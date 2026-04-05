@@ -19,23 +19,23 @@ resource "elasticstack_kibana_dashboard" "example" {
   title       = <required, string>
   description = <optional, string>
 
-  time_range = {
+  time_range = <required, object({
     from = <required, string>
     to   = <required, string>
     mode = <optional, string> # absolute | relative; see REQ-009 for read-back preservation
-  }
+  })>
 
-  refresh_interval = {
+  refresh_interval = <required, object({
     pause = <required, bool>
     value = <required, int64>
-  }
+  })>
 
-  query = {
+  query = <required, object({
     language = <required, string>
     # Exactly one of:
     text = <optional, string> # conflicts with json; KQL/Lucene string branch
     json = <optional, json string, normalized> # conflicts with text; object branch
-  }
+  })>
 
   tags = <optional, list(string)>
 
@@ -72,7 +72,7 @@ panels = <optional, list(object({
 
 sections = <optional, list(object({
   title     = <required, string>
-  uid       = <optional, string> # API section uid; replaces former attribute name `id`
+  uid       = <optional, computed, string> # API section uid; replaces former attribute name `id`
   collapsed = <optional, bool>
   grid      = { y = <required, int64> }
   panels    = <optional, list(...)> # same panel object shape as top-level panels
@@ -93,25 +93,25 @@ sections = <optional, list(object({
 
 ### Requirement: Dashboard root schema API naming (REQ-036)
 
-The resource SHALL expose dashboard-level time selection, refresh, and query using nested blocks whose attribute names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
+The resource SHALL expose dashboard-level time selection, refresh, and query as object-valued attributes whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
 
-The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
+The resource SHALL expose dashboard `options` as an object-valued attribute with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
 
 #### Scenario: Query union uses text branch
 
-- GIVEN `query { language = "kuery" text = "http.response.status_code:200" }`
+- GIVEN `query = { language = "kuery" text = "http.response.status_code:200" }`
 - WHEN the provider builds the create or update request body
 - THEN it SHALL set the API query to the string branch of `query.query` and SHALL set `query.language` from `query.language`
 
 #### Scenario: Query union uses json branch
 
-- GIVEN `query { language = "kuery" json = jsonencode({ ... }) }`
+- GIVEN `query = { language = "kuery" json = jsonencode({ ... }) }`
 - WHEN the provider builds the create or update request
 - THEN it SHALL set the API query to the object branch and SHALL reject configurations where both `text` and `json` are set
 
 #### Scenario: Options include new flags
 
-- GIVEN `options { hide_panel_borders = true auto_apply_filters = false }`
+- GIVEN `options = { hide_panel_borders = true auto_apply_filters = false }`
 - WHEN create or update runs
 - THEN the provider SHALL include those fields in the API `options` object when known
 
@@ -149,7 +149,7 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource currently preserves the prior **`time_range.mode`** value already held in state or plan instead of overwriting it from read-back, because the implementation does not currently map the API's optional `time_range.mode` field into state from GET responses. (Legacy attribute name `time_range_mode` at root is removed in favor of `time_range.mode`.)
 
-When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options (including behavior consistent with the implementation's **`isDashboardOptionsDefaultSet`** helper for **all** modeled option fields, including **`auto_apply_filters`** and **`hide_panel_borders`** when applicable), the resource SHALL keep the `options` block null in state.
+When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options, the resource SHALL keep the `options` block null in state. For this preservation and drift-suppression behavior, "default dashboard options" SHALL be interpreted consistently with the implementation's **`isDashboardOptionsDefaultSet`** helper for **all** modeled option fields, including **`auto_apply_filters = true`** and **`hide_panel_borders = false`** as the API defaults when those fields are present or materialized by Kibana.
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, and `project_routing`, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
 
