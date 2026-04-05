@@ -161,8 +161,11 @@ steps:
     with:
       go-version-file: go.mod
       cache: false
-  - name: Capture GOROOT for AWF chroot mode
-    run: echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -191,7 +194,7 @@ tools:
   github:
     toolsets: [repos, pull_requests]
 network:
-  allowed: [defaults, node]
+  allowed: [defaults, node, go]
 checkout:
   fetch-depth: 0
 safe-outputs:
@@ -220,7 +223,7 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 
 ## Pre-activation context
 
-Deterministic pre-activation steps have verified the triggering label and selected the active change. A deterministic setup step has installed Node dependencies before agent reasoning begins.
+Deterministic pre-activation steps have verified the triggering label and selected the active change. Deterministic steps have also provisioned the review toolchains (Node, Go, Terraform) and run `make setup` so OpenSpec CLI, Node packages, and prepared Go dependencies are available before agent reasoning begins.
 
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
 - **Gating**: already complete — the workflow reached this point only because exactly one active change with modified-only files was found. Do **not** re-inspect PR files or re-derive the change id.

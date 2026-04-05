@@ -316,40 +316,19 @@ The resource SHALL use the provider's configured Kibana OpenAPI client for all C
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
-Schema validation SHALL enforce that each typed panel config block is only present on a panel whose `type` matches that block's panel type, and that at most one typed config block is present on any panel. This exclusivity requirement applies to `time_slider_control_config`, `slo_burn_rate_config`, `slo_error_budget_config`, and `esql_control_config` in addition to all previously supported typed config blocks. Schema validation SHALL also enforce that `variable_type` and `control_type` values within `esql_control_config` are restricted to their documented enum values.
+Schema validation SHALL enforce that `options_list_control_config` is valid only for panels with `type = "options_list_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `search_technique` is restricted to `prefix`, `wildcard`, or `exact` when set.
 
-REQ-006 SHALL be extended to include the following rules for the `slo_burn_rate_config` block:
+REQ-006 is extended to include:
 
-The existing REQ-006 text is extended. The sentence:
+- `options_list_control_config` SHALL be valid only for panels with `type = "options_list_control"`.
+- `options_list_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- The `search_technique` attribute within `options_list_control_config` SHALL be restricted to the values `prefix`, `wildcard`, and `exact` when set; any other value SHALL be rejected at plan time.
 
-> Each panel SHALL declare at least one panel configuration block, panel configuration blocks SHALL be mutually exclusive, typed panel configuration blocks SHALL only be valid for their supported panel type, and `waffle_config` SHALL enforce its ES|QL-vs-non-ES|QL field consistency rules.
+#### Scenario: options_list_control_config rejected for non-options_list_control panel
 
-gains the following additions:
-
-- `esql_control_config` SHALL be valid only for panels with `type = "esql_control"`.
-- `esql_control_config` SHALL be mutually exclusive with all other panel configuration blocks.
-- The `variable_type` attribute within `esql_control_config` SHALL be restricted to the values `fields`, `values`, `functions`, `time_literal`, and `multi_values`; any other value SHALL be rejected at plan time.
-- The `control_type` attribute within `esql_control_config` SHALL be restricted to the values `STATIC_VALUES` and `VALUES_FROM_QUERY`; any other value SHALL be rejected at plan time.
-
-#### Scenario: esql_control_config rejected for non-esql_control panel (ADDED)
-
-- GIVEN a panel with `type = "lens"` and `esql_control_config` set
+- GIVEN a panel with `type = "lens"` and `options_list_control_config` set
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
-
-#### Scenario: Invalid variable_type value (ADDED)
-
-- GIVEN a panel with `type = "esql_control"` and `esql_control_config.variable_type = "unsupported_type"`
-- WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected at plan time with a diagnostic naming the allowed values
-
-#### Scenario: Invalid control_type value (ADDED)
-
-- GIVEN a panel with `type = "esql_control"` and `esql_control_config.control_type = "UNSUPPORTED"`
-- WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected at plan time with a diagnostic naming the allowed values
-
----
 
 ### Requirement: Create and update request mapping (REQ-007)
 
@@ -385,13 +364,21 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional `id`, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel. On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, and `esql_control`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
+`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block.
 
-#### Scenario: config_json rejected for esql_control panel type (ADDED)
+The existing REQ-010 text:
 
-- GIVEN a panel with `type = "esql_control"` configured through `config_json`
+> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+
+is updated to additionally state:
+
+> The `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+
+#### Scenario: config_json rejected for options_list_control panel type
+
+- GIVEN a panel with `type = "options_list_control"` configured through `config_json`
 - WHEN the provider builds the API request on create or update
-- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `esql_control`
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `options_list_control`
 
 ---
 
@@ -737,6 +724,173 @@ The `esql_control` panel type is a standalone control panel, not a Lens visualiz
 - GIVEN an `esql_control` panel with only `grid.x` and `grid.y` specified
 - WHEN the resource is created
 - THEN the provider SHALL apply the API defaults for panel width (`w = 24`) and height (`h = 15`) consistent with the `kbn-dashboard-panel-esql_control` schema
+
+### Requirement: Range slider control panel behavior (REQ-028)
+
+For `type = "range_slider_control"` panels, the resource SHALL accept `range_slider_control_config` with the following attributes:
+
+- **`data_view_id`** (required, string): the ID of the Kibana data view that the slider filter targets.
+- **`field_name`** (required, string): the numeric field within the data view that the slider operates on.
+- **`title`** (optional, string): a human-readable label displayed above the slider in the dashboard.
+- **`use_global_filters`** (optional, bool): when set, controls whether the panel respects dashboard-level global filters.
+- **`ignore_validations`** (optional, bool): when set, suppresses validation errors from the control during intermediate states.
+- **`value`** (optional, list(string)): the initial min/max range pre-populated on the slider, expressed as a 2-element list `[min, max]`. When set, the list MUST contain exactly 2 elements. The values are strings matching the API representation.
+- **`step`** (optional, number): the step size for each increment of the slider.
+
+On write, the resource SHALL send `data_view_id` and `field_name` unconditionally and SHALL include each optional field only when it is set to a known, non-null value. On read, the resource SHALL populate `range_slider_control_config` from the API response for panels with `type = "range_slider_control"` and SHALL leave optional fields null in state when the API does not return them.
+
+The `range_slider_control_config` block is valid only when `type = "range_slider_control"` and MUST NOT appear with any other typed panel config block or with `config_json`.
+
+#### Scenario: Required fields only
+
+- GIVEN a `range_slider_control` panel configured with only `data_view_id` and `field_name`
+- WHEN create or update runs
+- THEN the API request SHALL include `data_view_id` and `field_name` in the panel config and SHALL omit all unset optional fields
+
+#### Scenario: Optional range pre-selection
+
+- GIVEN a `range_slider_control` panel configured with `value = ["10", "500"]`
+- WHEN create or update runs
+- THEN the API request SHALL include `value` as a 2-element array matching the configured strings
+- AND when read-back occurs, state SHALL reflect `value = ["10", "500"]`
+
+#### Scenario: Invalid value list length
+
+- GIVEN a `range_slider_control_config` block with `value` set to a list with fewer or more than 2 elements
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a validation diagnostic stating that `value` must contain exactly 2 elements
+
+#### Scenario: config_json rejected for range_slider_control
+
+- GIVEN a panel with `type = "range_slider_control"` configured with `config_json` instead of `range_slider_control_config`
+- WHEN the provider builds the API request
+- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+
+### Requirement: SLO overview panel behavior (REQ-030)
+
+The resource SHALL support `type = "slo_overview"` panels through the typed `slo_overview_config` block. The block SHALL carry exactly one of two mutually exclusive nested blocks: `single` (for single-SLO overview) or `groups` (for grouped SLO overview). On write, the provider SHALL use the presence of the `single` block to select the `slo-single-overview-embeddable` API embeddable type, and the presence of the `groups` block to select the `slo-group-overview-embeddable` API embeddable type. The `overview_mode` discriminant field in the API payload SHALL be set to `"single"` or `"groups"` accordingly and SHALL NOT be exposed as a direct Terraform attribute.
+
+For `single` mode:
+- `slo_id` SHALL be required and SHALL be sent as the SLO identifier in the API payload.
+- `slo_instance_id` SHALL be optional. When configured, it SHALL be sent; when not configured, the field SHALL be omitted from the write payload. On read, if the prior state value was null and Kibana returns `"*"`, the provider SHALL preserve null rather than force `"*"` into state.
+- `remote_name` SHALL be optional and SHALL be sent when configured.
+
+For `groups` mode:
+- All fields SHALL be optional.
+- `group_filters` SHALL be an optional nested block with the following attributes:
+  - `group_by`: optional string, enum-validated as one of `"slo.tags"`, `"status"`, `"slo.indicator.type"`, `"_index"`.
+  - `groups`: optional list of strings with a maximum of 100 entries.
+  - `kql_query`: optional string.
+  - `filters_json`: optional normalized JSON string representing the AS-code filter array; the provider SHALL normalize this field for semantic equality on refresh.
+
+Both modes SHALL support the following shared optional display attributes within their respective nested blocks:
+- `title`: optional string.
+- `description`: optional string.
+- `hide_title`: optional bool.
+- `hide_border`: optional bool.
+
+Both modes SHALL support a `drilldowns` optional list of objects with the following attributes:
+- `url`: required string.
+- `label`: required string.
+- `trigger`: required string.
+- `type`: required string.
+- `encode_url`: optional bool.
+- `open_in_new_tab`: optional bool.
+
+On read, the provider SHALL reconstruct the `single` or `groups` sub-block from the API payload's `overview_mode` field. On read, if Kibana omits `hide_border` or any optional display field, the provider SHALL preserve the prior state value rather than forcing a default.
+
+#### Scenario: Single-mode SLO overview panel write and read
+
+- GIVEN a panel with `type = "slo_overview"` and a `single` block with `slo_id = "my-slo-id"` and `slo_instance_id = "instance-1"`
+- WHEN the provider builds the API request
+- THEN it SHALL send the `slo-single-overview-embeddable` payload with `overview_mode = "single"`, `slo_id = "my-slo-id"`, and `slo_instance_id = "instance-1"`
+- AND WHEN the provider reads the panel back
+- THEN it SHALL populate `single.slo_id` and `single.slo_instance_id` from the API response
+
+#### Scenario: Groups-mode SLO overview panel with group_filters
+
+- GIVEN a panel with `type = "slo_overview"` and a `groups` block with `group_filters.group_by = "status"` and `group_filters.kql_query = "slo.name: my-*"`
+- WHEN the provider builds the API request
+- THEN it SHALL send the `slo-group-overview-embeddable` payload with `overview_mode = "groups"` and the configured `group_filters`
+- AND WHEN the provider reads the panel back
+- THEN it SHALL populate `groups.group_filters.group_by` and `groups.group_filters.kql_query` from the API response
+
+#### Scenario: slo_instance_id null preservation
+
+- GIVEN a panel with `type = "slo_overview"` in `single` mode where `slo_instance_id` was not configured (null in state)
+- WHEN the provider reads the panel back and Kibana returns `slo_instance_id = "*"`
+- THEN the provider SHALL preserve `slo_instance_id` as null in state rather than updating it to `"*"`
+
+#### Scenario: Invalid slo_overview_config — no sub-block
+
+- GIVEN a panel with `type = "slo_overview"` and an `slo_overview_config` block that contains neither `single` nor `groups`
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
+#### Scenario: Drilldowns round-trip
+
+- GIVEN a panel with `type = "slo_overview"` in `single` mode with a `drilldowns` entry specifying `url`, `label`, `trigger`, `type`, and `open_in_new_tab = true`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the `drilldowns` list SHALL reflect the configured values in state
+
+### Requirement: Options list control panel behavior (REQ-027)
+
+When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block and SHALL require that block to be present. The block SHALL require `data_view_id` (string) and `field_name` (string). All other attributes in the block SHALL be optional:
+
+- `title` (string) — human-readable label displayed above the control.
+- `use_global_filters` (bool) — whether the control applies the dashboard's global filters to its own query.
+- `ignore_validations` (bool) — whether the control skips field-level validation against the data view.
+- `single_select` (bool) — when true, only one option may be selected at a time.
+- `exclude` (bool) — when true, the selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (bool) — when true, the control filters for documents where the field exists.
+- `run_past_timeout` (bool) — when true, the control continues to show results even when the underlying query times out.
+- `search_technique` (string) — the technique used to match suggestions; MUST be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (list of string) — the initially or persistently selected option values; the provider SHALL represent all selected options as strings regardless of whether the API stores them as numbers.
+- `display_settings` (nested block, optional) — display preferences for the control widget, containing:
+  - `placeholder` (string) — placeholder text shown when no option is selected.
+  - `hide_action_bar` (bool) — when true, hides the action bar on the control.
+  - `hide_exclude` (bool) — when true, hides the exclude toggle.
+  - `hide_exists` (bool) — when true, hides the exists filter option.
+  - `hide_sort` (bool) — when true, hides the sort control.
+- `sort` (nested block, optional) — default sort configuration for the suggestion list, containing:
+  - `by` (string) — the field or criterion to sort by.
+  - `direction` (string) — the sort direction.
+
+The `options_list_control_config` block SHALL conflict with all other typed panel config blocks (`markdown_config`, `xy_chart_config`, `treemap_config`, `mosaic_config`, `datatable_config`, `tagcloud_config`, `heatmap_config`, `waffle_config`, `region_map_config`, `gauge_config`, `metric_chart_config`, `pie_chart_config`, `legacy_metric_config`) and with `config_json`. When `type` is `options_list_control`, no other typed config block or `config_json` SHALL be present on the same panel entry.
+
+For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL use null-preservation semantics: optional boolean attributes (`use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block SHALL remain null in state when the prior state value was null, even if Kibana returns a server-side default for that attribute. Only attributes that were explicitly set by the user (non-null in prior state) SHALL be updated from the API response. During import (no prior state), only `data_view_id`, `field_name`, `title`, `single_select`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated; the remaining optional boolean attributes and `sort` SHALL be left null to avoid forcing users to manage Kibana server-side defaults in their configuration. The provider SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
+
+#### Scenario: Options list control panel requires data_view_id and field_name
+
+- GIVEN a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
+
+#### Scenario: Options list control panel with invalid search_technique
+
+- GIVEN a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
+
+#### Scenario: Options list control panel round-trips through Kibana
+
+- GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
+- WHEN the provider creates the dashboard and reads it back
+- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Options list control panel import leaves server-default booleans null
+
+- GIVEN an existing dashboard with an `options_list_control` panel where Kibana stores server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
+- WHEN the provider imports the dashboard resource
+- THEN `data_view_id` and `field_name` SHALL be populated in state
+- AND `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort` SHALL remain null in state
+- AND a subsequent plan against a configuration that omits those attributes SHALL show no changes
+
+#### Scenario: Options list control config conflicts with other typed blocks
+
+- GIVEN a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
 
 ## Traceability
 

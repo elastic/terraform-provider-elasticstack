@@ -24,7 +24,6 @@ resource "elasticstack_kibana_synthetics_private_location" "pl-tcp-monitor" {
 
 resource "elasticstack_kibana_synthetics_monitor" "tcp-monitor" {
   name              = "TestTcpMonitorResource - ${var.name}"
-  space_id          = "testacc"
   namespace         = "testacc_test"
   schedule          = 5
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-tcp-monitor.label]

@@ -24,7 +24,6 @@ resource "elasticstack_kibana_synthetics_private_location" "pl-browser-monitor" 
 
 resource "elasticstack_kibana_synthetics_monitor" "browser-monitor" {
   name              = "TestBrowserMonitorResource Updated - ${var.name}"
-  space_id          = "testacc"
   schedule          = 10
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-browser-monitor.label]
   enabled           = false

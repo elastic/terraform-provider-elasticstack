@@ -24,7 +24,6 @@ resource "elasticstack_kibana_synthetics_private_location" "pl-browser-monitor" 
 
 resource "elasticstack_kibana_synthetics_monitor" "browser-monitor" {
   name              = "TestBrowserMonitorResource - ${var.name}"
-  space_id          = "testacc"
   namespace         = "testacc_ns"
   schedule          = 5
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-browser-monitor.label]
