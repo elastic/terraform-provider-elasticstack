@@ -11,7 +11,7 @@
     "elasticstack_elasticsearch_ingest_processor_convert": "2026-04-02T10:38:47Z",
     "elasticstack_elasticsearch_ingest_processor_csv": "2026-04-03T10:34:36.198Z",
     "elasticstack_elasticsearch_ingest_processor_date": "2026-04-04T10:32:10Z",
-    "elasticstack_elasticsearch_ingest_processor_date_index_name": null,
+    "elasticstack_elasticsearch_ingest_processor_date_index_name": "2026-04-05T10:31:39Z",
     "elasticstack_elasticsearch_ingest_processor_dissect": null,
     "elasticstack_elasticsearch_ingest_processor_dot_expander": null,
     "elasticstack_elasticsearch_ingest_processor_drop": null,
