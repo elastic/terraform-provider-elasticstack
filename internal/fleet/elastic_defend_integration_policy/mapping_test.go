@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const testArtifactManifest = "WzEyMywxXQ=="
+
 // TestPopulateModelFromAPIValidatesPackageName tests that populateModelFromAPI
 // returns an error when the package name is not "endpoint" (REQ-005).
 func TestPopulateModelFromAPIValidatesPackageName(t *testing.T) {
@@ -60,7 +62,7 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 
 	agentPolicyID := "agent-policy-abc"
 	namespace := "default"
-	version := "WzEyMywxXQ=="
+	version := testArtifactManifest
 
 	policy := &kbapi.DefendPackagePolicy{
 		Id:       "policy-123",
@@ -222,7 +224,7 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 // extractPrivateStateFromResponse skips non-endpoint inputs and still finds
 // the artifact_manifest from the endpoint input.
 func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
-	version := "WzEyMywxXQ=="
+	version := testArtifactManifest
 	policy := &kbapi.DefendPackagePolicy{
 		Id:      "policy-123",
 		Name:    "test",
@@ -275,7 +277,7 @@ func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
 // TestExtractPrivateStateFromResponse tests that private state extraction
 // captures the version and artifact_manifest from an API response.
 func TestExtractPrivateStateFromResponse(t *testing.T) {
-	version := "WzEyMywxXQ=="
+	version := testArtifactManifest
 	policy := &kbapi.DefendPackagePolicy{
 		Id:      "policy-123",
 		Name:    "test",

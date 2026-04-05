@@ -70,14 +70,17 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 	model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
 
-	// Populate space_ids
+	// Populate space_ids — only overwrite when the API actually returns them.
+	// If the API omits space_ids, preserve the existing model value so
+	// space-aware operations (e.g. update, delete) continue to work correctly.
 	if policy.SpaceIds != nil && len(*policy.SpaceIds) > 0 {
 		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *policy.SpaceIds)
 		diags.Append(d...)
 		model.SpaceIDs = spaceIDs
-	} else {
+	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
+	// Otherwise keep the existing model.SpaceIDs value.
 
 	// Extract preset and policy from the endpoint input config
 	var preset string
@@ -306,6 +309,9 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 
 func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	if len(data) == 0 {
+		return types.ObjectNull(windowsPopupAttrTypes()), diags
+	}
 	malwareData := getMap(data, "malware")
 	ransomwareData := getMap(data, "ransomware")
 	memProtData := getMap(data, "memory_protection")
@@ -335,12 +341,14 @@ func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Obj
 	})
 	diags.Append(d...)
 
-	return types.ObjectValueFrom(ctx, windowsPopupAttrTypes(), windowsPopupModel{
+	obj, d := types.ObjectValueFrom(ctx, windowsPopupAttrTypes(), windowsPopupModel{
 		Malware:            malwareObj,
 		Ransomware:         ransomwareObj,
 		MemoryProtection:   memProtObj,
 		BehaviorProtection: behProtObj,
 	})
+	diags.Append(d...)
+	return obj, diags
 }
 
 func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
@@ -487,11 +495,13 @@ func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	})
 	diags.Append(d...)
 
-	return types.ObjectValueFrom(ctx, macLinuxPopupAttrTypes(), macLinuxPopupModel{
+	obj, d := types.ObjectValueFrom(ctx, macLinuxPopupAttrTypes(), macLinuxPopupModel{
 		Malware:            malwareObj,
 		MemoryProtection:   memProtObj,
 		BehaviorProtection: behProtObj,
 	})
+	diags.Append(d...)
+	return obj, diags
 }
 
 // ---- attr types helpers ----

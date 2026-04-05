@@ -150,7 +150,8 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		diags := fleetclient.DeletePackagePolicy(context.Background(), fleetClient, policyID, "", false)
+		spaceID := rs.Primary.Attributes["space_ids.0"]
+		diags := fleetclient.DeletePackagePolicy(context.Background(), fleetClient, policyID, spaceID, false)
 		if diags.HasError() {
 			return fmt.Errorf("error deleting Defend policy %q: %v", policyID, diags)
 		}

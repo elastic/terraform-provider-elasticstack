@@ -58,6 +58,16 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	// Capture the server-managed private state from bootstrap response
 	ps := extractPrivateStateFromResponse(bootstrapPolicy)
 
+	// Save policy_id and private state immediately after bootstrap so the
+	// resource can be recovered if finalize fails.
+	planModel.PolicyID = types.StringValue(bootstrapPolicy.Id)
+	planModel.ID = types.StringValue(bootstrapPolicy.Id)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &planModel)...)
+	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, ps)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Step 2: Finalize with the user-configured typed policy
 	finalizeReq, d := buildFinalizeRequest(ctx, &planModel, ps)
 	resp.Diagnostics.Append(d...)
