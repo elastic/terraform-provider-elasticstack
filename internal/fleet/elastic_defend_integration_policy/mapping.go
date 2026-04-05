@@ -473,6 +473,9 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 
 func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	if len(data) == 0 {
+		return types.ObjectNull(macLinuxPopupAttrTypes()), diags
+	}
 	malwareData := getMap(data, "malware")
 	memProtData := getMap(data, "memory_protection")
 	behProtData := getMap(data, "behavior_protection")
