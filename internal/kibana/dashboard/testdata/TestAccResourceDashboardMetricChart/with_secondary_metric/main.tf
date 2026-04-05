@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -24,12 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Metric Chart with Secondary Metric"
       description = "Test metric chart with secondary metric"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = "status:active"
+        language   = "kql"
+        expression = "status:active"
       }
       metrics = [
         {
@@ -49,8 +51,8 @@ resource "elasticstack_kibana_dashboard" "test" {
             sort_by           = "@timestamp",
             show_array_values = false,
             filter = {
-              query    = "\"@timestamp\": *"
-              language = "kuery"
+              expression = "\"@timestamp\": *"
+              language   = "kql"
             }
           })
         }

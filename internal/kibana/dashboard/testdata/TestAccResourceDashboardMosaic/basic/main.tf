@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -26,13 +26,15 @@ resource "elasticstack_kibana_dashboard" "test" {
       description = "Test mosaic visualization"
 
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
 
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
 
       group_by_json = jsonencode([
@@ -48,6 +50,12 @@ resource "elasticstack_kibana_dashboard" "test" {
             }
           }
           fields = ["host.name"]
+          limit  = 5
+          rank_by = {
+            direction = "desc"
+            metric    = 0
+            type      = "column"
+          }
         }
       ])
 
@@ -55,6 +63,12 @@ resource "elasticstack_kibana_dashboard" "test" {
         {
           operation = "terms"
           fields    = ["service.name"]
+          limit     = 5
+          rank_by = {
+            direction = "desc"
+            metric    = 0
+            type      = "column"
+          }
         }
       ])
 
@@ -66,7 +80,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = true
-        size                 = "medium"
+        size                 = "m"
         visible              = "auto"
         truncate_after_lines = 5
       }

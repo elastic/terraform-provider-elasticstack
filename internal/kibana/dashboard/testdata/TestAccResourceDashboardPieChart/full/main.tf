@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -23,15 +23,17 @@ resource "elasticstack_kibana_dashboard" "test" {
     pie_chart_config = {
       title          = "Full Pie Chart"
       description    = "Full pie chart visualization"
-      donut_hole     = "large"
+      donut_hole     = "l"
       label_position = "outside"
       dataset = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
       legend = jsonencode({
         visibility = "visible"
@@ -58,6 +60,12 @@ resource "elasticstack_kibana_dashboard" "test" {
                 type  = "color_code"
                 value = "#555555"
               }
+            }
+            limit = 5
+            rank_by = {
+              direction = "desc"
+              metric    = 0
+              type      = "column"
             }
           })
         }

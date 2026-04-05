@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -24,12 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Metric Chart with Filters"
       description = "Test metric chart with filters visualization"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = "status:active"
+        language   = "kql"
+        expression = "status:active"
       }
       metrics = [
         {
@@ -45,7 +47,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       breakdown_by_json = jsonencode({
         operation = "terms"
         fields    = ["category"]
-        size      = 3
+        limit     = 3
         rank_by = {
           direction = "desc"
           metric    = 0

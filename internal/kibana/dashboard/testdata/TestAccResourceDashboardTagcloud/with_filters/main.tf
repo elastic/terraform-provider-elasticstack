@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = false
   refresh_interval_value = 30000
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -24,12 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Filtered Tagcloud"
       description = "Tagcloud with filters and custom settings"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "logs-*"
+        type  = "index"
+        index = "logs-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = "service.name:*"
+        language   = "kql"
+        expression = "service.name:*"
       }
       filters = [
         {
@@ -50,7 +52,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["service.name"]
-        size      = 15
+        limit     = 15
       })
       orientation           = "vertical"
       ignore_global_filters = true

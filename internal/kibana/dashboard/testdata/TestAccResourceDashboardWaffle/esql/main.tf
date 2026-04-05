@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -35,12 +35,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       # Omit `query` for ES|QL mode (see provider docs).
 
       legend = {
-        size = "medium"
+        size = "m"
       }
 
       esql_metrics = [{
         column      = "c"
-        operation   = "value"
         format_json = jsonencode({ type = "number" })
         color = {
           type  = "static"

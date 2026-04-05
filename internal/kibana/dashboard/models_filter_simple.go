@@ -24,14 +24,14 @@ import (
 )
 
 type filterSimpleModel struct {
-	Language types.String `tfsdk:"language"`
-	Query    types.String `tfsdk:"query"`
+	Language   types.String `tfsdk:"language"`
+	Expression types.String `tfsdk:"expression"`
 }
 
 func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimple) {
-	m.Query = types.StringValue(apiQuery.Query)
+	m.Expression = types.StringValue(apiQuery.Expression)
 	if apiQuery.Language == nil {
-		m.Language = types.StringValue("kuery")
+		m.Language = types.StringValue(string(kbapi.FilterSimpleLanguageKql))
 		return
 	}
 	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
@@ -43,7 +43,7 @@ func (m *filterSimpleModel) toAPI() kbapi.FilterSimple {
 	}
 
 	query := kbapi.FilterSimple{
-		Query: m.Query.ValueString(),
+		Expression: m.Expression.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {
 		lang := kbapi.FilterSimpleLanguage(m.Language.ValueString())

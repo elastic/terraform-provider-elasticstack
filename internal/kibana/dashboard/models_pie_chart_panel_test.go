@@ -35,7 +35,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	title := "Pie Round-Trip"
 	desc := "Converter test"
-	donutHole := kbapi.PieNoESQLDonutHoleSmall
+	donutHole := kbapi.PieNoESQLDonutHoleS
 	labelPos := kbapi.PieNoESQLLabelsPositionInside
 	visibility := kbapi.PieLegendVisibilityVisible
 
@@ -49,7 +49,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 		}{Position: &labelPos},
 		Legend:  kbapi.PieLegend{Visibility: &visibility},
 		Dataset: kbapi.PieNoESQL_Dataset{},
-		Query:   kbapi.FilterSimple{Query: "response:200", Language: new(kbapi.FilterSimpleLanguageKuery)},
+		Query:   kbapi.FilterSimple{Expression: "response:200", Language: new(kbapi.FilterSimpleLanguageKql)},
 		Metrics: []kbapi.PieNoESQL_Metrics_Item{},
 		GroupBy: new([]kbapi.PieNoESQL_GroupBy_Item{}),
 	}
@@ -74,14 +74,14 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	noESQL2, err := chart2.AsPieNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Pie Round-Trip", *noESQL2.Title)
-	assert.Equal(t, "response:200", noESQL2.Query.Query)
+	assert.Equal(t, "response:200", noESQL2.Query.Expression)
 }
 
 func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	// Setup test data
 	title := "My Pie Chart"
 	desc := "A delicious pie chart"
-	donutHole := kbapi.PieNoESQLDonutHoleSmall
+	donutHole := kbapi.PieNoESQLDonutHoleS
 	labelPos := kbapi.PieNoESQLLabelsPositionInside
 
 	// Create a dummy dataset
@@ -93,8 +93,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	}
 
 	query := kbapi.FilterSimple{
-		Query:    "response:200",
-		Language: new(kbapi.FilterSimpleLanguageKuery),
+		Expression: "response:200",
+		Language:   new(kbapi.FilterSimpleLanguageKql),
 	}
 
 	apiChart := kbapi.PieNoESQL{
@@ -128,7 +128,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, desc, model.Description.ValueString())
 	assert.Equal(t, string(donutHole), model.DonutHole.ValueString())
 	assert.Equal(t, string(labelPos), model.LabelPosition.ValueString())
-	assert.Equal(t, "response:200", model.Query.Query.ValueString())
+	assert.Equal(t, "response:200", model.Query.Expression.ValueString())
 
 	// Test toAPI
 	resultSchema, diags := model.toAPI()
@@ -188,7 +188,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 		Description: types.StringValue("Test"),
 		Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 		Legend:      jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:       &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
@@ -213,7 +213,7 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 		Title:   types.StringValue("Pie with groupBy"),
 		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 		Legend:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:   &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Query:   &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},

@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -79,7 +79,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
+        size                 = "s"
         visible              = "visible"
         truncate_after_lines = 10
       }

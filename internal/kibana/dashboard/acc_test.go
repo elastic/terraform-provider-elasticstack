@@ -54,7 +54,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "now"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_pause", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_value", "90000"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_language", "kuery"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_text", ""),
 				),
 			},
@@ -341,7 +341,6 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	dashboardID := "test-legacy-metric-json-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -370,11 +369,10 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("legacy_metric_json"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
-					"dashboard_id":    config.StringVariable(dashboardID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "dashboard_id", dashboardID),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "dashboard_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),

@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -24,15 +24,17 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Waffle"
       description = "Test waffle visualization"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
       legend = {
-        size   = "medium"
+        size   = "m"
         values = ["absolute"]
       }
       metrics = [

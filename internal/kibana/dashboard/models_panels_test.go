@@ -40,7 +40,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 		"type": "mosaic",
 		"title": "Lens Mosaic",
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":""},
+		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metric": {"operation":"count"},
 		"group_by": ` + groupBy + `,
@@ -75,7 +75,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 		"type": "treemap",
 		"title": "Lens Treemap",
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":""},
+		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
@@ -109,7 +109,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 		"type": "waffle",
 		"title": "Lens Waffle",
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":""},
+		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}]
 	}`
@@ -520,7 +520,7 @@ func Test_panelsToAPI(t *testing.T) {
 							"title": "Lens Treemap",
 							"dataset": {"type":"dataView","id":"metrics-*"},
 							"filters": [],
-							"query": {"language":"kuery","query":""},
+							"query": {"language":"kql","expression":""},
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
 							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
@@ -549,7 +549,7 @@ func Test_panelsToAPI(t *testing.T) {
 							"title": "Lens Mosaic",
 							"dataset": {"type":"dataView","id":"metrics-*"},
 							"filters": [],
-							"query": {"language":"kuery","query":""},
+							"query": {"language":"kql","expression":""},
 							"legend": {"size":"small"},
 							"metric": {"operation":"count"},
 							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
@@ -583,7 +583,7 @@ func Test_panelsToAPI(t *testing.T) {
 							"title": "Lens Waffle",
 							"dataset": {"type":"dataView","id":"metrics-*"},
 							"filters": [],
-							"query": {"language":"kuery","query":""},
+							"query": {"language":"kql","expression":""},
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
 							"values": {"mode": "percentage"}

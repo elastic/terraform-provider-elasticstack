@@ -57,7 +57,7 @@ func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *lega
 	}
 	if a.Query != nil {
 		assert.Equal(t, a.Query.Language, b.Query.Language)
-		assert.Equal(t, a.Query.Query, b.Query.Query)
+		assert.Equal(t, a.Query.Expression, b.Query.Expression)
 	}
 	assert.Len(t, b.Filters, len(a.Filters))
 	for i := range a.Filters {
@@ -287,7 +287,7 @@ func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	model := &legacyMetricConfigModel{
 		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
-		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("*")},
+		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Expression: types.StringValue("*")},
 		MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
 			"operation": "value",
 			"column": "y",
@@ -304,7 +304,7 @@ func Test_legacyMetricConfigModel_toAPI_missingMetric(t *testing.T) {
 	model := &legacyMetricConfigModel{
 		Title:       types.StringValue("T"),
 		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
-		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("")},
+		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Expression: types.StringValue("")},
 		MetricJSON:  customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()

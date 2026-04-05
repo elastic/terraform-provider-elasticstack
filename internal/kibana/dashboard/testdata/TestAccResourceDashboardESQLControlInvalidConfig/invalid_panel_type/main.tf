@@ -12,7 +12,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   refresh_interval_pause = true
   refresh_interval_value = 0
 
-  query_language = "kuery"
+  query_language = "kql"
   query_text     = ""
 
   panels = [{
@@ -24,10 +24,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 6
     }
     esql_control_config = {
-      variable_name = "my_var"
-      variable_type = "values"
-      esql_query    = "FROM logs-* | STATS count = COUNT(*) BY host.name"
-      control_type  = "STATIC_VALUES"
+      selected_options = []
+      variable_name    = "my_var"
+      variable_type    = "values"
+      esql_query       = "FROM logs-* | STATS count = COUNT(*) BY host.name"
+      control_type     = "STATIC_VALUES"
     }
   }]
 }

@@ -666,12 +666,26 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 		{
 			name: "inside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
+				visibility := kbapi.XyLegendInsideVisibilityVisible
+				position := kbapi.TopLeft
 				legend := kbapi.XyLegendInside{
-					Placement:          kbapi.XyLegendInsidePlacementInside,
-					Visibility:         kbapi.XyLegendInsideVisibilityVisible,
-					TruncateAfterLines: new(float32(3)),
-					Columns:            new(float32(2)),
-					Position:           func() *kbapi.XyLegendInsidePosition { p := kbapi.XyLegendInsidePosition("left"); return &p }(),
+					Placement:  kbapi.XyLegendInsidePlacementInside,
+					Visibility: &visibility,
+					Layout: &struct {
+						Truncate *struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						} `json:"truncate,omitempty"`
+						Type kbapi.XyLegendInsideLayoutType `json:"type"`
+					}{
+						Truncate: &struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						}{
+							MaxLines: new(float32(3)),
+						},
+						Type: kbapi.XyLegendInsideLayoutTypeGrid,
+					},
+					Columns:  new(float32(2)),
+					Position: &position,
 					Statistics: &[]kbapi.XyLegendInsideStatistics{
 						kbapi.XyLegendInsideStatistics("mean"),
 						kbapi.XyLegendInsideStatistics("max"),
@@ -686,7 +700,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 				Visibility:         types.StringValue("visible"),
 				TruncateAfterLines: types.Int64Value(3),
 				Columns:            types.Int64Value(2),
-				Alignment:          types.StringValue("left"),
+				Alignment:          types.StringValue("top_left"),
 			},
 		},
 	}
@@ -723,17 +737,33 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 		{
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
-				legend := kbapi.XyLegendOutside{
-					Visibility:         kbapi.XyLegendOutsideVisibilityHidden,
-					TruncateAfterLines: new(float32(5)),
-					Position:           func() *kbapi.XyLegendOutsidePosition { p := kbapi.XyLegendOutsidePosition("right"); return &p }(),
-					Size:               func() *kbapi.XyLegendOutsideSize { s := kbapi.XyLegendOutsideSize("medium"); return &s }(),
-					Statistics: &[]kbapi.XyLegendOutsideStatistics{
-						kbapi.XyLegendOutsideStatistics("min"),
+				visibility := kbapi.XyLegendOutsideVerticalVisibilityHidden
+				position := kbapi.XyLegendOutsideVerticalPositionRight
+				placement := kbapi.XyLegendOutsideVerticalPlacementOutside
+				legend := kbapi.XyLegendOutsideVertical{
+					Visibility: &visibility,
+					Layout: &struct {
+						Truncate *struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						} `json:"truncate,omitempty"`
+						Type kbapi.XyLegendOutsideVerticalLayoutType `json:"type"`
+					}{
+						Truncate: &struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						}{
+							MaxLines: new(float32(5)),
+						},
+						Type: kbapi.Grid,
+					},
+					Placement: &placement,
+					Position:  &position,
+					Size:      kbapi.LegendSizeM,
+					Statistics: &[]kbapi.XyLegendOutsideVerticalStatistics{
+						kbapi.XyLegendOutsideVerticalStatistics("min"),
 					},
 				}
 				var result kbapi.XyLegend
-				_ = result.FromXyLegendOutside(legend)
+				_ = result.FromXyLegendOutsideVertical(legend)
 				return result
 			}(),
 			expected: &xyLegendModel{
@@ -741,7 +771,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 				Visibility:         types.StringValue("hidden"),
 				TruncateAfterLines: types.Int64Value(5),
 				Position:           types.StringValue("right"),
-				Size:               types.StringValue("medium"),
+				Size:               types.StringValue("m"),
 			},
 		},
 	}
@@ -785,8 +815,8 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			},
 		},
 		Query: &filterSimpleModel{
-			Query:    types.StringValue("*"),
-			Language: types.StringValue("kuery"),
+			Expression: types.StringValue("*"),
+			Language:   types.StringValue("kql"),
 		},
 	}
 
@@ -857,8 +887,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					Visibility: types.StringValue("visible"),
 				},
 				Query: &filterSimpleModel{
-					Query:    types.StringValue("*"),
-					Language: types.StringValue("kuery"),
+					Expression: types.StringValue("*"),
+					Language:   types.StringValue("kql"),
 				},
 			},
 			expectError: false,

@@ -2,12 +2,7 @@ variable "dashboard_title" {
   type = string
 }
 
-variable "dashboard_id" {
-  type = string
-}
-
 resource "elasticstack_kibana_dashboard" "test" {
-  dashboard_id           = var.dashboard_id
   space_id               = "default"
   title                  = var.dashboard_title
   description            = "Test for issue #1790"
@@ -16,7 +11,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -31,8 +26,10 @@ resource "elasticstack_kibana_dashboard" "test" {
     config_json = jsonencode({
       attributes = {
         dataset = {
-          id   = "metrics-*"
-          type = "dataView"
+          type  = "index"
+          index = "metrics-*"
+
+          time_field = "@timestamp"
         }
         description           = ""
         filters               = []
@@ -45,10 +42,6 @@ resource "elasticstack_kibana_dashboard" "test" {
             decimals = 2
             compact  = false
           }
-        }
-        query = {
-          language = "kuery"
-          query    = ""
         }
         sampling = 1
         title    = ""
