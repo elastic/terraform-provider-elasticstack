@@ -141,6 +141,24 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
 }
 
+func Test_heatmapLegendModel_visibility_hidden_roundTrip(t *testing.T) {
+	api := kbapi.HeatmapLegend{
+		Size: kbapi.LegendSizeS,
+		Visibility: func() *kbapi.HeatmapLegendVisibility {
+			v := kbapi.HeatmapLegendVisibilityHidden
+			return &v
+		}(),
+	}
+	var m heatmapLegendModel
+	m.fromAPI(api)
+	assert.Equal(t, types.StringValue("hidden"), m.Visibility)
+
+	out, diags := m.toAPI()
+	require.False(t, diags.HasError())
+	require.NotNil(t, out.Visibility)
+	assert.Equal(t, kbapi.HeatmapLegendVisibilityHidden, *out.Visibility)
+}
+
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	const esqlHeatmapJSON = `{
 		"type": "heatmap",

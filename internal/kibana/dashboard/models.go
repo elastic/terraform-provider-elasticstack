@@ -253,12 +253,13 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 	}
 	query.Language = m.Query.Language.ValueString()
 	// Query.Query is a union type with json.RawMessage
-	if typeutils.IsKnown(m.Query.Text) {
+	switch {
+	case typeutils.IsKnown(m.Query.Text):
 		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.Query.Text.ValueString())
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	} else if typeutils.IsKnown(m.Query.JSON) {
+	case typeutils.IsKnown(m.Query.JSON):
 		var qj map[string]any
 		diags := m.Query.JSON.Unmarshal(&qj)
 		if diags.HasError() {
@@ -269,6 +270,13 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
+	default:
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid dashboard query",
+			"Exactly one of `query.text` or `query.json` must be set.",
+		)
+		return query, diags
 	}
 
 	return query, nil

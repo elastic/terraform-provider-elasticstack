@@ -342,6 +342,30 @@ REQ-006 is extended to include:
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
 
+### Requirement: Dashboard root schema API naming (REQ-036)
+
+The resource SHALL expose dashboard-level time selection, refresh, and query using nested blocks whose attribute names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
+
+The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
+
+#### Scenario: Query union uses text branch
+
+- GIVEN `query { language = "kuery" text = "http.response.status_code:200" }`
+- WHEN the provider builds the create or update request body
+- THEN it SHALL set the API query to the string branch of `query.query` and SHALL set `query.language` from `query.language`
+
+#### Scenario: Query union uses json branch
+
+- GIVEN `query { language = "kuery" json = jsonencode({ ... }) }`
+- WHEN the provider builds the create or update request
+- THEN it SHALL set the API query to the object branch and SHALL reject configurations where both `text` and `json` are set, or where neither is set
+
+#### Scenario: Options include new flags
+
+- GIVEN `options { hide_panel_borders = true auto_apply_filters = false }`
+- WHEN create or update runs
+- THEN the provider SHALL include those fields in the API `options` object when known
+
 ### Requirement: Create and update request mapping (REQ-007)
 
 On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string branch of the API union and `query.json` as the object branch of the API union. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.

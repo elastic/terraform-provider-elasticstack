@@ -458,18 +458,18 @@ func getSchema() schema.Schema {
 						Required:            true,
 					},
 					"text": schema.StringAttribute{
-						MarkdownDescription: "Query string for KQL or Lucene. Mutually exclusive with `json`.",
+						MarkdownDescription: "Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.MatchRoot("query").AtName("json")),
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtName("json")),
 						},
 					},
 					"json": schema.StringAttribute{
-						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Mutually exclusive with `text`.",
+						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.",
 						CustomType:          jsontypes.NormalizedType{},
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.MatchRoot("query").AtName("text")),
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtName("text")),
 						},
 					},
 				},
@@ -531,6 +531,9 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The unique identifier of the section (API `uid`).",
 							Optional:            true,
 							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+							},
 						},
 						"collapsed": schema.BoolAttribute{
 							MarkdownDescription: "The collapsed state of the section.",

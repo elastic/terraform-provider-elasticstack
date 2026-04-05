@@ -79,6 +79,7 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.ignore_global_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.size", "s"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.visibility", "hidden"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.truncate_after_lines", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.labels.orientation", "vertical"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.labels.visible", "false"),

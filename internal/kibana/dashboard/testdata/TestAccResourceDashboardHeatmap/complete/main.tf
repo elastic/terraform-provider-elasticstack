@@ -104,7 +104,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       }
       legend = {
-        visibility           = "visible"
+        visibility           = "hidden"
         size                 = "s"
         truncate_after_lines = 10
       }

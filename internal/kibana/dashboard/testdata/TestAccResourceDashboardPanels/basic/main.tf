@@ -19,6 +19,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
   panels = [{
     type = "markdown"
+    uid  = "tf-acc-markdown-panel-uid"
     grid = {
       x = 0
       y = 0
