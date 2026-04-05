@@ -20,7 +20,6 @@
 
 package elasticdefendintegrationpolicy
 
-
 // ElasticDefendIntegrationPolicyModel is the exported alias for testing.
 type ElasticDefendIntegrationPolicyModel = elasticDefendIntegrationPolicyModel
 

@@ -24,18 +24,18 @@ import (
 // elasticDefendIntegrationPolicyModel is the Terraform state model for the
 // elasticstack_fleet_elastic_defend_integration_policy resource.
 type elasticDefendIntegrationPolicyModel struct {
-	ID                 types.String      `tfsdk:"id"`
-	PolicyID           types.String      `tfsdk:"policy_id"`
-	Name               types.String      `tfsdk:"name"`
-	Namespace          types.String      `tfsdk:"namespace"`
-	AgentPolicyID      types.String      `tfsdk:"agent_policy_id"`
-	Description        types.String      `tfsdk:"description"`
-	Enabled            types.Bool        `tfsdk:"enabled"`
-	Force              types.Bool        `tfsdk:"force"`
-	IntegrationVersion types.String      `tfsdk:"integration_version"`
-	SpaceIDs           types.Set         `tfsdk:"space_ids"`
-	Preset             types.String      `tfsdk:"preset"`
-	Policy             types.Object      `tfsdk:"policy"`
+	ID                 types.String `tfsdk:"id"`
+	PolicyID           types.String `tfsdk:"policy_id"`
+	Name               types.String `tfsdk:"name"`
+	Namespace          types.String `tfsdk:"namespace"`
+	AgentPolicyID      types.String `tfsdk:"agent_policy_id"`
+	Description        types.String `tfsdk:"description"`
+	Enabled            types.Bool   `tfsdk:"enabled"`
+	Force              types.Bool   `tfsdk:"force"`
+	IntegrationVersion types.String `tfsdk:"integration_version"`
+	SpaceIDs           types.Set    `tfsdk:"space_ids"`
+	Preset             types.String `tfsdk:"preset"`
+	Policy             types.Object `tfsdk:"policy"`
 }
 
 // policyModel holds the top-level policy nested attribute.

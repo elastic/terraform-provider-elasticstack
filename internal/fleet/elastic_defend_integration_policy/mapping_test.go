@@ -21,8 +21,8 @@ import (
 	"context"
 	"testing"
 
-	edip "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	edip "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -65,12 +65,12 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 	version := testArtifactManifest
 
 	policy := &kbapi.DefendPackagePolicy{
-		Id:       "policy-123",
-		Name:     "my-endpoint-policy",
-		Enabled:  true,
+		Id:        "policy-123",
+		Name:      "my-endpoint-policy",
+		Enabled:   true,
 		Namespace: &namespace,
-		PolicyId: &agentPolicyID,
-		Version:  &version,
+		PolicyId:  &agentPolicyID,
+		Version:   &version,
 		Package: &struct {
 			Name    string `json:"name"`
 			Version string `json:"version"`

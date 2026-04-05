@@ -515,14 +515,14 @@ func popupItemAttrTypes() map[string]attr.Type {
 
 func windowsEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"process":            types.BoolType,
-		"network":            types.BoolType,
-		"file":               types.BoolType,
+		"process":             types.BoolType,
+		"network":             types.BoolType,
+		"file":                types.BoolType,
 		"dll_and_driver_load": types.BoolType,
-		"dns":                types.BoolType,
-		"registry":           types.BoolType,
-		"security":           types.BoolType,
-		"authentication":     types.BoolType,
+		"dns":                 types.BoolType,
+		"registry":            types.BoolType,
+		"security":            types.BoolType,
+		"authentication":      types.BoolType,
 	}
 }
 
@@ -632,23 +632,23 @@ func windowsAttrTypes() map[string]attr.Type {
 
 func macAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"events":             types.ObjectType{AttrTypes: macEventsAttrTypes()},
-		"malware":            types.ObjectType{AttrTypes: malwareFullAttrTypes()},
-		"memory_protection":  types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		"events":              types.ObjectType{AttrTypes: macEventsAttrTypes()},
+		"malware":             types.ObjectType{AttrTypes: malwareFullAttrTypes()},
+		"memory_protection":   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
 		"behavior_protection": types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		"popup":              types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
-		"logging":            types.ObjectType{AttrTypes: loggingAttrTypes()},
+		"popup":               types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
+		"logging":             types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }
 
 func linuxAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"events":             types.ObjectType{AttrTypes: linuxEventsAttrTypes()},
-		"malware":            types.ObjectType{AttrTypes: malwareLinuxAttrTypes()},
-		"memory_protection":  types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		"events":              types.ObjectType{AttrTypes: linuxEventsAttrTypes()},
+		"malware":             types.ObjectType{AttrTypes: malwareLinuxAttrTypes()},
+		"memory_protection":   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
 		"behavior_protection": types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		"popup":              types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
-		"logging":            types.ObjectType{AttrTypes: loggingAttrTypes()},
+		"popup":               types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
+		"logging":             types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }
 

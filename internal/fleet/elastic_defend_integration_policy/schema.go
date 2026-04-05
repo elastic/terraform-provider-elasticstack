@@ -230,8 +230,8 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"ransomware": protectionModeSchema("Windows ransomware protection settings."),
-			"memory_protection": protectionModeSchema("Windows memory protection settings."),
+			"ransomware":          protectionModeSchema("Windows ransomware protection settings."),
+			"memory_protection":   protectionModeSchema("Windows memory protection settings."),
 			"behavior_protection": behaviorProtectionSchema("Windows behavior protection settings."),
 			"popup": schema.SingleNestedAttribute{
 				Description: "Windows popup notification settings.",

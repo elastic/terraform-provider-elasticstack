@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	bootstrapInputType  = "ENDPOINT_INTEGRATION_CONFIG"
-	finalizeInputType   = "endpoint"
+	bootstrapInputType = "ENDPOINT_INTEGRATION_CONFIG"
+	finalizeInputType  = "endpoint"
 )
 
 // buildBootstrapRequest builds the minimal Defend package policy request used
