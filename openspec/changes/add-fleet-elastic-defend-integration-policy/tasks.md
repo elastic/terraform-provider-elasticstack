@@ -32,9 +32,9 @@
 
 ## 6. Verify behavior
 
-- [ ] 6.1 Add unit coverage for shared `kbapi` mapped-versus-typed package policy handling, including typed `config`, input `type`, and request/response `version`.
-- [ ] 6.2 Add unit coverage for Fleet helper query-format selection so the mapped and typed paths cannot accidentally converge.
-- [ ] 6.3 Add regression coverage proving `elasticstack_fleet_integration_policy` remains mapped-only after the shared client changes.
-- [ ] 6.4 Add unit coverage for typed Defend request construction, typed response parsing, package-name validation on import/read, and preservation of opaque server-managed Defend data.
-- [ ] 6.5 Add acceptance coverage for create, update, import, refresh after out-of-band delete, and delete of `elasticstack_fleet_elastic_defend_integration_policy`.
-- [ ] 6.6 Run the relevant OpenSpec validation and targeted provider test commands for the new resource and the shared Fleet package-policy client changes.
+- [x] 6.1 Add unit coverage for shared `kbapi` mapped-versus-typed package policy handling, including typed `config`, input `type`, and request/response `version`.
+- [x] 6.2 Add unit coverage for Fleet helper query-format selection so the mapped and typed paths cannot accidentally converge.
+- [x] 6.3 Add regression coverage proving `elasticstack_fleet_integration_policy` remains mapped-only after the shared client changes.
+- [x] 6.4 Add unit coverage for typed Defend request construction, typed response parsing, package-name validation on import/read, and preservation of opaque server-managed Defend data.
+- [x] 6.5 Add acceptance coverage for create, update, import, refresh after out-of-band delete, and delete of `elasticstack_fleet_elastic_defend_integration_policy`.
+- [x] 6.6 Run the relevant OpenSpec validation and targeted provider test commands for the new resource and the shared Fleet package-policy client changes.

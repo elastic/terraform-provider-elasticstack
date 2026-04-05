@@ -37,6 +37,10 @@ const endpointPackageName = "endpoint"
 func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPolicyModel, policy *kbapi.DefendPackagePolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	if policy == nil {
+		return diags
+	}
+
 	// Validate package identity (REQ-005)
 	if policy.Package != nil && policy.Package.Name != endpointPackageName {
 		return diag.Diagnostics{
