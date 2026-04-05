@@ -24,6 +24,10 @@ description: |-
 
 {{ tffile "examples/resources/elasticstack_fleet_output/kafka_advanced.tf" }}
 
+### Remote Elasticsearch output
+
+{{ tffile "examples/resources/elasticstack_fleet_output/remote_elasticsearch.tf" }}
+
 {{ .SchemaMarkdown | trimspace }}
 {{- if or .HasImport .HasImportIDConfig .HasImportIdentityConfig }}
 

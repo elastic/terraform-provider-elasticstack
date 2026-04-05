@@ -765,5 +765,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
+	clearRemoteElasticsearchOnlyFields(model)
+
 	return
 }
