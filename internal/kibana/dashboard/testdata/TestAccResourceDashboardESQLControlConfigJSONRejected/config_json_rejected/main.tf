@@ -1,5 +1,5 @@
 resource "elasticstack_kibana_dashboard" "test" {
-  title     = "config-json-esql-test"
+  title = "config-json-esql-test"
   time_range = {
     from = "now-15m"
     to   = "now"

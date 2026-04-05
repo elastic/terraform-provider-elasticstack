@@ -21,11 +21,11 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
   options = {
     hide_panel_titles  = true
-    use_margins          = false
-    sync_colors          = true
-    sync_tooltips        = true
-    sync_cursor          = false
-    auto_apply_filters   = false
-    hide_panel_borders   = true
+    use_margins        = false
+    sync_colors        = true
+    sync_tooltips      = true
+    sync_cursor        = false
+    auto_apply_filters = false
+    hide_panel_borders = true
   }
 }

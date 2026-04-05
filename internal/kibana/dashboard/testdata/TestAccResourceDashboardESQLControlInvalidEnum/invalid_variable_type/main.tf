@@ -1,5 +1,5 @@
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = "invalid-enum-test"
+  title = "invalid-enum-test"
   time_range = {
     from = "now-15m"
     to   = "now"

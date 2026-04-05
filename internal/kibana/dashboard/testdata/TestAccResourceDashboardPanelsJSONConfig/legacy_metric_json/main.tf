@@ -3,10 +3,10 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  space_id               = "default"
-  title                  = var.dashboard_title
-  description            = "Test for issue #1790"
-  tags                   = ["test"]
+  space_id    = "default"
+  title       = var.dashboard_title
+  description = "Test for issue #1790"
+  tags        = ["test"]
   time_range = {
     from = "now-7d"
     to   = "now"

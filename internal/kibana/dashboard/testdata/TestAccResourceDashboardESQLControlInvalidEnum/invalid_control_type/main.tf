@@ -1,5 +1,5 @@
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = "invalid-control-type-test"
+  title = "invalid-control-type-test"
   time_range = {
     from = "now-15m"
     to   = "now"

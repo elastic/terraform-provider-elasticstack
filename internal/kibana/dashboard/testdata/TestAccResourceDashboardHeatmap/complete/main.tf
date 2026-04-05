@@ -3,8 +3,8 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Heatmap Panel"
+  title       = var.dashboard_title
+  description = "Dashboard with Heatmap Panel"
   time_range = {
     from = "now-15m"
     to   = "now"

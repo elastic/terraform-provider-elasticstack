@@ -3,8 +3,8 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Tagcloud Panel and Filters"
+  title       = var.dashboard_title
+  description = "Dashboard with Tagcloud Panel and Filters"
   time_range = {
     from = "now-1h"
     to   = "now"
