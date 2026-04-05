@@ -41,6 +41,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
@@ -175,6 +176,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		integration.NewResource,
 		integrationpolicy.NewResource,
 		output.NewResource,
+		agentdownloadsource.NewResource,
 		serverhost.NewResource,
 		systemuser.NewSystemUserResource,
 		securityuser.NewUserResource,
