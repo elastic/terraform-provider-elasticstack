@@ -24,10 +24,10 @@ The Kibana Dashboard API models dashboard bodies with nested `time_range`, `refr
 
 ### 1. Nested `time_range`
 
-Single optional/required block (exact optionality should match current semantics: today `time_from` / `time_to` are required at root — preserve requiredness unless product wants optional dashboard time).
+Single optional/required nested attribute object (exact optionality should match current semantics: today `time_from` / `time_to` are required at root — preserve requiredness unless product wants optional dashboard time).
 
 ```hcl
-time_range {
+time_range = {
   from = "now-15m"
   to   = "now"
   mode = "relative" # optional; write-only / preserved-in-state behavior unchanged vs REQ-009
@@ -39,7 +39,7 @@ Mapping: unchanged Go paths (`req.TimeRange.*`, read from `data.Data.TimeRange.*
 ### 2. Nested `refresh_interval`
 
 ```hcl
-refresh_interval {
+refresh_interval = {
   pause = true
   value = 30
 }
@@ -50,14 +50,14 @@ refresh_interval {
 Retain the union semantics of `KbnEsQueryServerQuerySchema`: `language` plus exactly one of string query or object query.
 
 ```hcl
-query {
+query = {
   language = "kuery"
   text     = "response.code:200"
 }
 
 # OR
 
-query {
+query = {
   language = "kuery"
   json     = jsonencode({ ... }) # normalized JSON string attribute
 }

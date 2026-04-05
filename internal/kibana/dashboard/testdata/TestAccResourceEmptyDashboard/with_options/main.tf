@@ -6,16 +6,16 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Test dashboard with options"
 
-  time_range {
+  time_range = {
     from = "2024-01-01T00:00:00.000Z"
     to   = "2024-01-01T01:00:00.000Z"
     mode = "absolute"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 60000
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

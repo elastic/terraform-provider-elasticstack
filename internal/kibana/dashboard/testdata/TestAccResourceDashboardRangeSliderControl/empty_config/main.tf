@@ -6,15 +6,15 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with Range Slider Control Panel (required fields only)"
 
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 0
   }
-  query {
+  query = {
     language = "kuery"
     text     = ""
   }

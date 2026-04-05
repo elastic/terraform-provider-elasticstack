@@ -38,15 +38,15 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Test dashboard with access control"
 
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 90000
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

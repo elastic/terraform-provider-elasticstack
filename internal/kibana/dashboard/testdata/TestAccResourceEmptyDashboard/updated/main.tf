@@ -6,15 +6,15 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Updated dashboard description"
 
-  time_range {
+  time_range = {
     from = "now-30m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = false
     value = 30000
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

@@ -5,15 +5,15 @@ variable "dashboard_title" {
 resource "elasticstack_kibana_dashboard" "test" {
   title                  = var.dashboard_title
   description            = "Dashboard with Tagcloud Panel and Filters"
-  time_range {
+  time_range = {
     from = "now-1h"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = false
     value = 30000
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

@@ -461,7 +461,7 @@ func getSchema() schema.Schema {
 						MarkdownDescription: "Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.ExactlyOneOf(path.MatchRelative().AtName("json")),
+								stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("json")),
 						},
 					},
 					"json": schema.StringAttribute{
@@ -469,7 +469,7 @@ func getSchema() schema.Schema {
 						CustomType:          jsontypes.NormalizedType{},
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.ExactlyOneOf(path.MatchRelative().AtName("text")),
+								stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("text")),
 						},
 					},
 				},

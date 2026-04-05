@@ -16,15 +16,15 @@ resource "elasticstack_kibana_dashboard" "test_space" {
   title       = var.dashboard_title
   description = "Test dashboard in custom space"
 
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 60000
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

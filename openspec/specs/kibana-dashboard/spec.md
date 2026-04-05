@@ -344,19 +344,19 @@ REQ-006 is extended to include:
 
 ### Requirement: Dashboard root schema API naming (REQ-036)
 
-The resource SHALL expose dashboard-level time selection, refresh, and query using nested blocks whose attribute names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
+The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
 
 The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
 
 #### Scenario: Query union uses text branch
 
-- GIVEN `query { language = "kuery" text = "http.response.status_code:200" }`
+- GIVEN `query = { language = "kuery" text = "http.response.status_code:200" }`
 - WHEN the provider builds the create or update request body
 - THEN it SHALL set the API query to the string branch of `query.query` and SHALL set `query.language` from `query.language`
 
 #### Scenario: Query union uses json branch
 
-- GIVEN `query { language = "kuery" json = jsonencode({ ... }) }`
+- GIVEN `query = { language = "kuery" json = jsonencode({ ... }) }`
 - WHEN the provider builds the create or update request
 - THEN it SHALL set the API query to the object branch and SHALL reject configurations where both `text` and `json` are set, or where neither is set
 
@@ -388,7 +388,7 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 #### Scenario: Read maps nested query and time_range
 
-- GIVEN a successful refresh after create with `query { language = "kuery" text = "foo" }` and `time_range { from = "now-7d" to = "now" }`
+- GIVEN a successful refresh after create with `query = { language = "kuery" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 

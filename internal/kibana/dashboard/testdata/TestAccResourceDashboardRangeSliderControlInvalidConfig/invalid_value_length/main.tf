@@ -6,15 +6,15 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with range slider using value list with wrong number of elements"
 
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 0
   }
-  query {
+  query = {
     language = "kuery"
     text     = ""
   }

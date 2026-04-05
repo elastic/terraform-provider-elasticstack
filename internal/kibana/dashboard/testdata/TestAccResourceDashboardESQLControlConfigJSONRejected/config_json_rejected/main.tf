@@ -1,14 +1,14 @@
 resource "elasticstack_kibana_dashboard" "test" {
   title     = "config-json-esql-test"
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 0
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

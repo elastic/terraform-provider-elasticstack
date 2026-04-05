@@ -6,15 +6,15 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with invalid slo_burn_rate_config panel type"
 
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 0
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

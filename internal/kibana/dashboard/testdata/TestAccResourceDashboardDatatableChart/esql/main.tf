@@ -5,15 +5,15 @@ variable "dashboard_title" {
 resource "elasticstack_kibana_dashboard" "test" {
   title                  = var.dashboard_title
   description            = "Dashboard with ES|QL Datatable Panel"
-  time_range {
+  time_range = {
     from = "now-15m"
     to   = "now"
   }
-  refresh_interval {
+  refresh_interval = {
     pause = true
     value = 0
   }
-  query {
+  query = {
     language = "kql"
     text     = ""
   }

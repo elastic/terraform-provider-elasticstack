@@ -139,7 +139,7 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 #### Scenario: Read maps nested query and time_range
 
-- GIVEN a successful refresh after create with `query { language = "kuery" text = "foo" }` and `time_range { from = "now-7d" to = "now" }`
+- GIVEN a successful refresh after create with `query = { language = "kuery" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 

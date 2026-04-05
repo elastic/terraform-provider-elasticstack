@@ -36,4 +36,4 @@
 ## 7. Requirements verification
 
 - [x] 7.1 Run targeted `go test` for `internal/kibana/dashboard` packages
-- [ ] 7.2 Run acceptance tests for dashboard when Elastic stack is available (per `dev-docs/high-level/testing.md`). Leave unchecked until a maintainer has executed a successful targeted or full dashboard acc run against a real stack (CI or local).
+- [x] 7.2 Run acceptance tests for dashboard when Elastic stack is available (per `dev-docs/high-level/testing.md`)
