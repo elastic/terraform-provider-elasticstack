@@ -141,6 +141,7 @@ const expectedJSONDateOnFailure = `{
       }
     ],
     "output_format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+    "target_field": "@timestamp",
     "timezone": "UTC"
   }
 }
@@ -153,6 +154,7 @@ const expectedJSONDateDefaults = `{
     "ignore_failure": false,
     "locale": "ENGLISH",
     "output_format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+    "target_field": "@timestamp",
     "timezone": "UTC"
   }
 }
