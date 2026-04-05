@@ -14,24 +14,36 @@ resource "elasticstack_kibana_dashboard" "example" {
   space_id     = <optional, computed, string> # default "default"; RequiresReplace
   dashboard_id = <computed, string> # Kibana-assigned dashboard id; UseStateForUnknown
 
-  title                  = <required, string>
-  description            = <optional, string>
-  time_from              = <required, string>
-  time_to                = <required, string>
-  time_range_mode        = <optional, string> # one of: absolute | relative
-  refresh_interval_pause = <required, bool>
-  refresh_interval_value = <required, int64>
-  query_language         = <required, string>
-  query_text             = <optional, string> # conflicts with query_json
-  query_json             = <optional, json string, normalized> # conflicts with query_text
-  tags                   = <optional, list(string)>
+  title       = <required, string>
+  description = <optional, string>
+
+  time_range = {
+    from = <required, string>
+    to   = <required, string>
+    mode = <optional, string> # absolute | relative; preserved when GET omits mode (REQ-009)
+  }
+
+  refresh_interval = {
+    pause = <required, bool>
+    value = <required, int64>
+  }
+
+  query = {
+    language = <required, string>
+    text     = <optional, string> # conflicts with json; string branch of API union
+    json     = <optional, json string, normalized> # conflicts with text; object branch
+  }
+
+  tags = <optional, list(string)>
 
   options = <optional, object({
-    hide_panel_titles = <optional, bool>
-    use_margins       = <optional, bool>
-    sync_colors       = <optional, bool>
-    sync_tooltips     = <optional, bool>
-    sync_cursor       = <optional, bool>
+    hide_panel_titles  = <optional, bool>
+    use_margins        = <optional, bool>
+    sync_colors        = <optional, bool>
+    sync_tooltips      = <optional, bool>
+    sync_cursor        = <optional, bool>
+    auto_apply_filters = <optional, bool>
+    hide_panel_borders = <optional, bool>
   })>
 
   panels = <optional, list(object({
@@ -42,7 +54,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       w = <optional, int64>
       h = <optional, int64>
     }
-    id = <optional, computed, string> # UseNonNullStateForUnknown
+    uid = <optional, computed, string> # API uid; UseNonNullStateForUnknown
 
     markdown_config = <optional, object({
       content     = <optional, string>
@@ -149,7 +161,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       sampling              = <optional, float64>
       axes                  = <required, object(...)>
       cells                 = <required, object(...)>
-      legend                = <required, object(...)>
+      legend                = <required, object({ visibility = <optional, string>, ... })> # visibility: visible | hidden
       metric_json           = <required, json string with defaults>
       x_axis_json           = <required, json string, normalized>
       y_axis_json           = <optional, json string, normalized>
@@ -210,14 +222,14 @@ resource "elasticstack_kibana_dashboard" "example" {
     pie_chart_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset               = <optional, json string, normalized>
+      dataset_json          = <optional, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, computed, bool> # default false
       sampling              = <optional, computed, float64> # default 1.0
       donut_hole            = <optional, string>
       label_position        = <optional, string>
-      legend                = <optional, json string, normalized>
+      legend_json           = <optional, json string, normalized>
       metrics               = <required, list(object({ config = <required, json string with defaults> }))> # at least 1
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # at least 1 when set
     })> # only with type = "lens"
@@ -238,7 +250,7 @@ resource "elasticstack_kibana_dashboard" "example" {
 
   sections = <optional, list(object({
     title     = <required, string>
-    id        = <optional, computed, string>
+    uid       = <optional, computed, string>
     collapsed = <optional, bool>
     grid = {
       y = <required, int64>
@@ -332,7 +344,7 @@ REQ-006 is extended to include:
 
 ### Requirement: Create and update request mapping (REQ-007)
 
-On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, `time_range`, `refresh_interval`, query, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query_text` as the string branch of the API union and `query_json` as the object branch of the API union. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
+On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string branch of the API union and `query.json` as the object branch of the API union. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
 
 #### Scenario: Post-apply authoritative read
 
@@ -342,7 +354,7 @@ On create and update, the resource SHALL map Terraform state to the dashboard AP
 
 ### Requirement: Read behavior and missing-resource handling (REQ-008)
 
-On refresh, the resource SHALL parse the composite `id`, read the dashboard from Kibana, and repopulate state from the API response. If Kibana returns not found, the resource SHALL remove itself from Terraform state. When a dashboard is found, the resource SHALL map title, description, time range, refresh interval, query, tags, options, access control, top-level panels, and sections back into state.
+On refresh, the resource SHALL parse the composite `id`, read the dashboard from Kibana, and repopulate state from the API response. If Kibana returns not found, the resource SHALL remove itself from Terraform state. When a dashboard is found, the resource SHALL map title, description, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, access control, top-level panels, and sections back into state.
 
 #### Scenario: Dashboard removed outside Terraform
 
@@ -352,9 +364,9 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
-When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource currently preserves the prior `time_range_mode` value already held in state or plan instead of overwriting it from read-back, because the implementation does not currently map the API's optional `time_range.mode` field into state. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options (`hide_panel_titles = false`, `use_margins = true`, `sync_colors = false`, `sync_tooltips = false`, `sync_cursor = true`), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
+When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
 
-The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, `project_routing`, and additional dashboard option flags, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
+The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, and `project_routing`, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
 
 #### Scenario: Options omitted in config
 
@@ -404,7 +416,7 @@ For `type = "markdown"` panels, the resource SHALL accept `markdown_config` with
 
 ### Requirement: XY chart panel behavior (REQ-013)
 
-For XY chart Lens panels, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both. When the provider builds a typed Lens XY panel, it SHALL send the fixed Lens panel time range used by the implementation for typed Lens panels.
+For XY chart Lens panels, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both. When the provider builds a typed Lens XY panel, it SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window for typed converters. The Terraform schema for typed XY panels does not expose that Lens-level `time_range` as a separate configurable attribute.
 
 #### Scenario: XY panel requires layers
 
@@ -454,7 +466,7 @@ For tagcloud Lens panels, the resource SHALL support the non-ES|QL tagcloud shap
 
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
 
 #### Scenario: Non-ES|QL heatmap requires query
 
@@ -504,7 +516,7 @@ For metric-chart Lens panels, the resource SHALL map the provider's two metric-c
 
 ### Requirement: Pie chart panel behavior (REQ-023)
 
-For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
+For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults. **JSON attributes:** the resource SHALL use **`dataset_json`** and **`legend_json`** (normalized JSON strings) for pie dataset and legend objects.
 
 #### Scenario: Pie chart API defaults
 

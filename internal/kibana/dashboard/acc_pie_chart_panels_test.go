@@ -56,7 +56,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.query.language", "kql"),
 
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.0.config"),
@@ -87,7 +87,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.sampling", "1"),
 
 					// Check JSON fields
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend"),
 
 					// Check metrics and group_by
@@ -110,7 +110,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.pie_chart_config.group_by.0.config",
 					"panels.0.pie_chart_config.metrics.0.config",
-					"panels.0.pie_chart_config.dataset",
+					"panels.0.pie_chart_config.dataset_json",
 				},
 			},
 		},
