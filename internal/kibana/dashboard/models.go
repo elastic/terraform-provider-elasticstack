@@ -252,14 +252,26 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		return query, nil
 	}
 	query.Language = m.Query.Language.ValueString()
+	textKnown := typeutils.IsKnown(m.Query.Text)
+	jsonKnown := typeutils.IsKnown(m.Query.JSON)
+
+	if textKnown == jsonKnown {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid dashboard query",
+			"Exactly one of `query.text` or `query.json` must be set.",
+		)
+		return query, diags
+	}
+
 	// Query.Query is a union type with json.RawMessage
 	switch {
-	case typeutils.IsKnown(m.Query.Text):
+	case textKnown:
 		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.Query.Text.ValueString())
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	case typeutils.IsKnown(m.Query.JSON):
+	case jsonKnown:
 		var qj map[string]any
 		diags := m.Query.JSON.Unmarshal(&qj)
 		if diags.HasError() {
@@ -270,13 +282,6 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	default:
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Invalid dashboard query",
-			"Exactly one of `query.text` or `query.json` must be set.",
-		)
-		return query, diags
 	}
 
 	return query, nil

@@ -54,3 +54,16 @@ func Test_dashboardModel_queryToAPI_jsonBranch(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, obj)
 }
+
+func Test_dashboardModel_queryToAPI_bothTextAndJSON(t *testing.T) {
+	m := &dashboardModel{
+		Query: &dashboardQueryModel{
+			Language: types.StringValue("kuery"),
+			Text:     types.StringValue("response.code:200"),
+			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
+		},
+	}
+	_, diags := m.queryToAPI()
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary(), "Invalid dashboard query")
+}
