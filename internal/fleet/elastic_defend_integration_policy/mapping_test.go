@@ -80,10 +80,10 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 			{
 				Type:    "endpoint",
 				Enabled: true,
-				Config: map[string]interface{}{
-					"integration_config": map[string]interface{}{
-						"value": map[string]interface{}{
-							"endpointConfig": map[string]interface{}{
+				Config: map[string]any{
+					"integration_config": map[string]any{
+						"value": map[string]any{
+							"endpointConfig": map[string]any{
 								"preset": "NGAv1",
 							},
 						},
@@ -176,17 +176,17 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Fatal("expected _config in bootstrap input config")
 	}
 
-	configMap, ok := config.(map[string]interface{})
+	configMap, ok := config.(map[string]any)
 	if !ok {
 		t.Fatal("expected _config to be a map")
 	}
 
-	valueMap, ok := configMap["value"].(map[string]interface{})
+	valueMap, ok := configMap["value"].(map[string]any)
 	if !ok {
 		t.Fatal("expected _config.value to be a map")
 	}
 
-	ecMap, ok := valueMap["endpointConfig"].(map[string]interface{})
+	ecMap, ok := valueMap["endpointConfig"].(map[string]any)
 	if !ok {
 		t.Fatal("expected _config.value.endpointConfig to be a map")
 	}
@@ -209,10 +209,10 @@ func TestExtractPrivateStateFromResponse(t *testing.T) {
 			{
 				Type:    "endpoint",
 				Enabled: true,
-				Config: map[string]interface{}{
-					"artifact_manifest": map[string]interface{}{
-						"artifacts": map[string]interface{}{
-							"endpoint-exceptionlist-macos-v1": map[string]interface{}{
+				Config: map[string]any{
+					"artifact_manifest": map[string]any{
+						"artifacts": map[string]any{
+							"endpoint-exceptionlist-macos-v1": map[string]any{
 								"sha256": "abc123",
 							},
 						},

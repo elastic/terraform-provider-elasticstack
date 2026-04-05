@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -49,7 +50,10 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
-				Config:                   testConfigCreate(policyName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "default"),
@@ -62,7 +66,10 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
-				Config:                   testConfigUpdate(policyName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description"),
@@ -94,7 +101,10 @@ func TestAccResourceElasticDefendIntegrationPolicyDisappears(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
-				Config:                   testConfigCreate(policyName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					// Delete out of band to trigger refresh behavior
@@ -168,96 +178,4 @@ func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testConfigCreate(policyName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test" {
-  name      = "%s-agent-policy"
-  namespace = "default"
-}
-
-resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
-  name                = %q
-  namespace           = "default"
-  agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
-  integration_version = "8.14.0"
-
-  policy = {
-    windows = {
-      events = {
-        process = true
-        network = true
-        file    = true
-      }
-      malware = {
-        mode = "prevent"
-      }
-    }
-    mac = {
-      events = {
-        process = true
-      }
-    }
-    linux = {
-      events = {
-        process = true
-        network = true
-      }
-    }
-  }
-}
-`, policyName, policyName)
-}
-
-func testConfigUpdate(policyName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test" {
-  name      = "%s-agent-policy"
-  namespace = "default"
-}
-
-resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
-  name                = %q
-  namespace           = "default"
-  description         = "Updated description"
-  agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
-  integration_version = "8.14.0"
-
-  policy = {
-    windows = {
-      events = {
-        process = true
-        network = true
-        file    = false
-      }
-      malware = {
-        mode = "detect"
-      }
-    }
-    mac = {
-      events = {
-        process = true
-        network = false
-      }
-    }
-    linux = {
-      events = {
-        process = true
-        network = false
-      }
-    }
-  }
-}
-`, policyName, policyName)
 }

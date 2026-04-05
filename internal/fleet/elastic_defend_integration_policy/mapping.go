@@ -77,17 +77,17 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 	// Extract preset and policy from the endpoint input config
 	var preset string
-	var policyData map[string]interface{}
+	var policyData map[string]any
 
 	for _, input := range policy.Inputs {
 		if input.Type == "endpoint" {
 			// Extract preset from integration_config
 			if ic, ok := input.Config["integration_config"]; ok {
-				if icMap, ok := ic.(map[string]interface{}); ok {
+				if icMap, ok := ic.(map[string]any); ok {
 					if val, ok := icMap["value"]; ok {
-						if valMap, ok := val.(map[string]interface{}); ok {
+						if valMap, ok := val.(map[string]any); ok {
 							if ec, ok := valMap["endpointConfig"]; ok {
-								if ecMap, ok := ec.(map[string]interface{}); ok {
+								if ecMap, ok := ec.(map[string]any); ok {
 									if p, ok := ecMap["preset"]; ok {
 										if pStr, ok := p.(string); ok {
 											preset = pStr
@@ -102,7 +102,7 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 			// Extract policy data
 			if p, ok := input.Config["policy"]; ok {
-				if pMap, ok := p.(map[string]interface{}); ok {
+				if pMap, ok := p.(map[string]any); ok {
 					policyData = pMap
 				}
 			}
@@ -126,7 +126,7 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 // mapPolicyFromAPI converts the raw Defend policy map from the API response
 // into the Terraform policy object.
-func mapPolicyFromAPI(ctx context.Context, policyData map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapPolicyFromAPI(ctx context.Context, policyData map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if policyData == nil {
@@ -140,19 +140,19 @@ func mapPolicyFromAPI(ctx context.Context, policyData map[string]interface{}) (t
 		return nullPolicy, diags
 	}
 
-	var winData, macData, linuxData map[string]interface{}
+	var winData, macData, linuxData map[string]any
 	if w, ok := policyData["windows"]; ok {
-		if wMap, ok := w.(map[string]interface{}); ok {
+		if wMap, ok := w.(map[string]any); ok {
 			winData = wMap
 		}
 	}
 	if m, ok := policyData["mac"]; ok {
-		if mMap, ok := m.(map[string]interface{}); ok {
+		if mMap, ok := m.(map[string]any); ok {
 			macData = mMap
 		}
 	}
 	if l, ok := policyData["linux"]; ok {
-		if lMap, ok := l.(map[string]interface{}); ok {
+		if lMap, ok := l.(map[string]any); ok {
 			linuxData = lMap
 		}
 	}
@@ -176,13 +176,12 @@ func mapPolicyFromAPI(ctx context.Context, policyData map[string]interface{}) (t
 }
 
 // Helper to extract bool from nested map.
-func getBool(m map[string]interface{}, key string) types.Bool {
+func getBool(m map[string]any, key string) types.Bool {
 	if m == nil {
 		return types.BoolNull()
 	}
 	if v, ok := m[key]; ok {
-		switch b := v.(type) {
-		case bool:
+		if b, ok := v.(bool); ok {
 			return types.BoolValue(b)
 		}
 	}
@@ -190,7 +189,7 @@ func getBool(m map[string]interface{}, key string) types.Bool {
 }
 
 // Helper to extract string from nested map.
-func getString(m map[string]interface{}, key string) types.String {
+func getString(m map[string]any, key string) types.String {
 	if m == nil {
 		return types.StringNull()
 	}
@@ -203,19 +202,19 @@ func getString(m map[string]interface{}, key string) types.String {
 }
 
 // Helper to extract sub-map from a map.
-func getMap(m map[string]interface{}, key string) map[string]interface{} {
+func getMap(m map[string]any, key string) map[string]any {
 	if m == nil {
 		return nil
 	}
 	if v, ok := m[key]; ok {
-		if sm, ok := v.(map[string]interface{}); ok {
+		if sm, ok := v.(map[string]any); ok {
 			return sm
 		}
 	}
 	return nil
 }
 
-func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if data == nil {
 		return types.ObjectNull(windowsAttrTypes()), diags
@@ -307,7 +306,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]interface{}) (
 	return winObj, diags
 }
 
-func mapWindowsPopupFromAPI(ctx context.Context, data map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	malwareData := getMap(data, "malware")
 	ransomwareData := getMap(data, "ransomware")
@@ -346,7 +345,7 @@ func mapWindowsPopupFromAPI(ctx context.Context, data map[string]interface{}) (t
 	})
 }
 
-func mapMacPolicyFromAPI(ctx context.Context, data map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if data == nil {
 		return types.ObjectNull(macAttrTypes()), diags
@@ -406,7 +405,7 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]interface{}) (type
 	return macObj, diags
 }
 
-func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if data == nil {
 		return types.ObjectNull(linuxAttrTypes()), diags
@@ -466,7 +465,7 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]interface{}) (ty
 	return linuxObj, diags
 }
 
-func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]interface{}) (types.Object, diag.Diagnostics) {
+func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	malwareData := getMap(data, "malware")
 	memProtData := getMap(data, "memory_protection")

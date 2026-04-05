@@ -55,12 +55,12 @@ func TestGetDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 		capturedURL = r.URL.String()
 		// Return a minimal valid Defend policy response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"item": map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"item": map[string]any{
 				"id":      "policy-123",
 				"name":    "test-endpoint",
 				"enabled": true,
-				"inputs":  []interface{}{},
+				"inputs":  []any{},
 			},
 		})
 	}))
@@ -91,12 +91,12 @@ func TestGetPackagePolicyUsesSimplifiedFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedURL = r.URL.String()
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"item": map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"item": map[string]any{
 				"id":       "policy-456",
 				"name":     "generic-policy",
 				"enabled":  true,
-				"inputs":   map[string]interface{}{},
+				"inputs":   map[string]any{},
 				"revision": 1,
 			},
 		})
@@ -124,12 +124,12 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 		capturedURL = r.URL.String()
 		capturedBody, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"item": map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"item": map[string]any{
 				"id":      "new-policy-789",
 				"name":    "endpoint-policy",
 				"enabled": true,
-				"inputs":  []interface{}{},
+				"inputs":  []any{},
 			},
 		})
 	}))
@@ -148,7 +148,7 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 			{
 				Type:    "ENDPOINT_INTEGRATION_CONFIG",
 				Enabled: true,
-				Streams: []interface{}{},
+				Streams: []any{},
 			},
 		},
 	}
@@ -160,7 +160,7 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 	}
 
 	// Verify the request body contains typed inputs (array, not map)
-	var body map[string]interface{}
+	var body map[string]any
 	if err := json.Unmarshal(capturedBody, &body); err != nil {
 		t.Fatalf("could not unmarshal request body: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 		t.Fatal("request body does not contain inputs")
 	}
 
-	if _, ok := inputs.([]interface{}); !ok {
+	if _, ok := inputs.([]any); !ok {
 		t.Errorf("Defend create request inputs must be a list, got %T", inputs)
 	}
 }
@@ -183,12 +183,12 @@ func TestSpaceAwareDefendPath(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedURL = r.URL.String()
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"item": map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"item": map[string]any{
 				"id":      "policy-123",
 				"name":    "test",
 				"enabled": true,
-				"inputs":  []interface{}{},
+				"inputs":  []any{},
 			},
 		})
 	}))

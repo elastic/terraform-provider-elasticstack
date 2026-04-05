@@ -37,12 +37,12 @@ type DefendPackagePolicyRequestInput struct {
 	Enabled bool `json:"enabled"`
 
 	// Streams is fixed to an empty list for Defend inputs.
-	Streams []interface{} `json:"streams"`
+	Streams []any `json:"streams"`
 
 	// Config holds the Defend-specific input configuration.
 	// For bootstrap: {"_config": {"value": {"endpointConfig": {"preset": "<preset>"}}}}
 	// For finalize/update: {"integration_config": {"value": {"endpointConfig": {"preset": "<preset>"}}}, ...}
-	Config map[string]interface{} `json:"config,omitempty"`
+	Config map[string]any `json:"config,omitempty"`
 }
 
 // DefendPackagePolicyRequest is the request body for creating or updating an
@@ -96,7 +96,7 @@ type DefendPackagePolicyInput struct {
 
 	// Config holds the Defend-specific input configuration, including
 	// "integration_config", "artifact_manifest", "policy", and other fields.
-	Config map[string]interface{} `json:"config,omitempty"`
+	Config map[string]any `json:"config,omitempty"`
 }
 
 // DefendPackagePolicy is the response body for an Elastic Defend package policy.

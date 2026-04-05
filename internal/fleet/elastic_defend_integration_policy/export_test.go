@@ -20,12 +20,6 @@
 
 package elasticdefendintegrationpolicy
 
-import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
 
 // ElasticDefendIntegrationPolicyModel is the exported alias for testing.
 type ElasticDefendIntegrationPolicyModel = elasticDefendIntegrationPolicyModel
@@ -34,16 +28,10 @@ type ElasticDefendIntegrationPolicyModel = elasticDefendIntegrationPolicyModel
 type DefendPrivateState = defendPrivateState
 
 // PopulateModelFromAPI is exported for unit tests.
-var PopulateModelFromAPI = func(ctx context.Context, model *elasticDefendIntegrationPolicyModel, policy *kbapi.DefendPackagePolicy) diag.Diagnostics {
-	return populateModelFromAPI(ctx, model, policy)
-}
+var PopulateModelFromAPI = populateModelFromAPI
 
 // BuildBootstrapRequest is exported for unit tests.
-var BuildBootstrapRequest = func(model *elasticDefendIntegrationPolicyModel) kbapi.DefendPackagePolicyRequest {
-	return buildBootstrapRequest(model)
-}
+var BuildBootstrapRequest = buildBootstrapRequest
 
 // ExtractPrivateStateFromResponse is exported for unit tests.
-var ExtractPrivateStateFromResponse = func(policy *kbapi.DefendPackagePolicy) defendPrivateState {
-	return extractPrivateStateFromResponse(policy)
-}
+var ExtractPrivateStateFromResponse = extractPrivateStateFromResponse

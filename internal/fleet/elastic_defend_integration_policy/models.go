@@ -179,7 +179,7 @@ type attackSurfaceReductionModel struct {
 // not be exposed in the public Terraform schema.
 type defendPrivateState struct {
 	// ArtifactManifest is the opaque artifact manifest returned by the Defend API.
-	ArtifactManifest map[string]interface{} `json:"artifact_manifest,omitempty"`
+	ArtifactManifest map[string]any `json:"artifact_manifest,omitempty"`
 
 	// Version is the package policy ES version token used for optimistic
 	// concurrency control on update requests.

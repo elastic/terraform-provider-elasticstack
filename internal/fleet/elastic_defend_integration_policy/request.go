@@ -55,11 +55,11 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Def
 	}
 
 	// Build bootstrap input config: _config.value.endpointConfig.preset
-	inputConfig := map[string]interface{}{}
+	inputConfig := map[string]any{}
 	if !model.Preset.IsNull() && !model.Preset.IsUnknown() && model.Preset.ValueString() != "" {
-		inputConfig["_config"] = map[string]interface{}{
-			"value": map[string]interface{}{
-				"endpointConfig": map[string]interface{}{
+		inputConfig["_config"] = map[string]any{
+			"value": map[string]any{
+				"endpointConfig": map[string]any{
 					"preset": model.Preset.ValueString(),
 				},
 			},
@@ -70,7 +70,7 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Def
 		{
 			Type:    bootstrapInputType,
 			Enabled: true,
-			Streams: []interface{}{},
+			Streams: []any{},
 			Config:  inputConfig,
 		},
 	}
@@ -120,7 +120,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		{
 			Type:    finalizeInputType,
 			Enabled: true,
-			Streams: []interface{}{},
+			Streams: []any{},
 			Config:  inputConfig,
 		},
 	}
@@ -131,18 +131,18 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 // buildFinalizeInputConfig builds the config map for the finalize/update input.
 // It includes integration_config (with preset), artifact_manifest (from private
 // state), and the typed policy payload.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]interface{}, diag.Diagnostics) {
+func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	config := map[string]interface{}{}
+	config := map[string]any{}
 
 	// integration_config with preset
 	preset := ""
 	if !model.Preset.IsNull() && !model.Preset.IsUnknown() {
 		preset = model.Preset.ValueString()
 	}
-	config["integration_config"] = map[string]interface{}{
-		"value": map[string]interface{}{
-			"endpointConfig": map[string]interface{}{
+	config["integration_config"] = map[string]any{
+		"value": map[string]any{
+			"endpointConfig": map[string]any{
 				"preset": preset,
 			},
 		},
@@ -165,7 +165,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 
 // buildPolicyPayload converts the Terraform policy model into the Defend API
 // policy map structure.
-func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (map[string]interface{}, diag.Diagnostics) {
+func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if model.Policy.IsNull() || model.Policy.IsUnknown() {
@@ -179,7 +179,7 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 		return nil, diags
 	}
 
-	policy := map[string]interface{}{}
+	policy := map[string]any{}
 
 	winData, d := buildWindowsPolicyPayload(ctx, pm.Windows)
 	diags.Append(d...)
@@ -202,7 +202,7 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 	return policy, diags
 }
 
-func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[string]interface{}, diag.Diagnostics) {
+func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if winObj.IsNull() || winObj.IsUnknown() {
 		return nil, diags
@@ -215,13 +215,13 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		return nil, diags
 	}
 
-	win := map[string]interface{}{}
+	win := map[string]any{}
 
 	if !wm.Events.IsNull() && !wm.Events.IsUnknown() {
 		var em windowsEventsModel
 		d = wm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		events := map[string]interface{}{}
+		events := map[string]any{}
 		setBoolField(events, "process", em.Process)
 		setBoolField(events, "network", em.Network)
 		setBoolField(events, "file", em.File)
@@ -237,7 +237,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var mm malwareFullModel
 		d = wm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		malware := map[string]interface{}{}
+		malware := map[string]any{}
 		setStringField(malware, "mode", mm.Mode)
 		setBoolField(malware, "blocklist", mm.Blocklist)
 		setBoolField(malware, "on_write_scan", mm.OnWriteScan)
@@ -249,7 +249,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var rm protectionModeModel
 		d = wm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		ransomware := map[string]interface{}{}
+		ransomware := map[string]any{}
 		setStringField(ransomware, "mode", rm.Mode)
 		setBoolField(ransomware, "supported", rm.Supported)
 		win["ransomware"] = ransomware
@@ -259,7 +259,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var mm protectionModeModel
 		d = wm.MemoryProtection.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		memProt := map[string]interface{}{}
+		memProt := map[string]any{}
 		setStringField(memProt, "mode", mm.Mode)
 		setBoolField(memProt, "supported", mm.Supported)
 		win["memory_protection"] = memProt
@@ -269,7 +269,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var bm behaviorProtectionModel
 		d = wm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		behProt := map[string]interface{}{}
+		behProt := map[string]any{}
 		setStringField(behProt, "mode", bm.Mode)
 		setBoolField(behProt, "supported", bm.Supported)
 		setBoolField(behProt, "reputation_service", bm.ReputationService)
@@ -280,7 +280,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var pm windowsPopupModel
 		d = wm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		popup := map[string]interface{}{}
+		popup := map[string]any{}
 		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
 		setPopupItem(ctx, popup, "ransomware", pm.Ransomware, &diags)
 		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
@@ -292,7 +292,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var lm loggingModel
 		d = wm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		logging := map[string]interface{}{}
+		logging := map[string]any{}
 		setStringField(logging, "file", lm.File)
 		win["logging"] = logging
 	}
@@ -301,7 +301,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var am antivirusRegistrationModel
 		d = wm.AntivirusRegistration.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		avr := map[string]interface{}{}
+		avr := map[string]any{}
 		setBoolField(avr, "enabled", am.Enabled)
 		win["antivirus_registration"] = avr
 	}
@@ -310,12 +310,12 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		var am attackSurfaceReductionModel
 		d = wm.AttackSurfaceReduction.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		asr := map[string]interface{}{}
+		asr := map[string]any{}
 		if !am.CredentialHardening.IsNull() && !am.CredentialHardening.IsUnknown() {
 			var cm credentialHardeningModel
 			d = am.CredentialHardening.As(ctx, &cm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 			diags.Append(d...)
-			ch := map[string]interface{}{}
+			ch := map[string]any{}
 			setBoolField(ch, "enabled", cm.Enabled)
 			asr["credential_hardening"] = ch
 		}
@@ -325,7 +325,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 	return win, diags
 }
 
-func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string]interface{}, diag.Diagnostics) {
+func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if macObj.IsNull() || macObj.IsUnknown() {
 		return nil, diags
@@ -338,13 +338,13 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		return nil, diags
 	}
 
-	mac := map[string]interface{}{}
+	mac := map[string]any{}
 
 	if !mm.Events.IsNull() && !mm.Events.IsUnknown() {
 		var em macEventsModel
 		d = mm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		events := map[string]interface{}{}
+		events := map[string]any{}
 		setBoolField(events, "process", em.Process)
 		setBoolField(events, "network", em.Network)
 		setBoolField(events, "file", em.File)
@@ -355,7 +355,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		var malwareModel malwareFullModel
 		d = mm.Malware.As(ctx, &malwareModel, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		malware := map[string]interface{}{}
+		malware := map[string]any{}
 		setStringField(malware, "mode", malwareModel.Mode)
 		setBoolField(malware, "blocklist", malwareModel.Blocklist)
 		setBoolField(malware, "on_write_scan", malwareModel.OnWriteScan)
@@ -367,7 +367,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		var pm protectionModeModel
 		d = mm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		memProt := map[string]interface{}{}
+		memProt := map[string]any{}
 		setStringField(memProt, "mode", pm.Mode)
 		setBoolField(memProt, "supported", pm.Supported)
 		mac["memory_protection"] = memProt
@@ -377,7 +377,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		var bm behaviorProtectionModel
 		d = mm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		behProt := map[string]interface{}{}
+		behProt := map[string]any{}
 		setStringField(behProt, "mode", bm.Mode)
 		setBoolField(behProt, "supported", bm.Supported)
 		setBoolField(behProt, "reputation_service", bm.ReputationService)
@@ -388,7 +388,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		var pm macLinuxPopupModel
 		d = mm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		popup := map[string]interface{}{}
+		popup := map[string]any{}
 		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
 		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
 		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
@@ -399,7 +399,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		var lm loggingModel
 		d = mm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		logging := map[string]interface{}{}
+		logging := map[string]any{}
 		setStringField(logging, "file", lm.File)
 		mac["logging"] = logging
 	}
@@ -407,7 +407,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 	return mac, diags
 }
 
-func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[string]interface{}, diag.Diagnostics) {
+func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if linuxObj.IsNull() || linuxObj.IsUnknown() {
 		return nil, diags
@@ -420,13 +420,13 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		return nil, diags
 	}
 
-	linux := map[string]interface{}{}
+	linux := map[string]any{}
 
 	if !lm.Events.IsNull() && !lm.Events.IsUnknown() {
 		var em linuxEventsModel
 		d = lm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		events := map[string]interface{}{}
+		events := map[string]any{}
 		setBoolField(events, "process", em.Process)
 		setBoolField(events, "network", em.Network)
 		setBoolField(events, "file", em.File)
@@ -439,7 +439,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		var mm malwareLinuxModel
 		d = lm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		malware := map[string]interface{}{}
+		malware := map[string]any{}
 		setStringField(malware, "mode", mm.Mode)
 		setBoolField(malware, "blocklist", mm.Blocklist)
 		linux["malware"] = malware
@@ -449,7 +449,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		var pm protectionModeModel
 		d = lm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		memProt := map[string]interface{}{}
+		memProt := map[string]any{}
 		setStringField(memProt, "mode", pm.Mode)
 		setBoolField(memProt, "supported", pm.Supported)
 		linux["memory_protection"] = memProt
@@ -459,7 +459,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		var bm behaviorProtectionModel
 		d = lm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		behProt := map[string]interface{}{}
+		behProt := map[string]any{}
 		setStringField(behProt, "mode", bm.Mode)
 		setBoolField(behProt, "supported", bm.Supported)
 		setBoolField(behProt, "reputation_service", bm.ReputationService)
@@ -470,7 +470,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		var pm macLinuxPopupModel
 		d = lm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		popup := map[string]interface{}{}
+		popup := map[string]any{}
 		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
 		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
 		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
@@ -481,7 +481,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		var logm loggingModel
 		d = lm.Logging.As(ctx, &logm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
-		logging := map[string]interface{}{}
+		logging := map[string]any{}
 		setStringField(logging, "file", logm.File)
 		linux["logging"] = logging
 	}
@@ -490,28 +490,28 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 }
 
 // setBoolField sets a bool field in the map if the value is known and non-null.
-func setBoolField(m map[string]interface{}, key string, val types.Bool) {
+func setBoolField(m map[string]any, key string, val types.Bool) {
 	if !val.IsNull() && !val.IsUnknown() {
 		m[key] = val.ValueBool()
 	}
 }
 
 // setStringField sets a string field in the map if the value is known and non-null.
-func setStringField(m map[string]interface{}, key string, val types.String) {
+func setStringField(m map[string]any, key string, val types.String) {
 	if !val.IsNull() && !val.IsUnknown() {
 		m[key] = val.ValueString()
 	}
 }
 
 // setPopupItem extracts a popup item from a Terraform object and adds it to the map.
-func setPopupItem(ctx context.Context, m map[string]interface{}, key string, obj types.Object, diags *diag.Diagnostics) {
+func setPopupItem(ctx context.Context, m map[string]any, key string, obj types.Object, diags *diag.Diagnostics) {
 	if obj.IsNull() || obj.IsUnknown() {
 		return
 	}
 	var pm popupItemModel
 	d := obj.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 	diags.Append(d...)
-	item := map[string]interface{}{}
+	item := map[string]any{}
 	setStringField(item, "message", pm.Message)
 	setBoolField(item, "enabled", pm.Enabled)
 	m[key] = item
