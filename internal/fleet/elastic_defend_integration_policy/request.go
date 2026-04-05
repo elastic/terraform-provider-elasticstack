@@ -584,8 +584,3 @@ func setPopupItem(ctx context.Context, m map[string]any, key string, obj types.O
 	setBoolField(item, "enabled", pm.Enabled)
 	m[key] = item
 }
-
-// ptr returns a pointer to the given value.
-func ptr[T any](v T) *T {
-	return &v
-}
