@@ -84,6 +84,9 @@ func extractPrivateStateFromResponse(policy *kbapi.DefendPackagePolicy) defendPr
 
 	// Extract artifact_manifest from the endpoint input's config
 	for _, input := range policy.Inputs {
+		if input.Type != finalizeInputType {
+			continue
+		}
 		if cfg, ok := input.Config["artifact_manifest"]; ok {
 			if manifest, ok := cfg.(map[string]any); ok {
 				ps.ArtifactManifest = manifest

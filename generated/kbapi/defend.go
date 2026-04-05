@@ -15,11 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// This file contains hand-authored extensions to the generated kbapi package
-// to support the Elastic Defend typed-input package policy encoding.
-// The generated kibana.gen.go uses a map-keyed input shape (simplified format)
-// which does not match the Defend API. These types provide the typed-input
-// shape required for Defend bootstrap and finalize operations.
+// This file is hand-authored, not generated. It extends the kbapi package
+// with Elastic Defend-specific types that use the typed-input encoding.
+// It will NOT be overwritten by make generate, but must be maintained
+// manually if the Fleet package policy API changes.
+//
+// Background: the generated kibana.gen.go uses a map-keyed input shape
+// (simplified format) which does not match the Defend API. These types provide
+// the typed-input shape required for Defend bootstrap and finalize operations.
 
 package kbapi
 

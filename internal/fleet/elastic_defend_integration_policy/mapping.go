@@ -42,13 +42,17 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	}
 
 	// Validate package identity (REQ-005)
-	if policy.Package != nil && policy.Package.Name != endpointPackageName {
+	if policy.Package == nil || policy.Package.Name != endpointPackageName {
+		pkgName := "<nil>"
+		if policy.Package != nil {
+			pkgName = policy.Package.Name
+		}
 		return diag.Diagnostics{
 			diag.NewErrorDiagnostic(
 				"Not an Elastic Defend policy",
 				fmt.Sprintf("Package policy %q belongs to package %q, not %q. "+
 					"Only Elastic Defend package policies can be managed by elasticstack_fleet_elastic_defend_integration_policy.",
-					policy.Id, policy.Package.Name, endpointPackageName),
+					policy.Id, pkgName, endpointPackageName),
 			),
 		}
 	}
@@ -130,14 +134,8 @@ func mapPolicyFromAPI(ctx context.Context, policyData map[string]any) (types.Obj
 	var diags diag.Diagnostics
 
 	if policyData == nil {
-		// Return null policy object when there's no data
-		nullPolicy, d := types.ObjectValueFrom(ctx, policyAttrTypes(), policyModel{
-			Windows: types.ObjectNull(windowsAttrTypes()),
-			Mac:     types.ObjectNull(macAttrTypes()),
-			Linux:   types.ObjectNull(linuxAttrTypes()),
-		})
-		diags.Append(d...)
-		return nullPolicy, diags
+		// Return null policy object when there's no data, to avoid spurious plan diffs
+		return types.ObjectNull(policyAttrTypes()), diags
 	}
 
 	var winData, macData, linuxData map[string]any
