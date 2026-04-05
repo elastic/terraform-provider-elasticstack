@@ -83,11 +83,37 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 	return union, diags
 }
 
-func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context, prior outputModel) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
 	ssl, diags := objectValueToSSLUpdate(ctx, model.Ssl)
 	if diags.HasError() {
 		return kbapi.UpdateOutputUnion{}, diags
 	}
+
+	// When ssl is omitted from configuration, objectValueToSSLUpdate returns nil and we would
+	// omit "ssl" from JSON (omitempty). The Fleet API then leaves any previously stored SSL
+	// in place; Read repopulates ssl and refresh shows perpetual drift. If prior state had
+	// ssl configured, send an explicit empty ssl object to clear it (same idea as
+	// logstashConfigYamlForUpdate for config_yaml).
+	var sslField *struct {
+		Certificate            *string                                        `json:"certificate,omitempty"`
+		CertificateAuthorities *[]string                                      `json:"certificate_authorities,omitempty"`
+		Key                    *string                                        `json:"key,omitempty"`
+		VerificationMode       *kbapi.UpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
+	}
+	switch {
+	case ssl != nil:
+		sslField = ssl.toUpdateLogstash()
+	case !prior.Ssl.IsNull() && !prior.Ssl.IsUnknown():
+		sslField = &struct {
+			Certificate            *string                                        `json:"certificate,omitempty"`
+			CertificateAuthorities *[]string                                      `json:"certificate_authorities,omitempty"`
+			Key                    *string                                        `json:"key,omitempty"`
+			VerificationMode       *kbapi.UpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
+		}{}
+	default:
+		sslField = nil
+	}
+
 	body := kbapi.UpdateOutputLogstash{
 		Type: func() *kbapi.UpdateOutputLogstashType {
 			outputType := kbapi.Logstash
@@ -95,12 +121,12 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		}(),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		ConfigYaml:           logstashConfigYamlForUpdate(model.ConfigYaml, prior.ConfigYaml),
 		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl.toUpdateLogstash(),
+		Ssl:                  sslField,
 	}
 
 	var union kbapi.UpdateOutputUnion
@@ -111,4 +137,29 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 	}
 
 	return union, diags
+}
+
+// logstashConfigYamlForUpdate maps Terraform plan/state to the Fleet update body.
+// When config_yaml is removed from configuration, the API must receive an explicit empty
+// string to clear a previously stored value; omitting the field leaves the old value
+// in place, which causes post-apply inconsistent state for this sensitive attribute.
+func logstashConfigYamlForUpdate(plan, state types.String) *string {
+	if !plan.IsNull() && !plan.IsUnknown() {
+		return plan.ValueStringPointer()
+	}
+	if !state.IsNull() && !state.IsUnknown() && state.ValueString() != "" {
+		empty := ""
+		return &empty
+	}
+	return nil
+}
+
+// normalizeConfigYamlFromPlan keeps config_yaml null when users omit it in configuration.
+// This avoids post-apply inconsistencies for the sensitive attribute when the API still
+// returns a stored value after an incomplete clear, similar to normalizeSSLFromPlan.
+func normalizeConfigYamlFromPlan(planned, fromAPI types.String) types.String {
+	if planned.IsNull() || planned.IsUnknown() {
+		return types.StringNull()
+	}
+	return fromAPI
 }
