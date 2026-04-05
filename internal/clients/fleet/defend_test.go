@@ -115,7 +115,9 @@ func TestGetPackagePolicyUsesSimplifiedFormat(t *testing.T) {
 }
 
 // TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat verifies that
-// CreateDefendPackagePolicy does NOT send format=simplified.
+// CreateDefendPackagePolicy does NOT send format=simplified query parameter,
+// and that inputs are serialised as a JSON object (map keyed by input type)
+// matching the Fleet API's simplified body format.
 func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 	var capturedURL string
 	var capturedBody []byte
@@ -144,9 +146,8 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 			Name:    "endpoint",
 			Version: "8.14.0",
 		},
-		Inputs: []kbapi.DefendPackagePolicyRequestInput{
-			{
-				Type:    "ENDPOINT_INTEGRATION_CONFIG",
+		Inputs: map[string]kbapi.DefendPackagePolicyRequestInput{
+			"endpoint": {
 				Enabled: true,
 				Streams: []any{},
 			},
@@ -156,10 +157,10 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 	_, _ = fleetclient.CreateDefendPackagePolicy(ctx, client, "", req)
 
 	if contains(capturedURL, "format=simplified") {
-		t.Errorf("CreateDefendPackagePolicy sent format=simplified; typed path must not use simplified format. URL: %s", capturedURL)
+		t.Errorf("CreateDefendPackagePolicy sent format=simplified query param; Defend path must not use it. URL: %s", capturedURL)
 	}
 
-	// Verify the request body contains typed inputs (array, not map)
+	// Verify the request body contains inputs as a JSON object (map), not an array
 	var body map[string]any
 	if err := json.Unmarshal(capturedBody, &body); err != nil {
 		t.Fatalf("could not unmarshal request body: %v", err)
@@ -170,8 +171,8 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 		t.Fatal("request body does not contain inputs")
 	}
 
-	if _, ok := inputs.([]any); !ok {
-		t.Errorf("Defend create request inputs must be a list, got %T", inputs)
+	if _, ok := inputs.(map[string]any); !ok {
+		t.Errorf("Defend create request inputs must be a JSON object (map), got %T", inputs)
 	}
 }
 

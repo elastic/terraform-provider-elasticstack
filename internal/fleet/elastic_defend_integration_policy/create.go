@@ -59,9 +59,19 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	ps := extractPrivateStateFromResponse(bootstrapPolicy)
 
 	// Save policy_id and private state immediately after bootstrap so the
-	// resource can be recovered if finalize fails.
+	// resource can be recovered if finalize fails. Populate basic fields from
+	// the bootstrap response to ensure no unknown values remain in state
+	// (the framework rejects unknown values after apply).
 	planModel.PolicyID = types.StringValue(bootstrapPolicy.Id)
 	planModel.ID = types.StringValue(bootstrapPolicy.Id)
+	// Normalize space_ids from bootstrap response to avoid unknown state values
+	if bootstrapPolicy.SpaceIds != nil && len(*bootstrapPolicy.SpaceIds) > 0 {
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *bootstrapPolicy.SpaceIds)
+		resp.Diagnostics.Append(d...)
+		planModel.SpaceIDs = spaceIDs
+	} else if planModel.SpaceIDs.IsNull() || planModel.SpaceIDs.IsUnknown() {
+		planModel.SpaceIDs = types.SetNull(types.StringType)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planModel)...)
 	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, ps)...)
 	if resp.Diagnostics.HasError() {

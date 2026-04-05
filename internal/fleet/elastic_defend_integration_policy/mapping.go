@@ -107,10 +107,19 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 				}
 			}
 
-			// Extract policy data
+			// Extract policy data — the Fleet API returns policy wrapped in a
+			// {"value": {...}} envelope, consistent with other config keys.
 			if p, ok := input.Config["policy"]; ok {
 				if pMap, ok := p.(map[string]any); ok {
-					policyData = pMap
+					// Unwrap the "value" envelope if present
+					if val, ok := pMap["value"]; ok {
+						if valMap, ok := val.(map[string]any); ok {
+							policyData = valMap
+						}
+					} else {
+						// Fallback: treat the map directly as policy data (pre-8.14 format)
+						policyData = pMap
+					}
 				}
 			}
 			break

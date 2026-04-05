@@ -92,7 +92,7 @@ func extractPrivateStateFromResponse(policy *kbapi.DefendPackagePolicy) defendPr
 // first endpoint input in the policy, or nil if not found.
 func extractArtifactManifest(inputs []kbapi.DefendPackagePolicyInput) map[string]any {
 	for _, input := range inputs {
-		if input.Type != finalizeInputType {
+		if input.Type != endpointInputType {
 			continue
 		}
 		if cfg, ok := input.Config["artifact_manifest"]; ok {

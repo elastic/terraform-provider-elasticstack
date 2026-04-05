@@ -27,15 +27,10 @@
 package kbapi
 
 // DefendPackagePolicyRequestInput is a typed input entry used by the Elastic
-// Defend package policy. Unlike the generic mapped inputs, Defend uses a list
-// of typed inputs where each input carries an explicit "type" discriminator and
-// a "config" payload.
+// Defend package policy. The map key (input type, e.g. "endpoint") acts as the
+// type discriminator; the Fleet API expects inputs as a JSON object (map) rather
+// than an array.
 type DefendPackagePolicyRequestInput struct {
-	// Type is the input type discriminator.
-	// For Defend bootstrap: "ENDPOINT_INTEGRATION_CONFIG"
-	// For Defend finalize/update: "endpoint"
-	Type string `json:"type"`
-
 	// Enabled indicates whether the input is active.
 	Enabled bool `json:"enabled"`
 
@@ -43,15 +38,15 @@ type DefendPackagePolicyRequestInput struct {
 	Streams []any `json:"streams"`
 
 	// Config holds the Defend-specific input configuration.
-	// For bootstrap: {"_config": {"value": {"endpointConfig": {"preset": "<preset>"}}}}
-	// For finalize/update: {"integration_config": {"value": {"endpointConfig": {"preset": "<preset>"}}}, ...}
+	// Keys include "integration_config" (with "value" wrapper), "artifact_manifest",
+	// and "policy" (with "value" wrapper).
 	Config map[string]any `json:"config,omitempty"`
 }
 
 // DefendPackagePolicyRequest is the request body for creating or updating an
-// Elastic Defend package policy. It uses the typed-input list encoding required
-// by the Defend API rather than the simplified mapped-input format used by
-// generic integrations.
+// Elastic Defend package policy. It uses the same map-keyed input format as the
+// generic PackagePolicyRequest (format=simplified), where the map key is the
+// input type (e.g. "endpoint").
 type DefendPackagePolicyRequest struct {
 	// Id is the package policy unique identifier (optional on create, required on update).
 	Id *string `json:"id,omitempty"`
@@ -83,8 +78,9 @@ type DefendPackagePolicyRequest struct {
 	// echoed back unchanged.
 	Version *string `json:"version,omitempty"`
 
-	// Inputs is the typed list of Defend inputs.
-	Inputs []DefendPackagePolicyRequestInput `json:"inputs"`
+	// Inputs is the map-keyed set of Defend inputs, keyed by input type (e.g. "endpoint").
+	// The Fleet API expects inputs as a JSON object, not an array.
+	Inputs map[string]DefendPackagePolicyRequestInput `json:"inputs"`
 }
 
 // DefendPackagePolicyInput is a typed input entry in the Elastic Defend package

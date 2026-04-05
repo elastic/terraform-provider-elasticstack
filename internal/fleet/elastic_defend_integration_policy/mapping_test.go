@@ -138,8 +138,8 @@ func TestPopulateModelFromAPINilPolicy(t *testing.T) {
 	}
 }
 
-// TestBuildBootstrapRequest tests that the bootstrap request has the correct
-// input type and preset path (REQ-008).
+// TestBuildBootstrapRequest tests that the bootstrap request uses the "endpoint"
+// input type (as map key) and sends preset in integration_config (REQ-008).
 func TestBuildBootstrapRequest(t *testing.T) {
 	model := &edip.ElasticDefendIntegrationPolicyModel{
 		Name:               types.StringValue("my-endpoint"),
@@ -159,9 +159,9 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
 	}
 
-	input := req.Inputs[0]
-	if input.Type != "ENDPOINT_INTEGRATION_CONFIG" {
-		t.Errorf("expected input type %q, got %q", "ENDPOINT_INTEGRATION_CONFIG", input.Type)
+	input, ok := req.Inputs["endpoint"]
+	if !ok {
+		t.Fatal("expected 'endpoint' key in inputs map")
 	}
 
 	if !input.Enabled {
@@ -172,25 +172,25 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Error("expected input streams to be non-nil (empty list)")
 	}
 
-	// Verify preset is at config._config.value.endpointConfig.preset
-	config, ok := input.Config["_config"]
+	// Verify preset is at config.integration_config.value.endpointConfig.preset
+	ic, ok := input.Config["integration_config"]
 	if !ok {
-		t.Fatal("expected _config in bootstrap input config")
+		t.Fatal("expected integration_config in bootstrap input config")
 	}
 
-	configMap, ok := config.(map[string]any)
+	icMap, ok := ic.(map[string]any)
 	if !ok {
-		t.Fatal("expected _config to be a map")
+		t.Fatal("expected integration_config to be a map")
 	}
 
-	valueMap, ok := configMap["value"].(map[string]any)
+	valueMap, ok := icMap["value"].(map[string]any)
 	if !ok {
-		t.Fatal("expected _config.value to be a map")
+		t.Fatal("expected integration_config.value to be a map")
 	}
 
 	ecMap, ok := valueMap["endpointConfig"].(map[string]any)
 	if !ok {
-		t.Fatal("expected _config.value.endpointConfig to be a map")
+		t.Fatal("expected integration_config.value.endpointConfig to be a map")
 	}
 
 	if ecMap["preset"] != "NGAv1" {
@@ -198,8 +198,9 @@ func TestBuildBootstrapRequest(t *testing.T) {
 	}
 }
 
-// TestBuildBootstrapRequestNullPreset tests that a null preset omits the _config
-// key from the bootstrap input config entirely, rather than sending an empty string.
+// TestBuildBootstrapRequestNullPreset tests that a null preset omits the
+// integration_config key from the bootstrap input config entirely, rather than
+// sending an empty string.
 func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 	model := &edip.ElasticDefendIntegrationPolicyModel{
 		Name:               types.StringValue("my-endpoint"),
@@ -215,8 +216,13 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
 	}
 
-	if _, ok := req.Inputs[0].Config["_config"]; ok {
-		t.Error("expected _config to be absent from bootstrap input config when preset is null")
+	input, ok := req.Inputs["endpoint"]
+	if !ok {
+		t.Fatal("expected 'endpoint' key in inputs map")
+	}
+
+	if _, ok := input.Config["integration_config"]; ok {
+		t.Error("expected integration_config to be absent from bootstrap input config when preset is null")
 	}
 }
 

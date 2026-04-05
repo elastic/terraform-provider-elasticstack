@@ -29,15 +29,14 @@ import (
 )
 
 // TestDefendRequestInputEncoding verifies that DefendPackagePolicyRequestInput
-// serialises to the typed-input shape (list with "type" discriminator) rather
-// than the mapped-input shape (map keyed by input ID).
+// serialises correctly without a "type" field (the type is the map key in
+// DefendPackagePolicyRequest.Inputs).
 func TestDefendRequestInputEncoding(t *testing.T) {
 	input := kbapi.DefendPackagePolicyRequestInput{
-		Type:    "ENDPOINT_INTEGRATION_CONFIG",
 		Enabled: true,
 		Streams: []interface{}{},
 		Config: map[string]interface{}{
-			"_config": map[string]interface{}{
+			"integration_config": map[string]interface{}{
 				"value": map[string]interface{}{
 					"endpointConfig": map[string]interface{}{
 						"preset": "NGAv1",
@@ -57,8 +56,9 @@ func TestDefendRequestInputEncoding(t *testing.T) {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
 
-	if got, ok := out["type"]; !ok || got != "ENDPOINT_INTEGRATION_CONFIG" {
-		t.Errorf("expected type=%q, got %v", "ENDPOINT_INTEGRATION_CONFIG", out["type"])
+	// The "type" field is now the map key, not a field in the input struct
+	if _, ok := out["type"]; ok {
+		t.Errorf("expected no 'type' field in input struct (type is now the map key), got: %v", out["type"])
 	}
 
 	if _, ok := out["streams"]; !ok {
@@ -82,7 +82,7 @@ func TestDefendRequestVersionField(t *testing.T) {
 			Name:    "endpoint",
 			Version: "8.14.0",
 		},
-		Inputs: []kbapi.DefendPackagePolicyRequestInput{},
+		Inputs: map[string]kbapi.DefendPackagePolicyRequestInput{},
 	}
 
 	data, err := json.Marshal(req)
@@ -158,10 +158,10 @@ func TestDefendResponseTypedInputShape(t *testing.T) {
 	_ = ic
 }
 
-// TestMappedVsTypedInputDistinction verifies that the generic PackagePolicyRequest
-// uses a map-keyed inputs shape, while DefendPackagePolicyRequest uses a typed
-// list. This documents the encoding boundary between the two resources.
-func TestMappedVsTypedInputDistinction(t *testing.T) {
+// TestMappedVsTypedInputSameShape verifies that both the generic PackagePolicyRequest
+// and DefendPackagePolicyRequest use a map-keyed inputs shape (JSON object), since
+// the Fleet API requires inputs as an object for all package policies on 8.14+.
+func TestMappedVsTypedInputSameShape(t *testing.T) {
 	// Generic (mapped) request: inputs is *map[string]PackagePolicyRequestInput
 	mappedReq := kbapi.PackagePolicyRequest{
 		Name: "generic-policy",
@@ -199,40 +199,40 @@ func TestMappedVsTypedInputDistinction(t *testing.T) {
 		t.Errorf("expected mapped inputs to be an object, got %T", inputs)
 	}
 
-	// Typed (Defend) request: inputs is []DefendPackagePolicyRequestInput
-	typedReq := kbapi.DefendPackagePolicyRequest{
+	// Defend request: inputs is map[string]DefendPackagePolicyRequestInput
+	// This matches the Fleet API's simplified format (map keyed by input type)
+	defendReq := kbapi.DefendPackagePolicyRequest{
 		Name: "endpoint-policy",
 		Package: kbapi.PackagePolicyRequestPackage{
 			Name:    "endpoint",
 			Version: "8.14.0",
 		},
-		Inputs: []kbapi.DefendPackagePolicyRequestInput{
-			{
-				Type:    "ENDPOINT_INTEGRATION_CONFIG",
+		Inputs: map[string]kbapi.DefendPackagePolicyRequestInput{
+			"endpoint": {
 				Enabled: true,
 				Streams: []interface{}{},
 			},
 		},
 	}
 
-	typedData, err := json.Marshal(typedReq)
+	defendData, err := json.Marshal(defendReq)
 	if err != nil {
-		t.Fatalf("json.Marshal typedReq failed: %v", err)
+		t.Fatalf("json.Marshal defendReq failed: %v", err)
 	}
 
-	var typedOut map[string]interface{}
-	if err := json.Unmarshal(typedData, &typedOut); err != nil {
-		t.Fatalf("json.Unmarshal typedData failed: %v", err)
+	var defendOut map[string]interface{}
+	if err := json.Unmarshal(defendData, &defendOut); err != nil {
+		t.Fatalf("json.Unmarshal defendData failed: %v", err)
 	}
 
-	// For typed requests, inputs should be an array
-	typedInputs, ok := typedOut["inputs"]
+	// Defend inputs should also be an object (map), not an array
+	defendInputs, ok := defendOut["inputs"]
 	if !ok {
-		t.Fatal("expected inputs in typed request")
+		t.Fatal("expected inputs in Defend request")
 	}
 
-	if _, ok := typedInputs.([]interface{}); !ok {
-		t.Errorf("expected typed inputs to be an array, got %T", typedInputs)
+	if _, ok := defendInputs.(map[string]interface{}); !ok {
+		t.Errorf("expected Defend inputs to be an object (map), got %T", defendInputs)
 	}
 }
 
