@@ -18,6 +18,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   namespace           = "default"
   agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
   integration_version = "8.14.0"
+  preset              = "NGAv1"
 
   policy = {
     windows = {

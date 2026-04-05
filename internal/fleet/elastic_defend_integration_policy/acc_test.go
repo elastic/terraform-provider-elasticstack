@@ -58,8 +58,12 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "default"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "preset", "NGAv1"),
+					resource.TestCheckNoResourceAttr(resourceName, "description"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "space_ids.#"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
 				),
 			},
 			// Step 2: Update description and preset
@@ -74,6 +78,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "detect"),
 				),
 			},
 			// Step 3: Import
@@ -83,7 +88,8 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateIdFunc:        testImportStateIDFunc(resourceName),
-				ImportStateVerify:        false, // Some fields like policy may differ slightly
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"force"},
 			},
 		},
 	})

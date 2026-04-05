@@ -196,6 +196,82 @@ func TestBuildBootstrapRequest(t *testing.T) {
 	}
 }
 
+// TestBuildBootstrapRequestNullPreset tests that a null preset omits the _config
+// key from the bootstrap input config entirely, rather than sending an empty string.
+func TestBuildBootstrapRequestNullPreset(t *testing.T) {
+	model := &edip.ElasticDefendIntegrationPolicyModel{
+		Name:               types.StringValue("my-endpoint"),
+		Namespace:          types.StringValue("default"),
+		AgentPolicyID:      types.StringValue("agent-123"),
+		IntegrationVersion: types.StringValue("8.14.0"),
+		Preset:             types.StringNull(),
+	}
+
+	req := edip.BuildBootstrapRequest(model)
+
+	if len(req.Inputs) != 1 {
+		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
+	}
+
+	if _, ok := req.Inputs[0].Config["_config"]; ok {
+		t.Error("expected _config to be absent from bootstrap input config when preset is null")
+	}
+}
+
+// TestExtractPrivateStateFromResponseNonEndpointFirst tests that
+// extractPrivateStateFromResponse skips non-endpoint inputs and still finds
+// the artifact_manifest from the endpoint input.
+func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
+	version := "WzEyMywxXQ=="
+	policy := &kbapi.DefendPackagePolicy{
+		Id:      "policy-123",
+		Name:    "test",
+		Enabled: true,
+		Version: &version,
+		Inputs: []kbapi.DefendPackagePolicyInput{
+			{
+				Type:    "some-other-type",
+				Enabled: true,
+				Config: map[string]any{
+					"artifact_manifest": map[string]any{
+						"artifacts": map[string]any{
+							"wrong": "should not be picked up",
+						},
+					},
+				},
+			},
+			{
+				Type:    "endpoint",
+				Enabled: true,
+				Config: map[string]any{
+					"artifact_manifest": map[string]any{
+						"artifacts": map[string]any{
+							"endpoint-exceptionlist-macos-v1": map[string]any{
+								"sha256": "abc123",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ps := edip.ExtractPrivateStateFromResponse(policy)
+
+	if ps.ArtifactManifest == nil {
+		t.Fatal("expected ArtifactManifest to be non-nil")
+	}
+
+	artifacts, ok := ps.ArtifactManifest["artifacts"].(map[string]any)
+	if !ok {
+		t.Fatal("expected ArtifactManifest.artifacts to be a map")
+	}
+
+	if _, ok := artifacts["endpoint-exceptionlist-macos-v1"]; !ok {
+		t.Error("expected artifact_manifest to come from the endpoint input, not the first non-endpoint input")
+	}
+}
+
 // TestExtractPrivateStateFromResponse tests that private state extraction
 // captures the version and artifact_manifest from an API response.
 func TestExtractPrivateStateFromResponse(t *testing.T) {
