@@ -181,6 +181,9 @@ func TestAccDataSourceEnrichPolicyFW(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					// Absent-state: no elasticsearch_connection block should appear in state
+					// when the data source does not configure one.
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#"),
 				),
 			},
 		},
@@ -417,6 +420,23 @@ func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					// api_key is sensitive — assert it is stored in state (non-empty)
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.api_key"),
+					// headers map must contain exactly one entry with the expected value
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.headers.%", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.headers.X-Terraform-Test", "enrich-policy"),
+				),
+			},
+			// Removal step: drop the elasticsearch_connection block and verify the
+			// attributes are no longer present in state.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#"),
 				),
 			},
 		},
@@ -426,6 +446,7 @@ func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
 func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	endpoint := primaryESEndpoint()
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheckESBasicAuth(t) },
 		Steps: []resource.TestStep{
@@ -452,6 +473,11 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					// Basic auth credentials must be reflected in state
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.username", username),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.password"),
+					// insecure=false was explicitly set in the config and must round-trip
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.insecure", "false"),
 				),
 			},
 		},
@@ -475,6 +501,18 @@ func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("cert_file"),
 				ExpectError:              regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_file.*key_file|key_file.*cert_file)`),
+			},
+			// key_file without cert_file must also be rejected
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("key_file"),
+				ExpectError:              regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|key_file.*cert_file|cert_file.*key_file)`),
+			},
+			// key_data without cert_data must also be rejected
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("key_data"),
+				ExpectError:              regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|key_data.*cert_data|cert_data.*key_data)`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -537,6 +575,45 @@ func TestAccDataSourceEnrichPolicyTermQuery(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "query", `{"term":{"active":{"value":true}}}`),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceEnrichPolicyBearerToken verifies that the data source
+// correctly stores a bearer_token connection block in state.
+// The test is skipped automatically when ELASTICSEARCH_BEARER_TOKEN is not set,
+// making it an opt-in test for environments that provide a bearer token.
+func TestAccDataSourceEnrichPolicyBearerToken(t *testing.T) {
+	bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN")
+	if bearerToken == "" {
+		t.Skip("ELASTICSEARCH_BEARER_TOKEN must be set to run the bearer-token happy-path coverage test")
+	}
+
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoint := primaryESEndpoint()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(name),
+					"endpoint":     config.StringVariable(endpoint),
+					"bearer_token": config.StringVariable(bearerToken),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					// Connection block must be present with correct endpoint
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					// bearer_token is sensitive — assert it is stored (non-empty) in state
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.bearer_token"),
 				),
 			},
 		},
