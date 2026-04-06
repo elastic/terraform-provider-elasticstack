@@ -126,14 +126,16 @@ Boolean toggles, mode strings, message strings, and similar stable leaf settings
 
 ### Requirement: Create uses the documented Defend bootstrap flow (REQ-008)
 
-On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape documented by Kibana, attached to the configured `agent_policy_id`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with:
+On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape, attached to the configured `agent_policy_id`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with:
 
-- input `type = "ENDPOINT_INTEGRATION_CONFIG"`
+- input `type = "endpoint"`
 - input `enabled = true`
 - input `streams = []`
-- preset mapped under `config._config.value.endpointConfig.preset`
+- preset mapped under `config.integration_config.value.endpointConfig.preset`
 
 After the bootstrap call succeeds, the resource SHALL use the API response as the source of truth for server-managed Defend data required for subsequent operations.
+
+**Note:** The Kibana Fleet API rejects `"ENDPOINT_INTEGRATION_CONFIG"` as the input type and `"_config"` as the config key. Both the bootstrap and finalize/update paths use `"endpoint"` as the input type and `"integration_config"` as the config key.
 
 #### Scenario: Create bootstraps a new Defend package policy
 
@@ -148,10 +150,9 @@ After the bootstrap create succeeds, the resource SHALL submit a Defend-specific
 
 - the provider-modeled Defend `policy` payload
 - the configured `preset` mapped under `config.integration_config.value.endpointConfig.preset`
-- the server-managed `artifact_manifest`
 - the top-level package policy `version`
 
-Those server-managed values SHALL be echoed back from the bootstrap response without user intervention.
+The `artifact_manifest` SHALL NOT be included in the finalize or update request body. Kibana manages `artifact_manifest` server-side and rejects it when present in typed input config. The provider preserves `artifact_manifest` in internal private state (captured from API responses) but does not echo it back in requests.
 
 #### Scenario: Create applies modeled policy settings after bootstrap
 
@@ -162,7 +163,7 @@ Those server-managed values SHALL be echoed back from the bootstrap response wit
 
 ### Requirement: Update preserves opaque server-managed Defend payloads (REQ-010)
 
-On update, the resource SHALL send the Defend-specific typed package policy shape required by Kibana, including the latest provider-modeled `preset` and `policy` values. The provider SHALL preserve and resend opaque server-managed Defend payloads needed for update, including `artifact_manifest` and the top-level package policy `version`, without exposing those values in the public Terraform schema.
+On update, the resource SHALL send the Defend-specific typed package policy shape required by Kibana, including the latest provider-modeled `preset` and `policy` values. The provider SHALL preserve and resend the top-level package policy `version` (for optimistic concurrency control) without exposing it in the public Terraform schema. The `artifact_manifest` SHALL NOT be included in update requests; Kibana manages it server-side and rejects it when present. The provider captures `artifact_manifest` from API responses into internal private state but does not send it on update.
 
 #### Scenario: Update succeeds without exposing artifact manifest
 
@@ -184,7 +185,7 @@ On read and import, the resource SHALL parse the Defend-specific package policy 
 
 ### Requirement: Provider-managed internal state for update prerequisites (REQ-012)
 
-The resource SHALL maintain internal provider-managed state for opaque Defend data that must survive between operations but does not belong in the public schema. This internal state SHALL include at least the latest `artifact_manifest` and package policy `version` returned by the API. It SHALL be refreshed from successful create, read, update, and import responses so later updates can continue using the latest Defend server-managed payloads.
+The resource SHALL maintain internal provider-managed state for opaque Defend data that must survive between operations but does not belong in the public schema. This internal state SHALL include the latest package policy `version` (used for optimistic concurrency control on updates) and the latest `artifact_manifest` (captured for observability, even though it is not sent in requests). Both SHALL be refreshed from successful create, read, update, and import responses.
 
 #### Scenario: Import captures opaque update prerequisites
 
