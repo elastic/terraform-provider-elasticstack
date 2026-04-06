@@ -31,20 +31,20 @@ const (
 )
 
 // buildBootstrapRequest builds the minimal Defend package policy request used
-// for the first create step (bootstrap). It uses the "endpoint" input type with
-// preset mapped under config.integration_config.value.endpointConfig.preset.
-// Inputs are sent as a map keyed by input type, matching the Fleet API's
-// simplified format.
-func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.DefendPackagePolicyRequest {
-	req := kbapi.DefendPackagePolicyRequest{
-		Name:      model.Name.ValueString(),
+// for the first create step (bootstrap). It uses the typed-inputs format with
+// an "endpoint" typed input, with preset mapped under
+// config.integration_config.value.endpointConfig.preset.
+func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
+	pkg := kbapi.PackagePolicyRequestPackage{
+		Name:    endpointPackageName,
+		Version: model.IntegrationVersion.ValueString(),
+	}
+	req := kbapi.PackagePolicyRequestTypedInputs{
+		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
-		Package: kbapi.PackagePolicyRequestPackage{
-			Name:    endpointPackageName,
-			Version: model.IntegrationVersion.ValueString(),
-		},
-		PolicyId: model.AgentPolicyID.ValueStringPointer(),
-		Enabled:  model.Enabled.ValueBoolPointer(),
+		Package:   &pkg,
+		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
+		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -67,34 +67,37 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Def
 		}
 	}
 
-	req.Inputs = map[string]kbapi.DefendPackagePolicyRequestInput{
-		endpointInputType: {
-			Enabled: true,
-			Streams: map[string]any{},
-			Config:  inputConfig,
-		},
+	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
+	input := kbapi.PackagePolicyRequestTypedInput{
+		Type:    endpointInputType,
+		Enabled: true,
+		Streams: &streams,
 	}
+	if len(inputConfig) > 0 {
+		input.Config = &inputConfig
+	}
+	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
 	return req
 }
 
 // buildFinalizeRequest builds the Defend package policy update request used
 // after the bootstrap to apply the user-configured policy settings. It uses
-// the "endpoint" input type and includes the server-managed artifact_manifest
-// and version from the private state. Inputs are sent as a map keyed by input
-// type, matching the Fleet API's simplified format.
-func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (kbapi.DefendPackagePolicyRequest, diag.Diagnostics) {
+// the typed-inputs format with an "endpoint" input and includes the
+// server-managed artifact_manifest and version from the private state.
+func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	req := kbapi.DefendPackagePolicyRequest{
-		Name:      model.Name.ValueString(),
+	pkg := kbapi.PackagePolicyRequestPackage{
+		Name:    endpointPackageName,
+		Version: model.IntegrationVersion.ValueString(),
+	}
+	req := kbapi.PackagePolicyRequestTypedInputs{
+		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
-		Package: kbapi.PackagePolicyRequestPackage{
-			Name:    endpointPackageName,
-			Version: model.IntegrationVersion.ValueString(),
-		},
-		PolicyId: model.AgentPolicyID.ValueStringPointer(),
-		Enabled:  model.Enabled.ValueBoolPointer(),
+		Package:   &pkg,
+		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
+		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -117,13 +120,16 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		return req, diags
 	}
 
-	req.Inputs = map[string]kbapi.DefendPackagePolicyRequestInput{
-		endpointInputType: {
-			Enabled: true,
-			Streams: map[string]any{},
-			Config:  inputConfig,
-		},
+	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
+	input := kbapi.PackagePolicyRequestTypedInput{
+		Type:    endpointInputType,
+		Enabled: true,
+		Streams: &streams,
 	}
+	if len(inputConfig) > 0 {
+		input.Config = &inputConfig
+	}
+	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
 	return req, diags
 }
@@ -131,7 +137,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 // buildFinalizeInputConfig builds the config map for the finalize/update input.
 // It includes integration_config (with preset), artifact_manifest (from private
 // state), and the typed policy payload.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
+func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, _ defendPrivateState) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := map[string]any{}
 
@@ -150,10 +156,9 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 		}
 	}
 
-	// Preserve artifact_manifest from private state
-	if ps.ArtifactManifest != nil {
-		config["artifact_manifest"] = ps.ArtifactManifest
-	}
+	// Note: artifact_manifest is managed server-side by Kibana and should NOT
+	// be included in update requests. Kibana rejects unknown properties in the
+	// typed input config schema and manages the artifact_manifest internally.
 
 	// Build the typed policy payload from the Terraform model.
 	// The Fleet API expects the policy wrapped in a {"value": {...}} envelope,

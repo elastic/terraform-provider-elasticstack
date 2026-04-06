@@ -29,12 +29,12 @@ import (
 
 const endpointPackageName = "endpoint"
 
-// populateModelFromAPI maps a DefendPackagePolicy API response into the
+// populateModelFromAPI maps a PackagePolicy API response into the
 // Terraform state model. It validates that the package name is "endpoint" and
 // maps all modelled schema fields. Server-managed fields (artifact_manifest,
 // version) are NOT written to the public model; callers must persist them
 // separately via savePrivateState.
-func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPolicyModel, policy *kbapi.DefendPackagePolicy) diag.Diagnostics {
+func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPolicyModel, policy *kbapi.PackagePolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if policy == nil {
@@ -61,7 +61,12 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	model.PolicyID = types.StringValue(policy.Id)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)
-	model.Description = types.StringPointerValue(policy.Description)
+	// Treat empty string description as null (Kibana may return "" when not set)
+	if policy.Description != nil && *policy.Description == "" {
+		model.Description = types.StringNull()
+	} else {
+		model.Description = types.StringPointerValue(policy.Description)
+	}
 	model.Enabled = types.BoolValue(policy.Enabled)
 
 	if policy.Package != nil {
@@ -82,43 +87,44 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	}
 	// Otherwise keep the existing model.SpaceIDs value.
 
+	// Extract typed inputs from the union Inputs field
+	typedInputs, err := policy.Inputs.AsPackagePolicyTypedInputs()
+	if err != nil {
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Failed to parse policy inputs",
+				fmt.Sprintf("Could not decode typed inputs from Defend package policy response: %s", err.Error()),
+			),
+		}
+	}
+
 	// Extract preset and policy from the endpoint input config
 	var preset string
 	var policyData map[string]any
 
-	for _, input := range policy.Inputs {
+	for _, input := range typedInputs {
 		if input.Type == "endpoint" {
-			// Extract preset from integration_config
-			if ic, ok := input.Config["integration_config"]; ok {
-				if icMap, ok := ic.(map[string]any); ok {
-					if val, ok := icMap["value"]; ok {
-						if valMap, ok := val.(map[string]any); ok {
-							if ec, ok := valMap["endpointConfig"]; ok {
-								if ecMap, ok := ec.(map[string]any); ok {
-									if p, ok := ecMap["preset"]; ok {
-										if pStr, ok := p.(string); ok {
-											preset = pStr
-										}
+			if input.Config != nil {
+				// Extract preset from integration_config.value.endpointConfig.preset
+				if icEntry, ok := (*input.Config)["integration_config"]; ok {
+					if valMap, ok := icEntry.Value.(map[string]any); ok {
+						if ec, ok := valMap["endpointConfig"]; ok {
+							if ecMap, ok := ec.(map[string]any); ok {
+								if p, ok := ecMap["preset"]; ok {
+									if pStr, ok := p.(string); ok {
+										preset = pStr
 									}
 								}
 							}
 						}
 					}
 				}
-			}
 
-			// Extract policy data — the Fleet API returns policy wrapped in a
-			// {"value": {...}} envelope, consistent with other config keys.
-			if p, ok := input.Config["policy"]; ok {
-				if pMap, ok := p.(map[string]any); ok {
-					// Unwrap the "value" envelope if present
-					if val, ok := pMap["value"]; ok {
-						if valMap, ok := val.(map[string]any); ok {
-							policyData = valMap
-						}
-					} else {
-						// Fallback: treat the map directly as policy data (pre-8.14 format)
-						policyData = pMap
+				// Extract policy data — the Fleet API returns policy wrapped in a
+				// {"value": {...}} envelope, consistent with other config keys.
+				if pEntry, ok := (*input.Config)["policy"]; ok {
+					if valMap, ok := pEntry.Value.(map[string]any); ok {
+						policyData = valMap
 					}
 				}
 			}
@@ -231,75 +237,129 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	}
 
 	eventsData := getMap(data, "events")
-	eventsObj, d := types.ObjectValueFrom(ctx, windowsEventsAttrTypes(), windowsEventsModel{
-		Process:          getBool(eventsData, "process"),
-		Network:          getBool(eventsData, "network"),
-		File:             getBool(eventsData, "file"),
-		DllAndDriverLoad: getBool(eventsData, "dll_and_driver_load"),
-		DNS:              getBool(eventsData, "dns"),
-		Registry:         getBool(eventsData, "registry"),
-		Security:         getBool(eventsData, "security"),
-		Authentication:   getBool(eventsData, "authentication"),
-	})
-	diags.Append(d...)
+	var eventsObj types.Object
+	if eventsData != nil {
+		var d diag.Diagnostics
+		eventsObj, d = types.ObjectValueFrom(ctx, windowsEventsAttrTypes(), windowsEventsModel{
+			Process:          getBool(eventsData, "process"),
+			Network:          getBool(eventsData, "network"),
+			File:             getBool(eventsData, "file"),
+			DllAndDriverLoad: getBool(eventsData, "dll_and_driver_load"),
+			DNS:              getBool(eventsData, "dns"),
+			Registry:         getBool(eventsData, "registry"),
+			Security:         getBool(eventsData, "security"),
+			Authentication:   getBool(eventsData, "authentication"),
+		})
+		diags.Append(d...)
+	} else {
+		eventsObj = types.ObjectNull(windowsEventsAttrTypes())
+	}
 
 	malwareData := getMap(data, "malware")
-	malwareObj, d := types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
-		Mode:        getString(malwareData, "mode"),
-		Blocklist:   getBool(malwareData, "blocklist"),
-		OnWriteScan: getBool(malwareData, "on_write_scan"),
-		NotifyUser:  getBool(malwareData, "notify_user"),
-	})
-	diags.Append(d...)
+	var malwareObj types.Object
+	if malwareData != nil {
+		var d diag.Diagnostics
+		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
+			Mode:        getString(malwareData, "mode"),
+			Blocklist:   getBool(malwareData, "blocklist"),
+			OnWriteScan: getBool(malwareData, "on_write_scan"),
+			NotifyUser:  getBool(malwareData, "notify_user"),
+		})
+		diags.Append(d...)
+	} else {
+		malwareObj = types.ObjectNull(malwareFullAttrTypes())
+	}
 
 	ransomwareData := getMap(data, "ransomware")
-	ransomwareObj, d := types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-		Mode:      getString(ransomwareData, "mode"),
-		Supported: getBool(ransomwareData, "supported"),
-	})
-	diags.Append(d...)
+	var ransomwareObj types.Object
+	if ransomwareData != nil {
+		var d diag.Diagnostics
+		ransomwareObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
+			Mode:      getString(ransomwareData, "mode"),
+			Supported: getBool(ransomwareData, "supported"),
+		})
+		diags.Append(d...)
+	} else {
+		ransomwareObj = types.ObjectNull(protectionModeAttrTypes())
+	}
 
 	memProtData := getMap(data, "memory_protection")
-	memProtObj, d := types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-		Mode:      getString(memProtData, "mode"),
-		Supported: getBool(memProtData, "supported"),
-	})
-	diags.Append(d...)
+	var memProtObj types.Object
+	if memProtData != nil {
+		var d diag.Diagnostics
+		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
+			Mode:      getString(memProtData, "mode"),
+			Supported: getBool(memProtData, "supported"),
+		})
+		diags.Append(d...)
+	} else {
+		memProtObj = types.ObjectNull(protectionModeAttrTypes())
+	}
 
 	behProtData := getMap(data, "behavior_protection")
-	behProtObj, d := types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-		Mode:              getString(behProtData, "mode"),
-		Supported:         getBool(behProtData, "supported"),
-		ReputationService: getBool(behProtData, "reputation_service"),
-	})
-	diags.Append(d...)
+	var behProtObj types.Object
+	if behProtData != nil {
+		var d diag.Diagnostics
+		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
+			Mode:              getString(behProtData, "mode"),
+			Supported:         getBool(behProtData, "supported"),
+			ReputationService: getBool(behProtData, "reputation_service"),
+		})
+		diags.Append(d...)
+	} else {
+		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
+	}
 
 	popupData := getMap(data, "popup")
 	popupObj, d := mapWindowsPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
 	loggingData := getMap(data, "logging")
-	loggingObj, d := types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-		File: getString(loggingData, "file"),
-	})
-	diags.Append(d...)
+	var loggingObj types.Object
+	if loggingData != nil {
+		var d diag.Diagnostics
+		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
+			File: getString(loggingData, "file"),
+		})
+		diags.Append(d...)
+	} else {
+		loggingObj = types.ObjectNull(loggingAttrTypes())
+	}
 
 	avrData := getMap(data, "antivirus_registration")
-	avrObj, d := types.ObjectValueFrom(ctx, antivirusRegistrationAttrTypes(), antivirusRegistrationModel{
-		Enabled: getBool(avrData, "enabled"),
-	})
-	diags.Append(d...)
+	var avrObj types.Object
+	if avrData != nil {
+		var d diag.Diagnostics
+		avrObj, d = types.ObjectValueFrom(ctx, antivirusRegistrationAttrTypes(), antivirusRegistrationModel{
+			Enabled: getBool(avrData, "enabled"),
+		})
+		diags.Append(d...)
+	} else {
+		avrObj = types.ObjectNull(antivirusRegistrationAttrTypes())
+	}
 
 	asrData := getMap(data, "attack_surface_reduction")
-	chData := getMap(asrData, "credential_hardening")
-	chObj, d := types.ObjectValueFrom(ctx, credentialHardeningAttrTypes(), credentialHardeningModel{
-		Enabled: getBool(chData, "enabled"),
-	})
-	diags.Append(d...)
-	asrObj, d := types.ObjectValueFrom(ctx, attackSurfaceReductionAttrTypes(), attackSurfaceReductionModel{
-		CredentialHardening: chObj,
-	})
-	diags.Append(d...)
+	var asrObj types.Object
+	if asrData != nil {
+		chData := getMap(asrData, "credential_hardening")
+		var chObj types.Object
+		if chData != nil {
+			var d diag.Diagnostics
+			chObj, d = types.ObjectValueFrom(ctx, credentialHardeningAttrTypes(), credentialHardeningModel{
+				Enabled: getBool(chData, "enabled"),
+			})
+			diags.Append(d...)
+		} else {
+			chObj = types.ObjectNull(credentialHardeningAttrTypes())
+		}
+		var d diag.Diagnostics
+		asrObj, d = types.ObjectValueFrom(ctx, attackSurfaceReductionAttrTypes(), attackSurfaceReductionModel{
+			CredentialHardening: chObj,
+		})
+		diags.Append(d...)
+	} else {
+		asrObj = types.ObjectNull(attackSurfaceReductionAttrTypes())
+	}
 
 	winObj, d := types.ObjectValueFrom(ctx, windowsAttrTypes(), windowsPolicyModel{
 		Events:                 eventsObj,
@@ -367,46 +427,76 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 	}
 
 	eventsData := getMap(data, "events")
-	eventsObj, d := types.ObjectValueFrom(ctx, macEventsAttrTypes(), macEventsModel{
-		Process: getBool(eventsData, "process"),
-		Network: getBool(eventsData, "network"),
-		File:    getBool(eventsData, "file"),
-	})
-	diags.Append(d...)
+	var eventsObj types.Object
+	if eventsData != nil {
+		var d diag.Diagnostics
+		eventsObj, d = types.ObjectValueFrom(ctx, macEventsAttrTypes(), macEventsModel{
+			Process: getBool(eventsData, "process"),
+			Network: getBool(eventsData, "network"),
+			File:    getBool(eventsData, "file"),
+		})
+		diags.Append(d...)
+	} else {
+		eventsObj = types.ObjectNull(macEventsAttrTypes())
+	}
 
 	malwareData := getMap(data, "malware")
-	malwareObj, d := types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
-		Mode:        getString(malwareData, "mode"),
-		Blocklist:   getBool(malwareData, "blocklist"),
-		OnWriteScan: getBool(malwareData, "on_write_scan"),
-		NotifyUser:  getBool(malwareData, "notify_user"),
-	})
-	diags.Append(d...)
+	var malwareObj types.Object
+	if malwareData != nil {
+		var d diag.Diagnostics
+		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
+			Mode:        getString(malwareData, "mode"),
+			Blocklist:   getBool(malwareData, "blocklist"),
+			OnWriteScan: getBool(malwareData, "on_write_scan"),
+			NotifyUser:  getBool(malwareData, "notify_user"),
+		})
+		diags.Append(d...)
+	} else {
+		malwareObj = types.ObjectNull(malwareFullAttrTypes())
+	}
 
 	memProtData := getMap(data, "memory_protection")
-	memProtObj, d := types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-		Mode:      getString(memProtData, "mode"),
-		Supported: getBool(memProtData, "supported"),
-	})
-	diags.Append(d...)
+	var memProtObj types.Object
+	if memProtData != nil {
+		var d diag.Diagnostics
+		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
+			Mode:      getString(memProtData, "mode"),
+			Supported: getBool(memProtData, "supported"),
+		})
+		diags.Append(d...)
+	} else {
+		memProtObj = types.ObjectNull(protectionModeAttrTypes())
+	}
 
 	behProtData := getMap(data, "behavior_protection")
-	behProtObj, d := types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-		Mode:              getString(behProtData, "mode"),
-		Supported:         getBool(behProtData, "supported"),
-		ReputationService: getBool(behProtData, "reputation_service"),
-	})
-	diags.Append(d...)
+	var behProtObj types.Object
+	if behProtData != nil {
+		var d diag.Diagnostics
+		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
+			Mode:              getString(behProtData, "mode"),
+			Supported:         getBool(behProtData, "supported"),
+			ReputationService: getBool(behProtData, "reputation_service"),
+		})
+		diags.Append(d...)
+	} else {
+		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
+	}
 
 	popupData := getMap(data, "popup")
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
 	loggingData := getMap(data, "logging")
-	loggingObj, d := types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-		File: getString(loggingData, "file"),
-	})
-	diags.Append(d...)
+	var loggingObj types.Object
+	if loggingData != nil {
+		var d diag.Diagnostics
+		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
+			File: getString(loggingData, "file"),
+		})
+		diags.Append(d...)
+	} else {
+		loggingObj = types.ObjectNull(loggingAttrTypes())
+	}
 
 	macObj, d := types.ObjectValueFrom(ctx, macAttrTypes(), macPolicyModel{
 		Events:             eventsObj,
@@ -427,46 +517,76 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 	}
 
 	eventsData := getMap(data, "events")
-	eventsObj, d := types.ObjectValueFrom(ctx, linuxEventsAttrTypes(), linuxEventsModel{
-		Process:     getBool(eventsData, "process"),
-		Network:     getBool(eventsData, "network"),
-		File:        getBool(eventsData, "file"),
-		SessionData: getBool(eventsData, "session_data"),
-		TtyIO:       getBool(eventsData, "tty_io"),
-	})
-	diags.Append(d...)
+	var eventsObj types.Object
+	if eventsData != nil {
+		var d diag.Diagnostics
+		eventsObj, d = types.ObjectValueFrom(ctx, linuxEventsAttrTypes(), linuxEventsModel{
+			Process:     getBool(eventsData, "process"),
+			Network:     getBool(eventsData, "network"),
+			File:        getBool(eventsData, "file"),
+			SessionData: getBool(eventsData, "session_data"),
+			TtyIO:       getBool(eventsData, "tty_io"),
+		})
+		diags.Append(d...)
+	} else {
+		eventsObj = types.ObjectNull(linuxEventsAttrTypes())
+	}
 
 	malwareData := getMap(data, "malware")
-	malwareObj, d := types.ObjectValueFrom(ctx, malwareLinuxAttrTypes(), malwareLinuxModel{
-		Mode:      getString(malwareData, "mode"),
-		Blocklist: getBool(malwareData, "blocklist"),
-	})
-	diags.Append(d...)
+	var malwareObj types.Object
+	if malwareData != nil {
+		var d diag.Diagnostics
+		malwareObj, d = types.ObjectValueFrom(ctx, malwareLinuxAttrTypes(), malwareLinuxModel{
+			Mode:      getString(malwareData, "mode"),
+			Blocklist: getBool(malwareData, "blocklist"),
+		})
+		diags.Append(d...)
+	} else {
+		malwareObj = types.ObjectNull(malwareLinuxAttrTypes())
+	}
 
 	memProtData := getMap(data, "memory_protection")
-	memProtObj, d := types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-		Mode:      getString(memProtData, "mode"),
-		Supported: getBool(memProtData, "supported"),
-	})
-	diags.Append(d...)
+	var memProtObj types.Object
+	if memProtData != nil {
+		var d diag.Diagnostics
+		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
+			Mode:      getString(memProtData, "mode"),
+			Supported: getBool(memProtData, "supported"),
+		})
+		diags.Append(d...)
+	} else {
+		memProtObj = types.ObjectNull(protectionModeAttrTypes())
+	}
 
 	behProtData := getMap(data, "behavior_protection")
-	behProtObj, d := types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-		Mode:              getString(behProtData, "mode"),
-		Supported:         getBool(behProtData, "supported"),
-		ReputationService: getBool(behProtData, "reputation_service"),
-	})
-	diags.Append(d...)
+	var behProtObj types.Object
+	if behProtData != nil {
+		var d diag.Diagnostics
+		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
+			Mode:              getString(behProtData, "mode"),
+			Supported:         getBool(behProtData, "supported"),
+			ReputationService: getBool(behProtData, "reputation_service"),
+		})
+		diags.Append(d...)
+	} else {
+		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
+	}
 
 	popupData := getMap(data, "popup")
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
 	loggingData := getMap(data, "logging")
-	loggingObj, d := types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-		File: getString(loggingData, "file"),
-	})
-	diags.Append(d...)
+	var loggingObj types.Object
+	if loggingData != nil {
+		var d diag.Diagnostics
+		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
+			File: getString(loggingData, "file"),
+		})
+		diags.Append(d...)
+	} else {
+		loggingObj = types.ObjectNull(loggingAttrTypes())
+	}
 
 	linuxObj, d := types.ObjectValueFrom(ctx, linuxAttrTypes(), linuxPolicyModel{
 		Events:             eventsObj,

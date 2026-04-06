@@ -75,28 +75,35 @@ func loadPrivateState(ctx context.Context, storage privateStateStorage) (defendP
 // payloads from an API response and builds a defendPrivateState ready to be
 // persisted. It reads the artifact_manifest from the endpoint input config and
 // the top-level version token.
-func extractPrivateStateFromResponse(policy *kbapi.DefendPackagePolicy) defendPrivateState {
+func extractPrivateStateFromResponse(policy *kbapi.PackagePolicy) defendPrivateState {
 	ps := defendPrivateState{}
 
 	if policy.Version != nil {
 		ps.Version = *policy.Version
 	}
 
-	// Extract artifact_manifest from the endpoint input's config
-	ps.ArtifactManifest = extractArtifactManifest(policy.Inputs)
+	// Extract artifact_manifest from the endpoint input's config.
+	// The Inputs field is a union type; extract as typed inputs (non-simplified format).
+	typedInputs, err := policy.Inputs.AsPackagePolicyTypedInputs()
+	if err == nil {
+		ps.ArtifactManifest = extractArtifactManifest(typedInputs)
+	}
 
 	return ps
 }
 
 // extractArtifactManifest returns the artifact_manifest config value from the
 // first endpoint input in the policy, or nil if not found.
-func extractArtifactManifest(inputs []kbapi.DefendPackagePolicyInput) map[string]any {
+func extractArtifactManifest(inputs kbapi.PackagePolicyTypedInputs) map[string]any {
 	for _, input := range inputs {
 		if input.Type != endpointInputType {
 			continue
 		}
-		if cfg, ok := input.Config["artifact_manifest"]; ok {
-			if manifest, ok := cfg.(map[string]any); ok {
+		if input.Config == nil {
+			return nil
+		}
+		if amEntry, ok := (*input.Config)["artifact_manifest"]; ok {
+			if manifest, ok := amEntry.Value.(map[string]any); ok {
 				return manifest
 			}
 		}

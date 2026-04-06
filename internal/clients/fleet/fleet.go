@@ -349,6 +349,26 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 	}
 }
 
+// GetDefendPackagePolicy reads a specific Elastic Defend package policy from
+// the Fleet API without requesting the simplified format. This preserves the
+// typed input shape, input config payloads, and the top-level version token
+// required for subsequent update operations.
+func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // CreatePackagePolicy creates a new package policy.
 func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
@@ -368,6 +388,28 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 	}
 }
 
+// CreateDefendPackagePolicy creates a new Elastic Defend package policy using
+// the typed-input request body without requesting the simplified format. This
+// is used for the Defend bootstrap create step.
+func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	var unionReq kbapi.PackagePolicyRequest
+	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // UpdatePackagePolicy updates an existing package policy.
 func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
@@ -375,6 +417,29 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 	}
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return &resp.JSON200.Item, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateDefendPackagePolicy updates an existing Elastic Defend package policy
+// using the typed-input request body without requesting the simplified format.
+// The request body must include the top-level "version" token from the last
+// successful read so Kibana can perform optimistic concurrency control.
+func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	var unionReq kbapi.PackagePolicyRequest
+	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}

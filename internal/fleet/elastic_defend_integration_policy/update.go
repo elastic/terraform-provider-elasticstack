@@ -69,15 +69,23 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	updateReq.Id = &policyID
+	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
 
-	policy, diags := fleetclient.UpdateDefendPackagePolicy(ctx, client, policyID, spaceID, updateReq)
+	_, diags = fleetclient.UpdateDefendPackagePolicy(ctx, client, policyID, spaceID, updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Refresh private state from the update response
+	// The PUT response does not include spaceIds, so do a GET to retrieve the
+	// full policy state (including spaceIds and the server-managed artifact_manifest).
+	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, client, policyID, spaceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Refresh private state from the GET response
 	newPS := extractPrivateStateFromResponse(policy)
 	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, newPS)...)
 	if resp.Diagnostics.HasError() {

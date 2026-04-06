@@ -85,11 +85,15 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
-				ResourceName:             resourceName,
-				ImportState:              true,
-				ImportStateIdFunc:        testImportStateIDFunc(resourceName),
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"force"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})

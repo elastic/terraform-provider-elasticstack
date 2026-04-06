@@ -44,6 +44,34 @@ func (p *privateData) SetKey(_ context.Context, key string, value []byte) diag.D
 
 type Map = map[string]any
 
+// buildPackagePolicyWithMappedInputs creates a PackagePolicy with mapped inputs
+// for use in tests. The Inputs field is set via the union type.
+func buildPackagePolicyWithMappedInputs(secretRefs *[]kbapi.PackagePolicySecretRef, inputs kbapi.PackagePolicyMappedInputs, vars *map[string]any) kbapi.PackagePolicy {
+	p := kbapi.PackagePolicy{
+		SecretReferences: secretRefs,
+		Vars:             vars,
+	}
+	if err := p.Inputs.FromPackagePolicyMappedInputs(inputs); err != nil {
+		panic("failed to set mapped inputs: " + err.Error())
+	}
+	return p
+}
+
+// buildPackagePolicyRequestMapped creates a PackagePolicyRequest from mapped inputs.
+func buildPackagePolicyRequestMapped(inputs *map[string]kbapi.PackagePolicyRequestMappedInput, vars *map[string]any) kbapi.PackagePolicyRequest {
+	mapped := kbapi.PackagePolicyRequestMappedInputs{
+		Name:    "test",
+		Package: kbapi.PackagePolicyRequestPackage{Name: "test", Version: "1.0.0"},
+		Inputs:  inputs,
+		Vars:    vars,
+	}
+	var req kbapi.PackagePolicyRequest
+	if err := req.FromPackagePolicyRequestMappedInputs(mapped); err != nil {
+		panic("failed to build mapped request: " + err.Error())
+	}
+	return req
+}
+
 func TestHandleRespSecrets(t *testing.T) {
 	t.Parallel()
 
@@ -105,25 +133,27 @@ func TestHandleRespSecrets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp := kbapi.PackagePolicy{
-				SecretReferences: secretRefs,
-				Inputs: map[string]kbapi.PackagePolicyInput{
-					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.input))}},
-						Vars:    new(maps.Clone(tt.input)),
-					},
-				},
-				Vars: new(maps.Clone(tt.input)),
+			inputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
+				"stream1": {Vars: new(maps.Clone(tt.input))},
 			}
-			wants := kbapi.PackagePolicy{
-				Inputs: map[string]kbapi.PackagePolicyInput{
-					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
-						Vars:    &tt.want,
-					},
+			mappedInputs := kbapi.PackagePolicyMappedInputs{
+				"input1": {
+					Streams: &inputStreams,
+					Vars:    new(maps.Clone(tt.input)),
 				},
-				Vars: &tt.want,
 			}
+			resp := buildPackagePolicyWithMappedInputs(secretRefs, mappedInputs, new(maps.Clone(tt.input)))
+
+			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
+				"stream1": {Vars: new(tt.want)},
+			}
+			wantMappedInputs := kbapi.PackagePolicyMappedInputs{
+				"input1": {
+					Streams: &wantInputStreams,
+					Vars:    &tt.want,
+				},
+			}
+			wants := buildPackagePolicyWithMappedInputs(nil, wantMappedInputs, &tt.want)
 
 			diags := integrationpolicy.HandleRespSecrets(ctx, &resp, &private)
 			require.Empty(t, diags)
@@ -132,14 +162,20 @@ func TestHandleRespSecrets(t *testing.T) {
 			want := *wants.Vars
 			require.Equal(t, want, got)
 
+			// Extract inputs to check
+			respMapped, err := resp.Inputs.AsPackagePolicyMappedInputs()
+			require.NoError(t, err)
+			wantsMapped, err := wants.Inputs.AsPackagePolicyMappedInputs()
+			require.NoError(t, err)
+
 			// Input vars
-			got = *resp.Inputs["input1"].Vars
-			want = *wants.Inputs["input1"].Vars
+			got = *respMapped["input1"].Vars
+			want = *wantsMapped["input1"].Vars
 			require.Equal(t, want, got)
 
 			// Stream vars
-			got = *(*resp.Inputs["input1"].Streams)["stream1"].Vars
-			want = *(*wants.Inputs["input1"].Streams)["stream1"].Vars
+			got = *(*respMapped["input1"].Streams)["stream1"].Vars
+			want = *(*wantsMapped["input1"].Streams)["stream1"].Vars
 			require.Equal(t, want, got)
 
 			// privateData
@@ -218,34 +254,38 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := kbapi.PackagePolicyRequest{
-				Inputs: &map[string]kbapi.PackagePolicyRequestInput{
-					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: new(maps.Clone(tt.reqInput))}},
-						Vars:    new(maps.Clone(tt.reqInput)),
-					},
-				},
-				Vars: new(maps.Clone(tt.reqInput)),
+			reqInputStreams := map[string]kbapi.PackagePolicyRequestMappedInputStream{
+				"stream1": {Vars: new(maps.Clone(tt.reqInput))},
 			}
-			resp := kbapi.PackagePolicy{
-				SecretReferences: secretRefs,
-				Inputs: map[string]kbapi.PackagePolicyInput{
-					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.respInput))}},
-						Vars:    new(maps.Clone(tt.respInput)),
-					},
+			reqInputs := &map[string]kbapi.PackagePolicyRequestMappedInput{
+				"input1": {
+					Streams: &reqInputStreams,
+					Vars:    new(maps.Clone(tt.reqInput)),
 				},
-				Vars: new(maps.Clone(tt.respInput)),
 			}
-			wants := kbapi.PackagePolicy{
-				Inputs: map[string]kbapi.PackagePolicyInput{
-					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
-						Vars:    &tt.want,
-					},
+			req := buildPackagePolicyRequestMapped(reqInputs, new(maps.Clone(tt.reqInput)))
+
+			respInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
+				"stream1": {Vars: new(maps.Clone(tt.respInput))},
+			}
+			respMappedInputs := kbapi.PackagePolicyMappedInputs{
+				"input1": {
+					Streams: &respInputStreams,
+					Vars:    new(maps.Clone(tt.respInput)),
 				},
-				Vars: &tt.want,
 			}
+			resp := buildPackagePolicyWithMappedInputs(secretRefs, respMappedInputs, new(maps.Clone(tt.respInput)))
+
+			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
+				"stream1": {Vars: new(tt.want)},
+			}
+			wantMappedInputs := kbapi.PackagePolicyMappedInputs{
+				"input1": {
+					Streams: &wantInputStreams,
+					Vars:    &tt.want,
+				},
+			}
+			wants := buildPackagePolicyWithMappedInputs(nil, wantMappedInputs, &tt.want)
 
 			private := privateData{}
 			diags := integrationpolicy.HandleReqRespSecrets(ctx, req, &resp, &private)
@@ -256,22 +296,33 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			want := *wants.Vars
 			require.Equal(t, want, got)
 
+			// Extract inputs to check
+			respMapped, err := resp.Inputs.AsPackagePolicyMappedInputs()
+			require.NoError(t, err)
+			wantsMapped, err := wants.Inputs.AsPackagePolicyMappedInputs()
+			require.NoError(t, err)
+
 			// Input vars
-			got = *resp.Inputs["input1"].Vars
-			want = *wants.Inputs["input1"].Vars
+			got = *respMapped["input1"].Vars
+			want = *wantsMapped["input1"].Vars
 			require.Equal(t, want, got)
 
 			// Stream vars
-			got = *(*resp.Inputs["input1"].Streams)["stream1"].Vars
-			want = *(*wants.Inputs["input1"].Streams)["stream1"].Vars
+			got = *(*respMapped["input1"].Streams)["stream1"].Vars
+			want = *(*wantsMapped["input1"].Streams)["stream1"].Vars
 			require.Equal(t, want, got)
 
+			// Check private data based on req vars
+			reqMapped, err := req.AsPackagePolicyRequestMappedInputs()
+			require.NoError(t, err)
 			privateWants := privateData{"secrets": `{}`}
-			if v, ok := (*req.Vars)["k"]; ok {
-				if s, ok := v.(string); ok && s == "secret" {
-					privateWants = privateData{"secrets": `{"known-secret":"secret"}`}
-				} else if _, ok := v.([]any); ok {
-					privateWants = privateData{"secrets": `{"known-secret-1":"secret1","known-secret-2":"secret2"}`}
+			if reqMapped.Vars != nil {
+				if v, ok := (*reqMapped.Vars)["k"]; ok {
+					if s, ok := v.(string); ok && s == "secret" {
+						privateWants = privateData{"secrets": `{"known-secret":"secret"}`}
+					} else if _, ok := v.([]any); ok {
+						privateWants = privateData{"secrets": `{"known-secret-1":"secret1","known-secret-2":"secret2"}`}
+					}
 				}
 			}
 			require.Equal(t, privateWants, private)

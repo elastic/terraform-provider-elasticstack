@@ -19,6 +19,7 @@ package elasticdefendintegrationpolicy_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -28,24 +29,62 @@ import (
 
 const testArtifactManifest = "WzEyMywxXQ=="
 
+// buildTestPackagePolicy constructs a kbapi.PackagePolicy with typed inputs
+// suitable for Defend resource tests.
+func buildTestPackagePolicy(id, name, pkgName, pkgVersion string, enabled bool, inputs kbapi.PackagePolicyTypedInputs) *kbapi.PackagePolicy {
+	policy := &kbapi.PackagePolicy{
+		Id:      id,
+		Name:    name,
+		Enabled: enabled,
+		Package: &struct {
+			ExperimentalDataStreamFeatures *[]struct {
+				DataStream string `json:"data_stream"`
+				Features   struct {
+					DocValueOnlyNumeric *bool `json:"doc_value_only_numeric,omitempty"`
+					DocValueOnlyOther   *bool `json:"doc_value_only_other,omitempty"`
+					SyntheticSource     *bool `json:"synthetic_source,omitempty"`
+					Tsdb                *bool `json:"tsdb,omitempty"`
+				} `json:"features"`
+			} `json:"experimental_data_stream_features,omitempty"`
+			FipsCompatible *bool `json:"fips_compatible,omitempty"`
+
+			// Name Package name
+			Name         string  `json:"name"`
+			RequiresRoot *bool   `json:"requires_root,omitempty"`
+			Title        *string `json:"title,omitempty"`
+
+			// Version Package version
+			Version string `json:"version"`
+		}{Name: pkgName, Version: pkgVersion},
+	}
+	if err := policy.Inputs.FromPackagePolicyTypedInputs(inputs); err != nil {
+		panic("failed to set typed inputs: " + err.Error())
+	}
+	return policy
+}
+
+// buildTypedInputConfig constructs a PackagePolicyTypedInput.Config-compatible
+// map entry from a raw value. The Defend API wraps config values in
+// {frozen, type, value} structs.
+func buildConfigEntry(value any) struct {
+	Frozen *bool   `json:"frozen,omitempty"`
+	Type   *string `json:"type,omitempty"`
+	Value  any     `json:"value"`
+} {
+	return struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{Value: value}
+}
+
 // TestPopulateModelFromAPIValidatesPackageName tests that populateModelFromAPI
 // returns an error when the package name is not "endpoint" (REQ-005).
 func TestPopulateModelFromAPIValidatesPackageName(t *testing.T) {
 	ctx := context.Background()
 
-	policy := &kbapi.DefendPackagePolicy{
-		Id:      "policy-123",
-		Name:    "wrong-package-policy",
-		Enabled: true,
-		Package: &struct {
-			Name    string `json:"name"`
-			Version string `json:"version"`
-		}{
-			Name:    "not-endpoint",
-			Version: "1.0.0",
-		},
-		Inputs: []kbapi.DefendPackagePolicyInput{},
-	}
+	policy := buildTestPackagePolicy("wrong-policy-id", "wrong-package-policy", "not-endpoint", "1.0.0", false,
+		kbapi.PackagePolicyTypedInputs{})
 
 	model := &edip.ElasticDefendIntegrationPolicyModel{}
 	diags := edip.PopulateModelFromAPI(ctx, model, policy)
@@ -64,36 +103,31 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 	namespace := "default"
 	version := testArtifactManifest
 
-	policy := &kbapi.DefendPackagePolicy{
-		Id:        "policy-123",
-		Name:      "my-endpoint-policy",
-		Enabled:   true,
-		Namespace: &namespace,
-		PolicyId:  &agentPolicyID,
-		Version:   &version,
-		Package: &struct {
-			Name    string `json:"name"`
-			Version string `json:"version"`
-		}{
-			Name:    "endpoint",
-			Version: "8.14.0",
-		},
-		Inputs: []kbapi.DefendPackagePolicyInput{
-			{
-				Type:    "endpoint",
-				Enabled: true,
-				Config: map[string]any{
-					"integration_config": map[string]any{
-						"value": map[string]any{
-							"endpointConfig": map[string]any{
-								"preset": "NGAv1",
-							},
-						},
-					},
-				},
+	icConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{
+		"integration_config": buildConfigEntry(map[string]any{
+			"endpointConfig": map[string]any{
+				"preset": "NGAv1",
 			},
+		}),
+	}
+
+	inputs := kbapi.PackagePolicyTypedInputs{
+		{
+			Type:    "endpoint",
+			Enabled: true,
+			Config:  &icConfig,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
 		},
 	}
+
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.14.0", true, inputs)
+	policy.Namespace = &namespace
+	policy.PolicyId = &agentPolicyID
+	policy.Version = &version
 
 	model := &edip.ElasticDefendIntegrationPolicyModel{}
 	diags := edip.PopulateModelFromAPI(ctx, model, policy)
@@ -138,8 +172,9 @@ func TestPopulateModelFromAPINilPolicy(t *testing.T) {
 	}
 }
 
-// TestBuildBootstrapRequest tests that the bootstrap request uses the "endpoint"
-// input type (as map key) and sends preset in integration_config (REQ-008).
+// TestBuildBootstrapRequest tests that the bootstrap request uses the typed
+// input format with "endpoint" type, and sends preset in
+// integration_config (REQ-008).
 func TestBuildBootstrapRequest(t *testing.T) {
 	model := &edip.ElasticDefendIntegrationPolicyModel{
 		Name:               types.StringValue("my-endpoint"),
@@ -151,17 +186,25 @@ func TestBuildBootstrapRequest(t *testing.T) {
 
 	req := edip.BuildBootstrapRequest(model)
 
-	if req.Package.Name != "endpoint" {
-		t.Errorf("expected package name %q, got %q", "endpoint", req.Package.Name)
+	if req.Package == nil || req.Package.Name != "endpoint" {
+		name := "<nil>"
+		if req.Package != nil {
+			name = req.Package.Name
+		}
+		t.Errorf("expected package name %q, got %q", "endpoint", name)
 	}
 
-	if len(req.Inputs) != 1 {
-		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
+	if req.Inputs == nil || len(*req.Inputs) != 1 {
+		count := 0
+		if req.Inputs != nil {
+			count = len(*req.Inputs)
+		}
+		t.Fatalf("expected 1 input, got %d", count)
 	}
 
-	input, ok := req.Inputs["endpoint"]
-	if !ok {
-		t.Fatal("expected 'endpoint' key in inputs map")
+	input := (*req.Inputs)[0]
+	if input.Type != "endpoint" {
+		t.Errorf("expected input type=%q, got %q", "endpoint", input.Type)
 	}
 
 	if !input.Enabled {
@@ -169,28 +212,60 @@ func TestBuildBootstrapRequest(t *testing.T) {
 	}
 
 	if input.Streams == nil {
-		t.Error("expected input streams to be non-nil (empty list)")
+		t.Error("expected input streams to be non-nil (empty slice)")
 	}
 
-	// Verify preset is at config.integration_config.value.endpointConfig.preset
-	ic, ok := input.Config["integration_config"]
+	// Verify the request serializes with inputs as a JSON array (typed format)
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+
+	var out map[string]any
+	if err := json.Unmarshal(data, &out); err != nil {
+		t.Fatalf("failed to unmarshal request: %v", err)
+	}
+
+	inputsRaw, ok := out["inputs"]
+	if !ok {
+		t.Fatal("expected inputs in request body")
+	}
+
+	// Typed format: inputs should be a JSON array
+	if _, ok := inputsRaw.([]any); !ok {
+		t.Errorf("expected inputs to be a JSON array (typed format), got %T", inputsRaw)
+	}
+
+	// Verify preset is in config. The request Config field is *map[string]interface{},
+	// so config values are raw interface{} values (not the struct-wrapped type in responses).
+	if input.Config == nil {
+		t.Fatal("expected config to be non-nil when preset is set")
+	}
+
+	icRaw, ok := (*input.Config)["integration_config"]
 	if !ok {
 		t.Fatal("expected integration_config in bootstrap input config")
 	}
 
-	icMap, ok := ic.(map[string]any)
+	icMap, ok := icRaw.(map[string]any)
 	if !ok {
-		t.Fatal("expected integration_config to be a map")
+		t.Fatalf("expected integration_config to be a map, got %T", icRaw)
 	}
 
-	valueMap, ok := icMap["value"].(map[string]any)
+	// The value is stored directly (not struct-wrapped) in the request config
+	valueRaw, ok := icMap["value"]
 	if !ok {
-		t.Fatal("expected integration_config.value to be a map")
+		t.Fatal("expected integration_config.value to be present")
+	}
+
+	valueMap, ok := valueRaw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected integration_config.value to be a map, got %T", valueRaw)
 	}
 
 	ecMap, ok := valueMap["endpointConfig"].(map[string]any)
 	if !ok {
-		t.Fatal("expected integration_config.value.endpointConfig to be a map")
+		t.Fatal("expected endpointConfig to be a map")
 	}
 
 	if ecMap["preset"] != "NGAv1" {
@@ -212,17 +287,21 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 
 	req := edip.BuildBootstrapRequest(model)
 
-	if len(req.Inputs) != 1 {
-		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
+	if req.Inputs == nil || len(*req.Inputs) != 1 {
+		count := 0
+		if req.Inputs != nil {
+			count = len(*req.Inputs)
+		}
+		t.Fatalf("expected 1 input, got %d", count)
 	}
 
-	input, ok := req.Inputs["endpoint"]
-	if !ok {
-		t.Fatal("expected 'endpoint' key in inputs map")
-	}
+	input := (*req.Inputs)[0]
 
-	if _, ok := input.Config["integration_config"]; ok {
-		t.Error("expected integration_config to be absent from bootstrap input config when preset is null")
+	// When preset is null, Config should be nil (no integration_config)
+	if input.Config != nil {
+		if _, ok := (*input.Config)["integration_config"]; ok {
+			t.Error("expected integration_config to be absent from bootstrap input config when preset is null")
+		}
 	}
 }
 
@@ -231,38 +310,52 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 // the artifact_manifest from the endpoint input.
 func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
 	version := testArtifactManifest
-	policy := &kbapi.DefendPackagePolicy{
-		Id:      "policy-123",
-		Name:    "test",
-		Enabled: true,
-		Version: &version,
-		Inputs: []kbapi.DefendPackagePolicyInput{
-			{
-				Type:    "some-other-type",
-				Enabled: true,
-				Config: map[string]any{
-					"artifact_manifest": map[string]any{
-						"artifacts": map[string]any{
-							"wrong": "should not be picked up",
-						},
-					},
-				},
-			},
-			{
-				Type:    "endpoint",
-				Enabled: true,
-				Config: map[string]any{
-					"artifact_manifest": map[string]any{
-						"artifacts": map[string]any{
-							"endpoint-exceptionlist-macos-v1": map[string]any{
-								"sha256": "abc123",
-							},
-						},
-					},
-				},
+
+	amValue := map[string]any{
+		"artifacts": map[string]any{
+			"endpoint-exceptionlist-macos-v1": map[string]any{
+				"sha256": "abc123",
 			},
 		},
 	}
+	wrongAmValue := map[string]any{
+		"artifacts": map[string]any{
+			"wrong": "should not be picked up",
+		},
+	}
+
+	otherConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{
+		"artifact_manifest": buildConfigEntry(wrongAmValue),
+	}
+	endpointConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{
+		"artifact_manifest": buildConfigEntry(amValue),
+	}
+
+	inputs := kbapi.PackagePolicyTypedInputs{
+		{
+			Type:    "some-other-type",
+			Enabled: true,
+			Config:  &otherConfig,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
+		},
+		{
+			Type:    "endpoint",
+			Enabled: true,
+			Config:  &endpointConfig,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
+		},
+	}
+
+	policy := buildTestPackagePolicy("policy-123", "test", "endpoint", "8.14.0", true, inputs)
+	policy.Version = &version
 
 	ps := edip.ExtractPrivateStateFromResponse(policy)
 
@@ -284,27 +377,33 @@ func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
 // captures the version and artifact_manifest from an API response.
 func TestExtractPrivateStateFromResponse(t *testing.T) {
 	version := testArtifactManifest
-	policy := &kbapi.DefendPackagePolicy{
-		Id:      "policy-123",
-		Name:    "test",
-		Enabled: true,
-		Version: &version,
-		Inputs: []kbapi.DefendPackagePolicyInput{
-			{
-				Type:    "endpoint",
-				Enabled: true,
-				Config: map[string]any{
-					"artifact_manifest": map[string]any{
-						"artifacts": map[string]any{
-							"endpoint-exceptionlist-macos-v1": map[string]any{
-								"sha256": "abc123",
-							},
-						},
-					},
-				},
+
+	amValue := map[string]any{
+		"artifacts": map[string]any{
+			"endpoint-exceptionlist-macos-v1": map[string]any{
+				"sha256": "abc123",
 			},
 		},
 	}
+	endpointConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{
+		"artifact_manifest": buildConfigEntry(amValue),
+	}
+
+	inputs := kbapi.PackagePolicyTypedInputs{
+		{
+			Type:    "endpoint",
+			Enabled: true,
+			Config:  &endpointConfig,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
+		},
+	}
+
+	policy := buildTestPackagePolicy("policy-123", "test", "endpoint", "8.14.0", true, inputs)
+	policy.Version = &version
 
 	ps := edip.ExtractPrivateStateFromResponse(policy)
 

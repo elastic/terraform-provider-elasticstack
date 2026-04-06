@@ -84,22 +84,30 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	finalizeReq.Id = &bootstrapPolicy.Id
+	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
 
-	finalPolicy, d := fleetclient.UpdateDefendPackagePolicy(ctx, client, bootstrapPolicy.Id, spaceID, finalizeReq)
+	_, d = fleetclient.UpdateDefendPackagePolicy(ctx, client, bootstrapPolicy.Id, spaceID, finalizeReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Refresh private state from finalize response
+	// The PUT response does not include spaceIds, so do a GET to retrieve the
+	// full policy state (including spaceIds and the server-managed artifact_manifest).
+	finalPolicy, d := fleetclient.GetDefendPackagePolicy(ctx, client, bootstrapPolicy.Id, spaceID)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Refresh private state from final GET response
 	ps = extractPrivateStateFromResponse(finalPolicy)
 	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, ps)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Populate state from the finalize response
+	// Populate state from the final GET response
 	d = populateModelFromAPI(ctx, &planModel, finalPolicy)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
