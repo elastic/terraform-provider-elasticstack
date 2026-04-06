@@ -1192,31 +1192,46 @@ func transformFleetPaths(schema *Schema) {
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
 	epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
-	epmPoliciesPath.Post.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema") // anyOf.0 is the deprecated array format
-	epmPolicyPath.Put.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema")    // anyOf.0 is the deprecated array format
-	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+
+	epmPoliciesPath.Post.Set("requestBody.content.application/json.schema", epmPolicyPath.Put.MustGetMap("requestBody.content.application/json.schema"))
 
 	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
 	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
-	schema.Components.Move("schemas.package_policy.properties.inputs.anyOf.1", "schemas.package_policy.properties.inputs") // anyOf.0 is the deprecated array format
+	schema.Components.CreateRef(schema, "package_policy_typed_inputs", "schemas.package_policy.properties.inputs.anyOf.0")
+	schema.Components.CreateRef(schema, "package_policy_mapped_inputs", "schemas.package_policy.properties.inputs.anyOf.1")
+	schema.Components.CreateRef(schema, "package_policy_typed_input", "schemas.package_policy_typed_inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_mapped_input", "schemas.package_policy_mapped_inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_typed_input_stream", "schemas.package_policy_typed_input.properties.streams.items")
+	schema.Components.CreateRef(schema, "package_policy_mapped_input_stream", "schemas.package_policy_mapped_input.properties.streams.additionalProperties")
 
-	schema.Components.CreateRef(schema, "package_policy_input", "schemas.package_policy.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_input_stream", "schemas.package_policy_input.properties.streams.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_mapped_inputs.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_typed_inputs.properties.package")
 
-	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request.properties.package")
-	schema.Components.CreateRef(schema, "package_policy_request_input", "schemas.package_policy_request.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_request_input_stream", "schemas.package_policy_request_input.properties.streams.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.package_policy_request_mapped_inputs.properties.inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_mapped_input_stream", "schemas.package_policy_request_mapped_input.properties.streams.additionalProperties")
+
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.package_policy_request_typed_inputs.properties.inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
 
 	// Simplify all of the vars
 	schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_typed_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_mapped_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_typed_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_mapped_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_inputs.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_inputs.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input.properties.config", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.config", Map{"type": "object"})
 }
 
 func setAllXOmitEmpty(key string, node Map) {
