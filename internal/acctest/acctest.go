@@ -18,15 +18,21 @@
 package acctest
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	clientconfig "github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 )
@@ -75,6 +81,60 @@ func PreCheck(t *testing.T) {
 
 func PreCheckWithExplicitKibanaEndpoint(t *testing.T) {
 	t.Setenv(clientconfig.PreferConfiguredKibanaEndpointEnvVar, "true")
+}
+
+// PreCheckWithWorkflowsEnabled runs standard pre-checks, skips if the server
+// version is below minVersion, and ensures the workflows UI setting is enabled
+// in Kibana.
+func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
+	PreCheck(t)
+
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client: %v", err)
+	}
+
+	serverVersion, diags := client.ServerVersion(context.Background())
+	if diags.HasError() {
+		t.Fatalf("Failed to get server version: %v", diags)
+	}
+	if serverVersion.LessThan(minVersion) {
+		t.Skipf("Skipping test: server version %s is below minimum %s", serverVersion, minVersion)
+	}
+
+	kibanaClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		t.Fatalf("Failed to get Kibana client: %v", err)
+	}
+
+	// Try the internal settings API endpoint
+	settingsURL := fmt.Sprintf("%s/internal/kibana/settings/workflows:ui:enabled", kibanaClient.URL)
+	body := map[string]any{
+		"value": true,
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("Failed to marshal body: %v", err)
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), "POST", settingsURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		t.Fatalf("Failed to create POST request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("kbn-xsrf", "true")
+	req.Header.Set("x-elastic-internal-origin", "Kibana")
+
+	resp, err := kibanaClient.HTTP.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to enable workflows: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		respBody, _ := io.ReadAll(resp.Body)
+		t.Fatalf("Failed to enable workflows (status %d): %s. Make sure workflows are enabled in kibana.yml with 'xpack.aiAssistant.workflows.enabled: true'", resp.StatusCode, string(respBody))
+	}
 }
 
 func NamedTestCaseDirectory(name string) config.TestStepConfigFunc {
