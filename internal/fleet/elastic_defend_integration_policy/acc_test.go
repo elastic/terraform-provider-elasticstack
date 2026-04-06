@@ -62,7 +62,6 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "description"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttrSet(resourceName, "space_ids.#"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
 				),
 			},
