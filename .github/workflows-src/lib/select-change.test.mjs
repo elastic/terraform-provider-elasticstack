@@ -99,7 +99,7 @@ test('selectChangeFromFiles selects mixed added and modified under one change as
   );
 });
 
-test('selectChangeFromFiles rejects unsupported file statuses under active changes', () => {
+test('selectChangeFromFiles rejects renamed status under active changes', () => {
   assert.deepEqual(
     selectChangeFromFiles([
       {
@@ -111,6 +111,22 @@ test('selectChangeFromFiles rejects unsupported file statuses under active chang
       ...ineligibleBase,
       selection_reason:
         'Unsupported file status under openspec/changes/: openspec/changes/example/tasks.md (renamed)',
+    }
+  );
+});
+
+test('selectChangeFromFiles rejects removed status under active changes', () => {
+  assert.deepEqual(
+    selectChangeFromFiles([
+      {
+        filename: 'openspec/changes/example/tasks.md',
+        status: 'removed',
+      },
+    ]),
+    {
+      ...ineligibleBase,
+      selection_reason:
+        'Unsupported file status under openspec/changes/: openspec/changes/example/tasks.md (removed)',
     }
   );
 });

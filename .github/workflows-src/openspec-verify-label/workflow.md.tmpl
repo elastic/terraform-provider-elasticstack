@@ -123,7 +123,7 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - All paths under `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/`.
    - For each delta spec `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/specs/<capability>/spec.md`, the matching **`openspec/specs/<capability>/spec.md`** if it appears in the PR.
 
-4. For **every other** changed file in the PR, read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. Only **`unassociated`** blocks **APPROVE**; when unsure, prefer **`relevant`** or **`uncertain`**.
+4. For **every other** changed file in the PR (outside the structural allowlist in step 3), read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. This step covers **relevance classification only** for out-of-scope files: among those outcomes, **`unassociated`** is what blocks **APPROVE** on the relevance axis. It is **not** the full approval gate—**CRITICAL** issues from verification (steps 1–2) still block **APPROVE** per step 7. When unsure, prefer **`relevant`** or **`uncertain`**.
 
 ## Review body, inline comments, and decision
 
