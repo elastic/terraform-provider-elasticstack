@@ -62,3 +62,18 @@ test('verify-label workflow prompt instructs terminal remove-labels cleanup', ()
   assert.match(source, /remove-labels.*terminal/s);
   assert.match(source, /post-agent script or job/);
 });
+
+test('verify-label workflow exposes review disposition and disposition reason to the agent', () => {
+  const source = workflowSource();
+  assert.match(source, /review_disposition: \$\{\{ steps\.select_change\.outputs\.review_disposition \}\}/);
+  assert.match(source, /disposition_reason: \$\{\{ steps\.select_change\.outputs\.disposition_reason \}\}/);
+  assert.match(source, /\*\*Review disposition\*\*.*approval-eligible.*comment-only/s);
+  assert.match(source, /\*\*Disposition reason\*\*/);
+});
+
+test('verify-label workflow ties APPROVE and archive to approval-eligible disposition', () => {
+  const source = workflowSource();
+  assert.match(source, /review_disposition.*approval-eligible/s);
+  assert.match(source, /Archive and push \(APPROVE only, approval-eligible only\)/);
+  assert.match(source, /comment-only.*net-new spec change/s);
+});
