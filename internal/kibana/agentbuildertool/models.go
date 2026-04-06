@@ -24,21 +24,37 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type toolModel struct {
-	ID            types.String `tfsdk:"id"`
-	ToolID        types.String `tfsdk:"tool_id"`
-	SpaceID       types.String `tfsdk:"space_id"`
-	Type          types.String `tfsdk:"type"`
-	Description   types.String `tfsdk:"description"`
-	Tags          types.List   `tfsdk:"tags"`
-	Configuration types.String `tfsdk:"configuration"`
+	ID            types.String         `tfsdk:"id"`
+	ToolID        types.String         `tfsdk:"tool_id"`
+	SpaceID       types.String         `tfsdk:"space_id"`
+	Type          types.String         `tfsdk:"type"`
+	Description   types.String         `tfsdk:"description"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Configuration jsontypes.Normalized `tfsdk:"configuration"`
 }
 
-func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+type toolDataSourceModel struct {
+	ID                        types.String                    `tfsdk:"id"`
+	SpaceID                   types.String                    `tfsdk:"space_id"`
+	ToolID                    types.String                    `tfsdk:"tool_id"`
+	Type                      types.String                    `tfsdk:"type"`
+	Description               types.String                    `tfsdk:"description"`
+	Tags                      types.Set                       `tfsdk:"tags"`
+	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
+	Configuration             types.String                    `tfsdk:"configuration"`
+	IncludeWorkflow           types.Bool                      `tfsdk:"include_workflow"`
+	WorkflowID                types.String                    `tfsdk:"workflow_id"`
+	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
+}
+
+func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -47,7 +63,7 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
-		spaceID = "default"
+		spaceID = defaultSpaceID
 	}
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
@@ -62,12 +78,14 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 	}
 
 	if len(data.Tags) > 0 {
-		tags, d := types.ListValueFrom(ctx, types.StringType, data.Tags)
+		tags, d := types.SetValueFrom(ctx, types.StringType, data.Tags)
 		diags.Append(d...)
 		model.Tags = tags
 	} else {
-		model.Tags = types.ListNull(types.StringType)
+		model.Tags = types.SetNull(types.StringType)
 	}
+
+	model.ReadOnly = types.BoolValue(data.ReadOnly)
 
 	if data.Configuration != nil {
 		configJSON, err := json.Marshal(data.Configuration)
@@ -78,6 +96,51 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 		model.Configuration = types.StringValue(string(configJSON))
 	} else {
 		model.Configuration = types.StringNull()
+	}
+
+	return diags
+}
+
+func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+	if data == nil {
+		return nil
+	}
+
+	var diags diag.Diagnostics
+
+	spaceID := model.SpaceID.ValueString()
+	if spaceID == "" {
+		spaceID = defaultSpaceID
+	}
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ToolID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Type = types.StringValue(data.Type)
+
+	if data.Description != nil && *data.Description != "" {
+		model.Description = types.StringValue(*data.Description)
+	} else {
+		model.Description = types.StringNull()
+	}
+
+	if len(data.Tags) > 0 {
+		tags, d := types.SetValueFrom(ctx, types.StringType, data.Tags)
+		diags.Append(d...)
+		model.Tags = tags
+	} else {
+		model.Tags = types.SetNull(types.StringType)
+	}
+
+	if data.Configuration != nil {
+		configJSON, err := json.Marshal(data.Configuration)
+		if err != nil {
+			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
+			return diags
+		}
+		model.Configuration = jsontypes.NewNormalizedValue(string(configJSON))
+	} else {
+		model.Configuration = jsontypes.NewNormalizedNull()
 	}
 
 	return diags

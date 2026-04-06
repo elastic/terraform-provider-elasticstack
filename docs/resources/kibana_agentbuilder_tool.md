@@ -80,7 +80,7 @@ resource "elasticstack_kibana_agentbuilder_tool" "workflow_tool" {
 
 - `description` (String) The tool description.
 - `space_id` (String) An identifier for the Kibana space. If not provided, the default space is used.
-- `tags` (List of String) List of tags for the tool.
+- `tags` (Set of String) List of tags for the tool.
 
 ### Read-Only
 

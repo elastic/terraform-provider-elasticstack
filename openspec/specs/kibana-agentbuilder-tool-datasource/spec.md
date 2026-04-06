@@ -1,15 +1,15 @@
-# `elasticstack_kibana_agentbuilder_export_tool` — Schema and Functional Requirements
+# `elasticstack_kibana_agentbuilder_tool` — Schema and Functional Requirements
 
-Data source implementation: `internal/kibana/exportagentbuilder/tool`
+Data source implementation: `internal/kibana/agentbuildertool`
 
 ## Purpose
 
-Define the Terraform schema and runtime behavior for the `elasticstack_kibana_agentbuilder_export_tool` data source, which reads an Agent Builder tool by ID from Kibana and optionally exports the workflow configuration referenced by a `workflow`-type tool. Tool export requires Kibana 9.3.0 or above. Workflow export (via `include_workflow`) requires Kibana 9.4.0 or above.
+Define the Terraform schema and runtime behavior for the `elasticstack_kibana_agentbuilder_tool` data source, which reads an Agent Builder tool by ID from Kibana and optionally exports the workflow configuration referenced by a `workflow`-type tool. Tool export requires Kibana 9.3.0 or above. Workflow export (via `include_workflow`) requires Kibana 9.4.0 or above.
 
 ## Schema
 
 ```hcl
-data "elasticstack_kibana_agentbuilder_export_tool" "example" {
+data "elasticstack_kibana_agentbuilder_tool" "example" {
   id               = <required, string>         # tool ID to export; accepts composite "<space_id>/<tool_id>"
   space_id         = <optional, string>         # Kibana space; defaults to "default"
   include_workflow = <optional, bool>           # when true, also export referenced workflow (requires 9.4.0+; only valid for type = "workflow")

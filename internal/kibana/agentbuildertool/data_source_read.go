@@ -15,11 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package tool
+package agentbuildertool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -31,9 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config dataSourceModel
+func (d *ToolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config toolDataSourceModel
 
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -59,7 +57,7 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	spaceID := "default"
+	spaceID := defaultSpaceID
 	if typeutils.IsKnown(config.SpaceID) {
 		spaceID = config.SpaceID.ValueString()
 	}
@@ -82,39 +80,11 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: toolID}
-
-	var state dataSourceModel
-	state.ID = types.StringValue(compositeID.String())
-	state.SpaceID = types.StringValue(spaceID)
-	state.ToolID = types.StringValue(tool.ID)
-	state.Type = types.StringValue(tool.Type)
-
-	if tool.Description != nil {
-		state.Description = types.StringValue(*tool.Description)
-	} else {
-		state.Description = types.StringNull()
-	}
-
-	if len(tool.Tags) > 0 {
-		tags, tagDiags := types.ListValueFrom(ctx, types.StringType, tool.Tags)
-		resp.Diagnostics.Append(tagDiags...)
-		state.Tags = tags
-	} else {
-		state.Tags = types.ListNull(types.StringType)
-	}
-
-	state.ReadOnly = types.BoolValue(tool.ReadOnly)
-
-	if tool.Configuration != nil {
-		configJSON, err := json.Marshal(tool.Configuration)
-		if err != nil {
-			resp.Diagnostics.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
-			return
-		}
-		state.Configuration = types.StringValue(string(configJSON))
-	} else {
-		state.Configuration = types.StringNull()
+	config.SpaceID = types.StringValue(spaceID)
+	diags = config.populateFromAPI(ctx, tool)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
@@ -160,13 +130,13 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 			return
 		}
 
-		state.WorkflowID = types.StringValue(workflow.ID)
-		state.WorkflowConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
+		config.WorkflowID = types.StringValue(workflow.ID)
+		config.WorkflowConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
 	} else {
-		state.WorkflowID = types.StringNull()
-		state.WorkflowConfigurationYaml = customtypes.NewNormalizedYamlNull()
+		config.WorkflowID = types.StringNull()
+		config.WorkflowConfigurationYaml = customtypes.NewNormalizedYamlNull()
 	}
 
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }

@@ -35,7 +35,7 @@ resource "elasticstack_kibana_agentbuilder_tool" "test" {
   })
 }
 
-data "elasticstack_kibana_agentbuilder_export_tool" "test" {
+data "elasticstack_kibana_agentbuilder_tool" "test" {
   id               = elasticstack_kibana_agentbuilder_tool.test.id
   include_workflow = true
 }

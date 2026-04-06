@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -62,7 +63,7 @@ func getSchema() schema.Schema {
 			"space_id": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				Default:             stringdefault.StaticString("default"),
+				Default:             stringdefault.StaticString(defaultSpaceID),
 				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -83,7 +84,7 @@ func getSchema() schema.Schema {
 				Optional:            true,
 				MarkdownDescription: "The tool description.",
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "List of tags for the tool.",
@@ -91,6 +92,7 @@ func getSchema() schema.Schema {
 			"configuration": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The tool configuration as a JSON-encoded string. Use `jsonencode()` to pass a configuration object.",
+				CustomType:          jsontypes.NormalizedType{},
 			},
 		},
 	}

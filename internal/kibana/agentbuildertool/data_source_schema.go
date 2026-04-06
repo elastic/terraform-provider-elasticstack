@@ -15,64 +15,63 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package tool
+package agentbuildertool
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the schema for the data source.
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Description: "Export an Agent Builder tool by ID. See https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "The tool ID to export.",
+func (d *ToolDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = dsschema.Schema{
+		Description: "Reads an Agent Builder tool by ID. See https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html",
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{
+				Description: "The tool ID to look up.",
 				Required:    true,
 			},
-			"space_id": schema.StringAttribute{
+			"space_id": dsschema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 			},
-			"tool_id": schema.StringAttribute{
-				Description: "The ID of the exported tool.",
+			"tool_id": dsschema.StringAttribute{
+				Description: "The ID of the tool.",
 				Computed:    true,
 			},
-			"type": schema.StringAttribute{
+			"type": dsschema.StringAttribute{
 				Description: "The type of the tool (esql, index_search, workflow, mcp).",
 				Computed:    true,
 			},
-			"description": schema.StringAttribute{
+			"description": dsschema.StringAttribute{
 				Description: "Description of what the tool does.",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": dsschema.SetAttribute{
 				Description: "Tags for categorizing and organizing tools.",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
-			"readonly": schema.BoolAttribute{
+			"readonly": dsschema.BoolAttribute{
 				Description: "Whether the tool is read-only.",
 				Computed:    true,
 			},
-			"configuration": schema.StringAttribute{
+			"configuration": dsschema.StringAttribute{
 				Description: "The tool configuration in JSON format.",
 				Computed:    true,
 			},
-			"include_workflow": schema.BoolAttribute{
-				Description: "When true, the workflow referenced by this tool will also be exported. Only valid when the tool type is `workflow`. Requires Kibana 9.4.0 or above. Defaults to false.",
+			"include_workflow": dsschema.BoolAttribute{
+				Description: "When true, the workflow referenced by this tool will also be included. Only valid when the tool type is `workflow`. Requires Kibana 9.4.0 or above. Defaults to false.",
 				Optional:    true,
 			},
-			"workflow_id": schema.StringAttribute{
+			"workflow_id": dsschema.StringAttribute{
 				Description: "The ID of the referenced workflow. Only populated when `include_workflow` is true.",
 				Computed:    true,
 			},
-			"workflow_configuration_yaml": schema.StringAttribute{
+			"workflow_configuration_yaml": dsschema.StringAttribute{
 				Description: "The YAML configuration of the referenced workflow. Only populated when `include_workflow` is true.",
 				Computed:    true,
 				CustomType:  customtypes.NormalizedYamlType{},

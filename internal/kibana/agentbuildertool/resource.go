@@ -28,10 +28,13 @@ import (
 )
 
 var (
-	_                               resource.Resource                = &ToolResource{}
-	_                               resource.ResourceWithConfigure   = &ToolResource{}
-	_                               resource.ResourceWithImportState = &ToolResource{}
-	minKibanaAgentBuilderAPIVersion                                  = version.Must(version.NewVersion("9.3.0"))
+	_                                       resource.Resource                = &ToolResource{}
+	_                                       resource.ResourceWithConfigure   = &ToolResource{}
+	_                                       resource.ResourceWithImportState = &ToolResource{}
+	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
+	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+
+	defaultSpaceID = "default"
 )
 
 // NewResource is a helper function to simplify the provider implementation.
