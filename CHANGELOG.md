@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_elasticsearch_inference_endpoint` resource. ([#1955](https://github.com/elastic/terraform-provider-elasticstack/pull/1955))
 - `elasticstack_kibana_data_view`: Support in-place updates of the `namespaces` field via the Kibana Spaces API (`POST /api/spaces/_update_objects_spaces`), preventing data view recreation when sharing across spaces. Previously, any change to `namespaces` would force replacement of the resource, breaking dependent alerting rules that reference the data view by ID. ([#2129](https://github.com/elastic/terraform-provider-elasticstack/pull/2129))
 - Add `elasticstack_kibana_agentbuilder_workflow` resource and `elasticstack_kibana_export_agentbuilder_workflow` data source ([#1923](https://github.com/elastic/terraform-provider-elasticstack/pull/1923))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
