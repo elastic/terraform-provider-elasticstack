@@ -34,23 +34,23 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiQuery: kbapi.FilterSimple{
-				Query:    "test query",
-				Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kuery"); return &l }(),
+				Expression: "test query",
+				Language:   func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }(),
 			},
 			expected: &filterSimpleModel{
-				Query:    types.StringValue("test query"),
-				Language: types.StringValue("kuery"),
+				Expression: types.StringValue("test query"),
+				Language:   types.StringValue("kql"),
 			},
 		},
 		{
 			name: "only required field",
 			apiQuery: kbapi.FilterSimple{
-				Query:    "simple query",
-				Language: nil,
+				Expression: "simple query",
+				Language:   nil,
 			},
 			expected: &filterSimpleModel{
-				Query:    types.StringValue("simple query"),
-				Language: types.StringValue("kuery"),
+				Expression: types.StringValue("simple query"),
+				Language:   types.StringValue("kql"),
 			},
 		},
 	}
@@ -61,12 +61,13 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 			model := &filterSimpleModel{}
 			model.fromAPI(tt.apiQuery)
 
-			assert.Equal(t, tt.expected.Query, model.Query)
+			assert.Equal(t, tt.expected.Expression, model.Expression)
 			assert.Equal(t, tt.expected.Language, model.Language)
 
 			// Test toAPI
 			apiQuery := model.toAPI()
-			assert.Equal(t, tt.apiQuery.Query, apiQuery.Query)
+			assert.Equal(t, tt.apiQuery.Expression, apiQuery.Expression)
+			assert.Equal(t, tt.expected.Language.ValueString(), string(*apiQuery.Language))
 		})
 	}
 }

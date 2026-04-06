@@ -85,7 +85,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
+	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

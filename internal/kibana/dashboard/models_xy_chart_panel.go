@@ -704,16 +704,22 @@ type xyLegendModel struct {
 
 func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) diag.Diagnostics {
 	var diags diag.Diagnostics
+	m.Position = types.StringNull()
+	m.Size = types.StringNull()
+	m.Columns = types.Int64Null()
+	m.TruncateAfterLines = types.Int64Null()
+	m.Alignment = types.StringNull()
+	m.Statistics = types.ListNull(types.StringType)
 
 	// Try inside legend first
 	legendInside, err := apiLegend.AsXyLegendInside()
 	if err == nil && legendInside.Placement == kbapi.XyLegendInsidePlacementInside {
 		m.Inside = types.BoolValue(true)
-		m.Visibility = types.StringValue(string(legendInside.Visibility))
+		m.Visibility = typeutils.StringishPointerValue(legendInside.Visibility)
 		m.Alignment = typeutils.StringishPointerValue(legendInside.Position)
 
-		if legendInside.TruncateAfterLines != nil {
-			m.TruncateAfterLines = types.Int64Value(int64(*legendInside.TruncateAfterLines))
+		if legendInside.Layout != nil && legendInside.Layout.Truncate != nil && legendInside.Layout.Truncate.MaxLines != nil {
+			m.TruncateAfterLines = types.Int64Value(int64(*legendInside.Layout.Truncate.MaxLines))
 		} else {
 			m.TruncateAfterLines = types.Int64Null()
 		}
@@ -738,31 +744,60 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 		return diags
 	}
 
-	// Try outside legend
-	legendOutside, err := apiLegend.AsXyLegendOutside()
-	if err == nil {
+	// Try outside vertical legend first since it carries required size information.
+	legendOutsideVertical, err := apiLegend.AsXyLegendOutsideVertical()
+	if err == nil &&
+		legendOutsideVertical.Placement != nil &&
+		*legendOutsideVertical.Placement == kbapi.XyLegendOutsideVerticalPlacementOutside &&
+		(legendOutsideVertical.Position == nil ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionLeft ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionRight) &&
+		legendOutsideVertical.Size != "" {
 		m.Inside = types.BoolValue(false)
-		m.Visibility = types.StringValue(string(legendOutside.Visibility))
-		m.Position = typeutils.StringishPointerValue(legendOutside.Position)
-		m.Size = typeutils.StringishPointerValue(legendOutside.Size)
+		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
+		m.Position = typeutils.StringishPointerValue(legendOutsideVertical.Position)
+		m.Size = types.StringValue(string(legendOutsideVertical.Size))
 
-		if legendOutside.TruncateAfterLines != nil {
-			m.TruncateAfterLines = types.Int64Value(int64(*legendOutside.TruncateAfterLines))
-		} else {
-			m.TruncateAfterLines = types.Int64Null()
+		if legendOutsideVertical.Layout != nil && legendOutsideVertical.Layout.Truncate != nil && legendOutsideVertical.Layout.Truncate.MaxLines != nil {
+			m.TruncateAfterLines = types.Int64Value(int64(*legendOutsideVertical.Layout.Truncate.MaxLines))
 		}
 
-		if legendOutside.Statistics != nil {
-			stats := make([]types.String, 0, len(*legendOutside.Statistics))
-			for _, s := range *legendOutside.Statistics {
+		if legendOutsideVertical.Statistics != nil {
+			stats := make([]types.String, 0, len(*legendOutsideVertical.Statistics))
+			for _, s := range *legendOutsideVertical.Statistics {
 				stats = append(stats, types.StringValue(string(s)))
 			}
 			var statsDiags diag.Diagnostics
 			m.Statistics, statsDiags = types.ListValueFrom(ctx, types.StringType, stats)
 			diags.Append(statsDiags...)
-		} else {
-			m.Statistics = types.ListNull(types.StringType)
 		}
+		return diags
+	}
+
+	// Try outside horizontal legend
+	legendOutsideHorizontal, err := apiLegend.AsXyLegendOutsideHorizontal()
+	if err == nil {
+		m.Inside = types.BoolValue(false)
+		m.Visibility = typeutils.StringishPointerValue(legendOutsideHorizontal.Visibility)
+		m.Position = typeutils.StringishPointerValue(legendOutsideHorizontal.Position)
+
+		if legendOutsideHorizontal.Layout != nil {
+			if layout, layoutErr := legendOutsideHorizontal.Layout.AsXyLegendOutsideHorizontalLayout0(); layoutErr == nil &&
+				layout.Truncate != nil && layout.Truncate.MaxLines != nil {
+				m.TruncateAfterLines = types.Int64Value(int64(*layout.Truncate.MaxLines))
+			}
+		}
+
+		if legendOutsideHorizontal.Statistics != nil {
+			stats := make([]types.String, 0, len(*legendOutsideHorizontal.Statistics))
+			for _, s := range *legendOutsideHorizontal.Statistics {
+				stats = append(stats, types.StringValue(string(s)))
+			}
+			var statsDiags diag.Diagnostics
+			m.Statistics, statsDiags = types.ListValueFrom(ctx, types.StringType, stats)
+			diags.Append(statsDiags...)
+		}
+		return diags
 	}
 
 	return diags
@@ -776,10 +811,12 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	isInside := typeutils.IsKnown(m.Inside) && m.Inside.ValueBool()
 	insideVisibility := kbapi.XyLegendInsideVisibilityAuto
-	outsideVisibility := kbapi.XyLegendOutsideVisibilityAuto
+	outsideHorizontalVisibility := kbapi.XyLegendOutsideHorizontalVisibilityAuto
+	outsideVerticalVisibility := kbapi.XyLegendOutsideVerticalVisibilityAuto
 	if typeutils.IsKnown(m.Visibility) {
 		insideVisibility = kbapi.XyLegendInsideVisibility(m.Visibility.ValueString())
-		outsideVisibility = kbapi.XyLegendOutsideVisibility(m.Visibility.ValueString())
+		outsideHorizontalVisibility = kbapi.XyLegendOutsideHorizontalVisibility(m.Visibility.ValueString())
+		outsideVerticalVisibility = kbapi.XyLegendOutsideVerticalVisibility(m.Visibility.ValueString())
 	}
 	statsElemsToStrings := func() ([]string, bool) {
 		if !typeutils.IsKnown(m.Statistics) {
@@ -811,10 +848,22 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	if isInside {
 		var legend kbapi.XyLegendInside
 		legend.Placement = kbapi.XyLegendInsidePlacementInside
-		legend.Visibility = insideVisibility
+		legend.Visibility = &insideVisibility
 
 		if typeutils.IsKnown(m.TruncateAfterLines) {
-			legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
+			legend.Layout = &struct {
+				Truncate *struct {
+					MaxLines *float32 `json:"max_lines,omitempty"`
+				} `json:"truncate,omitempty"`
+				Type kbapi.XyLegendInsideLayoutType `json:"type"`
+			}{
+				Truncate: &struct {
+					MaxLines *float32 `json:"max_lines,omitempty"`
+				}{
+					MaxLines: new(float32(m.TruncateAfterLines.ValueInt64())),
+				},
+				Type: kbapi.XyLegendInsideLayoutTypeGrid,
+			}
 		}
 		if typeutils.IsKnown(m.Columns) {
 			legend.Columns = new(float32(m.Columns.ValueInt64()))
@@ -838,32 +887,87 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 		return result, diags
 	}
 
-	// Outside legend
-	var legend kbapi.XyLegendOutside
-	legend.Visibility = outsideVisibility
-
-	if typeutils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
-	}
+	outsidePosition := ""
 	if typeutils.IsKnown(m.Position) {
-		pos := kbapi.XyLegendOutsidePosition(m.Position.ValueString())
+		outsidePosition = m.Position.ValueString()
+	}
+	isHorizontal := outsidePosition == "top" || outsidePosition == "bottom"
+
+	var result kbapi.XyLegend
+	if isHorizontal {
+		var legend kbapi.XyLegendOutsideHorizontal
+		placement := kbapi.XyLegendOutsideHorizontalPlacementOutside
+		legend.Placement = &placement
+		legend.Visibility = &outsideHorizontalVisibility
+		if outsidePosition != "" {
+			pos := kbapi.XyLegendOutsideHorizontalPosition(outsidePosition)
+			legend.Position = &pos
+		}
+		if typeutils.IsKnown(m.TruncateAfterLines) {
+			layout := kbapi.XyLegendOutsideHorizontal_Layout{}
+			if err := layout.FromXyLegendOutsideHorizontalLayout0(kbapi.XyLegendOutsideHorizontalLayout0{
+				Truncate: &struct {
+					MaxLines *float32 `json:"max_lines,omitempty"`
+				}{
+					MaxLines: new(float32(m.TruncateAfterLines.ValueInt64())),
+				},
+				Type: kbapi.XyLegendOutsideHorizontalLayout0TypeGrid,
+			}); err != nil {
+				diags.AddError("Failed to create horizontal legend layout", err.Error())
+				return result, diags
+			}
+			legend.Layout = &layout
+		}
+		if stats, ok := statsElemsToStrings(); ok {
+			statsAPI := make([]kbapi.XyLegendOutsideHorizontalStatistics, 0, len(stats))
+			for _, s := range stats {
+				statsAPI = append(statsAPI, kbapi.XyLegendOutsideHorizontalStatistics(s))
+			}
+			legend.Statistics = &statsAPI
+		}
+		if err := result.FromXyLegendOutsideHorizontal(legend); err != nil {
+			diags.AddError("Failed to create outside horizontal legend", err.Error())
+		}
+		return result, diags
+	}
+
+	var legend kbapi.XyLegendOutsideVertical
+	placement := kbapi.XyLegendOutsideVerticalPlacementOutside
+	legend.Placement = &placement
+	legend.Visibility = &outsideVerticalVisibility
+	if outsidePosition != "" {
+		pos := kbapi.XyLegendOutsideVerticalPosition(outsidePosition)
 		legend.Position = &pos
 	}
 	if typeutils.IsKnown(m.Size) {
-		size := kbapi.XyLegendOutsideSize(m.Size.ValueString())
-		legend.Size = &size
+		legend.Size = kbapi.LegendSize(m.Size.ValueString())
+	} else {
+		legend.Size = kbapi.LegendSizeM
+	}
+	if typeutils.IsKnown(m.TruncateAfterLines) {
+		legend.Layout = &struct {
+			Truncate *struct {
+				MaxLines *float32 `json:"max_lines,omitempty"`
+			} `json:"truncate,omitempty"`
+			Type kbapi.XyLegendOutsideVerticalLayoutType `json:"type"`
+		}{
+			Truncate: &struct {
+				MaxLines *float32 `json:"max_lines,omitempty"`
+			}{
+				MaxLines: new(float32(m.TruncateAfterLines.ValueInt64())),
+			},
+			Type: kbapi.Grid,
+		}
 	}
 	if stats, ok := statsElemsToStrings(); ok {
-		statsAPI := make([]kbapi.XyLegendOutsideStatistics, 0, len(stats))
+		statsAPI := make([]kbapi.XyLegendOutsideVerticalStatistics, 0, len(stats))
 		for _, s := range stats {
-			statsAPI = append(statsAPI, kbapi.XyLegendOutsideStatistics(s))
+			statsAPI = append(statsAPI, kbapi.XyLegendOutsideVerticalStatistics(s))
 		}
 		legend.Statistics = &statsAPI
 	}
-
-	var result kbapi.XyLegend
-	if err := result.FromXyLegendOutside(legend); err != nil {
-		diags.AddError("Failed to create outside legend", err.Error())
+	if err := result.FromXyLegendOutsideVertical(legend); err != nil {
+		diags.AddError("Failed to create outside vertical legend", err.Error())
 	}
 	return result, diags
 }

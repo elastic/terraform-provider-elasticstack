@@ -400,11 +400,9 @@ func getSchema() schema.Schema {
 				},
 			},
 			"dashboard_id": schema.StringAttribute{
-				MarkdownDescription: "A unique identifier for the dashboard. If not provided, one will be generated.",
-				Optional:            true,
+				MarkdownDescription: "The Kibana-assigned identifier for the dashboard.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -416,46 +414,64 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_from": schema.StringAttribute{
-				MarkdownDescription: "The start time for the dashboard's time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+			"time_range": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
 				Required:            true,
-			},
-			"time_to": schema.StringAttribute{
-				MarkdownDescription: "The end time for the dashboard's time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-				Required:            true,
-			},
-			"time_range_mode": schema.StringAttribute{
-				MarkdownDescription: "The time range mode. Valid values are 'absolute' or 'relative'.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("absolute", "relative"),
+				Attributes: map[string]schema.Attribute{
+					"from": schema.StringAttribute{
+						MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+						Required:            true,
+					},
+					"to": schema.StringAttribute{
+						MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
+						Required:            true,
+					},
+					"mode": schema.StringAttribute{
+						MarkdownDescription: "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("absolute", "relative"),
+						},
+					},
 				},
 			},
-			"refresh_interval_pause": schema.BoolAttribute{
-				MarkdownDescription: "Set to false to auto-refresh data on an interval.",
+			"refresh_interval": schema.SingleNestedAttribute{
+				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
 				Required:            true,
-			},
-			"refresh_interval_value": schema.Int64Attribute{
-				MarkdownDescription: "A numeric value indicating refresh frequency in milliseconds.",
-				Required:            true,
-			},
-			"query_language": schema.StringAttribute{
-				MarkdownDescription: "The query language (e.g., 'kuery', 'lucene').",
-				Required:            true,
-			},
-			"query_text": schema.StringAttribute{
-				MarkdownDescription: "The query text for text-based queries such as Kibana Query Language (KQL) or Lucene query language. Mutually exclusive with `query_json`.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_json")),
+				Attributes: map[string]schema.Attribute{
+					"pause": schema.BoolAttribute{
+						MarkdownDescription: "When true, auto-refresh is paused.",
+						Required:            true,
+					},
+					"value": schema.Int64Attribute{
+						MarkdownDescription: "Refresh interval in milliseconds when not paused.",
+						Required:            true,
+					},
 				},
 			},
-			"query_json": schema.StringAttribute{
-				MarkdownDescription: "The query as a JSON object for structured queries. Mutually exclusive with `query_text`.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_text")),
+			"query": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch).",
+				Required:            true,
+				Attributes: map[string]schema.Attribute{
+					"language": schema.StringAttribute{
+						MarkdownDescription: "Query language (e.g., `kql`, `lucene`, `kuery`).",
+						Required:            true,
+					},
+					"text": schema.StringAttribute{
+						MarkdownDescription: "Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("json")),
+						},
+					},
+					"json": schema.StringAttribute{
+						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.",
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("text")),
+						},
+					},
 				},
 			},
 			"tags": schema.ListAttribute{
@@ -487,6 +503,14 @@ func getSchema() schema.Schema {
 						MarkdownDescription: "Synchronize cursor position between related panels in the dashboard.",
 						Optional:            true,
 					},
+					"auto_apply_filters": schema.BoolAttribute{
+						MarkdownDescription: "When true, control filters are applied automatically.",
+						Optional:            true,
+					},
+					"hide_panel_borders": schema.BoolAttribute{
+						MarkdownDescription: "When true, panel borders are hidden in the dashboard layout.",
+						Optional:            true,
+					},
 				},
 			},
 			"panels": schema.ListNestedAttribute{
@@ -503,10 +527,13 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The title of the section.",
 							Required:            true,
 						},
-						"id": schema.StringAttribute{
-							MarkdownDescription: "The unique identifier of the section.",
+						"uid": schema.StringAttribute{
+							MarkdownDescription: "The unique identifier of the section (API `uid`).",
 							Optional:            true,
 							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+							},
 						},
 						"collapsed": schema.BoolAttribute{
 							MarkdownDescription: "The collapsed state of the section.",
@@ -582,8 +609,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 					},
 				},
 			},
-			"id": schema.StringAttribute{
-				MarkdownDescription: "The unique identifier of the panel.",
+			"uid": schema.StringAttribute{
+				MarkdownDescription: "The unique identifier of the panel (API `uid`).",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -736,7 +763,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"waffle_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
-					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.query` and `query.language` unset) for ES|QL mode.",
+					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.expression` and `query.language` unset) for ES|QL mode.",
 					"waffle_config",
 					panelConfigNames,
 				),
@@ -1465,10 +1492,11 @@ func getXYLegendSchema() map[string]schema.Attribute {
 			},
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size when positioned outside the chart. Valid when 'inside' is false or omitted.",
+			MarkdownDescription: "Legend size when positioned outside the chart. Valid for left/right outside legends. Values use the Kibana API enum: auto, s, m, l, xl.",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"columns": schema.Int64Attribute{
@@ -1489,14 +1517,14 @@ func getXYLegendSchema() map[string]schema.Attribute {
 func getFilterSimple() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"language": schema.StringAttribute{
-			MarkdownDescription: "Query language (default: 'kuery').",
+			MarkdownDescription: "Query language (default: 'kql').",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("kuery", "lucene"),
+				stringvalidator.OneOf("kql", "lucene"),
 			},
 		},
-		"query": schema.StringAttribute{
-			MarkdownDescription: "Filter query string.",
+		"expression": schema.StringAttribute{
+			MarkdownDescription: "Filter expression string.",
 			Required:            true,
 		},
 	}
@@ -1875,10 +1903,10 @@ func getWaffleSchema() map[string]schema.Attribute {
 func getWaffleLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Int64Attribute{
@@ -1909,13 +1937,6 @@ func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
 			"column": schema.StringAttribute{
 				MarkdownDescription: "ES|QL column name for the metric.",
 				Required:            true,
-			},
-			"operation": schema.StringAttribute{
-				MarkdownDescription: "Metric operation. Currently `value`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("value"),
-				},
 			},
 			"label": schema.StringAttribute{
 				MarkdownDescription: "Optional label for the metric.",
@@ -1953,13 +1974,6 @@ func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
 			"column": schema.StringAttribute{
 				MarkdownDescription: "ES|QL column for the breakdown.",
 				Required:            true,
-			},
-			"operation": schema.StringAttribute{
-				MarkdownDescription: "Group-by operation. Currently `value`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("value"),
-				},
 			},
 			"collapse_by": schema.StringAttribute{
 				MarkdownDescription: "Collapse function when multiple rows map to the same bucket.",
@@ -2067,10 +2081,10 @@ func getPartitionLegendSchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf("auto", "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Float64Attribute{
@@ -2195,22 +2209,18 @@ func getHeatmapCellsSchema() map[string]schema.Attribute {
 // getHeatmapLegendSchema returns schema for heatmap legend configuration
 func getHeatmapLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"visible": schema.BoolAttribute{
-			MarkdownDescription: "Whether to show the legend.",
-			Optional:            true,
-		},
-		"position": schema.StringAttribute{
-			MarkdownDescription: "Legend position.",
+		"visibility": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility. Valid values are `visible` or `hidden`.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("top", "bottom", "left", "right"),
+				stringvalidator.OneOf("visible", "hidden"),
 			},
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Int64Attribute{
@@ -2593,7 +2603,7 @@ func getPieChart() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -2611,10 +2621,10 @@ func getPieChart() map[string]schema.Attribute {
 			Default:             float64default.StaticFloat64(1.0),
 		},
 		"donut_hole": schema.StringAttribute{
-			MarkdownDescription: "Donut hole size: none (pie), small, medium, or large.",
+			MarkdownDescription: "Donut hole size: none (pie), s, m, or l.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("none", "small", "medium", "large"),
+				stringvalidator.OneOf("none", "s", "m", "l"),
 			},
 		},
 		"label_position": schema.StringAttribute{
@@ -2624,7 +2634,7 @@ func getPieChart() map[string]schema.Attribute {
 				stringvalidator.OneOf("hidden", "inside", "outside"),
 			},
 		},
-		"legend": schema.StringAttribute{
+		"legend_json": schema.StringAttribute{
 			MarkdownDescription: "Legend configuration as JSON.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,

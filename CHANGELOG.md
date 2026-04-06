@@ -15,6 +15,7 @@
 - Remove deprecation warning on the `elasticsearch_connection` attribute provider wide ([#2100](https://github.com/elastic/terraform-provider-elasticstack/pull/2100))
 - Migrate `elasticstack_elasticsearch_index_lifecycle` to the Terraform Plugin Framework ([#2002](https://github.com/elastic/terraform-provider-elasticstack/pull/2002))
 - Add `space_id` to `elasticstack_kibana_synthetics_private_location` ([#2142](https://github.com/elastic/terraform-provider-elasticstack/pull/2142))
+- Use space-scoped endpoints for Fleet resources to allow space-restricted roles to properly manage Fleet resources. ([#2084](https://github.com/elastic/terraform-provider-elasticstack/pull/2084))
 
 
 ## [0.14.3] - 2026-03-02

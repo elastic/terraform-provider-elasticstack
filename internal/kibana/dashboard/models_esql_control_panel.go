@@ -44,6 +44,31 @@ type esqlControlConfigModel struct {
 	DisplaySettings  *esqlControlDisplaySettingsModel `tfsdk:"display_settings"`
 }
 
+// esqlControlSingleSelectFromAPI returns the panel single-select flag when present
+// in the typed API config or in AdditionalProperties (e.g. camelCase keys from Kibana).
+func esqlControlSingleSelectFromAPI(cfg kbapi.KbnDashboardPanelEsqlControl_Config) *bool {
+	if cfg.SingleSelect != nil {
+		return cfg.SingleSelect
+	}
+	if cfg.AdditionalProperties == nil {
+		return nil
+	}
+	for _, key := range []string{"single_select", "singleSelect"} {
+		v, ok := cfg.AdditionalProperties[key]
+		if !ok {
+			continue
+		}
+		switch t := v.(type) {
+		case bool:
+			b := t
+			return &b
+		case *bool:
+			return t
+		}
+	}
+	return nil
+}
+
 // stringsToList converts a []string to a types.List of string elements.
 func stringsToList(strs []string) types.List {
 	vals := make([]attr.Value, len(strs))
@@ -76,6 +101,10 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
+		singleSelect := types.BoolNull()
+		if p := esqlControlSingleSelectFromAPI(apiConfig); p != nil {
+			singleSelect = types.BoolValue(*p)
+		}
 		existing = &esqlControlConfigModel{
 			SelectedOptions:  stringsToList(apiConfig.SelectedOptions),
 			VariableName:     types.StringValue(apiConfig.VariableName),
@@ -83,7 +112,7 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			EsqlQuery:        types.StringValue(apiConfig.EsqlQuery),
 			ControlType:      types.StringValue(string(apiConfig.ControlType)),
 			Title:            types.StringPointerValue(apiConfig.Title),
-			SingleSelect:     types.BoolPointerValue(apiConfig.SingleSelect),
+			SingleSelect:     singleSelect,
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
@@ -119,8 +148,10 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
 		existing.Title = types.StringValue(*apiConfig.Title)
 	}
-	if typeutils.IsKnown(existing.SingleSelect) && apiConfig.SingleSelect != nil {
-		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
+	if typeutils.IsKnown(existing.SingleSelect) {
+		if p := esqlControlSingleSelectFromAPI(apiConfig); p != nil {
+			existing.SingleSelect = types.BoolValue(*p)
+		}
 	}
 
 	// available_options: if TF state had it set (known, non-null list), update from API.

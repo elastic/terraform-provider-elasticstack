@@ -59,8 +59,8 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.sampling", "1"),
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.query", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.expression", ""),
 					// Check JSON fields are set
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.dataset_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.metric_json"),
@@ -87,8 +87,8 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.ignore_global_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.sampling", "0.5"),
 					// Check query with filter
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.query", "service.name:*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.expression", "service.name:*"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.filters.#", "1"),
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.filters.0.filter_json", regexp.MustCompile(`"field":"log.level"`)),

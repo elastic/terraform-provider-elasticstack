@@ -50,9 +50,10 @@ func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, 
 
 	// Populate the model.
 	//
-	// Disambiguate NoESQL vs ESQL using query presence in decoded no-esql variant.
+	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
+	// decode an empty no-ESQL query for ESQL payloads.
 	pm.PieChartConfig = &pieChartConfigModel{}
-	if noESQL, err := pieChart.AsPieNoESQL(); err == nil && (noESQL.Query.Query != "" || noESQL.Query.Language != nil) {
+	if noESQL, err := pieChart.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
 		return pm.PieChartConfig.fromAPINoESQL(noESQL)
 	}
 	esql, err := pieChart.AsPieESQL()
@@ -85,12 +86,12 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Lens
 type pieChartConfigModel struct {
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
-	Dataset             jsontypes.Normalized   `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64          `tfsdk:"sampling"`
 	DonutHole           types.String           `tfsdk:"donut_hole"`
 	LabelPosition       types.String           `tfsdk:"label_position"`
-	Legend              jsontypes.Normalized   `tfsdk:"legend"`
+	LegendJSON          jsontypes.Normalized   `tfsdk:"legend_json"`
 	Query               *filterSimpleModel     `tfsdk:"query"`
 	Filters             []chartFilterJSONModel `tfsdk:"filters"`
 	Metrics             []pieMetricModel       `tfsdk:"metrics"`
@@ -105,13 +106,28 @@ type pieGroupByModel struct {
 	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
 }
 
+func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
+	body, err := json.Marshal(apiChart.Dataset)
+	if err != nil {
+		return false
+	}
+
+	var dataset struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &dataset); err != nil {
+		return false
+	}
+
+	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
+}
+
 func (m *pieChartConfigModel) fromAPI(_ context.Context, apiChart kbapi.PieChart) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Try with non-ESQL first (most common)
+	// Try with non-ESQL first and disambiguate using dataset type.
 	noESQL, err := apiChart.AsPieNoESQL()
-	if err == nil {
-		// Check that Query is present if it's supposed to be there, or use that to disambiguate if needed
+	if err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
 		return m.fromAPINoESQL(noESQL)
 	}
 
@@ -158,16 +174,16 @@ func (m *pieChartConfigModel) populateCommonFields(
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
-	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset_json", diags)
 	if !ok {
 		return false
 	}
-	m.Dataset = dv
-	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend", diags)
+	m.DatasetJSON = dv
+	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend_json", diags)
 	if !ok {
 		return false
 	}
-	m.Legend = lv
+	m.LegendJSON = lv
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }
@@ -335,8 +351,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.Legend.IsNull() {
-			if err := json.Unmarshal([]byte(m.Legend.ValueString()), &chart.Legend); err != nil {
+		if !m.LegendJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
 				diags.AddError("Failed to unmarshal legend", err.Error())
 			}
 		}
@@ -345,8 +361,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.Dataset.IsNull() {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &chart.Dataset); err != nil {
+		if !m.DatasetJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}
@@ -415,8 +431,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.Legend.IsNull() {
-			if err := json.Unmarshal([]byte(m.Legend.ValueString()), &chart.Legend); err != nil {
+		if !m.LegendJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
 				diags.AddError("Failed to unmarshal legend", err.Error())
 			}
 		}
@@ -425,8 +441,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.Dataset.IsNull() {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &chart.Dataset); err != nil {
+		if !m.DatasetJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}
@@ -437,11 +453,10 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		// Metrics
 		if len(m.Metrics) > 0 {
 			metrics := make([]struct {
-				Color     kbapi.StaticColor             `json:"color"`
-				Column    string                        `json:"column"`
-				Format    kbapi.FormatType              `json:"format"`
-				Label     *string                       `json:"label,omitempty"`
-				Operation kbapi.PieESQLMetricsOperation `json:"operation"`
+				Color  kbapi.StaticColor `json:"color"`
+				Column string            `json:"column"`
+				Format kbapi.FormatType  `json:"format"`
+				Label  *string           `json:"label,omitempty"`
 			}, len(m.Metrics))
 			for i, metric := range m.Metrics {
 				if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
@@ -454,12 +469,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		// GroupBy
 		if len(m.GroupBy) > 0 {
 			groupBy := make([]struct {
-				CollapseBy kbapi.CollapseBy              `json:"collapse_by"`
-				Color      kbapi.ColorMapping            `json:"color"`
-				Column     string                        `json:"column"`
-				Format     kbapi.FormatType              `json:"format"`
-				Label      *string                       `json:"label,omitempty"`
-				Operation  kbapi.PieESQLGroupByOperation `json:"operation"`
+				CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+				Color      kbapi.ColorMapping `json:"color"`
+				Column     string             `json:"column"`
+				Format     kbapi.FormatType   `json:"format"`
+				Label      *string            `json:"label,omitempty"`
 			}, len(m.GroupBy))
 			for i, grp := range m.GroupBy {
 				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
