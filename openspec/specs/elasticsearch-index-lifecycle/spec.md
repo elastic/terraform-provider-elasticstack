@@ -1,362 +1,301 @@
 # `elasticstack_elasticsearch_index_lifecycle` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/index/ilm.go`
+Resource implementation: `internal/elasticsearch/index/ilm/`
 
 ## Purpose
 
-Manage Elasticsearch Index Lifecycle Management (ILM) policies. Each policy defines a sequence of lifecycle phases (`hot`, `warm`, `cold`, `frozen`, `delete`) and the actions to execute in each phase. The resource creates or updates the policy on create/update and removes it on destroy.
+Manage Elasticsearch Index Lifecycle Management (ILM) policies through the Terraform Plugin Framework resource. The resource creates and updates policies, reads them back into Terraform state, deletes them by policy name, supports import by composite id, allows an optional resource-scoped Elasticsearch connection, and preserves compatibility with older Elasticsearch versions and older SDK-shaped state.
 
 ## Schema
 
+### Top-level attributes
+
 ```hcl
 resource "elasticstack_elasticsearch_index_lifecycle" "example" {
-  id            = <computed, string>  # internal identifier: <cluster_uuid>/<policy_name>
-  name          = <required, string>  # force new; ILM policy name
-  metadata      = <optional, string>  # JSON string; diff-suppressed (semantic equality)
-  modified_date = <computed, string>  # datetime of last modification from API
+  id            = <computed, string>      # <cluster_uuid>/<policy_name>
+  name          = <required, string>      # force new
+  metadata      = <optional, json object> # normalized JSON string
+  modified_date = <computed, string>
 
-  # At least one of: hot, warm, cold, frozen, delete
+  hot    { /* SingleNestedBlock */ }
+  warm   { /* SingleNestedBlock */ }
+  cold   { /* SingleNestedBlock */ }
+  frozen { /* SingleNestedBlock */ }
+  delete { /* SingleNestedBlock */ }
 
-  hot {  # optional; max 1
-    min_age = <optional+computed, string>  # minimum age to enter phase
-
-    set_priority {  # optional; max 1
-      priority = <required, int>  # >= 0
-    }
-    unfollow {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    rollover {  # optional; max 1
-      max_age                = <optional, string>
-      max_docs               = <optional, int>
-      max_size               = <optional, string>
-      max_primary_shard_docs = <optional, int>   # ES >= 8.2
-      max_primary_shard_size = <optional, string>
-      min_age                = <optional, string>                  # ES >= 8.4
-      min_docs               = <optional, int>                     # ES >= 8.4
-      min_size               = <optional, string>                  # ES >= 8.4
-      min_primary_shard_docs = <optional, int>                     # ES >= 8.4
-      min_primary_shard_size = <optional, string>                  # ES >= 8.4
-    }
-    readonly {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    shrink {  # optional; max 1
-      number_of_shards         = <optional, int>
-      max_primary_shard_size   = <optional, string>
-      allow_write_after_shrink = <optional, bool>   # ES >= 8.14
-    }
-    forcemerge {  # optional; max 1
-      max_num_segments = <required, int>  # >= 1
-      index_codec      = <optional, string>
-    }
-    searchable_snapshot {  # optional; max 1
-      snapshot_repository = <required, string>
-      force_merge_index   = <optional, bool>  # default true
-    }
-    downsample {  # optional; max 1
-      fixed_interval = <required, string>
-      wait_timeout   = <optional+computed, string>
-    }
-  }
-
-  warm {  # optional; max 1
-    min_age = <optional+computed, string>
-
-    set_priority {  # optional; max 1
-      priority = <required, int>  # >= 0
-    }
-    unfollow {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    readonly {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    allocate {  # optional; max 1
-      number_of_replicas   = <optional, int>    # default 0
-      total_shards_per_node = <optional, int>   # default -1; ES >= 7.16
-      include              = <optional, string>  # JSON object; default "{}"
-      exclude              = <optional, string>  # JSON object; default "{}"
-      require              = <optional, string>  # JSON object; default "{}"
-    }
-    migrate {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    shrink {  # optional; max 1
-      number_of_shards         = <optional, int>
-      max_primary_shard_size   = <optional, string>
-      allow_write_after_shrink = <optional, bool>   # ES >= 8.14
-    }
-    forcemerge {  # optional; max 1
-      max_num_segments = <required, int>  # >= 1
-      index_codec      = <optional, string>
-    }
-    downsample {  # optional; max 1
-      fixed_interval = <required, string>
-      wait_timeout   = <optional+computed, string>
-    }
-  }
-
-  cold {  # optional; max 1
-    min_age = <optional+computed, string>
-
-    set_priority {  # optional; max 1
-      priority = <required, int>  # >= 0
-    }
-    unfollow {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    readonly {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    searchable_snapshot {  # optional; max 1
-      snapshot_repository = <required, string>
-      force_merge_index   = <optional, bool>  # default true
-    }
-    allocate {  # optional; max 1
-      number_of_replicas    = <optional, int>    # default 0
-      total_shards_per_node = <optional, int>    # default -1; ES >= 7.16
-      include               = <optional, string>  # JSON object; default "{}"
-      exclude               = <optional, string>  # JSON object; default "{}"
-      require               = <optional, string>  # JSON object; default "{}"
-    }
-    migrate {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    freeze {  # optional; max 1
-      enabled = <optional, bool>  # default true
-    }
-    downsample {  # optional; max 1
-      fixed_interval = <required, string>
-      wait_timeout   = <optional+computed, string>
-    }
-  }
-
-  frozen {  # optional; max 1
-    min_age = <optional+computed, string>
-
-    searchable_snapshot {  # optional; max 1
-      snapshot_repository = <required, string>
-      force_merge_index   = <optional, bool>  # default true
-    }
-  }
-
-  delete {  # optional; max 1
-    min_age = <optional+computed, string>
-
-    wait_for_snapshot {  # optional; max 1
-      policy = <required, string>  # SLM policy name
-    }
-    delete {  # optional; max 1
-      delete_searchable_snapshot = <optional, bool>  # default true
-    }
-  }
-
-  elasticsearch_connection {  # optional; deprecated
-    endpoints                = <optional, list(string)>
-    username                 = <optional, string>
-    password                 = <optional, string>
-    api_key                  = <optional, string>
-    bearer_token             = <optional, string>
-    es_client_authentication = <optional, string>
-    insecure                 = <optional, bool>
-    headers                  = <optional, map(string)>
-    ca_file                  = <optional, string>
-    ca_data                  = <optional, string>
-    cert_file                = <optional, string>
-    key_file                 = <optional, string>
-    cert_data                = <optional, string>
-    key_data                 = <optional, string>
-  }
+  elasticsearch_connection { /* list nested block from shared provider schema */ }
 }
 ```
 
+### Phase blocks
+
+Each phase block is a Plugin Framework `SingleNestedBlock`. In Terraform state, each phase is stored as a single object value or `null`, not as a single-element list.
+
+Every phase supports:
+
+| Attribute | Type | Notes |
+|-----------|------|-------|
+| `min_age` | optional + computed string | Defaults to `"0ms"` when omitted. |
+
+Allowed nested action blocks:
+
+| Phase | Allowed actions |
+|-------|-----------------|
+| `hot` | `set_priority`, `unfollow`, `rollover`, `readonly`, `shrink`, `forcemerge`, `searchable_snapshot`, `downsample` |
+| `warm` | `set_priority`, `unfollow`, `readonly`, `allocate`, `migrate`, `shrink`, `forcemerge`, `downsample` |
+| `cold` | `set_priority`, `unfollow`, `readonly`, `searchable_snapshot`, `allocate`, `migrate`, `freeze`, `downsample` |
+| `frozen` | `searchable_snapshot` |
+| `delete` | `wait_for_snapshot`, `delete` |
+
+### Action block shapes
+
+All ILM action blocks are also `SingleNestedBlock`s.
+
+```hcl
+allocate {
+  number_of_replicas    = <optional + computed, int>    # default 0
+  total_shards_per_node = <optional + computed, int>    # default -1; non-default requires ES >= 7.16
+  include               = <optional, json object string>
+  exclude               = <optional, json object string>
+  require               = <optional, json object string>
+}
+
+delete {
+  delete_searchable_snapshot = <optional + computed, bool> # default true
+}
+
+forcemerge {
+  max_num_segments = <optional, int>    # required when block is present; >= 1
+  index_codec      = <optional, string>
+}
+
+freeze {
+  enabled = <optional + computed, bool> # default true
+}
+
+migrate {
+  enabled = <optional + computed, bool> # default true
+}
+
+readonly {
+  enabled = <optional + computed, bool> # default true
+}
+
+rollover {
+  max_age                = <optional, string>
+  max_docs               = <optional, int>
+  max_size               = <optional, string>
+  max_primary_shard_docs = <optional, int>    # non-default requires ES >= 8.2
+  max_primary_shard_size = <optional, string>
+  min_age                = <optional, string> # non-default requires ES >= 8.4
+  min_docs               = <optional, int>    # non-default requires ES >= 8.4
+  min_size               = <optional, string> # non-default requires ES >= 8.4
+  min_primary_shard_docs = <optional, int>    # non-default requires ES >= 8.4
+  min_primary_shard_size = <optional, string> # non-default requires ES >= 8.4
+}
+
+searchable_snapshot {
+  snapshot_repository = <optional, string>          # required when block is present
+  force_merge_index   = <optional + computed, bool> # default true
+}
+
+set_priority {
+  priority = <optional, int> # required when block is present; >= 0
+}
+
+shrink {
+  number_of_shards         = <optional, int>
+  max_primary_shard_size   = <optional, string>
+  allow_write_after_shrink = <optional + computed, bool> # default false; non-default requires ES >= 8.14
+}
+
+unfollow {
+  enabled = <optional + computed, bool> # default true
+}
+
+wait_for_snapshot {
+  policy = <optional, string> # required when block is present
+}
+
+downsample {
+  fixed_interval = <optional, string> # required when block is present
+  wait_timeout   = <optional + computed, string>
+}
+```
+
+Additional schema behavior:
+
+- `metadata`, `allocate.include`, `allocate.exclude`, and `allocate.require` use normalized JSON object string types and validate JSON-object syntax.
+- Empty allocation filter objects are omitted from state on read so unset optional filters remain absent.
+- `elasticsearch_connection` remains list-shaped in state because it comes from the shared provider connection schema.
+
 ## Requirements
 
-### Requirement: ILM policy CRUD APIs (REQ-001–REQ-004)
+### Requirement: CRUD APIs and diagnostics (REQ-001–REQ-004)
 
-The resource SHALL use the Elasticsearch Put Lifecycle API (`ILM.PutLifecycle`) to create and update ILM policies ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html)). The resource SHALL use the Elasticsearch Get Lifecycle API (`ILM.GetLifecycle`) to read ILM policies ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-get-lifecycle.html)). The resource SHALL use the Elasticsearch Delete Lifecycle API (`ILM.DeleteLifecycle`) to delete ILM policies ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete-lifecycle.html)). When Elasticsearch returns a non-success response for any create, update, read, or delete request (other than not found on read), the resource SHALL surface the API error to Terraform diagnostics.
+The resource SHALL use the Elasticsearch Put Lifecycle API to create and update ILM policies, the Get Lifecycle API to read them, and the Delete Lifecycle API to delete them. When Elasticsearch returns a non-success response for create, update, read, or delete, except for HTTP `404` on read, the resource SHALL surface that failure as Terraform diagnostics.
 
-#### Scenario: API failure on create/update
+#### Scenario: Non-success lifecycle API response
 
-- GIVEN the Put Lifecycle API returns a non-success response
-- WHEN create or update runs
-- THEN Terraform diagnostics SHALL include the API error
+- GIVEN Elasticsearch returns a non-success response for Put, Get, or Delete lifecycle
+- WHEN the provider handles that response
+- THEN Terraform SHALL receive an error diagnostic
 
-#### Scenario: API failure on delete
+### Requirement: Identity, import, and replacement (REQ-005–REQ-007)
 
-- GIVEN the Delete Lifecycle API returns a non-success response
-- WHEN delete runs
-- THEN Terraform diagnostics SHALL include the API error
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<policy_name>`. Create and update SHALL derive that id from the connected cluster UUID and the configured `name`. Import SHALL use passthrough of the provided `id`. Changing `name` SHALL require replacement instead of in-place rename.
 
-### Requirement: Identity (REQ-005–REQ-006)
+#### Scenario: Import by composite id
 
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<policy_name>`. During create and update, the resource SHALL compute `id` from the cluster UUID (via `client.ID`) and the configured `name`.
+- GIVEN an import id in the form `<cluster_uuid>/<policy_name>`
+- WHEN import completes
+- THEN the resource SHALL store that id unchanged and use it on subsequent read and delete
 
-#### Scenario: ID set after create
+#### Scenario: Rename requested
 
-- GIVEN a successful create
-- WHEN create completes
-- THEN state SHALL contain `id` in the form `<cluster_uuid>/<policy_name>`
+- GIVEN an existing resource instance
+- WHEN `name` changes in configuration
+- THEN Terraform SHALL plan replacement
 
-### Requirement: Import (REQ-007)
+### Requirement: Validation and connection selection (REQ-008–REQ-010)
 
-The resource SHALL support import via `schema.ImportStatePassthroughContext`, persisting the imported `id` value directly to state. Import SHALL accept an `id` in the format `<cluster_uuid>/<policy_name>`; subsequent read and delete operations SHALL parse this composite `id` and SHALL return an error diagnostic when the format is invalid.
+The resource SHALL reject configuration that omits all five phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete`. The resource SHALL accept `metadata` and allocation filters only when they are valid JSON objects. By default, the resource SHALL use the provider-level Elasticsearch client; when `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for create, read, update, and delete.
 
-#### Scenario: Import passthrough
+#### Scenario: No lifecycle phases configured
 
-- GIVEN a valid composite id `<cluster_uuid>/<policy_name>`
-- WHEN import runs
-- THEN the id SHALL be stored and subsequent read SHALL populate all policy attributes
+- GIVEN all phase blocks are absent
+- WHEN configuration is validated
+- THEN the provider SHALL return a validation error before any lifecycle API call
 
-### Requirement: Lifecycle (REQ-008)
+#### Scenario: Resource-scoped connection override
 
-Changing `name` SHALL require replacement (`ForceNew`); an in-place rename is not supported.
+- GIVEN `elasticsearch_connection` is configured for the resource
+- WHEN CRUD operations run
+- THEN the provider SHALL use that resource-scoped connection
 
-#### Scenario: Name change triggers replacement
+### Requirement: Create and update flow (REQ-011–REQ-012)
 
-- GIVEN an existing ILM policy
-- WHEN `name` is changed in configuration
-- THEN Terraform SHALL plan a replacement (destroy + create)
+Create and update SHALL expand the Terraform model into a full `models.Policy`, set `policy.Name` from `name`, submit the policy with the Put Lifecycle API, set `id`, and then read the policy back so computed fields and cluster-returned values are refreshed into state.
 
-### Requirement: Phase requirement (REQ-009)
+#### Scenario: Read after successful put
 
-At least one of `hot`, `warm`, `cold`, `frozen`, or `delete` phases SHALL be configured. If none is specified, the schema SHALL reject the configuration before any API call.
+- GIVEN a successful Put Lifecycle request
+- WHEN create or update completes
+- THEN the provider SHALL perform read-after-write and populate computed state such as `modified_date`
 
-#### Scenario: No phase configured
+### Requirement: Read and delete behavior (REQ-013–REQ-016)
 
-- GIVEN a configuration with none of the five phase blocks
-- WHEN plan or apply runs
-- THEN the provider SHALL return a validation error
+Read and delete SHALL parse `id` as a composite identifier and return an error diagnostic when the format is invalid. Read SHALL call the Get Lifecycle API for the policy name portion of the id. If the API returns `404`, the provider SHALL log a warning and remove the resource from state. If the API returns success but does not contain the requested policy name in the response body, the provider SHALL return an error diagnostic. Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
 
-### Requirement: Connection (REQ-010–REQ-011)
+#### Scenario: Policy removed outside Terraform
 
-By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls (create, update, read, delete).
-
-#### Scenario: Resource-level connection
-
-- GIVEN `elasticsearch_connection` is set with custom endpoints
-- WHEN API calls run
-- THEN they SHALL use the resource-scoped client, not the provider client
-
-### Requirement: Create and update (REQ-012–REQ-013)
-
-On create and update, the resource SHALL expand the Terraform configuration into a `models.Policy` struct, set `policy.Name` from `name`, and submit it using the Put Lifecycle API. After a successful put, the resource SHALL set `id` and perform a read-after-write to refresh all computed attributes in state.
-
-#### Scenario: Read-after-write on create
-
-- GIVEN a successful Put Lifecycle call
-- WHEN create completes
-- THEN state SHALL reflect all computed attributes (e.g. `modified_date`) populated by the subsequent read
-
-### Requirement: Read (REQ-014–REQ-016)
-
-On read, the resource SHALL parse `id` using `clients.CompositeIDFromStr` to extract the policy name, call the Get Lifecycle API, and remove the resource from state when the policy is not found (HTTP 404). If the Get Lifecycle API succeeds but does not include the named policy in its response, the resource SHALL return an error diagnostic. On read, the resource SHALL set `modified_date`, `name`, and (when present) `metadata` from the API response, and SHALL flatten all returned phase configurations into the corresponding phase blocks in state.
-
-#### Scenario: Policy not found on read
-
-- GIVEN the ILM policy has been deleted out-of-band
+- GIVEN the policy no longer exists on the cluster
 - WHEN read runs
-- THEN the resource SHALL be removed from state (id cleared) without an error
+- THEN the provider SHALL remove the resource from state and SHALL not fail solely because of the missing policy
 
-#### Scenario: Policy missing from response body
+#### Scenario: Successful response missing named policy
 
-- GIVEN Get Lifecycle returns a success response but the named policy is absent from the response map
+- GIVEN Get Lifecycle succeeds but the requested policy is absent from the response object
 - WHEN read runs
-- THEN the resource SHALL return an error diagnostic
-
-### Requirement: Delete (REQ-017)
-
-On delete, the resource SHALL parse `id` using `clients.CompositeIDFromStr` to extract the policy name and call the Delete Lifecycle API with that name.
-
-#### Scenario: Delete by policy name
-
-- GIVEN an existing ILM policy with a known composite id
-- WHEN delete runs
-- THEN the provider SHALL call Delete Lifecycle with the policy name extracted from `id`
-
-### Requirement: Metadata mapping (REQ-018–REQ-019)
-
-`metadata` SHALL be validated as JSON by the schema (`validation.StringIsJSON`) and SHALL have JSON semantic diff suppression applied (`DiffJSONSuppress`). On create/update, when `metadata` is set, it SHALL be decoded into a `map[string]any` and included in the policy request body; if JSON decoding fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. On read, when the API response includes policy metadata, it SHALL be serialized to a JSON string and stored in state.
-
-#### Scenario: Invalid metadata JSON
-
-- GIVEN `metadata` is set to a non-JSON string
-- WHEN create or update runs
-- THEN the provider SHALL return an error diagnostic before calling Put Lifecycle
-
-### Requirement: Phase and action mapping (REQ-020–REQ-024)
-
-On create/update, for each configured phase the resource SHALL expand the phase's `min_age` and each action block into the API model. Actions with an `enabled` field (`readonly`, `freeze`, `unfollow`) SHALL be omitted from the API request when `enabled` is false. The `allocate` action's `include`, `exclude`, and `require` fields SHALL be validated as JSON objects by the schema and SHALL be decoded from JSON strings into `map[string]any` before inclusion in the API request. On read, the resource SHALL flatten phase actions returned by the API back into their corresponding Terraform block structure, including re-serializing `allocate` allocation filter fields (`include`, `exclude`, `require`) to JSON strings.
-
-#### Scenario: readonly action disabled
-
-- GIVEN `hot.0.readonly.0.enabled` is false
-- WHEN create or update runs
-- THEN the `readonly` key SHALL be absent from the `hot` phase actions in the API request body
-
-#### Scenario: allocate filter round-trip
-
-- GIVEN `warm.0.allocate.0.exclude` is set to `{"box_type":"hot"}`
-- WHEN create and subsequent read run
-- THEN state SHALL contain `exclude` equal to `{"box_type":"hot"}`
-
-### Requirement: Compatibility — rollover min conditions (REQ-025)
-
-When any of `rollover.min_age`, `rollover.min_docs`, `rollover.min_size`, `rollover.min_primary_shard_docs`, or `rollover.min_primary_shard_size` is set to a non-default value, the resource SHALL verify the Elasticsearch server version is at least **8.4.0**. If the server version is lower and the value differs from the default, the resource SHALL fail with an error diagnostic and SHALL not call the Put Lifecycle API.
-
-#### Scenario: min rollover condition on unsupported version
-
-- GIVEN server version < 8.4.0 and `hot.0.rollover.0.min_age` is set to a non-empty value
-- WHEN create or update runs
-- THEN the provider SHALL return an error diagnostic referencing the unsupported setting
-
-### Requirement: Compatibility — max_primary_shard_docs (REQ-026)
-
-When `rollover.max_primary_shard_docs` is set to a non-zero value, the resource SHALL verify the Elasticsearch server version is at least **8.2.0**. If the server version is lower and the value differs from the default (`0`), the resource SHALL fail with an error diagnostic.
-
-#### Scenario: max_primary_shard_docs on unsupported version
-
-- GIVEN server version < 8.2.0 and `hot.0.rollover.0.max_primary_shard_docs` is set to a non-zero value
-- WHEN create or update runs
 - THEN the provider SHALL return an error diagnostic
 
-### Requirement: Compatibility — total_shards_per_node (REQ-027)
+### Requirement: Metadata and phase/action mapping (REQ-017–REQ-021)
 
-When `allocate.total_shards_per_node` is set to a value other than `-1`, the resource SHALL verify the Elasticsearch server version is at least **7.16.0**. If the server version is lower and the value differs from the default (`-1`), the resource SHALL fail with an error diagnostic.
+On create and update, the resource SHALL decode `metadata` JSON into the policy metadata map when `metadata` is set. For each configured phase, the resource SHALL expand `min_age` and the configured action blocks into the API model. `allocate.include`, `allocate.exclude`, and `allocate.require` SHALL be decoded from JSON object strings into maps. `readonly`, `freeze`, and `unfollow` SHALL be omitted from the API payload when `enabled = false`. `migrate` SHALL still be sent with its configured `enabled` value, including `false`. Unknown action names encountered during expansion SHALL return an error diagnostic.
 
-#### Scenario: total_shards_per_node on unsupported version
+On read, the provider SHALL flatten API phases back into Terraform phase objects, serialize allocation filters back to JSON strings, retain prior `metadata` when the API omits metadata, and set `modified_date` from the policy definition returned by Elasticsearch.
 
-- GIVEN server version < 7.16.0 and `warm.0.allocate.0.total_shards_per_node` is set to a value other than -1
-- WHEN create or update runs
-- THEN the provider SHALL return an error diagnostic
+#### Scenario: Disabled readonly omitted from API payload
 
-### Requirement: Compatibility — allow_write_after_shrink (REQ-028)
+- GIVEN `readonly { enabled = false }` is configured in a phase
+- WHEN the policy is expanded for create or update
+- THEN the `readonly` action SHALL be omitted from the Elasticsearch payload
 
-When `shrink.allow_write_after_shrink` is set to `true`, the resource SHALL verify the Elasticsearch server version is at least **8.14.0**. If the server version is lower and the value differs from the default (`false`), the resource SHALL fail with an error diagnostic.
+#### Scenario: Migrate false preserved in payload
 
-#### Scenario: allow_write_after_shrink on unsupported version
+- GIVEN `migrate { enabled = false }` is configured
+- WHEN the policy is expanded for create or update
+- THEN the payload SHALL still contain the `migrate` action with `enabled = false`
 
-- GIVEN server version < 8.14.0 and `hot.0.shrink.0.allow_write_after_shrink` is true
-- WHEN create or update runs
-- THEN the provider SHALL return an error diagnostic
+### Requirement: Version-gated ILM settings (REQ-022–REQ-025)
 
-### Requirement: State — boolean-action read preservation (REQ-029)
+For ILM action settings that are only supported on newer Elasticsearch versions, the provider SHALL compare the connected server version to the setting's minimum supported version during expansion. If the configured value is non-default on an unsupported server, the provider SHALL return an error diagnostic. If the configured value equals the default, the provider SHALL omit that unsupported setting from the payload instead of failing.
 
-For the `readonly`, `freeze`, and `unfollow` actions, when the API response does not include the action (because it was not active), the resource SHALL check the prior Terraform configuration. If the prior configuration contained the action block, the resource SHALL write `enabled = false` into state for that block. This ensures that an explicit `enabled = false` in config does not cause an endless diff loop.
+The following minimum versions SHALL apply:
 
-#### Scenario: readonly absent from API response but present in config
+- `rollover.max_primary_shard_docs`: Elasticsearch `8.2.0`
+- `rollover.min_age`, `rollover.min_docs`, `rollover.min_size`, `rollover.min_primary_shard_docs`, `rollover.min_primary_shard_size`: Elasticsearch `8.4.0`
+- `allocate.total_shards_per_node` when not `-1`: Elasticsearch `7.16.0`
+- `shrink.allow_write_after_shrink` when `true`: Elasticsearch `8.14.0`
 
-- GIVEN prior config contained `hot.0.readonly.0.enabled = false`
-- WHEN read runs and the API response omits `readonly` from the hot phase
-- THEN state SHALL contain `hot.0.readonly.0.enabled = false`
+#### Scenario: Unsupported rollover min condition
 
-### Requirement: State — allocate total_shards_per_node default (REQ-030)
+- GIVEN Elasticsearch is older than `8.4.0`
+- WHEN a non-default rollover `min_*` condition is configured
+- THEN the provider SHALL return an unsupported-setting diagnostic
 
-On read, when the API response for an `allocate` action does not include `total_shards_per_node`, the resource SHALL store `-1` (the default) in state to avoid perpetual plan drift on Elasticsearch versions that do not return this field.
+#### Scenario: Unsupported allow-write-after-shrink
 
-#### Scenario: total_shards_per_node absent from API
+- GIVEN Elasticsearch is older than `8.14.0`
+- WHEN `shrink.allow_write_after_shrink = true` is configured
+- THEN the provider SHALL return an unsupported-setting diagnostic
 
-- GIVEN an `allocate` action in the API response that omits `total_shards_per_node`
-- WHEN read runs
+### Requirement: Read-state normalization (REQ-026–REQ-028)
+
+On read, when the API omits `total_shards_per_node` inside an `allocate` action, the provider SHALL store `-1` in state. When a `shrink` action is present and the API omits `allow_write_after_shrink`, the provider SHALL store `false` in state. When allocation filters serialize to empty JSON objects, the provider SHALL omit those filter attributes from state so unset optional filters remain absent.
+
+#### Scenario: Allocate default restored on read
+
+- GIVEN an `allocate` action from Elasticsearch that omits `total_shards_per_node`
+- WHEN the provider flattens the phase
 - THEN state SHALL contain `total_shards_per_node = -1`
+
+#### Scenario: Empty allocation filter omitted
+
+- GIVEN an `allocate` action whose `include`, `exclude`, or `require` values serialize to `{}`
+- WHEN the provider flattens the phase
+- THEN the corresponding Terraform attribute SHALL be absent from state
+
+### Requirement: Disabled toggle preservation across refresh (REQ-029)
+
+For `readonly`, `freeze`, and `unfollow`, when the API omits the action because it is inactive but the prior Terraform configuration had declared the block, the provider SHALL preserve that declaration in state by writing the block with `enabled = false`.
+
+#### Scenario: Disabled unfollow remains disabled after refresh
+
+- GIVEN prior Terraform state declared `unfollow { enabled = false }`
+- WHEN refresh reads a phase whose API actions omit `unfollow`
+- THEN state SHALL still contain `unfollow.enabled = false`
+
+### Requirement: Plugin Framework nested-block shape and state upgrade (REQ-030–REQ-031)
+
+The resource SHALL model each phase block and each ILM action block as a Plugin Framework `SingleNestedBlock`, so state stores them as objects instead of singleton lists. The resource SHALL use schema version `1` and implement state upgrade from schema version `0`, unwrapping legacy singleton-list phase values and legacy singleton-list action values into object values. The upgrade SHALL leave `elasticsearch_connection` list-shaped.
+
+#### Scenario: Upgrade old SDK-shaped nested values
+
+- GIVEN persisted schema version `0` state with a phase stored as `[ { ... } ]`
+- WHEN Terraform runs the state upgrader
+- THEN the upgraded state SHALL store that phase as a single object value
+
+#### Scenario: Connection block not rewritten
+
+- GIVEN persisted state with `elasticsearch_connection` stored as a list
+- WHEN the ILM state upgrader runs
+- THEN `elasticsearch_connection` SHALL remain list-shaped
+
+### Requirement: Action block presence validation (REQ-032)
+
+The blocks `forcemerge`, `searchable_snapshot`, `set_priority`, `wait_for_snapshot`, and `downsample` SHALL keep their key attributes optional at the attribute level so omitted blocks are valid, but SHALL require those attributes when the block is present using object-level validation equivalent to `objectvalidator.AlsoRequires`.
+
+The required-when-present attributes SHALL be:
+
+- `forcemerge.max_num_segments`
+- `searchable_snapshot.snapshot_repository`
+- `set_priority.priority`
+- `wait_for_snapshot.policy`
+- `downsample.fixed_interval`
+
+#### Scenario: Empty searchable snapshot block
+
+- GIVEN the user declares `searchable_snapshot { force_merge_index = true }`
+- WHEN Terraform validates the block
+- THEN validation SHALL fail because `snapshot_repository` is required when the block is present

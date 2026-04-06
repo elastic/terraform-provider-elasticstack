@@ -52,5 +52,9 @@ should be set to ` + "`true`."
 			Description: "The integration package version.",
 			Computed:    true,
 		},
+		"space_id": schema.StringAttribute{
+			Description: "The Kibana space ID to scope the request to. When not specified, the default space is used.",
+			Optional:    true,
+		},
 	}
 }

@@ -240,7 +240,7 @@ After any create, update, or read operation, the resource SHALL populate the fol
 
 ### Requirement: Package info caching (REQ-023)
 
-The resource SHALL cache package info retrieved from the Fleet registry using a process-level in-memory cache keyed by `<name>-<version>`. When the exact version is not found in the registry, the resource SHALL fall back to querying without a version (returning the installed package), and SHALL emit a warning diagnostic. When neither lookup finds the package, the resource SHALL emit a warning and proceed without package info defaults.
+The resource SHALL cache package info retrieved from the Fleet registry using a process-level in-memory cache keyed by `<name>-<version>`. Package info requests SHALL be scoped to the operational Kibana space (using the same space context as the package policy create/read/update operation) so that space-restricted API keys can retrieve package details. When the exact version is not found in the registry, the resource SHALL fall back to querying without a version (returning the installed package), and SHALL emit a warning diagnostic. When neither lookup finds the package, the resource SHALL emit a warning and proceed without package info defaults.
 
 #### Scenario: Version not found falls back to installed package
 

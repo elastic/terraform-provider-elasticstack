@@ -12,12 +12,15 @@ function workflowSource() {
   return readFileSync(workflowPath, 'utf8');
 }
 
-test('verify-label workflow installs Go from go.mod and exports GOROOT', () => {
+test('verify-label workflow installs Go from go.mod and exports Go paths for AWF', () => {
   const source = workflowSource();
   assert.match(source, /uses: actions\/setup-go@v6/);
   assert.match(source, /go-version-file: go\.mod/);
-  assert.match(source, /Capture GOROOT for AWF chroot mode/);
+  assert.match(source, /Export Go paths for AWF chroot mode/);
   assert.match(source, /GOROOT=\$\(go env GOROOT\)/);
+  assert.match(source, /GOPATH=\$\(go env GOPATH\)/);
+  assert.match(source, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
+  assert.match(source, /allowed: \[defaults, node, go\]/);
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
@@ -32,6 +35,11 @@ test('verify-label workflow provisions Terraform with wrapper disabled', () => {
   const source = workflowSource();
   assert.match(source, /uses: hashicorp\/setup-terraform@v4/);
   assert.match(source, /terraform_wrapper: false/);
+});
+
+test('verify-label workflow bootstraps the repo with make setup', () => {
+  const source = workflowSource();
+  assert.match(source, /Setup repository dependencies\s*\n\s*run: make setup/m);
 });
 
 test('verify-label workflow declares remove-labels safe output for verify-openspec only', () => {
@@ -53,4 +61,32 @@ test('verify-label workflow prompt instructs terminal remove-labels cleanup', ()
   assert.match(source, /## Remove trigger label \(final safe outputs\)/);
   assert.match(source, /remove-labels.*terminal/s);
   assert.match(source, /post-agent script or job/);
+});
+
+test('verify-label workflow exposes review disposition and disposition reason to the agent', () => {
+  const source = workflowSource();
+  assert.match(source, /review_disposition: \$\{\{ steps\.select_change\.outputs\.review_disposition \}\}/);
+  assert.match(source, /disposition_reason: \$\{\{ steps\.select_change\.outputs\.disposition_reason \}\}/);
+  assert.match(source, /\*\*Review disposition\*\*.*approval-eligible.*comment-only/s);
+  assert.match(source, /\*\*Disposition reason\*\*/);
+});
+
+test('verify-label agent prompt interpolates needs.pre_activation review outputs where the agent reads them', () => {
+  const source = workflowSource();
+  const rd = '${{ needs.pre_activation.outputs.review_disposition }}';
+  const dr = '${{ needs.pre_activation.outputs.disposition_reason }}';
+  assert.ok(source.includes(rd), 'expected review_disposition interpolation in generated workflow');
+  assert.ok(source.includes(dr), 'expected disposition_reason interpolation in generated workflow');
+  const pre = source.split('## Pre-activation context')[1].split('## Verification (active change)')[0];
+  assert.ok(pre.includes(rd), 'expected review_disposition in Pre-activation context');
+  assert.ok(pre.includes(dr), 'expected disposition_reason in Pre-activation context');
+  const step5 = source.split('## Review body, inline comments, and decision')[1].split('## Archive and push')[0];
+  assert.ok(step5.includes(rd), 'expected review_disposition in review-submission instructions');
+});
+
+test('verify-label workflow ties APPROVE and archive to approval-eligible disposition', () => {
+  const source = workflowSource();
+  assert.match(source, /review_disposition.*approval-eligible/s);
+  assert.match(source, /Archive and push \(APPROVE only, approval-eligible only\)/);
+  assert.match(source, /comment-only.*net-new spec change/s);
 });

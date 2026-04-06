@@ -93,11 +93,11 @@ func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features
 
 var knownPackages sync.Map
 
-func getPackageCacheKey(name string, version string) string {
+func getPackageCacheKey(name, version string) string {
 	return fmt.Sprintf("%s-%s", name, version)
 }
 
-func getPackageInfo(ctx context.Context, client *fleet.Client, name string, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
+func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if pkg, ok := getCachedPackageInfo(name, version); ok {
@@ -106,7 +106,7 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 
 	// Try the exact version first; fall back to no version (returns the installed
 	// package) when the requested version has been removed from the registry.
-	pkg, diags := fleet.GetPackage(ctx, client, name, version)
+	pkg, diags := fleet.GetPackage(ctx, client, name, version, spaceID)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -118,7 +118,7 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 				"Consider updating integration_version to an available version.", name, version),
 		)
 		var fallbackDiags diag.Diagnostics
-		pkg, fallbackDiags = fleet.GetPackage(ctx, client, name, "")
+		pkg, fallbackDiags = fleet.GetPackage(ctx, client, name, "", spaceID)
 		diags.Append(fallbackDiags...)
 		if diags.HasError() {
 			return nil, diags
@@ -135,7 +135,7 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 	return pkg, diags
 }
 
-func getCachedPackageInfo(name string, version string) (kbapi.PackageInfo, bool) {
+func getCachedPackageInfo(name, version string) (kbapi.PackageInfo, bool) {
 	value, ok := knownPackages.Load(getPackageCacheKey(name, version))
 	if !ok {
 		return kbapi.PackageInfo{}, false

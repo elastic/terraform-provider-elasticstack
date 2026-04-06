@@ -4,7 +4,7 @@ Workflow implementation: `.github/workflows/openspec-verify-label.md` (name MAY 
 
 ## Purpose
 
-Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated without adding new files under active change paths, verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE`, archives that change and pushes the result to the PR branch. When the agent finishes handling an eligible run, it removes the trigger label through the `remove-labels` safe output (see REQ-015), not through a separate cleanup job.
+Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated using only `added` and/or `modified` file statuses (non-archive), verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE` for an approval-eligible run, archives that change and pushes the result to the PR branch. When the agent finishes handling an eligible run, it removes the trigger label through the `remove-labels` safe output (see REQ-015), not through a separate cleanup job.
 
 ## Schema
 
@@ -85,48 +85,59 @@ The workflow SHALL declare safe outputs for:
 - THEN the workflow configuration SHALL allow removal of `verify-openspec` and SHALL NOT require broader label-removal authority
 
 ### Requirement: Discover active change id from PR files (REQ-005)
-The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result and, when selection succeeds, the selected active change id.
+The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals, and a deterministic disposition reason that explains why that review disposition was assigned.
 
 #### Scenario: Derive change id from path
 - **GIVEN** a modified file `openspec/changes/my-feature/tasks.md`
 - **WHEN** the deterministic selection step parses paths
 - **THEN** the active change id SHALL be recognized as `my-feature`
 
-#### Scenario: Selected change is exposed to the agent
+#### Scenario: Selected change, review disposition, and reason are exposed to the agent
 - **GIVEN** exactly one active change satisfies the gating rules
 - **WHEN** the deterministic selection step completes
-- **THEN** the workflow SHALL expose that change id as a pre-activation output for the later agent job
+- **THEN** the workflow SHALL expose that change id, the deterministic review disposition, and the deterministic disposition reason as pre-activation outputs for the later agent job
 
 ### Requirement: Noop when change selection rules fail (REQ-006)
 The workflow SHALL not submit a pull request review and SHALL not archive when the deterministic gating result indicates any of the following:
 
-1. More than one distinct `<id>` has at least one file with status `modified` among paths under `openspec/changes/<id>/` (non-archive).
-2. Any file under `openspec/changes/` (non-archive) has status `added`.
-3. Zero distinct `<id>` has at least one `modified` file under `openspec/changes/<id>/` (non-archive).
-4. Any file under `openspec/changes/<id>/` (non-archive) has a status other than `modified` among the set the workflow cares about (for example, `removed` or `renamed`) if the workflow adopts modified-only strictness for verification.
+1. More than one distinct `<id>` appears among paths under `openspec/changes/<id>/` (non-archive).
+2. Zero distinct `<id>` appears among paths under `openspec/changes/<id>/` (non-archive).
+3. Any file under the selected `openspec/changes/<id>/` tree has a status other than `added` or `modified` among the set the workflow cares about (for example, `removed` or `renamed`).
 
-#### Scenario: Two active changes modified
+When exactly one active change id is present and every relevant file status is `modified`, the workflow SHALL select that change and mark the run approval-eligible. When exactly one active change id is present and one or more relevant file statuses are `added` while the remaining relevant statuses, if any, are `modified`, the workflow SHALL select that change and mark the run comment-only rather than treating it as ineligible.
+
+#### Scenario: Two active changes are present
 - **GIVEN** the pull request modifies `openspec/changes/foo/proposal.md` and `openspec/changes/bar/tasks.md`
 - **WHEN** deterministic gating runs
 - **THEN** the workflow SHALL skip verification and SHALL not submit a review
 
-#### Scenario: New file under active change
-- **GIVEN** the pull request adds `openspec/changes/foo/new.md`
+#### Scenario: Unsupported status under active change
+- **GIVEN** the pull request renames `openspec/changes/foo/tasks.md`
 - **WHEN** deterministic gating runs
 - **THEN** the workflow SHALL skip verification
 
 #### Scenario: Single change updated by modifications only
 - **GIVEN** all non-archive `openspec/changes/` paths in the pull request refer to a single `<id>` and every such entry has status `modified`
 - **WHEN** deterministic gating runs
-- **THEN** the workflow SHALL select that `<id>` and continue to verification
+- **THEN** the workflow SHALL select that `<id>`, continue to verification, and mark the run approval-eligible
+
+#### Scenario: Single net-new change proposal is comment-only eligible
+- **GIVEN** all non-archive `openspec/changes/` paths in the pull request refer to a single `<id>` and at least one such entry has status `added` while all remaining relevant entries, if any, have status `modified`
+- **WHEN** deterministic gating runs
+- **THEN** the workflow SHALL select that `<id>`, continue to verification, and mark the run comment-only
 
 ### Requirement: Verification using active OpenSpec tooling (REQ-007)
-For the selected change id published by the deterministic pre-activation step, the agent SHALL use standard OpenSpec commands and `.agents/skills/openspec-verify-change/SKILL.md`, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id from workflow outputs rather than requiring the agent to rediscover PR files before verification. The verification report SHALL include Summary, Issues by priority (CRITICAL, WARNING, SUGGESTION), and Final assessment per the skill.
+For the selected change id and deterministic review disposition published by the pre-activation step, the agent SHALL use standard OpenSpec commands and `.agents/skills/openspec-verify-change/SKILL.md`, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id, review disposition, and disposition reason from workflow outputs rather than requiring the agent to rediscover PR files or approval eligibility before verification. The verification report SHALL include Summary, Issues by priority (CRITICAL, WARNING, SUGGESTION), and Final assessment per the skill.
 
 #### Scenario: CLI resolves the change
 - **GIVEN** `openspec/changes/<id>/` exists on the pull request branch and deterministic setup has completed
 - **WHEN** `npx openspec status --change "<id>"` runs in the workflow environment
 - **THEN** it SHALL succeed for a well-formed active change
+
+#### Scenario: Agent receives deterministic comment-only guidance
+- **GIVEN** deterministic gating selected a single active change with one or more added files
+- **WHEN** the agent prompt is rendered
+- **THEN** it SHALL receive the selected change id and a comment-only disposition from workflow outputs without re-inspecting PR file statuses
 
 ### Requirement: Structural allowlist for in-scope paths (REQ-008)
 
@@ -152,14 +163,17 @@ For every PR-changed file not covered by the structural allowlist, the agent SHA
 - THEN the file SHALL be `relevant` or `uncertain`, not `unassociated`
 
 ### Requirement: Pull request review body (REQ-010)
-
-The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`).
+The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied.
 
 #### Scenario: Body states unassociated outcome
+- **GIVEN** relevance review completes
+- **WHEN** the review is submitted
+- **THEN** the body SHALL state whether any `unassociated` files were found
 
-- GIVEN relevance review completes
-- WHEN the review is submitted
-- THEN the body SHALL state whether any `unassociated` files were found
+#### Scenario: Body explains net-new comment-only limitation
+- **GIVEN** the selected active change includes added files and verification finds zero CRITICAL issues and zero `unassociated` files
+- **WHEN** the review body is generated
+- **THEN** it SHALL explain that the PR met the normal approval criteria but is limited to `COMMENT` because it introduces a net-new spec change
 
 ### Requirement: Line-level review comments (REQ-011)
 
@@ -172,24 +186,31 @@ The agent SHALL add line-level comments for mappable Issues by priority entries 
 - THEN an inline review comment SHOULD be placed on that hunk when the API allows
 
 ### Requirement: Review event APPROVE vs COMMENT (REQ-012)
+The agent SHALL submit a pull request review with `APPROVE` if and only if the deterministic review disposition is approval-eligible and there are zero CRITICAL issues and zero `unassociated` files; otherwise `COMMENT`. The agent SHALL submit `COMMENT` whenever the deterministic review disposition is comment-only, including cases where verification finds zero CRITICAL issues and zero `unassociated` files. It SHALL not use `REQUEST_CHANGES`. WARNING and SUGGESTION alone SHALL NOT block `APPROVE` for approval-eligible runs.
 
-The agent SHALL submit a pull request review with `APPROVE` if and only if there are zero CRITICAL issues and zero `unassociated` files; otherwise `COMMENT`. It SHALL not use `REQUEST_CHANGES`. WARNING and SUGGESTION alone SHALL NOT block `APPROVE`.
+#### Scenario: Approve when gates pass for a modified change
+- **GIVEN** deterministic gating marked the selected active change approval-eligible and verification found zero CRITICAL issues and zero `unassociated`
+- **WHEN** the review is submitted
+- **THEN** `event` SHALL be `APPROVE`
 
-#### Scenario: Approve when gates pass
-
-- GIVEN zero CRITICAL and zero `unassociated`
-- WHEN the review is submitted
-- THEN `event` SHALL be `APPROVE`
+#### Scenario: Net-new change proposal remains comment-only
+- **GIVEN** deterministic gating marked the selected active change comment-only because it includes added files
+- **AND** verification found zero CRITICAL issues and zero `unassociated`
+- **WHEN** the review is submitted
+- **THEN** `event` SHALL be `COMMENT`
 
 ### Requirement: Archive after APPROVE only (REQ-013)
-
-Only when the agent submits a pull request review with `APPROVE` for this run, the workflow SHALL archive the selected change `<id>` using repository-standard automation (for example, `openspec archive <id>` and/or steps aligned with `openspec-archive-change`), updating `openspec/changes/archive/` and canonical specs per project policy.
+Only when the agent submits a pull request review with `APPROVE` for an approval-eligible run, the workflow SHALL archive the selected change `<id>` using repository-standard automation (for example, `openspec archive <id>` and/or steps aligned with `openspec-archive-change`), updating `openspec/changes/archive/` and canonical specs per project policy.
 
 #### Scenario: Comment review does not archive
+- **GIVEN** the review event is `COMMENT`
+- **WHEN** the run completes
+- **THEN** the workflow SHALL NOT move the change to `archive/` or mutate canonical specs for this id via this workflow
 
-- GIVEN the review event is `COMMENT`
-- WHEN the run completes
-- THEN the workflow SHALL NOT move the change to `archive/` or mutate canonical specs for this id via this workflow
+#### Scenario: Net-new change proposal does not archive
+- **GIVEN** deterministic gating marked the selected active change comment-only because it includes added files
+- **WHEN** the run completes after submitting its review
+- **THEN** the workflow SHALL NOT archive that change through this workflow run
 
 ### Requirement: Push archive result to PR branch (REQ-014)
 
@@ -218,7 +239,7 @@ For a run triggered by applying the `verify-openspec` label, the workflow SHALL 
 - THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
 
 ### Requirement: Review environment bootstraps repository toolchains
-The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT` after Go setup for AWF chroot mode, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
+The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
 
 #### Scenario: Node toolchain follows package.json
 - **GIVEN** the repository declares the supported Node version in `package.json`
@@ -230,10 +251,17 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **WHEN** the Go toolchain is installed
 - **THEN** the workflow SHALL configure `actions/setup-go` with `go-version-file: go.mod`
 
-#### Scenario: AWF chroot mode receives the configured GOROOT
+#### Scenario: AWF chroot mode receives the configured Go paths
 - **GIVEN** the review workflow has installed Go from `go.mod`
 - **WHEN** the agent environment is prepared for AWF chroot mode
 - **THEN** the workflow SHALL export `GOROOT=$(go env GOROOT)` to `GITHUB_ENV`
+- **AND** the workflow SHALL export `GOPATH=$(go env GOPATH)` to `GITHUB_ENV`
+- **AND** the workflow SHALL export `GOMODCACHE=$(go env GOMODCACHE)` to `GITHUB_ENV`
+
+#### Scenario: AWF network policy allows the Go ecosystem
+- **GIVEN** agent-executed verification commands may need Go module network access
+- **WHEN** maintainers inspect the workflow frontmatter
+- **THEN** `network.allowed` SHALL include `go`
 
 #### Scenario: Review bootstrap does not use runtimes.go
 - **GIVEN** the review workflow bootstrap is implemented
@@ -246,7 +274,7 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **THEN** Terraform SHALL be available in that environment without wrapper behavior enabled
 
 ### Requirement: Review environment installs repository dependencies before verification
-Before the agent performs verification, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally and SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path.
+Before the agent performs verification, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally, SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path, and SHALL preserve access to the prepared Go workspace and module cache for AWF agent commands during verification.
 
 #### Scenario: Review workspace runs repository setup
 - **GIVEN** a qualifying `verify-openspec` run reaches the review job after Node, Go, and Terraform have been provisioned
@@ -261,14 +289,19 @@ Before the agent performs verification, the workflow SHALL run `make setup` in t
 #### Scenario: Agent-invoked Go commands use prepared dependencies
 - **GIVEN** verification work invokes `go test` or another repository Go command
 - **WHEN** `make setup` has completed in the review workspace
-- **THEN** that command SHALL run against the provisioned Go toolchain and repository dependencies instead of failing solely because the base runner lacked the required Go version or module setup
+- **THEN** that command SHALL run against the provisioned Go toolchain and prepared Go dependencies instead of failing solely because the base runner lacked the required Go version or module setup
+
+#### Scenario: Prepared module cache remains available in AWF
+- **GIVEN** the workflow prepared Go dependencies before agent reasoning
+- **WHEN** an AWF agent command runs Go module-aware verification in chroot mode
+- **THEN** the command SHALL retain access to the configured Go workspace and module cache through the exported Go environment variables
 
 ### Requirement: Deterministic agent setup before verification
-The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, it SHALL run repository-standard Node dependency installation at the repository root so `npx openspec` is available to the agent without the prompt having to rediscover setup steps.
+The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, after the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps.
 
 #### Scenario: OpenSpec CLI is available before agent reasoning
 - **WHEN** the agent job starts for a verification run
-- **THEN** deterministic custom steps SHALL install the repository's Node dependencies before the agent uses `npx openspec`
+- **THEN** deterministic custom steps SHALL complete `make setup` before the agent uses `npx openspec`
 
 ### Requirement: Deterministic gates may skip agent execution
 The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. When the agent job is skipped, the `remove-labels` safe output is not invoked by this workflow for that run; REQ-015’s label-removal contract applies only when the agent runs and completes handling.

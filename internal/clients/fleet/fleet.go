@@ -409,10 +409,10 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 }
 
 // GetPackage reads a specific package from the API.
-func GetPackage(ctx context.Context, client *Client, name, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
+func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
-	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params)
+	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -486,12 +486,13 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 }
 
 // GetPackages returns information about the latest packages known to Fleet.
-func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.PackageListItem, diag.Diagnostics) {
+// If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
+func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesParams{
 		Prerelease: &prerelease,
 	}
 
-	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params)
+	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}

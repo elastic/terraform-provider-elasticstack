@@ -65,7 +65,7 @@ resource "elasticstack_kibana_data_view" "example" {
     }))>
 
     allow_no_index = <optional, computed, bool> # default false; RequiresReplace
-    namespaces     = <optional, list(string)>   # RequiresReplace
+    namespaces     = <optional, list(string)>
   }
 }
 ```
@@ -77,15 +77,21 @@ Notes:
 
 ## Requirements
 
-### Requirement: Kibana Data Views APIs (REQ-001)
+### Requirement: Kibana Data Views and Spaces APIs (REQ-001)
 
-The resource SHALL manage data views through Kibana's Data Views HTTP APIs: create, get, update, and delete ([Kibana data views API docs](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)).
+The resource SHALL manage data views through Kibana's Data Views HTTP APIs for create, get, update, and delete, and SHALL use Kibana's Spaces object-sharing API when reconciling `data_view.namespaces`.
 
 #### Scenario: CRUD uses Data Views APIs
 
 - GIVEN a managed Kibana data view
 - WHEN create, read, update, or delete runs
 - THEN the provider SHALL use the corresponding Kibana Data Views API operation
+
+#### Scenario: Namespace reconciliation uses Spaces API
+
+- GIVEN a managed Kibana data view whose `data_view.namespaces` membership changes
+- WHEN update runs
+- THEN the provider SHALL reconcile the namespace delta through Kibana's Spaces object-sharing API
 
 ### Requirement: API and client error surfacing (REQ-002)
 
@@ -147,7 +153,7 @@ The resource SHALL use the provider's configured Kibana OpenAPI client for creat
 
 ### Requirement: Lifecycle replacement fields (REQ-006)
 
-Changes to `space_id`, `data_view.id`, `data_view.field_attrs`, `data_view.allow_no_index`, or `data_view.namespaces` SHALL require resource replacement rather than an in-place update.
+Changes to `space_id`, `data_view.id`, `data_view.field_attrs`, or `data_view.allow_no_index` SHALL require resource replacement rather than an in-place update.
 
 #### Scenario: Replace on immutable data view id
 
@@ -175,15 +181,22 @@ On create, the resource SHALL build a create request from Terraform state and se
 - WHEN create builds the API request
 - THEN the request namespaces SHALL include `"backend"`, `"o11y"`, and `"default"`
 
-### Requirement: Update request mapping (REQ-009)
+### Requirement: Update request mapping and namespace reconciliation (REQ-009)
 
-On update, the resource SHALL build an update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`.
+On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state.
 
 #### Scenario: Override is create-only
 
 - GIVEN a managed data view whose configuration changes only `override`
 - WHEN update runs
 - THEN the update request SHALL NOT include `override`
+
+#### Scenario: Namespace update happens in place
+
+- GIVEN an existing managed data view and a plan that adds or removes entries from `data_view.namespaces`
+- WHEN update runs successfully
+- THEN the provider SHALL keep the same resource identity
+- AND SHALL reconcile namespace additions and removals through the Spaces API instead of replacing the resource
 
 ### Requirement: Read behavior and missing resource handling (REQ-010)
 
@@ -269,5 +282,5 @@ When a create request supplies an explicit `data_view.id`, the provider SHALL tr
 | Metadata / Configure / Import | `internal/kibana/dataview/resource.go` |
 | CRUD orchestration | `internal/kibana/dataview/create.go`, `internal/kibana/dataview/read.go`, `internal/kibana/dataview/update.go`, `internal/kibana/dataview/delete.go` |
 | Model mapping / id parsing / namespace normalization | `internal/kibana/dataview/models.go` |
-| API status handling | `internal/clients/kibanaoapi/data_views.go` |
+| API status handling | `internal/clients/kibanaoapi/data_views.go`, `internal/clients/kibanaoapi/data_views_spaces.go` |
 | Composite id parsing | `internal/clients/api_client.go` |

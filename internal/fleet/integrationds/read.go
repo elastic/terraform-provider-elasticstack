@@ -43,7 +43,8 @@ func (d *integrationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	name := model.Name.ValueString()
 	prerelease := model.Prerelease.ValueBool()
-	packages, diags := fleet.GetPackages(ctx, client, prerelease)
+	spaceID := model.SpaceID.ValueString()
+	packages, diags := fleet.GetPackages(ctx, client, prerelease, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

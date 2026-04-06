@@ -144,7 +144,7 @@ func Test_referenceLineLayerModel_fromAPIESql_toAPI(t *testing.T) {
 	assert.Equal(t, types.StringValue("left"), model.Thresholds[0].Axis)
 	assert.Equal(t, types.StringValue("bytes"), model.Thresholds[0].Column)
 	assert.Equal(t, types.StringValue("above"), model.Thresholds[0].Fill)
-	assert.Equal(t, types.StringValue("value"), model.Thresholds[0].Operation)
+	assert.True(t, model.Thresholds[0].Operation.IsNull())
 
 	raw, diags := model.toAPI("referenceLines")
 	require.False(t, diags.HasError())
