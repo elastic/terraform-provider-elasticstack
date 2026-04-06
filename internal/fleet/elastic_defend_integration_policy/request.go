@@ -337,6 +337,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		avr := map[string]any{}
+		setStringField(avr, "mode", am.Mode)
 		setBoolField(avr, "enabled", am.Enabled)
 		win["antivirus_registration"] = avr
 	}

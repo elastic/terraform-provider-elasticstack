@@ -262,6 +262,7 @@ Optional:
 Optional:
 
 - `enabled` (Boolean) Whether antivirus registration is enabled.
+- `mode` (String) Antivirus registration mode. Valid values: `"enabled"`, `"disabled"`, `"sync_with_malware_prevent"`.
 
 
 <a id="nestedatt--policy--windows--attack_surface_reduction"></a>

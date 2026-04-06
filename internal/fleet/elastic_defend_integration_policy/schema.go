@@ -19,10 +19,13 @@ package elasticdefendintegrationpolicy
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -115,14 +118,20 @@ func policySchema() schema.Attribute {
 
 func popupItemSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
+		Computed: true,
 		Optional: true,
+		Default:  objectdefault.StaticValue(popupItemDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			"message": schema.StringAttribute{
 				Description: "The popup message text.",
+				Computed:    true,
+				Default:     stringdefault.StaticString(""),
 				Optional:    true,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Whether the popup notification is enabled.",
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 				Optional:    true,
 			},
 		},
@@ -131,11 +140,15 @@ func popupItemSchema() schema.SingleNestedAttribute {
 
 func protectionModeSchema(description string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
+		Computed:    true,
 		Optional:    true,
 		Description: description,
+		Default:     objectdefault.StaticValue(protectionModeDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			"mode": schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Computed:    true,
+				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("off", "detect", "prevent"),
@@ -143,6 +156,8 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 			},
 			"supported": schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 				Optional:    true,
 			},
 		},
@@ -151,11 +166,15 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 
 func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
+		Computed:    true,
 		Optional:    true,
 		Description: description,
+		Default:     objectdefault.StaticValue(behaviorProtectionDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			"mode": schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Computed:    true,
+				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("off", "detect", "prevent"),
@@ -163,14 +182,68 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 			},
 			"supported": schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 				Optional:    true,
 			},
 			"reputation_service": schema.BoolAttribute{
 				Description: "Whether reputation service is enabled.",
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 				Optional:    true,
 			},
 		},
 	}
+}
+
+func popupItemDefaultValue() types.Object {
+	return types.ObjectValueMust(popupItemAttrTypes(), map[string]attr.Value{
+		"message": types.StringValue(""),
+		"enabled": types.BoolValue(false),
+	})
+}
+
+func protectionModeDefaultValue() types.Object {
+	return types.ObjectValueMust(protectionModeAttrTypes(), map[string]attr.Value{
+		"mode":      types.StringValue("off"),
+		"supported": types.BoolValue(true),
+	})
+}
+
+func behaviorProtectionDefaultValue() types.Object {
+	return types.ObjectValueMust(behaviorProtectionAttrTypes(), map[string]attr.Value{
+		"mode":               types.StringValue("off"),
+		"supported":          types.BoolValue(true),
+		"reputation_service": types.BoolValue(false),
+	})
+}
+
+func antivirusRegistrationDefaultValue() types.Object {
+	return types.ObjectValueMust(antivirusRegistrationAttrTypes(), map[string]attr.Value{
+		"mode":    types.StringValue("disabled"),
+		"enabled": types.BoolValue(false),
+	})
+}
+
+func credentialHardeningDefaultValue() types.Object {
+	return types.ObjectValueMust(credentialHardeningAttrTypes(), map[string]attr.Value{
+		"enabled": types.BoolValue(false),
+	})
+}
+
+func attackSurfaceReductionDefaultValue() types.Object {
+	return types.ObjectValueMust(attackSurfaceReductionAttrTypes(), map[string]attr.Value{
+		"credential_hardening": credentialHardeningDefaultValue(),
+	})
+}
+
+func windowsPopupDefaultValue() types.Object {
+	return types.ObjectValueMust(windowsPopupAttrTypes(), map[string]attr.Value{
+		"malware":             popupItemDefaultValue(),
+		"ransomware":          popupItemDefaultValue(),
+		"memory_protection":   popupItemDefaultValue(),
+		"behavior_protection": popupItemDefaultValue(),
+	})
 }
 
 func windowsPolicySchema() schema.Attribute {
@@ -246,7 +319,9 @@ func windowsPolicySchema() schema.Attribute {
 			"behavior_protection": behaviorProtectionSchema("Windows behavior protection settings."),
 			"popup": schema.SingleNestedAttribute{
 				Description: "Windows popup notification settings.",
+				Computed:    true,
 				Optional:    true,
+				Default:     objectdefault.StaticValue(windowsPopupDefaultValue()),
 				Attributes: map[string]schema.Attribute{
 					"malware":             popupItemSchema(),
 					"ransomware":          popupItemSchema(),
@@ -269,24 +344,43 @@ func windowsPolicySchema() schema.Attribute {
 			},
 			"antivirus_registration": schema.SingleNestedAttribute{
 				Description: "Windows antivirus registration settings.",
+				Computed:    true,
 				Optional:    true,
+				Default:     objectdefault.StaticValue(antivirusRegistrationDefaultValue()),
 				Attributes: map[string]schema.Attribute{
+					"mode": schema.StringAttribute{
+						Description: "Antivirus registration mode. Valid values: `\"enabled\"`, `\"disabled\"`, `\"sync_with_malware_prevent\"`.",
+						Computed:    true,
+						Default:     stringdefault.StaticString("disabled"),
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("enabled", "disabled", "sync_with_malware_prevent"),
+						},
+					},
 					"enabled": schema.BoolAttribute{
 						Description: "Whether antivirus registration is enabled.",
+						Computed:    true,
+						Default:     booldefault.StaticBool(false),
 						Optional:    true,
 					},
 				},
 			},
 			"attack_surface_reduction": schema.SingleNestedAttribute{
 				Description: "Windows attack surface reduction settings.",
+				Computed:    true,
 				Optional:    true,
+				Default:     objectdefault.StaticValue(attackSurfaceReductionDefaultValue()),
 				Attributes: map[string]schema.Attribute{
 					"credential_hardening": schema.SingleNestedAttribute{
 						Description: "Credential hardening settings.",
+						Computed:    true,
 						Optional:    true,
+						Default:     objectdefault.StaticValue(credentialHardeningDefaultValue()),
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
 								Description: "Whether credential hardening is enabled.",
+								Computed:    true,
+								Default:     booldefault.StaticBool(false),
 								Optional:    true,
 							},
 						},

@@ -42,45 +42,46 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         notify_user   = <optional, bool>
       }
       ransomware = <optional, single nested attribute> {
-        mode      = <optional, string>
-        supported = <optional, bool>
+        mode      = <optional+computed, string>  # default "off"
+        supported = <optional+computed, bool>    # default true
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional, string>
-        supported = <optional, bool>
+        mode      = <optional+computed, string>  # default "off"
+        supported = <optional+computed, bool>    # default true
       }
       behavior_protection = <optional, single nested attribute> {
-        mode               = <optional, string>
-        supported          = <optional, bool>
-        reputation_service = <optional, bool>
+        mode               = <optional+computed, string>  # default "off"
+        supported          = <optional+computed, bool>    # default true
+        reputation_service = <optional+computed, bool>    # default false
       }
-      popup = <optional, single nested attribute> {
+      popup = <optional+computed, single nested attribute> {
         malware = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         ransomware = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         memory_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
       }
       logging = <optional, single nested attribute> {
         file = <optional, string>
       }
       antivirus_registration = <optional, single nested attribute> {
-        enabled = <optional, bool>
+        mode    = <optional+computed, string>  # default "disabled"
+        enabled = <optional+computed, bool>    # default false
       }
       attack_surface_reduction = <optional, single nested attribute> {
         credential_hardening = <optional, single nested attribute> {
-          enabled = <optional, bool>
+          enabled = <optional+computed, bool>  # default false
         }
       }
     }
@@ -97,26 +98,26 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         notify_user   = <optional, bool>
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional, string>
-        supported = <optional, bool>
+        mode      = <optional+computed, string>  # default "off"
+        supported = <optional+computed, bool>    # default true
       }
       behavior_protection = <optional, single nested attribute> {
-        mode               = <optional, string>
-        supported          = <optional, bool>
-        reputation_service = <optional, bool>
+        mode               = <optional+computed, string>  # default "off"
+        supported          = <optional+computed, bool>    # default true
+        reputation_service = <optional+computed, bool>    # default false
       }
       popup = <optional, single nested attribute> {
         malware = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         memory_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
       }
       logging = <optional, single nested attribute> {
@@ -136,26 +137,26 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         blocklist = <optional, bool>
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional, string>
-        supported = <optional, bool>
+        mode      = <optional+computed, string>  # default "off"
+        supported = <optional+computed, bool>    # default true
       }
       behavior_protection = <optional, single nested attribute> {
-        mode               = <optional, string>
-        supported          = <optional, bool>
-        reputation_service = <optional, bool>
+        mode               = <optional+computed, string>  # default "off"
+        supported          = <optional+computed, bool>    # default true
+        reputation_service = <optional+computed, bool>    # default false
       }
       popup = <optional, single nested attribute> {
         malware = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         memory_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
-          message = <optional, string>
-          enabled = <optional, bool>
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
         }
       }
       logging = <optional, single nested attribute> {
@@ -227,7 +228,7 @@ On read and import, the resource SHALL validate that the resolved package policy
 
 ### Requirement: Typed Defend configuration schema (REQ-006)
 
-The resource SHALL model Defend-owned configuration through typed Terraform attributes and nested attributes. The `preset` attribute SHALL map to `config.integration_config.value.endpointConfig.preset` in read/update payloads. The `policy` attribute SHALL contain optional `windows`, `mac`, and `linux` nested attributes, each with a distinct schema containing only the fields applicable to that operating system. Structurally invalid combinations (such as `policy.linux.ransomware`) SHALL be impossible at plan time without requiring custom validation.
+The resource SHALL model Defend-owned configuration through typed Terraform attributes and nested attributes. The `preset` attribute SHALL map to `config.integration_config.value.endpointConfig.preset` in read/update payloads. The `policy` attribute SHALL contain optional `windows`, `mac`, and `linux` nested attributes, each with a distinct schema containing only the fields applicable to that operating system. Structurally invalid combinations (such as `policy.linux.ransomware`) SHALL be impossible at plan time without requiring custom validation. The typed schema SHALL also model the provider-known Defend defaults for popup entries, protection mode objects, behavior protection, Windows antivirus registration, and Windows attack surface reduction credential hardening so omitted or empty nested blocks plan with the same effective values the Defend policy uses.
 
 #### Scenario: Policy settings are modeled as typed attributes
 
@@ -242,6 +243,18 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 - WHEN Terraform maps the `policy.linux.events` schema to and from the API
 - THEN the typed schema SHALL include the documented Linux-specific event flags
 - AND those flags SHALL include `session_data` and `tty_io`
+
+#### Scenario: Omitted nested policy settings use modeled defaults
+
+- GIVEN a configuration that omits or leaves empty a popup item, protection-mode object, behavior-protection object, Windows antivirus registration object, or Windows attack-surface-reduction credential hardening object
+- WHEN Terraform plans the Defend resource
+- THEN the omitted or empty nested object SHALL use the modeled defaults
+- AND `policy.windows.popup` SHALL default to an object whose `malware`, `ransomware`, `memory_protection`, and `behavior_protection` entries each use the popup-item defaults
+- AND popup items SHALL default to `{ message = "", enabled = false }`
+- AND protection-mode objects SHALL default to `{ mode = "off", supported = true }`
+- AND behavior-protection objects SHALL default to `{ mode = "off", supported = true, reputation_service = false }`
+- AND `policy.windows.antivirus_registration` SHALL default to `{ mode = "disabled", enabled = false }`
+- AND `policy.windows.attack_surface_reduction.credential_hardening` SHALL default to `{ enabled = false }`
 
 ### Requirement: Resource boundary — Defend is typed-only (REQ-007)
 

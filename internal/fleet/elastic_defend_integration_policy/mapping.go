@@ -347,6 +347,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	if avrData != nil {
 		var d diag.Diagnostics
 		avrObj, d = types.ObjectValueFrom(ctx, antivirusRegistrationAttrTypes(), antivirusRegistrationModel{
+			Mode:    getString(avrData, "mode"),
 			Enabled: getBool(avrData, "enabled"),
 		})
 		diags.Append(d...)
@@ -731,6 +732,7 @@ func loggingAttrTypes() map[string]attr.Type {
 
 func antivirusRegistrationAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
+		"mode":    types.StringType,
 		"enabled": types.BoolType,
 	}
 }

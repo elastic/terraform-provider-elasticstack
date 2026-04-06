@@ -161,7 +161,8 @@ type loggingModel struct {
 
 // antivirusRegistrationModel holds the antivirus registration settings.
 type antivirusRegistrationModel struct {
-	Enabled types.Bool `tfsdk:"enabled"`
+	Mode    types.String `tfsdk:"mode"`
+	Enabled types.Bool   `tfsdk:"enabled"`
 }
 
 // credentialHardeningModel holds the credential hardening settings.
