@@ -99,6 +99,13 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if finalPolicy == nil {
+		resp.Diagnostics.AddError(
+			"Defend policy not found after create",
+			"The policy was created but could not be retrieved (HTTP 404). This is unexpected; the policy may have been deleted externally.",
+		)
+		return
+	}
 
 	// Refresh private state from final GET response
 	ps = extractPrivateStateFromResponse(finalPolicy)

@@ -84,6 +84,13 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if policy == nil {
+		resp.Diagnostics.AddError(
+			"Defend policy not found after update",
+			"The policy was updated but could not be retrieved (HTTP 404). This is unexpected; the policy may have been deleted externally.",
+		)
+		return
+	}
 
 	// Refresh private state from the GET response
 	newPS := extractPrivateStateFromResponse(policy)

@@ -77,6 +77,9 @@ func loadPrivateState(ctx context.Context, storage privateStateStorage) (defendP
 // the top-level version token.
 func extractPrivateStateFromResponse(policy *kbapi.PackagePolicy) defendPrivateState {
 	ps := defendPrivateState{}
+	if policy == nil {
+		return ps
+	}
 
 	if policy.Version != nil {
 		ps.Version = *policy.Version
