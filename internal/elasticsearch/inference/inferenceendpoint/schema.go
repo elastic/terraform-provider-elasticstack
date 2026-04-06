@@ -20,6 +20,7 @@ package inferenceendpoint
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -39,6 +40,7 @@ const inferenceEndpointDescription = "Creates or updates an inference endpoint."
 var (
 	MinSupportedVersion = version.Must(version.NewVersion("8.18.0"))
 	validTaskTypes      = []string{"sparse_embedding", "text_embedding", "rerank", "completion", "chat_completion", "embedding"}
+	taskTypesMarkdown   = fmt.Sprintf("[`%s`]", strings.Join(validTaskTypes, "`, `"))
 )
 
 func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -65,7 +67,7 @@ func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaR
 			"task_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: fmt.Sprintf("must be one of [%v]", validTaskTypes),
+				MarkdownDescription: fmt.Sprintf("must be one of %s", taskTypesMarkdown),
 
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
