@@ -218,7 +218,7 @@ For a run triggered by applying the `verify-openspec` label, the workflow SHALL 
 - THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
 
 ### Requirement: Review environment bootstraps repository toolchains
-The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT` after Go setup for AWF chroot mode, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
+The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
 
 #### Scenario: Node toolchain follows package.json
 - **GIVEN** the repository declares the supported Node version in `package.json`
@@ -230,10 +230,17 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **WHEN** the Go toolchain is installed
 - **THEN** the workflow SHALL configure `actions/setup-go` with `go-version-file: go.mod`
 
-#### Scenario: AWF chroot mode receives the configured GOROOT
+#### Scenario: AWF chroot mode receives the configured Go paths
 - **GIVEN** the review workflow has installed Go from `go.mod`
 - **WHEN** the agent environment is prepared for AWF chroot mode
 - **THEN** the workflow SHALL export `GOROOT=$(go env GOROOT)` to `GITHUB_ENV`
+- **AND** the workflow SHALL export `GOPATH=$(go env GOPATH)` to `GITHUB_ENV`
+- **AND** the workflow SHALL export `GOMODCACHE=$(go env GOMODCACHE)` to `GITHUB_ENV`
+
+#### Scenario: AWF network policy allows the Go ecosystem
+- **GIVEN** agent-executed verification commands may need Go module network access
+- **WHEN** maintainers inspect the workflow frontmatter
+- **THEN** `network.allowed` SHALL include `go`
 
 #### Scenario: Review bootstrap does not use runtimes.go
 - **GIVEN** the review workflow bootstrap is implemented
@@ -246,7 +253,7 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **THEN** Terraform SHALL be available in that environment without wrapper behavior enabled
 
 ### Requirement: Review environment installs repository dependencies before verification
-Before the agent performs verification, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally and SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path.
+Before the agent performs verification, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally, SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path, and SHALL preserve access to the prepared Go workspace and module cache for AWF agent commands during verification.
 
 #### Scenario: Review workspace runs repository setup
 - **GIVEN** a qualifying `verify-openspec` run reaches the review job after Node, Go, and Terraform have been provisioned
@@ -261,14 +268,19 @@ Before the agent performs verification, the workflow SHALL run `make setup` in t
 #### Scenario: Agent-invoked Go commands use prepared dependencies
 - **GIVEN** verification work invokes `go test` or another repository Go command
 - **WHEN** `make setup` has completed in the review workspace
-- **THEN** that command SHALL run against the provisioned Go toolchain and repository dependencies instead of failing solely because the base runner lacked the required Go version or module setup
+- **THEN** that command SHALL run against the provisioned Go toolchain and prepared Go dependencies instead of failing solely because the base runner lacked the required Go version or module setup
+
+#### Scenario: Prepared module cache remains available in AWF
+- **GIVEN** the workflow prepared Go dependencies before agent reasoning
+- **WHEN** an AWF agent command runs Go module-aware verification in chroot mode
+- **THEN** the command SHALL retain access to the configured Go workspace and module cache through the exported Go environment variables
 
 ### Requirement: Deterministic agent setup before verification
-The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, it SHALL run repository-standard Node dependency installation at the repository root so `npx openspec` is available to the agent without the prompt having to rediscover setup steps.
+The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, after the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps.
 
 #### Scenario: OpenSpec CLI is available before agent reasoning
 - **WHEN** the agent job starts for a verification run
-- **THEN** deterministic custom steps SHALL install the repository's Node dependencies before the agent uses `npx openspec`
+- **THEN** deterministic custom steps SHALL complete `make setup` before the agent uses `npx openspec`
 
 ### Requirement: Deterministic gates may skip agent execution
 The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. When the agent job is skipped, the `remove-labels` safe output is not invoked by this workflow for that run; REQ-015’s label-removal contract applies only when the agent runs and completes handling.

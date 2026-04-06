@@ -43,17 +43,19 @@ import (
 )
 
 const (
-	dashboardValueAuto      = "auto"
-	dashboardValueAverage   = "average"
-	pieChartTypeNumber      = "number"
-	pieChartTypePercent     = "percent"
-	operationTerms          = "terms"
-	panelTypeMarkdown       = "markdown"
-	panelTypeLens           = "lens"
-	panelTypeTimeSlider     = "time_slider_control"
-	panelTypeSloBurnRate    = "slo_burn_rate"
-	panelTypeSloErrorBudget = "slo_error_budget"
-	panelTypeEsqlControl    = "esql_control"
+	dashboardValueAuto          = "auto"
+	dashboardValueAverage       = "average"
+	pieChartTypeNumber          = "number"
+	pieChartTypePercent         = "percent"
+	operationTerms              = "terms"
+	panelTypeMarkdown           = "markdown"
+	panelTypeLens               = "lens"
+	panelTypeTimeSlider         = "time_slider_control"
+	panelTypeSloBurnRate        = "slo_burn_rate"
+	panelTypeSloErrorBudget     = "slo_error_budget"
+	panelTypeEsqlControl        = "esql_control"
+	panelTypeOptionsListControl = "options_list_control"
+	panelTypeRangeSlider        = "range_slider_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -75,8 +77,11 @@ var panelConfigNames = []string{
 	"waffle_config",
 	"time_slider_control_config",
 	"slo_burn_rate_config",
+	"slo_overview_config",
 	"slo_error_budget_config",
 	"esql_control_config",
+	"options_list_control_config",
+	"range_slider_control_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -395,11 +400,9 @@ func getSchema() schema.Schema {
 				},
 			},
 			"dashboard_id": schema.StringAttribute{
-				MarkdownDescription: "A unique identifier for the dashboard. If not provided, one will be generated.",
-				Optional:            true,
+				MarkdownDescription: "The Kibana-assigned identifier for the dashboard.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -411,46 +414,64 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_from": schema.StringAttribute{
-				MarkdownDescription: "The start time for the dashboard's time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+			"time_range": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
 				Required:            true,
-			},
-			"time_to": schema.StringAttribute{
-				MarkdownDescription: "The end time for the dashboard's time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-				Required:            true,
-			},
-			"time_range_mode": schema.StringAttribute{
-				MarkdownDescription: "The time range mode. Valid values are 'absolute' or 'relative'.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("absolute", "relative"),
+				Attributes: map[string]schema.Attribute{
+					"from": schema.StringAttribute{
+						MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+						Required:            true,
+					},
+					"to": schema.StringAttribute{
+						MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
+						Required:            true,
+					},
+					"mode": schema.StringAttribute{
+						MarkdownDescription: "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("absolute", "relative"),
+						},
+					},
 				},
 			},
-			"refresh_interval_pause": schema.BoolAttribute{
-				MarkdownDescription: "Set to false to auto-refresh data on an interval.",
+			"refresh_interval": schema.SingleNestedAttribute{
+				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
 				Required:            true,
-			},
-			"refresh_interval_value": schema.Int64Attribute{
-				MarkdownDescription: "A numeric value indicating refresh frequency in milliseconds.",
-				Required:            true,
-			},
-			"query_language": schema.StringAttribute{
-				MarkdownDescription: "The query language (e.g., 'kuery', 'lucene').",
-				Required:            true,
-			},
-			"query_text": schema.StringAttribute{
-				MarkdownDescription: "The query text for text-based queries such as Kibana Query Language (KQL) or Lucene query language. Mutually exclusive with `query_json`.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_json")),
+				Attributes: map[string]schema.Attribute{
+					"pause": schema.BoolAttribute{
+						MarkdownDescription: "When true, auto-refresh is paused.",
+						Required:            true,
+					},
+					"value": schema.Int64Attribute{
+						MarkdownDescription: "Refresh interval in milliseconds when not paused.",
+						Required:            true,
+					},
 				},
 			},
-			"query_json": schema.StringAttribute{
-				MarkdownDescription: "The query as a JSON object for structured queries. Mutually exclusive with `query_text`.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_text")),
+			"query": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch).",
+				Required:            true,
+				Attributes: map[string]schema.Attribute{
+					"language": schema.StringAttribute{
+						MarkdownDescription: "Query language (e.g., `kql`, `lucene`, `kuery`).",
+						Required:            true,
+					},
+					"text": schema.StringAttribute{
+						MarkdownDescription: "Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("json")),
+						},
+					},
+					"json": schema.StringAttribute{
+						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.",
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("text")),
+						},
+					},
 				},
 			},
 			"tags": schema.ListAttribute{
@@ -482,6 +503,14 @@ func getSchema() schema.Schema {
 						MarkdownDescription: "Synchronize cursor position between related panels in the dashboard.",
 						Optional:            true,
 					},
+					"auto_apply_filters": schema.BoolAttribute{
+						MarkdownDescription: "When true, control filters are applied automatically.",
+						Optional:            true,
+					},
+					"hide_panel_borders": schema.BoolAttribute{
+						MarkdownDescription: "When true, panel borders are hidden in the dashboard layout.",
+						Optional:            true,
+					},
 				},
 			},
 			"panels": schema.ListNestedAttribute{
@@ -498,10 +527,13 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The title of the section.",
 							Required:            true,
 						},
-						"id": schema.StringAttribute{
-							MarkdownDescription: "The unique identifier of the section.",
+						"uid": schema.StringAttribute{
+							MarkdownDescription: "The unique identifier of the section (API `uid`).",
 							Optional:            true,
 							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+							},
 						},
 						"collapsed": schema.BoolAttribute{
 							MarkdownDescription: "The collapsed state of the section.",
@@ -577,8 +609,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 					},
 				},
 			},
-			"id": schema.StringAttribute{
-				MarkdownDescription: "The unique identifier of the panel.",
+			"uid": schema.StringAttribute{
+				MarkdownDescription: "The unique identifier of the panel (API `uid`).",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -731,7 +763,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"waffle_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
-					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.query` and `query.language` unset) for ES|QL mode.",
+					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.expression` and `query.language` unset) for ES|QL mode.",
 					"waffle_config",
 					panelConfigNames,
 				),
@@ -910,6 +942,22 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
 				},
 			},
+			"slo_overview_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
+					"slo_overview_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSloOverviewSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("slo_overview_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloOverview}),
+					sloOverviewConfigModeValidator{},
+				},
+			},
 			"slo_error_budget_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
@@ -1006,6 +1054,167 @@ func getPanelSchema() schema.NestedAttributeObject {
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
+				},
+			},
+			"options_list_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
+					"options_list_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"data_view_id": schema.StringAttribute{
+						MarkdownDescription: "The ID of the data view that the control is tied to.",
+						Required:            true,
+					},
+					"field_name": schema.StringAttribute{
+						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+						Required:            true,
+					},
+					"title": schema.StringAttribute{
+						MarkdownDescription: "Human-readable label displayed above the control.",
+						Optional:            true,
+					},
+					"use_global_filters": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
+						Optional:            true,
+					},
+					"ignore_validations": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control skips field-level validation against the data view.",
+						Optional:            true,
+					},
+					"single_select": schema.BoolAttribute{
+						MarkdownDescription: "When true, only one option may be selected at a time.",
+						Optional:            true,
+					},
+					"exclude": schema.BoolAttribute{
+						MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
+						Optional:            true,
+					},
+					"exists_selected": schema.BoolAttribute{
+						MarkdownDescription: "When true, the control filters for documents where the field exists.",
+						Optional:            true,
+					},
+					"run_past_timeout": schema.BoolAttribute{
+						MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
+						Optional:            true,
+					},
+					"search_technique": schema.StringAttribute{
+						MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("prefix", "wildcard", "exact"),
+						},
+					},
+					"selected_options": schema.ListAttribute{
+						MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
+						Optional:            true,
+						ElementType:         types.StringType,
+					},
+					"display_settings": schema.SingleNestedAttribute{
+						MarkdownDescription: "Display preferences for the control widget.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"placeholder": schema.StringAttribute{
+								MarkdownDescription: "Placeholder text shown when no option is selected.",
+								Optional:            true,
+							},
+							"hide_action_bar": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the action bar on the control.",
+								Optional:            true,
+							},
+							"hide_exclude": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the exclude toggle.",
+								Optional:            true,
+							},
+							"hide_exists": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the exists filter option.",
+								Optional:            true,
+							},
+							"hide_sort": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the sort control.",
+								Optional:            true,
+							},
+						},
+					},
+					"sort": schema.SingleNestedAttribute{
+						MarkdownDescription: "Default sort configuration for the suggestion list.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"by": schema.StringAttribute{
+								MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("_count", "_key"),
+								},
+							},
+							"direction": schema.StringAttribute{
+								MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("asc", "desc"),
+								},
+							},
+						},
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("options_list_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
+				},
+			},
+			"range_slider_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
+					"range_slider_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"title": schema.StringAttribute{
+						MarkdownDescription: "A human-readable title for the control.",
+						Optional:            true,
+					},
+					"data_view_id": schema.StringAttribute{
+						MarkdownDescription: "The ID of the data view that the control is tied to.",
+						Required:            true,
+					},
+					"field_name": schema.StringAttribute{
+						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+						Required:            true,
+					},
+					"use_global_filters": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control respects dashboard-level filters.",
+						Optional:            true,
+					},
+					"ignore_validations": schema.BoolAttribute{
+						MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
+						Optional:            true,
+					},
+					"value": schema.ListAttribute{
+						MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
+						ElementType:         types.StringType,
+						Optional:            true,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(2),
+							listvalidator.SizeAtMost(2),
+						},
+					},
+					"step": schema.Float32Attribute{
+						MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
+						Optional:            true,
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("range_slider_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 				},
 			},
 			"config_json": schema.StringAttribute{
@@ -1283,10 +1492,11 @@ func getXYLegendSchema() map[string]schema.Attribute {
 			},
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size when positioned outside the chart. Valid when 'inside' is false or omitted.",
+			MarkdownDescription: "Legend size when positioned outside the chart. Valid for left/right outside legends. Values use the Kibana API enum: auto, s, m, l, xl.",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"columns": schema.Int64Attribute{
@@ -1307,14 +1517,14 @@ func getXYLegendSchema() map[string]schema.Attribute {
 func getFilterSimple() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"language": schema.StringAttribute{
-			MarkdownDescription: "Query language (default: 'kuery').",
+			MarkdownDescription: "Query language (default: 'kql').",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("kuery", "lucene"),
+				stringvalidator.OneOf("kql", "lucene"),
 			},
 		},
-		"query": schema.StringAttribute{
-			MarkdownDescription: "Filter query string.",
+		"expression": schema.StringAttribute{
+			MarkdownDescription: "Filter expression string.",
 			Required:            true,
 		},
 	}
@@ -1693,10 +1903,10 @@ func getWaffleSchema() map[string]schema.Attribute {
 func getWaffleLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Int64Attribute{
@@ -1727,13 +1937,6 @@ func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
 			"column": schema.StringAttribute{
 				MarkdownDescription: "ES|QL column name for the metric.",
 				Required:            true,
-			},
-			"operation": schema.StringAttribute{
-				MarkdownDescription: "Metric operation. Currently `value`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("value"),
-				},
 			},
 			"label": schema.StringAttribute{
 				MarkdownDescription: "Optional label for the metric.",
@@ -1771,13 +1974,6 @@ func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
 			"column": schema.StringAttribute{
 				MarkdownDescription: "ES|QL column for the breakdown.",
 				Required:            true,
-			},
-			"operation": schema.StringAttribute{
-				MarkdownDescription: "Group-by operation. Currently `value`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("value"),
-				},
 			},
 			"collapse_by": schema.StringAttribute{
 				MarkdownDescription: "Collapse function when multiple rows map to the same bucket.",
@@ -1885,10 +2081,10 @@ func getPartitionLegendSchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf("auto", "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Float64Attribute{
@@ -2013,22 +2209,18 @@ func getHeatmapCellsSchema() map[string]schema.Attribute {
 // getHeatmapLegendSchema returns schema for heatmap legend configuration
 func getHeatmapLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"visible": schema.BoolAttribute{
-			MarkdownDescription: "Whether to show the legend.",
-			Optional:            true,
-		},
-		"position": schema.StringAttribute{
-			MarkdownDescription: "Legend position.",
+		"visibility": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility. Valid values are `visible` or `hidden`.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("top", "bottom", "left", "right"),
+				stringvalidator.OneOf("visible", "hidden"),
 			},
 		},
 		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "s", "m", "l", "xl"),
 			},
 		},
 		"truncate_after_lines": schema.Int64Attribute{
@@ -2411,7 +2603,7 @@ func getPieChart() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -2429,10 +2621,10 @@ func getPieChart() map[string]schema.Attribute {
 			Default:             float64default.StaticFloat64(1.0),
 		},
 		"donut_hole": schema.StringAttribute{
-			MarkdownDescription: "Donut hole size: none (pie), small, medium, or large.",
+			MarkdownDescription: "Donut hole size: none (pie), s, m, or l.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("none", "small", "medium", "large"),
+				stringvalidator.OneOf("none", "s", "m", "l"),
 			},
 		},
 		"label_position": schema.StringAttribute{
@@ -2442,7 +2634,7 @@ func getPieChart() map[string]schema.Attribute {
 				stringvalidator.OneOf("hidden", "inside", "outside"),
 			},
 		},
-		"legend": schema.StringAttribute{
+		"legend_json": schema.StringAttribute{
 			MarkdownDescription: "Legend configuration as JSON.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -2489,5 +2681,166 @@ func getPieChart() map[string]schema.Attribute {
 				},
 			},
 		},
+	}
+}
+
+// getSloOverviewSchema returns the schema for the slo_overview_config block.
+func getSloOverviewSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"single": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for a single-SLO overview panel. Mutually exclusive with `groups`.",
+			Optional:            true,
+			Attributes:          getSloSingleSchema(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("groups")),
+			},
+		},
+		"groups": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for a grouped SLO overview panel. Mutually exclusive with `single`.",
+			Optional:            true,
+			Attributes:          getSloGroupsSchema(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("single")),
+			},
+		},
+	}
+}
+
+// getSloSharedDisplaySchema returns display attributes shared by both single and groups modes.
+func getSloSharedDisplaySchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title displayed on the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description displayed on the panel.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, the panel title is hidden.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, the panel border is hidden.",
+			Optional:            true,
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						MarkdownDescription: "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
+						Required:            true,
+					},
+					"label": schema.StringAttribute{
+						MarkdownDescription: "The display label for the drilldown link.",
+						Required:            true,
+					},
+					"encode_url": schema.BoolAttribute{
+						MarkdownDescription: "When true, the URL is percent-encoded.",
+						Optional:            true,
+					},
+					"open_in_new_tab": schema.BoolAttribute{
+						MarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
+						Optional:            true,
+					},
+				},
+			},
+		},
+	}
+}
+
+// getSloSingleSchema returns the attributes for the single sub-block.
+func getSloSingleSchema() map[string]schema.Attribute {
+	attrs := getSloSharedDisplaySchema()
+	attrs["slo_id"] = schema.StringAttribute{
+		MarkdownDescription: "The unique identifier of the SLO to display.",
+		Required:            true,
+	}
+	attrs["slo_instance_id"] = schema.StringAttribute{
+		MarkdownDescription: "The SLO instance ID. Set when the SLO uses group_by; identifies which instance to display. Defaults to `*` (all instances) when omitted.",
+		Optional:            true,
+	}
+	attrs["remote_name"] = schema.StringAttribute{
+		MarkdownDescription: "The name of the remote cluster where the SLO is defined.",
+		Optional:            true,
+	}
+	return attrs
+}
+
+// getSloGroupsSchema returns the attributes for the groups sub-block.
+func getSloGroupsSchema() map[string]schema.Attribute {
+	attrs := getSloSharedDisplaySchema()
+	attrs["group_filters"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Optional filters for grouped SLO overview mode.",
+		Optional:            true,
+		Attributes: map[string]schema.Attribute{
+			"group_by": schema.StringAttribute{
+				MarkdownDescription: "Group SLOs by this field. Valid values are `slo.tags`, `status`, `slo.indicator.type`, `_index`.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("slo.tags", "status", "slo.indicator.type", "_index"),
+				},
+			},
+			"groups": schema.ListAttribute{
+				MarkdownDescription: "List of group values to include (maximum 100).",
+				Optional:            true,
+				ElementType:         types.StringType,
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(100),
+				},
+			},
+			"kql_query": schema.StringAttribute{
+				MarkdownDescription: "KQL query string to filter the SLOs shown in the group overview.",
+				Optional:            true,
+			},
+			"filters_json": schema.StringAttribute{
+				MarkdownDescription: "AS-code filter array as a JSON string. Accepts the polymorphic filter schema (condition, group, DSL, spatial).",
+				CustomType:          jsontypes.NormalizedType{},
+				Optional:            true,
+			},
+		},
+	}
+	return attrs
+}
+
+// sloOverviewConfigModeValidator ensures exactly one of single or groups is set.
+var _ validator.Object = sloOverviewConfigModeValidator{}
+
+type sloOverviewConfigModeValidator struct{}
+
+func (v sloOverviewConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `single` or `groups` is configured inside `slo_overview_config`."
+}
+
+func (v sloOverviewConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v sloOverviewConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	singleVal := attrs["single"]
+	groupsVal := attrs["groups"]
+
+	singleSet := singleVal != nil && !singleVal.IsNull() && !singleVal.IsUnknown()
+	groupsSet := groupsVal != nil && !groupsVal.IsNull() && !groupsVal.IsUnknown()
+
+	if singleSet && groupsSet {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`, not both.")
+		return
+	}
+	if !singleSet && !groupsSet {
+		// Both unknown is acceptable (during planning with computed resources).
+		singleUnknown := singleVal != nil && singleVal.IsUnknown()
+		groupsUnknown := groupsVal != nil && groupsVal.IsUnknown()
+		if singleUnknown || groupsUnknown {
+			return
+		}
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.")
 	}
 }

@@ -34,6 +34,7 @@ data "elasticstack_fleet_integration" "example" {
   id         = <computed, string>  # hash of name
   name       = <required, string>
   prerelease = <optional, bool>
+  space_id   = <optional, string>  # Kibana space to scope the package list request
 
   version = <computed, string>
 }
@@ -53,7 +54,7 @@ The resource SHALL use the Kibana Fleet install package API to install integrati
 
 ### Requirement: Fleet package read API (REQ-004–REQ-005)
 
-The resource SHALL use the Kibana Fleet get package API to refresh state on read, supplying the `name` and `version` from state. The data source SHALL use the Kibana Fleet list packages API to retrieve available packages, filtered by the `prerelease` parameter.
+The resource SHALL use the Kibana Fleet get package API to refresh state on read, supplying the `name` and `version` from state. When `space_id` is configured, the get package API call SHALL be scoped to that Kibana space. The data source SHALL use the Kibana Fleet list packages API to retrieve available packages, filtered by the `prerelease` parameter.
 
 #### Scenario: Package not found on resource read
 
@@ -66,6 +67,12 @@ The resource SHALL use the Kibana Fleet get package API to refresh state on read
 - GIVEN a valid `name` and optional `prerelease` flag
 - WHEN read runs on the data source
 - THEN the data source SHALL set `version` to the version returned by the Fleet list packages API for the matching package name, or null if not found
+
+#### Scenario: Data source with space_id
+
+- GIVEN `space_id` is set to a non-default Kibana space
+- WHEN read runs on the data source
+- THEN the list packages API SHALL be called with that space ID as context (i.e. via the `/s/{space_id}/api/fleet/epm/packages` path)
 
 ### Requirement: Resource identity (REQ-006)
 

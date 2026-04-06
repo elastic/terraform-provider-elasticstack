@@ -18,17 +18,16 @@
 package provider_test
 
 import (
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -44,12 +43,16 @@ func TestProvider(t *testing.T) {
 func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				Config:   testElasticsearchConnection(apiKeyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: tfconfig.Variables{
+					"api_key_name": tfconfig.StringVariable(apiKeyName),
+					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
 				),
@@ -65,11 +68,15 @@ func TestElasticsearchBearerTokenConnection(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testElasticsearchBearerTokenConnection(bearerToken),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: tfconfig.Variables{
+					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
+					"bearer_token": tfconfig.StringVariable(bearerToken),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
 				),
@@ -82,12 +89,13 @@ func TestFleetConfiguration(t *testing.T) {
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				Config:   testFleetConfiguration(envConfig),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          fleetConfigVariables(envConfig),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -105,12 +113,13 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				Config:   testFleetBearerTokenConfiguration(envConfig, bearerToken),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          fleetBearerTokenConfigVariables(envConfig, bearerToken),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -122,246 +131,121 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 func TestKibanaConfiguration(t *testing.T) {
 	var envConfig config.Client
 
-	testCases := []struct {
-		name string
-		tc   func() resource.TestCase
-		pre  func(t *testing.T)
-		post func(t *testing.T)
-	}{
-		{
-			name: "with username and password",
-			pre: func(_ *testing.T) {
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
+	t.Run("with username and password", func(t *testing.T) {
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					Steps: []resource.TestStep{
-						{
-							SkipFunc: func() (bool, error) {
-								return envConfig.Kibana.Username == "", nil
-							},
-							Config: testKibanaConfiguration(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
+					SkipFunc: func() (bool, error) {
+						return envConfig.Kibana.Username == "", nil
 					},
-				}
+					ConfigDirectory: acctest.NamedTestCaseDirectory("username_password"),
+					ConfigVariables: kibanaUsernamePasswordConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
 			},
-		},
-		{
-			name: "with api key",
-			pre: func(t *testing.T) {
-				apiKey := os.Getenv("KIBANA_API_KEY")
-				t.Setenv("KIBANA_USERNAME", "")
-				t.Setenv("KIBANA_PASSWORD", "")
-				t.Setenv("KIBANA_API_KEY", apiKey)
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
-					ProtoV6ProviderFactories: acctest.Providers,
-					Steps: []resource.TestStep{
-						{
-							SkipFunc: func() (bool, error) {
-								return os.Getenv("KIBANA_API_KEY") == "", nil
-							},
-							Config: testKibanaAPIKeyConfiguration(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
-					},
-				}
-			},
-		},
-		{
-			name: "with bearer token",
-			pre: func(t *testing.T) {
-				bearerToken := os.Getenv("KIBANA_BEARER_TOKEN")
-				t.Setenv("KIBANA_USERNAME", "")
-				t.Setenv("KIBANA_PASSWORD", "")
-				t.Setenv("KIBANA_API_KEY", "")
-				t.Setenv("KIBANA_BEARER_TOKEN", bearerToken)
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
-					ProtoV6ProviderFactories: acctest.Providers,
-					Steps: []resource.TestStep{
-						{
-							SkipFunc: func() (bool, error) {
-								return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
-							},
-							Config: testKibanaBearerTokenConfiguration(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
-					},
-				}
-			},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.pre(t)
-			resource.Test(t, tc.tc())
-			tc.post(t)
 		})
+	})
 
+	t.Run("with api key", func(t *testing.T) {
+		apiKey := os.Getenv("KIBANA_API_KEY")
+		t.Setenv("KIBANA_USERNAME", "")
+		t.Setenv("KIBANA_PASSWORD", "")
+		t.Setenv("KIBANA_API_KEY", apiKey)
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc: func() (bool, error) {
+						return os.Getenv("KIBANA_API_KEY") == "", nil
+					},
+					ConfigDirectory: acctest.NamedTestCaseDirectory("api_key"),
+					ConfigVariables: kibanaAPIKeyConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("with bearer token", func(t *testing.T) {
+		bearerToken := os.Getenv("KIBANA_BEARER_TOKEN")
+		t.Setenv("KIBANA_USERNAME", "")
+		t.Setenv("KIBANA_PASSWORD", "")
+		t.Setenv("KIBANA_API_KEY", "")
+		t.Setenv("KIBANA_BEARER_TOKEN", bearerToken)
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc: func() (bool, error) {
+						return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
+					},
+					ConfigDirectory: acctest.NamedTestCaseDirectory("bearer_token"),
+					ConfigVariables: kibanaBearerTokenConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
+			},
+		})
+	})
+}
+
+func kibanaUsernamePasswordConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_username": tfconfig.StringVariable(cfg.Kibana.Username),
+		"kibana_password": tfconfig.StringVariable(cfg.Kibana.Password),
 	}
 }
 
-func testKibanaConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints = ["%s"]
-		username  = "%s"
-		password  = "%s"
+func kibanaAPIKeyConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_api_key":  tfconfig.StringVariable(cfg.Kibana.ApiKey),
 	}
 }
 
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.Username, cfg.Kibana.Password)
-}
+func fleetConfigVariables(cfg config.Client) tfconfig.Variables {
+	caCertVars := make([]tfconfig.Variable, len(cfg.Fleet.CACerts))
+	for i, ca := range cfg.Fleet.CACerts {
+		caCertVars[i] = tfconfig.StringVariable(ca)
+	}
 
-func testKibanaAPIKeyConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints = ["%s"]
-		api_key   = "%s"
+	return tfconfig.Variables{
+		"fleet_endpoint": tfconfig.StringVariable(cfg.Fleet.URL),
+		"fleet_username": tfconfig.StringVariable(cfg.Fleet.Username),
+		"fleet_password": tfconfig.StringVariable(cfg.Fleet.Password),
+		"fleet_ca_certs": tfconfig.ListVariable(caCertVars...),
 	}
 }
 
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.ApiKey)
-}
-
-func testFleetConfiguration(cfg config.Client) string {
-	caCerts := ""
-	if len(cfg.Fleet.CACerts) > 0 {
-		quotedCas := []string{}
-		for _, ca := range cfg.Fleet.CACerts {
-			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
-		}
-
-		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
+func fleetBearerTokenConfigVariables(cfg config.Client, bearerToken string) tfconfig.Variables {
+	caCertVars := make([]tfconfig.Variable, len(cfg.Fleet.CACerts))
+	for i, ca := range cfg.Fleet.CACerts {
+		caCertVars[i] = tfconfig.StringVariable(ca)
 	}
 
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	fleet {
-		endpoint = "%s"
-		username = "%s"
-		password = "%s"
-		%s
+	return tfconfig.Variables{
+		"fleet_endpoint": tfconfig.StringVariable(cfg.Fleet.URL),
+		"bearer_token":   tfconfig.StringVariable(bearerToken),
+		"fleet_ca_certs": tfconfig.ListVariable(caCertVars...),
 	}
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, cfg.Fleet.Username, cfg.Fleet.Password, caCerts)
-}
-
-func testElasticsearchConnection(apiKeyName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_api_key" "test_connection" {
-  name = "%s"
-
-  role_descriptors = jsonencode({
-    role-a = {
-      cluster = ["all"]
-      indices = [{
-        names = ["*"]
-        privileges = ["all"]
-        allow_restricted_indices = false
-      }]
-    }
-  })
-
-  expiration = "1d"
-}
-
-
-data "elasticstack_elasticsearch_security_user" "test" {
-  username = "elastic"
-
-  elasticsearch_connection {
-    endpoints = ["%s"]
-    api_key   = elasticstack_elasticsearch_security_api_key.test_connection.encoded
-  }
-}
-`, apiKeyName, os.Getenv("ELASTICSEARCH_ENDPOINTS"))
-}
-
-func testElasticsearchBearerTokenConnection(bearerToken string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {
-    endpoints    = ["%s"]
-    bearer_token = "%s"
-  }
-}
-
-data "elasticstack_elasticsearch_security_user" "test" {
-  username = "elastic"
-}
-`, os.Getenv("ELASTICSEARCH_ENDPOINTS"), bearerToken)
-}
-
-func testKibanaBearerTokenConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints    = ["%s"]
-		bearer_token = "%s"
+func kibanaBearerTokenConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint":     tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_bearer_token": tfconfig.StringVariable(cfg.Kibana.BearerToken),
 	}
-}
-
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.BearerToken)
-}
-
-func testFleetBearerTokenConfiguration(cfg config.Client, bearerToken string) string {
-	caCerts := ""
-	if len(cfg.Fleet.CACerts) > 0 {
-		quotedCas := []string{}
-		for _, ca := range cfg.Fleet.CACerts {
-			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
-		}
-
-		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	fleet {
-		endpoint     = "%s"
-		bearer_token = "%s"
-		%s
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, bearerToken, caCerts)
 }

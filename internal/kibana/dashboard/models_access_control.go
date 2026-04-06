@@ -30,18 +30,18 @@ type AccessControlValue struct {
 
 // toCreateAPI converts the Terraform model to the POST API model
 func (m *AccessControlValue) toCreateAPI() *struct {
-	AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+	AccessMode *kbapi.PostDashboardsJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
 } {
 	if m == nil {
 		return nil
 	}
 
 	result := &struct {
-		AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+		AccessMode *kbapi.PostDashboardsJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
 	}{}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
+		mode := kbapi.PostDashboardsJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
 		result.AccessMode = &mode
 	}
 

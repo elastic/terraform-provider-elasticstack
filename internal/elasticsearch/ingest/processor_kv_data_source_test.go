@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorKV(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorKV,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_kv.test", "json", expectedJSONKV),
 				),
@@ -52,20 +52,5 @@ const expectedJSONKV = `{
 		"strip_brackets": false,
 		"value_split": "="
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorKV = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_kv" "test" {
-  field       = "message"
-  field_split = " "
-  value_split = "="
-
-  exclude_keys = ["tags"]
-  prefix       = "setting_"
 }
 `

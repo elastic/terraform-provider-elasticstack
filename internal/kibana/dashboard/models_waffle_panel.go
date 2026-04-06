@@ -238,7 +238,6 @@ type waffleValueDisplay struct {
 
 type waffleEsqlMetric struct {
 	Column     types.String         `tfsdk:"column"`
-	Operation  types.String         `tfsdk:"operation"`
 	Label      types.String         `tfsdk:"label"`
 	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
 	Color      *waffleStaticColor   `tfsdk:"color"`
@@ -251,7 +250,6 @@ type waffleStaticColor struct {
 
 type waffleEsqlGroupBy struct {
 	Column     types.String         `tfsdk:"column"`
-	Operation  types.String         `tfsdk:"operation"`
 	CollapseBy types.String         `tfsdk:"collapse_by"`
 	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
 	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
@@ -265,7 +263,7 @@ func (m *waffleConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleNoESQL) diag.Diagnostics {
@@ -386,8 +384,7 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 		m.EsqlMetrics = make([]waffleEsqlMetric, len(api.Metrics))
 		for i, met := range api.Metrics {
 			em := waffleEsqlMetric{
-				Column:    types.StringValue(met.Column),
-				Operation: types.StringValue(string(met.Operation)),
+				Column: types.StringValue(met.Column),
 				FormatJSON: func() jsontypes.Normalized {
 					b, err := json.Marshal(met.Format)
 					if err != nil {
@@ -432,7 +429,6 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
 			eg := waffleEsqlGroupBy{
 				Column:     types.StringValue(gb.Column),
-				Operation:  types.StringValue(string(gb.Operation)),
 				CollapseBy: types.StringValue(string(gb.CollapseBy)),
 				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
 				FormatJSON: jsontypes.NewNormalizedValue(formatStr),
@@ -692,18 +688,16 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 	}
 
 	metrics := make([]struct {
-		Color     kbapi.StaticColor                `json:"color"`
-		Column    string                           `json:"column"`
-		Format    kbapi.FormatType                 `json:"format"`
-		Label     *string                          `json:"label,omitempty"`
-		Operation kbapi.WaffleESQLMetricsOperation `json:"operation"`
+		Color  kbapi.StaticColor `json:"color"`
+		Column string            `json:"column"`
+		Format kbapi.FormatType  `json:"format"`
+		Label  *string           `json:"label,omitempty"`
 	}, len(m.EsqlMetrics))
 	for i, em := range m.EsqlMetrics {
 		if err := json.Unmarshal([]byte(em.FormatJSON.ValueString()), &metrics[i].Format); err != nil {
 			diags.AddError("Failed to unmarshal format_json", err.Error())
 		}
 		metrics[i].Column = em.Column.ValueString()
-		metrics[i].Operation = kbapi.WaffleESQLMetricsOperation(em.Operation.ValueString())
 		if em.Color == nil {
 			diags.AddError("Missing color", "waffle_config.esql_metrics color is required")
 			continue
@@ -721,19 +715,17 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 
 	if len(m.EsqlGroupBy) > 0 {
 		gb := make([]struct {
-			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
-			Color      kbapi.ColorMapping               `json:"color"`
-			Column     string                           `json:"column"`
-			Format     kbapi.FormatType                 `json:"format"`
-			Label      *string                          `json:"label,omitempty"`
-			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
+			CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+			Color      kbapi.ColorMapping `json:"color"`
+			Column     string             `json:"column"`
+			Format     kbapi.FormatType   `json:"format"`
+			Label      *string            `json:"label,omitempty"`
 		}, len(m.EsqlGroupBy))
 		for i, eg := range m.EsqlGroupBy {
 			if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &gb[i].Color); err != nil {
 				diags.AddError("Failed to unmarshal color_json", err.Error())
 			}
 			gb[i].Column = eg.Column.ValueString()
-			gb[i].Operation = kbapi.WaffleESQLGroupByOperation(eg.Operation.ValueString())
 			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
 			formatSrc := `{"type":"number"}`
 			if typeutils.IsKnown(eg.FormatJSON) {
