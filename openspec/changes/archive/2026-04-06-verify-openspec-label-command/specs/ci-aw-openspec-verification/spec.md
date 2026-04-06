@@ -1,17 +1,17 @@
 ## MODIFIED Requirements
 
 ### Requirement: Label trigger (REQ-002)
-The workflow SHALL use `label_command` for the `verify-openspec` label and SHALL restrict that command to `pull_request` events only. Applying `verify-openspec` to a pull request SHALL activate the workflow's verification path for that pull request, and labels other than `verify-openspec` SHALL NOT activate this workflow. The workflow SHALL NOT rely on a separate deterministic label-verification step to confirm the trigger label after activation.
+The authored workflow source SHALL use `label_command` for the `verify-openspec` label and SHALL restrict that command to `pull_request` events only. Applying `verify-openspec` to a pull request SHALL activate the workflow's verification path for that pull request through that source declaration. The compiled `.lock.yml` MAY normalize this declaration into lower-level event wiring or compiler-managed activation steps. The workflow SHALL NOT rely on a separate repository-authored deterministic label-verification step to confirm the trigger label after activation.
 
 #### Scenario: Correct label runs automation on pull requests
 - **GIVEN** a pull request receives the label `verify-openspec`
 - **WHEN** the `label_command` trigger activates
 - **THEN** the workflow SHALL mark the run eligible for the agentic verification path subject to the remaining deterministic change-selection gate
 
-#### Scenario: Other labels do not start verification
-- **GIVEN** a pull request receives a label other than `verify-openspec`
-- **WHEN** pull request labeling activity occurs
-- **THEN** this workflow SHALL NOT activate for that label
+#### Scenario: Compiler normalization does not require duplicate label verification
+- **GIVEN** maintainers inspect the compiled `.lock.yml`
+- **WHEN** `label_command` has been compiled by `gh aw compile`
+- **THEN** the compiled artifact MAY express lower-level labeled-event wiring or activation helpers without requiring a repository-authored `verify_label` step or equivalent duplicated label-name gate
 
 #### Scenario: Non-pull-request items are out of scope
 - **GIVEN** an issue or discussion receives the label `verify-openspec`
@@ -52,7 +52,7 @@ The workflow SHALL NOT declare a `remove-labels` safe output for `verify-openspe
 
 ### Requirement: Remove trigger label after workflow completion (REQ-015)
 
-For a run triggered by applying the `verify-openspec` label to a pull request, the workflow SHALL rely on `label_command` automatic removal of that same label from the triggering pull request as part of activation rather than instructing the agent to request `remove-labels` before it concludes handling. The cleanup SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on terminal agent safe outputs or a separate post-agent cleanup job for this behavior.
+For a run triggered by applying the `verify-openspec` label to a pull request, the workflow SHALL rely on `label_command` automatic removal of that same label from the triggering pull request as part of activation rather than instructing the agent to request `remove-labels` before it concludes handling. Compiler-generated lockfile steps that implement this activation-time cleanup are acceptable. The cleanup SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on terminal agent safe outputs or a separate post-agent cleanup job for this behavior.
 
 #### Scenario: Activation removes the trigger label automatically
 

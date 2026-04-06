@@ -42,12 +42,16 @@ test('verify-label workflow bootstraps the repo with make setup', () => {
   assert.match(source, /Setup repository dependencies\s*\n\s*run: make setup/m);
 });
 
-test('verify-label workflow declares remove-labels safe output for verify-openspec only', () => {
+test('verify-label workflow uses label_command for verify-openspec on pull requests only', () => {
   const source = workflowSource();
-  assert.match(
-    source,
-    /remove-labels:\s*\n\s*target:\s*triggering\s*\n\s*allowed:\s*\[\s*verify-openspec\s*\]\s*\n\s*max:\s*1/m,
-  );
+  assert.match(source, /label_command:/);
+  assert.match(source, /names:\s*\[\s*verify-openspec\s*\]/);
+  assert.match(source, /events:\s*\[\s*pull_request\s*\]/);
+});
+
+test('verify-label workflow does not declare remove-labels safe output', () => {
+  const source = workflowSource();
+  assert.doesNotMatch(source, /remove-labels:/);
 });
 
 test('verify-label workflow does not use completion_cleanup job or inline label-removal script', () => {
@@ -56,11 +60,11 @@ test('verify-label workflow does not use completion_cleanup job or inline label-
   assert.doesNotMatch(source, /remove_verify_label\.inline\.js/);
 });
 
-test('verify-label workflow prompt instructs terminal remove-labels cleanup', () => {
+test('verify-label workflow prompt does not instruct remove-labels cleanup', () => {
   const source = workflowSource();
-  assert.match(source, /## Remove trigger label \(final safe outputs\)/);
-  assert.match(source, /remove-labels.*terminal/s);
-  assert.match(source, /post-agent script or job/);
+  assert.doesNotMatch(source, /## Remove trigger label \(final safe outputs\)/);
+  assert.match(source, /label_command/);
+  assert.match(source, /do \*\*not\*\* emit \*\*`remove-labels`\*\*/);
 });
 
 test('verify-label workflow exposes review disposition and disposition reason to the agent', () => {
