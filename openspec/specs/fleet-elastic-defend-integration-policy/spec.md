@@ -256,7 +256,9 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 
 ### Requirement: Create uses the documented Defend bootstrap flow (REQ-008)
 
-On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape documented by Kibana, attached to the configured `agent_policy_id`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with input `type = "ENDPOINT_INTEGRATION_CONFIG"`, input `enabled = true`, input `streams = []`, and preset mapped under `config._config.value.endpointConfig.preset`. After the bootstrap call succeeds, the resource SHALL use the API response as the source of truth for server-managed Defend data required for subsequent operations.
+On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape, attached to the configured `agent_policy_id`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with input `type = "endpoint"`, input `enabled = true`, input `streams = []`, and preset mapped under `config.integration_config.value.endpointConfig.preset`. After the bootstrap call succeeds, the resource SHALL use the API response as the source of truth for server-managed Defend data required for subsequent operations.
+
+**Note:** Kibana rejects `"ENDPOINT_INTEGRATION_CONFIG"` as the input type and `"_config"` as the config key. Both bootstrap and finalize/update paths use `"endpoint"` and `"integration_config"` respectively.
 
 #### Scenario: Create bootstraps a new Defend package policy
 
@@ -267,7 +269,7 @@ On create, the resource SHALL create the Elastic Defend package policy using the
 
 ### Requirement: Create finalizes the modeled policy after bootstrap (REQ-009)
 
-After the bootstrap create succeeds, the resource SHALL submit a Defend-specific update request that applies the configured typed `policy` settings to the new package policy. The finalized request SHALL include the provider-modeled Defend `policy` payload, the configured `preset` mapped under `config.integration_config.value.endpointConfig.preset`, the server-managed `artifact_manifest`, and the top-level package policy `version`. Those server-managed values SHALL be echoed back from the bootstrap response without user intervention.
+After the bootstrap create succeeds, the resource SHALL submit a Defend-specific update request that applies the configured typed `policy` settings to the new package policy. The finalized request SHALL include the provider-modeled Defend `policy` payload, the configured `preset` mapped under `config.integration_config.value.endpointConfig.preset`, and the top-level package policy `version`. The `artifact_manifest` SHALL NOT be included — Kibana manages it server-side and rejects it when present in typed input config.
 
 #### Scenario: Create applies modeled policy settings after bootstrap
 
@@ -278,14 +280,15 @@ After the bootstrap create succeeds, the resource SHALL submit a Defend-specific
 
 ### Requirement: Update preserves opaque server-managed Defend payloads (REQ-010)
 
-On update, the resource SHALL send the Defend-specific typed package policy shape required by Kibana, including the latest provider-modeled `preset` and `policy` values. The provider SHALL preserve and resend opaque server-managed Defend payloads needed for update, including `artifact_manifest` and the top-level package policy `version`, without exposing those values in the public Terraform schema.
+On update, the resource SHALL send the Defend-specific typed package policy shape required by Kibana, including the latest provider-modeled `preset` and `policy` values. The provider SHALL preserve and resend the top-level package policy `version` (for optimistic concurrency control) without exposing it in the public Terraform schema. The `artifact_manifest` SHALL NOT be included in update requests — Kibana manages it server-side and rejects it when present. The provider captures `artifact_manifest` from API responses into private state but does not send it on update.
 
 #### Scenario: Update succeeds without exposing artifact manifest
 
 - GIVEN an existing Defend resource that was previously created or imported
 - WHEN a user changes a modeled policy setting
-- THEN the provider SHALL include the stored server-managed Defend payloads required by the API in the update request
-- AND the Terraform schema SHALL still not expose `artifact_manifest` as a configurable field
+- THEN the provider SHALL include the package policy `version` token in the update request for optimistic concurrency control
+- AND the Terraform schema SHALL not expose `artifact_manifest` as a configurable field
+- AND the provider SHALL NOT send `artifact_manifest` in the update request body
 
 ### Requirement: Read and import map only modeled fields to state (REQ-011)
 
@@ -300,7 +303,7 @@ On read and import, the resource SHALL parse the Defend-specific package policy 
 
 ### Requirement: Provider-managed internal state for update prerequisites (REQ-012)
 
-The resource SHALL maintain internal provider-managed state for opaque Defend data that must survive between operations but does not belong in the public schema. This internal state SHALL include at least the latest `artifact_manifest` and package policy `version` returned by the API. It SHALL be refreshed from successful create, read, update, and import responses so later updates can continue using the latest Defend server-managed payloads.
+The resource SHALL maintain internal provider-managed state for opaque Defend data that must survive between operations but does not belong in the public schema. This internal state SHALL include the latest package policy `version` (used for optimistic concurrency control on updates) and the latest `artifact_manifest` (captured for observability, even though it is not sent in requests). Both SHALL be refreshed from successful create, read, update, and import responses.
 
 #### Scenario: Import captures opaque update prerequisites
 
