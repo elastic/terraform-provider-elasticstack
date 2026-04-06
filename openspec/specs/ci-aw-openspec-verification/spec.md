@@ -4,15 +4,16 @@ Workflow implementation: `.github/workflows/openspec-verify-label.md` (name MAY 
 
 ## Purpose
 
-Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated using only `added` and/or `modified` file statuses (non-archive), verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE` for an approval-eligible run, archives that change and pushes the result to the PR branch. When the agent finishes handling an eligible run, it removes the trigger label through the `remove-labels` safe output (see REQ-015), not through a separate cleanup job.
+Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied via `label_command`, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated using only `added` and/or `modified` file statuses (non-archive), verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE` for an approval-eligible run, archives that change and pushes the result to the PR branch. Trigger-label removal for `verify-openspec` is handled by `label_command` activation (see REQ-015), not by agent `remove-labels` safe outputs.
 
 ## Schema
 
 ```yaml
 # Illustrative frontmatter (exact keys per gh-aw compiler)
 on:
-  pull_request:
-    types: [labeled]
+  label_command:
+    names: [verify-openspec]
+    events: [pull_request]
 permissions:
   contents: read
   pull-requests: read
@@ -23,10 +24,6 @@ safe-outputs:
     max: 1
   push-to-pull-request-branch:
     target: triggering
-    max: 1
-  remove-labels:
-    target: triggering
-    allowed: [verify-openspec]
     max: 1
 ```
 ## Requirements
@@ -41,27 +38,32 @@ The automation SHALL be authored as a GitHub Agentic Workflow markdown file unde
 - THEN the `.md` source and regenerated `.lock.yml` SHALL match `gh aw compile` output
 
 ### Requirement: Label trigger (REQ-002)
-The workflow SHALL run on `pull_request` events of type `labeled`. A deterministic pre-activation step SHALL verify that `github.event.label.name` (or equivalent injected label data) is exactly `verify-openspec` and SHALL publish the result for downstream jobs. The workflow SHALL not perform verification or archive steps when that deterministic check indicates a different label.
+The authored workflow source SHALL use `label_command` for the `verify-openspec` label and SHALL restrict that command to `pull_request` events only. Applying `verify-openspec` to a pull request SHALL activate the workflow's verification path for that pull request through that source declaration. The compiled `.lock.yml` MAY normalize this declaration into lower-level event wiring or compiler-managed activation steps. The workflow SHALL NOT rely on a separate repository-authored deterministic label-verification step to confirm the trigger label after activation.
 
-#### Scenario: Correct label runs automation
+#### Scenario: Correct label runs automation on pull requests
 - **GIVEN** a pull request receives the label `verify-openspec`
-- **WHEN** GitHub dispatches the `labeled` event
-- **THEN** the deterministic pre-activation gate SHALL mark the run eligible for the agentic verification path
+- **WHEN** the `label_command` trigger activates
+- **THEN** the workflow SHALL mark the run eligible for the agentic verification path subject to the remaining deterministic change-selection gate
 
-#### Scenario: Other labels do not start verification
-- **GIVEN** a pull request receives a label other than `verify-openspec`
-- **WHEN** the `labeled` event fires
-- **THEN** the workflow SHALL not perform verification or archive steps for that event
+#### Scenario: Compiler normalization does not require duplicate label verification
+- **GIVEN** maintainers inspect the compiled `.lock.yml`
+- **WHEN** `label_command` has been compiled by `gh aw compile`
+- **THEN** the compiled artifact MAY express lower-level labeled-event wiring or activation helpers without requiring a repository-authored `verify_label` step or equivalent duplicated label-name gate
+
+#### Scenario: Non-pull-request items are out of scope
+- **GIVEN** an issue or discussion receives the label `verify-openspec`
+- **WHEN** labeling activity occurs
+- **THEN** this workflow SHALL NOT activate because the command is configured for pull requests only
 
 ### Requirement: Permissions for read, review, and push (REQ-003)
 
-The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and remove the `verify-openspec` label from the triggering pull request via the `remove-labels` safe output. At minimum this SHALL include `contents: write`, `pull-requests: write`, and `issues: write` unless the agentic compiler emits a narrower equivalent that still allows those operations.
+The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and allow `label_command` activation to remove the `verify-openspec` label from the triggering pull request automatically. At minimum this SHALL include `contents: write`, `pull-requests: write`, and any additional compiler-required scope for automatic trigger-label removal on pull requests.
 
-#### Scenario: Push safe output and label cleanup are permitted
+#### Scenario: Push safe output and trigger-label cleanup are permitted
 
 - GIVEN the agent archives the change and produces a commit on the PR branch
-- WHEN `push-to-pull-request-branch` and `remove-labels` safe outputs run
-- THEN the token SHALL have authority to push to the PR head branch and mutate the triggering pull request label set under normal repository settings
+- WHEN `push-to-pull-request-branch` runs and `label_command` activation removes the trigger label
+- THEN the workflow token SHALL have authority to push to the PR head branch and mutate the triggering pull request label set under normal repository settings
 
 ### Requirement: Safe outputs for review and push (REQ-004)
 
@@ -70,7 +72,8 @@ The workflow SHALL declare safe outputs for:
 - `create-pull-request-review-comment` with `max` large enough for verification and unassociated-file commentary.
 - `submit-pull-request-review` with `max: 1` and `target` appropriate to the triggering pull request.
 - `push-to-pull-request-branch` with `max: 1` (or documented policy) and `target: triggering`, plus any `checkout` `fetch` / `title-prefix` / `labels` required by repository policy and [GitHub Agentic Workflows - Push to PR branch](https://github.github.io/gh-aw/reference/safe-outputs-pull-requests/#push-to-pr-branch-push-to-pull-request-branch).
-- `remove-labels` with `target: triggering`, `allowed` constrained to `verify-openspec`, and a `max` that permits the single trigger-label cleanup action.
+
+The workflow SHALL NOT declare a `remove-labels` safe output for `verify-openspec` cleanup because trigger-label removal is handled by `label_command` activation.
 
 #### Scenario: One review decision per run
 
@@ -78,11 +81,11 @@ The workflow SHALL declare safe outputs for:
 - WHEN reviews are submitted
 - THEN at most one final submitted pull request review SHALL represent the approval decision before any archive push
 
-#### Scenario: Cleanup output is limited to the trigger label
+#### Scenario: No redundant label-cleanup safe output is declared
 
-- GIVEN the workflow requests label cleanup through safe outputs
-- WHEN `remove-labels` is evaluated
-- THEN the workflow configuration SHALL allow removal of `verify-openspec` and SHALL NOT require broader label-removal authority
+- GIVEN maintainers inspect the workflow frontmatter
+- WHEN they review the configured safe outputs
+- THEN the workflow SHALL omit `remove-labels` for `verify-openspec` cleanup
 
 ### Requirement: Discover active change id from PR files (REQ-005)
 The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals, and a deterministic disposition reason that explains why that review disposition was assigned.
@@ -224,19 +227,19 @@ After a successful `APPROVE` and archive step, the workflow SHALL commit the wor
 
 ### Requirement: Remove trigger label after workflow completion (REQ-015)
 
-For a run triggered by applying the `verify-openspec` label, the workflow SHALL instruct the agent to request removal of that same label from the triggering pull request through the `remove-labels` safe output before the agent concludes its handling of the pull request. The cleanup request SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on a separate post-agent cleanup script or job for this behavior.
+For a run triggered by applying the `verify-openspec` label to a pull request, the workflow SHALL rely on `label_command` automatic removal of that same label from the triggering pull request as part of activation rather than instructing the agent to request `remove-labels` before it concludes handling. Compiler-generated lockfile steps that implement this activation-time cleanup are acceptable. The cleanup SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on terminal agent safe outputs or a separate post-agent cleanup job for this behavior.
 
-#### Scenario: Approved run requests trigger label cleanup
+#### Scenario: Activation removes the trigger label automatically
 
-- GIVEN a `verify-openspec`-triggered run submits an `APPROVE` review and completes archive or push handling as applicable
-- WHEN the agent emits its final safe outputs for the run
-- THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
+- GIVEN a pull request receives the `verify-openspec` label
+- WHEN the `label_command` workflow activates
+- THEN the triggering pull request SHALL lose the `verify-openspec` label without requiring an agent-emitted `remove-labels` output
 
-#### Scenario: Non-approval run requests trigger label cleanup
+#### Scenario: Comment or skipped runs do not require agent cleanup
 
-- GIVEN a `verify-openspec`-triggered run ends with `COMMENT` or `noop` after agent handling begins
-- WHEN the agent emits its final safe outputs for the run
-- THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
+- GIVEN a `verify-openspec`-triggered run later submits `COMMENT` or is skipped by deterministic gating before agent execution
+- WHEN workflow activation has completed
+- THEN trigger-label cleanup SHALL already be handled without waiting for terminal agent safe outputs
 
 ### Requirement: Review environment bootstraps repository toolchains
 The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
@@ -304,10 +307,10 @@ The workflow SHALL use deterministic custom workflow steps in the agent job to p
 - **THEN** deterministic custom steps SHALL complete `make setup` before the agent uses `npx openspec`
 
 ### Requirement: Deterministic gates may skip agent execution
-The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. When the agent job is skipped, the `remove-labels` safe output is not invoked by this workflow for that run; REQ-015’s label-removal contract applies only when the agent runs and completes handling.
+The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. Trigger-label cleanup for `verify-openspec` SHALL already be handled by `label_command` activation and SHALL NOT depend on whether the agent job runs.
 
 #### Scenario: Ineligible run skips agent job
-- **GIVEN** deterministic pre-activation gating concludes the pull request is not eligible for verification
+- **GIVEN** deterministic gating concludes the pull request is not eligible for verification
 - **WHEN** downstream job conditions are evaluated
 - **THEN** the workflow SHALL skip the agent job
 

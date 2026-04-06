@@ -3,20 +3,14 @@ name: OpenSpec verify (label)
 description: >-
   When maintainers add the verify-openspec label, verifies the PR against exactly one active
   OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the
-  run is approval-eligible) archives the change and pushes the result to the PR branch, and removes
-  the trigger label via remove-labels safe output when the agent concludes handling.
+  run is approval-eligible) archives the change and pushes the result to the PR branch. Activation
+  uses label_command so the verify-openspec label is removed when the workflow starts; the agent does
+  not use remove-labels safe output.
 on:
-  pull_request:
-    types: [labeled]
-    # Hard gate: compiled workflow skips agent jobs unless this label triggered the run.
+  label_command:
     names: [verify-openspec]
+    events: [pull_request]
   steps:
-    - name: Verify triggering label
-      id: verify_label
-      uses: actions/github-script@v8
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/verify_label.inline.js
     - name: Select active change from PR files
       id: select_change
       uses: actions/github-script@v8
@@ -24,7 +18,6 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/select_change.inline.js
 if: >-
-  needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
   - name: Setup Go
@@ -56,8 +49,6 @@ permissions:
 jobs:
   pre-activation:
     outputs:
-      label_verified: ${{ steps.verify_label.outputs.label_verified }}
-      label_reason: ${{ steps.verify_label.outputs.label_reason }}
       selection_status: ${{ steps.select_change.outputs.selection_status }}
       selection_reason: ${{ steps.select_change.outputs.selection_reason }}
       selected_change: ${{ steps.select_change.outputs.selected_change }}
@@ -84,19 +75,15 @@ safe-outputs:
   push-to-pull-request-branch:
     target: triggering
     max: 1
-  remove-labels:
-    target: triggering
-    allowed: [verify-openspec]
-    max: 1
 ---
 
 # OpenSpec verify, archive, and clean up (label-gated)
 
-You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review run `openspec archive` and push the branch. When you finish handling this pull request, you remove the **`verify-openspec`** trigger label via the **`remove-labels`** safe output (see below); there is no separate cleanup job after the agent.
+You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review run `openspec archive` and push the branch. The **`verify-openspec`** label is removed when this workflow activates (`label_command`); do **not** emit **`remove-labels`** safe outputs.
 
 ## Pre-activation context
 
-Deterministic pre-activation steps have verified the triggering label and selected the active change. Deterministic steps have also provisioned the review toolchains (Node, Go, Terraform) and run `make setup` so OpenSpec CLI, Node packages, and prepared Go dependencies are available before agent reasoning begins.
+Deterministic pre-activation steps have selected the active change. Deterministic steps have also provisioned the review toolchains (Node, Go, Terraform) and run `make setup` so OpenSpec CLI, Node packages, and prepared Go dependencies are available before agent reasoning begins.
 
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
 - **Review disposition** (do not infer from PR files): `${{ needs.pre_activation.outputs.review_disposition }}` — either `approval-eligible` or `comment-only`
@@ -151,7 +138,3 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - Use **`push-to-pull-request-branch`** to update the **triggering** PR branch.
 
 9. If the review was **`COMMENT`**, or the run was **`comment-only`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
-
-## Remove trigger label (final safe outputs)
-
-10. After **`submit-pull-request-review`** and, when applicable, **`push-to-pull-request-branch`**, include **`remove-labels`** in your **terminal** safe outputs for this run so the **triggering** pull request loses **`verify-openspec`** only. Do this for **`APPROVE`**, **`COMMENT`**, and **`noop`** outcomes once you have reached a decision. Do **not** remove any other labels. Request this cleanup **before** you conclude handling; the workflow does **not** run a post-agent script or job to strip the label.
