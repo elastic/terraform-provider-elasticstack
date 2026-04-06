@@ -1,17 +1,17 @@
 ## MODIFIED Requirements
 
 ### Requirement: Discover active change id from PR files (REQ-005)
-The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, and a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals.
+The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals, and a deterministic disposition reason that explains why that review disposition was assigned.
 
 #### Scenario: Derive change id from path
 - **GIVEN** a modified file `openspec/changes/my-feature/tasks.md`
 - **WHEN** the deterministic selection step parses paths
 - **THEN** the active change id SHALL be recognized as `my-feature`
 
-#### Scenario: Selected change and review disposition are exposed to the agent
+#### Scenario: Selected change, review disposition, and reason are exposed to the agent
 - **GIVEN** exactly one active change satisfies the gating rules
 - **WHEN** the deterministic selection step completes
-- **THEN** the workflow SHALL expose that change id and the deterministic review disposition as pre-activation outputs for the later agent job
+- **THEN** the workflow SHALL expose that change id, the deterministic review disposition, and the deterministic disposition reason as pre-activation outputs for the later agent job
 
 ### Requirement: Noop when change selection rules fail (REQ-006)
 The workflow SHALL not submit a pull request review and SHALL not archive when the deterministic gating result indicates any of the following:
