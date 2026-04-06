@@ -163,14 +163,12 @@ For every PR-changed file not covered by the structural allowlist, the agent SHA
 - THEN the file SHALL be `relevant` or `uncertain`, not `unassociated`
 
 ### Requirement: Pull request review body (REQ-010)
-
 The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied.
 
 #### Scenario: Body states unassociated outcome
-
-- GIVEN relevance review completes
-- WHEN the review is submitted
-- THEN the body SHALL state whether any `unassociated` files were found
+- **GIVEN** relevance review completes
+- **WHEN** the review is submitted
+- **THEN** the body SHALL state whether any `unassociated` files were found
 
 #### Scenario: Body explains net-new comment-only limitation
 - **GIVEN** the selected active change includes added files and verification finds zero CRITICAL issues and zero `unassociated` files
@@ -188,7 +186,6 @@ The agent SHALL add line-level comments for mappable Issues by priority entries 
 - THEN an inline review comment SHOULD be placed on that hunk when the API allows
 
 ### Requirement: Review event APPROVE vs COMMENT (REQ-012)
-
 The agent SHALL submit a pull request review with `APPROVE` if and only if the deterministic review disposition is approval-eligible and there are zero CRITICAL issues and zero `unassociated` files; otherwise `COMMENT`. The agent SHALL submit `COMMENT` whenever the deterministic review disposition is comment-only, including cases where verification finds zero CRITICAL issues and zero `unassociated` files. It SHALL not use `REQUEST_CHANGES`. WARNING and SUGGESTION alone SHALL NOT block `APPROVE` for approval-eligible runs.
 
 #### Scenario: Approve when gates pass for a modified change
@@ -203,14 +200,12 @@ The agent SHALL submit a pull request review with `APPROVE` if and only if the d
 - **THEN** `event` SHALL be `COMMENT`
 
 ### Requirement: Archive after APPROVE only (REQ-013)
-
 Only when the agent submits a pull request review with `APPROVE` for an approval-eligible run, the workflow SHALL archive the selected change `<id>` using repository-standard automation (for example, `openspec archive <id>` and/or steps aligned with `openspec-archive-change`), updating `openspec/changes/archive/` and canonical specs per project policy.
 
 #### Scenario: Comment review does not archive
-
-- GIVEN the review event is `COMMENT`
-- WHEN the run completes
-- THEN the workflow SHALL NOT move the change to `archive/` or mutate canonical specs for this id via this workflow
+- **GIVEN** the review event is `COMMENT`
+- **WHEN** the run completes
+- **THEN** the workflow SHALL NOT move the change to `archive/` or mutate canonical specs for this id via this workflow
 
 #### Scenario: Net-new change proposal does not archive
 - **GIVEN** deterministic gating marked the selected active change comment-only because it includes added files
