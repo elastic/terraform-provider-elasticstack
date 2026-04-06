@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with Options List Control Panel (no config block)"
+  description = "Dashboard with JSON root query"
 
   time_range = {
     from = "now-15m"
@@ -16,15 +16,6 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
   query = {
     language = "kuery"
-    text     = ""
+    json     = jsonencode({ match_all = {} })
   }
-  panels = [{
-    type = "options_list_control"
-    grid = {
-      x = 0
-      y = 0
-      w = 12
-      h = 4
-    }
-  }]
 }

@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Pie Chart Panel (Full)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kql"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Pie Chart Panel (Full)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -25,7 +30,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       description    = "Full pie chart visualization"
       donut_hole     = "l"
       label_position = "outside"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type  = "index"
         index = "metrics-*"
 
@@ -35,7 +40,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         language   = "kql"
         expression = ""
       }
-      legend = jsonencode({
+      legend_json = jsonencode({
         visibility = "visible"
         size       = "auto"
       })

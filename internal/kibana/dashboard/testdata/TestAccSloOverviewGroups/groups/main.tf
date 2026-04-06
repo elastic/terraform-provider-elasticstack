@@ -6,15 +6,18 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with SLO Groups Overview Panel"
 
-  time_from = "now-15m"
-  time_to   = "now"
-
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-
-  query_language = "kuery"
-  query_text     = ""
-
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kuery"
+    text     = ""
+  }
   panels = [{
     type = "slo_overview"
     grid = {
