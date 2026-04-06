@@ -29,6 +29,6 @@ steps:
 EOT
 }
 
-data "elasticstack_kibana_agentbuilder_export_workflow" "test" {
+data "elasticstack_kibana_agentbuilder_workflow" "test" {
   id = elasticstack_kibana_agentbuilder_workflow.test.id
 }

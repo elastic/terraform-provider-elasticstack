@@ -1,15 +1,15 @@
-# `elasticstack_kibana_agentbuilder_export_workflow` — Schema and Functional Requirements
+# `elasticstack_kibana_agentbuilder_workflow` Data Source — Schema and Functional Requirements
 
-Data source implementation: `internal/kibana/exportagentbuilder/workflow`
+Data source implementation: `internal/kibana/agentbuilderworkflow`
 
 ## Purpose
 
-Define the Terraform schema and read behavior for the `elasticstack_kibana_agentbuilder_export_workflow` data source, including accepted identifier forms, space-resolution rules, stack-version gating, canonical state identity, and YAML export mapping from the Kibana Workflow API into Terraform state.
+Define the Terraform schema and read behavior for the `elasticstack_kibana_agentbuilder_workflow` data source, including accepted identifier forms, space-resolution rules, stack-version gating, canonical state identity, and YAML export mapping from the Kibana Workflow API into Terraform state.
 
 ## Schema
 
 ```hcl
-data "elasticstack_kibana_agentbuilder_export_workflow" "example" {
+data "elasticstack_kibana_agentbuilder_workflow" "example" {
   id = <required, string> # accepts either bare workflow id or composite "<space_id>/<workflow_id>"; state is normalized to canonical composite id
 
   space_id = <optional, computed, string> # when omitted, read defaults to "default" unless id supplies a composite space
@@ -103,10 +103,10 @@ If the workflow get request returns not found, the data source SHALL fail with a
 
 | Area | Primary files |
 |------|----------------|
-| Schema | `internal/kibana/exportagentbuilder/workflow/schema.go` |
-| Metadata / Configure | `internal/kibana/exportagentbuilder/workflow/data_source.go` |
-| Read logic | `internal/kibana/exportagentbuilder/workflow/read.go` |
-| Data model | `internal/kibana/exportagentbuilder/workflow/models.go` |
+| Schema | `internal/kibana/agentbuilderworkflow/data_source_schema.go` |
+| Metadata / Configure | `internal/kibana/agentbuilderworkflow/data_source.go` |
+| Read logic | `internal/kibana/agentbuilderworkflow/data_source_read.go` |
+| Data model | `internal/kibana/agentbuilderworkflow/models.go` |
 | API status handling | `internal/clients/kibanaoapi/workflows.go` |
 | Composite id parsing | `internal/clients/api_client.go` |
 | YAML custom type | `internal/utils/customtypes/normalized_yaml_type.go`, `internal/utils/customtypes/normalized_yaml_value.go` |

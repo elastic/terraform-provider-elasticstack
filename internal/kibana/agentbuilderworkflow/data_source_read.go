@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package workflow
+package agentbuilderworkflow
 
 import (
 	"context"
@@ -30,9 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config dataSourceModel
+func (d *WorkflowDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config workflowDataSourceModel
 
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -83,7 +82,7 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 
 	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: workflowID}
 
-	var state dataSourceModel
+	var state workflowDataSourceModel
 	state.ID = types.StringValue(compositeID.String())
 	state.SpaceID = types.StringValue(spaceID)
 	state.WorkflowID = types.StringValue(workflow.ID)

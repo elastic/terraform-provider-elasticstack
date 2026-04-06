@@ -15,40 +15,31 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package workflow
+package agentbuilderworkflow
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_                               datasource.DataSource              = &DataSource{}
-	_                               datasource.DataSourceWithConfigure = &DataSource{}
-	minKibanaAgentBuilderAPIVersion                                    = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	_ datasource.DataSource              = &WorkflowDataSource{}
+	_ datasource.DataSourceWithConfigure = &WorkflowDataSource{}
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return &DataSource{}
+	return &WorkflowDataSource{}
 }
 
-// DataSource is the data source implementation.
-type DataSource struct {
+type WorkflowDataSource struct {
 	client *clients.APIClient
 }
 
-// Metadata returns the data source type name.
-func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_kibana_agentbuilder_export_workflow"
-}
-
-// Configure adds the provider configured client to the data source.
-func (d *DataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *WorkflowDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -60,4 +51,8 @@ func (d *DataSource) Configure(_ context.Context, req datasource.ConfigureReques
 	}
 
 	d.client = client
+}
+
+func (d *WorkflowDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_workflow")
 }

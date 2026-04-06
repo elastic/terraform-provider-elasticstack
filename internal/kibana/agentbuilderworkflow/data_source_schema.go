@@ -15,36 +15,35 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package workflow
+package agentbuilderworkflow
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
-// Schema defines the schema for the data source.
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Description: "Export an Agent Builder workflow by ID. See https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "The workflow ID to export.",
+func (d *WorkflowDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = dsschema.Schema{
+		Description: "Reads an Agent Builder workflow by ID. See https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html",
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{
+				Description: "The workflow ID to look up.",
 				Required:    true,
 			},
-			"space_id": schema.StringAttribute{
+			"space_id": dsschema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
 			},
-			"workflow_id": schema.StringAttribute{
-				Description: "The ID of the exported workflow.",
+			"workflow_id": dsschema.StringAttribute{
+				Description: "The ID of the workflow.",
 				Computed:    true,
 			},
-			"configuration_yaml": schema.StringAttribute{
-				Description: "The exported workflow definition in YAML format.",
+			"configuration_yaml": dsschema.StringAttribute{
+				Description: "The workflow definition in YAML format.",
 				Computed:    true,
 				CustomType:  customtypes.NormalizedYamlType{},
 			},
