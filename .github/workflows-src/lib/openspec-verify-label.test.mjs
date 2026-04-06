@@ -71,6 +71,19 @@ test('verify-label workflow exposes review disposition and disposition reason to
   assert.match(source, /\*\*Disposition reason\*\*/);
 });
 
+test('verify-label agent prompt interpolates needs.pre_activation review outputs where the agent reads them', () => {
+  const source = workflowSource();
+  const rd = '${{ needs.pre_activation.outputs.review_disposition }}';
+  const dr = '${{ needs.pre_activation.outputs.disposition_reason }}';
+  assert.ok(source.includes(rd), 'expected review_disposition interpolation in generated workflow');
+  assert.ok(source.includes(dr), 'expected disposition_reason interpolation in generated workflow');
+  const pre = source.split('## Pre-activation context')[1].split('## Verification (active change)')[0];
+  assert.ok(pre.includes(rd), 'expected review_disposition in Pre-activation context');
+  assert.ok(pre.includes(dr), 'expected disposition_reason in Pre-activation context');
+  const step5 = source.split('## Review body, inline comments, and decision')[1].split('## Archive and push')[0];
+  assert.ok(step5.includes(rd), 'expected review_disposition in review-submission instructions');
+});
+
 test('verify-label workflow ties APPROVE and archive to approval-eligible disposition', () => {
   const source = workflowSource();
   assert.match(source, /review_disposition.*approval-eligible/s);

@@ -258,7 +258,7 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
 
    - Summary / scorecard from verification (**Issues by priority**).
    - **Out-of-scope / unassociated changes**: list **`unassociated`** files, summarize **`uncertain`**, note accepted **`relevant`** briefly.
-   - When **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`** (net-new spec change material under the selected change): explicitly state that the pull request met the normal approval criteria but is limited to **`COMMENT`** because it introduces a net-new spec change (added files under the active change), even if there are zero CRITICAL issues and zero **`unassociated`** files. Tie this to the deterministic **Disposition reason** above.
+   - When **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`** (net-new spec change material under the selected change): explain that the review is limited to **`COMMENT`** because it introduces a net-new spec change (added files under the active change), **including when the normal approval criteria are otherwise satisfied**. Do **not** imply the pull request met those criteria if verification reported **CRITICAL** issues; still describe the net-new **`COMMENT`** limitation. Tie this to the deterministic **Disposition reason** above.
 
 6. Add **line-level** **`create-pull-request-review-comment`** entries for mappable CRITICAL (and other high-signal) issues and for **`unassociated`** hunks where the API allows; avoid spam on large **`relevant`** sets.
 
