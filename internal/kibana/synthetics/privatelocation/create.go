@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,14 +41,30 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	input := plan.toPrivateLocationConfig()
+	spaceID := plan.SpaceID.ValueString()
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, input)
+	if requiresSpaceIDMinVersion(spaceID) {
+		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			response.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
+			)
+			return
+		}
+	}
+
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, spaceID, input)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`", input.Label), err.Error())
 		return
 	}
 
-	plan = toModelV0(*result)
+	plan = toModelV0(*result, spaceID)
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

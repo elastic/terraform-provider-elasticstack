@@ -25,16 +25,21 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var (
 	minKibanaPrivateLocationAPIVersion = version.Must(version.NewVersion("8.12.0"))
 )
+
+// accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 func TestSyntheticPrivateLocationResource(t *testing.T) {
 	resourceID := "elasticstack_kibana_synthetics_private_location.test"
@@ -51,6 +56,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 					"suffix": config.StringVariable(randomSuffix),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", ""),
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
@@ -141,6 +147,58 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
+	resourceID := "elasticstack_kibana_synthetics_private_location.test"
+	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				// Non-default space_id for this resource requires 9.4.0-SNAPSHOT+ (see privatelocation.MinVersionSpaceID).
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create_in_space"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(randomSuffix),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-space-%s", randomSuffix)),
+					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(resourceID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(resourceID, "geo.lat", "42.42"),
+					resource.TestCheckResourceAttr(resourceID, "geo.lon", "-42.42"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"id"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[resourceID]
+					if !ok {
+						return "", fmt.Errorf("resource not found: %s", resourceID)
+					}
+					id := rs.Primary.Attributes["id"]
+					return fmt.Sprintf("%s/%s", spaceID, id), nil
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create_in_space"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(randomSuffix),
+					"space_id": config.StringVariable(spaceID),
+				},
+			},
 		},
 	})
 }

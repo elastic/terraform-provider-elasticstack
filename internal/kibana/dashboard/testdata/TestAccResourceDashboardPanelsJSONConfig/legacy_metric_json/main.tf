@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  space_id               = "default"
-  title                  = var.dashboard_title
-  description            = "Test for issue #1790"
-  tags                   = ["test"]
-  time_from              = "now-7d"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kql"
-  query_text             = ""
-
+  space_id    = "default"
+  title       = var.dashboard_title
+  description = "Test for issue #1790"
+  tags        = ["test"]
+  time_range = {
+    from = "now-7d"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {

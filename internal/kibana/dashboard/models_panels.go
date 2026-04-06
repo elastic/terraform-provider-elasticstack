@@ -32,7 +32,7 @@ import (
 type panelModel struct {
 	Type                     types.String                                      `tfsdk:"type"`
 	Grid                     panelGridModel                                    `tfsdk:"grid"`
-	ID                       types.String                                      `tfsdk:"id"`
+	UID                      types.String                                      `tfsdk:"uid"`
 	MarkdownConfig           *markdownConfigModel                              `tfsdk:"markdown_config"`
 	XYChartConfig            *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
 	TreemapConfig            *treemapConfigModel                               `tfsdk:"treemap_config"`
@@ -65,7 +65,7 @@ type panelGridModel struct {
 
 type sectionModel struct {
 	Title     types.String     `tfsdk:"title"`
-	ID        types.String     `tfsdk:"id"`
+	UID       types.String     `tfsdk:"uid"`
 	Collapsed types.Bool       `tfsdk:"collapsed"`
 	Grid      sectionGridModel `tfsdk:"grid"`
 	Panels    []panelModel     `tfsdk:"panels"`
@@ -147,7 +147,7 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	sm := sectionModel{
 		Title:     types.StringValue(section.Title),
 		Collapsed: collapsed,
-		ID:        types.StringPointerValue(section.Uid),
+		UID:       types.StringPointerValue(section.Uid),
 		Grid: sectionGridModel{
 			Y: types.Int64Value(int64(section.Grid.Y)),
 		},
@@ -244,7 +244,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
-		pm.ID = types.StringPointerValue(markdownPanel.Uid)
+		pm.UID = types.StringPointerValue(markdownPanel.Uid)
 		if markdownPanel.Config != nil {
 			if !panelUsesConfigJSONOnly(tfPanel) {
 				config0, err := markdownPanel.Config.AsKbnDashboardPanelMarkdownConfig0()
@@ -263,7 +263,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sloPanel.Grid.X, sloPanel.Grid.Y, sloPanel.Grid.W, sloPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sloPanel.Uid)
+		pm.UID = types.StringPointerValue(sloPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		d := sloOverviewFromAPI(&pm, tfPanel, sloPanel)
 		diags.Append(d...)
@@ -273,7 +273,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
-		pm.ID = types.StringPointerValue(tsPanel.Uid)
+		pm.UID = types.StringPointerValue(tsPanel.Uid)
 		// Computed read-back only: practitioner-authored config_json is not supported for
 		// time_slider_control (see `config_json` type-allowlist validators on the panel schema).
 		if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
@@ -286,7 +286,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sbrPanel.Uid)
+		pm.UID = types.StringPointerValue(sbrPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
 	case panelTypeEsqlControl:
@@ -295,7 +295,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
-		pm.ID = types.StringPointerValue(esqlPanel.Uid)
+		pm.UID = types.StringPointerValue(esqlPanel.Uid)
 		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
@@ -305,7 +305,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
-		pm.ID = types.StringPointerValue(olPanel.Uid)
+		pm.UID = types.StringPointerValue(olPanel.Uid)
 		if configBytes, err := json.Marshal(olPanel.Config); err == nil {
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
@@ -316,7 +316,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
-		pm.ID = types.StringPointerValue(rsPanel.Uid)
+		pm.UID = types.StringPointerValue(rsPanel.Uid)
 		// Range slider control panels are managed via range_slider_control_config; config_json remains unset.
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateRangeSliderControlFromAPI(ctx, &pm, tfPanel, rsPanel.Config)
@@ -326,7 +326,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, lensPanel.Grid.X, lensPanel.Grid.Y, lensPanel.Grid.W, lensPanel.Grid.H)
-		pm.ID = types.StringPointerValue(lensPanel.Uid)
+		pm.UID = types.StringPointerValue(lensPanel.Uid)
 
 		configBytes, err := lensPanel.Config.MarshalJSON()
 		if err == nil {
@@ -355,12 +355,12 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sebPanel.Uid)
+		pm.UID = types.StringPointerValue(sebPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
 	default:
 		// No typed mapping yet; keep only the panel type.
-		pm.ID = types.StringNull()
+		pm.UID = types.StringNull()
 		pm.Grid = panelGridModel{
 			X: types.Int64Null(),
 			Y: types.Int64Null(),
@@ -418,8 +418,8 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 		if typeutils.IsKnown(sm.Collapsed) {
 			section.Collapsed = new(sm.Collapsed.ValueBool())
 		}
-		if typeutils.IsKnown(sm.ID) {
-			section.Uid = new(sm.ID.ValueString())
+		if typeutils.IsKnown(sm.UID) {
+			section.Uid = new(sm.UID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -470,8 +470,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	var uid *string
-	if typeutils.IsKnown(pm.ID) {
-		uid = new(pm.ID.ValueString())
+	if typeutils.IsKnown(pm.UID) {
+		uid = new(pm.UID.ValueString())
 	}
 
 	var panelItem kbapi.DashboardPanelItem

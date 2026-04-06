@@ -661,16 +661,16 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 }
 
 type heatmapLegendModel struct {
-	Visibility         types.Bool   `tfsdk:"visibility"`
+	Visibility         types.String `tfsdk:"visibility"`
 	Size               types.String `tfsdk:"size"`
 	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
 }
 
 func (m *heatmapLegendModel) fromAPI(api kbapi.HeatmapLegend) {
 	if api.Visibility != nil {
-		m.Visibility = types.BoolValue(*api.Visibility != kbapi.HeatmapLegendVisibilityHidden)
+		m.Visibility = types.StringValue(string(*api.Visibility))
 	} else {
-		m.Visibility = types.BoolNull()
+		m.Visibility = types.StringNull()
 	}
 	m.Size = types.StringValue(string(api.Size))
 
@@ -691,10 +691,7 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.Visibility) {
-		visibility := kbapi.HeatmapLegendVisibilityVisible
-		if !m.Visibility.ValueBool() {
-			visibility = kbapi.HeatmapLegendVisibilityHidden
-		}
+		visibility := kbapi.HeatmapLegendVisibility(m.Visibility.ValueString())
 		legend.Visibility = &visibility
 	}
 	if typeutils.IsKnown(m.Size) {
