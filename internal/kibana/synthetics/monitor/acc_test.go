@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -35,6 +36,9 @@ var (
 	minKibanaVersion = version.Must(version.NewVersion("8.14.0"))
 	kibana816Version = version.Must(version.NewVersion("8.16.0"))
 )
+
+// accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 const (
 	httpCheckExpectedUpdated = `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com",` +
@@ -636,6 +640,132 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// Delete testing automatically occurs in TestCase
 
+		},
+	})
+}
+
+func TestSyntheticMonitorHTTPResource_nonDefaultSpace(t *testing.T) {
+	httpMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor"
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				// Fleet agent policy space_ids (required to scope the policy to the Kibana space) needs 9.1+.
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_non_default_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
+					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(httpMonitorID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(httpMonitorID, "namespace", "test_namespace"),
+					resource.TestCheckResourceAttr(httpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(httpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(httpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.mode", "any"),
+				),
+			},
+		},
+	})
+}
+
+func TestSyntheticMonitorTCPResource_nonDefaultSpace(t *testing.T) {
+	tcpMonitorID := "elasticstack_kibana_synthetics_monitor.tcp-monitor"
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("tcp_non_default_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(tcpMonitorID, "namespace", "testacc_test"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.host", "http://localhost:5601"),
+				),
+			},
+		},
+	})
+}
+
+func TestSyntheticMonitorICMPResource_nonDefaultSpace(t *testing.T) {
+	icmpMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor"
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_non_default_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(icmpMonitorID, "namespace", "testacc_namespace"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "icmp.host", "localhost"),
+				),
+			},
+		},
+	})
+}
+
+func TestSyntheticMonitorBrowserResource_nonDefaultSpace(t *testing.T) {
+	browserMonitorID := "elasticstack_kibana_synthetics_monitor.browser-monitor"
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("browser_non_default_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
+					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource - "+name),
+					resource.TestCheckResourceAttr(browserMonitorID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(browserMonitorID, "namespace", "testacc_ns"),
+					resource.TestCheckResourceAttr(browserMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(browserMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(browserMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+				),
+			},
 		},
 	})
 }
