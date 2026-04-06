@@ -46,19 +46,19 @@ type Map = map[string]any
 
 // buildPackagePolicyWithMappedInputs creates a PackagePolicy with mapped inputs
 // for use in tests. The Inputs field is set via the union type.
-func buildPackagePolicyWithMappedInputs(secretRefs *[]kbapi.PackagePolicySecretRef, inputs kbapi.PackagePolicyMappedInputs, vars *map[string]any) kbapi.PackagePolicy {
+func buildPackagePolicyWithMappedInputs(t *testing.T, secretRefs *[]kbapi.PackagePolicySecretRef, inputs kbapi.PackagePolicyMappedInputs, vars *map[string]any) kbapi.PackagePolicy {
+	t.Helper()
 	p := kbapi.PackagePolicy{
 		SecretReferences: secretRefs,
 		Vars:             vars,
 	}
-	if err := p.Inputs.FromPackagePolicyMappedInputs(inputs); err != nil {
-		panic("failed to set mapped inputs: " + err.Error())
-	}
+	require.NoError(t, p.Inputs.FromPackagePolicyMappedInputs(inputs))
 	return p
 }
 
 // buildPackagePolicyRequestMapped creates a PackagePolicyRequest from mapped inputs.
-func buildPackagePolicyRequestMapped(inputs *map[string]kbapi.PackagePolicyRequestMappedInput, vars *map[string]any) kbapi.PackagePolicyRequest {
+func buildPackagePolicyRequestMapped(t *testing.T, inputs *map[string]kbapi.PackagePolicyRequestMappedInput, vars *map[string]any) kbapi.PackagePolicyRequest {
+	t.Helper()
 	mapped := kbapi.PackagePolicyRequestMappedInputs{
 		Name:    "test",
 		Package: kbapi.PackagePolicyRequestPackage{Name: "test", Version: "1.0.0"},
@@ -66,9 +66,7 @@ func buildPackagePolicyRequestMapped(inputs *map[string]kbapi.PackagePolicyReque
 		Vars:    vars,
 	}
 	var req kbapi.PackagePolicyRequest
-	if err := req.FromPackagePolicyRequestMappedInputs(mapped); err != nil {
-		panic("failed to build mapped request: " + err.Error())
-	}
+	require.NoError(t, req.FromPackagePolicyRequestMappedInputs(mapped))
 	return req
 }
 
@@ -142,7 +140,7 @@ func TestHandleRespSecrets(t *testing.T) {
 					Vars:    new(maps.Clone(tt.input)),
 				},
 			}
-			resp := buildPackagePolicyWithMappedInputs(secretRefs, mappedInputs, new(maps.Clone(tt.input)))
+			resp := buildPackagePolicyWithMappedInputs(t, secretRefs, mappedInputs, new(maps.Clone(tt.input)))
 
 			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 				"stream1": {Vars: new(tt.want)},
@@ -153,7 +151,7 @@ func TestHandleRespSecrets(t *testing.T) {
 					Vars:    &tt.want,
 				},
 			}
-			wants := buildPackagePolicyWithMappedInputs(nil, wantMappedInputs, &tt.want)
+			wants := buildPackagePolicyWithMappedInputs(t, nil, wantMappedInputs, &tt.want)
 
 			diags := integrationpolicy.HandleRespSecrets(ctx, &resp, &private)
 			require.Empty(t, diags)
@@ -263,7 +261,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 					Vars:    new(maps.Clone(tt.reqInput)),
 				},
 			}
-			req := buildPackagePolicyRequestMapped(reqInputs, new(maps.Clone(tt.reqInput)))
+			req := buildPackagePolicyRequestMapped(t, reqInputs, new(maps.Clone(tt.reqInput)))
 
 			respInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 				"stream1": {Vars: new(maps.Clone(tt.respInput))},
@@ -274,7 +272,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 					Vars:    new(maps.Clone(tt.respInput)),
 				},
 			}
-			resp := buildPackagePolicyWithMappedInputs(secretRefs, respMappedInputs, new(maps.Clone(tt.respInput)))
+			resp := buildPackagePolicyWithMappedInputs(t, secretRefs, respMappedInputs, new(maps.Clone(tt.respInput)))
 
 			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 				"stream1": {Vars: new(tt.want)},
@@ -285,7 +283,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 					Vars:    &tt.want,
 				},
 			}
-			wants := buildPackagePolicyWithMappedInputs(nil, wantMappedInputs, &tt.want)
+			wants := buildPackagePolicyWithMappedInputs(t, nil, wantMappedInputs, &tt.want)
 
 			private := privateData{}
 			diags := integrationpolicy.HandleReqRespSecrets(ctx, req, &resp, &private)

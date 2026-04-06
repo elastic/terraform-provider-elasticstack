@@ -56,5 +56,17 @@ func (r *elasticDefendIntegrationPolicyResource) Schema(_ context.Context, _ res
 }
 
 func (r *elasticDefendIntegrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("policy_id"), req, resp)
+	// Accept both "<space_id>/<policy_id>" and plain "<policy_id>" import IDs.
+	// Pass the raw import ID through to the "id" attribute.
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+
+	// Parse the composite ID to seed policy_id and, if present, space_ids.
+	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	if diags.HasError() {
+		// Plain policy_id: no space prefix
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("policy_id"), req.ID)...)
+	} else {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("policy_id"), compID.ResourceID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_ids"), []string{compID.ClusterID})...)
+	}
 }

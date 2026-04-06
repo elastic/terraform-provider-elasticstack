@@ -57,7 +57,6 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 		}
 	}
 
-	model.ID = types.StringValue(policy.Id)
 	model.PolicyID = types.StringValue(policy.Id)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)
@@ -78,14 +77,30 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	// Populate space_ids — only overwrite when the API actually returns them.
 	// If the API omits space_ids, preserve the existing model value so
 	// space-aware operations (e.g. update, delete) continue to work correctly.
+	var operationalSpaceID string
 	if policy.SpaceIds != nil && len(*policy.SpaceIds) > 0 {
 		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *policy.SpaceIds)
 		diags.Append(d...)
 		model.SpaceIDs = spaceIDs
+		operationalSpaceID = (*policy.SpaceIds)[0]
 	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
 		model.SpaceIDs = types.SetNull(types.StringType)
+	} else {
+		// Preserve existing space — extract it so the composite ID is correct.
+		var existingSpaceIDs []string
+		d := model.SpaceIDs.ElementsAs(ctx, &existingSpaceIDs, false)
+		diags.Append(d...)
+		if len(existingSpaceIDs) > 0 {
+			operationalSpaceID = existingSpaceIDs[0]
+		}
 	}
-	// Otherwise keep the existing model.SpaceIDs value.
+
+	// Set composite ID: "<space_id>/<policy_id>" when a space is in use.
+	if operationalSpaceID != "" {
+		model.ID = types.StringValue(operationalSpaceID + "/" + policy.Id)
+	} else {
+		model.ID = types.StringValue(policy.Id)
+	}
 
 	// Extract typed inputs from the union Inputs field
 	typedInputs, err := policy.Inputs.AsPackagePolicyTypedInputs()

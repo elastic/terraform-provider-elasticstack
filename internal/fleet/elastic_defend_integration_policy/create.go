@@ -63,7 +63,11 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	// the bootstrap response to ensure no unknown values remain in state
 	// (the framework rejects unknown values after apply).
 	planModel.PolicyID = types.StringValue(bootstrapPolicy.Id)
-	planModel.ID = types.StringValue(bootstrapPolicy.Id)
+	if spaceID != "" {
+		planModel.ID = types.StringValue(spaceID + "/" + bootstrapPolicy.Id)
+	} else {
+		planModel.ID = types.StringValue(bootstrapPolicy.Id)
+	}
 	// Normalize space_ids from bootstrap response to avoid unknown state values
 	if bootstrapPolicy.SpaceIds != nil && len(*bootstrapPolicy.SpaceIds) > 0 {
 		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *bootstrapPolicy.SpaceIds)

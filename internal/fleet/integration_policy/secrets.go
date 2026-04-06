@@ -147,7 +147,10 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	}
 	// Write modified inputs back to the union field
 	if len(respInputs) > 0 {
-		_ = resp.Inputs.FromPackagePolicyMappedInputs(respInputs)
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(respInputs); err != nil {
+			diags.AddError("failed to write back mapped inputs", err.Error())
+			return
+		}
 	}
 
 	nd = secrets.Save(ctx, private)
@@ -247,7 +250,10 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 	}
 	// Write modified inputs back to the union field
 	if len(respMapped) > 0 {
-		_ = resp.Inputs.FromPackagePolicyMappedInputs(respMapped)
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(respMapped); err != nil {
+			diags.AddError("failed to write back mapped inputs", err.Error())
+			return
+		}
 	}
 
 	nd = secrets.Save(ctx, private)

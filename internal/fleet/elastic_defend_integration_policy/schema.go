@@ -18,11 +18,13 @@
 package elasticdefendintegrationpolicy
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -135,6 +137,9 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 			"mode": schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("off", "detect", "prevent"),
+				},
 			},
 			"supported": schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
@@ -152,6 +157,9 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 			"mode": schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("off", "detect", "prevent"),
+				},
 			},
 			"supported": schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
@@ -215,6 +223,9 @@ func windowsPolicySchema() schema.Attribute {
 					"mode": schema.StringAttribute{
 						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("off", "detect", "prevent"),
+						},
 					},
 					"blocklist": schema.BoolAttribute{
 						Description: "Whether blocklist is enabled.",
@@ -250,6 +261,9 @@ func windowsPolicySchema() schema.Attribute {
 					"file": schema.StringAttribute{
 						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),
+						},
 					},
 				},
 			},
@@ -313,6 +327,9 @@ func macPolicySchema() schema.Attribute {
 					"mode": schema.StringAttribute{
 						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("off", "detect", "prevent"),
+						},
 					},
 					"blocklist": schema.BoolAttribute{
 						Description: "Whether blocklist is enabled.",
@@ -346,6 +363,9 @@ func macPolicySchema() schema.Attribute {
 					"file": schema.StringAttribute{
 						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),
+						},
 					},
 				},
 			},
@@ -391,6 +411,9 @@ func linuxPolicySchema() schema.Attribute {
 					"mode": schema.StringAttribute{
 						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("off", "detect", "prevent"),
+						},
 					},
 					"blocklist": schema.BoolAttribute{
 						Description: "Whether blocklist is enabled.",
@@ -416,6 +439,9 @@ func linuxPolicySchema() schema.Attribute {
 					"file": schema.StringAttribute{
 						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
 						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),
+						},
 					},
 				},
 			},
