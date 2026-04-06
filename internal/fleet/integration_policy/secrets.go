@@ -218,8 +218,13 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		}
 	}
 
-	// Extract mapped inputs from union types for secrets handling
-	reqMapped, _ := req.AsPackagePolicyRequestMappedInputs()
+	// Extract mapped inputs from union types for secrets handling.
+	// If either extraction fails (e.g. nil or malformed union), skip secrets
+	// processing to avoid clobbering secret values with nil.
+	reqMapped, err := req.AsPackagePolicyRequestMappedInputs()
+	if err != nil {
+		return
+	}
 	respMapped, err := resp.Inputs.AsPackagePolicyMappedInputs()
 	if err != nil {
 		respMapped = kbapi.PackagePolicyMappedInputs{}
