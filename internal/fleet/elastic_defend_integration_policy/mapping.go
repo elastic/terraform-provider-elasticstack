@@ -78,14 +78,15 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	// If the API omits space_ids, preserve the existing model value so
 	// space-aware operations (e.g. update, delete) continue to work correctly.
 	var operationalSpaceID string
-	if policy.SpaceIds != nil && len(*policy.SpaceIds) > 0 {
+	switch {
+	case policy.SpaceIds != nil && len(*policy.SpaceIds) > 0:
 		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *policy.SpaceIds)
 		diags.Append(d...)
 		model.SpaceIDs = spaceIDs
 		operationalSpaceID = (*policy.SpaceIds)[0]
-	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+	case model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown():
 		model.SpaceIDs = types.SetNull(types.StringType)
-	} else {
+	default:
 		// Preserve existing space — extract it so the composite ID is correct.
 		var existingSpaceIDs []string
 		d := model.SpaceIDs.ElementsAs(ctx, &existingSpaceIDs, false)
