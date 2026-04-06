@@ -20,6 +20,8 @@ The `openspec-verify-label` workflow currently rejects any pull request that add
 ## Impact
 
 - `.github/workflows-src/openspec-verify-label/workflow.md.tmpl`
+- `.github/workflows-src/lib/select-change.js`
+- `.github/workflows-src/lib/select-change.test.mjs`
 - `.github/workflows-src/openspec-verify-label/scripts/select_change.inline.js` and any related workflow prompt text
 - `.github/workflows/openspec-verify-label.md`
 - `.github/workflows/openspec-verify-label.lock.yml`
