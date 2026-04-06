@@ -5,11 +5,21 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { selectChangeForPullRequest, selectChangeFromFiles } = require('./select-change.js');
 
+const ineligibleBase = {
+  selection_status: 'ineligible',
+  selected_change: '',
+  review_disposition: '',
+  disposition_reason: '',
+};
+
+const eligibleBase = {
+  selection_status: 'eligible',
+};
+
 test('selectChangeForPullRequest rejects missing pull request numbers', () => {
   assert.deepEqual(selectChangeForPullRequest({ prNumber: undefined }), {
-    selection_status: 'ineligible',
+    ...ineligibleBase,
     selection_reason: 'No pull request number in event payload',
-    selected_change: '',
   });
 });
 
@@ -22,14 +32,13 @@ test('selectChangeFromFiles rejects pull requests without active change files', 
       },
     ]),
     {
-      selection_status: 'ineligible',
+      ...ineligibleBase,
       selection_reason: 'No files under openspec/changes/ (non-archive) found in this PR',
-      selected_change: '',
     }
   );
 });
 
-test('selectChangeFromFiles selects exactly one modified active change', () => {
+test('selectChangeFromFiles selects modified-only active change as approval-eligible', () => {
   assert.deepEqual(
     selectChangeFromFiles([
       {
@@ -38,30 +47,59 @@ test('selectChangeFromFiles selects exactly one modified active change', () => {
       },
     ]),
     {
-      selection_status: 'eligible',
+      ...eligibleBase,
       selection_reason: 'Selected change: example',
       selected_change: 'example',
+      review_disposition: 'approval-eligible',
+      disposition_reason:
+        'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.',
     }
   );
 });
 
-test('selectChangeFromFiles rejects added files under active changes', () => {
+test('selectChangeFromFiles selects net-new added files as comment-only', () => {
   assert.deepEqual(
     selectChangeFromFiles([
       {
-        filename: 'openspec/changes/example/new.md',
+        filename: 'openspec/changes/example/proposal.md',
         status: 'added',
       },
     ]),
     {
-      selection_status: 'ineligible',
-      selection_reason: 'Added file(s) under openspec/changes/: openspec/changes/example/new.md',
-      selected_change: '',
+      ...eligibleBase,
+      selection_reason: 'Selected change: example',
+      selected_change: 'example',
+      review_disposition: 'comment-only',
+      disposition_reason:
+        'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.',
     }
   );
 });
 
-test('selectChangeFromFiles rejects non-modified statuses under active changes', () => {
+test('selectChangeFromFiles selects mixed added and modified under one change as comment-only', () => {
+  assert.deepEqual(
+    selectChangeFromFiles([
+      {
+        filename: 'openspec/changes/example/proposal.md',
+        status: 'added',
+      },
+      {
+        filename: 'openspec/changes/example/tasks.md',
+        status: 'modified',
+      },
+    ]),
+    {
+      ...eligibleBase,
+      selection_reason: 'Selected change: example',
+      selected_change: 'example',
+      review_disposition: 'comment-only',
+      disposition_reason:
+        'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.',
+    }
+  );
+});
+
+test('selectChangeFromFiles rejects renamed status under active changes', () => {
   assert.deepEqual(
     selectChangeFromFiles([
       {
@@ -70,9 +108,25 @@ test('selectChangeFromFiles rejects non-modified statuses under active changes',
       },
     ]),
     {
-      selection_status: 'ineligible',
-      selection_reason: 'Non-modified file(s) under openspec/changes/: openspec/changes/example/tasks.md (renamed)',
-      selected_change: '',
+      ...ineligibleBase,
+      selection_reason:
+        'Unsupported file status under openspec/changes/: openspec/changes/example/tasks.md (renamed)',
+    }
+  );
+});
+
+test('selectChangeFromFiles rejects removed status under active changes', () => {
+  assert.deepEqual(
+    selectChangeFromFiles([
+      {
+        filename: 'openspec/changes/example/tasks.md',
+        status: 'removed',
+      },
+    ]),
+    {
+      ...ineligibleBase,
+      selection_reason:
+        'Unsupported file status under openspec/changes/: openspec/changes/example/tasks.md (removed)',
     }
   );
 });
@@ -90,14 +144,17 @@ test('selectChangeFromFiles ignores archive paths', () => {
       },
     ]),
     {
-      selection_status: 'eligible',
+      ...eligibleBase,
       selection_reason: 'Selected change: example',
       selected_change: 'example',
+      review_disposition: 'approval-eligible',
+      disposition_reason:
+        'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.',
     }
   );
 });
 
-test('selectChangeFromFiles rejects multiple modified change ids', () => {
+test('selectChangeFromFiles rejects multiple active change ids', () => {
   assert.deepEqual(
     selectChangeFromFiles([
       {
@@ -110,9 +167,8 @@ test('selectChangeFromFiles rejects multiple modified change ids', () => {
       },
     ]),
     {
-      selection_status: 'ineligible',
-      selection_reason: 'Multiple active change ids with modified files: foo, bar',
-      selected_change: '',
+      ...ineligibleBase,
+      selection_reason: 'Multiple active change ids: bar, foo',
     }
   );
 });

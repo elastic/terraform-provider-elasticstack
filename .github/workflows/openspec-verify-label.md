@@ -3,9 +3,9 @@
 name: OpenSpec verify (label)
 description: >-
   When maintainers add the verify-openspec label, verifies the PR against exactly one active
-  OpenSpec change (modified-only), posts a PR review, on APPROVE archives the change and pushes
-  the result to the PR branch, and removes the trigger label via remove-labels safe output when the
-  agent concludes handling.
+  OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the
+  run is approval-eligible) archives the change and pushes the result to the PR branch, and removes
+  the trigger label via remove-labels safe output when the agent concludes handling.
 on:
   pull_request:
     types: [labeled]
@@ -54,11 +54,15 @@ on:
           const CHANGE_PATTERN = /^openspec\/changes\/([^/]+)\/.+$/;
           const ARCHIVE_PATTERN = /^openspec\/changes\/archive\//;
           
+          const ALLOWED_STATUSES = new Set(['added', 'modified']);
+          
           function ineligible(selection_reason) {
             return {
               selection_status: 'ineligible',
               selection_reason,
               selected_change: '',
+              review_disposition: '',
+              disposition_reason: '',
             };
           }
           
@@ -71,43 +75,35 @@ on:
               return ineligible('No files under openspec/changes/ (non-archive) found in this PR');
             }
           
-            const addedFiles = relevantFiles.filter(file => file.status === 'added');
-            if (addedFiles.length > 0) {
+            const unsupported = relevantFiles.filter(file => !ALLOWED_STATUSES.has(file.status));
+            if (unsupported.length > 0) {
               return ineligible(
-                `Added file(s) under openspec/changes/: ${addedFiles.map(file => file.filename).join(', ')}`
-              );
-            }
-          
-            const nonModifiedFiles = relevantFiles.filter(file => file.status !== 'modified');
-            if (nonModifiedFiles.length > 0) {
-              return ineligible(
-                `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles
+                `Unsupported file status under openspec/changes/: ${unsupported
                   .map(file => `${file.filename} (${file.status})`)
                   .join(', ')}`
               );
             }
           
-            const modifiedIds = new Set(
-              relevantFiles
-                .filter(file => file.status === 'modified')
-                .map(file => file.filename.match(CHANGE_PATTERN)[1])
-            );
+            const changeIds = new Set(relevantFiles.map(file => file.filename.match(CHANGE_PATTERN)[1]));
           
-            if (modifiedIds.size === 0) {
-              return ineligible('No active change id with a modified file found');
+            if (changeIds.size > 1) {
+              return ineligible(`Multiple active change ids: ${Array.from(changeIds).sort().join(', ')}`);
             }
           
-            if (modifiedIds.size > 1) {
-              return ineligible(
-                `Multiple active change ids with modified files: ${Array.from(modifiedIds).join(', ')}`
-              );
-            }
+            const selectedChange = Array.from(changeIds)[0];
+            const hasAdded = relevantFiles.some(file => file.status === 'added');
+            const reviewDisposition = hasAdded ? 'comment-only' : 'approval-eligible';
           
-            const selectedChange = Array.from(modifiedIds)[0];
+            const dispositionReason = hasAdded
+              ? 'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.'
+              : 'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.';
+          
             return {
               selection_status: 'eligible',
               selection_reason: `Selected change: ${selectedChange}`,
               selected_change: selectedChange,
+              review_disposition: reviewDisposition,
+              disposition_reason: dispositionReason,
             };
           }
           
@@ -147,9 +143,11 @@ on:
           core.setOutput('selection_status', result.selection_status);
           core.setOutput('selection_reason', result.selection_reason);
           core.setOutput('selected_change', result.selected_change);
+          core.setOutput('review_disposition', result.review_disposition ?? '');
+          core.setOutput('disposition_reason', result.disposition_reason ?? '');
           
           if (result.selection_status === 'eligible') {
-            core.info(`Selected active change: ${result.selected_change}`);
+            core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);
           }
           
 if: >-
@@ -190,6 +188,8 @@ jobs:
       selection_status: ${{ steps.select_change.outputs.selection_status }}
       selection_reason: ${{ steps.select_change.outputs.selection_reason }}
       selected_change: ${{ steps.select_change.outputs.selected_change }}
+      review_disposition: ${{ steps.select_change.outputs.review_disposition }}
+      disposition_reason: ${{ steps.select_change.outputs.disposition_reason }}
 tools:
   github:
     toolsets: [repos, pull_requests]
@@ -226,7 +226,9 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 Deterministic pre-activation steps have verified the triggering label and selected the active change. Deterministic steps have also provisioned the review toolchains (Node, Go, Terraform) and run `make setup` so OpenSpec CLI, Node packages, and prepared Go dependencies are available before agent reasoning begins.
 
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
-- **Gating**: already complete — the workflow reached this point only because exactly one active change with modified-only files was found. Do **not** re-inspect PR files or re-derive the change id.
+- **Review disposition** (do not infer from PR files): `${{ needs.pre_activation.outputs.review_disposition }}` — either `approval-eligible` or `comment-only`
+- **Disposition reason** (authoritative; echo or paraphrase in the review body when relevant): ${{ needs.pre_activation.outputs.disposition_reason }}
+- **Gating**: already complete — the workflow reached this point only because exactly one active non-archive change was found with file statuses limited to `added` and `modified`. Do **not** re-inspect PR files, re-derive the change id, or guess approval eligibility from the diff.
 
 Use **`npx openspec`** for all OpenSpec CLI invocations.
 
@@ -248,7 +250,7 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - All paths under `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/`.
    - For each delta spec `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/specs/<capability>/spec.md`, the matching **`openspec/specs/<capability>/spec.md`** if it appears in the PR.
 
-4. For **every other** changed file in the PR, read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. Only **`unassociated`** blocks **APPROVE**; when unsure, prefer **`relevant`** or **`uncertain`**.
+4. For **every other** changed file in the PR (outside the structural allowlist in step 3), read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. This step covers **relevance classification only** for out-of-scope files: among those outcomes, **`unassociated`** is what blocks **APPROVE** on the relevance axis. It is **not** the full approval gate—**CRITICAL** issues from verification (steps 1–2) still block **APPROVE** per step 7. When unsure, prefer **`relevant`** or **`uncertain`**.
 
 ## Review body, inline comments, and decision
 
@@ -256,24 +258,26 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
 
    - Summary / scorecard from verification (**Issues by priority**).
    - **Out-of-scope / unassociated changes**: list **`unassociated`** files, summarize **`uncertain`**, note accepted **`relevant`** briefly.
+   - When **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`** (net-new spec change material under the selected change): explain that the review is limited to **`COMMENT`** because it introduces a net-new spec change (added files under the active change), **including when the normal approval criteria are otherwise satisfied**. Do **not** imply the pull request met those criteria if verification reported **CRITICAL** issues; still describe the net-new **`COMMENT`** limitation. Tie this to the deterministic **Disposition reason** above.
 
 6. Add **line-level** **`create-pull-request-review-comment`** entries for mappable CRITICAL (and other high-signal) issues and for **`unassociated`** hunks where the API allows; avoid spam on large **`relevant`** sets.
 
 7. Submit **exactly one** **`submit-pull-request-review`** for this run:
 
-   - Use **`APPROVE`** **if and only if** there are **zero CRITICAL** issues and **zero `unassociated`** files.
-   - Otherwise use **`COMMENT`**.
-   - **Never** use **`REQUEST_CHANGES`**. WARNING and SUGGESTION **alone** do **not** block APPROVE.
+   - Use **`APPROVE`** **if and only if** **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`approval-eligible`** **and** there are **zero CRITICAL** issues and **zero `unassociated`** files.
+   - Use **`COMMENT`** when **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`**, **including** when verification finds zero CRITICAL issues and zero **`unassociated`** files.
+   - Otherwise (blocking issues / unassociated files) use **`COMMENT`**.
+   - **Never** use **`REQUEST_CHANGES`**. WARNING and SUGGESTION **alone** do **not** block **`APPROVE`** for **`approval-eligible`** runs.
 
-## Archive and push (APPROVE only)
+## Archive and push (APPROVE only, approval-eligible only)
 
-8. **Only** if the review you submitted in step 7 used **`APPROVE`**:
+8. **Only** if the review you submitted in step 7 used **`APPROVE`** **and** **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`approval-eligible`**:
 
    - Run **`npx openspec archive "${{ needs.pre_activation.outputs.selected_change }}" --yes`** (non-interactive; add `--skip-specs` only if the change is explicitly doc-only and repository policy allows — default is full archive).
    - If the working tree has changes, **commit** them with a clear message (e.g. `chore(openspec): archive ${{ needs.pre_activation.outputs.selected_change }} via verify-openspec`).
    - Use **`push-to-pull-request-branch`** to update the **triggering** PR branch.
 
-9. If the review was **`COMMENT`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
+9. If the review was **`COMMENT`**, or the run was **`comment-only`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
 
 ## Remove trigger label (final safe outputs)
 
