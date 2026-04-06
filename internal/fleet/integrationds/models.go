@@ -27,6 +27,7 @@ type integrationDataSourceModel struct {
 	Name       types.String `tfsdk:"name"`
 	Prerelease types.Bool   `tfsdk:"prerelease"`
 	Version    types.String `tfsdk:"version"`
+	SpaceID    types.String `tfsdk:"space_id"`
 }
 
 func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []kbapi.PackageListItem) {

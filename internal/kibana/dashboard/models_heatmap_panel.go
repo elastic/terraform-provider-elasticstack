@@ -50,7 +50,7 @@ func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context,
 	}
 
 	pm.HeatmapConfig = &heatmapConfigModel{}
-	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && (heatmapNoESQL.Query.Query != "" || heatmapNoESQL.Query.Language != nil) {
+	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
 		return pm.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
 	}
 	heatmapESQL, err := heatmapChart.AsHeatmapESQL()
@@ -93,6 +93,22 @@ type heatmapConfigModel struct {
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 	XAxisJSON           jsontypes.Normalized                              `tfsdk:"x_axis_json"`
 	YAxisJSON           jsontypes.Normalized                              `tfsdk:"y_axis_json"`
+}
+
+func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
+	body, err := apiChart.Dataset.MarshalJSON()
+	if err != nil {
+		return false
+	}
+
+	var dataset struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &dataset); err != nil {
+		return false
+	}
+
+	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
 func (m *heatmapConfigModel) populateCommonFields(
@@ -247,7 +263,7 @@ func (m *heatmapConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostics) {
@@ -645,15 +661,17 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 }
 
 type heatmapLegendModel struct {
-	Visible            types.Bool   `tfsdk:"visible"`
-	Position           types.String `tfsdk:"position"`
+	Visibility         types.String `tfsdk:"visibility"`
 	Size               types.String `tfsdk:"size"`
 	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
 }
 
 func (m *heatmapLegendModel) fromAPI(api kbapi.HeatmapLegend) {
-	m.Visible = types.BoolPointerValue(api.Visible)
-	m.Position = typeutils.StringishPointerValue(api.Position)
+	if api.Visibility != nil {
+		m.Visibility = types.StringValue(string(*api.Visibility))
+	} else {
+		m.Visibility = types.StringNull()
+	}
 	m.Size = types.StringValue(string(api.Size))
 
 	if api.TruncateAfterLines != nil {
@@ -672,12 +690,9 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 		return legend, diags
 	}
 
-	if typeutils.IsKnown(m.Visible) {
-		legend.Visible = new(m.Visible.ValueBool())
-	}
-	if typeutils.IsKnown(m.Position) {
-		pos := kbapi.HeatmapLegendPosition(m.Position.ValueString())
-		legend.Position = &pos
+	if typeutils.IsKnown(m.Visibility) {
+		visibility := kbapi.HeatmapLegendVisibility(m.Visibility.ValueString())
+		legend.Visibility = &visibility
 	}
 	if typeutils.IsKnown(m.Size) {
 		legend.Size = kbapi.LegendSize(m.Size.ValueString())

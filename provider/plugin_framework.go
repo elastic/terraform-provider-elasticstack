@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
@@ -81,10 +82,9 @@ import (
 )
 
 const (
-	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
-	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
-	AccTestVersion               = "acctest"
-	envVarEnabled                = "true"
+	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	AccTestVersion            = "acctest"
+	envVarEnabled             = "true"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -147,8 +147,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	validateLocation := os.Getenv(SkipLocationValidationEnvVar) != envVarEnabled
-	resources := p.resources(ctx, validateLocation)
+	resources := p.resources(ctx)
 
 	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		resources = append(resources, p.experimentalResources(ctx)...)
@@ -157,7 +156,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
-func (p *Provider) resources(_ context.Context, validateLocation bool) []func() resource.Resource {
+func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
@@ -167,9 +166,10 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return monitor.NewResource(validateLocation) },
+		monitor.NewResource,
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
+		ilm.NewResource,
 		func() resource.Resource { return &connectors.Resource{} },
 		agentpolicy.NewResource,
 		agentbuilderworkflow.NewResource,

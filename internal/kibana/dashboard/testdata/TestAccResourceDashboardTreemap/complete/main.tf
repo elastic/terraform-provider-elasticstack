@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Treemap Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Treemap Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -26,13 +31,15 @@ resource "elasticstack_kibana_dashboard" "test" {
       description = "Complete treemap visualization"
 
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
 
       query = {
-        language = "kuery"
-        query    = "service.name:*"
+        language   = "kql"
+        expression = "service.name:*"
       }
 
       filters = [
@@ -61,7 +68,12 @@ resource "elasticstack_kibana_dashboard" "test" {
             }
           }
           fields = ["service.name"]
-          size   = 5
+          rank_by = {
+            direction = "desc"
+            metric    = 0
+            type      = "column"
+          }
+          limit = 5
         }
       ])
 
@@ -73,7 +85,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
+        size                 = "s"
         visible              = "visible"
         truncate_after_lines = 10
       }

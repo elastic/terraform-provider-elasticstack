@@ -40,22 +40,35 @@ import (
 var minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
 
 func TestAccResourcePrebuiltRules(t *testing.T) {
-	testAccResourcePrebuiltRules(t, "default")
-}
+	testCases := []struct {
+		name    string
+		spaceID string
+	}{
+		{
+			name:    "default",
+			spaceID: "default",
+		},
+		{
+			name:    "in_space",
+			spaceID: "security_rules" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum),
+		},
+	}
 
-func TestAccResourcePrebuiltRulesInSpace(t *testing.T) {
-	spaceID := "security_rules" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	testAccResourcePrebuiltRules(t, spaceID)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testAccResourcePrebuiltRules(t, tc.spaceID)
+		})
+	}
 }
 
 func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -70,8 +83,9 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 				),
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -82,8 +96,9 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 				},
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},

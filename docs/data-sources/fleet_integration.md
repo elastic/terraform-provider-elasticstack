@@ -49,6 +49,7 @@ data "elasticstack_fleet_integration" "test" {
 ### Optional
 
 - `prerelease` (Boolean) Include prerelease packages.
+- `space_id` (String) The Kibana space ID to scope the request to. When not specified, the default space is used.
 
 ### Read-Only
 
