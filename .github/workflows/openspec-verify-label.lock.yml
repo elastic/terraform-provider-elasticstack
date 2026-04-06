@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4bc5042b12e8cb31b37f5cfe661f88fd4223b30b0b1eea5fe5666d3d79dde562","compiler_version":"v0.67.0","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"3e2e2012c5adb2a0d4230ed6d3ff4e6439f32f1f0d1e712bc9596d44703f204e","compiler_version":"v0.67.0","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -21,7 +21,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (modified-only), posts a PR review, on APPROVE archives the change and pushes the result to the PR branch, and removes the trigger label via remove-labels safe output when the agent concludes handling.
+# When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the run is approval-eligible) archives the change and pushes the result to the PR branch, and removes the trigger label via remove-labels safe output when the agent concludes handling.
 #
 # Secrets used:
 #   - COPILOT_GITHUB_TOKEN
@@ -89,11 +89,15 @@ name: "OpenSpec verify (label)"
         # const CHANGE_PATTERN = /^openspec\/changes\/([^/]+)\/.+$/;
         # const ARCHIVE_PATTERN = /^openspec\/changes\/archive\//;
         # 
+        # const ALLOWED_STATUSES = new Set(['added', 'modified']);
+        # 
         # function ineligible(selection_reason) {
           # return {
             # selection_status: 'ineligible',
             # selection_reason,
             # selected_change: '',
+            # review_disposition: '',
+            # disposition_reason: '',
           # };
         # }
         # 
@@ -106,43 +110,35 @@ name: "OpenSpec verify (label)"
             # return ineligible('No files under openspec/changes/ (non-archive) found in this PR');
           # }
         # 
-          # const addedFiles = relevantFiles.filter(file => file.status === 'added');
-          # if (addedFiles.length > 0) {
+          # const unsupported = relevantFiles.filter(file => !ALLOWED_STATUSES.has(file.status));
+          # if (unsupported.length > 0) {
             # return ineligible(
-              # `Added file(s) under openspec/changes/: ${addedFiles.map(file => file.filename).join(', ')}`
-            # );
-          # }
-        # 
-          # const nonModifiedFiles = relevantFiles.filter(file => file.status !== 'modified');
-          # if (nonModifiedFiles.length > 0) {
-            # return ineligible(
-              # `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles
+              # `Unsupported file status under openspec/changes/: ${unsupported
                 # .map(file => `${file.filename} (${file.status})`)
                 # .join(', ')}`
             # );
           # }
         # 
-          # const modifiedIds = new Set(
-            # relevantFiles
-              # .filter(file => file.status === 'modified')
-              # .map(file => file.filename.match(CHANGE_PATTERN)[1])
-          # );
+          # const changeIds = new Set(relevantFiles.map(file => file.filename.match(CHANGE_PATTERN)[1]));
         # 
-          # if (modifiedIds.size === 0) {
-            # return ineligible('No active change id with a modified file found');
+          # if (changeIds.size > 1) {
+            # return ineligible(`Multiple active change ids: ${Array.from(changeIds).sort().join(', ')}`);
           # }
         # 
-          # if (modifiedIds.size > 1) {
-            # return ineligible(
-              # `Multiple active change ids with modified files: ${Array.from(modifiedIds).join(', ')}`
-            # );
-          # }
+          # const selectedChange = Array.from(changeIds)[0];
+          # const hasAdded = relevantFiles.some(file => file.status === 'added');
+          # const reviewDisposition = hasAdded ? 'comment-only' : 'approval-eligible';
         # 
-          # const selectedChange = Array.from(modifiedIds)[0];
+          # const dispositionReason = hasAdded
+            # ? 'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.'
+            # : 'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.';
+        # 
           # return {
             # selection_status: 'eligible',
             # selection_reason: `Selected change: ${selectedChange}`,
             # selected_change: selectedChange,
+            # review_disposition: reviewDisposition,
+            # disposition_reason: dispositionReason,
           # };
         # }
         # 
@@ -182,15 +178,17 @@ name: "OpenSpec verify (label)"
         # core.setOutput('selection_status', result.selection_status);
         # core.setOutput('selection_reason', result.selection_reason);
         # core.setOutput('selected_change', result.selected_change);
+        # core.setOutput('review_disposition', result.review_disposition ?? '');
+        # core.setOutput('disposition_reason', result.disposition_reason ?? '');
         # 
         # if (result.selection_status === 'eligible') {
-          # core.info(`Selected active change: ${result.selected_change}`);
+          # core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);
         # }
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
   cancel-in-progress: true
 
 run-name: "OpenSpec verify (label)"
@@ -306,24 +304,26 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_7b83c2ca6de328d1_EOF'
+          cat << 'GH_AW_PROMPT_17edb86c49b66733_EOF'
           <system>
-          GH_AW_PROMPT_7b83c2ca6de328d1_EOF
+          GH_AW_PROMPT_17edb86c49b66733_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_7b83c2ca6de328d1_EOF'
+          cat << 'GH_AW_PROMPT_17edb86c49b66733_EOF'
           <safe-output-tools>
           Tools: create_pull_request_review_comment(max:25), submit_pull_request_review, remove_labels, push_to_pull_request_branch, missing_tool, missing_data, noop
-          GH_AW_PROMPT_7b83c2ca6de328d1_EOF
+          GH_AW_PROMPT_17edb86c49b66733_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
-          cat << 'GH_AW_PROMPT_7b83c2ca6de328d1_EOF'
+          cat << 'GH_AW_PROMPT_17edb86c49b66733_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -356,17 +356,19 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_7b83c2ca6de328d1_EOF
+          GH_AW_PROMPT_17edb86c49b66733_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_7b83c2ca6de328d1_EOF'
+          cat << 'GH_AW_PROMPT_17edb86c49b66733_EOF'
           </system>
           {{#runtime-import .github/workflows/openspec-verify-label.md}}
-          GH_AW_PROMPT_7b83c2ca6de328d1_EOF
+          GH_AW_PROMPT_17edb86c49b66733_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         with:
           script: |
@@ -387,6 +389,8 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         with:
           script: |
@@ -408,6 +412,8 @@ jobs:
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE
               }
             });
@@ -548,12 +554,12 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_ac2ae0c20efa8481_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_a280fe85db8d6149_EOF'
           {"create_pull_request_review_comment":{"max":25,"side":"RIGHT","target":"triggering"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"remove_labels":{"allowed":["verify-openspec"],"max":1,"target":"triggering"},"submit_pull_request_review":{"max":1,"target":"triggering"}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_ac2ae0c20efa8481_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_a280fe85db8d6149_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_29346730e6db88c3_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_31765dc335fd4a08_EOF'
           {
             "description_suffixes": {
               "create_pull_request_review_comment": " CONSTRAINTS: Maximum 25 review comment(s) can be created. Comments will be on the RIGHT side of the diff.",
@@ -564,8 +570,8 @@ jobs:
             "repo_params": {},
             "dynamic_tools": []
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_29346730e6db88c3_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_817c59df1f65d112_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_31765dc335fd4a08_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_fdc74b942930377b_EOF'
           {
             "create_pull_request_review_comment": {
               "defaultMax": 1,
@@ -719,7 +725,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_817c59df1f65d112_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_fdc74b942930377b_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -789,7 +795,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.12'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_288b2c263f3f40ec_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_9555f33ebcead671_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -830,7 +836,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_288b2c263f3f40ec_EOF
+          GH_AW_MCP_CONFIG_9555f33ebcead671_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1204,7 +1210,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: "OpenSpec verify (label)"
-          WORKFLOW_DESCRIPTION: "When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (modified-only), posts a PR review, on APPROVE archives the change and pushes the result to the PR branch, and removes the trigger label via remove-labels safe output when the agent concludes handling."
+          WORKFLOW_DESCRIPTION: "When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the run is approval-eligible) archives the change and pushes the result to the PR branch, and removes the trigger label via remove-labels safe output when the agent concludes handling."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1277,9 +1283,11 @@ jobs:
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      disposition_reason: ${{ steps.select_change.outputs.disposition_reason }}
       label_reason: ${{ steps.verify_label.outputs.label_reason }}
       label_verified: ${{ steps.verify_label.outputs.label_verified }}
       matched_command: ''
+      review_disposition: ${{ steps.select_change.outputs.review_disposition }}
       select_change_result: ${{ steps.select_change.outcome }}
       selected_change: ${{ steps.select_change.outputs.selected_change }}
       selection_reason: ${{ steps.select_change.outputs.selection_reason }}
@@ -1346,11 +1354,15 @@ jobs:
             const CHANGE_PATTERN = /^openspec\/changes\/([^/]+)\/.+$/;
             const ARCHIVE_PATTERN = /^openspec\/changes\/archive\//;
 
+            const ALLOWED_STATUSES = new Set(['added', 'modified']);
+
             function ineligible(selection_reason) {
               return {
                 selection_status: 'ineligible',
                 selection_reason,
                 selected_change: '',
+                review_disposition: '',
+                disposition_reason: '',
               };
             }
 
@@ -1363,43 +1375,35 @@ jobs:
                 return ineligible('No files under openspec/changes/ (non-archive) found in this PR');
               }
 
-              const addedFiles = relevantFiles.filter(file => file.status === 'added');
-              if (addedFiles.length > 0) {
+              const unsupported = relevantFiles.filter(file => !ALLOWED_STATUSES.has(file.status));
+              if (unsupported.length > 0) {
                 return ineligible(
-                  `Added file(s) under openspec/changes/: ${addedFiles.map(file => file.filename).join(', ')}`
-                );
-              }
-
-              const nonModifiedFiles = relevantFiles.filter(file => file.status !== 'modified');
-              if (nonModifiedFiles.length > 0) {
-                return ineligible(
-                  `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles
+                  `Unsupported file status under openspec/changes/: ${unsupported
                     .map(file => `${file.filename} (${file.status})`)
                     .join(', ')}`
                 );
               }
 
-              const modifiedIds = new Set(
-                relevantFiles
-                  .filter(file => file.status === 'modified')
-                  .map(file => file.filename.match(CHANGE_PATTERN)[1])
-              );
+              const changeIds = new Set(relevantFiles.map(file => file.filename.match(CHANGE_PATTERN)[1]));
 
-              if (modifiedIds.size === 0) {
-                return ineligible('No active change id with a modified file found');
+              if (changeIds.size > 1) {
+                return ineligible(`Multiple active change ids: ${Array.from(changeIds).sort().join(', ')}`);
               }
 
-              if (modifiedIds.size > 1) {
-                return ineligible(
-                  `Multiple active change ids with modified files: ${Array.from(modifiedIds).join(', ')}`
-                );
-              }
+              const selectedChange = Array.from(changeIds)[0];
+              const hasAdded = relevantFiles.some(file => file.status === 'added');
+              const reviewDisposition = hasAdded ? 'comment-only' : 'approval-eligible';
 
-              const selectedChange = Array.from(modifiedIds)[0];
+              const dispositionReason = hasAdded
+                ? 'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.'
+                : 'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.';
+
               return {
                 selection_status: 'eligible',
                 selection_reason: `Selected change: ${selectedChange}`,
                 selected_change: selectedChange,
+                review_disposition: reviewDisposition,
+                disposition_reason: dispositionReason,
               };
             }
 
@@ -1439,9 +1443,11 @@ jobs:
             core.setOutput('selection_status', result.selection_status);
             core.setOutput('selection_reason', result.selection_reason);
             core.setOutput('selected_change', result.selected_change);
+            core.setOutput('review_disposition', result.review_disposition ?? '');
+            core.setOutput('disposition_reason', result.disposition_reason ?? '');
 
             if (result.selection_status === 'eligible') {
-              core.info(`Selected active change: ${result.selected_change}`);
+              core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);
             }
 
   safe_outputs:
