@@ -34,8 +34,9 @@ type DefendPackagePolicyRequestInput struct {
 	// Enabled indicates whether the input is active.
 	Enabled bool `json:"enabled"`
 
-	// Streams is fixed to an empty list for Defend inputs.
-	Streams []any `json:"streams"`
+	// Streams is fixed to an empty object for Defend inputs.
+	// The Fleet simplified-format schema expects streams as a map (object), not an array.
+	Streams map[string]any `json:"streams"`
 
 	// Config holds the Defend-specific input configuration.
 	// Keys include "integration_config" (with "value" wrapper), "artifact_manifest",

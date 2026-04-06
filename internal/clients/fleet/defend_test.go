@@ -149,7 +149,7 @@ func TestCreateDefendPackagePolicyDoesNotUseSimplifiedFormat(t *testing.T) {
 		Inputs: map[string]kbapi.DefendPackagePolicyRequestInput{
 			"endpoint": {
 				Enabled: true,
-				Streams: []any{},
+				Streams: map[string]any{},
 			},
 		},
 	}

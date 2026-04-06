@@ -34,11 +34,11 @@ import (
 func TestDefendRequestInputEncoding(t *testing.T) {
 	input := kbapi.DefendPackagePolicyRequestInput{
 		Enabled: true,
-		Streams: []interface{}{},
-		Config: map[string]interface{}{
-			"integration_config": map[string]interface{}{
-				"value": map[string]interface{}{
-					"endpointConfig": map[string]interface{}{
+		Streams: map[string]any{},
+		Config: map[string]any{
+			"integration_config": map[string]any{
+				"value": map[string]any{
+					"endpointConfig": map[string]any{
 						"preset": "NGAv1",
 					},
 				},
@@ -51,7 +51,7 @@ func TestDefendRequestInputEncoding(t *testing.T) {
 		t.Fatalf("json.Marshal failed: %v", err)
 	}
 
-	var out map[string]interface{}
+	var out map[string]any
 	if err := json.Unmarshal(data, &out); err != nil {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestDefendRequestVersionField(t *testing.T) {
 		t.Fatalf("json.Marshal failed: %v", err)
 	}
 
-	var out map[string]interface{}
+	var out map[string]any
 	if err := json.Unmarshal(data, &out); err != nil {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestMappedVsTypedInputSameShape(t *testing.T) {
 		t.Fatalf("json.Marshal mappedReq failed: %v", err)
 	}
 
-	var mappedOut map[string]interface{}
+	var mappedOut map[string]any
 	if err := json.Unmarshal(mappedData, &mappedOut); err != nil {
 		t.Fatalf("json.Unmarshal mappedData failed: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestMappedVsTypedInputSameShape(t *testing.T) {
 		t.Fatal("expected inputs in mapped request")
 	}
 
-	if _, ok := inputs.(map[string]interface{}); !ok {
+	if _, ok := inputs.(map[string]any); !ok {
 		t.Errorf("expected mapped inputs to be an object, got %T", inputs)
 	}
 
@@ -210,7 +210,7 @@ func TestMappedVsTypedInputSameShape(t *testing.T) {
 		Inputs: map[string]kbapi.DefendPackagePolicyRequestInput{
 			"endpoint": {
 				Enabled: true,
-				Streams: []interface{}{},
+				Streams: map[string]any{},
 			},
 		},
 	}
@@ -220,7 +220,7 @@ func TestMappedVsTypedInputSameShape(t *testing.T) {
 		t.Fatalf("json.Marshal defendReq failed: %v", err)
 	}
 
-	var defendOut map[string]interface{}
+	var defendOut map[string]any
 	if err := json.Unmarshal(defendData, &defendOut); err != nil {
 		t.Fatalf("json.Unmarshal defendData failed: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestMappedVsTypedInputSameShape(t *testing.T) {
 		t.Fatal("expected inputs in Defend request")
 	}
 
-	if _, ok := defendInputs.(map[string]interface{}); !ok {
+	if _, ok := defendInputs.(map[string]any); !ok {
 		t.Errorf("expected Defend inputs to be an object (map), got %T", defendInputs)
 	}
 }

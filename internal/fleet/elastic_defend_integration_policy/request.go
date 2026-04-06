@@ -70,7 +70,7 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Def
 	req.Inputs = map[string]kbapi.DefendPackagePolicyRequestInput{
 		endpointInputType: {
 			Enabled: true,
-			Streams: []any{},
+			Streams: map[string]any{},
 			Config:  inputConfig,
 		},
 	}
@@ -120,7 +120,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 	req.Inputs = map[string]kbapi.DefendPackagePolicyRequestInput{
 		endpointInputType: {
 			Enabled: true,
-			Streams: []any{},
+			Streams: map[string]any{},
 			Config:  inputConfig,
 		},
 	}
