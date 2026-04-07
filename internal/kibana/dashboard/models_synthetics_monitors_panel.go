@@ -28,7 +28,7 @@ type syntheticsMonitorsConfigModel struct {
 	Filters *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
 }
 
-// syntheticsMonitorsFiltersModel holds the six optional filter dimensions for a
+// syntheticsMonitorsFiltersModel holds the optional filter dimensions for a
 // Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types, statuses).
 // Each dimension is a list of { label, value } pairs.
 type syntheticsMonitorsFiltersModel struct {
