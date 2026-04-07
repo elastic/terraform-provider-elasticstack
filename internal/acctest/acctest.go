@@ -71,6 +71,12 @@ func PreCheck(t *testing.T) {
 	if !authOk {
 		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD, or KIBANA_USERNAME and KIBANA_PASSWORD, or ELASTICSEARCH_API_KEY, or KIBANA_API_KEY must be set for acceptance tests to run")
 	}
+
+	// Fleet rejects agent policy operations unless a default agent binary download source with a host exists.
+	// See https://github.com/elastic/kibana/issues/139513 — per-policy download_source_id alone is not enough.
+	ensureFleetDefaultDownloadSourceOnce.Do(func() {
+		ensureFleetDefaultAgentDownloadSource(t)
+	})
 }
 
 func PreCheckWithExplicitKibanaEndpoint(t *testing.T) {
