@@ -142,12 +142,19 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 	// If originally set but API didn't return it, keep the original value
-	model.populateInputsFromAPI(ctx, pkg, data.Inputs, &diags)
+	// Extract mapped inputs from the union Inputs field (simplified format returns mapped inputs).
+	// The union field may be empty (nil JSON) when inputs are not present in the response.
+	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()
+	if err != nil {
+		// If the union is empty/nil, treat as no inputs rather than an error
+		mappedInputs = kbapi.PackagePolicyMappedInputs{}
+	}
+	model.populateInputsFromAPI(ctx, pkg, mappedInputs, &diags)
 
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
+func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, inputs kbapi.PackagePolicyMappedInputs, diags *diag.Diagnostics) {
 	// Handle input population based on context:
 	// 1. If model.Inputs is unknown: we're importing or reading fresh state → populate from API
 	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
@@ -247,7 +254,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 		}
 	}
 
-	body := kbapi.PackagePolicyRequest{
+	mappedBody := kbapi.PackagePolicyRequestMappedInputs{
 		Description: model.Description.ValueStringPointer(),
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
@@ -289,22 +296,27 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 	}
 
 	if typeutils.IsKnown(model.PolicyID) {
-		body.Id = model.PolicyID.ValueStringPointer()
+		mappedBody.Id = model.PolicyID.ValueStringPointer()
 	}
 
 	if typeutils.IsKnown(model.ID) {
-		body.Id = model.ID.ValueStringPointer()
+		mappedBody.Id = model.ID.ValueStringPointer()
 	}
 
-	body.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
+	mappedBody.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
 	// Note: space_ids is not included in the request body; the Fleet API manages space assignment
 
+	var body kbapi.PackagePolicyRequest
+	if err := body.FromPackagePolicyRequestMappedInputs(mappedBody); err != nil {
+		diags.AddError("Failed to build package policy request", err.Error())
+		return kbapi.PackagePolicyRequest{}, diags
+	}
 	return body, diags
 }
 
 // toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format
-func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestInput {
-	result := make(map[string]kbapi.PackagePolicyRequestInput, len(model.Inputs.Elements()))
+func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestMappedInput {
+	result := make(map[string]kbapi.PackagePolicyRequestMappedInput, len(model.Inputs.Elements()))
 	if !typeutils.IsKnown(model.Inputs.MapValue) {
 		return &result
 	}
@@ -317,7 +329,7 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 	for inputID, inputModel := range inputsMap {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
-		apiInput := kbapi.PackagePolicyRequestInput{
+		apiInput := kbapi.PackagePolicyRequestMappedInput{
 			Enabled: inputModel.Enabled.ValueBoolPointer(),
 			Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
 		}
@@ -326,9 +338,9 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 		if typeutils.IsKnown(inputModel.Streams) && len(inputModel.Streams.Elements()) > 0 {
 			streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
 			if streamsMap != nil {
-				streams := make(map[string]kbapi.PackagePolicyRequestInputStream, len(streamsMap))
+				streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(streamsMap))
 				for streamID, streamModel := range streamsMap {
-					streams[streamID] = kbapi.PackagePolicyRequestInputStream{
+					streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
 						Enabled: streamModel.Enabled.ValueBoolPointer(),
 						Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
 					}
