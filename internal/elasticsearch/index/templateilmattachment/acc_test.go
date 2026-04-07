@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -480,6 +479,15 @@ func primaryESEndpoint() string {
 func createESAccessToken(t *testing.T) string {
 	t.Helper()
 
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance testing client: %v", err)
+	}
+	esClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("failed to get Elasticsearch client: %v", err)
+	}
+
 	payload, err := json.Marshal(map[string]string{
 		"grant_type": "password",
 		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
@@ -489,32 +497,27 @@ func createESAccessToken(t *testing.T) string {
 		t.Fatalf("failed to marshal token request: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, primaryESEndpoint()+"/_security/oauth2/token", bytes.NewReader(payload))
-	if err != nil {
-		t.Fatalf("failed to build token request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
-
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := esClient.Security.GetToken(
+		bytes.NewReader(payload),
+		esClient.Security.GetToken.WithContext(context.Background()),
+	)
 	if err != nil {
 		t.Fatalf("failed to create Elasticsearch access token: %v", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read token response: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
+	if resp.IsError() {
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			t.Fatalf("failed to read token error response: %v", readErr)
+		}
 		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var tokenResponse struct {
 		AccessToken string `json:"access_token"`
 	}
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		t.Fatalf("failed to decode token response: %v", err)
 	}
 	if tokenResponse.AccessToken == "" {
