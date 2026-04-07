@@ -1221,7 +1221,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"synthetics_stats_overview_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
-					"Configuration for a Synthetics stats overview panel. Displays monitoring statistics for Elastic Synthetics monitors. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space.",
+					"Configuration for a Synthetics stats overview panel. "+
+						"All fields are optional; an absent or empty block shows statistics "+
+						"for all monitors visible within the space.",
 					"synthetics_stats_overview_config",
 					panelConfigNames,
 				),
@@ -1318,8 +1320,10 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 			},
 		},
 		"filters": schema.SingleNestedAttribute{
-			MarkdownDescription: "Optional Synthetics-specific monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block entirely or omit individual categories to apply no filtering for those dimensions.",
-			Optional:            true,
+			MarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +
+				"accepts a list of `{ label, value }` objects. Omit the block or individual categories " +
+				"to apply no filtering for those dimensions.",
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"projects": schema.ListNestedAttribute{
 					MarkdownDescription: "Filter by Synthetics project.",

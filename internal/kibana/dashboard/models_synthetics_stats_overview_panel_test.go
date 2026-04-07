@@ -319,20 +319,20 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 	panel := makeSyntheticsAPIConfig()
 	encodeURL := true
 	openInNewTab := true
-	panel.Config.Drilldowns = &[]struct {
-		EncodeUrl    *bool                                                                        `json:"encode_url,omitempty"`
-		Label        string                                                                       `json:"label"`
-		OpenInNewTab *bool                                                                        `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger       `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType          `json:"type"`
-		Url          string                                                                       `json:"url"`
+	panel.Config.Drilldowns = &[]struct { //nolint:revive
+		EncodeUrl    *bool                                                                  `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                                 `json:"label"`
+		OpenInNewTab *bool                                                                  `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+		Url          string                                                                 `json:"url"` //nolint:revive
 	}{
 		{
-			Url:          "https://example.com",
+			Url:          "https://example.com", //nolint:revive
 			Label:        "View",
 			Trigger:      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
 			Type:         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
-			EncodeUrl:    &encodeURL,
+			EncodeUrl:    &encodeURL, //nolint:revive
 			OpenInNewTab: &openInNewTab,
 		},
 	}
@@ -359,7 +359,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
+		MonitorIds *[]struct { //nolint:revive
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"monitor_ids,omitempty"`
@@ -399,7 +399,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
+		MonitorIds *[]struct { //nolint:revive
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"monitor_ids,omitempty"`

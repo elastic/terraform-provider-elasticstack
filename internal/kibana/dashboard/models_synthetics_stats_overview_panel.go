@@ -137,7 +137,7 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 					Label string `json:"label"`
 					Value string `json:"value"`
 				} `json:"locations,omitempty"`
-				MonitorIds *[]struct {
+				MonitorIds *[]struct { //nolint:revive
 					Label string `json:"label"`
 					Value string `json:"value"`
 				} `json:"monitor_ids,omitempty"`
