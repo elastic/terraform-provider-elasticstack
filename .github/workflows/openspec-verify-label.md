@@ -323,6 +323,7 @@ jobs:
       label_verified: ${{ steps.verify_label.outputs.label_verified }}
       label_verified_reason: ${{ steps.verify_label.outputs.label_verified_reason }}
       trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
       selection_status: ${{ steps.classify_and_select.outputs.selection_status }}
       selection_reason: ${{ steps.classify_and_select.outputs.selection_reason }}
       selected_change: ${{ steps.classify_and_select.outputs.selected_change }}
