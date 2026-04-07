@@ -49,6 +49,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -63,6 +64,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -76,6 +78,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -97,6 +100,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 				"xy_chart_config": {Set: true},
 			}),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -111,6 +115,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -124,6 +129,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -144,6 +150,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 				"heatmap_config":  {Set: true},
 			}),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -162,6 +169,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 				"gauge_config": {Set: true},
 			}),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -177,6 +185,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -194,6 +203,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -210,6 +220,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -223,6 +234,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -240,6 +252,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -253,6 +266,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -269,6 +283,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -348,6 +363,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{Set: true},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -362,6 +378,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -375,6 +392,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -407,6 +425,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -423,6 +442,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			lensConfigStates(nil),
 			panelConfigValueState{},
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -436,6 +456,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)

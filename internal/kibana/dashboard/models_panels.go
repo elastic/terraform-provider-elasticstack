@@ -53,6 +53,7 @@ type panelModel struct {
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
 	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	LensDashboardAppConfig   *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
 	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -216,7 +217,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
 		pm.OptionsListControlConfig == nil &&
-		pm.RangeSliderControlConfig == nil
+		pm.RangeSliderControlConfig == nil &&
+		pm.LensDashboardAppConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -349,6 +351,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				break
 			}
 		}
+	case panelTypeLensDashboardApp:
+		ldaPanel, err := panelItem.AsKbnDashboardPanelLensDashboardApp()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, ldaPanel.Grid.X, ldaPanel.Grid.Y, ldaPanel.Grid.W, ldaPanel.Grid.H)
+		pm.UID = types.StringPointerValue(ldaPanel.Uid)
+		// lens-dashboard-app panels are managed via lens_dashboard_app_config; config_json remains unset.
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		d := populateLensDashboardAppFromAPI(&pm, tfPanel, ldaPanel)
+		diags.Append(d...)
 	case panelTypeSloErrorBudget:
 		sebPanel, err := panelItem.AsKbnDashboardPanelSloErrorBudget()
 		if err != nil {
@@ -564,6 +577,23 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.LensDashboardAppConfig != nil {
+		ldaPanel := kbapi.KbnDashboardPanelLensDashboardApp{
+			Grid: grid,
+			Uid:  uid,
+			Type: kbapi.LensDashboardApp,
+		}
+		d := buildLensDashboardAppConfig(pm, &ldaPanel)
+		diags.Append(d...)
+		if diags.HasError() {
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		if err := panelItem.FromKbnDashboardPanelLensDashboardApp(ldaPanel); err != nil {
+			diags.AddError("Failed to create lens-dashboard-app panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
 	if pm.EsqlControlConfig != nil {
 		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
 			Grid: grid,
@@ -658,6 +688,13 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				"Unsupported panel type for config_json",
 				"The slo_overview panel type must be managed through the typed slo_overview_config block, not config_json.",
 			)
+		case panelTypeLensDashboardApp:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"The `lens-dashboard-app` panel type must be managed exclusively through the `lens_dashboard_app_config` block. "+
+					"`config_json` is not supported for `lens-dashboard-app` panels.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
