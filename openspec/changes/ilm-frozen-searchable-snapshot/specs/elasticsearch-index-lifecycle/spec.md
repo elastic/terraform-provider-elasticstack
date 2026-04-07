@@ -27,13 +27,9 @@ frozen {
 
 ### Requirement: Validation and connection selection (REQ-008–REQ-010)
 
-The existing REQ-008–REQ-010 text:
+The resource SHALL continue to reject configuration that omits all five phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete`. The resource SHALL continue to accept `metadata` and allocation filters only when they are valid JSON objects. By default, the resource SHALL continue to use the provider-level Elasticsearch client; when `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for create, read, update, and delete.
 
-> The resource SHALL reject configuration that omits all five phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete`. The resource SHALL accept `metadata` and allocation filters only when they are valid JSON objects. By default, the resource SHALL use the provider-level Elasticsearch client; when `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for create, read, update, and delete.
-
-is extended with:
-
-> When the user declares the `frozen` phase, the configuration SHALL include a `searchable_snapshot` block inside `frozen`; omission SHALL be rejected during Terraform validation before any lifecycle API call.
+When the user declares the `frozen` phase, the configuration SHALL include a `searchable_snapshot` block inside `frozen`; omission SHALL be rejected during Terraform validation before any lifecycle API call.
 
 #### Scenario: Frozen phase without searchable snapshot is rejected (ADDED)
 
