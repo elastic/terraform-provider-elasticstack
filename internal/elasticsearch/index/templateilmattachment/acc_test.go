@@ -509,7 +509,7 @@ func createESAccessToken(t *testing.T) string {
 	if resp.IsError() {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			t.Fatalf("failed to read token error response: %v", readErr)
+			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
 		}
 		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
 	}
