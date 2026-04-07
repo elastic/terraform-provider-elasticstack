@@ -19,7 +19,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
   enabled             = true
   integration_version = "8.14.0"
-  preset              = "NGAv1"
+  preset              = "EDRComplete"
 
   policy = {
     windows = {

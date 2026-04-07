@@ -173,8 +173,8 @@ func TestPopulateModelFromAPINilPolicy(t *testing.T) {
 }
 
 // TestBuildBootstrapRequest tests that the bootstrap request uses the typed
-// input format with "endpoint" type, and sends preset in
-// integration_config (REQ-008).
+// input format with ENDPOINT_INTEGRATION_CONFIG, and sends preset in
+// _config (REQ-008).
 func TestBuildBootstrapRequest(t *testing.T) {
 	model := &edip.ElasticDefendIntegrationPolicyModel{
 		Name:               types.StringValue("my-endpoint"),
@@ -203,8 +203,8 @@ func TestBuildBootstrapRequest(t *testing.T) {
 	}
 
 	input := (*req.Inputs)[0]
-	if input.Type != "endpoint" {
-		t.Errorf("expected input type=%q, got %q", "endpoint", input.Type)
+	if input.Type != "ENDPOINT_INTEGRATION_CONFIG" {
+		t.Errorf("expected input type=%q, got %q", "ENDPOINT_INTEGRATION_CONFIG", input.Type)
 	}
 
 	if !input.Enabled {
@@ -242,25 +242,29 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Fatal("expected config to be non-nil when preset is set")
 	}
 
-	icRaw, ok := (*input.Config)["integration_config"]
+	icRaw, ok := (*input.Config)["_config"]
 	if !ok {
-		t.Fatal("expected integration_config in bootstrap input config")
+		t.Fatal("expected _config in bootstrap input config")
 	}
 
 	icMap, ok := icRaw.(map[string]any)
 	if !ok {
-		t.Fatalf("expected integration_config to be a map, got %T", icRaw)
+		t.Fatalf("expected _config to be a map, got %T", icRaw)
 	}
 
 	// The value is stored directly (not struct-wrapped) in the request config
 	valueRaw, ok := icMap["value"]
 	if !ok {
-		t.Fatal("expected integration_config.value to be present")
+		t.Fatal("expected _config.value to be present")
 	}
 
 	valueMap, ok := valueRaw.(map[string]any)
 	if !ok {
-		t.Fatalf("expected integration_config.value to be a map, got %T", valueRaw)
+		t.Fatalf("expected _config.value to be a map, got %T", valueRaw)
+	}
+
+	if valueMap["type"] != "endpoint" {
+		t.Errorf("expected _config.value.type=%q, got %v", "endpoint", valueMap["type"])
 	}
 
 	ecMap, ok := valueMap["endpointConfig"].(map[string]any)
@@ -274,7 +278,7 @@ func TestBuildBootstrapRequest(t *testing.T) {
 }
 
 // TestBuildBootstrapRequestNullPreset tests that a null preset omits the
-// integration_config key from the bootstrap input config entirely, rather than
+// _config key from the bootstrap input config entirely, rather than
 // sending an empty string.
 func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 	model := &edip.ElasticDefendIntegrationPolicyModel{
@@ -297,11 +301,90 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 
 	input := (*req.Inputs)[0]
 
-	// When preset is null, Config should be nil (no integration_config)
+	// When preset is null, Config should be nil (no _config)
 	if input.Config != nil {
-		if _, ok := (*input.Config)["integration_config"]; ok {
-			t.Error("expected integration_config to be absent from bootstrap input config when preset is null")
+		if _, ok := (*input.Config)["_config"]; ok {
+			t.Error("expected _config to be absent from bootstrap input config when preset is null")
 		}
+	}
+}
+
+func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
+	ctx := context.Background()
+	artifactManifest := map[string]any{
+		"manifest_version": "1.0.0",
+		"schema_version":   "v1",
+		"artifacts":        map[string]any{},
+	}
+	endpointConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value"`
+	}{
+		"integration_config": buildConfigEntry(map[string]any{
+			"endpointConfig": map[string]any{
+				"preset": "EDRComplete",
+			},
+		}),
+		"artifact_manifest": buildConfigEntry(artifactManifest),
+		"policy": buildConfigEntry(map[string]any{
+			"windows": map[string]any{"events": map[string]any{"process": true}},
+			"mac":     map[string]any{"events": map[string]any{"process": true}},
+			"linux":   map[string]any{"events": map[string]any{"process": true}},
+		}),
+	}
+	inputs := kbapi.PackagePolicyTypedInputs{
+		{
+			Type:    "endpoint",
+			Enabled: true,
+			Config:  &endpointConfig,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
+		},
+	}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint", "endpoint", "8.14.0", true, inputs)
+	policy.PolicyId = &[]string{"agent-123"}[0]
+
+	model := &edip.ElasticDefendIntegrationPolicyModel{}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics populating model, got %v", diags)
+	}
+
+	ps := edip.DefendPrivateState{
+		Version: "WzEyMywxXQ==",
+		ArtifactManifest: artifactManifest,
+	}
+
+	req, diags := edip.BuildFinalizeRequest(ctx, model, ps)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics, got %v", diags)
+	}
+	if req.Inputs == nil || len(*req.Inputs) != 1 {
+		t.Fatalf("expected 1 input, got %v", req.Inputs)
+	}
+
+	input := (*req.Inputs)[0]
+	if input.Config == nil {
+		t.Fatal("expected config to be non-nil")
+	}
+	artifactManifestRaw, ok := (*input.Config)["artifact_manifest"]
+	if !ok {
+		t.Fatal("expected artifact_manifest in finalize input config")
+	}
+	artifactManifestMap, ok := artifactManifestRaw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected artifact_manifest to be a map, got %T", artifactManifestRaw)
+	}
+	valueRaw, ok := artifactManifestMap["value"]
+	if !ok {
+		t.Fatal("expected artifact_manifest.value to be present")
+	}
+	valueMap, ok := valueRaw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected artifact_manifest.value to be a map, got %T", valueRaw)
+	}
+	if valueMap["manifest_version"] != "1.0.0" {
+		t.Errorf("expected manifest_version=%q, got %v", "1.0.0", valueMap["manifest_version"])
 	}
 }
 

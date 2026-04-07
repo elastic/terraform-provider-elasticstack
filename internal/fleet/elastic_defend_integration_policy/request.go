@@ -27,13 +27,14 @@ import (
 )
 
 const (
-	endpointInputType = "endpoint"
+	endpointInputType          = "endpoint"
+	bootstrapEndpointInputType = "ENDPOINT_INTEGRATION_CONFIG"
 )
 
 // buildBootstrapRequest builds the minimal Defend package policy request used
-// for the first create step (bootstrap). It uses the typed-inputs format with
-// an "endpoint" typed input, with preset mapped under
-// config.integration_config.value.endpointConfig.preset.
+// for the first create step (bootstrap). Kibana expects the create bootstrap to
+// use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
+// under config._config.value.endpointConfig.preset.
 func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
@@ -55,11 +56,12 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Pac
 		req.Force = model.Force.ValueBoolPointer()
 	}
 
-	// Build bootstrap input config: integration_config.value.endpointConfig.preset
+	// Build bootstrap input config: _config.value.endpointConfig.preset
 	inputConfig := map[string]any{}
 	if !model.Preset.IsNull() && !model.Preset.IsUnknown() && model.Preset.ValueString() != "" {
-		inputConfig["integration_config"] = map[string]any{
+		inputConfig["_config"] = map[string]any{
 			"value": map[string]any{
+				"type": endpointPackageName,
 				"endpointConfig": map[string]any{
 					"preset": model.Preset.ValueString(),
 				},
@@ -69,7 +71,7 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Pac
 
 	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
 	input := kbapi.PackagePolicyRequestTypedInput{
-		Type:    endpointInputType,
+		Type:    bootstrapEndpointInputType,
 		Enabled: true,
 		Streams: &streams,
 	}
@@ -137,7 +139,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 // buildFinalizeInputConfig builds the config map for the finalize/update input.
 // It includes integration_config (with preset), artifact_manifest (from private
 // state), and the typed policy payload.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, _ defendPrivateState) (map[string]any, diag.Diagnostics) {
+func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := map[string]any{}
 
@@ -156,9 +158,13 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 		}
 	}
 
-	// Note: artifact_manifest is managed server-side by Kibana and should NOT
-	// be included in update requests. Kibana rejects unknown properties in the
-	// typed input config schema and manages the artifact_manifest internally.
+	// Kibana requires callers to echo back the opaque artifact_manifest on
+	// update/finalize requests. Persist it in private state and round-trip it.
+	if ps.ArtifactManifest != nil {
+		config["artifact_manifest"] = map[string]any{
+			"value": ps.ArtifactManifest,
+		}
+	}
 
 	// Build the typed policy payload from the Terraform model.
 	// The Fleet API expects the policy wrapped in a {"value": {...}} envelope,

@@ -32,5 +32,8 @@ var PopulateModelFromAPI = populateModelFromAPI
 // BuildBootstrapRequest is exported for unit tests.
 var BuildBootstrapRequest = buildBootstrapRequest
 
+// BuildFinalizeRequest is exported for unit tests.
+var BuildFinalizeRequest = buildFinalizeRequest
+
 // ExtractPrivateStateFromResponse is exported for unit tests.
 var ExtractPrivateStateFromResponse = extractPrivateStateFromResponse
