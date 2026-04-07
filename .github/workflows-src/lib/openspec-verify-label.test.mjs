@@ -99,13 +99,12 @@ test('verify-label workflow exposes review disposition and disposition reason to
   assert.match(source, /\*\*Disposition reason\*\*/);
 });
 
-test('verify-label workflow exposes verification mode and archive/push outputs to the agent', () => {
+test('verify-label workflow exposes archive/push outputs to the agent', () => {
   const source = workflowSource();
-  assert.match(source, /verification_mode: \$\{\{ steps\.classify_and_select\.outputs\.verification_mode \}\}/);
   assert.match(source, /archive_push_allowed: \$\{\{ steps\.classify_and_select\.outputs\.archive_push_allowed \}\}/);
-  assert.match(source, /\*\*Verification mode\*\*/);
-  assert.match(source, /workspace.*api-only/s);
+  assert.match(source, /archive_push_allowed_reason: \$\{\{ steps\.classify_and_select\.outputs\.archive_push_allowed_reason \}\}/);
   assert.match(source, /\*\*Archive\/push allowed\*\*/);
+  assert.doesNotMatch(source, /verification_mode:/);
 });
 
 test('verify-label agent prompt interpolates needs.pre_activation review outputs where the agent reads them', () => {
@@ -124,12 +123,12 @@ test('verify-label agent prompt interpolates needs.pre_activation review outputs
 test('verify-label agent prompt interpolates archive/push outputs where the agent reads them', () => {
   const source = workflowSource();
   const archiveAllowed = '${{ needs.pre_activation.outputs.archive_push_allowed }}';
-  const archiveReason = '${{ needs.pre_activation.outputs.archive_push_reason }}';
+  const archiveAllowedReason = '${{ needs.pre_activation.outputs.archive_push_allowed_reason }}';
   assert.ok(source.includes(archiveAllowed), 'expected archive_push_allowed interpolation in generated workflow');
-  assert.ok(source.includes(archiveReason), 'expected archive_push_reason interpolation in generated workflow');
+  assert.ok(source.includes(archiveAllowedReason), 'expected archive_push_allowed_reason interpolation in generated workflow');
   const pre = source.split('## Pre-activation context')[1].split('## Verification (active change)')[0];
   assert.ok(pre.includes(archiveAllowed), 'expected archive_push_allowed in Pre-activation context');
-  assert.ok(pre.includes(archiveReason), 'expected archive_push_reason in Pre-activation context');
+  assert.ok(pre.includes(archiveAllowedReason), 'expected archive_push_allowed_reason in Pre-activation context');
 });
 
 test('verify-label workflow ties APPROVE and archive to approval-eligible disposition', () => {
@@ -155,19 +154,28 @@ test('verify-label workflow states archive_push_allowed false does not force COM
   assert.match(source, /archive_push_allowed.*false.*does \*\*not\*\* force \*\*`COMMENT`\*\*/s);
 });
 
-test('verify-label workflow workspace bootstrap steps are conditional on workspace verification mode', () => {
+test('verify-label workflow bootstrap steps run unconditionally (no verification_mode condition)', () => {
   const source = workflowSource();
-  // The compiled output should show Go/Node/Terraform setup steps are conditional on workspace mode
-  assert.match(source, /verification_mode.*workspace/s);
+  // Bootstrap steps must not have verification_mode conditions — they always run
+  assert.doesNotMatch(source, /verification_mode.*workspace/s);
+  // Bootstrap steps must still be present
+  assert.match(source, /Setup Go/);
+  assert.match(source, /Setup Node\.js/);
+  assert.match(source, /Setup Terraform CLI/);
+  assert.match(source, /Setup repository dependencies/);
 });
 
 test('verify-label compiled lock pre_activation job has issues write for label cleanup', () => {
   const lock = lockSource();
-  assert.match(lock, /pre_activation:[\s\S]*?permissions:[\s\S]*?issues: write/);
+  // Extract just the pre_activation job block (up to the next top-level job key)
+  const preActivationMatch = lock.match(/^  pre_activation:\n([\s\S]*?)(?=\n  \w[\w-]*:\n)/m);
+  assert.ok(preActivationMatch, 'expected to find pre_activation job block in lock file');
+  const preActivationBlock = preActivationMatch[0];
+  assert.ok(preActivationBlock.includes('issues: write'), 'expected issues: write in pre_activation job permissions');
 });
 
-test('verify-label compiled lock preserves workspace-only guards on credential-bearing steps', () => {
+test('verify-label compiled lock has no verification_mode conditions on any steps', () => {
   const lock = lockSource();
-  const workspaceGuard = /if: needs\.pre_activation\.outputs\.verification_mode == 'workspace'/;
-  assert.match(lock, workspaceGuard);
+  const workspaceGuard = /if:.*needs\.pre_activation\.outputs\.verification_mode/;
+  assert.doesNotMatch(lock, workspaceGuard);
 });

@@ -28,10 +28,8 @@ core.setOutput('selection_reason', selectionResult.selection_reason);
 core.setOutput('selected_change', selectionResult.selected_change);
 core.setOutput('review_disposition', selectionResult.review_disposition ?? '');
 core.setOutput('disposition_reason', selectionResult.disposition_reason ?? '');
-core.setOutput('verification_mode', classification.verification_mode);
-core.setOutput('verification_mode_reason', classification.verification_mode_reason);
 core.setOutput('archive_push_allowed', classification.archive_push_allowed ? 'true' : 'false');
-core.setOutput('archive_push_reason', classification.archive_push_reason);
+core.setOutput('archive_push_allowed_reason', classification.archive_push_allowed_reason);
 
 if (selectionResult.selection_status === 'eligible') {
   core.info(
@@ -39,5 +37,5 @@ if (selectionResult.selection_status === 'eligible') {
   );
 }
 core.info(
-  `PR classification: ${classification.verification_mode} (archive/push: ${classification.archive_push_allowed})`
+  `PR classification: archive/push allowed=${classification.archive_push_allowed}`
 );

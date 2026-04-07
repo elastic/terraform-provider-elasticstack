@@ -39,33 +39,30 @@ test('verifyTriggerLabel returns label_verified false for an empty string with (
 // classify-pr.js — classifyPullRequest
 // ---------------------------------------------------------------------------
 
-test('classifyPullRequest returns workspace mode when headRepoId matches baseRepoId', () => {
+test('classifyPullRequest allows archive/push when headRepoId matches baseRepoId', () => {
   const result = classifyPullRequest({ headRepoId: 123, baseRepoId: 123 });
-  assert.equal(result.verification_mode, 'workspace');
   assert.equal(result.archive_push_allowed, true);
+  assert.ok(result.archive_push_allowed_reason.length > 0, 'expected a non-empty reason');
 });
 
-test('classifyPullRequest returns api-only mode when headRepoId differs from baseRepoId', () => {
+test('classifyPullRequest disallows archive/push when headRepoId differs from baseRepoId', () => {
   const result = classifyPullRequest({ headRepoId: 456, baseRepoId: 123 });
-  assert.equal(result.verification_mode, 'api-only');
   assert.equal(result.archive_push_allowed, false);
+  assert.ok(result.archive_push_allowed_reason.length > 0, 'expected a non-empty reason');
 });
 
-test('classifyPullRequest returns api-only mode when headRepoId is null (safe fallback)', () => {
+test('classifyPullRequest disallows archive/push when headRepoId is null (safe fallback)', () => {
   const result = classifyPullRequest({ headRepoId: null, baseRepoId: 123 });
-  assert.equal(result.verification_mode, 'api-only');
   assert.equal(result.archive_push_allowed, false);
 });
 
-test('classifyPullRequest returns api-only mode when headRepoId is undefined (deleted fork repo)', () => {
+test('classifyPullRequest disallows archive/push when headRepoId is undefined (deleted fork repo)', () => {
   const result = classifyPullRequest({ headRepoId: undefined, baseRepoId: 123 });
-  assert.equal(result.verification_mode, 'api-only');
   assert.equal(result.archive_push_allowed, false);
 });
 
-test('classifyPullRequest returns api-only mode when both headRepoId and baseRepoId are undefined', () => {
+test('classifyPullRequest disallows archive/push when both headRepoId and baseRepoId are undefined', () => {
   const result = classifyPullRequest({ headRepoId: undefined, baseRepoId: undefined });
-  assert.equal(result.verification_mode, 'api-only');
   assert.equal(result.archive_push_allowed, false);
 });
 

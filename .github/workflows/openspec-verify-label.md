@@ -200,40 +200,31 @@ on:
           }
           
           /**
-           * Classifies a pull request as workspace (same-repository) or api-only (fork),
-           * and determines archive/push eligibility.
+           * Determines archive/push eligibility for a pull request.
            *
-           * Same-repository pull requests (head.repo.id === repository.id) are classified as
-           * workspace mode with archive/push allowed. Fork pull requests are classified as
-           * api-only mode with archive/push disallowed.
+           * Same-repository pull requests (head.repo.id === repository.id) have archive/push allowed.
+           * Fork pull requests have archive/push disallowed (fork-controlled content must not be pushed
+           * to a branch in the trusted repository context).
            *
            * @param {{ headRepoId: number|undefined, baseRepoId: number|undefined }} opts
            * @returns {{
-           *   verification_mode: 'workspace' | 'api-only',
-           *   verification_mode_reason: string,
            *   archive_push_allowed: boolean,
-           *   archive_push_reason: string,
+           *   archive_push_allowed_reason: string,
            * }}
            */
           function classifyPullRequest({ headRepoId, baseRepoId }) {
             if (headRepoId != null && baseRepoId != null && headRepoId === baseRepoId) {
               return {
-                verification_mode: 'workspace',
-                verification_mode_reason:
-                  'Pull request head repository matches base repository (same-repository PR). Full workspace toolchain is available.',
                 archive_push_allowed: true,
-                archive_push_reason:
+                archive_push_allowed_reason:
                   'Same-repository pull request: archive and push to PR branch are allowed.',
               };
             }
           
             return {
-              verification_mode: 'api-only',
-              verification_mode_reason:
-                'Pull request head repository differs from base repository (fork PR). Verification uses PR metadata and diffs only; trusted workspace bootstrap is not available.',
               archive_push_allowed: false,
-              archive_push_reason:
-                'Fork pull request: archive and push to PR branch are disallowed to prevent execution of fork-controlled content in the trusted workflow context.',
+              archive_push_allowed_reason:
+                'Fork pull request: archive and push to PR branch are disallowed to prevent pushing fork-controlled content to the trusted repository.',
             };
           }
           
@@ -268,10 +259,8 @@ on:
           core.setOutput('selected_change', selectionResult.selected_change);
           core.setOutput('review_disposition', selectionResult.review_disposition ?? '');
           core.setOutput('disposition_reason', selectionResult.disposition_reason ?? '');
-          core.setOutput('verification_mode', classification.verification_mode);
-          core.setOutput('verification_mode_reason', classification.verification_mode_reason);
           core.setOutput('archive_push_allowed', classification.archive_push_allowed ? 'true' : 'false');
-          core.setOutput('archive_push_reason', classification.archive_push_reason);
+          core.setOutput('archive_push_allowed_reason', classification.archive_push_allowed_reason);
           
           if (selectionResult.selection_status === 'eligible') {
             core.info(
@@ -279,7 +268,7 @@ on:
             );
           }
           core.info(
-            `PR classification: ${classification.verification_mode} (archive/push: ${classification.archive_push_allowed})`
+            `PR classification: archive/push allowed=${classification.archive_push_allowed}`
           );
           
 if: >-
@@ -287,29 +276,24 @@ if: >-
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
   - name: Setup Go
-    if: needs.pre_activation.outputs.verification_mode == 'workspace'
     uses: actions/setup-go@v6
     with:
       go-version-file: go.mod
       cache: false
   - name: Export Go paths for AWF chroot mode
-    if: needs.pre_activation.outputs.verification_mode == 'workspace'
     run: |
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    if: needs.pre_activation.outputs.verification_mode == 'workspace'
     uses: actions/setup-node@v6
     with:
       node-version-file: package.json
   - name: Setup Terraform CLI
-    if: needs.pre_activation.outputs.verification_mode == 'workspace'
     uses: hashicorp/setup-terraform@v4
     with:
       terraform_wrapper: false
   - name: Setup repository dependencies
-    if: needs.pre_activation.outputs.verification_mode == 'workspace'
     run: make setup
 engine:
   id: copilot
@@ -329,10 +313,8 @@ jobs:
       selected_change: ${{ steps.classify_and_select.outputs.selected_change }}
       review_disposition: ${{ steps.classify_and_select.outputs.review_disposition }}
       disposition_reason: ${{ steps.classify_and_select.outputs.disposition_reason }}
-      verification_mode: ${{ steps.classify_and_select.outputs.verification_mode }}
-      verification_mode_reason: ${{ steps.classify_and_select.outputs.verification_mode_reason }}
       archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
-      archive_push_reason: ${{ steps.classify_and_select.outputs.archive_push_reason }}
+      archive_push_allowed_reason: ${{ steps.classify_and_select.outputs.archive_push_allowed_reason }}
 tools:
   github:
     toolsets: [repos, pull_requests]
@@ -358,7 +340,7 @@ safe-outputs:
 
 <!-- MAINTAINER NOTE — POST-COMPILE MANUAL OVERRIDES
      Running `make workflow-generate` (which runs `gh aw compile`) will silently overwrite the
-     compiled lock file. Two categories of manual overrides MUST be re-applied after every
+     compiled lock file. One category of manual override MUST be re-applied after every
      `gh aw compile` run:
 
      Override 1 — pre_activation job permissions:
@@ -368,13 +350,6 @@ safe-outputs:
            issues: write        # required for remove_trigger_label (github.rest.issues.removeLabel)
            pull-requests: read  # required for classify_and_select (github.paginate pulls.listFiles)
            contents: read       # required for checkout and file access in classify_and_select
-
-     Override 2 — Configure Git credentials and Checkout PR branch step conditionals:
-       gh-aw injects these steps unconditionally; the DSL has no mechanism to add conditionals.
-       After compiling, find both steps in the agent job and add the `if:` guard:
-         if: needs.pre_activation.outputs.verification_mode == 'workspace'
-       This prevents the steps from running on fork PRs (api-only mode), where checking out
-       fork-controlled content in the trusted workflow context would be a security risk.
 -->
 
 # OpenSpec verify, archive, and clean up (label-gated)
@@ -390,19 +365,15 @@ Deterministic pre-activation steps have classified the pull request and selected
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
 - **Review disposition** (do not infer from PR files): `${{ needs.pre_activation.outputs.review_disposition }}` — either `approval-eligible` or `comment-only`
 - **Disposition reason** (authoritative; echo or paraphrase in the review body when relevant): ${{ needs.pre_activation.outputs.disposition_reason }}
-- **Verification mode**: `${{ needs.pre_activation.outputs.verification_mode }}` — either `workspace` (same-repository PR, full toolchain available) or `api-only` (fork PR, review from PR metadata and diffs only)
-- **Verification mode reason**: ${{ needs.pre_activation.outputs.verification_mode_reason }}
 - **Archive/push allowed**: `${{ needs.pre_activation.outputs.archive_push_allowed }}` — either `true` (same-repository PR) or `false` (fork PR)
-- **Archive/push reason**: ${{ needs.pre_activation.outputs.archive_push_reason }}
+- **Archive/push allowed reason**: ${{ needs.pre_activation.outputs.archive_push_allowed_reason }}
 - **Gating**: already complete — the workflow reached this point only because exactly one active non-archive change was found with file statuses limited to `added` and `modified`. Do **not** re-inspect PR files, re-derive the change id, guess approval eligibility from the diff, or re-derive whether archive/push is allowed.
 
-Use **`npx openspec`** for all OpenSpec CLI invocations when **`${{ needs.pre_activation.outputs.verification_mode }}`** is **`workspace`**. When it is **`api-only`**, verify from pull request metadata and diffs only — do **not** run repository bootstrap commands or `npx openspec`.
+Use **`npx openspec`** for all OpenSpec CLI invocations.
 
 ## Verification (active change)
 
 Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
-
-**When `${{ needs.pre_activation.outputs.verification_mode }}` is `workspace`**:
 
 1. Run:
 
@@ -410,12 +381,6 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - `npx openspec instructions apply --change "${{ needs.pre_activation.outputs.selected_change }}" --json`
 
 2. Read **`.agents/skills/openspec-verify-change/SKILL.md`** and perform verification **rooted at** `openspec/changes/<id>/` using the skill's steps (status / apply JSON for context files, completeness / correctness / coherence, **Issues by priority**: CRITICAL, WARNING, SUGGESTION, **Final assessment**).
-
-**When `${{ needs.pre_activation.outputs.verification_mode }}` is `api-only`**:
-
-1. Review the change from pull request changed files, diffs, and the pre-activation outputs above. Do not run `npx openspec`, `make setup`, or any other repository bootstrap command.
-2. Read the changed files under `openspec/changes/<id>/` via the GitHub API and classify them against the change's **proposal**, **design**, **tasks**, and delta specs.
-3. Apply the same verification criteria (completeness, correctness, coherence, **Issues by priority**) using the PR diff context.
 
 ## Structural allowlist and relevance
 
@@ -432,7 +397,6 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
 
    - Summary / scorecard from verification (**Issues by priority**).
    - **Out-of-scope / unassociated changes**: list **`unassociated`** files, summarize **`uncertain`**, note accepted **`relevant`** briefly.
-   - When **`${{ needs.pre_activation.outputs.verification_mode }}`** is **`api-only`**: note in the review body that this verification was performed in API-only mode because the pull request comes from a fork, and that archive/push is not available for this run.
    - When **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`** (net-new spec change material under the selected change): explain that the review is limited to **`COMMENT`** because it introduces a net-new spec change (added files under the active change), **including when the normal approval criteria are otherwise satisfied**. Do **not** imply the pull request met those criteria if verification reported **CRITICAL** issues; still describe the net-new **`COMMENT`** limitation. Tie this to the deterministic **Disposition reason** above.
 
 6. Add **line-level** **`create-pull-request-review-comment`** entries for mappable CRITICAL (and other high-signal) issues and for **`unassociated`** hunks where the API allows; avoid spam on large **`relevant`** sets.
