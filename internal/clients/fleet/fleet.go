@@ -483,6 +483,21 @@ func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, s
 	}
 }
 
+// ListAgentDownloadSources reads all agent binary download sources from the API.
+func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentDownloadSourcesWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // GetPackage reads a specific package from the API.
 func GetPackage(ctx context.Context, client *Client, name, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}

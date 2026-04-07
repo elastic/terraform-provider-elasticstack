@@ -42,6 +42,10 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
+	resp.Diagnostics.Append(r.assertVersionSupported(ctx)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Determine space from plan (first space_ids entry) for CREATE.
 	var spaceID string
@@ -69,22 +73,21 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	item := createResp.JSON200.Item
 
-	plan.ID = types.StringValue(item.Id)
-	plan.SourceID = types.StringValue(item.Id)
-	plan.Name = types.StringValue(item.Name)
-	plan.Host = types.StringValue(item.Host)
-	plan.Default = types.BoolPointerValue(item.IsDefault)
-	if item.ProxyId != nil {
-		plan.ProxyID = types.StringValue(*item.ProxyId)
-	} else {
-		plan.ProxyID = types.StringNull()
-	}
-
 	// Ensure we keep the operational space information consistent with how Read/Update/Delete will resolve it.
 	if plan.SpaceIDs.IsUnknown() {
 		plan.SpaceIDs = types.SetNull(types.StringType)
 	}
 
-	diags = resp.State.Set(ctx, plan)
+	readState, found, diags := r.readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError("Unexpected API response", "Created agent download source could not be read back by source_id")
+		return
+	}
+
+	diags = resp.State.Set(ctx, readState)
 	resp.Diagnostics.Append(diags...)
 }

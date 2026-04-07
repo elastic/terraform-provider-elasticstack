@@ -39,6 +39,10 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
+	resp.Diagnostics.Append(r.assertVersionSupported(ctx)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	sourceID := state.SourceID.ValueString()
 

@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -38,6 +37,10 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	client, err := r.client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
+		return
+	}
+	resp.Diagnostics.Append(r.assertVersionSupported(ctx)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -64,18 +67,16 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	item := updateResp.JSON200.Item
-
-	plan.ID = types.StringValue(item.Id)
-	plan.SourceID = types.StringValue(item.Id)
-	plan.Name = types.StringValue(item.Name)
-	plan.Host = types.StringValue(item.Host)
-	plan.Default = types.BoolPointerValue(item.IsDefault)
-	if item.ProxyId != nil {
-		plan.ProxyID = types.StringValue(*item.ProxyId)
-	} else {
-		plan.ProxyID = types.StringNull()
+	readState, found, diags := r.readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError("Unexpected API response", "Updated agent download source could not be read back by source_id")
+		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
+	diags = resp.State.Set(ctx, readState)
 	resp.Diagnostics.Append(diags...)
 }

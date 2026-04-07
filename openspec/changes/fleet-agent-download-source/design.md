@@ -34,7 +34,7 @@ All HTTP interactions SHALL go through the generated `kbapi` client and the Flee
 - `id` in state SHALL store the Fleet download source ID returned by Kibana.
 - `source_id` SHALL mirror that value for the path parameter on read, update, and delete.
 - If Terraform sets `source_id` at create time, the create payload SHALL pass it so Kibana creates that ID; if omitted, the provider SHALL persist the server-assigned ID to `id` and `source_id`.
-- Import SHALL accept the download source ID and set both `id` and `source_id`.
+- Import SHALL accept a composite `<space_id>/<source_id>` identifier, set both `id` and `source_id` from `source_id`, and preserve `space_ids` as a single-entry set containing `space_id`.
 
 ### `space_ids`
 

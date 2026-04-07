@@ -50,6 +50,10 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Agent Download Source %s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id", "proxy-123"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
 				),
 			},
 			{
@@ -57,8 +61,12 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				Config:   testAccResourceFleetAgentDownloadSourceUpdate(random),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Updated Agent Download Source %s", random)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id", "proxy-456"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
 				),
 			},
 			{
@@ -67,6 +75,13 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				ResourceName:      "elasticstack_fleet_agent_download_source.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource elasticstack_fleet_agent_download_source.test not found in state")
+					}
+					return fmt.Sprintf("default/%s", res.Primary.ID), nil
+				},
 			},
 		},
 	})
@@ -80,10 +95,13 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_agent_download_source" "test" {
   name      = "Agent Download Source %s"
+  source_id = "agent-download-source-%s"
   default   = false
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
+  proxy_id  = "proxy-123"
+  space_ids = ["default"]
 }
-`, suffix)
+`, suffix, suffix)
 }
 
 func testAccResourceFleetAgentDownloadSourceUpdate(suffix string) string {
@@ -94,10 +112,13 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_agent_download_source" "test" {
   name      = "Updated Agent Download Source %s"
-  default   = false
+  source_id = "agent-download-source-%s"
+  default   = true
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
+  proxy_id  = "proxy-456"
+  space_ids = ["default"]
 }
-`, suffix)
+`, suffix, suffix)
 }
 
 func checkResourceFleetAgentDownloadSourceDestroy(s *terraform.State) error {
