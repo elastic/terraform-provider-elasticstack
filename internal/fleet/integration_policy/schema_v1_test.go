@@ -58,7 +58,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 			"key1": "value1",
 			"key2": 42,
 		}
-		apiStreams := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled,
 				Vars:    &vars,
@@ -90,7 +90,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 		vars1 := map[string]any{"key1": "value1"}
 		vars2 := map[string]any{"key2": "value2"}
 
-		apiStreams := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled1,
 				Vars:    &vars1,
@@ -119,7 +119,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 
 	t.Run("stream with nil enabled", func(t *testing.T) {
 		vars := map[string]any{"key": "value"}
-		apiStreams := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: nil,
 				Vars:    &vars,
@@ -144,7 +144,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 
 	t.Run("stream with nil vars", func(t *testing.T) {
 		enabled := true
-		apiStreams := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled,
 				Vars:    nil,
@@ -311,7 +311,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 	t.Run("conversion with input and streams", func(t *testing.T) {
 		enabled := true
 		vars := map[string]any{"stream_var": "value"}
-		apiStreams := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled,
 				Vars:    &vars,
@@ -372,10 +372,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		vars1 := map[string]any{"stream1_var": "value1"}
 		vars2 := map[string]any{"stream2_var": "value2"}
 
-		apiStreams1 := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams1 := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {Enabled: &enabled1, Vars: &vars1},
 		}
-		apiStreams2 := map[string]kbapi.PackagePolicyInputStream{
+		apiStreams2 := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-2": {Enabled: &enabled2, Vars: &vars2},
 		}
 

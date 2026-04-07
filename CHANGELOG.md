@@ -18,6 +18,7 @@
 - Migrate `elasticstack_elasticsearch_index_lifecycle` to the Terraform Plugin Framework ([#2002](https://github.com/elastic/terraform-provider-elasticstack/pull/2002))
 - Add `space_id` to `elasticstack_kibana_synthetics_private_location` ([#2142](https://github.com/elastic/terraform-provider-elasticstack/pull/2142))
 - Use space-scoped endpoints for Fleet resources to allow space-restricted roles to properly manage Fleet resources. ([#2084](https://github.com/elastic/terraform-provider-elasticstack/pull/2084))
+- Add `elasticstack_fleet_elastic_defend_integration_policy` resource ([#2147](https://github.com/elastic/terraform-provider-elasticstack/pull/2147))
 
 
 ## [0.14.3] - 2026-03-02

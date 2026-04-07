@@ -152,7 +152,7 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 		return types.MapNull(getInputStreamType()), nil
 	}
 
-	var apiStreams map[string]kbapi.PackagePolicyInputStream
+	var apiStreams map[string]kbapi.PackagePolicyMappedInputStream
 	diags := v1.Unmarshal(&apiStreams)
 	if diags.HasError() {
 		return types.MapNull(getInputStreamType()), diags
