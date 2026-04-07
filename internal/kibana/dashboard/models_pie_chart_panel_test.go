@@ -75,7 +75,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NotNil(t, pm.PieChartConfig.Legend)
 	assert.Equal(t, "auto", pm.PieChartConfig.Legend.Size.ValueString())
 	assert.True(t, pm.PieChartConfig.Legend.Nested.ValueBool())
-	assert.Equal(t, float64(3), pm.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64())
+	assert.InEpsilon(t, float64(3), pm.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
 	assert.Equal(t, string(visibility), pm.PieChartConfig.Legend.Visible.ValueString())
 
 	attrs2, diags := converter.buildAttributes(*pm)
@@ -156,7 +156,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, "auto", model.Legend.Size.ValueString())
 	assert.True(t, model.Legend.Nested.ValueBool())
-	assert.Equal(t, float64(4), model.Legend.TruncateAfterLine.ValueFloat64())
+	assert.InEpsilon(t, float64(4), model.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
 	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI

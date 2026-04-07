@@ -2660,9 +2660,9 @@ func getPieChart() map[string]schema.Attribute {
 				"Same shape as treemap and mosaic legends; Terraform `visible` maps to API `visibility`. " +
 				"When omitted, the schema default matches typical Kibana legend defaults (size and visibility " +
 				"`auto`) so apply/read stay consistent.",
-			Optional: true,
-			Computed: true,
-			Default:  objectdefault.StaticValue(pieChartLegendDefaultObject()),
+			Optional:   true,
+			Computed:   true,
+			Default:    objectdefault.StaticValue(pieChartLegendDefaultObject()),
 			Attributes: getPartitionLegendSchema(),
 		},
 		"query": schema.SingleNestedAttribute{
