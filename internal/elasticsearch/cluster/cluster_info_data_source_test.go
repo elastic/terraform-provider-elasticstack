@@ -18,12 +18,25 @@
 package cluster_test
 
 import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
+	"encoding/pem"
+	"io"
+	"math/big"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -188,6 +201,164 @@ func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceClusterInfo_withoutExplicitConnection(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "elasticsearch_connection.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceClusterInfo_withBasicAuthHeadersAndMultiEndpoints(t *testing.T) {
+	endpoints := clusterInfoConnectionEndpoints()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckClusterInfoESBasicAuth(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"endpoints": config.ListVariable(
+						config.StringVariable(endpoints[0]),
+						config.StringVariable(endpoints[1]),
+					),
+					"headers": config.MapVariable(map[string]config.Variable{
+						"XTerraformTest": config.StringVariable("basic-auth"),
+						"XTrace":         config.StringVariable("cluster-info"),
+					}),
+					"password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+					"username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.%", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTerraformTest", "basic-auth"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTrace", "cluster-info"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceClusterInfo_withAPIKey(t *testing.T) {
+	endpoint := clusterInfoPrimaryESEndpoint()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"endpoint": config.StringVariable(endpoint),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceClusterInfo_withBearerToken(t *testing.T) {
+	endpoint := clusterInfoPrimaryESEndpoint()
+	var bearerToken string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			preCheckClusterInfoESBasicAuth(t)
+			bearerToken = createClusterInfoESAccessToken(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"bearer_token": config.StringVariable(bearerToken),
+					"endpoint":     config.StringVariable(endpoint),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", bearerToken),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
+	endpoint := clusterInfoPrimaryESEndpoint()
+	tlsMaterial := createClusterInfoTLSMaterial(t)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("inline"),
+				ConfigVariables: config.Variables{
+					"ca_data":   config.StringVariable(tlsMaterial.caPEM),
+					"cert_data": config.StringVariable(tlsMaterial.certPEM),
+					"endpoint":  config.StringVariable(endpoint),
+					"key_data":  config.StringVariable(tlsMaterial.keyPEM),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data", tlsMaterial.caPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data", tlsMaterial.certPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data", tlsMaterial.keyPEM),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("file"),
+				ConfigVariables: config.Variables{
+					"ca_file":   config.StringVariable(tlsMaterial.caFile),
+					"cert_file": config.StringVariable(tlsMaterial.certFile),
+					"endpoint":  config.StringVariable(endpoint),
+					"key_file":  config.StringVariable(tlsMaterial.keyFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file", tlsMaterial.caFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file", tlsMaterial.certFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file", tlsMaterial.keyFile),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats upgrades the
 // set-only assertions for cluster_uuid, cluster_name and name to regex
 // checks so we catch obviously-wrong values (e.g. empty string).
@@ -268,4 +439,154 @@ func clusterInfoPrimaryESEndpoint() string {
 		}
 	}
 	return "http://localhost:9200"
+}
+
+func clusterInfoConnectionEndpoints() []string {
+	endpoints := make([]string, 0, 2)
+	for endpoint := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
+		endpoint = strings.TrimSpace(endpoint)
+		if endpoint != "" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	if len(endpoints) == 0 {
+		endpoints = append(endpoints, "http://localhost:9200")
+	}
+	if len(endpoints) == 1 {
+		endpoints = append(endpoints, endpoints[0])
+	}
+
+	return endpoints[:2]
+}
+
+func preCheckClusterInfoESBasicAuth(t *testing.T) {
+	t.Helper()
+	acctest.PreCheck(t)
+	if os.Getenv("ELASTICSEARCH_USERNAME") == "" || os.Getenv("ELASTICSEARCH_PASSWORD") == "" {
+		t.Skip("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set for explicit basic auth coverage")
+	}
+}
+
+func createClusterInfoESAccessToken(t *testing.T) string {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance testing client: %v", err)
+	}
+	esClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("failed to get Elasticsearch client: %v", err)
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"grant_type": "password",
+		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
+		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal token request: %v", err)
+	}
+
+	resp, err := esClient.Security.GetToken(
+		bytes.NewReader(payload),
+		esClient.Security.GetToken.WithContext(context.Background()),
+	)
+	if err != nil {
+		t.Fatalf("failed to create Elasticsearch access token: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.IsError() {
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
+		}
+		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResponse struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		t.Fatalf("failed to decode token response: %v", err)
+	}
+	if tokenResponse.AccessToken == "" {
+		t.Fatalf("token response did not include an access_token")
+	}
+
+	return tokenResponse.AccessToken
+}
+
+type clusterInfoTLSMaterial struct {
+	caPEM    string
+	certPEM  string
+	keyPEM   string
+	caFile   string
+	certFile string
+	keyFile  string
+}
+
+func createClusterInfoTLSMaterial(t *testing.T) clusterInfoTLSMaterial {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+
+	certificateDER, err := x509.CreateCertificate(rand.Reader, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: "cluster-info-test",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: "cluster-info-test",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("failed to generate certificate: %v", err)
+	}
+
+	certPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificateDER}))
+	keyPEM := string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}))
+
+	tempDir := t.TempDir()
+	caFile := filepath.Join(tempDir, "ca.pem")
+	certFile := filepath.Join(tempDir, "cert.pem")
+	keyFile := filepath.Join(tempDir, "key.pem")
+
+	for path, contents := range map[string]string{
+		caFile:   certPEM,
+		certFile: certPEM,
+		keyFile:  keyPEM,
+	} {
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatalf("failed to write TLS test file %s: %v", path, err)
+		}
+	}
+
+	return clusterInfoTLSMaterial{
+		caPEM:    certPEM,
+		certPEM:  certPEM,
+		keyPEM:   keyPEM,
+		caFile:   caFile,
+		certFile: certFile,
+		keyFile:  keyFile,
+	}
 }
