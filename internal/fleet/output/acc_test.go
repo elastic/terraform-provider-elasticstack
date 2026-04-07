@@ -21,9 +21,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -35,6 +35,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
@@ -361,8 +362,9 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 	require.NoError(t, err)
 	kibanaOapiClient, err := client.GetKibanaOapiClient()
 	require.NoError(t, err)
+	remote := true
 	resp, err := kibanaOapiClient.API.PostFleetServiceTokensWithResponse(t.Context(), kbapi.PostFleetServiceTokensJSONRequestBody{
-		Remote: new(true),
+		Remote: &remote,
 	})
 	require.NoError(t, err)
 	serviceToken := resp.JSON200.Value
