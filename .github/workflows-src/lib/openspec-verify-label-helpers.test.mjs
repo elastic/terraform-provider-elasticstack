@@ -63,6 +63,12 @@ test('classifyPullRequest returns api-only mode when headRepoId is undefined (de
   assert.equal(result.archive_push_allowed, false);
 });
 
+test('classifyPullRequest returns api-only mode when both headRepoId and baseRepoId are undefined', () => {
+  const result = classifyPullRequest({ headRepoId: undefined, baseRepoId: undefined });
+  assert.equal(result.verification_mode, 'api-only');
+  assert.equal(result.archive_push_allowed, false);
+});
+
 // ---------------------------------------------------------------------------
 // remove-trigger-label.js — removeTriggerLabel
 // ---------------------------------------------------------------------------

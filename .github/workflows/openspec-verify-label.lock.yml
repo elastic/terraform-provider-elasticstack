@@ -1416,10 +1416,14 @@ jobs:
   pre_activation:
     runs-on: ubuntu-slim
     # issues: write is required for the remove_trigger_label step (github.rest.issues.removeLabel).
+    # pull-requests: read is required for the classify_and_select step (github.paginate pulls.listFiles).
+    # contents: read is required for checkout and file access in the classify_and_select step.
     # The gh-aw DSL does not support per-job permissions for pre_activation; this block is a
     # post-compile manual override. Re-apply after running `gh aw compile`.
     permissions:
       issues: write
+      pull-requests: read
+      contents: read
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
       archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
