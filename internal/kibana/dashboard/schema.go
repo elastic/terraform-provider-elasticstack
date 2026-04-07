@@ -2908,6 +2908,11 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 					Optional:            true,
 					NestedObject:        filterItemSchema,
 				},
+				"statuses": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor statuses. Each entry has a `label` (display name) and a `value` (status, e.g. `up`, `down`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
 			},
 		},
 	}

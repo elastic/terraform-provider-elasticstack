@@ -28,8 +28,8 @@ type syntheticsMonitorsConfigModel struct {
 	Filters *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
 }
 
-// syntheticsMonitorsFiltersModel holds the five optional filter dimensions for a
-// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types).
+// syntheticsMonitorsFiltersModel holds the six optional filter dimensions for a
+// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types, statuses).
 // Each dimension is a list of { label, value } pairs.
 type syntheticsMonitorsFiltersModel struct {
 	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
@@ -37,6 +37,7 @@ type syntheticsMonitorsFiltersModel struct {
 	MonitorIDs   []syntheticsFilterItemModel `tfsdk:"monitor_ids"`
 	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
 	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
+	Statuses     []syntheticsFilterItemModel `tfsdk:"statuses"`
 }
 
 // syntheticsFilterItemModel is a single { label, value } filter entry.
@@ -99,6 +100,11 @@ func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
 		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
 		panel.Config.Filters.MonitorTypes = &items
 	}
+	if len(cfg.Filters.Statuses) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.Statuses)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.Statuses = &items
+	}
 
 	return panel
 }
@@ -121,6 +127,10 @@ func ensureSyntheticsAPIFilters(f *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"projects,omitempty"`
+	Statuses *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"statuses,omitempty"`
 	Tags *[]struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
@@ -142,6 +152,10 @@ func ensureSyntheticsAPIFilters(f *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"projects,omitempty"`
+	Statuses *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"statuses,omitempty"`
 	Tags *[]struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
@@ -167,6 +181,10 @@ func ensureSyntheticsAPIFilters(f *struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -260,6 +278,10 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"projects,omitempty"`
+	Statuses *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"statuses,omitempty"`
 	Tags *[]struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
@@ -274,9 +296,10 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 	monitorIDs := fromSyntheticsAPIItems(apiFilters.MonitorIds)
 	locations := fromSyntheticsAPIItems(apiFilters.Locations)
 	monitorTypes := fromSyntheticsAPIItems(apiFilters.MonitorTypes)
+	statuses := fromSyntheticsAPIItems(apiFilters.Statuses)
 
 	// If all dimensions are nil (empty or absent), treat filters as null.
-	if projects == nil && tags == nil && monitorIDs == nil && locations == nil && monitorTypes == nil {
+	if projects == nil && tags == nil && monitorIDs == nil && locations == nil && monitorTypes == nil && statuses == nil {
 		return nil
 	}
 
@@ -286,6 +309,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		MonitorIDs:   monitorIDs,
 		Locations:    locations,
 		MonitorTypes: monitorTypes,
+		Statuses:     statuses,
 	}
 }
 
