@@ -1254,11 +1254,6 @@ func getPanelSchema() schema.NestedAttributeObject {
 								MarkdownDescription: "The ID of the saved Lens visualization saved object to embed.",
 								Required:            true,
 							},
-							"overrides_json": schema.StringAttribute{
-								MarkdownDescription: "Optional JSON object for runtime overrides on the saved Lens object.",
-								Optional:            true,
-								CustomType:          jsontypes.NormalizedType{},
-							},
 						},
 					},
 					"title": schema.StringAttribute{

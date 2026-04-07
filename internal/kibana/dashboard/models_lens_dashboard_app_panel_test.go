@@ -124,7 +124,6 @@ func Test_lensDashboardApp_byReference_writeConverter(t *testing.T) {
 		LensDashboardAppConfig: &lensDashboardAppConfigModel{
 			ByReference: &lensDashboardAppByReferenceModel{
 				SavedObjectID: types.StringValue("abc-123"),
-				OverridesJSON: jsontypes.NewNormalizedNull(),
 			},
 			Title:       types.StringValue("My Shared Viz"),
 			HideTitle:   types.BoolValue(true),
@@ -306,7 +305,6 @@ func Test_lensDashboardApp_readConverter_byReference_preservesAbsentOptionals(t 
 	existingConfig := &lensDashboardAppConfigModel{
 		ByReference: &lensDashboardAppByReferenceModel{
 			SavedObjectID: types.StringValue("xyz-456"),
-			OverridesJSON: jsontypes.NewNormalizedNull(),
 		},
 		Title:       types.StringNull(),
 		Description: types.StringNull(),

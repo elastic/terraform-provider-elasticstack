@@ -46,8 +46,7 @@ type lensDashboardAppByValueModel struct {
 
 // lensDashboardAppByReferenceModel is the by-reference sub-block model.
 type lensDashboardAppByReferenceModel struct {
-	SavedObjectID types.String         `tfsdk:"saved_object_id"`
-	OverridesJSON jsontypes.Normalized `tfsdk:"overrides_json"`
+	SavedObjectID types.String `tfsdk:"saved_object_id"`
 }
 
 // lensDashboardAppTimeRangeModel is the time_range nested block model.
@@ -112,7 +111,9 @@ func buildLensDashboardAppByValueConfig(cfg *lensDashboardAppConfigModel) (kbapi
 			diags.AddError("Failed to parse references_json", err.Error())
 			return kbapi.KbnDashboardPanelLensDashboardAppConfig0{}, diags
 		}
-		config0.References = &refs
+		if len(refs) > 0 {
+			config0.References = &refs
+		}
 	}
 
 	applyLensDashboardAppSharedFields(cfg, &config0.Title, &config0.Description, &config0.HideTitle, &config0.HideBorder)
@@ -130,10 +131,6 @@ func buildLensDashboardAppByReferenceConfig(cfg *lensDashboardAppConfigModel) kb
 	}
 
 	applyLensDashboardAppSharedFields(cfg, &config1.Title, &config1.Description, &config1.HideTitle, &config1.HideBorder)
-
-	// overrides_json: the API Config1 does not have a dedicated Overrides field in the generated
-	// struct. overrides_json is intentionally ignored on write for now (see design note on overrides_json).
-	// TODO: if the API adds an Overrides field to Config1, wire it up here.
 
 	return config1
 }
@@ -268,15 +265,7 @@ func populateLensDashboardAppByReferenceFromAPI(pm *panelModel, existing *lensDa
 		ByValue: nil,
 		ByReference: &lensDashboardAppByReferenceModel{
 			SavedObjectID: types.StringValue(config1.RefId),
-			// overrides_json: the API Config1 does not carry a typed Overrides field in the
-			// generated struct. We preserve the existing state value if present.
-			OverridesJSON: jsontypes.NewNormalizedNull(),
 		},
-	}
-
-	// Preserve overrides_json from existing state if it was set.
-	if existing != nil && existing.ByReference != nil && typeutils.IsKnown(existing.ByReference.OverridesJSON) {
-		cfg.ByReference.OverridesJSON = existing.ByReference.OverridesJSON
 	}
 
 	populateLensDashboardAppSharedFromAPI(cfg, existing, config1.Title, config1.Description, config1.HideTitle, config1.HideBorder, config1.TimeRange)
@@ -332,7 +321,9 @@ func populateLensDashboardAppSharedFromAPI(
 		cfg.HideBorder = types.BoolNull()
 	}
 
-	// time_range: preserve null if not set in prior state.
+	// time_range: reflect the API response to avoid preserving stale values.
+	// Only preserve the null vs set intent from prior state: if the user did not configure
+	// time_range (existing.TimeRange == nil), keep it nil regardless of what the API returns.
 	if existing.TimeRange != nil {
 		if apiTimeRange.From != "" || apiTimeRange.To != "" {
 			cfg.TimeRange = &lensDashboardAppTimeRangeModel{
@@ -340,7 +331,8 @@ func populateLensDashboardAppSharedFromAPI(
 				To:   types.StringValue(apiTimeRange.To),
 			}
 		} else {
-			cfg.TimeRange = existing.TimeRange
+			// API returned no time_range; set to nil to reflect remote state.
+			cfg.TimeRange = nil
 		}
 	} else {
 		cfg.TimeRange = nil
