@@ -433,7 +433,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-sync-integrations"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-integrations"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -442,7 +442,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-sync-uninstalled-integrations"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-uninstalled-integrations"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -451,7 +451,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-write-to-logs-streams"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-write-to-logs-streams"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -460,7 +460,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-missing-service-token"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-missing-service-token"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -469,7 +469,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-service-token-on-elasticsearch"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-service-token-on-elasticsearch"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
