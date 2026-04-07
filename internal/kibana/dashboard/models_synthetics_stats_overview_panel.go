@@ -25,12 +25,12 @@ import (
 
 // syntheticsStatsOverviewConfigModel is the Terraform model for the synthetics_stats_overview_config block.
 type syntheticsStatsOverviewConfigModel struct {
-	Title       types.String                        `tfsdk:"title"`
-	Description types.String                        `tfsdk:"description"`
-	HideTitle   types.Bool                          `tfsdk:"hide_title"`
-	HideBorder  types.Bool                          `tfsdk:"hide_border"`
+	Title       types.String                             `tfsdk:"title"`
+	Description types.String                             `tfsdk:"description"`
+	HideTitle   types.Bool                               `tfsdk:"hide_title"`
+	HideBorder  types.Bool                               `tfsdk:"hide_border"`
 	Drilldowns  []syntheticsStatsOverviewDrilldownModel  `tfsdk:"drilldowns"`
-	Filters     *syntheticsStatsOverviewFiltersModel `tfsdk:"filters"`
+	Filters     *syntheticsStatsOverviewFiltersModel     `tfsdk:"filters"`
 }
 
 // syntheticsStatsOverviewDrilldownModel holds one URL drilldown entry.
@@ -81,12 +81,12 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                           `json:"encode_url,omitempty"`    //nolint:revive
-			Label        string                                                          `json:"label"`
-			OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-			Url          string                                                          `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                                    `json:"label"`
+			OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger    `json:"trigger"`
+			Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType       `json:"type"`
+			Url          string                                                                    `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
@@ -105,156 +105,88 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 	}
 
 	if cfg.Filters != nil {
-		filters := &struct {
-			Locations *[]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			} `json:"locations,omitempty"`
-			MonitorIds *[]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			} `json:"monitor_ids,omitempty"`
-			MonitorTypes *[]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			} `json:"monitor_types,omitempty"`
-			Projects *[]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			} `json:"projects,omitempty"`
-			Tags *[]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			} `json:"tags,omitempty"`
-		}{}
-
-		if len(cfg.Filters.Projects) > 0 {
-			items := make([]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			}, len(cfg.Filters.Projects))
-			for i, p := range cfg.Filters.Projects {
-				items[i] = struct {
-					Label string `json:"label"`
-					Value string `json:"value"`
-				}{Label: p.Label.ValueString(), Value: p.Value.ValueString()}
-			}
-			filters.Projects = &items
+		// apiFilterItem is a type alias for the anonymous filter-entry struct shared by all
+		// filter categories in the Kibana API. The alias lets us write a single inline helper
+		// without repeating the struct literal for each category.
+		type apiFilterItem = struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
 		}
 
-		if len(cfg.Filters.Tags) > 0 {
-			items := make([]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			}, len(cfg.Filters.Tags))
-			for i, t := range cfg.Filters.Tags {
-				items[i] = struct {
-					Label string `json:"label"`
-					Value string `json:"value"`
-				}{Label: t.Label.ValueString(), Value: t.Value.ValueString()}
+		toAPIItems := func(items []syntheticsFilterItemModel) *[]apiFilterItem {
+			if len(items) == 0 {
+				return nil
 			}
-			filters.Tags = &items
+			out := make([]apiFilterItem, len(items))
+			for i, it := range items {
+				out[i] = apiFilterItem{Label: it.Label.ValueString(), Value: it.Value.ValueString()}
+			}
+			return &out
 		}
 
-		if len(cfg.Filters.MonitorIDs) > 0 {
-			items := make([]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			}, len(cfg.Filters.MonitorIDs))
-			for i, m := range cfg.Filters.MonitorIDs {
-				items[i] = struct {
+		projects := toAPIItems(cfg.Filters.Projects)
+		tags := toAPIItems(cfg.Filters.Tags)
+		monitorIDs := toAPIItems(cfg.Filters.MonitorIDs)
+		locations := toAPIItems(cfg.Filters.Locations)
+		monitorTypes := toAPIItems(cfg.Filters.MonitorTypes)
+
+		// Only set the filters struct when at least one category is non-empty.
+		if projects != nil || tags != nil || monitorIDs != nil || locations != nil || monitorTypes != nil {
+			panel.Config.Filters = &struct {
+				Locations *[]struct {
 					Label string `json:"label"`
 					Value string `json:"value"`
-				}{Label: m.Label.ValueString(), Value: m.Value.ValueString()}
-			}
-			filters.MonitorIds = &items
-		}
-
-		if len(cfg.Filters.Locations) > 0 {
-			items := make([]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			}, len(cfg.Filters.Locations))
-			for i, l := range cfg.Filters.Locations {
-				items[i] = struct {
+				} `json:"locations,omitempty"`
+				MonitorIds *[]struct {
 					Label string `json:"label"`
 					Value string `json:"value"`
-				}{Label: l.Label.ValueString(), Value: l.Value.ValueString()}
-			}
-			filters.Locations = &items
-		}
-
-		if len(cfg.Filters.MonitorTypes) > 0 {
-			items := make([]struct {
-				Label string `json:"label"`
-				Value string `json:"value"`
-			}, len(cfg.Filters.MonitorTypes))
-			for i, mt := range cfg.Filters.MonitorTypes {
-				items[i] = struct {
+				} `json:"monitor_ids,omitempty"`
+				MonitorTypes *[]struct {
 					Label string `json:"label"`
 					Value string `json:"value"`
-				}{Label: mt.Label.ValueString(), Value: mt.Value.ValueString()}
+				} `json:"monitor_types,omitempty"`
+				Projects *[]struct {
+					Label string `json:"label"`
+					Value string `json:"value"`
+				} `json:"projects,omitempty"`
+				Tags *[]struct {
+					Label string `json:"label"`
+					Value string `json:"value"`
+				} `json:"tags,omitempty"`
+			}{
+				Projects:     projects,
+				Tags:         tags,
+				MonitorIds:   monitorIDs,
+				Locations:    locations,
+				MonitorTypes: monitorTypes,
 			}
-			filters.MonitorTypes = &items
-		}
-
-		// Only set the filters struct if at least one category is non-empty.
-		if filters.Projects != nil || filters.Tags != nil || filters.MonitorIds != nil ||
-			filters.Locations != nil || filters.MonitorTypes != nil {
-			panel.Config.Filters = filters
 		}
 	}
 }
 
-// populateSyntheticsStatsOverviewFromAPI reads back a synthetics stats overview config from the
+// populateSyntheticsStatsOverviewFromAPI reads back a synthetics stats overview panel from the
 // API response and updates the panel model. Null-preservation semantics apply.
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, all API-returned
-// fields are populated unconditionally.
-func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig struct {
-	Description *string `json:"description,omitempty"`
-	Drilldowns  *[]struct {
-		EncodeUrl    *bool                                                           `json:"encode_url,omitempty"`    //nolint:revive
-		Label        string                                                          `json:"label"`
-		OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                          `json:"url"` //nolint:revive
-	} `json:"drilldowns,omitempty"`
-	Filters *struct {
-		Locations *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_ids,omitempty"`
-		MonitorTypes *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_types,omitempty"`
-		Projects *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"projects,omitempty"`
-		Tags *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"tags,omitempty"`
-	} `json:"filters,omitempty"`
-	HideBorder *bool   `json:"hide_border,omitempty"`
-	HideTitle  *bool   `json:"hide_title,omitempty"`
-	Title      *string `json:"title,omitempty"`
-}) {
+// fields are populated unconditionally (no prior intent to preserve).
+func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview) {
+	cfg := apiPanel.Config
+
 	// On import (tfPanel == nil), populate unconditionally when at least one API field is set.
 	if tfPanel == nil {
-		if !syntheticsConfigHasAnyField(apiConfig) {
+		if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
+			(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && !syntheticsFiltersHasAnyEntry(cfg.Filters) {
 			// Empty config — keep block null.
 			return
 		}
-		cfg := syntheticsFromAPIUnconditional(apiConfig)
-		pm.SyntheticsStatsOverviewConfig = cfg
+		pm.SyntheticsStatsOverviewConfig = &syntheticsStatsOverviewConfigModel{
+			Title:       types.StringPointerValue(cfg.Title),
+			Description: types.StringPointerValue(cfg.Description),
+			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
+			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
+			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
+			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
+		}
 		return
 	}
 
@@ -267,65 +199,20 @@ func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel,
 
 	// Block exists in state — apply null-preservation per field.
 	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(apiConfig.Title)
+		existing.Title = types.StringPointerValue(cfg.Title)
 	}
 	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(apiConfig.Description)
+		existing.Description = types.StringPointerValue(cfg.Description)
 	}
 	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+		existing.HideTitle = types.BoolPointerValue(cfg.HideTitle)
 	}
 	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+		existing.HideBorder = types.BoolPointerValue(cfg.HideBorder)
 	}
 
-	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiConfig.Drilldowns, existing.Drilldowns)
-	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiConfig.Filters, existing.Filters)
-}
-
-// syntheticsConfigHasAnyField returns true if the API config has at least one non-nil field.
-func syntheticsConfigHasAnyField(apiConfig struct {
-	Description *string `json:"description,omitempty"`
-	Drilldowns  *[]struct {
-		EncodeUrl    *bool                                                           `json:"encode_url,omitempty"`    //nolint:revive
-		Label        string                                                          `json:"label"`
-		OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                          `json:"url"` //nolint:revive
-	} `json:"drilldowns,omitempty"`
-	Filters *struct {
-		Locations *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_ids,omitempty"`
-		MonitorTypes *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_types,omitempty"`
-		Projects *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"projects,omitempty"`
-		Tags *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"tags,omitempty"`
-	} `json:"filters,omitempty"`
-	HideBorder *bool   `json:"hide_border,omitempty"`
-	HideTitle  *bool   `json:"hide_title,omitempty"`
-	Title      *string `json:"title,omitempty"`
-}) bool {
-	return apiConfig.Title != nil ||
-		apiConfig.Description != nil ||
-		apiConfig.HideTitle != nil ||
-		apiConfig.HideBorder != nil ||
-		(apiConfig.Drilldowns != nil && len(*apiConfig.Drilldowns) > 0) ||
-		(apiConfig.Filters != nil && syntheticsFiltersHasAnyEntry(apiConfig.Filters))
+	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, existing.Drilldowns)
+	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
 }
 
 // syntheticsFiltersHasAnyEntry returns true if the filters object has at least one non-empty category.
@@ -361,69 +248,14 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0)
 }
 
-// syntheticsFromAPIUnconditional populates a config model from the API without null-preservation.
-// Used on import when there is no prior TF state.
-func syntheticsFromAPIUnconditional(apiConfig struct {
-	Description *string `json:"description,omitempty"`
-	Drilldowns  *[]struct {
-		EncodeUrl    *bool                                                           `json:"encode_url,omitempty"`    //nolint:revive
-		Label        string                                                          `json:"label"`
-		OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                          `json:"url"` //nolint:revive
-	} `json:"drilldowns,omitempty"`
-	Filters *struct {
-		Locations *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_ids,omitempty"`
-		MonitorTypes *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_types,omitempty"`
-		Projects *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"projects,omitempty"`
-		Tags *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"tags,omitempty"`
-	} `json:"filters,omitempty"`
-	HideBorder *bool   `json:"hide_border,omitempty"`
-	HideTitle  *bool   `json:"hide_title,omitempty"`
-	Title      *string `json:"title,omitempty"`
-}) *syntheticsStatsOverviewConfigModel {
-	cfg := &syntheticsStatsOverviewConfigModel{
-		Title:       types.StringPointerValue(apiConfig.Title),
-		Description: types.StringPointerValue(apiConfig.Description),
-		HideTitle:   types.BoolPointerValue(apiConfig.HideTitle),
-		HideBorder:  types.BoolPointerValue(apiConfig.HideBorder),
-	}
-	cfg.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiConfig.Drilldowns, nil)
-	cfg.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiConfig.Filters, nil)
-	return cfg
-}
-
 // readSyntheticsStatsOverviewDrilldownsFromAPI converts API drilldowns to TF models.
 // priorDrilldowns is the existing TF state (may be nil on import).
 // Optional bool fields (encode_url, open_in_new_tab) use null-preservation when prior state is available.
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
-	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                                           `json:"encode_url,omitempty"`    //nolint:revive
-		Label        string                                                          `json:"label"`
-		OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                          `json:"url"` //nolint:revive
-	},
+	apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview,
 	priorDrilldowns []syntheticsStatsOverviewDrilldownModel,
 ) []syntheticsStatsOverviewDrilldownModel {
+	apiDrilldowns := apiPanel.Config.Drilldowns
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
@@ -469,30 +301,11 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 // Treats a nil or empty filters object as equivalent to an absent block.
 // priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
-	apiFilters *struct {
-		Locations *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_ids,omitempty"`
-		MonitorTypes *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"monitor_types,omitempty"`
-		Projects *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"projects,omitempty"`
-		Tags *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"tags,omitempty"`
-	},
+	apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview,
 	priorFilters *syntheticsStatsOverviewFiltersModel,
 ) *syntheticsStatsOverviewFiltersModel {
+	apiFilters := apiPanel.Config.Filters
+
 	// Treat nil or empty filters as absent block.
 	if !syntheticsFiltersHasAnyEntry(apiFilters) {
 		// If prior state had a filters block, preserve it (avoids drift from API not returning filters).
@@ -502,57 +315,30 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 		return nil
 	}
 
-	f := &syntheticsStatsOverviewFiltersModel{}
-
-	if apiFilters.Projects != nil && len(*apiFilters.Projects) > 0 {
-		f.Projects = make([]syntheticsFilterItemModel, len(*apiFilters.Projects))
-		for i, p := range *apiFilters.Projects {
-			f.Projects[i] = syntheticsFilterItemModel{
-				Label: types.StringValue(p.Label),
-				Value: types.StringValue(p.Value),
+	// apiFilterItem is a type alias for the anonymous filter-entry struct shared by all categories.
+	type apiFilterItem = struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}
+	fromAPIItems := func(items *[]apiFilterItem) []syntheticsFilterItemModel {
+		if items == nil || len(*items) == 0 {
+			return nil
+		}
+		out := make([]syntheticsFilterItemModel, len(*items))
+		for i, it := range *items {
+			out[i] = syntheticsFilterItemModel{
+				Label: types.StringValue(it.Label),
+				Value: types.StringValue(it.Value),
 			}
 		}
+		return out
 	}
 
-	if apiFilters.Tags != nil && len(*apiFilters.Tags) > 0 {
-		f.Tags = make([]syntheticsFilterItemModel, len(*apiFilters.Tags))
-		for i, t := range *apiFilters.Tags {
-			f.Tags[i] = syntheticsFilterItemModel{
-				Label: types.StringValue(t.Label),
-				Value: types.StringValue(t.Value),
-			}
-		}
+	return &syntheticsStatsOverviewFiltersModel{
+		Projects:     fromAPIItems(apiFilters.Projects),
+		Tags:         fromAPIItems(apiFilters.Tags),
+		MonitorIDs:   fromAPIItems(apiFilters.MonitorIds),
+		Locations:    fromAPIItems(apiFilters.Locations),
+		MonitorTypes: fromAPIItems(apiFilters.MonitorTypes),
 	}
-
-	if apiFilters.MonitorIds != nil && len(*apiFilters.MonitorIds) > 0 {
-		f.MonitorIDs = make([]syntheticsFilterItemModel, len(*apiFilters.MonitorIds))
-		for i, m := range *apiFilters.MonitorIds {
-			f.MonitorIDs[i] = syntheticsFilterItemModel{
-				Label: types.StringValue(m.Label),
-				Value: types.StringValue(m.Value),
-			}
-		}
-	}
-
-	if apiFilters.Locations != nil && len(*apiFilters.Locations) > 0 {
-		f.Locations = make([]syntheticsFilterItemModel, len(*apiFilters.Locations))
-		for i, l := range *apiFilters.Locations {
-			f.Locations[i] = syntheticsFilterItemModel{
-				Label: types.StringValue(l.Label),
-				Value: types.StringValue(l.Value),
-			}
-		}
-	}
-
-	if apiFilters.MonitorTypes != nil && len(*apiFilters.MonitorTypes) > 0 {
-		f.MonitorTypes = make([]syntheticsFilterItemModel, len(*apiFilters.MonitorTypes))
-		for i, mt := range *apiFilters.MonitorTypes {
-			f.MonitorTypes[i] = syntheticsFilterItemModel{
-				Label: types.StringValue(mt.Label),
-				Value: types.StringValue(mt.Value),
-			}
-		}
-	}
-
-	return f
 }

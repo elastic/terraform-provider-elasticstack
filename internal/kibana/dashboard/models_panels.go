@@ -368,7 +368,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
 		pm.UID = types.StringPointerValue(ssoPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel.Config)
+		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.UID = types.StringNull()

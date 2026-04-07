@@ -203,7 +203,7 @@ func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelSyntheticsStatsOverview {
 func Test_populateSyntheticsStatsOverviewFromAPI_import_emptyConfig_blockIsNull(t *testing.T) {
 	pm := &panelModel{}
 	panel := makeSyntheticsAPIConfig()
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should be null when API config is empty on import")
 }
@@ -221,7 +221,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T)
 	hideBorder := false
 	panel.Config.HideBorder = &hideBorder
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	cfg := pm.SyntheticsStatsOverviewConfig
@@ -240,7 +240,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *
 	title := "Should not appear"
 	panel.Config.Title = &title
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should remain nil when prior state had no config block")
 }
@@ -260,7 +260,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *tes
 	title := "API title"
 	panel.Config.Title = &title
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	// title was null in prior state — preserve null even though API returned a value.
@@ -289,7 +289,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *tes
 	hideBorder := false
 	panel.Config.HideBorder = &hideBorder
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	cfg := pm.SyntheticsStatsOverviewConfig
@@ -337,7 +337,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 		},
 	}
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	require.Len(t, pm.SyntheticsStatsOverviewConfig.Drilldowns, 1)
@@ -377,7 +377,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 		} `json:"tags,omitempty"`
 	}{} // all nil categories
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters, "empty filters should not populate the filters block")
@@ -419,7 +419,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 		Projects: &projects,
 	}
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel.Config)
+	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters)
