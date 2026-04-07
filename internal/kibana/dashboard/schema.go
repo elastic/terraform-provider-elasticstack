@@ -50,6 +50,7 @@ const (
 	operationTerms              = "terms"
 	panelTypeMarkdown           = "markdown"
 	panelTypeLens               = "lens"
+	panelTypeLensDashboardApp   = "lens-dashboard-app"
 	panelTypeTimeSlider         = "time_slider_control"
 	panelTypeSloBurnRate        = "slo_burn_rate"
 	panelTypeSloErrorBudget     = "slo_error_budget"
@@ -82,6 +83,7 @@ var panelConfigNames = []string{
 	"esql_control_config",
 	"options_list_control_config",
 	"range_slider_control_config",
+	"lens_dashboard_app_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -1215,6 +1217,82 @@ func getPanelSchema() schema.NestedAttributeObject {
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
+				},
+			},
+			"lens_dashboard_app_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a `lens-dashboard-app` panel. "+
+						"Use `by_reference` to embed a saved Lens visualization by its saved object ID, "+
+						"or `by_value` to embed a full Lens visualization definition inline. "+
+						"Exactly one of `by_value` or `by_reference` must be set.",
+					"lens_dashboard_app_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"by_value": schema.SingleNestedAttribute{
+						MarkdownDescription: "Embed a full Lens visualization definition inline (by-value mode). Mutually exclusive with `by_reference`.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"attributes_json": schema.StringAttribute{
+								MarkdownDescription: "The full Lens chart attributes as a JSON string. Maps to the `attributes` field in the Kibana API.",
+								Required:            true,
+								CustomType:          jsontypes.NormalizedType{},
+							},
+							"references_json": schema.StringAttribute{
+								MarkdownDescription: "Optional JSON array of `{id, name, type}` objects for data view references used by the chart.",
+								Optional:            true,
+								CustomType:          jsontypes.NormalizedType{},
+							},
+						},
+					},
+					"by_reference": schema.SingleNestedAttribute{
+						MarkdownDescription: "Reference an existing saved Lens visualization by its saved object ID (by-reference mode). Mutually exclusive with `by_value`.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"saved_object_id": schema.StringAttribute{
+								MarkdownDescription: "The ID of the saved Lens visualization saved object to embed.",
+								Required:            true,
+							},
+						},
+					},
+					"title": schema.StringAttribute{
+						MarkdownDescription: "Optional panel title override.",
+						Optional:            true,
+					},
+					"description": schema.StringAttribute{
+						MarkdownDescription: "Optional panel description override.",
+						Optional:            true,
+					},
+					"hide_title": schema.BoolAttribute{
+						MarkdownDescription: "When true, hides the panel title.",
+						Optional:            true,
+					},
+					"hide_border": schema.BoolAttribute{
+						MarkdownDescription: "When true, hides the panel border.",
+						Optional:            true,
+					},
+					"time_range": schema.SingleNestedAttribute{
+						MarkdownDescription: "Optional panel-level time range override, scoping the visualization independently of the dashboard time range.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"from": schema.StringAttribute{
+								MarkdownDescription: "Start of the time range (e.g. `now-15m`).",
+								Required:            true,
+							},
+							"to": schema.StringAttribute{
+								MarkdownDescription: "End of the time range (e.g. `now`).",
+								Required:            true,
+							},
+						},
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("lens_dashboard_app_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
+					lensDashboardAppConfigModeValidator{},
 				},
 			},
 			"config_json": schema.StringAttribute{
@@ -2842,5 +2920,52 @@ func (v sloOverviewConfigModeValidator) ValidateObject(_ context.Context, req va
 			return
 		}
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.")
+	}
+}
+
+// lensDashboardAppConfigModeValidator ensures exactly one of by_value or by_reference is set.
+var _ validator.Object = lensDashboardAppConfigModeValidator{}
+
+type lensDashboardAppConfigModeValidator struct{}
+
+func (v lensDashboardAppConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `by_value` or `by_reference` is configured inside `lens_dashboard_app_config`."
+}
+
+func (v lensDashboardAppConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v lensDashboardAppConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	byValueVal := attrs["by_value"]
+	byRefVal := attrs["by_reference"]
+
+	byValueSet := byValueVal != nil && !byValueVal.IsNull() && !byValueVal.IsUnknown()
+	byRefSet := byRefVal != nil && !byRefVal.IsNull() && !byRefVal.IsUnknown()
+
+	if byValueSet && byRefSet {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid lens_dashboard_app_config",
+			"`by_value` and `by_reference` are mutually exclusive inside `lens_dashboard_app_config`. Set exactly one.",
+		)
+		return
+	}
+	if !byValueSet && !byRefSet {
+		// Either unknown is acceptable during planning.
+		byValueUnknown := byValueVal != nil && byValueVal.IsUnknown()
+		byRefUnknown := byRefVal != nil && byRefVal.IsUnknown()
+		if byValueUnknown || byRefUnknown {
+			return
+		}
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid lens_dashboard_app_config",
+			"Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.",
+		)
 	}
 }

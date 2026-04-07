@@ -54,7 +54,8 @@ func (panelConfigValidator) Description(_ context.Context) string {
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
-		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
+		"`slo_error_budget` panels configure `slo_error_budget_config`, " +
+		"and `lens-dashboard-app` panels configure `lens_dashboard_app_config`. " +
 		"Practitioner-authored `config_json` for `time_slider_control` is rejected only by the `config_json` " +
 		"attribute validator (type allowlist) to avoid duplicate diagnostics."
 }
@@ -95,6 +96,7 @@ func panelConfigValidateDiags(
 	markdownConfig, configJSON, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
 	lensConfigs map[string]panelConfigValueState,
 	sloOverviewConfig panelConfigValueState,
+	lensDashboardAppConfig panelConfigValueState,
 	attrPath *path.Path,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -163,6 +165,11 @@ func panelConfigValidateDiags(
 			return diags
 		}
 		add("Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
+	case panelTypeLensDashboardApp:
+		if lensDashboardAppConfig.Set || lensDashboardAppConfig.Unknown {
+			return diags
+		}
+		add("Missing lens-dashboard-app panel configuration", "`lens-dashboard-app` panels require `lens_dashboard_app_config`.")
 	}
 
 	return diags
@@ -198,6 +205,7 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
 		lensConfigs,
 		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
+		panelConfigValueStateFromValue(attrs["lens_dashboard_app_config"]),
 		&req.Path,
 	)...)
 }
