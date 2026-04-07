@@ -165,13 +165,14 @@ test('verify-label workflow bootstrap steps run unconditionally (no verification
   assert.match(source, /Setup repository dependencies/);
 });
 
-test('verify-label compiled lock pre_activation job has issues write for label cleanup', () => {
+test('verify-label compiled lock pre_activation job has issues and pull-requests write permissions', () => {
   const lock = lockSource();
   // Extract just the pre_activation job block (up to the next top-level job key)
   const preActivationMatch = lock.match(/^  pre_activation:\n([\s\S]*?)(?=\n  \w[\w-]*:\n)/m);
   assert.ok(preActivationMatch, 'expected to find pre_activation job block in lock file');
   const preActivationBlock = preActivationMatch[0];
   assert.ok(preActivationBlock.includes('issues: write'), 'expected issues: write in pre_activation job permissions');
+  assert.ok(preActivationBlock.includes('pull-requests: write'), 'expected pull-requests: write in pre_activation job permissions');
 });
 
 test('verify-label compiled lock has no verification_mode conditions on any steps', () => {

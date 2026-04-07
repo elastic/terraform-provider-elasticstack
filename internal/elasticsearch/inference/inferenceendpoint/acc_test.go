@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -35,6 +36,33 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+const (
+	defaultInferenceEndpointAPIKey = "test-openai-api-key"
+	inferenceEndpointAPIKeyEnvVar  = "TF_ELASTICSTACK_TEST_OPENAI_API_KEY"
+)
+
+func inferenceEndpointTestAPIKey() (string, bool) {
+	apiKey, ok := os.LookupEnv(inferenceEndpointAPIKeyEnvVar)
+	if ok && apiKey != "" {
+		return apiKey, false
+	}
+
+	return defaultInferenceEndpointAPIKey, true
+}
+
+func inferenceEndpointConfigVariables(inferenceID, apiKey string) config.Variables {
+	return config.Variables{
+		"inference_id": config.StringVariable(inferenceID),
+		"api_key":      config.StringVariable(apiKey),
+	}
+}
+
+func skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey bool) func() (bool, error) {
+	return func() (bool, error) {
+		return usingFakeAPIKey, nil
+	}
+}
 
 // skipValidateAndStart sets xpack.inference.skip_validate_and_start=true so
 // inference endpoint tests can run without a reachable upstream service, and
@@ -72,6 +100,8 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	apiKey, usingFakeAPIKey := inferenceEndpointTestAPIKey()
+	skipIfUsingFakeAPIKey := skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -80,9 +110,7 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
@@ -92,9 +120,8 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
@@ -105,21 +132,19 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				PlanOnly: true,
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
+				PlanOnly:                 true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				ResourceName:            "elasticstack_elasticsearch_inference_endpoint.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"service_settings"},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
+				ResourceName:             "elasticstack_elasticsearch_inference_endpoint.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"service_settings"},
 			},
 		},
 	})
@@ -134,6 +159,7 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	apiKey, _ := inferenceEndpointTestAPIKey()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -142,9 +168,7 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
@@ -155,9 +179,7 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("different_task_type"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(
@@ -187,6 +209,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	apiKey, _ := inferenceEndpointTestAPIKey()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -196,9 +219,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
@@ -210,30 +231,24 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 			// Update to remove task_settings entirely — must not drift either.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				Check: resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				Check:                    resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
 			},
 			// Re-plan after removing task_settings — still no drift.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
@@ -252,6 +267,8 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	apiKey, usingFakeAPIKey := inferenceEndpointTestAPIKey()
+	skipIfUsingFakeAPIKey := skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -262,9 +279,7 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "azureaistudio"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
@@ -274,20 +289,17 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 			// Now explicitly set max_new_tokens to a non-default value.
 			// This is a real user-driven change and must be applied.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith(
 						"elasticstack_elasticsearch_inference_endpoint.test",
@@ -309,11 +321,10 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
-				ConfigVariables: config.Variables{
-					"inference_id": config.StringVariable(inferenceID),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})

@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix state consistency with semantic text types in `elasticstack_elasticsearch_index` ([#2112](https://github.com/elastic/terraform-provider-elasticstack/pull/2112))
 - Add `elasticstack_elasticsearch_inference_endpoint` resource. ([#1955](https://github.com/elastic/terraform-provider-elasticstack/pull/1955))
 - `elasticstack_kibana_data_view`: Support in-place updates of the `namespaces` field via the Kibana Spaces API (`POST /api/spaces/_update_objects_spaces`), preventing data view recreation when sharing across spaces. Previously, any change to `namespaces` would force replacement of the resource, breaking dependent alerting rules that reference the data view by ID. ([#2129](https://github.com/elastic/terraform-provider-elasticstack/pull/2129))
 - Add `elasticstack_kibana_agentbuilder_workflow` resource and `elasticstack_kibana_export_agentbuilder_workflow` data source ([#1923](https://github.com/elastic/terraform-provider-elasticstack/pull/1923))
@@ -18,7 +19,7 @@
 - Migrate `elasticstack_elasticsearch_index_lifecycle` to the Terraform Plugin Framework ([#2002](https://github.com/elastic/terraform-provider-elasticstack/pull/2002))
 - Add `space_id` to `elasticstack_kibana_synthetics_private_location` ([#2142](https://github.com/elastic/terraform-provider-elasticstack/pull/2142))
 - Use space-scoped endpoints for Fleet resources to allow space-restricted roles to properly manage Fleet resources. ([#2084](https://github.com/elastic/terraform-provider-elasticstack/pull/2084))
-- Fix state consistency with semantic text types in `elasticstack_elasticsearch_index` ([#2112](https://github.com/elastic/terraform-provider-elasticstack/pull/2112))
+- Add `elasticstack_fleet_elastic_defend_integration_policy` resource ([#2147](https://github.com/elastic/terraform-provider-elasticstack/pull/2147))
 
 
 ## [0.14.3] - 2026-03-02
