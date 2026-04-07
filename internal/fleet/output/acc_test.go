@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -393,6 +394,10 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Remote Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "service_token"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_uninstalled_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "write_to_logs_streams", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
 				),
 			},
@@ -408,8 +413,97 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Remote Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "service_token"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_integrations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_uninstalled_integrations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "write_to_logs_streams", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name              = "Validation Output %s"
+  output_id         = "%s-validation-output"
+  type              = "elasticsearch"
+  sync_integrations = true
+  hosts             = ["https://elasticsearch:9200"]
+}
+`, policyName, policyName),
+				ExpectError: regexp.MustCompile(`sync_integrations.+type equals "remote_elasticsearch"`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name                          = "Validation Output %s"
+  output_id                     = "%s-validation-output"
+  type                          = "elasticsearch"
+  sync_uninstalled_integrations = true
+  hosts                         = ["https://elasticsearch:9200"]
+}
+`, policyName, policyName),
+				ExpectError: regexp.MustCompile(`sync_uninstalled_integrations.+type equals "remote_elasticsearch"`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name                  = "Validation Output %s"
+  output_id             = "%s-validation-output"
+  type                  = "elasticsearch"
+  write_to_logs_streams = true
+  hosts                 = ["https://elasticsearch:9200"]
+}
+`, policyName, policyName),
+				ExpectError: regexp.MustCompile(`write_to_logs_streams.+type equals "remote_elasticsearch"`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name      = "Validation Output %s"
+  output_id = "%s-validation-output"
+  type      = "remote_elasticsearch"
+  hosts     = ["https://elasticsearch:9200"]
+}
+`, policyName, policyName),
+				ExpectError: regexp.MustCompile(`service_token.+must be set when type equals "remote_elasticsearch"`),
 			},
 		},
 	})
