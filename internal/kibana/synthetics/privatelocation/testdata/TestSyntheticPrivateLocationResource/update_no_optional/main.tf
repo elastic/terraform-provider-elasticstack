@@ -11,7 +11,7 @@ provider "elasticstack" {
 resource "elasticstack_fleet_agent_download_source" "default" {
   name      = "Agent Download Source Private Location ${var.suffix}"
   source_id = "agent-download-source-private-location-${var.suffix}"
-  default   = true
+  default   = false
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
   space_ids = ["default"]
 }
