@@ -351,7 +351,7 @@ func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 	}
 
 	ps := edip.DefendPrivateState{
-		Version: "WzEyMywxXQ==",
+		Version:          "WzEyMywxXQ==",
 		ArtifactManifest: artifactManifest,
 	}
 
