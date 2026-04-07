@@ -433,95 +433,46 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name              = "Validation Output %s"
-  output_id         = "%s-validation-output"
-  type              = "elasticsearch"
-  sync_integrations = true
-  hosts             = ["https://elasticsearch:9200"]
-}
-`, policyName, policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-sync-integrations"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ExpectError: regexp.MustCompile(`sync_integrations.+type equals "remote_elasticsearch"`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                          = "Validation Output %s"
-  output_id                     = "%s-validation-output"
-  type                          = "elasticsearch"
-  sync_uninstalled_integrations = true
-  hosts                         = ["https://elasticsearch:9200"]
-}
-`, policyName, policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-sync-uninstalled-integrations"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ExpectError: regexp.MustCompile(`sync_uninstalled_integrations.+type equals "remote_elasticsearch"`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                  = "Validation Output %s"
-  output_id             = "%s-validation-output"
-  type                  = "elasticsearch"
-  write_to_logs_streams = true
-  hosts                 = ["https://elasticsearch:9200"]
-}
-`, policyName, policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-write-to-logs-streams"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ExpectError: regexp.MustCompile(`write_to_logs_streams.+type equals "remote_elasticsearch"`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name      = "Validation Output %s"
-  output_id = "%s-validation-output"
-  type      = "remote_elasticsearch"
-  hosts     = ["https://elasticsearch:9200"]
-}
-`, policyName, policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-missing-service-token"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ExpectError: regexp.MustCompile(`service_token.+must be set when type equals "remote_elasticsearch"`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name          = "Validation Output %s"
-  output_id     = "%s-validation-output"
-  type          = "elasticsearch"
-  service_token = "should-not-be-allowed"
-  hosts         = ["https://elasticsearch:9200"]
-}
-`, policyName, policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validation-service-token-on-elasticsearch"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ExpectError: regexp.MustCompile(`service_token.+type equals "remote_elasticsearch"`),
 			},
 		},
