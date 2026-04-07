@@ -77,11 +77,7 @@ func buildLensDashboardAppConfig(pm panelModel, panel *kbapi.KbnDashboardPanelLe
 			return diags
 		}
 	} else if cfg.ByReference != nil {
-		config1, d := buildLensDashboardAppByReferenceConfig(cfg)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
+		config1 := buildLensDashboardAppByReferenceConfig(cfg)
 		if err := apiConfig.FromKbnDashboardPanelLensDashboardAppConfig1(config1); err != nil {
 			diags.AddError("Failed to build lens-dashboard-app by-reference config", err.Error())
 			return diags
@@ -125,8 +121,7 @@ func buildLensDashboardAppByValueConfig(cfg *lensDashboardAppConfigModel) (kbapi
 }
 
 // buildLensDashboardAppByReferenceConfig constructs a Config1 (by-reference) payload from the TF model.
-func buildLensDashboardAppByReferenceConfig(cfg *lensDashboardAppConfigModel) (kbapi.KbnDashboardPanelLensDashboardAppConfig1, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func buildLensDashboardAppByReferenceConfig(cfg *lensDashboardAppConfigModel) kbapi.KbnDashboardPanelLensDashboardAppConfig1 {
 	byRef := cfg.ByReference
 
 	config1 := kbapi.KbnDashboardPanelLensDashboardAppConfig1{
@@ -137,14 +132,10 @@ func buildLensDashboardAppByReferenceConfig(cfg *lensDashboardAppConfigModel) (k
 	applyLensDashboardAppSharedFields(cfg, &config1.Title, &config1.Description, &config1.HideTitle, &config1.HideBorder)
 
 	// overrides_json: the API Config1 does not have a dedicated Overrides field in the generated
-	// struct, so we store it in the References field as a workaround — but first let us check
-	// whether we need to handle it via raw JSON merging.
-	// The API schema's Config1 has no "overrides" field in the generated Go struct, so
-	// overrides_json is intentionally ignored on write for now (see design note on overrides_json).
+	// struct. overrides_json is intentionally ignored on write for now (see design note on overrides_json).
 	// TODO: if the API adds an Overrides field to Config1, wire it up here.
-	_ = byRef.OverridesJSON
 
-	return config1, diags
+	return config1
 }
 
 // buildLensDashboardAppTimeRange builds the API time range from the TF model.
@@ -230,8 +221,7 @@ func populateLensDashboardAppFromAPI(pm *panelModel, tfPanel *panelModel, apiPan
 			diags.AddError("Failed to read lens-dashboard-app by-reference config", err.Error())
 			return diags
 		}
-		d := populateLensDashboardAppByReferenceFromAPI(pm, existing, config1)
-		diags.Append(d...)
+		populateLensDashboardAppByReferenceFromAPI(pm, existing, config1)
 	}
 
 	return diags
@@ -263,12 +253,7 @@ func populateLensDashboardAppByValueFromAPI(pm *panelModel, existing *lensDashbo
 		}
 		cfg.ByValue.ReferencesJSON = jsontypes.NewNormalizedValue(string(refsBytes))
 	} else {
-		// Preserve null if existing state had null; otherwise set null.
-		if existing != nil && existing.ByValue != nil && typeutils.IsKnown(existing.ByValue.ReferencesJSON) {
-			cfg.ByValue.ReferencesJSON = jsontypes.NewNormalizedNull()
-		} else {
-			cfg.ByValue.ReferencesJSON = jsontypes.NewNormalizedNull()
-		}
+		cfg.ByValue.ReferencesJSON = jsontypes.NewNormalizedNull()
 	}
 
 	populateLensDashboardAppSharedFromAPI(cfg, existing, config0.Title, config0.Description, config0.HideTitle, config0.HideBorder, config0.TimeRange)
@@ -278,9 +263,7 @@ func populateLensDashboardAppByValueFromAPI(pm *panelModel, existing *lensDashbo
 }
 
 // populateLensDashboardAppByReferenceFromAPI populates pm.LensDashboardAppConfig from a Config1 response.
-func populateLensDashboardAppByReferenceFromAPI(pm *panelModel, existing *lensDashboardAppConfigModel, config1 kbapi.KbnDashboardPanelLensDashboardAppConfig1) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func populateLensDashboardAppByReferenceFromAPI(pm *panelModel, existing *lensDashboardAppConfigModel, config1 kbapi.KbnDashboardPanelLensDashboardAppConfig1) {
 	cfg := &lensDashboardAppConfigModel{
 		ByValue: nil,
 		ByReference: &lensDashboardAppByReferenceModel{
@@ -299,7 +282,6 @@ func populateLensDashboardAppByReferenceFromAPI(pm *panelModel, existing *lensDa
 	populateLensDashboardAppSharedFromAPI(cfg, existing, config1.Title, config1.Description, config1.HideTitle, config1.HideBorder, config1.TimeRange)
 
 	pm.LensDashboardAppConfig = cfg
-	return diags
 }
 
 // populateLensDashboardAppSharedFromAPI populates shared optional fields on the config model.
