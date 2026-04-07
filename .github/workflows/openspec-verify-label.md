@@ -356,6 +356,27 @@ safe-outputs:
     max: 1
 ---
 
+<!-- MAINTAINER NOTE — POST-COMPILE MANUAL OVERRIDES
+     Running `make workflow-generate` (which runs `gh aw compile`) will silently overwrite the
+     compiled lock file. Two categories of manual overrides MUST be re-applied after every
+     `gh aw compile` run:
+
+     Override 1 — pre_activation job permissions:
+       The gh-aw DSL does not support per-job permissions for the pre_activation job.
+       After compiling, find the `pre_activation:` job block and add/restore:
+         permissions:
+           issues: write        # required for remove_trigger_label (github.rest.issues.removeLabel)
+           pull-requests: read  # required for classify_and_select (github.paginate pulls.listFiles)
+           contents: read       # required for checkout and file access in classify_and_select
+
+     Override 2 — Configure Git credentials and Checkout PR branch step conditionals:
+       gh-aw injects these steps unconditionally; the DSL has no mechanism to add conditionals.
+       After compiling, find both steps in the agent job and add the `if:` guard:
+         if: needs.pre_activation.outputs.verification_mode == 'workspace'
+       This prevents the steps from running on fork PRs (api-only mode), where checking out
+       fork-controlled content in the trusted workflow context would be a security risk.
+-->
+
 # OpenSpec verify, archive, and clean up (label-gated)
 
 You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review and when archive/push is allowed run `openspec archive` and push the branch. The **`verify-openspec`** label is removed by a deterministic script step before this agent runs; do **not** emit **`remove-labels`** safe outputs.
