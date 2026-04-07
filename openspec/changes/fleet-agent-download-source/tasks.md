@@ -3,7 +3,7 @@
 ## 1. Spec and docs
 
 - [x] 1.1 Confirm delta spec `specs/fleet-agent-download-source/spec.md` matches intended behavior and passes `openspec validate fleet-agent-download-source --type change`
-- [ ] 1.2 After implementation or on merge policy, sync delta into `openspec/specs/fleet-agent-download-source/spec.md` or archive the change per project workflow
+- [x] 1.2 After implementation or on merge policy, sync delta into `openspec/specs/fleet-agent-download-source/spec.md` or archive the change per project workflow
 
 ## 2. Implementation alignment
 

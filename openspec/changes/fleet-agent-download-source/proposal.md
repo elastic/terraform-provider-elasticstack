@@ -8,7 +8,7 @@ Functional requirements for `elasticstack_fleet_agent_download_source` were auth
 
 - **Introduce** a delta spec for the `fleet-agent-download-source` capability covering schema, API usage, identity, spaces, import, errors, updates, and v1 scope (no `auth`/`secrets` attributes).
 - **Add** `proposal.md`, `design.md`, and `tasks.md` for this capability so implementation and future sync/archive follow the standard workflow.
-- **Replace** the standalone dev-docs requirements file with a pointer to this change (and to the canonical spec path after sync).
+- **Migrate** standalone requirements intent into OpenSpec artifacts and canonical spec under `openspec/specs/`.
 
 ## Capabilities
 
@@ -22,6 +22,6 @@ Functional requirements for `elasticstack_fleet_agent_download_source` were auth
 
 ## Impact
 
-- **Documentation**: `dev-docs/requirements/kibana/fleet_agent_download_source.md` becomes a short redirect; detailed requirements live in the change delta spec.
+- **Documentation**: Canonical requirements live in OpenSpec (`openspec/specs/fleet-agent-download-source/spec.md`) after sync.
 - **Implementation**: Existing code under `internal/fleet/agentdownloadsource` and `internal/clients/fleet` should align with the delta spec; gaps are tracked via tasks.
 - **No breaking change** to Terraform schema or behavior by this documentation-only migration; the spec documents intended behavior.

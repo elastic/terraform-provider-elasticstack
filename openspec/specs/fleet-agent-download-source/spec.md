@@ -1,6 +1,4 @@
-# Delta Spec: Fleet Agent Download Source
-
-On sync or archive, this content is intended to land in `openspec/specs/fleet-agent-download-source/spec.md`.
+# `elasticstack_fleet_agent_download_source` — Schema and Functional Requirements
 
 Resource implementation: `internal/fleet/agentdownloadsource`
 
@@ -28,7 +26,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
 }
 ```
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Fleet Agent Download Source CRUD APIs
 
