@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with XY Chart Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with XY Chart Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -55,11 +60,9 @@ resource "elasticstack_kibana_dashboard" "test" {
               query = "FROM metrics-* | KEEP @timestamp, host.name, system.cpu.user.pct | LIMIT 10"
             })
             x_json = jsonencode({
-              operation = "value"
-              column    = "@timestamp"
+              column = "@timestamp"
             })
             breakdown_by_json = jsonencode({
-              operation   = "value"
               column      = "host.name"
               collapse_by = "avg"
               color = {
@@ -83,8 +86,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             y = [
               {
                 config_json = jsonencode({
-                  operation = "value"
-                  column    = "system.cpu.user.pct"
+                  column = "system.cpu.user.pct"
                   color = {
                     type  = "static"
                     color = "#54B399"
@@ -101,8 +103,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

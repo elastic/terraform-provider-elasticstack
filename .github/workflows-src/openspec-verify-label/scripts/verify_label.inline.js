@@ -1,6 +1,13 @@
 //include: ../../lib/verify-label.js
 
-const result = verifyLabel(context.payload.label?.name);
-core.setOutput('label_verified', result.label_verified);
-core.setOutput('label_reason', result.label_reason);
-core.info(result.log_message);
+const labelName = context.payload.label?.name ?? '';
+const result = verifyTriggerLabel(labelName);
+
+core.setOutput('label_verified', result.label_verified ? 'true' : 'false');
+core.setOutput('label_verified_reason', result.label_verified_reason);
+
+if (result.label_verified) {
+  core.info(`Trigger label verified: ${labelName}`);
+} else {
+  core.info(`Trigger label not matched (got: ${labelName}): ${result.label_verified_reason}`);
+}

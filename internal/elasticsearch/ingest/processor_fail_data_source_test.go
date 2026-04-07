@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorFail(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorFail,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFail),
 				),
@@ -45,16 +45,5 @@ const expectedJSONFail = `{
 		"ignore_failure": false,
 		"if" : "ctx.tags.contains('production') != true"
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorFail = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_fail" "test" {
-  if      = "ctx.tags.contains('production') != true"
-  message = "The production tag is not present, found tags: {{{tags}}}"
 }
 `

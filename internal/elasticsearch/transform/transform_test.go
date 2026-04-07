@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -37,12 +38,15 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 
 	transformNamePivot := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceTransformWithPivotCreate(transformNamePivot),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformNamePivot),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
@@ -61,7 +65,11 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceTransformWithPivotUpdate(transformNamePivot),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformNamePivot),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
@@ -81,6 +89,11 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformNamePivot),
+				},
 				ResourceName:            "elasticstack_elasticsearch_transform.test_pivot",
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -94,12 +107,15 @@ func TestAccResourceTransformWithLatest(t *testing.T) {
 
 	transformNameLatest := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceTransformWithLatestCreate(transformNameLatest),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformNameLatest),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "name", transformNameLatest),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_latest", "id"),
@@ -122,13 +138,17 @@ func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
-				Config:   testAccResourceTransformWithAdvancedSettingsCreate(transformName, pipelineName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+					"pipeline_name":  config.StringVariable(pipelineName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "name", transformName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "id"),
@@ -157,12 +177,16 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceTransformNoDeferCreate(transformName, indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+					"index_name":     config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "test description"),
@@ -179,13 +203,16 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 func TestAccResourceTransformWithAliases(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
-				Config:   testAccResourceTransformWithAliasesCreate(transformName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "name", transformName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.#", "2"),
@@ -196,8 +223,12 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
-				Config:   testAccResourceTransformWithAliasesUpdate(transformName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "name", transformName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.#", "3"),
@@ -209,450 +240,6 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 			},
 		},
 	})
-}
-
-// create a transform referencing a non-existing source index;
-// because validations are deferred, this should pass
-func testAccResourceTransformWithPivotCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_transform" "test_pivot" {
-  name = "%s"
-  description = "test description"
-
-  source {
-    indices = ["source_index_for_transform"]
-  }
-
-  destination {
-    index = "dest_index_for_transform"
-  }
-
-  pivot = jsonencode({
-    "group_by": {
-      "customer_id": {
-        "terms": {
-          "field": "customer_id",
-          "missing_bucket": true
-        }
-      }
-    },
-    "aggregations": {
-      "max_price": {
-        "max": {
-          "field": "taxful_total_price"
-        }
-      }
-    }
-  })
-
-  sync {
-    time {
-      field = "order_date"
-      delay = "20s"
-    }
-  }
-
-  max_page_search_size = 2000
-  frequency = "5m"
-  enabled = false
-
-  defer_validation = true
-  timeout = "1m"
-}
-  `, name)
-}
-
-// update the existing transform, add another source index and start it (enabled = true)
-// validations are now unavoidable (at start), so make sure to create the indices _before_ updating the transform
-// the tf script below uses implicit dependency, but `depends_on` is also an option
-func testAccResourceTransformWithPivotUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_source_index_1" {
-  name = "source_index_for_transform"
-
-  alias = [{
-    name = "test_alias_1"
-  }]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-  deletion_protection = false
-  wait_for_active_shards = "all"
-  master_timeout = "1m"
-  timeout = "1m"
-}
-
-resource "elasticstack_elasticsearch_index" "test_source_index_2" {
-  name = "additional_index"
-
-  alias = [{
-    name = "test_alias_2"
-  }]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-  deletion_protection = false
-  wait_for_active_shards = "all"
-  master_timeout = "1m"
-  timeout = "1m"
-}
-
-resource "elasticstack_elasticsearch_transform" "test_pivot" {
-  name = "%s"
-  description = "yet another test description"
-
-  source {
-    indices = [
-      elasticstack_elasticsearch_index.test_source_index_1.name,
-      elasticstack_elasticsearch_index.test_source_index_2.name
-      ]
-  }
-
-  destination {
-    index = "dest_index_for_transform_v2"
-  }
-
-  pivot = jsonencode({
-    "group_by": {
-      "customer_id": {
-        "terms": {
-          "field": "customer_id",
-          "missing_bucket": true
-        }
-      }
-    },
-    "aggregations": {
-      "max_price": {
-        "max": {
-          "field": "taxful_total_price"
-        }
-      }
-    }
-  })
-
-  sync {
-    time {
-      field = "order_date"
-      delay = "20s"
-    }
-  }
-
-  retention_policy {
-    time {
-      field   = "order_date"
-      max_age = "7d"
-    }
-  }
-
-  max_page_search_size = 2000
-  frequency = "10m"
-  enabled = true
-
-  defer_validation = true
-  timeout = "1m"
-}
-  `, name)
-}
-
-func testAccResourceTransformWithLatestCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_transform" "test_latest" {
-  name = "%s"
-  description = "test description (latest)"
-
-  source {
-    indices = ["source_index_for_transform"]
-  }
-
-  destination {
-    index = "dest_index_for_transform"
-  }
-
-  latest = jsonencode({
-    "unique_key": ["customer_id"],
-    "sort": "order_date"
-  })
-  frequency = "2m"
-  enabled = false
-
-  defer_validation = true
-  timeout = "1m"
-}
-  `, name)
-}
-
-func testAccResourceTransformWithAdvancedSettingsCreate(transformName, pipelineName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ingest_pipeline" "test" {
-  name = "%s"
-
-  processors = [
-    jsonencode({
-      set = {
-        field = "_meta"
-        value = "transformed"
-      }
-    })
-  ]
-}
-
-resource "elasticstack_elasticsearch_transform" "test_advanced" {
-  name = "%s"
-  description = "test advanced transform settings"
-
-  source {
-    indices = ["source_index_for_transform"]
-    query   = jsonencode({ term = { status = "active" } })
-    runtime_mappings = jsonencode({
-      day_of_week = {
-        type = "keyword"
-        script = {
-          source = "emit(doc['order_date'].value.dayOfWeekEnum.getDisplayName(TextStyle.FULL, Locale.ROOT))"
-        }
-      }
-    })
-  }
-
-  destination {
-    index    = "dest_index_for_transform_advanced"
-    pipeline = elasticstack_elasticsearch_ingest_pipeline.test.name
-  }
-
-  metadata = jsonencode({
-    owner = "test-team"
-    env   = "ci"
-  })
-
-  pivot = jsonencode({
-    group_by = {
-      customer_id = {
-        terms = {
-          field = "customer_id"
-        }
-      }
-    }
-    aggregations = {
-      total_sales = {
-        sum = {
-          field = "sales"
-        }
-      }
-    }
-  })
-
-  sync {
-    time {
-      field = "order_date"
-      delay = "20s"
-    }
-  }
-
-  align_checkpoints    = true
-  dates_as_epoch_millis = false
-  deduce_mappings      = true
-  docs_per_second      = 100
-  num_failure_retries  = 5
-  unattended           = false
-
-  max_page_search_size = 2000
-  frequency            = "5m"
-  enabled              = false
-
-  defer_validation = true
-  timeout          = "1m"
-}
-`, pipelineName, transformName)
-}
-
-func testAccResourceTransformNoDeferCreate(transformName, indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_index" {
-  name = "%s"
-
-  alias = [{
-    name = "test_alias_1"
-  }]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-  deletion_protection = false
-  wait_for_active_shards = "all"
-  master_timeout = "1m"
-  timeout = "1m"
-}
-
-resource "elasticstack_elasticsearch_transform" "test_pivot" {
-  name = "%s"
-  description = "test description"
-
-  source {
-    indices = [elasticstack_elasticsearch_index.test_index.name]
-  }
-
-  destination {
-    index = "dest_index_for_transform"
-  }
-
-  pivot = jsonencode({
-    "group_by": {
-      "customer_id": {
-        "terms": {
-          "field": "customer_id",
-          "missing_bucket": true
-        }
-      }
-    },
-    "aggregations": {
-      "max_price": {
-        "max": {
-          "field": "taxful_total_price"
-        }
-      }
-    }
-  })
-  frequency = "5m"
-  enabled = false
-
-  defer_validation = false
-  timeout = "1m"
-}
-  `, indexName, transformName)
-}
-
-func testAccResourceTransformWithAliasesCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_transform" "test_aliases" {
-  name = "%s"
-  description = "test transform with aliases"
-
-  source {
-    indices = ["source_index"]
-  }
-
-  destination {
-    index = "dest_index_for_transform"
-
-    aliases {
-      alias = "test_alias_1"
-      move_on_creation = true
-    }
-
-    aliases {
-      alias = "test_alias_2"
-      move_on_creation = false
-    }
-  }
-
-  pivot = jsonencode({
-    "group_by": {
-      "customer_id": {
-        "terms": {
-          "field": "customer_id"
-        }
-      }
-    },
-    "aggregations": {
-      "total_sales": {
-        "sum": {
-          "field": "sales"
-        }
-      }
-    }
-  })
-
-  defer_validation = true
-}
-`, name)
-}
-
-func testAccResourceTransformWithAliasesUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_transform" "test_aliases" {
-  name = "%s"
-  description = "test transform with aliases"
-
-  source {
-    indices = ["source_index"]
-  }
-
-  destination {
-    index = "dest_index_for_transform"
-
-    aliases {
-      alias = "test_alias_1"
-      move_on_creation = false
-    }
-
-    aliases {
-      alias = "test_alias_2"
-      move_on_creation = true
-    }
-
-	aliases {
-      alias = "test_alias_3"
-	}
-  }
-
-  pivot = jsonencode({
-    "group_by": {
-      "customer_id": {
-        "terms": {
-          "field": "customer_id"
-        }
-      }
-    },
-    "aggregations": {
-      "total_sales": {
-        "sum": {
-          "field": "sales"
-        }
-      }
-    }
-  })
-
-  defer_validation = true
-}
-`, name)
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {

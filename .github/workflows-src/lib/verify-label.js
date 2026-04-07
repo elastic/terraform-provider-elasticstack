@@ -1,21 +1,23 @@
-function verifyLabel(label, expectedLabel = 'verify-openspec') {
-  if (label !== expectedLabel) {
+const TRIGGER_LABEL = 'verify-openspec';
+
+/**
+ * Verifies that the event label matches the expected trigger label.
+ * @param {string} labelName - The label name from the event payload.
+ * @returns {{ label_verified: boolean, label_verified_reason: string }}
+ */
+function verifyTriggerLabel(labelName) {
+  if (labelName === TRIGGER_LABEL) {
     return {
-      label_verified: 'false',
-      label_reason: `Unexpected label: ${label || '(none)'}`,
-      log_message: `Label check failed: expected ${expectedLabel}, got ${label || '(none)'}`,
+      label_verified: true,
+      label_verified_reason: `Label matches trigger: ${TRIGGER_LABEL}`,
     };
   }
-
   return {
-    label_verified: 'true',
-    label_reason: `Label verified: ${expectedLabel}`,
-    log_message: `Label verified: ${expectedLabel}`,
+    label_verified: false,
+    label_verified_reason: `Label does not match trigger (expected: ${TRIGGER_LABEL}, got: ${labelName || '(empty)'})`,
   };
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = {
-    verifyLabel,
-  };
+  module.exports = { TRIGGER_LABEL, verifyTriggerLabel };
 }

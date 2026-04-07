@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorTrim(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorTrim,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrim),
@@ -47,13 +47,3 @@ const expectedJSONTrim = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorTrim = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_trim" "test" {
-  field = "foo"
-}
-`

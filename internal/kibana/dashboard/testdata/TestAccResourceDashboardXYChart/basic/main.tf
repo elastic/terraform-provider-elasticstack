@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with XY Chart Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with XY Chart Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -51,8 +56,10 @@ resource "elasticstack_kibana_dashboard" "test" {
             ignore_global_filters = false
             sampling              = 1
             dataset_json = jsonencode({
-              type = "dataView"
-              id   = "metrics-*"
+              type  = "index"
+              index = "metrics-*"
+
+              time_field = "@timestamp"
             })
             y = [
               {
@@ -71,8 +78,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

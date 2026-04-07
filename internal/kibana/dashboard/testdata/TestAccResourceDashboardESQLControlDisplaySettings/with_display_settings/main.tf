@@ -6,6 +6,18 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with ES|QL Control Panel (display_settings)"
 
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "esql_control"
     grid = {

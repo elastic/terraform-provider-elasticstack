@@ -19,7 +19,9 @@ if (!prNumber) {
 core.setOutput('selection_status', result.selection_status);
 core.setOutput('selection_reason', result.selection_reason);
 core.setOutput('selected_change', result.selected_change);
+core.setOutput('review_disposition', result.review_disposition ?? '');
+core.setOutput('disposition_reason', result.disposition_reason ?? '');
 
 if (result.selection_status === 'eligible') {
-  core.info(`Selected active change: ${result.selected_change}`);
+  core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);
 }

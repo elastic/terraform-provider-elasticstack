@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorURIParts(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorURIParts,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "input_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIParts),
@@ -49,16 +49,3 @@ const expectedJSONURIParts = `{
 		"target_field": "url"
 	}
 }`
-
-const testAccDataSourceIngestProcessorURIParts = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_uri_parts" "test" {
-  field                = "input_field"
-  target_field         = "url"
-  keep_original        = true
-  remove_if_successful = false
-}
-`

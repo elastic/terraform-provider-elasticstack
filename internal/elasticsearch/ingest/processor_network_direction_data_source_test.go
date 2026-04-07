@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorNetworkDirection,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirection),
 				),
@@ -48,13 +48,3 @@ const expectedJSONNetworkDirection = `{
 		]
 	}
 }`
-
-const testAccDataSourceIngestProcessorNetworkDirection = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_network_direction" "test" {
-  internal_networks = ["private"]
-}
-`

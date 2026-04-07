@@ -56,10 +56,10 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Determine space context for creating the package policy
-	// The package policy must be created in the same space as the agent policy it references
+	// Determine space context for creating the package policy.
+	// The package policy must be created in the same space as the agent policy it references.
 	var spaceID string
-	if !planModel.SpaceIDs.IsNull() && !planModel.SpaceIDs.IsUnknown() {
+	if typeutils.IsKnown(planModel.SpaceIDs) {
 		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
 		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
@@ -73,6 +73,14 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		if !typeutils.IsKnown(planModel.SpaceIDs) {
+			resp.Diagnostics.AddWarning(
+				"Integration policy space_ids not set",
+				"The agent policy may reside in a non-default Kibana space. If the error above is "+
+					"a 403 Forbidden, set space_ids on the integration policy to match the agent policy's space. "+
+					"For example: space_ids = elasticstack_fleet_agent_policy.<name>.space_ids",
+			)
+		}
 		return
 	}
 
@@ -93,7 +101,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
+	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

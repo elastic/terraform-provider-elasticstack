@@ -247,7 +247,6 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		api.Metric.Column = metric.Column
 		api.Metric.Format = metric.Format
 		api.Metric.Label = metric.Label
-		api.Metric.Operation = metric.Operation
 		api.Metric.Size = metric.Size
 
 		if err := result.FromLegacyMetricESQL(api); err != nil {
@@ -344,6 +343,5 @@ type legacyMetricESQLMetricAPIModel struct {
 	Column       string                                    `json:"column"`
 	Format       kbapi.FormatType                          `json:"format"`
 	Label        *string                                   `json:"label,omitempty"`
-	Operation    kbapi.LegacyMetricESQLMetricOperation     `json:"operation"`
 	Size         *kbapi.LegacyMetricESQLMetricSize         `json:"size,omitempty"`
 }
