@@ -30,31 +30,31 @@ import (
 )
 
 type panelModel struct {
-	Type                     types.String                                      `tfsdk:"type"`
-	Grid                     panelGridModel                                    `tfsdk:"grid"`
-	UID                      types.String                                      `tfsdk:"uid"`
-	MarkdownConfig           *markdownConfigModel                              `tfsdk:"markdown_config"`
-	XYChartConfig            *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
-	TreemapConfig            *treemapConfigModel                               `tfsdk:"treemap_config"`
-	MosaicConfig             *mosaicConfigModel                                `tfsdk:"mosaic_config"`
-	DatatableConfig          *datatableConfigModel                             `tfsdk:"datatable_config"`
-	TagcloudConfig           *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
-	MetricChartConfig        *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
-	PieChartConfig           *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
-	GaugeConfig              *gaugeConfigModel                                 `tfsdk:"gauge_config"`
-	LegacyMetricConfig       *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
-	RegionMapConfig          *regionMapConfigModel                             `tfsdk:"region_map_config"`
-	HeatmapConfig            *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
-	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
-	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
-	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
-	EsqlControlConfig              *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
-	OptionsListControlConfig       *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig       *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
-	SyntheticsStatsOverviewConfig  *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
-	ConfigJSON                     customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	Type                          types.String                                      `tfsdk:"type"`
+	Grid                          panelGridModel                                    `tfsdk:"grid"`
+	UID                           types.String                                      `tfsdk:"uid"`
+	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
+	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
+	TreemapConfig                 *treemapConfigModel                               `tfsdk:"treemap_config"`
+	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"mosaic_config"`
+	DatatableConfig               *datatableConfigModel                             `tfsdk:"datatable_config"`
+	TagcloudConfig                *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
+	MetricChartConfig             *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
+	PieChartConfig                *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
+	GaugeConfig                   *gaugeConfigModel                                 `tfsdk:"gauge_config"`
+	LegacyMetricConfig            *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
+	RegionMapConfig               *regionMapConfigModel                             `tfsdk:"region_map_config"`
+	HeatmapConfig                 *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	WaffleConfig                  *waffleConfigModel                                `tfsdk:"waffle_config"`
+	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
+	SloErrorBudgetConfig          *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
+	EsqlControlConfig             *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
+	OptionsListControlConfig      *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
+	RangeSliderControlConfig      *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
+	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {

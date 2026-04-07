@@ -25,12 +25,12 @@ import (
 
 // syntheticsStatsOverviewConfigModel is the Terraform model for the synthetics_stats_overview_config block.
 type syntheticsStatsOverviewConfigModel struct {
-	Title       types.String                             `tfsdk:"title"`
-	Description types.String                             `tfsdk:"description"`
-	HideTitle   types.Bool                               `tfsdk:"hide_title"`
-	HideBorder  types.Bool                               `tfsdk:"hide_border"`
-	Drilldowns  []syntheticsStatsOverviewDrilldownModel  `tfsdk:"drilldowns"`
-	Filters     *syntheticsStatsOverviewFiltersModel     `tfsdk:"filters"`
+	Title       types.String                            `tfsdk:"title"`
+	Description types.String                            `tfsdk:"description"`
+	HideTitle   types.Bool                              `tfsdk:"hide_title"`
+	HideBorder  types.Bool                              `tfsdk:"hide_border"`
+	Drilldowns  []syntheticsStatsOverviewDrilldownModel `tfsdk:"drilldowns"`
+	Filters     *syntheticsStatsOverviewFiltersModel    `tfsdk:"filters"`
 }
 
 // syntheticsStatsOverviewDrilldownModel holds one URL drilldown entry.
@@ -81,12 +81,12 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                    `json:"label"`
-			OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger    `json:"trigger"`
-			Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType       `json:"type"`
-			Url          string                                                                    `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                                 `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                                `json:"label"`
+			OpenInNewTab *bool                                                                 `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+			Url          string                                                                `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
