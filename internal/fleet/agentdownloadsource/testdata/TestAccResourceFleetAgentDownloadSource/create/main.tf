@@ -11,6 +11,5 @@ resource "elasticstack_fleet_agent_download_source" "test" {
   source_id = "agent-download-source-${var.suffix}"
   default   = false
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
-  proxy_id  = "proxy-123"
   space_ids = ["default"]
 }
