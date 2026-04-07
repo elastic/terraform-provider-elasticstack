@@ -302,7 +302,8 @@ func checkResourceFleetAgentDownloadSourceDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		resp, diags := fleet.GetAgentDownloadSource(context.Background(), fleetClient, rs.Primary.ID, "")
+		spaceID := getOperationalSpaceFromResourceState(rs)
+		resp, diags := fleet.GetAgentDownloadSource(context.Background(), fleetClient, rs.Primary.ID, spaceID)
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
@@ -311,4 +312,13 @@ func checkResourceFleetAgentDownloadSourceDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func getOperationalSpaceFromResourceState(rs *terraform.ResourceState) string {
+	for k, v := range rs.Primary.Attributes {
+		if strings.HasPrefix(k, "space_ids.") && k != "space_ids.#" && v != "" {
+			return v
+		}
+	}
+	return ""
 }
