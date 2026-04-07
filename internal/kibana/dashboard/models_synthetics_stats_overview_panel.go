@@ -303,7 +303,8 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 }
 
 // readSyntheticsStatsOverviewFiltersFromAPI converts API filters to TF model.
-// Treats a nil or empty filters object as equivalent to an absent block.
+// When the API omits the filters field entirely (nil), the prior state is preserved to avoid false drift.
+// When the API returns an explicit empty filters object, nil is returned regardless of prior state.
 // priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
 	apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview,
@@ -311,12 +312,13 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 ) *syntheticsStatsOverviewFiltersModel {
 	apiFilters := apiPanel.Config.Filters
 
-	// Treat nil or empty filters as absent block.
+	if apiFilters == nil {
+		// API did not return a filters field at all — preserve prior state to avoid false drift.
+		return priorFilters
+	}
+
+	// API returned a filters object (possibly empty) — an empty object means "no filters".
 	if !syntheticsFiltersHasAnyEntry(apiFilters) {
-		// If prior state had a filters block, preserve it (avoids drift from API not returning filters).
-		if priorFilters != nil {
-			return priorFilters
-		}
 		return nil
 	}
 

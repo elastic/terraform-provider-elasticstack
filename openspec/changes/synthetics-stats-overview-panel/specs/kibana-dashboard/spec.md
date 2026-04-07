@@ -13,10 +13,9 @@ The `synthetics_stats_overview_config` block SHALL expose the following optional
 - `drilldowns` (list of objects): URL drilldown actions attached to the panel. Each drilldown object SHALL contain:
   - `url` (string): the URL template for the drilldown action.
   - `label` (string): the human-readable label for the drilldown action.
-  - `trigger` (string): the trigger event; the only supported value is `on_open_panel_menu`.
-  - `type` (string): the drilldown type; the only supported value is `url_drilldown`.
   - `encode_url` (bool, optional): whether to URL-encode the drilldown target; defaults to `true` at the API level.
   - `open_in_new_tab` (bool, optional): whether to open the drilldown in a new browser tab; defaults to `true` at the API level.
+  - The API fields `trigger` and `type` each accept only one value (`on_open_panel_menu` and `url_drilldown` respectively). These SHALL be hardcoded in the write converter and SHALL NOT be exposed as user-configurable Terraform attributes (matching the established pattern for `slo_overview_config` and `slo_error_budget_config` drilldowns).
 - `filters` (nested block, optional): Synthetics-specific monitor filter constraints. Each filter category within the block is optional and accepts a `list(object({ label = string, value = string }))`:
   - `projects`: filter by Synthetics project.
   - `tags`: filter by monitor tag.
@@ -53,9 +52,9 @@ The `synthetics_stats_overview_config` block SHALL be mutually exclusive with al
 
 #### Scenario: Read-back with empty filters
 
-- GIVEN a `synthetics_stats_overview` panel whose API response contains a `filters` object with no entries
-- WHEN read runs
-- THEN the resource SHALL not populate the `filters` block in state
+- GIVEN a `synthetics_stats_overview` panel whose API response contains a `filters` object with no entries (non-nil but empty)
+- WHEN read runs (including refresh, not just import)
+- THEN the resource SHALL set `filters` to null in state regardless of the prior state value
 
 #### Scenario: Panel config block exclusivity
 

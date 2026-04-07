@@ -509,3 +509,77 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withStatuses(t *testing.
 	assert.Equal(t, "Down", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[1].Label.ValueString())
 	assert.Equal(t, "down", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[1].Value.ValueString())
 }
+
+// Test: on refresh (tfPanel != nil), empty API filters object clears the filters block.
+// This verifies that returning an explicit empty filters object is treated as absent even
+// when prior state had a populated filters block.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBlock(t *testing.T) {
+	existing := &syntheticsStatsOverviewConfigModel{
+		Filters: &syntheticsStatsOverviewFiltersModel{
+			Projects: []syntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns an explicit empty filters object (non-nil, no entries).
+	panel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
+	}{} // all nil categories
+
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters,
+		"explicit empty filters object from API should clear the filters block in state")
+}
+
+// Test: on refresh (tfPanel != nil), nil API filters (field absent) preserves prior filters.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFilters_preservesPrior(t *testing.T) {
+	existing := &syntheticsStatsOverviewConfigModel{
+		Filters: &syntheticsStatsOverviewFiltersModel{
+			Projects: []syntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns nil filters (field not present in response).
+	panel.Config.Filters = nil
+
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters,
+		"nil filters from API (field absent) should preserve prior state to avoid false drift")
+	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Projects, 1)
+}
