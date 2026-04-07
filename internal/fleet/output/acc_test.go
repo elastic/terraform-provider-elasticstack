@@ -505,6 +505,25 @@ resource "elasticstack_fleet_output" "test_output" {
 `, policyName, policyName),
 				ExpectError: regexp.MustCompile(`service_token.+must be set when type equals "remote_elasticsearch"`),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_output" "test_output" {
+  name          = "Validation Output %s"
+  output_id     = "%s-validation-output"
+  type          = "elasticsearch"
+  service_token = "should-not-be-allowed"
+  hosts         = ["https://elasticsearch:9200"]
+}
+`, policyName, policyName),
+				ExpectError: regexp.MustCompile(`service_token.+type equals "remote_elasticsearch"`),
+			},
 		},
 	})
 }
