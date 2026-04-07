@@ -146,7 +146,7 @@ check-workflows: ## Check generated workflow markdown sources
 	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check
 
 .PHONY: gen
-gen: docs-generate workflow-generate ## Generate the code and documentation
+gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
 
 .PHONY: clean
@@ -172,7 +172,7 @@ golangci-lint: golangci-lint-custom
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
-lint: setup golangci-lint fmt docs-generate workflow-generate ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
 check-lint: setup check-openspec golangci-lint workflow-test check-workflows check-fmt check-docs

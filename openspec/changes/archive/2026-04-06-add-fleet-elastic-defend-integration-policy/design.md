@@ -205,10 +205,10 @@ Leaf fields such as booleans, mode strings, notification enablement, and message
 
 The public schema should not expose the typed package policy input itself. The resource owns that translation internally, including:
 
-- bootstrap create input `type = "ENDPOINT_INTEGRATION_CONFIG"`
-- bootstrap preset path `config._config.value.endpointConfig.preset`
-- persisted/read/update input `type = "endpoint"`
-- persisted/read/update preset path `config.integration_config.value.endpointConfig.preset`
+- bootstrap create input `type = "endpoint"` (Kibana rejects `"ENDPOINT_INTEGRATION_CONFIG"`)
+- bootstrap preset path `config.integration_config.value.endpointConfig.preset`
+- finalize/update input `type = "endpoint"`
+- finalize/update preset path `config.integration_config.value.endpointConfig.preset`
 - fixed input `enabled = true`
 - fixed `streams = []`
 
@@ -216,7 +216,7 @@ Alternative considered: a single `policy_json` string.
 Rejected for the main configuration surface because it would throw away most of the value of a dedicated resource and make drift, validation, and docs much weaker. A raw JSON escape hatch could be reconsidered later if the API surface proves too volatile, but it is not the preferred first design.
 
 Treat `artifact_manifest` and update concurrency tokens as opaque provider-managed state.
-The documented Defend API flow shows that create and update require server-managed payloads that users should not author directly. The resource should therefore preserve the latest `artifact_manifest` and the package policy `version` token used on update in provider-managed private state (or equivalent internal state), then echo them back on update without exposing them as schema.
+The resource preserves the latest `artifact_manifest` and the package policy `version` token in provider-managed private state without exposing them as schema. The `version` token is echoed back on update for optimistic concurrency control. The `artifact_manifest` is captured from API responses but is NOT included in update requests — Kibana manages it server-side and rejects it when present in typed input config.
 
 Alternative considered: expose `artifact_manifest_json` as computed state.
 Rejected because it is operational noise for Terraform users, encourages accidental coupling to a server-managed implementation detail, and would make plans noisier without improving ergonomics.
