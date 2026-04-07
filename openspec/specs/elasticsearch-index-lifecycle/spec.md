@@ -44,7 +44,7 @@ Allowed nested action blocks:
 | `hot` | `set_priority`, `unfollow`, `rollover`, `readonly`, `shrink`, `forcemerge`, `searchable_snapshot`, `downsample` |
 | `warm` | `set_priority`, `unfollow`, `readonly`, `allocate`, `migrate`, `shrink`, `forcemerge`, `downsample` |
 | `cold` | `set_priority`, `unfollow`, `readonly`, `searchable_snapshot`, `allocate`, `migrate`, `freeze`, `downsample` |
-| `frozen` | `searchable_snapshot` |
+| `frozen` | `searchable_snapshot` (required when `frozen` is declared) |
 | `delete` | `wait_for_snapshot`, `delete` |
 
 ### Action block shapes
@@ -125,6 +125,7 @@ downsample {
 
 Additional schema behavior:
 
+- When the `frozen` phase is declared, the `searchable_snapshot` nested block is required in the Terraform schema (unlike `hot` and `cold`, where that action remains optional).
 - `metadata`, `allocate.include`, `allocate.exclude`, and `allocate.require` use normalized JSON object string types and validate JSON-object syntax.
 - Empty allocation filter objects are omitted from state on read so unset optional filters remain absent.
 - `elasticsearch_connection` remains list-shaped in state because it comes from the shared provider connection schema.
@@ -161,11 +162,19 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<policy_
 
 The resource SHALL reject configuration that omits all five phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete`. The resource SHALL accept `metadata` and allocation filters only when they are valid JSON objects. By default, the resource SHALL use the provider-level Elasticsearch client; when `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for create, read, update, and delete.
 
+When the user declares the `frozen` phase, the configuration SHALL include a `searchable_snapshot` block inside `frozen`; omission SHALL be rejected during Terraform validation before any lifecycle API call.
+
 #### Scenario: No lifecycle phases configured
 
 - GIVEN all phase blocks are absent
 - WHEN configuration is validated
 - THEN the provider SHALL return a validation error before any lifecycle API call
+
+#### Scenario: Frozen phase without searchable snapshot is rejected
+
+- GIVEN a resource configuration with `frozen { min_age = "30d" }` and no `searchable_snapshot`
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a validation error before any Elasticsearch ILM API call
 
 #### Scenario: Resource-scoped connection override
 
@@ -299,3 +308,32 @@ The required-when-present attributes SHALL be:
 - GIVEN the user declares `searchable_snapshot { force_merge_index = true }`
 - WHEN Terraform validates the block
 - THEN validation SHALL fail because `snapshot_repository` is required when the block is present
+
+### Requirement: Frozen phase requires searchable snapshot (REQ-033)
+
+When the `frozen` phase is configured, the resource SHALL require the `frozen.searchable_snapshot` nested block in the Terraform schema rather than treating it as optional.
+
+Within that required block, `snapshot_repository` SHALL remain required when the `searchable_snapshot` block is present, consistent with REQ-032.
+
+The generated Terraform documentation for the resource SHALL reflect this schema shape by describing `frozen.searchable_snapshot` as required within the `frozen` phase.
+
+#### Scenario: Valid frozen phase includes searchable snapshot
+
+- GIVEN a resource configuration with:
+  - `frozen.min_age = "30d"`
+  - `frozen.searchable_snapshot.snapshot_repository = "repo-a"`
+- WHEN Terraform plans or applies the resource
+- THEN the provider SHALL accept the `frozen` phase schema shape
+- AND the lifecycle policy expansion SHALL include the `searchable_snapshot` action for the `frozen` phase
+
+#### Scenario: Required nested field within frozen searchable snapshot
+
+- GIVEN a resource configuration with `frozen.searchable_snapshot { force_merge_index = false }`
+- WHEN Terraform validates the configuration
+- THEN validation SHALL fail because `snapshot_repository` is required when the `searchable_snapshot` block is present
+
+#### Scenario: Generated docs match frozen schema requirement
+
+- GIVEN the provider documentation is generated from the resource schema
+- WHEN the `elasticstack_elasticsearch_index_lifecycle` docs are refreshed
+- THEN the `frozen` section SHALL describe `searchable_snapshot` as required within `frozen`

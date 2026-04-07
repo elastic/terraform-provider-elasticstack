@@ -57,7 +57,7 @@ The existing REQ-006 text is extended with the following additions:
 
 ---
 
-### Requirement: Panels and `config_json` round-trip behavior (REQ-010)
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
 `config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block.
 
