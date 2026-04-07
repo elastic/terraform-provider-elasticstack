@@ -18,7 +18,10 @@
 package indices_test
 
 import (
+	"fmt"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -349,4 +352,171 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccIndicesDataSource_ExplicitConnection verifies that the data source accepts
+// an explicit elasticsearch_connection block and reflects stable connection fields
+// in state while still returning index data.
+func TestAccIndicesDataSource_ExplicitConnection(t *testing.T) {
+	endpoints := indicesDataSourceESEndpoints()
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	if username == "" {
+		username = "elastic"
+	}
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+	if password == "" {
+		password = "password"
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"endpoints": config.ListVariable(endpointVars...),
+					"username":  config.StringVariable(username),
+					"password":  config.StringVariable(password),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", ".security-*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "target", ".security-*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.username", username),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_elasticsearch_indices.test_conn",
+						"elasticsearch_connection.0.endpoints.#",
+						fmt.Sprintf("%d", len(endpoints)),
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.insecure", "true"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndicesDataSource_ReadsStaticCreationSettings verifies previously uncovered
+// creation-time index settings that Elasticsearch returns via flat settings.
+func TestAccIndicesDataSource_ReadsStaticCreationSettings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.routing_partition_size", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.load_fixed_bitset_filters_eagerly", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.shard_check_on_startup", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.sort_field.0", "sort_key"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.sort_order.0", "asc"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndicesDataSource_ReadsDynamicHighImpactSettings verifies high-impact runtime
+// settings that previously had no data source coverage.
+func TestAccIndicesDataSource_ReadsDynamicHighImpactSettings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.auto_expand_replicas", "0-5"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_idle_after", "30s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.query_default_field.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.query_default_field.0", "field1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.blocks_read_only", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.blocks_read_only_allow_delete", "false"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndicesDataSource_TargetShapesAndAliasShapes covers comma-separated targets,
+// alias targets, guaranteed misses, and empty alias sets.
+func TestAccIndicesDataSource_TargetShapesAndAliasShapes(t *testing.T) {
+	indexA := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	indexB := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	aliasName := indexA + "-alias"
+	missTarget := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlpha) + "-missing"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"index_a":     config.StringVariable(indexA),
+					"index_b":     config.StringVariable(indexB),
+					"alias_name":  config.StringVariable(aliasName),
+					"miss_target": config.StringVariable(missTarget),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.multi", "id", indexA+","+indexB),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.multi", "indices.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.alias_target", "id", aliasName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.alias_target", "indices.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.alias_target", "indices.0.name", indexA),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.miss", "id", missTarget),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.miss", "indices.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.with_alias", "indices.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"data.elasticstack_elasticsearch_indices.with_alias",
+						"indices.0.alias.*",
+						map[string]string{
+							"name": aliasName,
+						},
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.without_alias", "indices.0.alias.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func indicesDataSourceESEndpoints() []string {
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	if rawEndpoints == "" {
+		rawEndpoints = "http://localhost:9200"
+	}
+
+	parts := strings.Split(rawEndpoints, ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+
+	return endpoints
 }
