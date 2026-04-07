@@ -29,7 +29,7 @@ import (
 )
 
 const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},` +
-	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassignedColor":{"type":"color_code","value":"#D3DAE6"}},` +
+	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},` +
 	`"column":"host.name","operation":"value"}`
 
 func TestAccResourceDashboardXYChart(t *testing.T) {

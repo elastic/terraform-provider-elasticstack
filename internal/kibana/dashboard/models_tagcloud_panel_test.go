@@ -46,7 +46,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	var tagcloudChart kbapi.TagcloudChart
 	require.NoError(t, tagcloudChart.FromTagcloudNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTagcloudChart(tagcloudChart))
 
 	converter := newTagcloudPanelConfigConverter()
@@ -87,7 +87,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 					Description:         new("A test tagcloud description"),
 					IgnoreGlobalFilters: new(true),
 					Sampling:            new(float32(0.5)),
-					Orientation:         new(kbapi.TagcloudNoESQLOrientation("horizontal")),
+					Orientation:         kbapi.VisApiOrientation("horizontal"),
 					FontSize: &struct {
 						Max *float32 `json:"max,omitempty"`
 						Min *float32 `json:"min,omitempty"`
@@ -222,9 +222,8 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.InDelta(t, *tt.api.Sampling, *apiResult.Sampling, 0.001, "Round-trip Sampling should match")
 			}
 
-			if tt.api.Orientation != nil {
-				require.NotNil(t, apiResult.Orientation, "Round-trip Orientation should not be nil")
-				assert.Equal(t, *tt.api.Orientation, *apiResult.Orientation, "Round-trip Orientation should match")
+			if tt.api.Orientation != "" {
+				assert.Equal(t, tt.api.Orientation, apiResult.Orientation, "Round-trip Orientation should match")
 			}
 		})
 	}
