@@ -233,7 +233,7 @@ func sslToObjectValue(ctx context.Context, certificate *string, certificateAutho
 // This avoids post-apply inconsistencies for nested sensitive values when APIs return
 // partial SSL objects while plan did not configure SSL.
 func normalizeSSLFromPlan(plannedSSL types.Object, mappedSSL types.Object) types.Object {
-	if plannedSSL.IsNull() || plannedSSL.IsUnknown() {
+	if plannedSSL.IsNull() {
 		return types.ObjectNull(getSslAttrTypes())
 	}
 	return mappedSSL

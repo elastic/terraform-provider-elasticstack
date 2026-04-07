@@ -101,9 +101,11 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context, prior out
 		VerificationMode       *kbapi.UpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
 	}
 	switch {
+	case model.Ssl.IsUnknown():
+		sslField = nil
 	case ssl != nil:
 		sslField = ssl.toUpdateLogstash()
-	case !prior.Ssl.IsNull() && !prior.Ssl.IsUnknown():
+	case model.Ssl.IsNull() && !prior.Ssl.IsNull() && !prior.Ssl.IsUnknown():
 		sslField = &struct {
 			Certificate            *string                                        `json:"certificate,omitempty"`
 			CertificateAuthorities *[]string                                      `json:"certificate_authorities,omitempty"`
@@ -144,7 +146,10 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context, prior out
 // string to clear a previously stored value; omitting the field leaves the old value
 // in place, which causes post-apply inconsistent state for this sensitive attribute.
 func logstashConfigYamlForUpdate(plan, state types.String) *string {
-	if !plan.IsNull() && !plan.IsUnknown() {
+	if plan.IsUnknown() {
+		return nil
+	}
+	if !plan.IsNull() {
 		return plan.ValueStringPointer()
 	}
 	if !state.IsNull() && !state.IsUnknown() && state.ValueString() != "" {
@@ -158,7 +163,7 @@ func logstashConfigYamlForUpdate(plan, state types.String) *string {
 // This avoids post-apply inconsistencies for the sensitive attribute when the API still
 // returns a stored value after an incomplete clear, similar to normalizeSSLFromPlan.
 func normalizeConfigYamlFromPlan(planned, fromAPI types.String) types.String {
-	if planned.IsNull() || planned.IsUnknown() {
+	if planned.IsNull() {
 		return types.StringNull()
 	}
 	return fromAPI
