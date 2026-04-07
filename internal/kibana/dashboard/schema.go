@@ -51,12 +51,12 @@ const (
 	panelTypeMarkdown           = "markdown"
 	panelTypeLens               = "lens"
 	panelTypeTimeSlider         = "time_slider_control"
-	panelTypeSloBurnRate            = "slo_burn_rate"
-	panelTypeSloErrorBudget         = "slo_error_budget"
-	panelTypeEsqlControl            = "esql_control"
-	panelTypeOptionsListControl     = "options_list_control"
-	panelTypeRangeSlider            = "range_slider_control"
-	panelTypeSyntheticsMonitors     = "synthetics_monitors"
+	panelTypeSloBurnRate        = "slo_burn_rate"
+	panelTypeSloErrorBudget     = "slo_error_budget"
+	panelTypeEsqlControl        = "esql_control"
+	panelTypeOptionsListControl = "options_list_control"
+	panelTypeRangeSlider        = "range_slider_control"
+	panelTypeSyntheticsMonitors = "synthetics_monitors"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)

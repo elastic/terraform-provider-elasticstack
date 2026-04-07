@@ -50,11 +50,11 @@ type panelModel struct {
 	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
 	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
-	EsqlControlConfig          *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
-	OptionsListControlConfig   *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig   *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
-	SyntheticsMonitorsConfig   *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
-	ConfigJSON                 customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
+	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
+	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	SyntheticsMonitorsConfig *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
+	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
