@@ -66,10 +66,10 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Cont
 
 	// Populate the model.
 	//
-	// Disambiguate variant 0 vs 1 using query presence in decoded variant0; variant1 (ESQL)
-	// can decode into variant0 but leaves query empty.
+	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
+	// return an empty standard-query object, so query presence is not reliable.
 	pm.MetricChartConfig = &metricChartConfigModel{}
-	if variant0, err := metricChart.AsMetricNoESQL(); err == nil && (variant0.Query.Query != "" || variant0.Query.Language != nil) {
+	if variant0, err := metricChart.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
 		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
 	}
 	variant1, err := metricChart.AsMetricESQL()
@@ -115,24 +115,36 @@ type metricItemModel struct {
 	ConfigJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
+func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
+	body, err := json.Marshal(apiChart.Dataset)
+	if err != nil {
+		return false
+	}
+
+	var dataset struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &dataset); err != nil {
+		return false
+	}
+
+	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
+}
+
 func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChart) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to get the metric chart variant 0 (non-ESQL) or 1 (ESQL)
 	// Both variants share the same "type" field value ("metric"), so we can't use that to distinguish them.
-	// The key difference is that variant 0 requires a Query field, while variant 1 doesn't have one.
-	// We try variant 0 first, but if the Query field is empty (which happens when decoding variant 1 JSON),
-	// we know it's actually variant 1.
+	// The key difference is the dataset type: data views and indices are no-ESQL,
+	// while ESQL/table datasets belong to the ESQL variant.
 	variant0, err := apiChart.AsMetricNoESQL()
 	if err == nil {
-		// Check if this is actually variant 1 by looking at whether the Query field is empty
-		if variant0.Query.Query == "" && variant0.Query.Language == nil {
-			// This is likely variant 1 (ESQL), try decoding as that
+		if isMetricNoESQLCandidateActuallyESQL(variant0) {
 			variant1, err1 := apiChart.AsMetricESQL()
 			if err1 == nil {
 				return m.fromAPIVariant1(ctx, variant1)
 			}
-			// If variant 1 also fails, fall back to variant 0 anyway
 		}
 		return m.fromAPIVariant0(ctx, variant0)
 	}
@@ -392,12 +404,11 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy struct {
-			CollapseBy kbapi.CollapseBy                     `json:"collapse_by"`
-			Column     string                               `json:"column"`
-			Columns    *float32                             `json:"columns,omitempty"`
-			Format     kbapi.FormatType                     `json:"format"`
-			Label      *string                              `json:"label,omitempty"`
-			Operation  kbapi.MetricESQLBreakdownByOperation `json:"operation"`
+			CollapseBy kbapi.CollapseBy `json:"collapse_by"`
+			Column     string           `json:"column"`
+			Columns    *float32         `json:"columns,omitempty"`
+			Format     kbapi.FormatType `json:"format"`
+			Label      *string          `json:"label,omitempty"`
 		}
 		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)

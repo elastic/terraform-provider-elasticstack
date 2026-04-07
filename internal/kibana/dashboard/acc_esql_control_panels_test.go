@@ -82,6 +82,10 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					// Kibana may omit or relocate single_select on read; optional in config.
+					"panels.0.esql_control_config.single_select",
+				},
 			},
 			// Update to empty config block
 			{
@@ -108,6 +112,17 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				ExpectError: regexp.MustCompile(`(?i)esql_control_config`),
+			},
+			// Restore a valid config so post-test destroy does not reuse the invalid fixture.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})

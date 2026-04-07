@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,12 +34,13 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkRepoDestroy(name),
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRepoFsCreate(name),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.location", "/tmp"),
@@ -47,8 +49,11 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
-				ImportState:  true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ResourceName:             "elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
+				ImportState:              true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
 					importedName := is[0].Attributes["name"]
 					if importedName != name {
@@ -66,12 +71,13 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkRepoDestroy(name),
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRepoURLCreate(name),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "file:/tmp"),
@@ -80,40 +86,6 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccRepoFsCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = "%s"
-
-  fs {
-    location                  = "/tmp"
-    compress                  = true
-    max_restore_bytes_per_sec = "10mb"
-  }
-}
-	`, name)
-}
-
-func testAccRepoURLCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
-  name = "%s"
-
-  url {
-    url = "file:/tmp"
-  }
-}
-	`, name)
 }
 
 func checkRepoDestroy(name string) func(s *terraform.State) error {
