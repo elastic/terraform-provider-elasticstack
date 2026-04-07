@@ -121,7 +121,7 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 	require.NotNil(t, panel.Config.Filters)
 	assert.NotNil(t, panel.Config.Filters.Projects)
 	assert.NotNil(t, panel.Config.Filters.Tags)
-	assert.NotNil(t, panel.Config.Filters.MonitorIds) //nolint:revive
+	assert.NotNil(t, panel.Config.Filters.MonitorIds)
 	assert.NotNil(t, panel.Config.Filters.Locations)
 	assert.NotNil(t, panel.Config.Filters.MonitorTypes)
 }

@@ -86,7 +86,7 @@ func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
 	if len(cfg.Filters.MonitorIDs) > 0 {
 		items := toSyntheticsFilterItems(cfg.Filters.MonitorIDs)
 		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
-		panel.Config.Filters.MonitorIds = &items //nolint:revive
+		panel.Config.Filters.MonitorIds = &items
 	}
 	if len(cfg.Filters.Locations) > 0 {
 		items := toSyntheticsFilterItems(cfg.Filters.Locations)
@@ -264,7 +264,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 
 	projects := fromSyntheticsAPIItems(apiFilters.Projects)
 	tags := fromSyntheticsAPIItems(apiFilters.Tags)
-	monitorIDs := fromSyntheticsAPIItems(apiFilters.MonitorIds) //nolint:revive
+	monitorIDs := fromSyntheticsAPIItems(apiFilters.MonitorIds)
 	locations := fromSyntheticsAPIItems(apiFilters.Locations)
 	monitorTypes := fromSyntheticsAPIItems(apiFilters.MonitorTypes)
 
