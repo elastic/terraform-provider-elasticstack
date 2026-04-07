@@ -1,6 +1,7 @@
 variable "bearer_token" {
   type        = string
   description = "Elasticsearch bearer token for explicit JWT auth coverage"
+  sensitive   = true
 }
 
 variable "endpoint" {
