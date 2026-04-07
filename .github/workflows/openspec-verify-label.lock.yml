@@ -317,7 +317,11 @@ name: "OpenSpec verify (label)"
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  # Include the triggering label name so that unrelated label events do not cancel an active
+  # verification run. Without this, any label applied while a verify-openspec run is in progress
+  # would share the same concurrency group and cancel the running job.
+  # Post-compile manual override — re-apply after running `gh aw compile`.
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}-${{ github.event.label.name || 'no-label' }}"
   cancel-in-progress: true
 
 run-name: "OpenSpec verify (label)"

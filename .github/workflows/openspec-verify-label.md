@@ -383,7 +383,9 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 
 ## Pre-activation context
 
-Deterministic pre-activation steps have classified the pull request and selected the active change. The `verify-openspec` label has already been removed from the triggering pull request.
+Deterministic pre-activation steps have classified the pull request and selected the active change.
+
+- **Label removal status**: ${{ needs.pre_activation.outputs.trigger_label_removed == 'true' && 'The `verify-openspec` label has been removed from this pull request.' || format('The `verify-openspec` label could not be removed (reason: `{0}`). Do not attempt to remove it yourself.', needs.pre_activation.outputs.trigger_label_removed_reason) }}
 
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
 - **Review disposition** (do not infer from PR files): `${{ needs.pre_activation.outputs.review_disposition }}` — either `approval-eligible` or `comment-only`

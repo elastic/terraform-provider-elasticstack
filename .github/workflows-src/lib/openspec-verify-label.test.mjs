@@ -160,3 +160,14 @@ test('verify-label workflow workspace bootstrap steps are conditional on workspa
   // The compiled output should show Go/Node/Terraform setup steps are conditional on workspace mode
   assert.match(source, /verification_mode.*workspace/s);
 });
+
+test('verify-label compiled lock pre_activation job has issues write for label cleanup', () => {
+  const lock = lockSource();
+  assert.match(lock, /pre_activation:[\s\S]*?permissions:[\s\S]*?issues: write/);
+});
+
+test('verify-label compiled lock preserves workspace-only guards on credential-bearing steps', () => {
+  const lock = lockSource();
+  const workspaceGuard = /if: needs\.pre_activation\.outputs\.verification_mode == 'workspace'/;
+  assert.match(lock, workspaceGuard);
+});
