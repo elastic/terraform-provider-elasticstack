@@ -1350,6 +1350,11 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 					Optional:            true,
 					NestedObject:        filterItemSchema.NestedObject,
 				},
+				"statuses": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor status (e.g. `up`, `down`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
+				},
 			},
 		},
 	}

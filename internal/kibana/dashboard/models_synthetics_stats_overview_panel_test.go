@@ -375,6 +375,10 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 	}{} // all nil categories
 
 	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
@@ -415,6 +419,10 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 	}{
 		Projects: &projects,
 	}
@@ -426,4 +434,83 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Projects, 1)
 	assert.Equal(t, "My Project", pm.SyntheticsStatsOverviewConfig.Filters.Projects[0].Label.ValueString())
 	assert.Equal(t, "my-project", pm.SyntheticsStatsOverviewConfig.Filters.Projects[0].Value.ValueString())
+}
+
+// Test: build with statuses filter — write path maps statuses correctly.
+func Test_buildSyntheticsStatsOverviewConfig_withStatuses(t *testing.T) {
+	pm := panelModel{
+		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
+			Filters: &syntheticsStatsOverviewFiltersModel{
+				Statuses: []syntheticsFilterItemModel{
+					{Label: types.StringValue("Up"), Value: types.StringValue("up")},
+					{Label: types.StringValue("Down"), Value: types.StringValue("down")},
+				},
+			},
+		},
+	}
+	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	buildSyntheticsStatsOverviewConfig(pm, &panel)
+
+	require.NotNil(t, panel.Config.Filters)
+	require.NotNil(t, panel.Config.Filters.Statuses)
+	require.Len(t, *panel.Config.Filters.Statuses, 2)
+	assert.Equal(t, "Up", (*panel.Config.Filters.Statuses)[0].Label)
+	assert.Equal(t, "up", (*panel.Config.Filters.Statuses)[0].Value)
+	assert.Equal(t, "Down", (*panel.Config.Filters.Statuses)[1].Label)
+	assert.Equal(t, "down", (*panel.Config.Filters.Statuses)[1].Value)
+	// Other categories should be nil.
+	assert.Nil(t, panel.Config.Filters.Projects)
+	assert.Nil(t, panel.Config.Filters.Tags)
+}
+
+// Test: import with statuses filter — read path maps statuses correctly.
+func Test_populateSyntheticsStatsOverviewFromAPI_import_withStatuses(t *testing.T) {
+	pm := &panelModel{}
+
+	panel := makeSyntheticsAPIConfig()
+	statuses := []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}{
+		{Label: "Up", Value: "up"},
+		{Label: "Down", Value: "down"},
+	}
+	panel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
+	}{
+		Statuses: &statuses,
+	}
+
+	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters)
+	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Statuses, 2)
+	assert.Equal(t, "Up", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[0].Label.ValueString())
+	assert.Equal(t, "up", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[0].Value.ValueString())
+	assert.Equal(t, "Down", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[1].Label.ValueString())
+	assert.Equal(t, "down", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[1].Value.ValueString())
 }

@@ -127,6 +127,9 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.projects.0.value", "my-project"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.monitor_types.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.monitor_types.0.value", "http"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.statuses.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.statuses.0.label", "Up"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.filters.statuses.0.value", "up"),
 				),
 			},
 			// Import
