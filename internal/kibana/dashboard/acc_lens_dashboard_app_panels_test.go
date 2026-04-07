@@ -139,8 +139,11 @@ func TestAccResourceDashboardLensDashboardAppInvalidBothSubblocks(t *testing.T) 
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
-				ExpectError:              regexp.MustCompile(`(?i)mutually exclusive|by_value.*by_reference|by_reference.*by_value`),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?i)mutually exclusive|by_value.*by_reference|by_reference.*by_value`),
 			},
 		},
 	})
@@ -155,8 +158,11 @@ func TestAccResourceDashboardLensDashboardAppInvalidNeitherSubblock(t *testing.T
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
-				ExpectError:              regexp.MustCompile(`(?i)exactly one|by_value.*by_reference`),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?i)exactly one|by_value.*by_reference`),
 			},
 		},
 	})
@@ -171,8 +177,11 @@ func TestAccResourceDashboardLensDashboardAppConfigJSONRejected(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
-				ExpectError:              regexp.MustCompile(`(?i)lens-dashboard-app|not allowed|not supported|Invalid Configuration`),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?i)lens-dashboard-app|not allowed|not supported|Invalid Configuration`),
 			},
 		},
 	})

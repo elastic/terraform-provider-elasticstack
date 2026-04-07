@@ -29,12 +29,16 @@ resource "elasticstack_kibana_dashboard" "test" {
     lens_dashboard_app_config = {
       by_value = {
         attributes_json = jsonencode({
-          visualizationType = "lnsMetric"
-          title             = "Test Metric"
-          state = {
-            datasourceStates = {}
-            visualization    = {}
-          }
+          type    = "metric"
+          filters = []
+          query   = { expression = "" }
+          dataset = { type = "index", index = "test-*" }
+          metrics = [{
+            type      = "primary"
+            operation = "count"
+            filter    = { expression = "" }
+            format    = { type = "number" }
+          }]
         })
       }
     }

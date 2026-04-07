@@ -9,6 +9,14 @@ resource "elasticstack_kibana_dashboard" "test" {
     from = "now-15m"
     to   = "now"
   }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens-dashboard-app"
     grid = {

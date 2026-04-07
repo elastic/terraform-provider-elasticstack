@@ -228,15 +228,28 @@ func populateLensDashboardAppFromAPI(pm *panelModel, tfPanel *panelModel, apiPan
 func populateLensDashboardAppByValueFromAPI(pm *panelModel, existing *lensDashboardAppConfigModel, config0 kbapi.KbnDashboardPanelLensDashboardAppConfig0) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	attrsBytes, err := json.Marshal(config0.Attributes)
-	if err != nil {
-		diags.AddError("Failed to marshal lens-dashboard-app attributes", err.Error())
-		return diags
+	// Determine the attributes_json to store.
+	// When a prior plan/state is available and it has a by_value config, preserve the
+	// planned attributes_json value. The Kibana API enriches the stored attributes with
+	// default fields (e.g. sampling, empty_as_null) that were not in the user's plan,
+	// and storing the API-enriched form back would cause a "Provider produced inconsistent
+	// result after apply" error. On import (existing == nil or existing.ByValue == nil)
+	// we use the API response instead so the full state is captured.
+	var attributesJSON jsontypes.Normalized
+	if existing != nil && existing.ByValue != nil && !existing.ByValue.AttributesJSON.IsNull() && !existing.ByValue.AttributesJSON.IsUnknown() {
+		attributesJSON = existing.ByValue.AttributesJSON
+	} else {
+		attrsBytes, err := json.Marshal(config0.Attributes)
+		if err != nil {
+			diags.AddError("Failed to marshal lens-dashboard-app attributes", err.Error())
+			return diags
+		}
+		attributesJSON = jsontypes.NewNormalizedValue(string(attrsBytes))
 	}
 
 	cfg := &lensDashboardAppConfigModel{
 		ByValue: &lensDashboardAppByValueModel{
-			AttributesJSON: jsontypes.NewNormalizedValue(string(attrsBytes)),
+			AttributesJSON: attributesJSON,
 		},
 		ByReference: nil,
 	}

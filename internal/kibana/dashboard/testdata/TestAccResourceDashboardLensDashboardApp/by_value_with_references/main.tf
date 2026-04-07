@@ -29,8 +29,16 @@ resource "elasticstack_kibana_dashboard" "test" {
     lens_dashboard_app_config = {
       by_value = {
         attributes_json = jsonencode({
-          visualizationType = "lnsXY"
-          title             = "Test XY Chart"
+          type    = "metric"
+          filters = []
+          query   = { expression = "" }
+          dataset = { type = "index", index = "test-*" }
+          metrics = [{
+            type      = "primary"
+            operation = "count"
+            filter    = { expression = "" }
+            format    = { type = "number" }
+          }]
         })
         references_json = jsonencode([{
           id   = "test-data-view-id"
