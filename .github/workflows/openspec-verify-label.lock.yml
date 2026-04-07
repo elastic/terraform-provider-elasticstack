@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"210707318f9be16c49c40f5b0c1ef2932bce97c62bb702416f5bb2d84add1f12","compiler_version":"v0.67.0","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"5ec0f625b5917c5c662bcb91d47ac36ad52dbc602d88f1b804cd8701805a32c5","compiler_version":"v0.67.0","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -21,7 +21,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the run is approval-eligible) archives the change and pushes the result to the PR branch. Activation uses label_command so the verify-openspec label is removed when the workflow starts; the agent does not use remove-labels safe output.
+# When maintainers add the verify-openspec label to a pull request, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, and on APPROVE (only when the run is approval-eligible and archive/push is allowed for same-repository PRs) archives the change and pushes the result to the PR branch. Uses pull_request_target with a deterministic verify_label step; a deterministic script step removes verify-openspec after activation; the agent does not use remove-labels safe output.
 #
 # Secrets used:
 #   - COPILOT_GITHUB_TOKEN
@@ -42,55 +42,309 @@
 
 name: "OpenSpec verify (label)"
 "on":
-  pull_request:
+  pull_request_target:
     types:
     - labeled
   # steps: # Steps injected into pre-activation job
-  # - id: select_change
-    # name: Select active change from PR files
+  # - id: verify_label
+    # name: Verify trigger label
     # uses: actions/github-script@v8
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "const CHANGE_PATTERN = /^openspec\\/changes\\/([^/]+)\\/.+$/;\nconst ARCHIVE_PATTERN = /^openspec\\/changes\\/archive\\//;\n\nconst ALLOWED_STATUSES = new Set(['added', 'modified']);\n\nfunction ineligible(selection_reason) {\n  return {\n    selection_status: 'ineligible',\n    selection_reason,\n    selected_change: '',\n    review_disposition: '',\n    disposition_reason: '',\n  };\n}\n\nfunction selectChangeFromFiles(files) {\n  const relevantFiles = files.filter(\n    file => CHANGE_PATTERN.test(file.filename) && !ARCHIVE_PATTERN.test(file.filename)\n  );\n\n  if (relevantFiles.length === 0) {\n    return ineligible('No files under openspec/changes/ (non-archive) found in this PR');\n  }\n\n  const unsupported = relevantFiles.filter(file => !ALLOWED_STATUSES.has(file.status));\n  if (unsupported.length > 0) {\n    return ineligible(\n      `Unsupported file status under openspec/changes/: ${unsupported\n        .map(file => `${file.filename} (${file.status})`)\n        .join(', ')}`\n    );\n  }\n\n  const changeIds = new Set(relevantFiles.map(file => file.filename.match(CHANGE_PATTERN)[1]));\n\n  if (changeIds.size > 1) {\n    return ineligible(`Multiple active change ids: ${Array.from(changeIds).sort().join(', ')}`);\n  }\n\n  const selectedChange = Array.from(changeIds)[0];\n  const hasAdded = relevantFiles.some(file => file.status === 'added');\n  const reviewDisposition = hasAdded ? 'comment-only' : 'approval-eligible';\n\n  const dispositionReason = hasAdded\n    ? 'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.'\n    : 'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.';\n\n  return {\n    selection_status: 'eligible',\n    selection_reason: `Selected change: ${selectedChange}`,\n    selected_change: selectedChange,\n    review_disposition: reviewDisposition,\n    disposition_reason: dispositionReason,\n  };\n}\n\nfunction selectChangeForPullRequest({ prNumber, files = [] }) {\n  if (!prNumber) {\n    return ineligible('No pull request number in event payload');\n  }\n\n  return selectChangeFromFiles(files);\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ARCHIVE_PATTERN,\n    CHANGE_PATTERN,\n    selectChangeForPullRequest,\n    selectChangeFromFiles,\n  };\n}\n\nconst prNumber = context.payload.pull_request?.number;\nlet result;\n\nif (!prNumber) {\n  result = selectChangeForPullRequest({ prNumber });\n} else {\n  const files = await github.paginate(github.rest.pulls.listFiles, {\n    owner: context.repo.owner,\n    repo: context.repo.repo,\n    pull_number: prNumber,\n    per_page: 100,\n  });\n\n  result = selectChangeForPullRequest({ prNumber, files });\n}\n\ncore.setOutput('selection_status', result.selection_status);\ncore.setOutput('selection_reason', result.selection_reason);\ncore.setOutput('selected_change', result.selected_change);\ncore.setOutput('review_disposition', result.review_disposition ?? '');\ncore.setOutput('disposition_reason', result.disposition_reason ?? '');\n\nif (result.selection_status === 'eligible') {\n  core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);\n}\n"
-  workflow_dispatch:
-    inputs:
-      aw_context:
-        default: ""
-        description: Agent caller context (used internally by Agentic Workflows).
-        required: false
-        type: string
-      item_number:
-        default: ""
-        description: The number of the issue, pull request, or discussion
-        required: false
-        type: string
+      # script: |
+        # const TRIGGER_LABEL = 'verify-openspec';
+        # 
+        # /**
+         # * Verifies that the event label matches the expected trigger label.
+         # * @param {string} labelName - The label name from the event payload.
+         # * @returns {{ label_verified: boolean, label_verified_reason: string }}
+         # */
+        # function verifyTriggerLabel(labelName) {
+          # if (labelName === TRIGGER_LABEL) {
+            # return {
+              # label_verified: true,
+              # label_verified_reason: `Label matches trigger: ${TRIGGER_LABEL}`,
+            # };
+          # }
+          # return {
+            # label_verified: false,
+            # label_verified_reason: `Label does not match trigger (expected: ${TRIGGER_LABEL}, got: ${labelName || '(empty)'})`,
+          # };
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = { TRIGGER_LABEL, verifyTriggerLabel };
+        # }
+        # 
+        # const labelName = context.payload.label?.name ?? '';
+        # const result = verifyTriggerLabel(labelName);
+        # 
+        # core.setOutput('label_verified', result.label_verified ? 'true' : 'false');
+        # core.setOutput('label_verified_reason', result.label_verified_reason);
+        # 
+        # if (result.label_verified) {
+          # core.info(`Trigger label verified: ${labelName}`);
+        # } else {
+          # core.info(`Trigger label not matched (got: ${labelName}): ${result.label_verified_reason}`);
+        # }
+  # - id: remove_trigger_label
+    # if: steps.verify_label.outputs.label_verified == 'true'
+    # name: Remove trigger label
+    # uses: actions/github-script@v8
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const TRIGGER_LABEL = 'verify-openspec';
+        # 
+        # /**
+         # * Removes only the verify-openspec trigger label from the triggering pull request.
+         # * Does not remove any other labels.
+         # * @param {{ github: object, context: object, prNumber: number|undefined }} opts
+         # * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}
+         # */
+        # async function removeTriggerLabel({ github, context, prNumber }) {
+          # if (!prNumber) {
+            # return {
+              # trigger_label_removed: false,
+              # trigger_label_removed_reason: 'No pull request number in event payload',
+            # };
+          # }
+        # 
+          # try {
+            # await github.rest.issues.removeLabel({
+              # owner: context.repo.owner,
+              # repo: context.repo.repo,
+              # issue_number: prNumber,
+              # name: TRIGGER_LABEL,
+            # });
+            # return {
+              # trigger_label_removed: true,
+              # trigger_label_removed_reason: `Removed label: ${TRIGGER_LABEL}`,
+            # };
+          # } catch (err) {
+            # // GitHub returns 404 when the label does not exist on the issue; treat as success
+            # if (err.status === 404) {
+              # return {
+                # trigger_label_removed: true,
+                # trigger_label_removed_reason: `Label ${TRIGGER_LABEL} was not present (already removed or never applied)`,
+              # };
+            # }
+            # return {
+              # trigger_label_removed: false,
+              # trigger_label_removed_reason: `Failed to remove label: ${err.message}`,
+            # };
+          # }
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = { TRIGGER_LABEL, removeTriggerLabel };
+        # }
+        # 
+        # const prNumber = context.payload.pull_request?.number;
+        # const result = await removeTriggerLabel({ github, context, prNumber });
+        # 
+        # core.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');
+        # core.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);
+        # 
+        # if (result.trigger_label_removed) {
+          # core.info(`Removed trigger label verify-openspec from PR #${prNumber}`);
+        # } else {
+          # core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
+        # }
+  # - id: classify_and_select
+    # if: steps.verify_label.outputs.label_verified == 'true'
+    # name: Classify pull request and select active change
+    # uses: actions/github-script@v8
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const CHANGE_PATTERN = /^openspec\/changes\/([^/]+)\/.+$/;
+        # const ARCHIVE_PATTERN = /^openspec\/changes\/archive\//;
+        # 
+        # const ALLOWED_STATUSES = new Set(['added', 'modified']);
+        # 
+        # function ineligible(selection_reason) {
+          # return {
+            # selection_status: 'ineligible',
+            # selection_reason,
+            # selected_change: '',
+            # review_disposition: '',
+            # disposition_reason: '',
+          # };
+        # }
+        # 
+        # function selectChangeFromFiles(files) {
+          # const relevantFiles = files.filter(
+            # file => CHANGE_PATTERN.test(file.filename) && !ARCHIVE_PATTERN.test(file.filename)
+          # );
+        # 
+          # if (relevantFiles.length === 0) {
+            # return ineligible('No files under openspec/changes/ (non-archive) found in this PR');
+          # }
+        # 
+          # const unsupported = relevantFiles.filter(file => !ALLOWED_STATUSES.has(file.status));
+          # if (unsupported.length > 0) {
+            # return ineligible(
+              # `Unsupported file status under openspec/changes/: ${unsupported
+                # .map(file => `${file.filename} (${file.status})`)
+                # .join(', ')}`
+            # );
+          # }
+        # 
+          # const changeIds = new Set(relevantFiles.map(file => file.filename.match(CHANGE_PATTERN)[1]));
+        # 
+          # if (changeIds.size > 1) {
+            # return ineligible(`Multiple active change ids: ${Array.from(changeIds).sort().join(', ')}`);
+          # }
+        # 
+          # const selectedChange = Array.from(changeIds)[0];
+          # const hasAdded = relevantFiles.some(file => file.status === 'added');
+          # const reviewDisposition = hasAdded ? 'comment-only' : 'approval-eligible';
+        # 
+          # const dispositionReason = hasAdded
+            # ? 'The selected change includes one or more added files (net-new spec change material). APPROVE is not permitted; submit COMMENT only, even if verification passes with no blocking issues.'
+            # : 'Every file under the selected change is a modification. APPROVE is permitted when verification finds zero CRITICAL issues and zero unassociated files.';
+        # 
+          # return {
+            # selection_status: 'eligible',
+            # selection_reason: `Selected change: ${selectedChange}`,
+            # selected_change: selectedChange,
+            # review_disposition: reviewDisposition,
+            # disposition_reason: dispositionReason,
+          # };
+        # }
+        # 
+        # function selectChangeForPullRequest({ prNumber, files = [] }) {
+          # if (!prNumber) {
+            # return ineligible('No pull request number in event payload');
+          # }
+        # 
+          # return selectChangeFromFiles(files);
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = {
+            # ARCHIVE_PATTERN,
+            # CHANGE_PATTERN,
+            # selectChangeForPullRequest,
+            # selectChangeFromFiles,
+          # };
+        # }
+        # 
+        # /**
+         # * Classifies a pull request as workspace (same-repository) or api-only (fork),
+         # * and determines archive/push eligibility.
+         # *
+         # * Same-repository pull requests (head.repo.id === repository.id) are classified as
+         # * workspace mode with archive/push allowed. Fork pull requests are classified as
+         # * api-only mode with archive/push disallowed.
+         # *
+         # * @param {{ headRepoId: number|undefined, baseRepoId: number|undefined }} opts
+         # * @returns {{
+         # *   verification_mode: 'workspace' | 'api-only',
+         # *   verification_mode_reason: string,
+         # *   archive_push_allowed: boolean,
+         # *   archive_push_reason: string,
+         # * }}
+         # */
+        # function classifyPullRequest({ headRepoId, baseRepoId }) {
+          # if (headRepoId != null && baseRepoId != null && headRepoId === baseRepoId) {
+            # return {
+              # verification_mode: 'workspace',
+              # verification_mode_reason:
+                # 'Pull request head repository matches base repository (same-repository PR). Full workspace toolchain is available.',
+              # archive_push_allowed: true,
+              # archive_push_reason:
+                # 'Same-repository pull request: archive and push to PR branch are allowed.',
+            # };
+          # }
+        # 
+          # return {
+            # verification_mode: 'api-only',
+            # verification_mode_reason:
+              # 'Pull request head repository differs from base repository (fork PR). Verification uses PR metadata and diffs only; trusted workspace bootstrap is not available.',
+            # archive_push_allowed: false,
+            # archive_push_reason:
+              # 'Fork pull request: archive and push to PR branch are disallowed to prevent execution of fork-controlled content in the trusted workflow context.',
+          # };
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = { classifyPullRequest };
+        # }
+        # 
+        # const prNumber = context.payload.pull_request?.number;
+        # const headRepoId = context.payload.pull_request?.head?.repo?.id;
+        # const baseRepoId = context.payload.repository?.id;
+        # 
+        # // Classify the pull request trust level
+        # const classification = classifyPullRequest({ headRepoId, baseRepoId });
+        # 
+        # // Select the active change from PR files
+        # let selectionResult;
+        # if (!prNumber) {
+          # selectionResult = selectChangeForPullRequest({ prNumber });
+        # } else {
+          # const files = await github.paginate(github.rest.pulls.listFiles, {
+            # owner: context.repo.owner,
+            # repo: context.repo.repo,
+            # pull_number: prNumber,
+            # per_page: 100,
+          # });
+        # 
+          # selectionResult = selectChangeForPullRequest({ prNumber, files });
+        # }
+        # 
+        # core.setOutput('selection_status', selectionResult.selection_status);
+        # core.setOutput('selection_reason', selectionResult.selection_reason);
+        # core.setOutput('selected_change', selectionResult.selected_change);
+        # core.setOutput('review_disposition', selectionResult.review_disposition ?? '');
+        # core.setOutput('disposition_reason', selectionResult.disposition_reason ?? '');
+        # core.setOutput('verification_mode', classification.verification_mode);
+        # core.setOutput('verification_mode_reason', classification.verification_mode_reason);
+        # core.setOutput('archive_push_allowed', classification.archive_push_allowed ? 'true' : 'false');
+        # core.setOutput('archive_push_reason', classification.archive_push_reason);
+        # 
+        # if (selectionResult.selection_status === 'eligible') {
+          # core.info(
+            # `Selected active change: ${selectionResult.selected_change} (${selectionResult.review_disposition})`
+          # );
+        # }
+        # core.info(
+          # `PR classification: ${classification.verification_mode} (archive/push: ${classification.archive_push_allowed})`
+        # );
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}-${{ github.event.label.name || github.run_id }}"
+  # Include the triggering label name so that unrelated label events do not cancel an active
+  # verification run. Without this, any label applied while a verify-openspec run is in progress
+  # would share the same concurrency group and cancel the running job.
+  # Post-compile manual override — re-apply after running `gh aw compile`.
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}-${{ github.event.label.name || 'no-label' }}"
+  cancel-in-progress: true
 
 run-name: "OpenSpec verify (label)"
 
 jobs:
   activation:
     needs: pre_activation
-    if: needs.pre_activation.outputs.activated == 'true' && (needs.pre_activation.outputs.selection_status == 'eligible')
+    if: >
+      needs.pre_activation.outputs.activated == 'true' && (needs.pre_activation.outputs.label_verified == 'true' &&
+      needs.pre_activation.outputs.selection_status == 'eligible')
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      discussions: write
-      issues: write
-      pull-requests: write
     outputs:
-      comment_id: ${{ steps.add-comment.outputs.comment-id }}
-      comment_repo: ${{ steps.add-comment.outputs.comment-repo }}
-      comment_url: ${{ steps.add-comment.outputs.comment-url }}
-      label_command: ${{ steps.remove_trigger_label.outputs.label_name }}
+      body: ${{ steps.sanitized.outputs.body }}
+      comment_id: ""
+      comment_repo: ""
       lockdown_check_failed: ${{ steps.generate_aw_info.outputs.lockdown_check_failed == 'true' }}
       model: ${{ steps.generate_aw_info.outputs.model }}
       secret_verification_result: ${{ steps.validate-secret.outputs.verification_result }}
       setup-trace-id: ${{ steps.setup.outputs.trace-id }}
+      text: ${{ steps.sanitized.outputs.text }}
+      title: ${{ steps.sanitized.outputs.title }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -125,19 +379,6 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/generate_aw_info.cjs');
             await main(core, context);
-      - name: Add eyes reaction for immediate feedback
-        id: react
-        if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'discussion' || github.event_name == 'discussion_comment' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.id == github.repository_id
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          GH_AW_REACTION: "eyes"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
-            setupGlobals(core, github, context, exec, io);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/add_reaction.cjs');
-            await main();
       - name: Validate COPILOT_GITHUB_TOKEN secret
         id: validate-secret
         run: ${RUNNER_TEMP}/gh-aw/actions/validate_multi_secret.sh COPILOT_GITHUB_TOKEN 'GitHub Copilot CLI' https://github.github.com/gh-aw/reference/engines/#github-copilot-default
@@ -173,28 +414,14 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_version_updates.cjs');
             await main();
-      - name: Add comment with workflow run link
-        id: add-comment
-        if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'discussion' || github.event_name == 'discussion_comment' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.id == github.repository_id
+      - name: Compute current body text
+        id: sanitized
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          GH_AW_WORKFLOW_NAME: "OpenSpec verify (label)"
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
             setupGlobals(core, github, context, exec, io);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/add_workflow_run_comment.cjs');
-            await main();
-      - name: Remove trigger label
-        id: remove_trigger_label
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          GH_AW_LABEL_NAMES: "[\"verify-openspec\"]"
-        with:
-          script: |
-            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
-            setupGlobals(core, github, context, exec, io);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/remove_trigger_label.cjs');
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/compute_text.cjs');
             await main();
       - name: Create prompt with built-in context
         env:
@@ -208,6 +435,8 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED: ${{ needs.pre_activation.outputs.archive_push_allowed }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED_REASON: ${{ needs.pre_activation.outputs.archive_push_allowed_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
@@ -215,19 +444,19 @@ jobs:
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_d1b3db0b3e787e0f_EOF'
+          cat << 'GH_AW_PROMPT_5882573a965544fd_EOF'
           <system>
-          GH_AW_PROMPT_d1b3db0b3e787e0f_EOF
+          GH_AW_PROMPT_5882573a965544fd_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_d1b3db0b3e787e0f_EOF'
+          cat << 'GH_AW_PROMPT_5882573a965544fd_EOF'
           <safe-output-tools>
           Tools: create_pull_request_review_comment(max:25), submit_pull_request_review, push_to_pull_request_branch, missing_tool, missing_data, noop
-          GH_AW_PROMPT_d1b3db0b3e787e0f_EOF
+          GH_AW_PROMPT_5882573a965544fd_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
-          cat << 'GH_AW_PROMPT_d1b3db0b3e787e0f_EOF'
+          cat << 'GH_AW_PROMPT_5882573a965544fd_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -260,17 +489,19 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_d1b3db0b3e787e0f_EOF
+          GH_AW_PROMPT_5882573a965544fd_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_d1b3db0b3e787e0f_EOF'
+          cat << 'GH_AW_PROMPT_5882573a965544fd_EOF'
           </system>
           {{#runtime-import .github/workflows/openspec-verify-label.md}}
-          GH_AW_PROMPT_d1b3db0b3e787e0f_EOF
+          GH_AW_PROMPT_5882573a965544fd_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED: ${{ needs.pre_activation.outputs.archive_push_allowed }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED_REASON: ${{ needs.pre_activation.outputs.archive_push_allowed_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
@@ -293,6 +524,8 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED: ${{ needs.pre_activation.outputs.archive_push_allowed }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED_REASON: ${{ needs.pre_activation.outputs.archive_push_allowed_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: ${{ needs.pre_activation.outputs.disposition_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: ${{ needs.pre_activation.outputs.review_disposition }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
@@ -300,9 +533,9 @@ jobs:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
             setupGlobals(core, github, context, exec, io);
-            
+
             const substitutePlaceholders = require('${{ runner.temp }}/gh-aw/actions/substitute_placeholders.cjs');
-            
+
             // Call the substitution function
             return await substitutePlaceholders({
               file: process.env.GH_AW_PROMPT,
@@ -316,6 +549,8 @@ jobs:
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ARCHIVE_PUSH_ALLOWED_REASON,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DISPOSITION_REASON,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_REVIEW_DISPOSITION,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE
@@ -423,8 +658,7 @@ jobs:
           echo "Git configured with standard GitHub Actions identity"
       - name: Checkout PR branch
         id: checkout-pr
-        if: |
-          github.event.pull_request || github.event.issue.pull_request
+        if: (github.event.pull_request || github.event.issue.pull_request)
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN || secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -458,12 +692,12 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_572d593ed80ffa69_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_d5705f9f766e7144_EOF'
           {"create_pull_request_review_comment":{"max":25,"side":"RIGHT","target":"triggering"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"submit_pull_request_review":{"max":1,"target":"triggering"}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_572d593ed80ffa69_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_d5705f9f766e7144_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_81ad624e159abe1c_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_7ca2860183ac8c09_EOF'
           {
             "description_suffixes": {
               "create_pull_request_review_comment": " CONSTRAINTS: Maximum 25 review comment(s) can be created. Comments will be on the RIGHT side of the diff.",
@@ -473,8 +707,8 @@ jobs:
             "repo_params": {},
             "dynamic_tools": []
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_81ad624e159abe1c_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_53deeb0177b5bc2e_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_7ca2860183ac8c09_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_16546ad99d569371_EOF'
           {
             "create_pull_request_review_comment": {
               "defaultMax": 1,
@@ -609,7 +843,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_53deeb0177b5bc2e_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_16546ad99d569371_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -679,7 +913,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.12'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_925921973a4f4976_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_4854f70a05b229dc_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -720,7 +954,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_925921973a4f4976_EOF
+          GH_AW_MCP_CONFIG_4854f70a05b229dc_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1011,24 +1245,6 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/handle_agent_failure.cjs');
             await main();
-      - name: Update reaction comment with completion status
-        id: conclusion
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_COMMENT_ID: ${{ needs.activation.outputs.comment_id }}
-          GH_AW_COMMENT_REPO: ${{ needs.activation.outputs.comment_repo }}
-          GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          GH_AW_WORKFLOW_NAME: "OpenSpec verify (label)"
-          GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_DETECTION_CONCLUSION: ${{ needs.detection.outputs.detection_conclusion }}
-        with:
-          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          script: |
-            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
-            setupGlobals(core, github, context, exec, io);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/notify_comment_error.cjs');
-            await main();
 
   detection:
     needs:
@@ -1111,7 +1327,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: "OpenSpec verify (label)"
-          WORKFLOW_DESCRIPTION: "When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the run is approval-eligible) archives the change and pushes the result to the PR branch. Activation uses label_command so the verify-openspec label is removed when the workflow starts; the agent does not use remove-labels safe output."
+          WORKFLOW_DESCRIPTION: "When maintainers add the verify-openspec label to a pull request, verifies the PR against exactly one active OpenSpec change (added and/or modified files only), posts a PR review, and on APPROVE (only when the run is approval-eligible and archive/push is allowed for same-repository PRs) archives the change and pushes the result to the PR branch. Uses pull_request_target with a deterministic verify_label step; a deterministic script step removes verify-openspec after activation; the agent does not use remove-labels safe output."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1182,16 +1398,33 @@ jobs:
 
   pre_activation:
     runs-on: ubuntu-slim
+    # issues: write is required for the remove_trigger_label step (github.rest.issues.removeLabel).
+    # pull-requests: read is required for the classify_and_select step (github.paginate pulls.listFiles).
+    # contents: read is required for checkout and file access in the classify_and_select step.
+    # The gh-aw DSL does not support per-job permissions for pre_activation; this block is a
+    # post-compile manual override. Re-apply after running `gh aw compile`.
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
-      disposition_reason: ${{ steps.select_change.outputs.disposition_reason }}
+      archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
+      archive_push_allowed_reason: ${{ steps.classify_and_select.outputs.archive_push_allowed_reason }}
+      classify_and_select_result: ${{ steps.classify_and_select.outcome }}
+      disposition_reason: ${{ steps.classify_and_select.outputs.disposition_reason }}
+      label_verified: ${{ steps.verify_label.outputs.label_verified }}
+      label_verified_reason: ${{ steps.verify_label.outputs.label_verified_reason }}
       matched_command: ''
-      review_disposition: ${{ steps.select_change.outputs.review_disposition }}
-      select_change_result: ${{ steps.select_change.outcome }}
-      selected_change: ${{ steps.select_change.outputs.selected_change }}
-      selection_reason: ${{ steps.select_change.outputs.selection_reason }}
-      selection_status: ${{ steps.select_change.outputs.selection_status }}
+      remove_trigger_label_result: ${{ steps.remove_trigger_label.outcome }}
+      review_disposition: ${{ steps.classify_and_select.outputs.review_disposition }}
+      selected_change: ${{ steps.classify_and_select.outputs.selected_change }}
+      selection_reason: ${{ steps.classify_and_select.outputs.selection_reason }}
+      selection_status: ${{ steps.classify_and_select.outputs.selection_status }}
       setup-trace-id: ${{ steps.setup.outputs.trace-id }}
+      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      verify_label_result: ${{ steps.verify_label.outcome }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -1211,8 +1444,114 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
-      - name: Select active change from PR files
-        id: select_change
+      - name: Verify trigger label
+        id: verify_label
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const TRIGGER_LABEL = 'verify-openspec';
+
+            /**
+             * Verifies that the event label matches the expected trigger label.
+             * @param {string} labelName - The label name from the event payload.
+             * @returns {{ label_verified: boolean, label_verified_reason: string }}
+             */
+            function verifyTriggerLabel(labelName) {
+              if (labelName === TRIGGER_LABEL) {
+                return {
+                  label_verified: true,
+                  label_verified_reason: `Label matches trigger: ${TRIGGER_LABEL}`,
+                };
+              }
+              return {
+                label_verified: false,
+                label_verified_reason: `Label does not match trigger (expected: ${TRIGGER_LABEL}, got: ${labelName || '(empty)'})`,
+              };
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = { TRIGGER_LABEL, verifyTriggerLabel };
+            }
+
+            const labelName = context.payload.label?.name ?? '';
+            const result = verifyTriggerLabel(labelName);
+
+            core.setOutput('label_verified', result.label_verified ? 'true' : 'false');
+            core.setOutput('label_verified_reason', result.label_verified_reason);
+
+            if (result.label_verified) {
+              core.info(`Trigger label verified: ${labelName}`);
+            } else {
+              core.info(`Trigger label not matched (got: ${labelName}): ${result.label_verified_reason}`);
+            }
+      - name: Remove trigger label
+        id: remove_trigger_label
+        if: steps.verify_label.outputs.label_verified == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const TRIGGER_LABEL = 'verify-openspec';
+
+            /**
+             * Removes only the verify-openspec trigger label from the triggering pull request.
+             * Does not remove any other labels.
+             * @param {{ github: object, context: object, prNumber: number|undefined }} opts
+             * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}
+             */
+            async function removeTriggerLabel({ github, context, prNumber }) {
+              if (!prNumber) {
+                return {
+                  trigger_label_removed: false,
+                  trigger_label_removed_reason: 'No pull request number in event payload',
+                };
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: TRIGGER_LABEL,
+                });
+                return {
+                  trigger_label_removed: true,
+                  trigger_label_removed_reason: `Removed label: ${TRIGGER_LABEL}`,
+                };
+              } catch (err) {
+                // GitHub returns 404 when the label does not exist on the issue; treat as success
+                if (err.status === 404) {
+                  return {
+                    trigger_label_removed: true,
+                    trigger_label_removed_reason: `Label ${TRIGGER_LABEL} was not present (already removed or never applied)`,
+                  };
+                }
+                return {
+                  trigger_label_removed: false,
+                  trigger_label_removed_reason: `Failed to remove label: ${err.message}`,
+                };
+              }
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = { TRIGGER_LABEL, removeTriggerLabel };
+            }
+
+            const prNumber = context.payload.pull_request?.number;
+            const result = await removeTriggerLabel({ github, context, prNumber });
+
+            core.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');
+            core.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);
+
+            if (result.trigger_label_removed) {
+              core.info(`Removed trigger label verify-openspec from PR #${prNumber}`);
+            } else {
+              core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
+            }
+      - name: Classify pull request and select active change
+        id: classify_and_select
+        if: steps.verify_label.outputs.label_verified == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -1290,11 +1629,50 @@ jobs:
               };
             }
 
-            const prNumber = context.payload.pull_request?.number;
-            let result;
+            /**
+             * Determines archive/push eligibility for a pull request.
+             *
+             * Same-repository pull requests (head.repo.id === repository.id) have archive/push allowed.
+             * Fork pull requests have archive/push disallowed (fork-controlled content must not be pushed
+             * to a branch in the trusted repository context).
+             *
+             * @param {{ headRepoId: number|undefined, baseRepoId: number|undefined }} opts
+             * @returns {{
+             *   archive_push_allowed: boolean,
+             *   archive_push_allowed_reason: string,
+             * }}
+             */
+            function classifyPullRequest({ headRepoId, baseRepoId }) {
+              if (headRepoId != null && baseRepoId != null && headRepoId === baseRepoId) {
+                return {
+                  archive_push_allowed: true,
+                  archive_push_allowed_reason:
+                    'Same-repository pull request: archive and push to PR branch are allowed.',
+                };
+              }
 
+              return {
+                archive_push_allowed: false,
+                archive_push_allowed_reason:
+                  'Fork pull request: archive and push to PR branch are disallowed to prevent pushing fork-controlled content to the trusted repository.',
+              };
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = { classifyPullRequest };
+            }
+
+            const prNumber = context.payload.pull_request?.number;
+            const headRepoId = context.payload.pull_request?.head?.repo?.id;
+            const baseRepoId = context.payload.repository?.id;
+
+            // Classify the pull request archive/push eligibility
+            const classification = classifyPullRequest({ headRepoId, baseRepoId });
+
+            // Select the active change from PR files
+            let selectionResult;
             if (!prNumber) {
-              result = selectChangeForPullRequest({ prNumber });
+              selectionResult = selectChangeForPullRequest({ prNumber });
             } else {
               const files = await github.paginate(github.rest.pulls.listFiles, {
                 owner: context.repo.owner,
@@ -1303,18 +1681,25 @@ jobs:
                 per_page: 100,
               });
 
-              result = selectChangeForPullRequest({ prNumber, files });
+              selectionResult = selectChangeForPullRequest({ prNumber, files });
             }
 
-            core.setOutput('selection_status', result.selection_status);
-            core.setOutput('selection_reason', result.selection_reason);
-            core.setOutput('selected_change', result.selected_change);
-            core.setOutput('review_disposition', result.review_disposition ?? '');
-            core.setOutput('disposition_reason', result.disposition_reason ?? '');
+            core.setOutput('selection_status', selectionResult.selection_status);
+            core.setOutput('selection_reason', selectionResult.selection_reason);
+            core.setOutput('selected_change', selectionResult.selected_change);
+            core.setOutput('review_disposition', selectionResult.review_disposition ?? '');
+            core.setOutput('disposition_reason', selectionResult.disposition_reason ?? '');
+            core.setOutput('archive_push_allowed', classification.archive_push_allowed ? 'true' : 'false');
+            core.setOutput('archive_push_allowed_reason', classification.archive_push_allowed_reason);
 
-            if (result.selection_status === 'eligible') {
-              core.info(`Selected active change: ${result.selected_change} (${result.review_disposition})`);
+            if (selectionResult.selection_status === 'eligible') {
+              core.info(
+                `Selected active change: ${selectionResult.selected_change} (${selectionResult.review_disposition})`
+              );
             }
+            core.info(
+              `PR classification: archive/push allowed=${classification.archive_push_allowed}`
+            );
 
   safe_outputs:
     needs:

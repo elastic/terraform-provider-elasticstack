@@ -1,23 +1,38 @@
 ---
 name: OpenSpec verify (label)
 description: >-
-  When maintainers add the verify-openspec label, verifies the PR against exactly one active
-  OpenSpec change (added and/or modified files only), posts a PR review, on APPROVE (only when the
-  run is approval-eligible) archives the change and pushes the result to the PR branch. Activation
-  uses label_command so the verify-openspec label is removed when the workflow starts; the agent does
-  not use remove-labels safe output.
+  When maintainers add the verify-openspec label to a pull request, verifies the PR against exactly
+  one active OpenSpec change (added and/or modified files only), posts a PR review, and on APPROVE
+  (only when the run is approval-eligible and archive/push is allowed for same-repository PRs)
+  archives the change and pushes the result to the PR branch. Uses pull_request_target with a
+  deterministic verify_label step; a deterministic script step removes verify-openspec after
+  activation; the agent does not use remove-labels safe output.
 on:
-  label_command:
-    names: [verify-openspec]
-    events: [pull_request]
+  pull_request_target:
+    types: [labeled]
   steps:
-    - name: Select active change from PR files
-      id: select_change
+    - name: Verify trigger label
+      id: verify_label
       uses: actions/github-script@v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/select_change.inline.js
+        x-script-include: scripts/verify_label.inline.js
+    - name: Remove trigger label
+      id: remove_trigger_label
+      if: steps.verify_label.outputs.label_verified == 'true'
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/remove_trigger_label.inline.js
+    - name: Classify pull request and select active change
+      id: classify_and_select
+      if: steps.verify_label.outputs.label_verified == 'true'
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/classify_and_select.inline.js
 if: >-
+  needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
   - name: Setup Go
@@ -49,11 +64,17 @@ permissions:
 jobs:
   pre-activation:
     outputs:
-      selection_status: ${{ steps.select_change.outputs.selection_status }}
-      selection_reason: ${{ steps.select_change.outputs.selection_reason }}
-      selected_change: ${{ steps.select_change.outputs.selected_change }}
-      review_disposition: ${{ steps.select_change.outputs.review_disposition }}
-      disposition_reason: ${{ steps.select_change.outputs.disposition_reason }}
+      label_verified: ${{ steps.verify_label.outputs.label_verified }}
+      label_verified_reason: ${{ steps.verify_label.outputs.label_verified_reason }}
+      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      selection_status: ${{ steps.classify_and_select.outputs.selection_status }}
+      selection_reason: ${{ steps.classify_and_select.outputs.selection_reason }}
+      selected_change: ${{ steps.classify_and_select.outputs.selected_change }}
+      review_disposition: ${{ steps.classify_and_select.outputs.review_disposition }}
+      disposition_reason: ${{ steps.classify_and_select.outputs.disposition_reason }}
+      archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
+      archive_push_allowed_reason: ${{ steps.classify_and_select.outputs.archive_push_allowed_reason }}
 tools:
   github:
     toolsets: [repos, pull_requests]
@@ -77,18 +98,36 @@ safe-outputs:
     max: 1
 ---
 
+<!-- MAINTAINER NOTE — POST-COMPILE MANUAL OVERRIDES
+     Running `make workflow-generate` (which runs `gh aw compile`) will silently overwrite the
+     compiled lock file. One category of manual override MUST be re-applied after every
+     `gh aw compile` run:
+
+     Override 1 — pre_activation job permissions:
+       The gh-aw DSL does not support per-job permissions for the pre_activation job.
+       After compiling, find the `pre_activation:` job block and add/restore:
+         permissions:
+           issues: write        # required for remove_trigger_label (github.rest.issues.removeLabel)
+           pull-requests: read  # required for classify_and_select (github.paginate pulls.listFiles)
+           contents: read       # required for checkout and file access in classify_and_select
+-->
+
 # OpenSpec verify, archive, and clean up (label-gated)
 
-You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review run `openspec archive` and push the branch. The **`verify-openspec`** label is removed when this workflow activates (`label_command`); do **not** emit **`remove-labels`** safe outputs.
+You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review and when archive/push is allowed run `openspec archive` and push the branch. The **`verify-openspec`** label is removed by a deterministic script step before this agent runs; do **not** emit **`remove-labels`** safe outputs.
 
 ## Pre-activation context
 
-Deterministic pre-activation steps have selected the active change. Deterministic steps have also provisioned the review toolchains (Node, Go, Terraform) and run `make setup` so OpenSpec CLI, Node packages, and prepared Go dependencies are available before agent reasoning begins.
+Deterministic pre-activation steps have classified the pull request and selected the active change.
+
+- **Label removal status**: ${{ needs.pre_activation.outputs.trigger_label_removed == 'true' && 'The `verify-openspec` label has been removed from this pull request.' || format('The `verify-openspec` label could not be removed (reason: `{0}`). Do not attempt to remove it yourself.', needs.pre_activation.outputs.trigger_label_removed_reason) }}
 
 - **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
 - **Review disposition** (do not infer from PR files): `${{ needs.pre_activation.outputs.review_disposition }}` — either `approval-eligible` or `comment-only`
 - **Disposition reason** (authoritative; echo or paraphrase in the review body when relevant): ${{ needs.pre_activation.outputs.disposition_reason }}
-- **Gating**: already complete — the workflow reached this point only because exactly one active non-archive change was found with file statuses limited to `added` and `modified`. Do **not** re-inspect PR files, re-derive the change id, or guess approval eligibility from the diff.
+- **Archive/push allowed**: `${{ needs.pre_activation.outputs.archive_push_allowed }}` — either `true` (same-repository PR) or `false` (fork PR)
+- **Archive/push allowed reason**: ${{ needs.pre_activation.outputs.archive_push_allowed_reason }}
+- **Gating**: already complete — the workflow reached this point only because exactly one active non-archive change was found with file statuses limited to `added` and `modified`. Do **not** re-inspect PR files, re-derive the change id, guess approval eligibility from the diff, or re-derive whether archive/push is allowed.
 
 Use **`npx openspec`** for all OpenSpec CLI invocations.
 
@@ -128,13 +167,14 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - Use **`COMMENT`** when **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`comment-only`**, **including** when verification finds zero CRITICAL issues and zero **`unassociated`** files.
    - Otherwise (blocking issues / unassociated files) use **`COMMENT`**.
    - **Never** use **`REQUEST_CHANGES`**. WARNING and SUGGESTION **alone** do **not** block **`APPROVE`** for **`approval-eligible`** runs.
+   - **`${{ needs.pre_activation.outputs.archive_push_allowed }}`** being `false` does **not** force **`COMMENT`** — the review decision is based solely on verification results and review disposition.
 
-## Archive and push (APPROVE only, approval-eligible only)
+## Archive and push (APPROVE only, approval-eligible only, archive-push-allowed only)
 
-8. **Only** if the review you submitted in step 7 used **`APPROVE`** **and** **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`approval-eligible`**:
+8. **Only** if the review you submitted in step 7 used **`APPROVE`** **and** **`${{ needs.pre_activation.outputs.review_disposition }}`** is **`approval-eligible`** **and** **`${{ needs.pre_activation.outputs.archive_push_allowed }}`** is **`true`**:
 
    - Run **`npx openspec archive "${{ needs.pre_activation.outputs.selected_change }}" --yes`** (non-interactive; add `--skip-specs` only if the change is explicitly doc-only and repository policy allows — default is full archive).
    - If the working tree has changes, **commit** them with a clear message (e.g. `chore(openspec): archive ${{ needs.pre_activation.outputs.selected_change }} via verify-openspec`).
    - Use **`push-to-pull-request-branch`** to update the **triggering** PR branch.
 
-9. If the review was **`COMMENT`**, or the run was **`comment-only`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
+9. If the review was **`COMMENT`**, or the run was **`comment-only`**, or **`${{ needs.pre_activation.outputs.archive_push_allowed }}`** is **`false`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
