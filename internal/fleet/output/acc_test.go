@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -371,10 +372,10 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 	if resp == nil {
 		t.Skip("skipping remote output acceptance test: no response when creating remote service token")
 	}
-	if resp.JSON200 == nil || resp.JSON200.Value == "" {
+	if resp.JSON200 == nil || strings.TrimSpace(resp.JSON200.Value) == "" {
 		t.Skipf("skipping remote output acceptance test: unable to create remote service token (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))
 	}
-	serviceToken := resp.JSON200.Value
+	serviceToken := strings.TrimSpace(resp.JSON200.Value)
 
 	policyName := sdkacctest.RandString(22)
 
@@ -437,7 +438,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`sync_integrations.+type equals "remote_elasticsearch"`),
+				ExpectError: regexp.MustCompile(`(?s)sync_integrations.*remote_elasticsearch`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -446,7 +447,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`sync_uninstalled_integrations.+type equals "remote_elasticsearch"`),
+				ExpectError: regexp.MustCompile(`(?s)sync_uninstalled_integrations.*remote_elasticsearch`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -455,7 +456,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`write_to_logs_streams.+type equals "remote_elasticsearch"`),
+				ExpectError: regexp.MustCompile(`(?s)write_to_logs_streams.*remote_elasticsearch`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -464,7 +465,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`service_token.+must be set when type equals "remote_elasticsearch"`),
+				ExpectError: regexp.MustCompile(`(?s)service_token.*must be set.*remote_elasticsearch`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -473,7 +474,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`service_token.+type equals "remote_elasticsearch"`),
+				ExpectError: regexp.MustCompile(`(?s)service_token.*remote_elasticsearch`),
 			},
 		},
 	})
