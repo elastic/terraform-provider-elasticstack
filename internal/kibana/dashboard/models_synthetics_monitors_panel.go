@@ -28,7 +28,7 @@ type syntheticsMonitorsConfigModel struct {
 	Filters *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
 }
 
-// syntheticsMonitorsFiltersModel holds the six optional filter dimensions for a
+// syntheticsMonitorsFiltersModel holds the five optional filter dimensions for a
 // Synthetics monitors panel. Each dimension is a list of { label, value } pairs.
 type syntheticsMonitorsFiltersModel struct {
 	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
@@ -73,12 +73,88 @@ func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
 		return panel
 	}
 
-	apiFilters := &struct {
+	if len(cfg.Filters.Projects) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.Projects)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.Projects = &items
+	}
+	if len(cfg.Filters.Tags) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.Tags)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.Tags = &items
+	}
+	if len(cfg.Filters.MonitorIDs) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.MonitorIDs)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.MonitorIds = &items //nolint:revive
+	}
+	if len(cfg.Filters.Locations) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.Locations)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.Locations = &items
+	}
+	if len(cfg.Filters.MonitorTypes) > 0 {
+		items := toSyntheticsFilterItems(cfg.Filters.MonitorTypes)
+		panel.Config.Filters = ensureSyntheticsAPIFilters(panel.Config.Filters)
+		panel.Config.Filters.MonitorTypes = &items
+	}
+
+	return panel
+}
+
+// ensureSyntheticsAPIFilters initialises the Config.Filters pointer if it is nil.
+func ensureSyntheticsAPIFilters(f *struct {
+	Locations *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"locations,omitempty"`
+	MonitorIds *[]struct { //nolint:revive
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"monitor_ids,omitempty"`
+	MonitorTypes *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"monitor_types,omitempty"`
+	Projects *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"projects,omitempty"`
+	Tags *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"tags,omitempty"`
+}) *struct {
+	Locations *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"locations,omitempty"`
+	MonitorIds *[]struct { //nolint:revive
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"monitor_ids,omitempty"`
+	MonitorTypes *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"monitor_types,omitempty"`
+	Projects *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"projects,omitempty"`
+	Tags *[]struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"tags,omitempty"`
+} {
+	if f != nil {
+		return f
+	}
+	return &struct {
 		Locations *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
+		MonitorIds *[]struct { //nolint:revive
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"monitor_ids,omitempty"`
@@ -95,30 +171,6 @@ func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
 	}{}
-
-	if len(cfg.Filters.Projects) > 0 {
-		items := toSyntheticsFilterItems(cfg.Filters.Projects)
-		apiFilters.Projects = &items
-	}
-	if len(cfg.Filters.Tags) > 0 {
-		items := toSyntheticsFilterItems(cfg.Filters.Tags)
-		apiFilters.Tags = &items
-	}
-	if len(cfg.Filters.MonitorIDs) > 0 {
-		items := toSyntheticsFilterItems(cfg.Filters.MonitorIDs)
-		apiFilters.MonitorIds = &items
-	}
-	if len(cfg.Filters.Locations) > 0 {
-		items := toSyntheticsFilterItems(cfg.Filters.Locations)
-		apiFilters.Locations = &items
-	}
-	if len(cfg.Filters.MonitorTypes) > 0 {
-		items := toSyntheticsFilterItems(cfg.Filters.MonitorTypes)
-		apiFilters.MonitorTypes = &items
-	}
-
-	panel.Config.Filters = apiFilters
-	return panel
 }
 
 // toSyntheticsFilterItems converts a slice of TF filter items to the anonymous API struct slice.
@@ -137,34 +189,15 @@ func toSyntheticsFilterItems(items []syntheticsFilterItemModel) []struct {
 	return result
 }
 
-// populateSyntheticsMonitorsFromAPI reads back the Kibana API config filters and updates the
-// panel model. Implements null-preservation: when the prior TF state omitted the config
-// block entirely, this call is a no-op to preserve practitioner intent.
+// populateSyntheticsMonitorsFromAPI reads back the Kibana API panel and updates the panel model.
+// Implements null-preservation: when the prior TF state omitted the config block entirely, this
+// call is a no-op to preserve practitioner intent.
 //
-// apiFilters is the Filters field from the API response Config struct (may be nil).
-// tfPanel is the prior TF state/plan panel, or nil on import.
-func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiFilters *struct {
-	Locations *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"locations,omitempty"`
-	MonitorIds *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"monitor_ids,omitempty"`
-	MonitorTypes *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"monitor_types,omitempty"`
-	Projects *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"projects,omitempty"`
-	Tags *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"tags,omitempty"`
-}) {
+// apiPanel is the panel returned from the API. tfPanel is the prior TF state/plan panel, or nil
+// on import.
+func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelSyntheticsMonitors) {
+	apiFilters := apiPanel.Config.Filters
+
 	// On import (tfPanel == nil), populate config from API unconditionally.
 	if tfPanel == nil {
 		if apiFilters == nil {
@@ -208,7 +241,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"locations,omitempty"`
-	MonitorIds *[]struct {
+	MonitorIds *[]struct { //nolint:revive
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"monitor_ids,omitempty"`
@@ -231,7 +264,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 
 	projects := fromSyntheticsAPIItems(apiFilters.Projects)
 	tags := fromSyntheticsAPIItems(apiFilters.Tags)
-	monitorIDs := fromSyntheticsAPIItems(apiFilters.MonitorIds)
+	monitorIDs := fromSyntheticsAPIItems(apiFilters.MonitorIds) //nolint:revive
 	locations := fromSyntheticsAPIItems(apiFilters.Locations)
 	monitorTypes := fromSyntheticsAPIItems(apiFilters.MonitorTypes)
 

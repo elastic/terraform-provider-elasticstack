@@ -1221,7 +1221,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"synthetics_monitors_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
-					"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
+					"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
+						"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
 					"synthetics_monitors_config",
 					panelConfigNames,
 				),

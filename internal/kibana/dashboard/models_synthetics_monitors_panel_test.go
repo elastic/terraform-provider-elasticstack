@@ -30,7 +30,7 @@ import (
 // buildSyntheticsMonitorsPanel (write path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-func makeGrid() struct {
+func makeTestGrid() struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -50,7 +50,7 @@ func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 	pm := panelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 	}
-	grid := makeGrid()
+	grid := makeTestGrid()
 	uid := "panel-1"
 
 	panel := buildSyntheticsMonitorsPanel(pm, grid, &uid)
@@ -66,7 +66,7 @@ func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
 		Type:                     types.StringValue(panelTypeSyntheticsMonitors),
 		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{},
 	}
-	grid := makeGrid()
+	grid := makeTestGrid()
 
 	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
 
@@ -87,7 +87,7 @@ func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 			},
 		},
 	}
-	grid := makeGrid()
+	grid := makeTestGrid()
 
 	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
 
@@ -114,14 +114,14 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 			},
 		},
 	}
-	grid := makeGrid()
+	grid := makeTestGrid()
 
 	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
 
 	require.NotNil(t, panel.Config.Filters)
 	assert.NotNil(t, panel.Config.Filters.Projects)
 	assert.NotNil(t, panel.Config.Filters.Tags)
-	assert.NotNil(t, panel.Config.Filters.MonitorIds)
+	assert.NotNil(t, panel.Config.Filters.MonitorIds) //nolint:revive
 	assert.NotNil(t, panel.Config.Filters.Locations)
 	assert.NotNil(t, panel.Config.Filters.MonitorTypes)
 }
@@ -130,39 +130,116 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 // populateSyntheticsMonitorsFromAPI (read path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-// makeAPIFilters builds the API filter struct pointer used in tests.
-func makeAPIFilters(projects, tags, monitorIDs, locations, monitorTypes []struct{ Label, Value string }) *struct {
-	Locations *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"locations,omitempty"`
-	MonitorIds *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"monitor_ids,omitempty"`
-	MonitorTypes *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"monitor_types,omitempty"`
-	Projects *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"projects,omitempty"`
-	Tags *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"tags,omitempty"`
-} {
-	type item = struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
+// makeSyntheticsPanel builds a KbnDashboardPanelSyntheticsMonitors for use in tests.
+func makeSyntheticsPanel() kbapi.KbnDashboardPanelSyntheticsMonitors {
+	return kbapi.KbnDashboardPanelSyntheticsMonitors{
+		Type: kbapi.SyntheticsMonitors,
 	}
-	f := &struct {
+}
+
+// On import (tfPanel == nil) with no filters returned from API, config remains nil.
+func Test_populateSyntheticsMonitorsFromAPI_import_noFilters(t *testing.T) {
+	pm := &panelModel{}
+	populateSyntheticsMonitorsFromAPI(pm, nil, makeSyntheticsPanel())
+	assert.Nil(t, pm.SyntheticsMonitorsConfig)
+}
+
+// On import with project filter data in API response, config is populated.
+func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
+	pm := &panelModel{}
+	apiPanel := makeSyntheticsPanel()
+	projects := []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}{{Label: "My Project", Value: "proj-1"}}
+	apiPanel.Config.Filters = &struct {
 		Locations *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"locations,omitempty"`
-		MonitorIds *[]struct {
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{
+		Projects: &projects,
+	}
+	populateSyntheticsMonitorsFromAPI(pm, nil, apiPanel)
+
+	require.NotNil(t, pm.SyntheticsMonitorsConfig)
+	require.NotNil(t, pm.SyntheticsMonitorsConfig.Filters)
+	require.Len(t, pm.SyntheticsMonitorsConfig.Filters.Projects, 1)
+	assert.Equal(t, "My Project", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Label.ValueString())
+	assert.Equal(t, "proj-1", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Value.ValueString())
+}
+
+// Null-preservation: prior state has no config block; API returns filters.
+// The config block should remain nil (preserve practitioner intent).
+func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
+	pm := &panelModel{}
+	tfPanel := &panelModel{} // no SyntheticsMonitorsConfig
+	apiPanel := makeSyntheticsPanel()
+	projects := []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}{{Label: "P", Value: "p"}}
+	apiPanel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{
+		Projects: &projects,
+	}
+	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+	assert.Nil(t, pm.SyntheticsMonitorsConfig, "config block should remain nil when prior state had no config block")
+}
+
+// Null-preservation: prior state had config block with no filters. API returns empty filters.
+// The filters should remain nil.
+func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *testing.T) {
+	existing := &syntheticsMonitorsConfigModel{
+		Filters: nil, // practitioner wrote synthetics_monitors_config = {}
+	}
+	pm := &panelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+
+	// API returns present but empty filters struct
+	apiPanel := makeSyntheticsPanel()
+	apiPanel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"monitor_ids,omitempty"`
@@ -179,93 +256,7 @@ func makeAPIFilters(projects, tags, monitorIDs, locations, monitorTypes []struct
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
 	}{}
-
-	if len(projects) > 0 {
-		s := make([]item, len(projects))
-		for i, p := range projects {
-			s[i] = item{Label: p.Label, Value: p.Value}
-		}
-		f.Projects = &s
-	}
-	if len(tags) > 0 {
-		s := make([]item, len(tags))
-		for i, p := range tags {
-			s[i] = item{Label: p.Label, Value: p.Value}
-		}
-		f.Tags = &s
-	}
-	if len(monitorIDs) > 0 {
-		s := make([]item, len(monitorIDs))
-		for i, p := range monitorIDs {
-			s[i] = item{Label: p.Label, Value: p.Value}
-		}
-		f.MonitorIds = &s
-	}
-	if len(locations) > 0 {
-		s := make([]item, len(locations))
-		for i, p := range locations {
-			s[i] = item{Label: p.Label, Value: p.Value}
-		}
-		f.Locations = &s
-	}
-	if len(monitorTypes) > 0 {
-		s := make([]item, len(monitorTypes))
-		for i, p := range monitorTypes {
-			s[i] = item{Label: p.Label, Value: p.Value}
-		}
-		f.MonitorTypes = &s
-	}
-	return f
-}
-
-// On import (tfPanel == nil) with no filters returned from API, config remains nil.
-func Test_populateSyntheticsMonitorsFromAPI_import_noFilters(t *testing.T) {
-	pm := &panelModel{}
-	populateSyntheticsMonitorsFromAPI(pm, nil, nil)
-	assert.Nil(t, pm.SyntheticsMonitorsConfig)
-}
-
-// On import with filter data in API response, config is populated.
-func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
-	pm := &panelModel{}
-	apiFilters := makeAPIFilters(
-		[]struct{ Label, Value string }{{"My Project", "proj-1"}},
-		nil, nil, nil, nil,
-	)
-	populateSyntheticsMonitorsFromAPI(pm, nil, apiFilters)
-
-	require.NotNil(t, pm.SyntheticsMonitorsConfig)
-	require.NotNil(t, pm.SyntheticsMonitorsConfig.Filters)
-	require.Len(t, pm.SyntheticsMonitorsConfig.Filters.Projects, 1)
-	assert.Equal(t, "My Project", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Label.ValueString())
-	assert.Equal(t, "proj-1", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Value.ValueString())
-}
-
-// Null-preservation: prior state has no config block; API returns filters.
-// The config block should remain nil (preserve practitioner intent).
-func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{} // no SyntheticsMonitorsConfig
-	apiFilters := makeAPIFilters(
-		[]struct{ Label, Value string }{{"P", "p"}},
-		nil, nil, nil, nil,
-	)
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiFilters)
-	assert.Nil(t, pm.SyntheticsMonitorsConfig, "config block should remain nil when prior state had no config block")
-}
-
-// Null-preservation: prior state had config block with no filters. API returns empty filters.
-// The filters should remain nil.
-func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *testing.T) {
-	existing := &syntheticsMonitorsConfigModel{
-		Filters: nil, // practitioner wrote synthetics_monitors_config = {}
-	}
-	pm := &panelModel{SyntheticsMonitorsConfig: existing}
-	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
-
-	// API returns present but empty filters
-	f := makeAPIFilters(nil, nil, nil, nil, nil)
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, f)
+	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig.Filters, "filters should remain nil when API returns empty filters")
@@ -283,11 +274,36 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 	pm := &panelModel{SyntheticsMonitorsConfig: existing}
 	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
 
-	apiFilters := makeAPIFilters(
-		[]struct{ Label, Value string }{{"P1", "p1"}},
-		nil, nil, nil, nil,
-	)
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiFilters)
+	apiPanel := makeSyntheticsPanel()
+	projects := []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}{{Label: "P1", Value: "p1"}}
+	apiPanel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{
+		Projects: &projects,
+	}
+	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	require.NotNil(t, pm.SyntheticsMonitorsConfig.Filters)
@@ -302,7 +318,7 @@ func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t 
 	pm := &panelModel{SyntheticsMonitorsConfig: existing}
 	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
 
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, nil)
+	populateSyntheticsMonitorsFromAPI(pm, tfPanel, makeSyntheticsPanel())
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig.Filters)
