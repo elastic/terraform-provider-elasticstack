@@ -375,7 +375,10 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 	if resp.JSON200 == nil || strings.TrimSpace(resp.JSON200.Value) == "" {
 		t.Skipf("skipping remote output acceptance test: unable to create remote service token (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))
 	}
-	serviceToken := strings.TrimSpace(resp.JSON200.Value)
+	serviceToken := strings.Trim(strings.TrimSpace(resp.JSON200.Value), "\"")
+	if !strings.Contains(serviceToken, ":") {
+		t.Skipf("skipping remote output acceptance test: unexpected remote service token format (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))
+	}
 
 	policyName := sdkacctest.RandString(22)
 
