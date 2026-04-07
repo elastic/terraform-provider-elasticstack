@@ -185,7 +185,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChart, diag.Diagnostics) 
 		return kbapi.RegionMapChart{}, diags
 	}
 
-	if m.Query != nil && typeutils.IsKnown(m.Query.Query) {
+	if m.Query != nil && typeutils.IsKnown(m.Query.Expression) {
 		api := kbapi.RegionMapNoESQL{
 			Type: kbapi.RegionMapNoESQLTypeRegionMap,
 		}

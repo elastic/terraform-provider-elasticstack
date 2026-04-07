@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Mosaic Panel (ES|QL)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Mosaic Panel (ES|QL)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -79,7 +84,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
+        size                 = "s"
         visible              = "visible"
         truncate_after_lines = 10
       }

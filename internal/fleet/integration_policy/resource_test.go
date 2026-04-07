@@ -53,7 +53,7 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 
-	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.10")
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.10", "")
 
 	assert.Nil(t, pkg)
 	require.False(t, diags.HasError(), "expected no errors, got: %v", diags.Errors())
@@ -81,7 +81,7 @@ func TestGetPackageInfo_Success(t *testing.T) {
 		assert.NoError(t, json.NewEncoder(w).Encode(resp))
 	}))
 
-	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11")
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11", "")
 
 	require.False(t, diags.HasError())
 	require.NotNil(t, pkg)
@@ -98,7 +98,34 @@ func TestGetPackageInfo_CacheHit(t *testing.T) {
 		t.Fatal("HTTP request should not be made when cache is hit")
 	}))
 
-	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11")
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11", "")
+
+	require.False(t, diags.HasError())
+	require.NotNil(t, pkg)
+	assert.Equal(t, "tcp", pkg.Name)
+}
+
+func TestGetPackageInfo_SpaceAware(t *testing.T) {
+	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11"))
+	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify the request path includes the space prefix
+		assert.Equal(t, "/s/my-space/api/fleet/epm/packages/tcp/3.1.11", r.URL.Path)
+
+		resp := struct {
+			Item kbapi.PackageInfo `json:"item"`
+		}{
+			Item: kbapi.PackageInfo{
+				Name:    "tcp",
+				Version: "3.1.11",
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		assert.NoError(t, json.NewEncoder(w).Encode(resp))
+	}))
+
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11", "my-space")
 
 	require.False(t, diags.HasError())
 	require.NotNil(t, pkg)
@@ -127,7 +154,7 @@ func TestGetPackageInfo_FallbackToInstalled(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 
-	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.10")
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.10", "")
 
 	require.False(t, diags.HasError())
 	require.NotNil(t, pkg)

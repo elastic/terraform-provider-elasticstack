@@ -26,24 +26,27 @@ import (
 
 func Test_roundtrip(t *testing.T) {
 	tests := []struct {
-		name string
-		id   string
-		ns   string
-		plc  kbapi.PrivateLocationConfig
+		name    string
+		id      string
+		ns      string
+		spaceID string
+		plc     kbapi.PrivateLocationConfig
 	}{
 		{
-			name: "only required fields",
-			id:   "id-1",
-			ns:   "ns-1",
+			name:    "only required fields",
+			id:      "id-1",
+			ns:      "ns-1",
+			spaceID: "",
 			plc: kbapi.PrivateLocationConfig{
 				Label:         "label-1",
 				AgentPolicyId: "agent-policy-id-1",
 			},
 		},
 		{
-			name: "all fields",
-			id:   "id-2",
-			ns:   "ns-2",
+			name:    "all fields",
+			id:      "id-2",
+			ns:      "ns-2",
+			spaceID: "sample-space",
 			plc: kbapi.PrivateLocationConfig{
 				Label:         "label-2",
 				AgentPolicyId: "agent-policy-id-2",
@@ -55,9 +58,10 @@ func Test_roundtrip(t *testing.T) {
 			},
 		},
 		{
-			name: "only tags",
-			id:   "id-3",
-			ns:   "ns-3",
+			name:    "only tags",
+			id:      "id-3",
+			ns:      "ns-3",
+			spaceID: "default",
 			plc: kbapi.PrivateLocationConfig{
 				Label:         "label-3",
 				AgentPolicyId: "agent-policy-id-3",
@@ -66,9 +70,10 @@ func Test_roundtrip(t *testing.T) {
 			},
 		},
 		{
-			name: "only geo",
-			id:   "id-4",
-			ns:   "ns-4",
+			name:    "only geo",
+			id:      "id-4",
+			ns:      "ns-4",
+			spaceID: "",
 			plc: kbapi.PrivateLocationConfig{
 				Label:         "label-4",
 				AgentPolicyId: "agent-policy-id-4",
@@ -87,8 +92,9 @@ func Test_roundtrip(t *testing.T) {
 				Namespace:             tt.ns,
 				PrivateLocationConfig: plc,
 			}
-			modelV0 := toModelV0(input)
+			modelV0 := toModelV0(input, tt.spaceID)
 
+			assert.Equal(t, tt.spaceID, modelV0.SpaceID.ValueString())
 			actual := modelV0.toPrivateLocationConfig()
 			assert.Equal(t, plc, actual)
 		})

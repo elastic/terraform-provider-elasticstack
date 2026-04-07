@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -39,12 +40,13 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 	minSupportedDescriptionVersion := version.Must(version.NewVersion("8.15.0"))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityRoleDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSecurityRoleCreate(roleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
@@ -56,7 +58,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceSecurityRoleUpdate(roleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -67,8 +71,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
-				Config:   testAccResourceSecurityRoleWithDescription(roleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_description"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -77,8 +83,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
-				Config:   testAccResourceSecurityRoleRemoteIndicesCreate(roleNameRemoteIndices),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remote_indices_create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
@@ -94,8 +102,10 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
-				Config:   testAccResourceSecurityRoleRemoteIndicesUpdate(roleNameRemoteIndices),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remote_indices_update"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -111,228 +121,6 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceSecurityRoleCreate(roleName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "test" {
-  name    = "%s"
-  elasticsearch {
-    cluster = [ "create_snapshot" ]
-    indices {
-      field_security {
-        grant = ["sample"]
-        except = []
-      }
-      names = ["sample"]
-      privileges = ["create", "read", "write"]
-    }
-  }
-  kibana {
-    feature {
-      name = "actions"
-      privileges = ["read"]
-    }
-    feature {
-      name = "advancedSettings"
-      privileges = ["read"]
-    }
-    feature {
-      name = "discover"
-      privileges = ["minimal_read", "url_create", "store_search_session"]
-    }
-    feature {
-      name = "generalCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "observabilityCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "osquery"
-      privileges = ["minimal_read", "live_queries_all", "run_saved_queries", "saved_queries_read", "packs_all"]
-    }
-    feature {
-      name = "rulesSettings"
-      privileges = ["minimal_read", "readFlappingSettings"]
-    }
-    feature {
-      name = "securitySolutionCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "visualize"
-      privileges = ["minimal_read", "url_create"]
-    }
-
-    spaces = ["default"]
-  }
-}
-	`, roleName)
-}
-
-func testAccResourceSecurityRoleUpdate(roleName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "%s"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-	`, roleName)
-}
-
-func testAccResourceSecurityRoleWithDescription(roleName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "%s"
-	description = "Role description"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-	`, roleName)
-}
-
-func testAccResourceSecurityRoleRemoteIndicesCreate(roleName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "test" {
-  name    = "%s"
-  elasticsearch {
-    cluster = [ "create_snapshot" ]
-    indices {
-      field_security {
-        grant = ["sample"]
-        except = []
-      }
-      names = ["sample"]
-      privileges = ["create", "read", "write"]
-    }
-    remote_indices {
-	  clusters = ["test-cluster"]
-      field_security {
-        grant = ["sample"]
-        except = []
-      }
-      names = ["sample"]
-      privileges = ["create", "read", "write"]
-    }
-  }
-  kibana {
-    feature {
-      name = "actions"
-      privileges = ["read"]
-    }
-    feature {
-      name = "advancedSettings"
-      privileges = ["read"]
-    }
-    feature {
-      name = "discover"
-      privileges = ["minimal_read", "url_create", "store_search_session"]
-    }
-    feature {
-      name = "generalCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "observabilityCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "osquery"
-      privileges = ["minimal_read", "live_queries_all", "run_saved_queries", "saved_queries_read", "packs_all"]
-    }
-    feature {
-      name = "rulesSettings"
-      privileges = ["minimal_read", "readFlappingSettings"]
-    }
-    feature {
-      name = "securitySolutionCases"
-      privileges = ["minimal_read", "cases_delete"]
-    }
-    feature {
-      name = "visualize"
-      privileges = ["minimal_read", "url_create"]
-    }
-
-    spaces = ["default"]
-  }
-}
-	`, roleName)
-}
-
-func testAccResourceSecurityRoleRemoteIndicesUpdate(roleName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "%s"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-      remote_indices {
-	    clusters = ["test-cluster2"]
-        field_security {
-          grant = ["sample2"]
-          except = []
-        }
-        names = ["sample2"]
-        privileges = ["create", "read", "write"]
-      }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-	`, roleName)
 }
 
 func checkResourceSecurityRoleDestroy(s *terraform.State) error {

@@ -6,15 +6,18 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Dashboard with invalid esql_control_config panel type"
 
-  time_from = "now-15m"
-  time_to   = "now"
-
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-
-  query_language = "kuery"
-  query_text     = ""
-
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -24,10 +27,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 6
     }
     esql_control_config = {
-      variable_name = "my_var"
-      variable_type = "values"
-      esql_query    = "FROM logs-* | STATS count = COUNT(*) BY host.name"
-      control_type  = "STATIC_VALUES"
+      selected_options = []
+      variable_name    = "my_var"
+      variable_type    = "values"
+      esql_query       = "FROM logs-* | STATS count = COUNT(*) BY host.name"
+      control_type     = "STATIC_VALUES"
     }
   }]
 }

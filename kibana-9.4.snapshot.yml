@@ -4,3 +4,8 @@ server.name: kibana
 feature_flags.overrides:
   lens.apiFormat: true
 server.oas.enabled: true
+xpack.streams.preconfigured.enabled: true
+uiSettings:
+  overrides:
+    observability:streamsEnableQueryStreams: true
+    observability:streamsEnableWiredStreamViews: true

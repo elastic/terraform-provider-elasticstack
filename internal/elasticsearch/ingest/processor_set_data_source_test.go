@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSet,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "field", "count"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSet),
@@ -50,14 +50,3 @@ const expectedJSONSet = `{
 		"value": "1"
 	}
 }`
-
-const testAccDataSourceIngestProcessorSet = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_set" "test" {
-  field = "count"
-  value = 1
-}
-`

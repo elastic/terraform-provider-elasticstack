@@ -1,11 +1,11 @@
 ---
 name: openspec-implementation-loop
-description: Orchestrates an end-to-end implementation loop for a single OpenSpec change: select a change, delegate implementation to a dedicated subagent, run review and verification subagents, feed findings back for fixes, push to origin, and watch GitHub Actions until the branch is green or blocked. Use when the user wants to implement an approved OpenSpec proposal/change with iterative review and CI feedback.
+description: Orchestrates an end-to-end implementation loop for a single OpenSpec change: select a change, ask commit-only vs PR delivery, delegate implementation to a dedicated subagent, run review and verification subagents, feed findings back for fixes, push to origin, then either watch GitHub Actions on the branch (commit mode) or create a PR and watch PR checks while polling for and addressing PR reviews (PR mode). Use when the user wants to implement an approved OpenSpec proposal/change with iterative review and CI feedback.
 license: MIT
 compatibility: Requires openspec CLI, git, and GitHub CLI.
 metadata:
   author: openspec
-  version: "1.0"
+  version: "2.0"
 ---
 
 Orchestrate an implementation loop around a single OpenSpec change.
@@ -15,12 +15,15 @@ Orchestrate an implementation loop around a single OpenSpec change.
 **High-level flow**
 
 1. Select the change
-2. Load OpenSpec context
-3. Start a dedicated implementor subagent
-4. Run review subagents in parallel
-5. Send findings back to the implementor and repeat until clean
-6. Push the branch to `origin`
-7. Watch GitHub Actions and loop failures back to the implementor
+2. **Ask delivery mode (commit vs PR) — do this immediately after selecting the change, not after implementation**
+3. Load OpenSpec context
+4. Start a dedicated implementor subagent
+5. Run review subagents in parallel
+6. Send findings back to the implementor and repeat until clean
+7. Push the branch to `origin`
+8. **Commit mode**: Watch GitHub Actions on the pushed branch/commit  
+   **PR mode**: Create a PR, watch PR checks, poll for PR reviews six times at 10-minute intervals, and address review feedback
+9. Report final outcome
 
 **Steps**
 
@@ -40,7 +43,18 @@ Orchestrate an implementation loop around a single OpenSpec change.
 
    Always announce: `Using change: <name>`.
 
-2. **Load OpenSpec status and context**
+2. **Choose delivery mode (ask immediately — before loading context or starting the implementor)**
+
+   Use **AskUserQuestion** (or an equivalent explicit user prompt) right after step 1. Do **not** defer this until after implementation or push.
+
+   Offer two options:
+
+   - **Commit-only**: Push your work to `origin` on the current branch. After each push, monitor GitHub Actions for the **branch / commits** you pushed (same behavior as the historical workflow).
+   - **Pull request**: After the **initial** push of the implementation loop, **create a PR** (for example with `gh pr create`). Then monitor **PR** workflow runs (checks on the PR), and **actively handle PR reviews** as described in step 10.
+
+   Record the user’s choice and refer to it from push onward (steps 8–10).
+
+3. **Load OpenSpec status and context**
 
    Run:
    ```bash
@@ -61,7 +75,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - If `state: "all_done"`: skip directly to the review stage
    - Otherwise: proceed to implementation
 
-3. **Start the implementor subagent**
+4. **Start the implementor subagent**
 
    Launch a dedicated write-capable subagent and keep reusing the same subagent for the full loop.
 
@@ -82,7 +96,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 
    **If the implementor is blocked**, stop and surface the blocker to the user.
 
-4. **Determine the review strategy**
+5. **Determine the review strategy**
 
    Inspect the change artifacts and implementation to decide whether this is a Terraform entity change.
 
@@ -90,7 +104,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - specs reference `Resource implementation:` or `Data source implementation:`
    - changed code is primarily in a resource/data source package
 
-5. **Run review subagents in parallel**
+6. **Run review subagents in parallel**
 
    Launch the following review subagents at the same time after the implementor reports completion of a reviewable chunk:
 
@@ -117,7 +131,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - evidence
    - recommended fix
 
-6. **Aggregate findings and decide whether to loop**
+7. **Aggregate findings and decide whether to loop**
 
    Combine the review outputs into a single actionable list.
 
@@ -137,7 +151,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 
    If the loop stalls, pause and ask the user how to proceed.
 
-7. **Push the branch**
+8. **Push the branch**
 
    After local review is clear:
    - verify the branch state is ready to push
@@ -153,16 +167,18 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - Never force-push unless the user explicitly asks
    - Do not push before local review passes
 
-8. **Watch GitHub Actions**
+9. **Commit-only mode: watch GitHub Actions (branch / commits)**
+
+   If the user chose **commit-only** in step 2:
 
    After pushing:
-   - inspect the runs for the current branch using `gh`
+   - inspect workflow runs for the current branch and the **commits** you pushed (for example with `gh run list` filtered by branch, or `gh` against the latest commit SHA)
    - watch or poll the latest relevant workflow runs until they complete
    - expect the acceptance test suite to take around 15 minutes to complete
    - once the only remaining jobs are long-running acceptance tests, poll less frequently instead of checking aggressively
 
    If CI succeeds:
-   - finish with a concise summary
+   - finish with a concise summary (or continue to step 11 if you already reported)
 
    If CI fails:
    - collect the failing workflow, job, and relevant log details
@@ -175,16 +191,51 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - CI is green, or
    - a failure cannot be resolved without user input
 
-9. **Report final outcome**
+10. **PR mode: create PR, watch PR checks, poll reviews, address feedback**
 
-   Summarize:
-   - change name
-   - schema
-   - implementation/review/CI loop status
-   - commits created during the loop
-   - tests or coverage checks used
-   - final CI state
-   - any remaining blockers or risks
+    If the user chose **pull request** in step 2:
+
+    **Create the PR after the initial push** (step 8), if it does not already exist:
+    - use `gh pr create` (or equivalent) with an appropriate title and body tied to the OpenSpec change
+    - record the PR number or URL
+
+    **Watch GitHub Actions in PR context**:
+    - prefer PR-centric views: for example `gh pr checks <pr>` and/or workflow runs associated with the PR’s head branch or PR event
+    - poll until required checks complete, with the same practical pacing as commit-only mode for long acceptance tests
+
+    **PR reviews — six checks, ten minutes apart**:
+    - After the PR exists, perform **six** separate review polls for new or updated reviews.
+    - **Schedule**: run the **first** poll as soon as the PR is created (or immediately after). Run polls **two** through **six** each after **waiting 10 minutes** since the previous poll (six polls total, ~50 minutes from first to last if no work interrupts the schedule).
+    - If a poll triggers implementor work and pushes, you may **pause the clock** until checks rerun, then **resume** the remaining scheduled polls so review handling stays coherent.
+    - On each pass, fetch current PR review state, for example:
+      - `gh pr view <pr> --json reviews,comments`
+      - and/or `gh api repos/{owner}/{repo}/pulls/<number>/reviews` and review comments as needed
+    - If there are **new or unresolved** review threads (requested changes, comments, or reviews), treat them like CI failures:
+      - summarize for the implementor
+      - resume the implementor to address feedback with minimal commits
+      - push updates; the PR updates automatically
+      - re-check PR checks after pushes
+    - If a **late** review round arrives after the sixth poll, surface it to the user (or extend polling if they ask).
+
+    If CI fails on the PR:
+    - same loop as commit-only: collect logs, implementor fixes, push, re-watch checks
+
+    Repeat until:
+    - CI is green and review passes show nothing actionable (within the six-pass schedule), or
+    - a failure or review cannot be resolved without user input
+
+11. **Report final outcome**
+
+    Summarize:
+    - change name
+    - schema
+    - delivery mode (commit-only vs PR)
+    - implementation/review/CI loop status
+    - commits created during the loop
+    - tests or coverage checks used
+    - final CI state (and PR link if PR mode)
+    - PR review handling summary if PR mode (including how many review passes ran)
+    - any remaining blockers or risks
 
 **Recommended subagent responsibilities**
 
@@ -196,6 +247,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 **Guardrails**
 
 - Operate on one change only
+- Ask **commit vs PR** at the **start** (step 2), not when implementation is finished
 - Always read the OpenSpec context before implementation
 - Reuse the same implementor subagent through the whole loop
 - Run reviewers in parallel whenever possible

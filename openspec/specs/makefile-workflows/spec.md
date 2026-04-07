@@ -38,7 +38,7 @@ Environment variables consumed by underlying tools (for example Terraform loggin
 - **Dependencies & build:** `vendor`, `build-ci`, `build`, `clean`, `install`
 - **Tests:** `test`, `testacc`, `testacc-vs-docker`, `docker-testacc`, `docker-testacc-with-token`
 - **Docker & HTTP helpers:** `docker-elasticsearch`, `docker-kibana`, `docker-fleet`, `docker-clean`, `copy-kibana-ca`, `set-kibana-password`, `setup-synthetics`, `create-es-api-key`, `create-es-bearer-token`, `setup-kibana-fleet`
-- **Lint, format, docs, OpenSpec:** `tools`, `golangci-lint`, `lint`, `check-lint`, `fmt`, `check-fmt`, `docs-generate`, `check-docs`, `setup-openspec`, `check-openspec`, `setup`
+- **Lint, format, docs, OpenSpec:** `tools`, `golangci-lint`, `lint`, `check-lint`, `fmt`, `check-fmt`, `docs-generate`, `workflow-generate`, `workflow-test`, `check-workflows`, `check-docs`, `setup-openspec`, `check-openspec`, `setup`
 - **Release & maintenance:** `release-snapshot`, `release-no-publish`, `release`, `check-sign-release`, `check-publish-release`, `release-notes`, `renovate-post-upgrade`, `notice`
 - **Codegen:** `gen`, `generate-slo-client`, `generate-clients`
 ## Requirements
@@ -214,9 +214,9 @@ The `copy-kibana-ca` target SHALL copy the Kibana TLS CA certificate from the ru
 - WHEN `make copy-kibana-ca` runs
 - THEN `kibana-ca.pem` SHALL exist in the working tree with the CA material from the Kibana container
 
-### Requirement: Documentation and code generation (REQ-038–REQ-040)
+### Requirement: Documentation, workflow, and code generation (REQ-038–REQ-042)
 
-The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. The `gen` target SHALL run documentation generation and `go generate` for the repository.
+The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. The `workflow-generate` target SHALL regenerate the checked-in GitHub workflow artifacts from the repository-authored workflow sources, and it SHALL run only when explicitly requested. Aggregate targets such as `gen`, `lint`, and `build` SHALL NOT depend on `workflow-generate`. The `workflow-test` target SHALL run the repository tests that cover workflow source generation. The `check-workflows` target SHALL verify that generated workflow artifacts are up to date without regenerating them. The `gen` target SHALL run documentation generation and `go generate` for the repository.
 
 #### Scenario: Docs generation
 
@@ -224,9 +224,21 @@ The `docs-generate` target SHALL regenerate Terraform provider website/markdown 
 - WHEN it succeeds
 - THEN `tfplugindocs` SHALL have regenerated provider docs to match the current schema
 
+#### Scenario: Manual workflow generation
+
+- GIVEN `make workflow-generate`
+- WHEN it succeeds
+- THEN the checked-in workflow artifacts SHALL be regenerated from the repository-authored workflow sources
+
+#### Scenario: Workflow drift check without regeneration
+
+- GIVEN generated workflow sources are out of date with their checked-in templates
+- WHEN `make check-workflows` runs
+- THEN it SHALL fail without regenerating workflow artifacts
+
 ### Requirement: golangci-lint execution (REQ-041–REQ-043)
 
-The `tools` target SHALL provision golangci-lint at the **version pinned in the repository**. The `golangci-lint` target SHALL lint Go code under `internal/` with zero tolerance for duplicate identical issues unless `GOLANGCIFLAGS` alters behavior. The `lint` target SHALL enable auto-fix behavior where supported; `check-lint` SHALL not depend on that fix mode for golangci-lint.
+The `tools` target SHALL provision golangci-lint at the **version pinned in the repository**. The `golangci-lint` target SHALL lint Go code across the repository module using `./...`, while still honoring repository-configured golangci-lint exclusions, with zero tolerance for duplicate identical issues unless `GOLANGCIFLAGS` alters behavior. The `lint` target SHALL enable auto-fix behavior where supported; `check-lint` SHALL not depend on that fix mode for golangci-lint.
 
 #### Scenario: Lint without fix
 
@@ -234,8 +246,15 @@ The `tools` target SHALL provision golangci-lint at the **version pinned in the 
 - WHEN golangci-lint runs
 - THEN it SHALL report issues without the fix-only mode used by `lint`
 
+#### Scenario: Repository-wide Go lint scope
+
+- GIVEN `make golangci-lint`
+- WHEN the target invokes golangci-lint
+- THEN it SHALL run against `./...`
+- AND Go packages outside `internal/` SHALL be part of the lint scope unless excluded by repository golangci-lint configuration
+
 ### Requirement: Lint aggregate targets (REQ-044–REQ-045)
-The `lint` target SHALL run setup, golangci-lint (with fix), formatting, and documentation generation. The `check-lint` target SHALL run setup, OpenSpec structural validation, golangci-lint (check mode), workflow generation checks, format check, and documentation freshness check.
+The `lint` target SHALL run setup, golangci-lint (with fix), formatting, and documentation generation, and it SHALL NOT invoke workflow generation. The `check-lint` target SHALL run setup, OpenSpec structural validation, golangci-lint (check mode), workflow generation checks, format check, and documentation freshness check.
 
 #### Scenario: Lint matches contributor workflow
 - GIVEN `make lint`

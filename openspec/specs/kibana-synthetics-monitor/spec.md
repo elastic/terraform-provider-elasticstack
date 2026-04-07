@@ -96,7 +96,7 @@ Notes:
 - The type name is built as `req.ProviderTypeName + "_kibana_synthetics_monitor"` (constant `synthetics.MetadataPrefix + "monitor"`).
 - The `id` attribute has both `UseStateForUnknown` and `RequiresReplace` plan modifiers.
 - `space_id` has `UseStateForUnknown` and `RequiresReplace`; changing it destroys and recreates.
-- Location validation (enum of allowed managed location strings) is only applied when the resource is instantiated with `validateLocation: true` (see `NewResource(validateLocation bool)`).
+- Managed location validation (enum of allowed location strings for `locations`) runs at validate time unless the environment variable `TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION` is set to `true` at that moment.
 - `params`, `proxy_header`, `response`, `check`, and `playwright_options` use `jsontypes.NormalizedType`.
 
 ## Requirements
@@ -219,11 +219,11 @@ At least one of `locations` or `private_locations` SHALL be set. Configuring nei
 
 ### Requirement: Config validation — `locations` enum (REQ-009)
 
-When location validation is enabled (i.e. the provider is configured with `validateLocation: true`), each element of `locations` SHALL be one of the recognized managed location identifiers. An unrecognized location string SHALL be rejected with a validation diagnostic.
+Unless `TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION` is set to `true` in the environment at validate time, each element of `locations` SHALL be one of the recognized managed location identifiers. An unrecognized location string SHALL be rejected with a validation diagnostic.
 
 #### Scenario: Invalid location string with validation enabled
 
-- GIVEN `locations` contains a string not in the recognized set and location validation is enabled
+- GIVEN `locations` contains a string not in the recognized set and `TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION` is not `true`
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return a validation diagnostic listing the allowed values
 

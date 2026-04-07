@@ -32,12 +32,12 @@ var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
-				Config:   testAccDataSourceIntegration,
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
 					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
@@ -46,17 +46,6 @@ func TestAccDataSourceIntegration(t *testing.T) {
 		},
 	})
 }
-
-const testAccDataSourceIntegration = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-data "elasticstack_fleet_integration" "test" {
-  name = "tcp"
-}
-`
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key
 // is not empty.
