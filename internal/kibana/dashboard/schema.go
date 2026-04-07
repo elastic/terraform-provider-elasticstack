@@ -48,14 +48,15 @@ const (
 	pieChartTypeNumber          = "number"
 	pieChartTypePercent         = "percent"
 	operationTerms              = "terms"
-	panelTypeMarkdown           = "markdown"
-	panelTypeLens               = "lens"
-	panelTypeTimeSlider         = "time_slider_control"
-	panelTypeSloBurnRate        = "slo_burn_rate"
-	panelTypeSloErrorBudget     = "slo_error_budget"
-	panelTypeEsqlControl        = "esql_control"
-	panelTypeOptionsListControl = "options_list_control"
-	panelTypeRangeSlider        = "range_slider_control"
+	panelTypeMarkdown                = "markdown"
+	panelTypeLens                    = "lens"
+	panelTypeTimeSlider              = "time_slider_control"
+	panelTypeSloBurnRate             = "slo_burn_rate"
+	panelTypeSloErrorBudget          = "slo_error_budget"
+	panelTypeEsqlControl             = "esql_control"
+	panelTypeOptionsListControl      = "options_list_control"
+	panelTypeRangeSlider             = "range_slider_control"
+	panelTypeSyntheticsStatsOverview = "synthetics_stats_overview"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -82,6 +83,7 @@ var panelConfigNames = []string{
 	"esql_control_config",
 	"options_list_control_config",
 	"range_slider_control_config",
+	"synthetics_stats_overview_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -1217,6 +1219,21 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 				},
 			},
+			"synthetics_stats_overview_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a Synthetics stats overview panel. Displays monitoring statistics for Elastic Synthetics monitors. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space.",
+					"synthetics_stats_overview_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSyntheticsStatsOverviewSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("synthetics_stats_overview_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsStatsOverview}),
+				},
+			},
 			"config_json": schema.StringAttribute{
 				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
 				CustomType:          customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
@@ -1227,6 +1244,107 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens, panelTypeMarkdown}),
+				},
+			},
+		},
+	}
+}
+
+// getSyntheticsStatsOverviewSchema returns the schema attributes for the synthetics_stats_overview_config block.
+func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
+	filterItemSchema := schema.ListNestedAttribute{
+		Optional: true,
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"label": schema.StringAttribute{
+					MarkdownDescription: "Human-readable display label for the filter option.",
+					Required:            true,
+				},
+				"value": schema.StringAttribute{
+					MarkdownDescription: "Machine-readable value used for actual filtering.",
+					Required:            true,
+				},
+			},
+		},
+	}
+
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Display title shown in the panel header.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Descriptive text for the panel.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
+			Optional:            true,
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: "Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						MarkdownDescription: "Templated URL for the drilldown action. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
+						Required:            true,
+					},
+					"label": schema.StringAttribute{
+						MarkdownDescription: "Human-readable label shown in the drilldown menu.",
+						Required:            true,
+					},
+					"trigger": schema.StringAttribute{
+						MarkdownDescription: "The trigger event for the drilldown. The only supported value is `on_open_panel_menu`.",
+						Required:            true,
+					},
+					"type": schema.StringAttribute{
+						MarkdownDescription: "The drilldown type. The only supported value is `url_drilldown`.",
+						Required:            true,
+					},
+					"encode_url": schema.BoolAttribute{
+						MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default (`true`).",
+						Optional:            true,
+					},
+					"open_in_new_tab": schema.BoolAttribute{
+						MarkdownDescription: "When true, the drilldown opens in a new browser tab. Omit to use the API default (`true`).",
+						Optional:            true,
+					},
+				},
+			},
+		},
+		"filters": schema.SingleNestedAttribute{
+			MarkdownDescription: "Optional Synthetics-specific monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block entirely or omit individual categories to apply no filtering for those dimensions.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"projects": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by Synthetics project.",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
+				},
+				"tags": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor tag.",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
+				},
+				"monitor_ids": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor ID. The API accepts up to 5000 entries.",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
+				},
+				"locations": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor location.",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
+				},
+				"monitor_types": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor type (e.g. `browser`, `http`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema.NestedObject,
 				},
 			},
 		},

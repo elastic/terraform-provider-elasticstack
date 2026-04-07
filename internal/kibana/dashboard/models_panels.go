@@ -50,10 +50,11 @@ type panelModel struct {
 	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
 	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
-	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
-	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
-	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	EsqlControlConfig              *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
+	OptionsListControlConfig       *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
+	RangeSliderControlConfig       *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	SyntheticsStatsOverviewConfig  *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
+	ConfigJSON                     customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -216,7 +217,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
 		pm.OptionsListControlConfig == nil &&
-		pm.RangeSliderControlConfig == nil
+		pm.RangeSliderControlConfig == nil &&
+		pm.SyntheticsStatsOverviewConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -358,6 +360,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.UID = types.StringPointerValue(sebPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
+	case panelTypeSyntheticsStatsOverview:
+		ssoPanel, err := panelItem.AsKbnDashboardPanelSyntheticsStatsOverview()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
+		pm.UID = types.StringPointerValue(ssoPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel.Config)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.UID = types.StringNull()
@@ -564,6 +575,30 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.SyntheticsStatsOverviewConfig != nil {
+		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSyntheticsStatsOverviewConfig(pm, &ssoPanel)
+		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeSyntheticsStatsOverview {
+		// Panel type is synthetics_stats_overview with no config block: send empty config.
+		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+			Grid: grid,
+			Uid:  uid,
+		}
+		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
 	if pm.EsqlControlConfig != nil {
 		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
 			Grid: grid,
@@ -657,6 +692,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			diags.AddError(
 				"Unsupported panel type for config_json",
 				"The slo_overview panel type must be managed through the typed slo_overview_config block, not config_json.",
+			)
+		case panelTypeSyntheticsStatsOverview:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"The synthetics_stats_overview panel type must be managed through the typed synthetics_stats_overview_config block, not config_json.",
 			)
 		default:
 			diags.AddError(
