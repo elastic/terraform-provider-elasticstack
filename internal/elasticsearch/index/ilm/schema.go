@@ -24,6 +24,8 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -152,7 +154,10 @@ func phaseFrozenBlock() schema.SingleNestedBlock {
 			"min_age": minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"searchable_snapshot": blockSearchableSnapshot(),
+			"searchable_snapshot": blockSearchableSnapshotInFrozenPhase(),
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("searchable_snapshot")),
 		},
 	}
 }
