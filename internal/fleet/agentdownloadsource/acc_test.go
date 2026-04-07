@@ -109,8 +109,17 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent-no-optionals"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_download_source.test", "source_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "id", "elasticstack_fleet_agent_download_source.test", "source_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				Config:   testAccResourceFleetAgentDownloadSourceEmptySpaceIDs(random),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Empty Space IDs Agent Download Source %s", random)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "0"),
 				),
 			},
 			{
@@ -176,9 +185,24 @@ provider "elasticstack" {
 resource "elasticstack_fleet_agent_download_source" "test" {
   name      = "No Optionals Agent Download Source %s"
   host      = "https://artifacts.elastic.co/downloads/elastic-agent-no-optionals"
-  space_ids = ["default"]
 }
 `, suffix)
+}
+
+func testAccResourceFleetAgentDownloadSourceEmptySpaceIDs(suffix string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_download_source" "test" {
+  name      = "Empty Space IDs Agent Download Source %s"
+  source_id = "agent-download-source-empty-space-ids-%s"
+  default   = false
+  host      = "https://artifacts.elastic.co/downloads/elastic-agent-empty-space-ids"
+  space_ids = []
+}
+`, suffix, suffix)
 }
 
 func testAccResourceFleetAgentDownloadSourceReplaceSourceID(suffix string) string {
