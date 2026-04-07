@@ -357,10 +357,15 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 }
 
 func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
-	serviceToken := os.Getenv("TF_ACC_FLEET_REMOTE_SERVICE_TOKEN")
-	if serviceToken == "" {
-		t.Skip("TF_ACC_FLEET_REMOTE_SERVICE_TOKEN must be set for remote_elasticsearch acceptance coverage")
-	}
+	client, err := clients.NewAcceptanceTestingClient()
+	require.NoError(t, err)
+	kibanaOapiClient, err := client.GetKibanaOapiClient()
+	require.NoError(t, err)
+	resp, err := kibanaOapiClient.API.PostFleetServiceTokensWithResponse(t.Context(), kbapi.PostFleetServiceTokensJSONRequestBody{
+		Remote: new(true),
+	})
+	require.NoError(t, err)
+	serviceToken := resp.JSON200.Value
 
 	policyName := sdkacctest.RandString(22)
 
