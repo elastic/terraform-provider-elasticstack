@@ -53,6 +53,7 @@ type panelModel struct {
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
 	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	SyntheticsMonitorsConfig *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -216,7 +217,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
 		pm.OptionsListControlConfig == nil &&
-		pm.RangeSliderControlConfig == nil
+		pm.RangeSliderControlConfig == nil &&
+		pm.SyntheticsMonitorsConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -358,6 +360,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.UID = types.StringPointerValue(sebPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
+	case panelTypeSyntheticsMonitors:
+		smPanel, err := panelItem.AsKbnDashboardPanelSyntheticsMonitors()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, smPanel.Grid.X, smPanel.Grid.Y, smPanel.Grid.W, smPanel.Grid.H)
+		pm.UID = types.StringPointerValue(smPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSyntheticsMonitorsFromAPI(&pm, tfPanel, smPanel)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.UID = types.StringNull()
@@ -564,6 +575,14 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.Type.ValueString() == panelTypeSyntheticsMonitors || pm.SyntheticsMonitorsConfig != nil {
+		smPanel := buildSyntheticsMonitorsPanel(pm, grid, uid)
+		if err := panelItem.FromKbnDashboardPanelSyntheticsMonitors(smPanel); err != nil {
+			diags.AddError("Failed to create synthetics monitors panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
 	if pm.EsqlControlConfig != nil {
 		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
 			Grid: grid,
@@ -662,7 +681,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			diags.AddError(
 				"Unsupported panel type for config_json",
 				"Only markdown and lens panel types are currently supported with config_json. "+
-					"The esql_control panel type must be managed using the esql_control_config block.",
+					"The esql_control panel type must be managed using the esql_control_config block. "+
+					"The synthetics_monitors panel type must be managed using the synthetics_monitors_config block.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}

@@ -15795,6 +15795,29 @@
                         "value"
                       ]
                     }
+                  },
+                  "statuses": {
+                    "type": "array",
+                    "description": "Filter by monitor statuses",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
                   }
                 },
                 "additionalProperties": false
