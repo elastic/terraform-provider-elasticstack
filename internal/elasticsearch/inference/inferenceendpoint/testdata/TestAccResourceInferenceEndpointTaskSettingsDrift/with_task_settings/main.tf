@@ -6,6 +6,7 @@ variable "inference_id" {
 variable "api_key" {
   description = "The API key used by the inference service"
   type        = string
+  sensitive   = true
 }
 
 provider "elasticstack" {
