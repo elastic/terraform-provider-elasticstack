@@ -34,6 +34,7 @@ import (
 )
 
 var minVersionElasticDefend = version.Must(version.NewVersion("8.14.0"))
+var minVersionElasticDefendSpaceIDs = version.Must(version.NewVersion("9.1.0"))
 
 const (
 	resourceName            = "elasticstack_fleet_elastic_defend_integration_policy.test"
@@ -67,8 +68,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "description"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "1"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", "default"),
+					testCheckSpaceIDsIfSupported(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.network", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.file", "true"),
@@ -117,8 +117,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
 					resource.TestCheckResourceAttr(resourceName, "preset", "EDRComplete"),
-					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "1"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", "default"),
+					testCheckSpaceIDsIfSupported(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.network", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.file", "false"),
@@ -232,6 +231,23 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("error deleting Defend policy %q: %v", policyID, diags)
 		}
 		return nil
+	}
+}
+
+func testCheckSpaceIDsIfSupported(resourceAddress string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefendSpaceIDs)()
+		if err != nil {
+			return err
+		}
+		if unsupported {
+			return nil
+		}
+
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(resourceAddress, "space_ids.#", "1"),
+			resource.TestCheckTypeSetElemAttr(resourceAddress, "space_ids.*", "default"),
+		)(state)
 	}
 }
 

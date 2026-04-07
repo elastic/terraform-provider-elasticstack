@@ -161,6 +161,47 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 	}
 }
 
+func TestPopulateModelFromAPIPreservesSpaceIDsWhenAPIOmitsThem(t *testing.T) {
+	ctx := context.Background()
+
+	inputs := kbapi.PackagePolicyTypedInputs{
+		{
+			Type:    "endpoint",
+			Enabled: true,
+			Streams: []kbapi.PackagePolicyTypedInputStream{},
+		},
+	}
+
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.14.0", true, inputs)
+
+	spaceIDs, diags := types.SetValueFrom(ctx, types.StringType, []string{"default"})
+	if diags.HasError() {
+		t.Fatalf("unexpected error creating space_ids set: %v", diags)
+	}
+
+	model := &edip.ElasticDefendIntegrationPolicyModel{
+		SpaceIDs: spaceIDs,
+	}
+	diags = edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+
+	var actualSpaceIDs []string
+	diags = model.SpaceIDs.ElementsAs(ctx, &actualSpaceIDs, false)
+	if diags.HasError() {
+		t.Fatalf("unexpected error reading space_ids set: %v", diags)
+	}
+
+	if len(actualSpaceIDs) != 1 || actualSpaceIDs[0] != "default" {
+		t.Fatalf("expected preserved space_ids [default], got %v", actualSpaceIDs)
+	}
+
+	if model.ID.ValueString() != "default/policy-123" {
+		t.Errorf("expected composite ID=%q, got %q", "default/policy-123", model.ID.ValueString())
+	}
+}
+
 // TestPopulateModelFromAPINilPolicy tests that populateModelFromAPI handles nil
 // gracefully.
 func TestPopulateModelFromAPINilPolicy(t *testing.T) {

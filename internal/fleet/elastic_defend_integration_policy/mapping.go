@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -77,16 +78,20 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	// Populate space_ids — only overwrite when the API actually returns them.
 	// If the API omits space_ids, preserve the existing model value so
 	// space-aware operations (e.g. update, delete) continue to work correctly.
+	originallySetSpaceIDs := typeutils.IsKnown(model.SpaceIDs)
 	var operationalSpaceID string
-	switch {
-	case policy.SpaceIds != nil && len(*policy.SpaceIds) > 0:
+	if policy.SpaceIds != nil {
 		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *policy.SpaceIds)
 		diags.Append(d...)
 		model.SpaceIDs = spaceIDs
-		operationalSpaceID = (*policy.SpaceIds)[0]
-	case model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown():
+		if len(*policy.SpaceIds) > 0 {
+			operationalSpaceID = (*policy.SpaceIds)[0]
+		}
+	} else if !originallySetSpaceIDs {
 		model.SpaceIDs = types.SetNull(types.StringType)
-	default:
+	}
+
+	if operationalSpaceID == "" && originallySetSpaceIDs {
 		// Preserve existing space — extract it so the composite ID is correct.
 		var existingSpaceIDs []string
 		d := model.SpaceIDs.ElementsAs(ctx, &existingSpaceIDs, false)
