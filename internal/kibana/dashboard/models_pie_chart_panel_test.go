@@ -47,7 +47,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
 			Visible  *bool                          `json:"visible,omitempty"`
 		}{Position: &labelPos},
-		Legend:  kbapi.PieLegend{Visibility: &visibility},
+		Legend:  kbapi.PieLegend{Size: kbapi.LegendSizeAuto, Visibility: &visibility},
 		Dataset: kbapi.PieNoESQL_Dataset{},
 		Query:   kbapi.FilterSimple{Expression: "response:200", Language: new(kbapi.FilterSimpleLanguageKql)},
 		Metrics: []kbapi.PieNoESQL_Metrics_Item{},
@@ -89,6 +89,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 
 	visibility := kbapi.PieLegendVisibilityVisible
 	legend := kbapi.PieLegend{
+		Size:       kbapi.LegendSizeAuto,
 		Visibility: &visibility,
 	}
 
@@ -129,6 +130,9 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, string(donutHole), model.DonutHole.ValueString())
 	assert.Equal(t, string(labelPos), model.LabelPosition.ValueString())
 	assert.Equal(t, "response:200", model.Query.Expression.ValueString())
+	require.NotNil(t, model.Legend)
+	assert.Equal(t, "auto", model.Legend.Size.ValueString())
+	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI
 	resultSchema, diags := model.toAPI()
@@ -140,6 +144,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 
 	assert.Equal(t, title, *resultNoESQL.Title)
 	assert.Equal(t, desc, *resultNoESQL.Description)
+	require.NotNil(t, resultNoESQL.Legend.Visibility)
+	assert.Equal(t, visibility, *resultNoESQL.Legend.Visibility)
 }
 
 func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
@@ -152,7 +158,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"sampling": 0.5,
 		"ignore_global_filters": true,
-		"legend": {"visible": "show"},
+		"legend": {"size":"auto","visibility":"visible"},
 		"metrics": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}],
 		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
@@ -187,8 +193,11 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 		Title:       types.StringValue("Pie with metrics"),
 		Description: types.StringValue("Test"),
 		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		LegendJSON:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Legend: &partitionLegendModel{
+			Size:    types.StringValue("auto"),
+			Visible: types.StringValue("visible"),
+		},
+		Query: &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
@@ -212,8 +221,11 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 	model := &pieChartConfigModel{
 		Title:       types.StringValue("Pie with groupBy"),
 		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		LegendJSON:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Legend: &partitionLegendModel{
+			Size:    types.StringValue("auto"),
+			Visible: types.StringValue("visible"),
+		},
+		Query: &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
@@ -230,4 +242,23 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, noESQL.GroupBy)
 	assert.Len(t, *noESQL.GroupBy, 2)
+}
+
+func Test_pieChartConfigModel_toAPI_legendOmitted(t *testing.T) {
+	model := &pieChartConfigModel{
+		Title:       types.StringValue("Pie default legend"),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []pieMetricModel{
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
+		},
+		Legend: nil,
+	}
+
+	chart, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	noESQL, err := chart.AsPieNoESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.LegendSizeAuto, noESQL.Legend.Size)
 }

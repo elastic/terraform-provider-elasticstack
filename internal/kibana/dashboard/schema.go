@@ -2634,10 +2634,10 @@ func getPieChart() map[string]schema.Attribute {
 				stringvalidator.OneOf("hidden", "inside", "outside"),
 			},
 		},
-		"legend_json": schema.StringAttribute{
-			MarkdownDescription: "Legend configuration as JSON.",
-			CustomType:          jsontypes.NormalizedType{},
-			Optional:            true,
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Optional legend configuration for the pie chart. Uses the same attributes as treemap and mosaic legends; Terraform `visible` maps to the Kibana API field `visibility`. When omitted, the provider sends a default legend with size `auto` on write.",
+			Optional:              true,
+			Attributes:            getPartitionLegendSchema(),
 		},
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",

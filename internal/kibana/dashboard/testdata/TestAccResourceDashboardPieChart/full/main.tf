@@ -40,10 +40,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         language   = "kql"
         expression = ""
       }
-      legend_json = jsonencode({
-        visibility = "visible"
-        size       = "auto"
-      })
+      legend = {
+        size    = "auto"
+        visible = "visible"
+      }
       metrics = [
         {
           config = jsonencode({

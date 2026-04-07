@@ -229,7 +229,12 @@ resource "elasticstack_kibana_dashboard" "example" {
       sampling              = <optional, computed, float64> # default 1.0
       donut_hole            = <optional, string>
       label_position        = <optional, string>
-      legend_json           = <optional, json string, normalized>
+      legend = <optional, object({
+        nested               = <optional, bool>
+        size                 = <required, string> # auto | s | m | l | xl
+        truncate_after_lines = <optional, float64>
+        visible              = <optional, string> # auto | visible | hidden; maps to API `visibility`
+      })>
       metrics               = <required, list(object({ config = <required, json string with defaults> }))> # at least 1
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # at least 1 when set
     })> # only with type = "lens"
@@ -562,7 +567,9 @@ For metric-chart Lens panels, the resource SHALL map the provider's two metric-c
 
 ### Requirement: Pie chart panel behavior (REQ-023)
 
-For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults. **JSON attributes:** the resource SHALL use **`dataset_json`** and **`legend_json`** (normalized JSON strings) for pie dataset and legend objects.
+For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
+
+`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`.
 
 #### Scenario: Pie chart API defaults
 
@@ -575,6 +582,27 @@ For pie Lens panels, the resource SHALL require at least one `metrics` entry and
 - GIVEN `pie_chart_config` with `dataset_json` set to a normalized JSON string for the pie dataset
 - WHEN the provider builds the Lens attributes
 - THEN it SHALL decode `dataset_json` into the API pie dataset shape
+
+#### Scenario: Pie chart uses structured legend
+
+- GIVEN `pie_chart_config.legend` with `size = "auto"` and `visible = "visible"`
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL encode the pie legend using the API pie legend shape
+- AND it SHALL map Terraform `visible` to API `visibility`
+
+#### Scenario: Pie chart legend omitted
+
+- GIVEN `pie_chart_config` with no `legend` block
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL still produce a valid pie legend object for the API
+- AND it SHALL use the implementation default legend size `auto`
+
+#### Scenario: Pie chart read-back uses legend block
+
+- GIVEN a managed pie chart whose API payload contains a legend object
+- WHEN the provider refreshes state
+- THEN it SHALL populate `pie_chart_config.legend`
+- AND it SHALL NOT populate `pie_chart_config.legend_json`
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
