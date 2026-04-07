@@ -312,6 +312,46 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 	assert.Equal(t, "p1", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Value.ValueString())
 }
 
+// Prior state had an explicit empty filters block (filters = {}).
+// API returns an empty filters struct — the empty filters block is preserved to avoid a
+// perpetual diff.
+func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testing.T) {
+	emptyFilters := &syntheticsMonitorsFiltersModel{} // all slices nil
+	existing := &syntheticsMonitorsConfigModel{Filters: emptyFilters}
+	pm := &panelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+
+	// API returns an empty filters struct (all dimensions absent).
+	apiPanel := makeSyntheticsPanel()
+	apiPanel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{}
+	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+
+	require.NotNil(t, pm.SyntheticsMonitorsConfig)
+	// Empty filters block should be preserved (not dropped) to avoid a perpetual diff.
+	assert.NotNil(t, pm.SyntheticsMonitorsConfig.Filters, "empty filters block should be preserved on refresh")
+}
+
 // Prior state had config with no filters; API returns nil filters → keep filters nil.
 func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t *testing.T) {
 	existing := &syntheticsMonitorsConfigModel{Filters: nil}

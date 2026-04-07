@@ -29,7 +29,8 @@ type syntheticsMonitorsConfigModel struct {
 }
 
 // syntheticsMonitorsFiltersModel holds the five optional filter dimensions for a
-// Synthetics monitors panel. Each dimension is a list of { label, value } pairs.
+// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types).
+// Each dimension is a list of { label, value } pairs.
 type syntheticsMonitorsFiltersModel struct {
 	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
 	Tags         []syntheticsFilterItemModel `tfsdk:"tags"`
@@ -227,8 +228,14 @@ func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiP
 	}
 
 	filters := fromSyntheticsAPIFilters(apiFilters)
-	if filters == nil && existing.Filters == nil {
-		// Both prior and API have no meaningful filter content — keep null.
+	if filters == nil {
+		// API returned empty or absent filters.
+		if existing.Filters == nil {
+			// Both prior state and API have no meaningful filter content — keep null.
+			return
+		}
+		// Prior state had an explicit (possibly empty) filters block.
+		// Preserve the empty block to avoid a perpetual diff for `filters = {}`.
 		return
 	}
 	existing.Filters = filters

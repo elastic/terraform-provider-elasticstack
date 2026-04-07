@@ -22,7 +22,7 @@
 
 - [x] 3.1 Add acceptance tests for `synthetics_monitors` panel creation with no config block (bare panel)
 - [x] 3.2 Add acceptance tests for `synthetics_monitors` panel creation with a `filters` block containing selected filter dimensions
-- [x] 3.3 Add acceptance tests for `synthetics_monitors` panel with all six filter dimensions set
+- [x] 3.3 Add acceptance tests for `synthetics_monitors` panel with all five filter dimensions set
 - [x] 3.4 Add acceptance tests for plan stability: after create, a subsequent plan SHALL show no changes (no spurious diffs from empty filters)
 - [x] 3.5 Add unit tests for the `synthetics_monitors` panel write converter (Terraform model to API payload)
 - [x] 3.6 Add unit tests for the `synthetics_monitors` panel read converter (API payload to Terraform model), including empty-filters null-preservation
