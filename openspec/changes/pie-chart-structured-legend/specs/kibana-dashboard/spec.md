@@ -42,10 +42,10 @@ pie_chart_config = <optional, object({
   label_position        = <optional, string>
   legend = <optional, computed, object({
     nested               = <optional, bool>
-    size                 = <required, string>  # auto | s | m | l | xl
+    size                 = <required, string> # auto | s | m | l | xl
     truncate_after_lines = <optional, float64>
-    visible              = <optional, string>  # auto | visible | hidden
-  })> # optional+computed with schema default when omitted from config
+    visible              = <optional, string> # auto | visible | hidden; maps to API `visibility`
+  })> # schema default when omitted (typical size/visibility auto); optional+computed for Terraform
   metrics               = <required, list(object({ config = <required, json string with defaults> }))>
   group_by              = <optional, list(object({ config = <required, json string with defaults> }))>
 })>
@@ -56,7 +56,7 @@ Notes:
 - `legend_json` is removed.
 - `legend` uses the same Terraform-facing shape as treemap and mosaic legends.
 - The Terraform attribute is `visible`, which maps to the API field `legend.visibility`.
-- The `legend` block remains optional for pie charts; the Terraform schema marks it optional and computed with a default object so omitted configuration stays consistent with typical Kibana read-back.
+- The `legend` block remains optional for pie charts; the Terraform schema marks it optional and computed with a default object so omitted practitioner configuration stays consistent with typical Kibana read-back.
 
 ---
 
@@ -66,9 +66,13 @@ Notes:
 
 For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
 
-`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. `legend_json` SHALL be removed and replaced by an optional structured `legend` object with the Terraform attributes `nested`, required `size`, optional `truncate_after_lines`, and optional `visible`.
+`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
 
-When the `legend` block is present, the provider SHALL map it to the API pie legend object. The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent, the provider SHALL still build a valid API pie legend by supplying the implementation's default legend size `auto`.
+#### Scenario: Pie chart API defaults
+
+- GIVEN a pie panel read from Kibana without explicit `ignore_global_filters` or `sampling`
+- WHEN state is refreshed
+- THEN the provider SHALL reconcile those fields as `false` and `1.0`
 
 #### Scenario: Pie chart uses dataset_json
 
@@ -78,9 +82,7 @@ When the `legend` block is present, the provider SHALL map it to the API pie leg
 
 #### Scenario: Pie chart uses structured legend
 
-- GIVEN `pie_chart_config.legend` with:
-  - `size = "auto"`
-  - `visible = "visible"`
+- GIVEN `pie_chart_config.legend` with `size = "auto"` and `visible = "visible"`
 - WHEN the provider builds the Lens attributes
 - THEN it SHALL encode the pie legend using the API pie legend shape
 - AND it SHALL map Terraform `visible` to API `visibility`

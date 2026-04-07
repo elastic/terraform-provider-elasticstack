@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -94,6 +95,9 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.visible", "visible"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.nested", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.truncate_after_lines", "5"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.filters.#", "1"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
 
 					// Check metrics and group_by
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.#", "1"),
