@@ -38,6 +38,8 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	donutHole := kbapi.PieNoESQLDonutHoleS
 	labelPos := kbapi.PieNoESQLLabelsPositionInside
 	visibility := kbapi.PieLegendVisibilityVisible
+	nested := true
+	truncateLines := float32(3)
 
 	apiChart := kbapi.PieNoESQL{
 		Title:       &title,
@@ -47,7 +49,12 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
 			Visible  *bool                          `json:"visible,omitempty"`
 		}{Position: &labelPos},
-		Legend:  kbapi.PieLegend{Size: kbapi.LegendSizeAuto, Visibility: &visibility},
+		Legend: kbapi.PieLegend{
+			Size:               kbapi.LegendSizeAuto,
+			Nested:             &nested,
+			TruncateAfterLines: &truncateLines,
+			Visibility:         &visibility,
+		},
 		Dataset: kbapi.PieNoESQL_Dataset{},
 		Query:   kbapi.FilterSimple{Expression: "response:200", Language: new(kbapi.FilterSimpleLanguageKql)},
 		Metrics: []kbapi.PieNoESQL_Metrics_Item{},
@@ -65,6 +72,11 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	diags := converter.populateFromAttributes(ctx, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.PieChartConfig)
+	require.NotNil(t, pm.PieChartConfig.Legend)
+	assert.Equal(t, "auto", pm.PieChartConfig.Legend.Size.ValueString())
+	assert.True(t, pm.PieChartConfig.Legend.Nested.ValueBool())
+	assert.Equal(t, float64(3), pm.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64())
+	assert.Equal(t, string(visibility), pm.PieChartConfig.Legend.Visible.ValueString())
 
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
@@ -75,6 +87,13 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NoError(t, err)
 	assert.Equal(t, "Pie Round-Trip", *noESQL2.Title)
 	assert.Equal(t, "response:200", noESQL2.Query.Expression)
+	assert.Equal(t, kbapi.LegendSizeAuto, noESQL2.Legend.Size)
+	require.NotNil(t, noESQL2.Legend.Nested)
+	assert.True(t, *noESQL2.Legend.Nested)
+	require.NotNil(t, noESQL2.Legend.TruncateAfterLines)
+	assert.InEpsilon(t, float64(3), float64(*noESQL2.Legend.TruncateAfterLines), 0.001)
+	require.NotNil(t, noESQL2.Legend.Visibility)
+	assert.Equal(t, visibility, *noESQL2.Legend.Visibility)
 }
 
 func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
@@ -88,9 +107,13 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	dataset := kbapi.PieNoESQL_Dataset{}
 
 	visibility := kbapi.PieLegendVisibilityVisible
+	nested := true
+	truncate := float32(4)
 	legend := kbapi.PieLegend{
-		Size:       kbapi.LegendSizeAuto,
-		Visibility: &visibility,
+		Size:               kbapi.LegendSizeAuto,
+		Nested:             &nested,
+		TruncateAfterLines: &truncate,
+		Visibility:         &visibility,
 	}
 
 	query := kbapi.FilterSimple{
@@ -132,6 +155,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, "response:200", model.Query.Expression.ValueString())
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, "auto", model.Legend.Size.ValueString())
+	assert.True(t, model.Legend.Nested.ValueBool())
+	assert.Equal(t, float64(4), model.Legend.TruncateAfterLine.ValueFloat64())
 	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI
@@ -144,6 +169,11 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 
 	assert.Equal(t, title, *resultNoESQL.Title)
 	assert.Equal(t, desc, *resultNoESQL.Description)
+	assert.Equal(t, kbapi.LegendSizeAuto, resultNoESQL.Legend.Size)
+	require.NotNil(t, resultNoESQL.Legend.Nested)
+	assert.True(t, *resultNoESQL.Legend.Nested)
+	require.NotNil(t, resultNoESQL.Legend.TruncateAfterLines)
+	assert.InEpsilon(t, float64(4), float64(*resultNoESQL.Legend.TruncateAfterLines), 0.001)
 	require.NotNil(t, resultNoESQL.Legend.Visibility)
 	assert.Equal(t, visibility, *resultNoESQL.Legend.Visibility)
 }
@@ -176,6 +206,9 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	assert.Equal(t, "ESQL pie description", model.Description.ValueString())
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.GroupBy, 1)
+	require.NotNil(t, model.Legend)
+	assert.Equal(t, "auto", model.Legend.Size.ValueString())
+	assert.Equal(t, string(kbapi.PieLegendVisibilityVisible), model.Legend.Visible.ValueString())
 
 	resultChart, diags := model.toAPI()
 	require.False(t, diags.HasError())
@@ -186,6 +219,9 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	assert.Equal(t, kbapi.PieESQLType("pie"), esql2.Type)
 	assert.Len(t, esql2.Metrics, 1)
 	assert.Equal(t, "bytes", esql2.Metrics[0].Column)
+	assert.Equal(t, kbapi.LegendSizeAuto, esql2.Legend.Size)
+	require.NotNil(t, esql2.Legend.Visibility)
+	assert.Equal(t, kbapi.PieLegendVisibilityVisible, *esql2.Legend.Visibility)
 }
 
 func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
@@ -261,4 +297,38 @@ func Test_pieChartConfigModel_toAPI_legendOmitted(t *testing.T) {
 	noESQL, err := chart.AsPieNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.LegendSizeAuto, noESQL.Legend.Size)
+}
+
+func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
+	model := &pieChartConfigModel{
+		Title: types.StringValue("ESQL pie default legend"),
+		DatasetJSON: jsontypes.NewNormalizedValue(
+			`{"type":"esql","query":"FROM logs-* | LIMIT 10"}`,
+		),
+		Query: nil,
+		Metrics: []pieMetricModel{
+			{
+				Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
+					`{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}`,
+					populatePieChartMetricDefaults,
+				),
+			},
+		},
+		GroupBy: []pieGroupByModel{
+			{
+				Config: customtypes.NewJSONWithDefaultsValue(
+					`{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}`,
+					populateLensGroupByDefaults,
+				),
+			},
+		},
+		Legend: nil,
+	}
+
+	chart, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	esql, err := chart.AsPieESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.LegendSizeAuto, esql.Legend.Size)
 }

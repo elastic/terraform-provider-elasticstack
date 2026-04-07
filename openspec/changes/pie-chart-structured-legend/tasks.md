@@ -37,3 +37,9 @@
 
 - [x] 6.1 Update OpenSpec REQ-023 and the schema summary for `pie_chart_config`
 - [x] 6.2 Review any pie chart examples or test data that still use raw legend JSON and convert them to the structured block
+
+## 7. Review follow-up (lint, acc, tests)
+
+- [x] 7.1 Shorten pie `legend` schema description / satisfy line-length lint
+- [x] 7.2 Optional+computed `legend` with `objectdefault` so omitted block does not break apply consistency
+- [x] 7.3 Stronger pie chart unit tests (converter round-trip, ES|QL omitted legend); acc import verifies legend attributes

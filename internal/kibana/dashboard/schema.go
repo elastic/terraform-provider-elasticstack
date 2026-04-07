@@ -30,11 +30,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -2592,6 +2594,25 @@ func populateLensGroupByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// pieChartLegendDefaultObject is the schema default when the legend block is omitted from config,
+// aligned with typical Kibana read-back so apply and refresh stay consistent.
+func pieChartLegendDefaultObject() types.Object {
+	return types.ObjectValueMust(
+		map[string]attr.Type{
+			"nested":               types.BoolType,
+			"size":                 types.StringType,
+			"truncate_after_lines": types.Float64Type,
+			"visible":              types.StringType,
+		},
+		map[string]attr.Value{
+			"nested":               types.BoolNull(),
+			"size":                 types.StringValue("auto"),
+			"truncate_after_lines": types.Float64Null(),
+			"visible":              types.StringValue("auto"),
+		},
+	)
+}
+
 // getPieChart returns the schema for pie chart configuration
 func getPieChart() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
@@ -2635,9 +2656,14 @@ func getPieChart() map[string]schema.Attribute {
 			},
 		},
 		"legend": schema.SingleNestedAttribute{
-			MarkdownDescription: "Optional legend configuration for the pie chart. Uses the same attributes as treemap and mosaic legends; Terraform `visible` maps to the Kibana API field `visibility`. When omitted, the provider sends a default legend with size `auto` on write.",
-			Optional:              true,
-			Attributes:            getPartitionLegendSchema(),
+			MarkdownDescription: "Optional legend configuration for the pie chart. " +
+				"Same shape as treemap and mosaic legends; Terraform `visible` maps to API `visibility`. " +
+				"When omitted, the schema default matches typical Kibana legend defaults (size and visibility " +
+				"`auto`) so apply/read stay consistent.",
+			Optional: true,
+			Computed: true,
+			Default:  objectdefault.StaticValue(pieChartLegendDefaultObject()),
+			Attributes: getPartitionLegendSchema(),
 		},
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",

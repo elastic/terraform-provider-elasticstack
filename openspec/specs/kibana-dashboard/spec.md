@@ -229,12 +229,12 @@ resource "elasticstack_kibana_dashboard" "example" {
       sampling              = <optional, computed, float64> # default 1.0
       donut_hole            = <optional, string>
       label_position        = <optional, string>
-      legend = <optional, object({
+      legend = <optional, computed, object({
         nested               = <optional, bool>
         size                 = <required, string> # auto | s | m | l | xl
         truncate_after_lines = <optional, float64>
         visible              = <optional, string> # auto | visible | hidden; maps to API `visibility`
-      })>
+      })> # schema default when omitted (typical size/visibility auto); optional+computed for Terraform
       metrics               = <required, list(object({ config = <required, json string with defaults> }))> # at least 1
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # at least 1 when set
     })> # only with type = "lens"
@@ -569,7 +569,7 @@ For metric-chart Lens panels, the resource SHALL map the provider's two metric-c
 
 For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
 
-`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`.
+`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
 
 #### Scenario: Pie chart API defaults
 

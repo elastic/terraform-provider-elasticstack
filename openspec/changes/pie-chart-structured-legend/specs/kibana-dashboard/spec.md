@@ -40,12 +40,12 @@ pie_chart_config = <optional, object({
   sampling              = <optional, computed, float64>
   donut_hole            = <optional, string>
   label_position        = <optional, string>
-  legend = <optional, object({
+  legend = <optional, computed, object({
     nested               = <optional, bool>
     size                 = <required, string>  # auto | s | m | l | xl
     truncate_after_lines = <optional, float64>
     visible              = <optional, string>  # auto | visible | hidden
-  })>
+  })> # optional+computed with schema default when omitted from config
   metrics               = <required, list(object({ config = <required, json string with defaults> }))>
   group_by              = <optional, list(object({ config = <required, json string with defaults> }))>
 })>
@@ -56,7 +56,7 @@ Notes:
 - `legend_json` is removed.
 - `legend` uses the same Terraform-facing shape as treemap and mosaic legends.
 - The Terraform attribute is `visible`, which maps to the API field `legend.visibility`.
-- The `legend` block itself remains optional for pie charts.
+- The `legend` block remains optional for pie charts; the Terraform schema marks it optional and computed with a default object so omitted configuration stays consistent with typical Kibana read-back.
 
 ---
 

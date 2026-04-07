@@ -41,8 +41,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         expression = ""
       }
       legend = {
-        size    = "auto"
-        visible = "visible"
+        nested               = true
+        size                 = "auto"
+        visible              = "visible"
+        truncate_after_lines = 5
       }
       metrics = [
         {
