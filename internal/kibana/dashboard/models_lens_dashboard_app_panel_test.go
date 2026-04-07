@@ -207,7 +207,7 @@ func buildLensDashboardAppByValueAPIPanel(attrsJSON string, refsJSON *string, ti
 
 	return kbapi.KbnDashboardPanelLensDashboardApp{
 		Config: cfg,
-		Grid:   struct {
+		Grid: struct {
 			H *float32 `json:"h,omitempty"`
 			W *float32 `json:"w,omitempty"`
 			X float32  `json:"x"`
@@ -228,7 +228,7 @@ func buildLensDashboardAppByReferenceAPIPanel(refID string, title *string) kbapi
 
 	return kbapi.KbnDashboardPanelLensDashboardApp{
 		Config: cfg,
-		Grid:   struct {
+		Grid: struct {
 			H *float32 `json:"h,omitempty"`
 			W *float32 `json:"w,omitempty"`
 			X float32  `json:"x"`
