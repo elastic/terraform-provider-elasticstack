@@ -13,6 +13,10 @@ Define a GitHub Agentic Workflow that runs when pull request label `verify-opens
 on:
   pull_request_target:
     types: [labeled]
+  permissions:
+    issues: write
+    pull-requests: write
+    contents: read
   steps:
     - name: Verify trigger label
       id: verify_label
@@ -73,7 +77,7 @@ The authored workflow source SHALL use `pull_request_target` with `types: [label
 - **THEN** this workflow SHALL NOT activate because the trigger is configured for pull request labeled events only
 
 ### Requirement: Permissions for read, review, and push (REQ-003)
-The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch` for deterministically eligible same-repository pull requests, and remove the `verify-openspec` label from the triggering pull request via a deterministic script step. The gh-aw compiler in strict mode assigns write scopes at the job level based on safe-outputs and pre-activation steps; explicit frontmatter write permissions are not required and SHALL NOT be declared. The workflow SHALL make the label-mutation write scope available in the deterministic pre-activation path that performs label cleanup rather than depending on agent safe-output processing to hold that authority.
+The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch` for deterministically eligible same-repository pull requests, and remove the `verify-openspec` label from the triggering pull request via a deterministic script step. The authored workflow SHALL declare the deterministic pre-activation scopes it needs through `on.permissions`. At minimum this SHALL include `contents: read`, `pull-requests: write`, and `issues: write`. The workflow SHALL make the label-mutation write scope available in the deterministic pre-activation path that performs label cleanup rather than depending on agent safe-output processing to hold that authority.
 
 #### Scenario: Same-repository archive push and deterministic label cleanup are permitted
 - **GIVEN** the agent archives the change and produces a commit on a deterministically eligible same-repository pull request branch
@@ -107,22 +111,22 @@ The workflow SHALL NOT declare a `remove-labels` safe output for `verify-openspe
 - **THEN** the workflow SHALL omit `remove-labels` for `verify-openspec` cleanup
 
 ### Requirement: Discover active change id from PR files (REQ-005)
-The workflow SHALL use deterministic pre-activation steps to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on), and to classify whether the triggering pull request is a same-repository pull request or a fork pull request. It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals, a deterministic verification mode (`workspace` for same-repository pull requests, `api-only` for fork pull requests), a deterministic archive/push eligibility result, and deterministic reason strings that explain those classifications.
+The workflow SHALL use deterministic pre-activation steps to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on), and to classify whether the triggering pull request is a same-repository pull request or a fork pull request for archive/push eligibility. It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result, the selected active change id when selection succeeds, a deterministic review disposition that distinguishes approval-eligible modified-only changes from comment-only net-new change proposals, a deterministic archive/push eligibility result, and deterministic reason strings that explain those classifications.
 
 #### Scenario: Derive change id from path
 - **GIVEN** a modified file `openspec/changes/my-feature/tasks.md`
 - **WHEN** the deterministic selection step parses paths
 - **THEN** the active change id SHALL be recognized as `my-feature`
 
-#### Scenario: Selected change, review disposition, and reason are exposed to the agent
+#### Scenario: Selected change, review disposition, and archive/push outputs are exposed to the agent
 - **GIVEN** exactly one active change satisfies the change-selection rules
 - **WHEN** the deterministic pre-activation steps complete
-- **THEN** the workflow SHALL expose that change id, the deterministic review disposition, the deterministic verification mode, the deterministic archive/push eligibility result, and their reason strings as pre-activation outputs for the later agent job
+- **THEN** the workflow SHALL expose that change id, the deterministic review disposition, the deterministic archive/push eligibility result, and their reason strings as pre-activation outputs for the later agent job
 
 #### Scenario: Fork pull request is classified before agent reasoning
 - **GIVEN** the triggering pull request head repository differs from the base repository
 - **WHEN** deterministic pre-activation classification runs
-- **THEN** the workflow SHALL publish `api-only` verification mode and archive/push ineligibility before the agent starts
+- **THEN** the workflow SHALL publish archive/push ineligibility before the agent starts
 
 ### Requirement: Noop when change selection rules fail (REQ-006)
 The workflow SHALL not submit a pull request review and SHALL not archive when the deterministic gating result indicates any of the following:
@@ -154,17 +158,12 @@ When exactly one active change id is present and every relevant file status is `
 - **THEN** the workflow SHALL select that `<id>`, continue to verification, and mark the run comment-only
 
 ### Requirement: Verification using active OpenSpec tooling (REQ-007)
-For the selected change id and deterministic execution outputs published by the pre-activation steps, the agent SHALL follow `.agents/skills/openspec-verify-change/SKILL.md` while respecting the deterministic verification mode. In `workspace` mode, the agent SHALL use standard OpenSpec commands, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. In `api-only` mode, the agent SHALL verify from pull request changed files, diffs, and deterministic workflow outputs and SHALL NOT require repository bootstrap or execution of fork-controlled workspace commands before review submission. The prompt SHALL consume the selected change id, review disposition, verification mode, archive/push eligibility, and their reasons from workflow outputs rather than requiring the agent to rediscover pull request trust or archive/push policy before verification.
+For the selected change id and deterministic execution outputs published by the pre-activation steps, the agent SHALL follow `.agents/skills/openspec-verify-change/SKILL.md`. The agent SHALL use standard OpenSpec commands, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id, review disposition, archive/push eligibility, and their reasons from workflow outputs rather than requiring the agent to rediscover pull request trust or archive/push policy before verification.
 
-#### Scenario: Same-repository pull request uses workspace verification
-- **GIVEN** the triggering pull request head repository matches the base repository and deterministic setup selected a single active change
+#### Scenario: Verification uses the selected change context
+- **GIVEN** deterministic setup selected a single active change
 - **WHEN** verification runs
 - **THEN** the workflow SHALL permit the agent to use local OpenSpec tooling rooted at `openspec/changes/<id>/`
-
-#### Scenario: Fork pull request uses API-only verification
-- **GIVEN** the triggering pull request head repository differs from the base repository and deterministic setup selected a single active change
-- **WHEN** verification runs
-- **THEN** the agent SHALL review the change from pull request metadata and diffs without depending on repository bootstrap in the trusted workflow context
 
 ### Requirement: Structural allowlist for in-scope paths (REQ-008)
 
@@ -190,7 +189,7 @@ For every PR-changed file not covered by the structural allowlist, the agent SHA
 - THEN the file SHALL be `relevant` or `uncertain`, not `unassociated`
 
 ### Requirement: Pull request review body (REQ-010)
-The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied. When deterministic verification mode is `api-only`, the review body SHALL note that verification was performed in API-only mode because the pull request comes from a fork and that archive/push is not available for this run.
+The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied.
 
 #### Scenario: Body states unassociated outcome
 - **GIVEN** relevance review completes
@@ -201,11 +200,6 @@ The review body SHALL summarize verification (Issues by priority) and SHALL incl
 - **GIVEN** the selected active change includes added files and verification finds zero CRITICAL issues and zero `unassociated` files
 - **WHEN** the review body is generated
 - **THEN** it SHALL explain that the PR met the normal approval criteria but is limited to `COMMENT` because it introduces a net-new spec change
-
-#### Scenario: Body notes api-only mode for fork pull requests
-- **GIVEN** the triggering pull request comes from a fork and deterministic verification mode is `api-only`
-- **WHEN** the review body is generated
-- **THEN** it SHALL note that verification was performed in API-only mode and archive/push is not available
 
 ### Requirement: Line-level review comments (REQ-011)
 
@@ -288,7 +282,7 @@ For a run triggered by applying the `verify-openspec` label, the workflow SHALL 
 - **THEN** trigger-label cleanup SHALL already be handled without waiting for agent safe outputs
 
 ### Requirement: Review environment bootstraps repository toolchains
-The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins only for deterministic `workspace` verification mode. At a minimum, that trusted workspace mode SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. Fork pull requests in deterministic `api-only` mode SHALL NOT require this bootstrap before review submission.
+The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, it SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning.
 
 #### Scenario: Node toolchain follows package.json
 - **GIVEN** the repository declares the supported Node version in `package.json`
@@ -322,16 +316,11 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **WHEN** the review environment is prepared in workspace mode
 - **THEN** Terraform SHALL be available in that environment without wrapper behavior enabled
 
-#### Scenario: Fork verification does not require trusted workspace bootstrap
-- **GIVEN** deterministic verification mode is `api-only`
-- **WHEN** the review run prepares the agent context
-- **THEN** the workflow SHALL NOT require repository toolchain bootstrap as a prerequisite for submitting the review
-
 ### Requirement: Review environment installs repository dependencies before verification
-Before the agent performs verification in deterministic `workspace` mode, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally, SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path, and SHALL preserve access to the prepared Go workspace and module cache for AWF agent commands during verification. Deterministic `api-only` mode SHALL NOT require `make setup` before review submission.
+Before the agent performs verification, the workflow SHALL run `make setup` in the agent workspace after runtime provisioning completes. This bootstrap SHALL make `npx openspec` available locally, SHALL prepare repository Go dependencies needed by agent-invoked Go commands through the repository's standard setup path, and SHALL preserve access to the prepared Go workspace and module cache for AWF agent commands during verification.
 
-#### Scenario: Review workspace runs repository setup in workspace mode
-- **GIVEN** a qualifying `verify-openspec` run reaches the review job in workspace mode after Node, Go, and Terraform have been provisioned
+#### Scenario: Review workspace runs repository setup
+- **GIVEN** a qualifying `verify-openspec` run reaches the review job after Node, Go, and Terraform have been provisioned
 - **WHEN** the workflow prepares the repository for agent verification
 - **THEN** it SHALL run `make setup` in the review workspace before agent reasoning begins
 
@@ -350,26 +339,16 @@ Before the agent performs verification in deterministic `workspace` mode, the wo
 - **WHEN** an AWF agent command runs Go module-aware verification in chroot mode
 - **THEN** the command SHALL retain access to the configured Go workspace and module cache through the exported Go environment variables
 
-#### Scenario: Fork review skips repository setup
-- **GIVEN** deterministic verification mode is `api-only`
-- **WHEN** the workflow prepares the review run
-- **THEN** it SHALL be able to reach review submission without running `make setup`
-
 ### Requirement: Deterministic agent setup before verification
-The workflow SHALL use deterministic custom workflow steps to prepare the repository workspace before agent reasoning begins only when deterministic verification mode is `workspace`. In that mode, after the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps. In deterministic `api-only` mode, the workflow SHALL not require workspace bootstrap to start review reasoning.
+The workflow SHALL use deterministic custom workflow steps to prepare the repository workspace before agent reasoning begins. After the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps.
 
-#### Scenario: OpenSpec CLI is available before agent reasoning in workspace mode
-- **GIVEN** deterministic verification mode is `workspace`
+#### Scenario: OpenSpec CLI is available before agent reasoning
+- **GIVEN** the agent job starts for a verification run
 - **WHEN** the agent job starts for a verification run
 - **THEN** deterministic custom steps SHALL complete `make setup` before the agent uses `npx openspec`
 
-#### Scenario: Fork review starts without workspace bootstrap
-- **GIVEN** deterministic verification mode is `api-only`
-- **WHEN** the agent job starts for a verification run
-- **THEN** the workflow SHALL provide review context without requiring `make setup`
-
 ### Requirement: Deterministic gates may skip agent execution
-The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. Fork classification alone SHALL NOT skip the agent job; instead it SHALL select `api-only` verification mode and archive/push ineligibility while still allowing review execution.
+The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. Fork classification alone SHALL NOT skip the agent job; instead it SHALL publish archive/push ineligibility while still allowing review execution.
 
 #### Scenario: Ineligible label or change selection skips agent job
 - **GIVEN** deterministic pre-activation gating concludes that the label is not `verify-openspec` or the pull request is not eligible for change verification
@@ -379,4 +358,4 @@ The workflow SHALL use deterministic pre-activation outputs to decide whether th
 #### Scenario: Fork pull request still runs review path
 - **GIVEN** deterministic pre-activation gating selected a single active change and classified the pull request as a fork
 - **WHEN** downstream job conditions are evaluated
-- **THEN** the workflow SHALL continue to the agent job in `api-only` mode
+- **THEN** the workflow SHALL continue to the agent job while withholding archive/push behavior
