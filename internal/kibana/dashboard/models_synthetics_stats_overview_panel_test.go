@@ -319,7 +319,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 	panel := makeSyntheticsAPIConfig()
 	encodeURL := true
 	openInNewTab := true
-	panel.Config.Drilldowns = &[]struct { //nolint:revive
+	panel.Config.Drilldowns = &[]struct {
 		EncodeUrl    *bool                                                                  `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                                                 `json:"label"`
 		OpenInNewTab *bool                                                                  `json:"open_in_new_tab,omitempty"`
@@ -328,11 +328,11 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 		Url          string                                                                 `json:"url"` //nolint:revive
 	}{
 		{
-			Url:          "https://example.com", //nolint:revive
+			Url:          "https://example.com",
 			Label:        "View",
 			Trigger:      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
 			Type:         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
-			EncodeUrl:    &encodeURL, //nolint:revive
+			EncodeUrl:    &encodeURL,
 			OpenInNewTab: &openInNewTab,
 		},
 	}
