@@ -103,6 +103,34 @@ func Test_outputModel_toAPIUpdateModel_logstash_sendsEmptySslToClearFleet(t *tes
 	require.NotNil(t, updateModel.Ssl, "empty ssl object must be sent so Fleet clears stored ssl")
 }
 
+func Test_outputModel_toAPIUpdateModel_logstash_unknownSslDoesNotClearFleet(t *testing.T) {
+	t.Parallel()
+
+	cas := []string{"placeholder"}
+	priorSsl, d := sslToObjectValue(context.Background(), ptrString("placeholder"), &cas, ptrString("placeholder"))
+	require.False(t, d.HasError())
+
+	model := outputModel{
+		Name:                types.StringValue("Logstash Output (Unknown SSL)"),
+		Type:                types.StringValue("logstash"),
+		Hosts:               types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logstash:5044")}),
+		DefaultIntegrations: types.BoolValue(false),
+		DefaultMonitoring:   types.BoolValue(false),
+		Ssl:                 types.ObjectUnknown(getSslAttrTypes()),
+	}
+
+	prior := outputModel{
+		Ssl: priorSsl,
+	}
+
+	union, diags := model.toAPIUpdateModel(context.Background(), nil, prior)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	updateModel, err := union.AsUpdateOutputLogstash()
+	require.NoError(t, err)
+	assert.Nil(t, updateModel.Ssl, "unknown ssl in plan must not send explicit clear payload")
+}
+
 func Test_logstashConfigYamlForUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -118,6 +146,29 @@ func Test_logstashConfigYamlForUpdate(t *testing.T) {
 	})
 	t.Run("plan unset and no prior value omits field", func(t *testing.T) {
 		assert.Nil(t, logstashConfigYamlForUpdate(types.StringNull(), types.StringNull()))
+	})
+	t.Run("plan unknown and prior value omits field", func(t *testing.T) {
+		assert.Nil(t, logstashConfigYamlForUpdate(types.StringUnknown(), types.StringValue(`"ssl.verification_mode": none`)))
+	})
+}
+
+func Test_normalizeConfigYamlFromPlan(t *testing.T) {
+	t.Parallel()
+
+	mapped := types.StringValue("mapped")
+
+	t.Run("planned null remains null", func(t *testing.T) {
+		assert.True(t, normalizeConfigYamlFromPlan(types.StringNull(), mapped).IsNull())
+	})
+
+	t.Run("planned unknown keeps mapped value", func(t *testing.T) {
+		got := normalizeConfigYamlFromPlan(types.StringUnknown(), mapped)
+		assert.Equal(t, mapped, got)
+	})
+
+	t.Run("planned configured keeps mapped value", func(t *testing.T) {
+		got := normalizeConfigYamlFromPlan(types.StringValue("configured"), mapped)
+		assert.Equal(t, mapped, got)
 	})
 }
 

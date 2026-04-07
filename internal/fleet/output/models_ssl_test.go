@@ -211,10 +211,10 @@ func Test_normalizeSSLFromPlan(t *testing.T) {
 			want:       types.ObjectNull(getSslAttrTypes()),
 		},
 		{
-			name:       "returns null when planned ssl is unknown",
+			name:       "keeps mapped value when planned ssl is unknown",
 			plannedSSL: types.ObjectUnknown(getSslAttrTypes()),
 			mappedSSL:  mappedSSL,
-			want:       types.ObjectNull(getSslAttrTypes()),
+			want:       mappedSSL,
 		},
 		{
 			name: "keeps mapped value when planned ssl configured",
