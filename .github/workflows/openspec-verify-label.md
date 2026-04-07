@@ -11,6 +11,10 @@ description: >-
 on:
   pull_request_target:
     types: [labeled]
+  permissions:
+    issues: write
+    pull-requests: write
+    contents: read
   steps:
     - name: Verify trigger label
       id: verify_label
@@ -337,20 +341,6 @@ safe-outputs:
     target: triggering
     max: 1
 ---
-
-<!-- MAINTAINER NOTE — POST-COMPILE MANUAL OVERRIDES
-     Running `make workflow-generate` (which runs `gh aw compile`) will silently overwrite the
-     compiled lock file. One category of manual override MUST be re-applied after every
-     `gh aw compile` run:
-
-     Override 1 — pre_activation job permissions:
-       The gh-aw DSL does not support per-job permissions for the pre_activation job.
-       After compiling, find the `pre_activation:` job block and add/restore:
-         permissions:
-           issues: write        # required for remove_trigger_label (github.rest.issues.removeLabel)
-           pull-requests: read  # required for classify_and_select (github.paginate pulls.listFiles)
-           contents: read       # required for checkout and file access in classify_and_select
--->
 
 # OpenSpec verify, archive, and clean up (label-gated)
 
