@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -41,13 +42,16 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	var idBeforeReplacement string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceFleetAgentDownloadSourceDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceCreate(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Agent Download Source %s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
@@ -59,8 +63,12 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceUpdate(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Updated Agent Download Source %s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
@@ -72,8 +80,12 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:            testAccResourceFleetAgentDownloadSourceUpdate(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				ResourceName:      "elasticstack_fleet_agent_download_source.test",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -86,8 +98,12 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				},
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:            testAccResourceFleetAgentDownloadSourceUpdate(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				ResourceName:      "elasticstack_fleet_agent_download_source.test",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -100,8 +116,12 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				},
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceOmitOptionals(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_optionals"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckFleetAgentDownloadSourceCaptureID("elasticstack_fleet_agent_download_source.test", &idBeforeReplacement),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("No Optionals Agent Download Source %s", random)),
@@ -115,24 +135,37 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceEmptySpaceIDs(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_space_ids"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Empty Space IDs Agent Download Source %s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "0"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceReplaceSourceID(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_source_id"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckFleetAgentDownloadSourceIDChanged("elasticstack_fleet_agent_download_source.test", &idBeforeReplacement),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-replaced-%s", random)),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
-				Config:   testAccResourceFleetAgentDownloadSourceNonDefaultSpace(random),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_default_space"),
+				ConfigVariables: config.Variables{
+					"suffix":               config.StringVariable(random),
+					"non_default_space_id": config.StringVariable(fmt.Sprintf("fleet-agent-download-source-%s", random)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
 					testCheckFleetAgentDownloadSourceSpaceContains("elasticstack_fleet_agent_download_source.test", fmt.Sprintf("fleet-agent-download-source-%s", random)),
@@ -140,106 +173,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceFleetAgentDownloadSourceCreate(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "Agent Download Source %s"
-  source_id = "agent-download-source-%s"
-  default   = false
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent"
-  proxy_id  = "proxy-123"
-  space_ids = ["default"]
-}
-`, suffix, suffix)
-}
-
-func testAccResourceFleetAgentDownloadSourceUpdate(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "Updated Agent Download Source %s"
-  source_id = "agent-download-source-%s"
-  default   = true
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent-updated"
-  proxy_id  = "proxy-456"
-  space_ids = ["default"]
-}
-`, suffix, suffix)
-}
-
-func testAccResourceFleetAgentDownloadSourceOmitOptionals(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "No Optionals Agent Download Source %s"
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent-no-optionals"
-}
-`, suffix)
-}
-
-func testAccResourceFleetAgentDownloadSourceEmptySpaceIDs(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "Empty Space IDs Agent Download Source %s"
-  source_id = "agent-download-source-empty-space-ids-%s"
-  default   = false
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent-empty-space-ids"
-  space_ids = []
-}
-`, suffix, suffix)
-}
-
-func testAccResourceFleetAgentDownloadSourceReplaceSourceID(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "Replace Source ID Agent Download Source %s"
-  source_id = "agent-download-source-replaced-%s"
-  default   = false
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent-replaced"
-  space_ids = ["default"]
-}
-`, suffix, suffix)
-}
-
-func testAccResourceFleetAgentDownloadSourceNonDefaultSpace(suffix string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test" {
-  space_id = "fleet-agent-download-source-%s"
-  name     = "Fleet Agent Download Source %s"
-}
-
-resource "elasticstack_fleet_agent_download_source" "test" {
-  name      = "Non Default Space Agent Download Source %s"
-  source_id = "agent-download-source-space-%s"
-  default   = false
-  host      = "https://artifacts.elastic.co/downloads/elastic-agent-space"
-  space_ids = [elasticstack_kibana_space.test.space_id]
-}
-`, suffix, suffix, suffix, suffix)
 }
 
 func testCheckFleetAgentDownloadSourceCaptureID(resourceName string, target *string) resource.TestCheckFunc {
