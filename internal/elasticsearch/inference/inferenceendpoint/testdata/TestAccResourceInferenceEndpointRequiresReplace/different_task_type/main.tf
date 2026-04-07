@@ -3,6 +3,11 @@ variable "inference_id" {
   type        = string
 }
 
+variable "api_key" {
+  description = "The API key used by the inference service"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
@@ -12,7 +17,7 @@ resource "elasticstack_elasticsearch_inference_endpoint" "test" {
   task_type    = "chat_completion"
   service      = "openai"
   service_settings = jsonencode({
-    api_key  = "test-openai-api-key"
+    api_key  = var.api_key
     model_id = "gpt-4o-mini"
   })
 }

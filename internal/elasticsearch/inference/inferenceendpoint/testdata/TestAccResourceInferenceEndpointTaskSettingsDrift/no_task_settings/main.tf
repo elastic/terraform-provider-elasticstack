@@ -3,6 +3,11 @@ variable "inference_id" {
   type        = string
 }
 
+variable "api_key" {
+  description = "The API key used by the inference service"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
@@ -14,7 +19,7 @@ resource "elasticstack_elasticsearch_inference_endpoint" "test" {
   task_type    = "completion"
   service      = "azureaistudio"
   service_settings = jsonencode({
-    api_key       = "test-api-key"
+    api_key       = var.api_key
     target        = "https://example.com"
     provider      = "openai"
     endpoint_type = "token"
