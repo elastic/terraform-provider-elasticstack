@@ -43,11 +43,11 @@ import (
 )
 
 const (
-	dashboardValueAuto          = "auto"
-	dashboardValueAverage       = "average"
-	pieChartTypeNumber          = "number"
-	pieChartTypePercent         = "percent"
-	operationTerms              = "terms"
+	dashboardValueAuto               = "auto"
+	dashboardValueAverage            = "average"
+	pieChartTypeNumber               = "number"
+	pieChartTypePercent              = "percent"
+	operationTerms                   = "terms"
 	panelTypeMarkdown                = "markdown"
 	panelTypeLens                    = "lens"
 	panelTypeTimeSlider              = "time_slider_control"
