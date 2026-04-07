@@ -95,8 +95,6 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com/{{context.panel.title}}"),
 					Label:        types.StringValue("View details"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -111,6 +109,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 	d := (*panel.Config.Drilldowns)[0]
 	assert.Equal(t, "https://example.com/{{context.panel.title}}", d.Url)
 	assert.Equal(t, "View details", d.Label)
+	// trigger and type are always hardcoded constants.
 	assert.Equal(t, kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
 	assert.Equal(t, kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, d.Type)
 	assert.Nil(t, d.EncodeUrl)
@@ -124,8 +123,6 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolValue(true),
 					OpenInNewTab: types.BoolValue(false),
 				},
@@ -306,8 +303,6 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
-				Trigger:      types.StringValue("on_open_panel_menu"),
-				Type:         types.StringValue("url_drilldown"),
 				EncodeURL:    types.BoolNull(),
 				OpenInNewTab: types.BoolNull(),
 			},

@@ -34,11 +34,11 @@ type syntheticsStatsOverviewConfigModel struct {
 }
 
 // syntheticsStatsOverviewDrilldownModel holds one URL drilldown entry.
+// trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
+// are not exposed to users (matching the slo_overview_config drilldowns approach).
 type syntheticsStatsOverviewDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	Type         types.String `tfsdk:"type"`
 	EncodeURL    types.Bool   `tfsdk:"encode_url"`
 	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }
@@ -51,12 +51,6 @@ type syntheticsStatsOverviewFiltersModel struct {
 	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
 	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
 	Statuses     []syntheticsFilterItemModel `tfsdk:"statuses"`
-}
-
-// syntheticsFilterItemModel holds a single { label, value } filter option.
-type syntheticsFilterItemModel struct {
-	Label types.String `tfsdk:"label"`
-	Value types.String `tfsdk:"value"`
 }
 
 // buildSyntheticsStatsOverviewConfig writes the TF model into the API panel struct.
@@ -93,8 +87,8 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger(d.Trigger.ValueString())
-			drilldowns[i].Type = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType(d.Type.ValueString())
+			drilldowns[i].Trigger = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -274,11 +268,10 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 
 	result := make([]syntheticsStatsOverviewDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
+		// trigger and type are not stored in state — they are always hardcoded constants.
 		result[i] = syntheticsStatsOverviewDrilldownModel{
-			URL:     types.StringValue(d.Url),
-			Label:   types.StringValue(d.Label),
-			Trigger: types.StringValue(string(d.Trigger)),
-			Type:    types.StringValue(string(d.Type)),
+			URL:   types.StringValue(d.Url),
+			Label: types.StringValue(d.Label),
 		}
 
 		var prior *syntheticsStatsOverviewDrilldownModel

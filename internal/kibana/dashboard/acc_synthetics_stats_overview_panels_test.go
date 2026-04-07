@@ -164,8 +164,9 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithDrilldowns(t *testing.T)
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.url", "https://example.com/{{context.panel.title}}"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.label", "View details"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.trigger", "on_open_panel_menu"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.type", "url_drilldown"),
+					// trigger and type are hardcoded constants — not exposed in state.
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.trigger"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.type"),
 					// Optional bools omitted — confirm null-preservation in state.
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.encode_url"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_stats_overview_config.drilldowns.0.open_in_new_tab"),

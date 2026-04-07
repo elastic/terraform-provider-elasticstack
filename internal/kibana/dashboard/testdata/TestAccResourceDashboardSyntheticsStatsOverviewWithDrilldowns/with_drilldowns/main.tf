@@ -29,10 +29,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     synthetics_stats_overview_config = {
       drilldowns = [
         {
-          url     = "https://example.com/{{context.panel.title}}"
-          label   = "View details"
-          trigger = "on_open_panel_menu"
-          type    = "url_drilldown"
+          url   = "https://example.com/{{context.panel.title}}"
+          label = "View details"
         }
       ]
     }

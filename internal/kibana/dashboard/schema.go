@@ -1318,14 +1318,6 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 						MarkdownDescription: "Human-readable label shown in the drilldown menu.",
 						Required:            true,
 					},
-					"trigger": schema.StringAttribute{
-						MarkdownDescription: "The trigger event for the drilldown. The only supported value is `on_open_panel_menu`.",
-						Required:            true,
-					},
-					"type": schema.StringAttribute{
-						MarkdownDescription: "The drilldown type. The only supported value is `url_drilldown`.",
-						Required:            true,
-					},
 					"encode_url": schema.BoolAttribute{
 						MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default (`true`).",
 						Optional:            true,
