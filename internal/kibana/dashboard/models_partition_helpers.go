@@ -151,7 +151,8 @@ func (m *partitionLegendModel) fromPieLegend(api kbapi.PieLegend) {
 	if api.Visibility != nil {
 		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
-		m.Visible = types.StringNull()
+		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
+		m.Visible = types.StringValue(string(kbapi.PieLegendVisibilityAuto))
 	}
 }
 
