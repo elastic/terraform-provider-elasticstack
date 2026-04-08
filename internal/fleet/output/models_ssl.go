@@ -203,6 +203,50 @@ func (ssl *outputSSLAPIModel) toUpdateLogstash() *struct {
 	}
 }
 
+func (ssl *outputSSLAPIModel) toCreateRemoteElasticsearch() *struct {
+	Certificate            *string                                                              `json:"certificate,omitempty"`
+	CertificateAuthorities *[]string                                                            `json:"certificate_authorities,omitempty"`
+	Key                    *string                                                              `json:"key,omitempty"`
+	VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
+} {
+	if ssl == nil {
+		return nil
+	}
+
+	return &struct {
+		Certificate            *string                                                              `json:"certificate,omitempty"`
+		CertificateAuthorities *[]string                                                            `json:"certificate_authorities,omitempty"`
+		Key                    *string                                                              `json:"key,omitempty"`
+		VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
+	}{
+		Certificate:            ssl.Certificate,
+		CertificateAuthorities: ssl.CertificateAuthorities,
+		Key:                    ssl.Key,
+	}
+}
+
+func (ssl *outputSSLAPIModel) toUpdateRemoteElasticsearch() *struct {
+	Certificate            *string                                                   `json:"certificate,omitempty"`
+	CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
+	Key                    *string                                                   `json:"key,omitempty"`
+	VerificationMode       *kbapi.UpdateOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
+} {
+	if ssl == nil {
+		return nil
+	}
+
+	return &struct {
+		Certificate            *string                                                   `json:"certificate,omitempty"`
+		CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
+		Key                    *string                                                   `json:"key,omitempty"`
+		VerificationMode       *kbapi.UpdateOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
+	}{
+		Certificate:            ssl.Certificate,
+		CertificateAuthorities: ssl.CertificateAuthorities,
+		Key:                    ssl.Key,
+	}
+}
+
 func sslToObjectValue(ctx context.Context, certificate *string, certificateAuthorities *[]string, key *string) (types.Object, diag.Diagnostics) {
 	if certificate == nil && certificateAuthorities == nil && key == nil {
 		return types.ObjectNull(getSslAttrTypes()), nil
