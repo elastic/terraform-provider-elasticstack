@@ -30,11 +30,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -56,6 +58,7 @@ const (
 	panelTypeEsqlControl        = "esql_control"
 	panelTypeOptionsListControl = "options_list_control"
 	panelTypeRangeSlider        = "range_slider_control"
+	panelTypeSyntheticsMonitors = "synthetics_monitors"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -82,6 +85,7 @@ var panelConfigNames = []string{
 	"esql_control_config",
 	"options_list_control_config",
 	"range_slider_control_config",
+	"synthetics_monitors_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -1215,6 +1219,22 @@ func getPanelSchema() schema.NestedAttributeObject {
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
+				},
+			},
+			"synthetics_monitors_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
+						"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
+					"synthetics_monitors_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSyntheticsMonitorsSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("synthetics_monitors_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsMonitors}),
 				},
 			},
 			"config_json": schema.StringAttribute{
@@ -2592,6 +2612,25 @@ func populateLensGroupByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// pieChartLegendDefaultObject is the schema default when the legend block is omitted from config,
+// aligned with typical Kibana read-back so apply and refresh stay consistent.
+func pieChartLegendDefaultObject() types.Object {
+	return types.ObjectValueMust(
+		map[string]attr.Type{
+			"nested":               types.BoolType,
+			"size":                 types.StringType,
+			"truncate_after_lines": types.Float64Type,
+			"visible":              types.StringType,
+		},
+		map[string]attr.Value{
+			"nested":               types.BoolNull(),
+			"size":                 types.StringValue("auto"),
+			"truncate_after_lines": types.Float64Null(),
+			"visible":              types.StringValue("auto"),
+		},
+	)
+}
+
 // getPieChart returns the schema for pie chart configuration
 func getPieChart() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
@@ -2634,10 +2673,15 @@ func getPieChart() map[string]schema.Attribute {
 				stringvalidator.OneOf("hidden", "inside", "outside"),
 			},
 		},
-		"legend_json": schema.StringAttribute{
-			MarkdownDescription: "Legend configuration as JSON.",
-			CustomType:          jsontypes.NormalizedType{},
-			Optional:            true,
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Optional legend configuration for the pie chart. " +
+				"Same shape as treemap and mosaic legends; Terraform `visible` maps to API `visibility`. " +
+				"When omitted, the schema default matches typical Kibana legend defaults (size and visibility " +
+				"`auto`) so apply/read stay consistent.",
+			Optional:   true,
+			Computed:   true,
+			Default:    objectdefault.StaticValue(pieChartLegendDefaultObject()),
+			Attributes: getPartitionLegendSchema(),
 		},
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
@@ -2842,5 +2886,60 @@ func (v sloOverviewConfigModeValidator) ValidateObject(_ context.Context, req va
 			return
 		}
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.")
+	}
+}
+
+// getSyntheticsMonitorsSchema returns the schema for the synthetics_monitors_config block.
+// All fields are optional — the block itself may be omitted for a bare panel.
+func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
+	filterItemSchema := schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Display label for the filter option.",
+				Required:            true,
+			},
+			"value": schema.StringAttribute{
+				MarkdownDescription: "Value for the filter option.",
+				Required:            true,
+			},
+		},
+	}
+	return map[string]schema.Attribute{
+		"filters": schema.SingleNestedAttribute{
+			MarkdownDescription: "Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"projects": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by project. Each entry has a `label` (display name) and a `value` (project ID).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"tags": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by tags. Each entry has a `label` (display name) and a `value` (tag).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"monitor_ids": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor IDs. Each entry has a `label` (display name) and a `value` (monitor ID). The Kibana API accepts up to 5000 items.",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"locations": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor locations. Each entry has a `label` (display name) and a `value` (location ID).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"monitor_types": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"statuses": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor statuses. Each entry has a `label` (display name) and a `value` (status, e.g. `up`, `down`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+			},
+		},
 	}
 }

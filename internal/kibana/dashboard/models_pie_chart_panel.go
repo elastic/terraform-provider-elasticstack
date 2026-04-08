@@ -91,7 +91,7 @@ type pieChartConfigModel struct {
 	Sampling            types.Float64          `tfsdk:"sampling"`
 	DonutHole           types.String           `tfsdk:"donut_hole"`
 	LabelPosition       types.String           `tfsdk:"label_position"`
-	LegendJSON          jsontypes.Normalized   `tfsdk:"legend_json"`
+	Legend              *partitionLegendModel  `tfsdk:"legend"`
 	Query               *filterSimpleModel     `tfsdk:"query"`
 	Filters             []chartFilterJSONModel `tfsdk:"filters"`
 	Metrics             []pieMetricModel       `tfsdk:"metrics"`
@@ -147,8 +147,7 @@ func (m *pieChartConfigModel) populateCommonFields(
 	donutHole, labelPosition *string,
 	datasetBytes []byte,
 	datasetErr error,
-	legendBytes []byte,
-	legendErr error,
+	legend kbapi.PieLegend,
 	filters []kbapi.LensPanelFilters_Item,
 	diags *diag.Diagnostics,
 ) bool {
@@ -179,11 +178,8 @@ func (m *pieChartConfigModel) populateCommonFields(
 		return false
 	}
 	m.DatasetJSON = dv
-	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend_json", diags)
-	if !ok {
-		return false
-	}
-	m.LegendJSON = lv
+	m.Legend = &partitionLegendModel{}
+	m.Legend.fromPieLegend(legend)
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }
@@ -202,12 +198,11 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 		labelPosition = &s
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
-	legendBytes, legendErr := json.Marshal(apiChart.Legend)
 
 	if !m.populateCommonFields(
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
 		donutHole, labelPosition,
-		datasetBytes, datasetErr, legendBytes, legendErr,
+		datasetBytes, datasetErr, apiChart.Legend,
 		apiChart.Filters, &diags,
 	) {
 		return diags
@@ -265,12 +260,11 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 		labelPosition = &s
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
-	legendBytes, legendErr := json.Marshal(apiChart.Legend)
 
 	if !m.populateCommonFields(
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
 		donutHole, labelPosition,
-		datasetBytes, datasetErr, legendBytes, legendErr,
+		datasetBytes, datasetErr, apiChart.Legend,
 		apiChart.Filters, &diags,
 	) {
 		return diags
@@ -351,10 +345,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.LegendJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
-				diags.AddError("Failed to unmarshal legend", err.Error())
-			}
+		if m.Legend != nil {
+			chart.Legend = m.Legend.toPieLegend()
 		}
 		if chart.Legend.Size == "" {
 			chart.Legend.Size = kbapi.LegendSizeAuto
@@ -431,10 +423,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.LegendJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
-				diags.AddError("Failed to unmarshal legend", err.Error())
-			}
+		if m.Legend != nil {
+			chart.Legend = m.Legend.toPieLegend()
 		}
 		if chart.Legend.Size == "" {
 			chart.Legend.Size = kbapi.LegendSizeAuto
