@@ -62,11 +62,16 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	previousSSL := stateModel.Ssl
+	previousConfigYaml := stateModel.ConfigYaml
+
 	diags = stateModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	stateModel.Ssl = normalizeSSLFromPlan(previousSSL, stateModel.Ssl)
+	stateModel.ConfigYaml = normalizeConfigYamlFromPlan(previousConfigYaml, stateModel.ConfigYaml)
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
