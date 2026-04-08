@@ -23,7 +23,7 @@ resource "elasticstack_fleet_agent_download_source" "default" {
   source_id = "agent-download-source-private-location-space-${var.suffix}"
   default   = false
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
-  space_ids = ["default"]
+  space_ids = [elasticstack_kibana_space.test.space_id]
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {

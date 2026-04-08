@@ -34,7 +34,7 @@ resource "elasticstack_fleet_agent_download_source" "default" {
   source_id = "agent-download-source-icmp-monitor-${var.name}"
   default   = false
   host      = "https://artifacts.elastic.co/downloads/elastic-agent"
-  space_ids = ["default"]
+  space_ids = [elasticstack_kibana_space.test.space_id]
 }
 
 resource "elasticstack_kibana_synthetics_private_location" "pl-icmp-monitor" {
