@@ -25,9 +25,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 )
 
 // Stable ID for acceptance-test bootstrap; lives in the default Kibana space and is not managed by Terraform state.
@@ -45,29 +42,31 @@ func ensureFleetDefaultAgentDownloadSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	supported, verDiags := client.EnforceMinVersion(ctx, agentdownloadsource.MinVersionFleetAgentDownloadSource)
-	if verDiags.HasError() {
-		t.Fatal(diagutil.SdkDiagsAsError(verDiags))
-	}
-	if !supported {
-		return
-	}
-
 	fc, err := client.GetFleetClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	listResp, diags := fleet.ListAgentDownloadSources(ctx, fc, "")
-	if diags.HasError() {
-		t.Fatal(diagutil.FwDiagsAsError(diags))
+	// NOTE: We intentionally do NOT version-gate this bootstrap.
+	// Some stacks require a default download source for agent policy operations even when our
+	// elasticstack_fleet_agent_download_source resource is version-gated.
+	// If the endpoint isn't available, we no-op; otherwise we ensure a default exists.
+	listResp, err := fc.API.GetFleetAgentDownloadSourcesWithResponse(ctx)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if listResp != nil && listResp.JSON200 != nil {
+	switch listResp.StatusCode() {
+	case http.StatusOK:
 		for _, item := range listResp.JSON200.Items {
 			if item.IsDefault != nil && *item.IsDefault && item.Host != "" {
 				return
 			}
 		}
+	case http.StatusNotFound:
+		// Endpoint not available on this stack; nothing we can do here.
+		return
+	default:
+		t.Fatal("unexpected response when listing Fleet agent download sources: " + string(listResp.Body))
 	}
 
 	isDefault := true
@@ -79,17 +78,24 @@ func ensureFleetDefaultAgentDownloadSource(t *testing.T) {
 		Id:        &id,
 	}
 
-	_, createDiags := fleet.CreateAgentDownloadSource(ctx, fc, "", body)
-	if !createDiags.HasError() {
+	createResp, err := fc.API.PostFleetAgentDownloadSourcesWithResponse(ctx, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	switch createResp.StatusCode() {
+	case http.StatusOK:
+		return
+	case http.StatusNotFound:
+		// Endpoint not available on this stack; nothing we can do here.
 		return
 	}
 
-	getResp, getDiags := fleet.GetAgentDownloadSource(ctx, fc, fleetAcceptanceDefaultDownloadSourceID, "")
-	if getDiags.HasError() {
-		t.Fatal(diagutil.FwDiagsAsError(createDiags))
+	getResp, err := fc.API.GetFleetAgentDownloadSourcesSourceidWithResponse(ctx, fleetAcceptanceDefaultDownloadSourceID)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if getResp == nil || getResp.StatusCode() != http.StatusOK || getResp.JSON200 == nil {
-		t.Fatal(diagutil.FwDiagsAsError(createDiags))
+	if getResp.StatusCode() != http.StatusOK || getResp.JSON200 == nil {
+		t.Fatal("failed to create default Fleet agent download source: " + string(createResp.Body))
 	}
 
 	updateBody := kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
@@ -97,8 +103,16 @@ func ensureFleetDefaultAgentDownloadSource(t *testing.T) {
 		Name:      body.Name,
 		IsDefault: &isDefault,
 	}
-	_, updDiags := fleet.UpdateAgentDownloadSource(ctx, fc, fleetAcceptanceDefaultDownloadSourceID, "", updateBody)
-	if updDiags.HasError() {
-		t.Fatal(diagutil.FwDiagsAsError(updDiags))
+	updResp, err := fc.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, fleetAcceptanceDefaultDownloadSourceID, updateBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	switch updResp.StatusCode() {
+	case http.StatusOK:
+		return
+	case http.StatusNotFound:
+		return
+	default:
+		t.Fatal("failed to update default Fleet agent download source: " + string(updResp.Body))
 	}
 }
