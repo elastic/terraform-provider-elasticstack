@@ -35,7 +35,8 @@ import (
 )
 
 var (
-	minKibanaPrivateLocationAPIVersion = version.Must(version.NewVersion("8.12.0"))
+	// Private location fixtures use elasticstack_fleet_agent_download_source (8.13+), same as Fleet agent download sources API.
+	minKibanaPrivateLocationAPIVersion = version.Must(version.NewVersion("8.13.0"))
 )
 
 // accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
