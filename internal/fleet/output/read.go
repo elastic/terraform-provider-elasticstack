@@ -64,14 +64,20 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	previousSSL := stateModel.Ssl
 	previousConfigYaml := stateModel.ConfigYaml
+	hasMaterializedPriorState := !stateModel.Name.IsNull() && !stateModel.Name.IsUnknown()
 
 	diags = stateModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	stateModel.Ssl = normalizeSSLFromPlan(previousSSL, stateModel.Ssl)
-	stateModel.ConfigYaml = normalizeConfigYamlFromPlan(previousConfigYaml, stateModel.ConfigYaml)
+	// Only normalize against prior state during regular refresh cycles.
+	// During import bootstrap reads, state is not yet materialized and normalization
+	// would incorrectly discard API-backed values (e.g. config_yaml/ssl).
+	if hasMaterializedPriorState {
+		stateModel.Ssl = normalizeSSLFromPlan(previousSSL, stateModel.Ssl)
+		stateModel.ConfigYaml = normalizeConfigYamlFromPlan(previousConfigYaml, stateModel.ConfigYaml)
+	}
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
