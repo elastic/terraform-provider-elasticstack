@@ -6,7 +6,7 @@ variable "connector_name" {
 resource "elasticstack_kibana_action_connector" "test" {
   name = var.connector_name
   config = jsonencode({
-    url = "https://hooks.example.com/services"
+    url    = "https://hooks.example.com/services"
     method = "post"
     headers = {
       "Content-Type" = "application/json"
