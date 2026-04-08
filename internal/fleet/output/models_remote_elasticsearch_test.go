@@ -63,6 +63,75 @@ func TestOutputModelToAPICreateRemoteElasticsearchModel(t *testing.T) {
 	assert.False(t, *body.WriteToLogsStreams)
 }
 
+func TestOutputModelRemoteElasticsearchModelMapsSSLCertificateAuthoritiesAndClientKeypair(t *testing.T) {
+	t.Parallel()
+
+	sslObj := types.ObjectValueMust(
+		getSslAttrTypes(),
+		map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("ca-1"),
+				types.StringValue("ca-2"),
+			}),
+			"certificate": types.StringValue("client-cert"),
+			"key":         types.StringValue("client-key"),
+		},
+	)
+
+	t.Run("create", func(t *testing.T) {
+		t.Parallel()
+
+		model := outputModel{
+			OutputID:     types.StringValue("remote-output-id"),
+			Name:         types.StringValue("remote-output"),
+			Type:         types.StringValue("remote_elasticsearch"),
+			Hosts:        types.ListValueMust(types.StringType, []attr.Value{types.StringValue("https://remote-es:9200")}),
+			ServiceToken: types.StringValue("service-token-value"),
+			Ssl:          sslObj,
+		}
+
+		union, diags := model.toAPICreateRemoteElasticsearchModel(context.Background())
+		require.False(t, diags.HasError())
+
+		body, err := union.AsNewOutputRemoteElasticsearch()
+		require.NoError(t, err)
+
+		require.NotNil(t, body.Ssl)
+		require.NotNil(t, body.Ssl.CertificateAuthorities)
+		assert.Equal(t, []string{"ca-1", "ca-2"}, *body.Ssl.CertificateAuthorities)
+		require.NotNil(t, body.Ssl.Certificate)
+		assert.Equal(t, "client-cert", *body.Ssl.Certificate)
+		require.NotNil(t, body.Ssl.Key)
+		assert.Equal(t, "client-key", *body.Ssl.Key)
+	})
+
+	t.Run("update", func(t *testing.T) {
+		t.Parallel()
+
+		model := outputModel{
+			Name:         types.StringValue("updated-remote-output"),
+			Type:         types.StringValue("remote_elasticsearch"),
+			Hosts:        types.ListValueMust(types.StringType, []attr.Value{types.StringValue("https://remote-es-2:9200")}),
+			ServiceToken: types.StringValue("updated-service-token"),
+			Ssl:          sslObj,
+		}
+
+		union, diags := model.toAPIUpdateRemoteElasticsearchModel(context.Background())
+		require.False(t, diags.HasError())
+
+		body, err := union.AsUpdateOutputRemoteElasticsearch()
+		require.NoError(t, err)
+
+		require.NotNil(t, body.Ssl)
+		require.NotNil(t, body.Ssl.CertificateAuthorities)
+		assert.Equal(t, []string{"ca-1", "ca-2"}, *body.Ssl.CertificateAuthorities)
+		require.NotNil(t, body.Ssl.Certificate)
+		assert.Equal(t, "client-cert", *body.Ssl.Certificate)
+		require.NotNil(t, body.Ssl.Key)
+		assert.Equal(t, "client-key", *body.Ssl.Key)
+	})
+}
+
 func TestOutputModelToAPIUpdateRemoteElasticsearchModel(t *testing.T) {
 	t.Parallel()
 
