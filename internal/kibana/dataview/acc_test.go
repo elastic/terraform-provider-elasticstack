@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
 )
 
@@ -245,4 +246,83 @@ func testAccDataViewCreateErrorProxy(t *testing.T, upstreamEndpoint, spaceID str
 
 func testAccIsDataViewCreatePath(path, spaceID string) bool {
 	return path == "/api/data_views/data_view" || path == fmt.Sprintf("/s/%s/api/data_views/data_view", spaceID)
+}
+
+func TestAccResourceDataViewNamespaces(t *testing.T) {
+	indexName := "ns-test-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+	space1 := "space-a-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	space2 := "space-b-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	space3 := "space-c-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+		"space1":     config.StringVariable(space1),
+		"space2":     config.StringVariable(space2),
+		"space3":     config.StringVariable(space3),
+	}
+	var dataViewID string
+	captureID := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.ns_dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.ns_dv not found in state")
+		}
+		dataViewID = rs.Primary.ID
+		return nil
+	}
+	checkIDUnchanged := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.ns_dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.ns_dv not found in state")
+		}
+		if rs.Primary.ID != dataViewID {
+			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
+		}
+		return nil
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					captureID,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_space"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "4"),
+					checkIDUnchanged,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_space"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					checkIDUnchanged,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_remove_space"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					checkIDUnchanged,
+				),
+			},
+		},
+	})
 }

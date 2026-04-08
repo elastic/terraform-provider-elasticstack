@@ -44,16 +44,28 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 			name: "all axes populated",
 			apiAxis: kbapi.XyAxis{
 				X: &xyAxisConfigAPIModel{
-					Grid:  new(true),
-					Ticks: new(false),
+					Grid: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: true},
+					Ticks: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: false},
 				},
 				Left: &leftYAxisConfigAPIModel{
-					Grid:  new(true),
-					Ticks: new(true),
+					Grid: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: true},
+					Ticks: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: true},
 				},
 				Right: &rightYAxisConfigAPIModel{
-					Grid:  new(false),
-					Ticks: new(true),
+					Grid: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: false},
+					Ticks: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: true},
 				},
 			},
 			expected: &xyAxisModel{
@@ -88,7 +100,9 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 			name: "only x axis",
 			apiAxis: kbapi.XyAxis{
 				X: &xyAxisConfigAPIModel{
-					Grid: new(true),
+					Grid: &struct {
+						Visible bool `json:"visible"`
+					}{Visible: true},
 				},
 				Left:  nil,
 				Right: nil,
@@ -160,14 +174,20 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:             new(true),
-				Ticks:            new(false),
-				LabelOrientation: func() *kbapi.XyAxisXLabelOrientation { o := kbapi.XyAxisXLabelOrientation("horizontal"); return &o }(),
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				Ticks: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
+				Labels: &struct {
+					Orientation kbapi.VisApiOrientation `json:"orientation"`
+				}{Orientation: kbapi.VisApiOrientation("horizontal")},
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("X Axis Title"),
+					Text:    new("X Axis Title"),
 					Visible: new(true),
 				},
 			},
@@ -189,10 +209,12 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only required fields",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:             new(false),
-				Ticks:            nil,
-				LabelOrientation: nil,
-				Title:            nil,
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
+				Ticks:  nil,
+				Labels: nil,
+				Title:  nil,
 			},
 			expected: &xyAxisConfigModel{
 				Grid:             types.BoolValue(false),
@@ -204,8 +226,12 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "with all boolean fields",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:  new(true),
-				Ticks: new(true),
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				Ticks: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
 			},
 			expected: &xyAxisConfigModel{
 				Grid:  types.BoolValue(true),
@@ -255,15 +281,21 @@ func Test_yAxisConfigModel_fromAPILeft_toAPILeft(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &leftYAxisConfigAPIModel{
-				Grid:             new(true),
-				Ticks:            new(false),
-				LabelOrientation: func() *kbapi.XyAxisLeftLabelOrientation { o := kbapi.XyAxisLeftLabelOrientation("vertical"); return &o }(),
-				Scale:            func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				Ticks: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
+				Labels: &struct {
+					Orientation kbapi.VisApiOrientation `json:"orientation"`
+				}{Orientation: kbapi.VisApiOrientation("vertical")},
+				Scale: func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("Y Axis Title"),
+					Text:    new("Y Axis Title"),
 					Visible: new(false),
 				},
 			},
@@ -286,7 +318,9 @@ func Test_yAxisConfigModel_fromAPILeft_toAPILeft(t *testing.T) {
 		{
 			name: "with scale field",
 			apiAxis: &leftYAxisConfigAPIModel{
-				Grid:  new(false),
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
 				Scale: func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
 			},
 			expected: &yAxisConfigModel{
@@ -332,15 +366,21 @@ func Test_yAxisConfigModel_fromAPIRight_toAPIRight(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &rightYAxisConfigAPIModel{
-				Grid:             new(false),
-				Ticks:            new(true),
-				LabelOrientation: func() *kbapi.XyAxisRightLabelOrientation { o := kbapi.XyAxisRightLabelOrientation("angled"); return &o }(),
-				Scale:            func() *kbapi.XyAxisRightScale { s := kbapi.XyAxisRightScale("log"); return &s }(),
+				Grid: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
+				Ticks: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				Labels: &struct {
+					Orientation kbapi.VisApiOrientation `json:"orientation"`
+				}{Orientation: kbapi.VisApiOrientation("angled")},
+				Scale: func() *kbapi.XyAxisRightScale { s := kbapi.XyAxisRightScale("log"); return &s }(),
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("Right Y Axis"),
+					Text:    new("Right Y Axis"),
 					Visible: new(true),
 				},
 			},
@@ -393,7 +433,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		apiTitle *struct {
-			Value   *string `json:"value,omitempty"`
+			Text    *string `json:"text,omitempty"`
 			Visible *bool   `json:"visible,omitempty"`
 		}
 		expected *axisTitleModel
@@ -401,10 +441,10 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiTitle: &struct {
-				Value   *string `json:"value,omitempty"`
+				Text    *string `json:"text,omitempty"`
 				Visible *bool   `json:"visible,omitempty"`
 			}{
-				Value:   new("Test Title"),
+				Text:    new("Test Title"),
 				Visible: new(true),
 			},
 			expected: &axisTitleModel{
@@ -420,10 +460,10 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only value",
 			apiTitle: &struct {
-				Value   *string `json:"value,omitempty"`
+				Text    *string `json:"text,omitempty"`
 				Visible *bool   `json:"visible,omitempty"`
 			}{
-				Value:   new("Only Value"),
+				Text:    new("Only Value"),
 				Visible: nil,
 			},
 			expected: &axisTitleModel{
@@ -434,10 +474,10 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only visible",
 			apiTitle: &struct {
-				Value   *string `json:"value,omitempty"`
+				Text    *string `json:"text,omitempty"`
 				Visible *bool   `json:"visible,omitempty"`
 			}{
-				Value:   nil,
+				Text:    nil,
 				Visible: new(false),
 			},
 			expected: &axisTitleModel{
@@ -472,10 +512,14 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiDecorations: kbapi.XyDecorations{
-				ShowEndZones:          new(true),
-				ShowCurrentTimeMarker: new(false),
+				EndZones: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				CurrentTimeMarker: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: false},
 				PointVisibility: func() *kbapi.XyDecorationsPointVisibility {
-					v := kbapi.XyDecorationsPointVisibilityAlways
+					v := kbapi.XyDecorationsPointVisibilityVisible
 					return &v
 				}(),
 				LineInterpolation: func() *kbapi.XyDecorationsLineInterpolation {
@@ -483,13 +527,15 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 					return &i
 				}(),
 				MinimumBarHeight: new(float32(5)),
-				ShowValueLabels:  new(true),
-				FillOpacity:      new(float32(0.5)),
+				Values: &struct {
+					Visible bool `json:"visible"`
+				}{Visible: true},
+				FillOpacity: new(float32(0.5)),
 			},
 			expected: &xyDecorationsModel{
 				ShowEndZones:          types.BoolValue(true),
 				ShowCurrentTimeMarker: types.BoolValue(false),
-				PointVisibility:       types.StringValue("always"),
+				PointVisibility:       types.StringValue("visible"),
 				LineInterpolation:     types.StringValue("linear"),
 				MinimumBarHeight:      types.Int64Value(5),
 				ShowValueLabels:       types.BoolValue(true),
@@ -498,16 +544,8 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 			expectFillValue: 0.5,
 		},
 		{
-			name: "nil values",
-			apiDecorations: kbapi.XyDecorations{
-				ShowEndZones:          nil,
-				ShowCurrentTimeMarker: nil,
-				PointVisibility:       nil,
-				LineInterpolation:     nil,
-				MinimumBarHeight:      nil,
-				ShowValueLabels:       nil,
-				FillOpacity:           nil,
-			},
+			name:           "nil values",
+			apiDecorations: kbapi.XyDecorations{},
 			expected: &xyDecorationsModel{
 				ShowEndZones:          types.BoolNull(),
 				ShowCurrentTimeMarker: types.BoolNull(),
@@ -555,7 +593,8 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 
 			// Verify round-trip preserves known values
 			if !model.ShowEndZones.IsNull() && !model.ShowEndZones.IsUnknown() {
-				assert.Equal(t, model.ShowEndZones.ValueBool(), *apiDecorations.ShowEndZones)
+				require.NotNil(t, apiDecorations.EndZones)
+				assert.Equal(t, model.ShowEndZones.ValueBool(), apiDecorations.EndZones.Visible)
 			}
 		})
 	}
@@ -627,12 +666,26 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 		{
 			name: "inside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
+				visibility := kbapi.XyLegendInsideVisibilityVisible
+				position := kbapi.TopLeft
 				legend := kbapi.XyLegendInside{
-					Inside:             true,
-					Visibility:         kbapi.XyLegendInsideVisibilityVisible,
-					TruncateAfterLines: new(float32(3)),
-					Columns:            new(float32(2)),
-					Alignment:          func() *kbapi.XyLegendInsideAlignment { a := kbapi.XyLegendInsideAlignment("left"); return &a }(),
+					Placement:  kbapi.XyLegendInsidePlacementInside,
+					Visibility: &visibility,
+					Layout: &struct {
+						Truncate *struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						} `json:"truncate,omitempty"`
+						Type kbapi.XyLegendInsideLayoutType `json:"type"`
+					}{
+						Truncate: &struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						}{
+							MaxLines: new(float32(3)),
+						},
+						Type: kbapi.XyLegendInsideLayoutTypeGrid,
+					},
+					Columns:  new(float32(2)),
+					Position: &position,
 					Statistics: &[]kbapi.XyLegendInsideStatistics{
 						kbapi.XyLegendInsideStatistics("mean"),
 						kbapi.XyLegendInsideStatistics("max"),
@@ -647,7 +700,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 				Visibility:         types.StringValue("visible"),
 				TruncateAfterLines: types.Int64Value(3),
 				Columns:            types.Int64Value(2),
-				Alignment:          types.StringValue("left"),
+				Alignment:          types.StringValue("top_left"),
 			},
 		},
 	}
@@ -684,17 +737,33 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 		{
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
-				legend := kbapi.XyLegendOutside{
-					Visibility:         kbapi.XyLegendOutsideVisibilityHidden,
-					TruncateAfterLines: new(float32(5)),
-					Position:           func() *kbapi.XyLegendOutsidePosition { p := kbapi.XyLegendOutsidePosition("right"); return &p }(),
-					Size:               func() *kbapi.XyLegendOutsideSize { s := kbapi.XyLegendOutsideSize("medium"); return &s }(),
-					Statistics: &[]kbapi.XyLegendOutsideStatistics{
-						kbapi.XyLegendOutsideStatistics("min"),
+				visibility := kbapi.XyLegendOutsideVerticalVisibilityHidden
+				position := kbapi.XyLegendOutsideVerticalPositionRight
+				placement := kbapi.XyLegendOutsideVerticalPlacementOutside
+				legend := kbapi.XyLegendOutsideVertical{
+					Visibility: &visibility,
+					Layout: &struct {
+						Truncate *struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						} `json:"truncate,omitempty"`
+						Type kbapi.XyLegendOutsideVerticalLayoutType `json:"type"`
+					}{
+						Truncate: &struct {
+							MaxLines *float32 `json:"max_lines,omitempty"`
+						}{
+							MaxLines: new(float32(5)),
+						},
+						Type: kbapi.Grid,
+					},
+					Placement: &placement,
+					Position:  &position,
+					Size:      kbapi.LegendSizeM,
+					Statistics: &[]kbapi.XyLegendOutsideVerticalStatistics{
+						kbapi.XyLegendOutsideVerticalStatistics("min"),
 					},
 				}
 				var result kbapi.XyLegend
-				_ = result.FromXyLegendOutside(legend)
+				_ = result.FromXyLegendOutsideVertical(legend)
 				return result
 			}(),
 			expected: &xyLegendModel{
@@ -702,7 +771,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 				Visibility:         types.StringValue("hidden"),
 				TruncateAfterLines: types.Int64Value(5),
 				Position:           types.StringValue("right"),
-				Size:               types.StringValue("medium"),
+				Size:               types.StringValue("m"),
 			},
 		},
 	}
@@ -746,15 +815,15 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			},
 		},
 		Query: &filterSimpleModel{
-			Query:    types.StringValue("*"),
-			Language: types.StringValue("kuery"),
+			Expression: types.StringValue("*"),
+			Language:   types.StringValue("kql"),
 		},
 	}
 
 	xyChart, diags := model.toAPI()
 	require.False(t, diags.HasError())
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromXyChart(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
@@ -818,8 +887,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					Visibility: types.StringValue("visible"),
 				},
 				Query: &filterSimpleModel{
-					Query:    types.StringValue("*"),
-					Language: types.StringValue("kuery"),
+					Expression: types.StringValue("*"),
+					Language:   types.StringValue("kql"),
 				},
 			},
 			expectError: false,

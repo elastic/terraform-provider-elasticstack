@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -137,29 +138,47 @@ type tfModelV0 struct {
 //go:embed resource-description.md
 var monitorDescription string
 
-func locationValidator(validateLocation bool) []validator.List {
-	if validateLocation {
-		return []validator.List{
-			listvalidator.ValueStringsAre(
-				stringvalidator.OneOf(
-					"japan",
-					"india",
-					"singapore",
-					"australia_east",
-					"united_kingdom",
-					"germany",
-					"canada_east",
-					"brazil",
-					"us_east",
-					"us_west",
-				),
-			),
-		}
-	}
-	return []validator.List{}
+// skipLocationValidationEnvVar: when set to "true" at validate time, managed location enum
+// validation is skipped (e.g. acceptance tests using t.Setenv after provider init).
+const skipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
+
+var managedElasticLocationOneOf = stringvalidator.OneOf(
+	"japan",
+	"india",
+	"singapore",
+	"australia_east",
+	"united_kingdom",
+	"germany",
+	"canada_east",
+	"brazil",
+	"us_east",
+	"us_west",
+)
+
+type managedLocationStringValidator struct{}
+
+func (v managedLocationStringValidator) Description(ctx context.Context) string {
+	return managedElasticLocationOneOf.Description(ctx)
 }
 
-func monitorConfigSchema(validateLocation bool) schema.Schema {
+func (v managedLocationStringValidator) MarkdownDescription(ctx context.Context) string {
+	return managedElasticLocationOneOf.MarkdownDescription(ctx)
+}
+
+func (v managedLocationStringValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if os.Getenv(skipLocationValidationEnvVar) == "true" {
+		return
+	}
+	managedElasticLocationOneOf.ValidateString(ctx, req, resp)
+}
+
+func locationValidators() []validator.List {
+	return []validator.List{
+		listvalidator.ValueStringsAre(managedLocationStringValidator{}),
+	}
+}
+
+func monitorConfigSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: monitorDescription,
 		Attributes: map[string]schema.Attribute{
@@ -212,7 +231,7 @@ func monitorConfigSchema(validateLocation bool) schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.",
-				Validators:          locationValidator(validateLocation),
+				Validators:          locationValidators(),
 			},
 			"private_locations": schema.ListAttribute{
 				ElementType:         types.StringType,

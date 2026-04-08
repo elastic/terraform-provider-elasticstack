@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorUppercase(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUppercase,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "json", expectedJSONUppercase),
@@ -47,13 +47,3 @@ const expectedJSONUppercase = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorUppercase = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_uppercase" "test" {
-  field = "foo"
-}
-`

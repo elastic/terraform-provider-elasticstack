@@ -36,6 +36,9 @@
       ]
     }
   ],
+  "ignorePaths": [
+    ".github/workflows/*.lock.yml"
+  ],
   "automerge": true,
   "automergeStrategy": "squash",
   "automergeType": "branch",

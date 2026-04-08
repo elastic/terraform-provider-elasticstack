@@ -50,12 +50,12 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "dashboard_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", "Test dashboard description"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_from", "now-15m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "now"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_pause", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_value", "90000"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_text", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "now-15m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.pause", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.value", "90000"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
 				),
 			},
 			{
@@ -69,10 +69,10 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" Updated"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", "Updated dashboard description"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_from", "now-30m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "now"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_pause", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_value", "30000"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "now-30m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.pause", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.value", "30000"),
 				),
 			},
 			{
@@ -85,13 +85,16 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Options"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_from", "2024-01-01T00:00:00.000Z"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "2024-01-01T01:00:00.000Z"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range_mode", "absolute"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "2024-01-01T00:00:00.000Z"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.to", "2024-01-01T01:00:00.000Z"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.mode", "absolute"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.hide_panel_titles", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.use_margins", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.sync_colors", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.sync_tooltips", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.sync_cursor", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.auto_apply_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.hide_panel_borders", "true"),
 				),
 			},
 			{
@@ -104,28 +107,44 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 				ResourceName:            "elasticstack_kibana_dashboard.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"time_range_mode"},
+				ImportStateVerifyIgnore: []string{"time_range.mode"},
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardAccessControl(t *testing.T) {
+	t.Skip("Access control requires a full user profile which is not currently supported in the test environment")
+	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum) + " with Access Control"
+	username := "tf-dashboard-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	password := "TestPass-" + sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
+					"dashboard_title":    config.StringVariable(dashboardTitle),
+					"dashboard_username": config.StringVariable(username),
+					"dashboard_password": config.StringVariable(password),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Access Control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.owner", "elastic"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
+					"dashboard_title":    config.StringVariable(dashboardTitle),
+					"dashboard_username": config.StringVariable(username),
+					"dashboard_password": config.StringVariable(password),
 				},
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
@@ -191,6 +210,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
@@ -236,7 +256,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "My Section"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "markdown"),
@@ -262,11 +282,11 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
 				),
@@ -284,12 +304,12 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.1.markdown_config.content", "Section one - panel two"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.1.markdown_config.content", "Section two - panel two"),
@@ -310,11 +330,11 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.content", "Top-level panel two"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.uid"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
 				),
@@ -323,9 +343,31 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardRootQueryJSON(t *testing.T) {
+	dashboardTitle := "Test Dashboard JSON Query " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kuery"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "query.json"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	dashboardID := "test-legacy-metric-json-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -354,14 +396,16 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("legacy_metric_json"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
-					"dashboard_id":    config.StringVariable(dashboardID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "dashboard_id", dashboardID),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "dashboard_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.0", "test"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.uid", "panel-1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"type"\s*:\s*"legacy_metric"`)),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.dataset_json"),

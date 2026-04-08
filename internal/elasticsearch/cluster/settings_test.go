@@ -31,12 +31,12 @@ import (
 
 func TestAccResourceClusterSettings(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceClusterSettingsDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceClusterSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceClusterSettingsCreate(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "3"),
@@ -76,7 +76,8 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceClusterSettingsTransientUpdate(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("transient_update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "3"),
@@ -116,7 +117,8 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceClusterSettingsUpdate(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
@@ -150,7 +152,8 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceClusterSettingsPersistentValueListUpdate(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("persistent_value_list_update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
@@ -184,8 +187,9 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "elasticstack_elasticsearch_cluster_settings.test",
-				ImportState:  true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_cluster_settings.test",
+				ImportState:              true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
 					if len(is) != 1 {
 						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
@@ -213,12 +217,12 @@ func TestAccResourceClusterSettings(t *testing.T) {
 
 func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceClusterSettingsDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceClusterSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceClusterSettingsPersistentOnly(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test_persistent", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "persistent.0.setting.#", "1"),
@@ -233,153 +237,6 @@ func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceClusterSettingsCreate() string {
-	return `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_cluster_settings" "test" {
-  persistent {
-    setting {
-      name  = "indices.lifecycle.poll_interval"
-      value = "10m"
-    }
-    setting {
-      name  = "indices.recovery.max_bytes_per_sec"
-      value = "50mb"
-    }
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "65%"
-    }
-  }
-
-  transient {
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "60%"
-    }
-    setting {
-      name       = "xpack.security.audit.logfile.events.include"
-      value_list = ["ACCESS_DENIED", "ACCESS_GRANTED"]
-    }
-  }
-}
-`
-}
-
-func testAccResourceClusterSettingsTransientUpdate() string {
-	return `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_cluster_settings" "test" {
-  persistent {
-    setting {
-      name  = "indices.lifecycle.poll_interval"
-      value = "10m"
-    }
-    setting {
-      name  = "indices.recovery.max_bytes_per_sec"
-      value = "50mb"
-    }
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "65%"
-    }
-  }
-
-  transient {
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "70%"
-    }
-    setting {
-      name       = "xpack.security.audit.logfile.events.include"
-      value_list = ["ACCESS_DENIED", "AUTHENTICATION_SUCCESS"]
-    }
-  }
-}
-`
-}
-
-func testAccResourceClusterSettingsUpdate() string {
-	return `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_cluster_settings" "test" {
-  persistent {
-    setting {
-      name  = "indices.lifecycle.poll_interval"
-      value = "15m"
-    }
-    setting {
-      name  = "indices.recovery.max_bytes_per_sec"
-      value = "40mb"
-    }
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "60%"
-    }
-    setting {
-      name       = "xpack.security.audit.logfile.events.include"
-      value_list = ["ACCESS_DENIED", "AUTHENTICATION_SUCCESS"]
-    }
-  }
-}
-`
-}
-
-func testAccResourceClusterSettingsPersistentValueListUpdate() string {
-	return `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_cluster_settings" "test" {
-  persistent {
-    setting {
-      name  = "indices.lifecycle.poll_interval"
-      value = "15m"
-    }
-    setting {
-      name  = "indices.recovery.max_bytes_per_sec"
-      value = "40mb"
-    }
-    setting {
-      name  = "indices.breaker.total.limit"
-      value = "60%"
-    }
-    setting {
-      name       = "xpack.security.audit.logfile.events.include"
-      value_list = ["ACCESS_DENIED", "ACCESS_GRANTED"]
-    }
-  }
-}
-`
-}
-
-func testAccResourceClusterSettingsPersistentOnly() string {
-	return `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_cluster_settings" "test_persistent" {
-  persistent {
-    setting {
-      name  = "indices.lifecycle.poll_interval"
-      value = "10m"
-    }
-  }
-}
-`
 }
 
 func checkResourceClusterSettingsDestroy(s *terraform.State) error {

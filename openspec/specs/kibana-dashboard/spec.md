@@ -12,26 +12,38 @@ Define the Terraform schema and runtime behavior for the `elasticstack_kibana_da
 resource "elasticstack_kibana_dashboard" "example" {
   id           = <computed, string> # canonical state id: "<space_id>/<dashboard_id>"; UseStateForUnknown
   space_id     = <optional, computed, string> # default "default"; RequiresReplace
-  dashboard_id = <optional, computed, string> # Kibana saved object id; RequiresReplace; UseStateForUnknown
+  dashboard_id = <computed, string> # Kibana-assigned dashboard id; UseStateForUnknown
 
-  title                  = <required, string>
-  description            = <optional, string>
-  time_from              = <required, string>
-  time_to                = <required, string>
-  time_range_mode        = <optional, string> # one of: absolute | relative
-  refresh_interval_pause = <required, bool>
-  refresh_interval_value = <required, int64>
-  query_language         = <required, string>
-  query_text             = <optional, string> # conflicts with query_json
-  query_json             = <optional, json string, normalized> # conflicts with query_text
-  tags                   = <optional, list(string)>
+  title       = <required, string>
+  description = <optional, string>
+
+  time_range = {
+    from = <required, string>
+    to   = <required, string>
+    mode = <optional, string> # absolute | relative; preserved when GET omits mode (REQ-009)
+  }
+
+  refresh_interval = {
+    pause = <required, bool>
+    value = <required, int64>
+  }
+
+  query = {
+    language = <required, string>
+    text     = <optional, string> # conflicts with json; string branch of API union
+    json     = <optional, json string, normalized> # conflicts with text; object branch
+  }
+
+  tags = <optional, list(string)>
 
   options = <optional, object({
-    hide_panel_titles = <optional, bool>
-    use_margins       = <optional, bool>
-    sync_colors       = <optional, bool>
-    sync_tooltips     = <optional, bool>
-    sync_cursor       = <optional, bool>
+    hide_panel_titles  = <optional, bool>
+    use_margins        = <optional, bool>
+    sync_colors        = <optional, bool>
+    sync_tooltips      = <optional, bool>
+    sync_cursor        = <optional, bool>
+    auto_apply_filters = <optional, bool>
+    hide_panel_borders = <optional, bool>
   })>
 
   panels = <optional, list(object({
@@ -42,7 +54,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       w = <optional, int64>
       h = <optional, int64>
     }
-    id = <optional, computed, string> # UseNonNullStateForUnknown
+    uid = <optional, computed, string> # API uid; UseNonNullStateForUnknown
 
     markdown_config = <optional, object({
       content     = <optional, string>
@@ -149,7 +161,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       sampling              = <optional, float64>
       axes                  = <required, object(...)>
       cells                 = <required, object(...)>
-      legend                = <required, object(...)>
+      legend                = <required, object({ visibility = <optional, string>, ... })> # visibility: visible | hidden
       metric_json           = <required, json string with defaults>
       x_axis_json           = <required, json string, normalized>
       y_axis_json           = <optional, json string, normalized>
@@ -210,14 +222,19 @@ resource "elasticstack_kibana_dashboard" "example" {
     pie_chart_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset               = <optional, json string, normalized>
+      dataset_json          = <optional, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, computed, bool> # default false
       sampling              = <optional, computed, float64> # default 1.0
       donut_hole            = <optional, string>
       label_position        = <optional, string>
-      legend                = <optional, json string, normalized>
+      legend = <optional, computed, object({
+        nested               = <optional, bool>
+        size                 = <required, string> # auto | s | m | l | xl
+        truncate_after_lines = <optional, float64>
+        visible              = <optional, string> # auto | visible | hidden; maps to API `visibility`
+      })> # schema default when omitted (typical size/visibility auto); optional+computed for Terraform
       metrics               = <required, list(object({ config = <required, json string with defaults> }))> # at least 1
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # at least 1 when set
     })> # only with type = "lens"
@@ -238,7 +255,7 @@ resource "elasticstack_kibana_dashboard" "example" {
 
   sections = <optional, list(object({
     title     = <required, string>
-    id        = <optional, computed, string>
+    uid       = <optional, computed, string>
     collapsed = <optional, bool>
     grid = {
       y = <required, int64>
@@ -248,7 +265,6 @@ resource "elasticstack_kibana_dashboard" "example" {
 
   access_control = <optional, object({
     access_mode = <optional, string> # one of: write_restricted | default
-    owner       = <optional, string>
   })>
 }
 ```
@@ -287,11 +303,11 @@ For create, read, update, and delete, when the provider cannot supply a Kibana O
 
 ### Requirement: Composite identity and computed ids (REQ-003)
 
-The resource SHALL expose a computed canonical `id` in the format `<space_id>/<dashboard_id>`. `space_id` SHALL default to `default` when omitted. On create, if `dashboard_id` is omitted, the resource SHALL accept the id generated by Kibana and store it in both `dashboard_id` and the composite `id`. On read and update, the resource SHALL derive the target dashboard id and space from the composite `id`.
+The resource SHALL expose a computed canonical `id` in the format `<space_id>/<dashboard_id>`. `space_id` SHALL default to `default` when omitted. On create, the resource SHALL accept the id generated by Kibana and store it in both `dashboard_id` and the composite `id`. On read and update, the resource SHALL derive the target dashboard id and space from the composite `id`.
 
-#### Scenario: Generated dashboard id
+#### Scenario: Kibana-generated dashboard id
 
-- GIVEN configuration omits `dashboard_id`
+- GIVEN configuration does not provide `dashboard_id`
 - WHEN create succeeds and Kibana returns dashboard id `abc123`
 - THEN state SHALL contain `dashboard_id = "abc123"` and `id = "default/abc123"` unless another `space_id` was configured
 
@@ -317,18 +333,61 @@ The resource SHALL use the provider's configured Kibana OpenAPI client for all C
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
-Schema validation SHALL enforce that each typed panel config block is only present on a panel whose `type` matches that block's panel type, and that at most one typed config block is present on any panel. This exclusivity requirement now applies to `time_slider_control_config` in addition to all previously supported typed config blocks.
+Schema validation SHALL enforce that `options_list_control_config` is valid only for panels with `type = "options_list_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `search_technique` is restricted to `prefix`, `wildcard`, or `exact` when set. Schema validation SHALL also enforce that `synthetics_monitors_config` is valid only for panels with `type = "synthetics_monitors"` and is mutually exclusive with all other panel configuration blocks and with `config_json`.
 
-#### Scenario: Reject conflicting time slider config blocks
+REQ-006 is extended to include:
 
-- GIVEN a panel with `type = "time_slider_control"`
-- AND `time_slider_control_config` is set together with another typed panel config block or practitioner-authored `config_json`
+- `options_list_control_config` SHALL be valid only for panels with `type = "options_list_control"`.
+- `options_list_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- The `search_technique` attribute within `options_list_control_config` SHALL be restricted to the values `prefix`, `wildcard`, and `exact` when set; any other value SHALL be rejected at plan time.
+- `synthetics_monitors_config` SHALL be valid only for panels with `type = "synthetics_monitors"`.
+- `synthetics_monitors_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+
+#### Scenario: options_list_control_config rejected for non-options_list_control panel
+
+- GIVEN a panel with `type = "lens"` and `options_list_control_config` set
 - WHEN Terraform validates the resource schema
-- THEN the provider SHALL return a plan-time validation error describing the conflict or unsupported configuration
+- THEN the configuration SHALL be rejected before any dashboard API call
+
+#### Scenario: synthetics_monitors_config rejected for non-synthetics_monitors panel
+
+- GIVEN a panel with `type = "lens"` and `synthetics_monitors_config` set
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
+#### Scenario: synthetics_monitors_config conflicts with other typed blocks
+
+- GIVEN a panel entry with `type = "synthetics_monitors"` that sets both `synthetics_monitors_config` and any other typed config block (e.g. `markdown_config`)
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
+
+### Requirement: Dashboard root schema API naming (REQ-036)
+
+The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
+
+The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
+
+#### Scenario: Query union uses text branch
+
+- GIVEN `query = { language = "kuery" text = "http.response.status_code:200" }`
+- WHEN the provider builds the create or update request body
+- THEN it SHALL set the API query to the string branch of `query.query` and SHALL set `query.language` from `query.language`
+
+#### Scenario: Query union uses json branch
+
+- GIVEN `query = { language = "kuery" json = jsonencode({ ... }) }`
+- WHEN the provider builds the create or update request
+- THEN it SHALL set the API query to the object branch and SHALL reject configurations where both `text` and `json` are set, or where neither is set
+
+#### Scenario: Options include new flags
+
+- GIVEN `options { hide_panel_borders = true auto_apply_filters = false }`
+- WHEN create or update runs
+- THEN the provider SHALL include those fields in the API `options` object when known
 
 ### Requirement: Create and update request mapping (REQ-007)
 
-On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, `time_range`, `refresh_interval`, query, tags, options, panels, sections, and access control when those values are known. Query mapping SHALL send `query_text` as the string branch of the API union and `query_json` as the object branch of the API union. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
+On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string branch of the API union and `query.json` as the object branch of the API union. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
 
 #### Scenario: Post-apply authoritative read
 
@@ -338,7 +397,7 @@ On create and update, the resource SHALL map Terraform state to the dashboard AP
 
 ### Requirement: Read behavior and missing-resource handling (REQ-008)
 
-On refresh, the resource SHALL parse the composite `id`, read the dashboard from Kibana, and repopulate state from the API response. If Kibana returns not found, the resource SHALL remove itself from Terraform state. When a dashboard is found, the resource SHALL map title, description, time range, refresh interval, query, tags, options, access control, top-level panels, and sections back into state.
+On refresh, the resource SHALL parse the composite `id`, read the dashboard from Kibana, and repopulate state from the API response. If Kibana returns not found, the resource SHALL remove itself from Terraform state. When a dashboard is found, the resource SHALL map title, description, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, access control, top-level panels, and sections back into state.
 
 #### Scenario: Dashboard removed outside Terraform
 
@@ -346,9 +405,17 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 - WHEN refresh runs and Kibana returns not found
 - THEN the resource SHALL remove the dashboard from state
 
+#### Scenario: Read maps nested query and time_range
+
+- GIVEN a successful refresh after create with `query = { language = "kuery" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
+- WHEN state is repopulated from the GET response
+- THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
+
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
-When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. Because the GET dashboard API does not return `time_range_mode`, the resource SHALL preserve the prior `time_range_mode` value already held in state or plan. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options (`hide_panel_titles = false`, `use_margins = true`, `sync_colors = false`, `sync_tooltips = false`, `sync_cursor = true`), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
+When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
+
+The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, and `project_routing`, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
 
 #### Scenario: Options omitted in config
 
@@ -358,13 +425,33 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional `id`, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel. On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`uid`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
 
-#### Scenario: JSON-only lens panel
+On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, and `esql_control`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
-- GIVEN a panel with `type = "lens"` configured only through `config_json`
-- WHEN the dashboard is read back from Kibana
-- THEN the provider SHALL keep `config_json` as the round-tripped panel representation and SHALL leave typed panel blocks unset for that panel
+`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block; using `config_json` with `type = "synthetics_monitors"` SHALL return an error diagnostic.
+
+**Panel and section identity**: The Terraform attributes **`panels[].uid`** and **`sections[].uid`** replace **`panels[].id`** and **`sections[].id`** to match API `uid`.
+
+#### Scenario: Panel uid round-trip
+
+- GIVEN a panel with `uid = "panel-a"` in configuration
+- WHEN create or update runs
+- THEN the API request SHALL include `uid` (or equivalent panel identity) consistent with `panel-a` for that panel
+
+#### Scenario: config_json rejected for options_list_control panel type
+
+- GIVEN a panel with `type = "options_list_control"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `options_list_control`
+
+#### Scenario: config_json rejected for synthetics_monitors panel type
+
+- GIVEN a panel with `type = "synthetics_monitors"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `synthetics_monitors`
 
 ### Requirement: Panel default normalization and XY-axis drift prevention (REQ-011)
 
@@ -386,9 +473,17 @@ For `type = "markdown"` panels, the resource SHALL accept `markdown_config` with
 - WHEN create, update, or read runs
 - THEN the provider SHALL map the markdown fields between Terraform and the dashboard API
 
-### Requirement: XY chart panel behavior (REQ-013)
+### Requirement: XY chart panel behavior and typed Lens `time_range` (REQ-013)
 
-For XY chart Lens panels, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both. When the provider builds a typed Lens XY panel, it SHALL send the fixed Lens panel time range used by the implementation for typed Lens panels.
+For **typed** Lens panels (those built through the provider’s typed `*_config` blocks and the shared typed Lens write path, not panels managed solely through raw `config_json`), the provider SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window from **`lensPanelTimeRange()`** when assembling the Lens payload. The Terraform schema does not expose that Lens-level `time_range` as a separate configurable attribute for those panels; it remains implementation-defined. REQ-025 governs raw `config_json` Lens panels (no `lensPanelTimeRange()` injection on that path).
+
+For XY chart Lens panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both.
+
+#### Scenario: Typed Lens write includes Lens time_range
+
+- GIVEN a typed Lens panel on create or update (for example XY, heatmap, pie, or treemap panels using their typed configuration blocks)
+- WHEN the provider builds the Lens panel payload through the typed converter path
+- THEN it SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window for typed converters
 
 #### Scenario: XY panel requires layers
 
@@ -438,13 +533,19 @@ For tagcloud Lens panels, the resource SHALL support the non-ES|QL tagcloud shap
 
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
 
 #### Scenario: Non-ES|QL heatmap requires query
 
 - GIVEN a heatmap panel using the non-ES|QL branch
 - WHEN the provider builds the API request
 - THEN it SHALL require `query` to be present
+
+#### Scenario: Heatmap legend visibility enum
+
+- GIVEN `heatmap_config.legend.visibility = "hidden"`
+- WHEN the provider builds the API request
+- THEN it SHALL set API heatmap legend visibility to the `hidden` enum value
 
 ### Requirement: Waffle panel behavior (REQ-019)
 
@@ -490,11 +591,40 @@ For metric-chart Lens panels, the resource SHALL map the provider's two metric-c
 
 For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
 
+`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
+
 #### Scenario: Pie chart API defaults
 
 - GIVEN a pie panel read from Kibana without explicit `ignore_global_filters` or `sampling`
 - WHEN state is refreshed
 - THEN the provider SHALL reconcile those fields as `false` and `1.0`
+
+#### Scenario: Pie chart uses dataset_json
+
+- GIVEN `pie_chart_config` with `dataset_json` set to a normalized JSON string for the pie dataset
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL decode `dataset_json` into the API pie dataset shape
+
+#### Scenario: Pie chart uses structured legend
+
+- GIVEN `pie_chart_config.legend` with `size = "auto"` and `visible = "visible"`
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL encode the pie legend using the API pie legend shape
+- AND it SHALL map Terraform `visible` to API `visibility`
+
+#### Scenario: Pie chart legend omitted
+
+- GIVEN `pie_chart_config` with no `legend` block
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL still produce a valid pie legend object for the API
+- AND it SHALL use the implementation default legend size `auto`
+
+#### Scenario: Pie chart read-back uses legend block
+
+- GIVEN a managed pie chart whose API payload contains a legend object
+- WHEN the provider refreshes state
+- THEN it SHALL populate `pie_chart_config.legend`
+- AND it SHALL NOT populate `pie_chart_config.legend_json`
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
@@ -580,6 +710,368 @@ Practitioner-authored `config_json` SHALL NOT be used when `type = "time_slider_
 - AND the practitioner has not configured a `time_slider_control_config` block
 - WHEN the provider refreshes state
 - THEN it SHALL leave `time_slider_control_config` as null in state
+
+### Requirement: SLO burn rate panel behavior (REQ-032)
+
+The resource SHALL support `type = "slo_burn_rate"` panels through the typed `slo_burn_rate_config` block. The block requires `slo_id` and `duration`, and optionally accepts `slo_instance_id`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns`.
+
+The `duration` field SHALL be validated at plan time against the pattern `^\d+[mhd]$`. Any value that does not match SHALL be rejected before any dashboard API call.
+
+On write, the provider SHALL map `slo_burn_rate_config` to the `config` object in the `slo-burn-rate-embeddable` API schema. Optional fields SHALL be included only when set; absent optional fields SHALL NOT be sent to the API. When `drilldowns` is set, each drilldown object SHALL accept practitioner-configured `url` and `label`, SHALL hardcode `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` in the API request, and SHALL include the optional attributes (`encode_url`, `open_in_new_tab`) only when explicitly set.
+
+On read, the `slo_instance_id` field SHALL use null-preservation: if the prior state value was null and the API returns `"*"`, the provider SHALL keep `slo_instance_id` null in state rather than introducing the API sentinel. When `slo_instance_id` is explicitly configured to `"*"`, the provider SHALL round-trip it normally.
+
+#### Scenario: Creation of slo_burn_rate panel with required fields
+
+- GIVEN a dashboard configuration containing an `slo_burn_rate` panel with `slo_burn_rate_config.slo_id = "my-slo-id"` and `slo_burn_rate_config.duration = "72h"`
+- WHEN the resource is created
+- THEN the provider SHALL send the mapped `config` object to the Kibana dashboard API with `slo_id` and `duration`
+- AND `slo_instance_id` SHALL be null in state
+
+#### Scenario: slo_instance_id null-preservation after read-back
+
+- GIVEN a dashboard configuration containing an `slo_burn_rate` panel that does not set `slo_instance_id`
+- WHEN the resource is created and then read back from Kibana
+- AND Kibana returns `slo_instance_id = "*"` in the API response
+- THEN the provider SHALL keep `slo_instance_id` as null in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Creation of slo_burn_rate panel with slo_instance_id and drilldowns
+
+- GIVEN a dashboard configuration containing an `slo_burn_rate` panel with `slo_instance_id = "host-a"` and a drilldown entry
+- WHEN the resource is created and read back
+- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+
+### Requirement: SLO error budget panel behavior (REQ-031)
+
+For `type = "slo_error_budget"` panels, the resource SHALL accept a typed `slo_error_budget_config` block containing the fields of the `slo-error-budget-embeddable` API schema. `slo_id` SHALL be required. `slo_instance_id`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` SHALL be optional. `slo_error_budget_config` SHALL be mutually exclusive with all other typed panel config blocks and with `config_json`.
+
+On write, the provider SHALL map all configured fields from `slo_error_budget_config` into the Kibana dashboard panel API request for the `slo_error_budget` embeddable type.
+
+On read, the provider SHALL repopulate `slo_error_budget_config` from the API response. For `slo_instance_id`, the provider SHALL preserve the prior Terraform state value when the prior value was null: if the practitioner did not configure `slo_instance_id`, the provider SHALL NOT write the API-returned default `"*"` into state. For `encode_url` and `open_in_new_tab` drilldown fields, the provider SHALL normalize the API default value of `true` so that practitioners who omit those fields do not observe spurious drift after apply. On import, the provider SHALL populate API-returned optional display fields such as `title`, `description`, `hide_title`, and `hide_border`.
+
+`drilldowns` SHALL be represented as a list of typed objects. Each drilldown object SHALL contain required `url` (string) and `label` (string), and optional `encode_url` (bool, default `true`) and `open_in_new_tab` (bool, default `true`). On write, the provider SHALL set Kibana's fixed `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` values in the API request.
+
+#### Scenario: Minimal slo_error_budget panel with only slo_id
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config { slo_id = "my-slo-id" }`
+- WHEN create and subsequent read run
+- THEN the provider SHALL send `slo_id = "my-slo-id"` in the API request
+- AND SHALL read it back into state without error
+
+#### Scenario: slo_instance_id null preservation
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` that omits `slo_instance_id`
+- WHEN the dashboard is created and subsequently read back from Kibana
+- THEN the provider SHALL keep `slo_instance_id` null in state even if Kibana returns `"*"` as the default value
+- AND a subsequent plan SHALL show no changes for `slo_instance_id`
+
+#### Scenario: drilldowns configuration
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` containing a `drilldowns` block with `url` and `label`
+- WHEN the dashboard is created and subsequently read back from Kibana
+- THEN the provider SHALL round-trip the typed drilldown fields
+- AND SHALL apply default normalization for `encode_url` and `open_in_new_tab` so that omitting them in configuration does not produce drift
+- AND SHALL write Kibana's fixed `trigger` and `type` values into the API request
+
+### Requirement: ES|QL control panel behavior (REQ-026)
+
+For `type = "esql_control"` panels, the resource SHALL accept `esql_control_config` with the required fields `selected_options`, `variable_name`, `variable_type`, `esql_query`, and `control_type`, and the optional fields `title`, `single_select`, `available_options`, and `display_settings`.
+
+On write (create and update), the resource SHALL map `esql_control_config` to the `config` object in the `kbn-dashboard-panel-esql_control` API schema. All required fields SHALL be included in the API request. Optional fields SHALL be included only when they are set in Terraform state; absent optional fields SHALL NOT be sent to the API. The `display_settings` sub-object SHALL be sent only when the `display_settings` block is set; within that block, only attributes that are explicitly set SHALL be included.
+
+On read, the resource SHALL repopulate `esql_control_config` from the API response. Fields that the API response omits SHALL not be forced into state. When `selected_options` is returned by the API, the provider SHALL preserve the API-returned ordering. The provider SHALL NOT apply a typed `config_json` round-trip for `esql_control` panels; such panels are always managed through the typed `esql_control_config` block.
+
+The `esql_control` panel type is a standalone control panel, not a Lens visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. As a result, none of the Lens panel converters, Lens time-range injection, or Lens metric default normalization SHALL apply to `esql_control` panels.
+
+#### Scenario: Creation of esql_control panel with required fields using STATIC_VALUES
+
+- GIVEN a dashboard configuration containing an `esql_control` panel with:
+  - `type = "esql_control"`
+  - `esql_control_config.selected_options = ["option_a", "option_b"]`
+  - `esql_control_config.variable_name = "my_var"`
+  - `esql_control_config.variable_type = "values"`
+  - `esql_control_config.esql_query = "FROM logs-* | STATS count = COUNT(*) BY host.name"`
+  - `esql_control_config.control_type = "STATIC_VALUES"`
+- WHEN the resource is created
+- THEN the provider SHALL send the mapped `config` object to the Kibana dashboard API
+- AND the panel SHALL appear in state with all five required fields populated
+- AND the provider SHALL NOT populate `config_json` for this panel in state
+
+#### Scenario: Creation of esql_control panel with VALUES_FROM_QUERY control type
+
+- GIVEN a dashboard configuration containing an `esql_control` panel with:
+  - `esql_control_config.control_type = "VALUES_FROM_QUERY"`
+  - `esql_control_config.variable_type = "fields"`
+  - `esql_control_config.variable_name = "target_field"`
+  - `esql_control_config.esql_query = "FROM logs-* | KEEP host.name"`
+  - `esql_control_config.selected_options = []`
+- WHEN the resource is created
+- THEN the provider SHALL send the control to Kibana with `control_type = "VALUES_FROM_QUERY"`
+- AND on read-back the provider SHALL refresh `selected_options` from the API response without treating an API-returned empty list as drift
+
+#### Scenario: esql_control panel with display_settings
+
+- GIVEN a dashboard panel with `esql_control_config` including a `display_settings` block with `hide_action_bar = true` and `placeholder = "Select a value"`
+- WHEN the resource is created or updated
+- THEN the provider SHALL include the `display_settings` object in the API request with the set attributes
+- AND on read-back the provider SHALL repopulate `display_settings` from the API response
+
+#### Scenario: Read-back of esql_control panel preserves optional fields
+
+- GIVEN a managed `esql_control` panel whose `esql_control_config` omits `title` and `display_settings`
+- WHEN Kibana returns the panel without those optional fields
+- THEN the provider SHALL keep `title` and `display_settings` as null/unset in state
+- AND SHALL NOT create a spurious diff on the next plan
+
+#### Scenario: Validation of variable_type enum values
+
+- GIVEN an `esql_control_config` block with `variable_type = "time_literal"`
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be accepted
+- GIVEN an `esql_control_config` block with `variable_type = "unsupported"`
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic listing `fields`, `values`, `functions`, `time_literal`, `multi_values` as the valid values
+
+#### Scenario: esql_control panel grid defaults
+
+- GIVEN an `esql_control` panel with only `grid.x` and `grid.y` specified
+- WHEN the resource is created
+- THEN the provider SHALL apply the API defaults for panel width (`w = 24`) and height (`h = 15`) consistent with the `kbn-dashboard-panel-esql_control` schema
+
+### Requirement: Range slider control panel behavior (REQ-028)
+
+For `type = "range_slider_control"` panels, the resource SHALL accept `range_slider_control_config` with the following attributes:
+
+- **`data_view_id`** (required, string): the ID of the Kibana data view that the slider filter targets.
+- **`field_name`** (required, string): the numeric field within the data view that the slider operates on.
+- **`title`** (optional, string): a human-readable label displayed above the slider in the dashboard.
+- **`use_global_filters`** (optional, bool): when set, controls whether the panel respects dashboard-level global filters.
+- **`ignore_validations`** (optional, bool): when set, suppresses validation errors from the control during intermediate states.
+- **`value`** (optional, list(string)): the initial min/max range pre-populated on the slider, expressed as a 2-element list `[min, max]`. When set, the list MUST contain exactly 2 elements. The values are strings matching the API representation.
+- **`step`** (optional, number): the step size for each increment of the slider.
+
+On write, the resource SHALL send `data_view_id` and `field_name` unconditionally and SHALL include each optional field only when it is set to a known, non-null value. On read, the resource SHALL populate `range_slider_control_config` from the API response for panels with `type = "range_slider_control"` and SHALL leave optional fields null in state when the API does not return them.
+
+The `range_slider_control_config` block is valid only when `type = "range_slider_control"` and MUST NOT appear with any other typed panel config block or with `config_json`.
+
+#### Scenario: Required fields only
+
+- GIVEN a `range_slider_control` panel configured with only `data_view_id` and `field_name`
+- WHEN create or update runs
+- THEN the API request SHALL include `data_view_id` and `field_name` in the panel config and SHALL omit all unset optional fields
+
+#### Scenario: Optional range pre-selection
+
+- GIVEN a `range_slider_control` panel configured with `value = ["10", "500"]`
+- WHEN create or update runs
+- THEN the API request SHALL include `value` as a 2-element array matching the configured strings
+- AND when read-back occurs, state SHALL reflect `value = ["10", "500"]`
+
+#### Scenario: Invalid value list length
+
+- GIVEN a `range_slider_control_config` block with `value` set to a list with fewer or more than 2 elements
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a validation diagnostic stating that `value` must contain exactly 2 elements
+
+#### Scenario: config_json rejected for range_slider_control
+
+- GIVEN a panel with `type = "range_slider_control"` configured with `config_json` instead of `range_slider_control_config`
+- WHEN the provider builds the API request
+- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+
+### Requirement: SLO overview panel behavior (REQ-030)
+
+The resource SHALL support `type = "slo_overview"` panels through the typed `slo_overview_config` block. The block SHALL carry exactly one of two mutually exclusive nested blocks: `single` (for single-SLO overview) or `groups` (for grouped SLO overview). On write, the provider SHALL use the presence of the `single` block to select the `slo-single-overview-embeddable` API embeddable type, and the presence of the `groups` block to select the `slo-group-overview-embeddable` API embeddable type. The `overview_mode` discriminant field in the API payload SHALL be set to `"single"` or `"groups"` accordingly and SHALL NOT be exposed as a direct Terraform attribute.
+
+For `single` mode:
+- `slo_id` SHALL be required and SHALL be sent as the SLO identifier in the API payload.
+- `slo_instance_id` SHALL be optional. When configured, it SHALL be sent; when not configured, the field SHALL be omitted from the write payload. On read, if the prior state value was null and Kibana returns `"*"`, the provider SHALL preserve null rather than force `"*"` into state.
+- `remote_name` SHALL be optional and SHALL be sent when configured.
+
+For `groups` mode:
+- All fields SHALL be optional.
+- `group_filters` SHALL be an optional nested block with the following attributes:
+  - `group_by`: optional string, enum-validated as one of `"slo.tags"`, `"status"`, `"slo.indicator.type"`, `"_index"`.
+  - `groups`: optional list of strings with a maximum of 100 entries.
+  - `kql_query`: optional string.
+  - `filters_json`: optional normalized JSON string representing the AS-code filter array; the provider SHALL normalize this field for semantic equality on refresh.
+
+Both modes SHALL support the following shared optional display attributes within their respective nested blocks:
+- `title`: optional string.
+- `description`: optional string.
+- `hide_title`: optional bool.
+- `hide_border`: optional bool.
+
+Both modes SHALL support a `drilldowns` optional list of objects with the following attributes:
+- `url`: required string.
+- `label`: required string.
+- `trigger`: required string.
+- `type`: required string.
+- `encode_url`: optional bool.
+- `open_in_new_tab`: optional bool.
+
+On read, the provider SHALL reconstruct the `single` or `groups` sub-block from the API payload's `overview_mode` field. On read, if Kibana omits `hide_border` or any optional display field, the provider SHALL preserve the prior state value rather than forcing a default.
+
+#### Scenario: Single-mode SLO overview panel write and read
+
+- GIVEN a panel with `type = "slo_overview"` and a `single` block with `slo_id = "my-slo-id"` and `slo_instance_id = "instance-1"`
+- WHEN the provider builds the API request
+- THEN it SHALL send the `slo-single-overview-embeddable` payload with `overview_mode = "single"`, `slo_id = "my-slo-id"`, and `slo_instance_id = "instance-1"`
+- AND WHEN the provider reads the panel back
+- THEN it SHALL populate `single.slo_id` and `single.slo_instance_id` from the API response
+
+#### Scenario: Groups-mode SLO overview panel with group_filters
+
+- GIVEN a panel with `type = "slo_overview"` and a `groups` block with `group_filters.group_by = "status"` and `group_filters.kql_query = "slo.name: my-*"`
+- WHEN the provider builds the API request
+- THEN it SHALL send the `slo-group-overview-embeddable` payload with `overview_mode = "groups"` and the configured `group_filters`
+- AND WHEN the provider reads the panel back
+- THEN it SHALL populate `groups.group_filters.group_by` and `groups.group_filters.kql_query` from the API response
+
+#### Scenario: slo_instance_id null preservation
+
+- GIVEN a panel with `type = "slo_overview"` in `single` mode where `slo_instance_id` was not configured (null in state)
+- WHEN the provider reads the panel back and Kibana returns `slo_instance_id = "*"`
+- THEN the provider SHALL preserve `slo_instance_id` as null in state rather than updating it to `"*"`
+
+#### Scenario: Invalid slo_overview_config — no sub-block
+
+- GIVEN a panel with `type = "slo_overview"` and an `slo_overview_config` block that contains neither `single` nor `groups`
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
+#### Scenario: Drilldowns round-trip
+
+- GIVEN a panel with `type = "slo_overview"` in `single` mode with a `drilldowns` entry specifying `url`, `label`, `trigger`, `type`, and `open_in_new_tab = true`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the `drilldowns` list SHALL reflect the configured values in state
+
+### Requirement: Options list control panel behavior (REQ-027)
+
+When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block and SHALL require that block to be present. The block SHALL require `data_view_id` (string) and `field_name` (string). All other attributes in the block SHALL be optional:
+
+- `title` (string) — human-readable label displayed above the control.
+- `use_global_filters` (bool) — whether the control applies the dashboard's global filters to its own query.
+- `ignore_validations` (bool) — whether the control skips field-level validation against the data view.
+- `single_select` (bool) — when true, only one option may be selected at a time.
+- `exclude` (bool) — when true, the selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (bool) — when true, the control filters for documents where the field exists.
+- `run_past_timeout` (bool) — when true, the control continues to show results even when the underlying query times out.
+- `search_technique` (string) — the technique used to match suggestions; MUST be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (list of string) — the initially or persistently selected option values; the provider SHALL represent all selected options as strings regardless of whether the API stores them as numbers.
+- `display_settings` (nested block, optional) — display preferences for the control widget, containing:
+  - `placeholder` (string) — placeholder text shown when no option is selected.
+  - `hide_action_bar` (bool) — when true, hides the action bar on the control.
+  - `hide_exclude` (bool) — when true, hides the exclude toggle.
+  - `hide_exists` (bool) — when true, hides the exists filter option.
+  - `hide_sort` (bool) — when true, hides the sort control.
+- `sort` (nested block, optional) — default sort configuration for the suggestion list, containing:
+  - `by` (string) — the field or criterion to sort by.
+  - `direction` (string) — the sort direction.
+
+The `options_list_control_config` block SHALL conflict with all other typed panel config blocks (`markdown_config`, `xy_chart_config`, `treemap_config`, `mosaic_config`, `datatable_config`, `tagcloud_config`, `heatmap_config`, `waffle_config`, `region_map_config`, `gauge_config`, `metric_chart_config`, `pie_chart_config`, `legacy_metric_config`) and with `config_json`. When `type` is `options_list_control`, no other typed config block or `config_json` SHALL be present on the same panel entry.
+
+For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL use null-preservation semantics: optional boolean attributes (`use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block SHALL remain null in state when the prior state value was null, even if Kibana returns a server-side default for that attribute. Only attributes that were explicitly set by the user (non-null in prior state) SHALL be updated from the API response. During import (no prior state), only `data_view_id`, `field_name`, `title`, `single_select`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated; the remaining optional boolean attributes and `sort` SHALL be left null to avoid forcing users to manage Kibana server-side defaults in their configuration. The provider SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
+
+#### Scenario: Options list control panel requires data_view_id and field_name
+
+- GIVEN a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
+
+#### Scenario: Options list control panel with invalid search_technique
+
+- GIVEN a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
+
+#### Scenario: Options list control panel round-trips through Kibana
+
+- GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
+- WHEN the provider creates the dashboard and reads it back
+- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Options list control panel import leaves server-default booleans null
+
+- GIVEN an existing dashboard with an `options_list_control` panel where Kibana stores server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
+- WHEN the provider imports the dashboard resource
+- THEN `data_view_id` and `field_name` SHALL be populated in state
+- AND `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort` SHALL remain null in state
+- AND a subsequent plan against a configuration that omits those attributes SHALL show no changes
+
+#### Scenario: Options list control config conflicts with other typed blocks
+
+- GIVEN a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
+
+### Requirement: Synthetics monitors panel behavior (REQ-034)
+
+For `type = "synthetics_monitors"` panels, the resource SHALL accept an optional `synthetics_monitors_config` block. The block, if present, may contain an optional `filters` nested block. Within `filters`, all six filter dimensions (`projects`, `tags`, `monitor_ids`, `locations`, `monitor_types`, `statuses`) are optional lists of `{ label, value }` objects.
+
+The `synthetics_monitors` panel type is a standalone panel, not a Lens visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. None of the Lens panel converters, Lens time-range injection, or Lens metric default normalization SHALL apply to `synthetics_monitors` panels.
+
+**On write (create and update):**
+
+When `synthetics_monitors_config` is set, the resource SHALL map the config block to the panel's `config` object in the API request. When the `filters` block is set, the resource SHALL include the `filters` sub-object with only the filter dimensions that are explicitly configured. Filter dimensions that are not set SHALL be omitted from the API request rather than sent as empty arrays. When `synthetics_monitors_config` is omitted entirely, the resource SHALL send an empty `config` object `{}` or omit `config` from the panel payload, consistent with how other all-optional panel config blocks are handled.
+
+**On read:**
+
+When Kibana returns a `synthetics_monitors` panel with an empty or absent `config` object, the provider SHALL keep `synthetics_monitors_config` null in state. When Kibana returns a present `config` with an empty or absent `filters` object, the provider SHALL keep the `filters` block null in state. When Kibana returns individual filter dimension arrays that are empty, the provider SHALL treat them as equivalent to omitted dimensions and SHALL NOT force empty lists into state.
+
+The provider SHALL seed `synthetics_monitors_config` from prior state or plan on read-back, so that filter dimensions omitted by Kibana do not overwrite Terraform-authored values with null.
+
+**Shared filter model:**
+
+The filter structure used by `synthetics_monitors_config` (lists of `{ label, value }` pairs for each filter dimension) is identical to the filter structure used by `synthetics_stats_overview_config` (REQ-033). The implementation SHOULD share filter model types and converter functions between the two panel types to avoid duplication.
+
+#### Scenario: Synthetics monitors panel with no config block
+
+- GIVEN a dashboard configuration containing a `synthetics_monitors` panel with no `synthetics_monitors_config` block
+- WHEN the resource is created
+- THEN the provider SHALL send a valid API request for the panel without a populated `config` object
+- AND state SHALL record `synthetics_monitors_config` as null
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Synthetics monitors panel with filters
+
+- GIVEN a dashboard configuration containing a `synthetics_monitors` panel with:
+  - `type = "synthetics_monitors"`
+  - `synthetics_monitors_config.filters.projects = [{ label = "My Project", value = "my-project" }]`
+  - `synthetics_monitors_config.filters.statuses = [{ label = "Up", value = "up" }, { label = "Down", value = "down" }]`
+- WHEN the resource is created
+- THEN the provider SHALL send the mapped `config.filters` object to the Kibana dashboard API with the `projects` and `statuses` dimensions populated
+- AND the panel SHALL appear in state with those filter dimensions populated
+- AND omitted filter dimensions (`tags`, `monitor_ids`, `locations`, `monitor_types`) SHALL remain null in state
+
+#### Scenario: Read-back null preservation when config is empty
+
+- GIVEN a managed `synthetics_monitors` panel whose `synthetics_monitors_config` is null (no config block)
+- WHEN Kibana returns the panel with an empty `config` object `{}`
+- THEN the provider SHALL keep `synthetics_monitors_config` null in state
+- AND SHALL NOT create a spurious diff on the next plan
+
+#### Scenario: Read-back null preservation when filters is empty
+
+- GIVEN a managed `synthetics_monitors` panel with `synthetics_monitors_config` set but `filters` omitted
+- WHEN Kibana returns the panel with a `config` containing an empty `filters` object `{}`
+- THEN the provider SHALL keep the `filters` block null in state
+- AND SHALL NOT create a spurious diff on the next plan
+
+#### Scenario: All filter dimensions set
+
+- GIVEN a `synthetics_monitors` panel with all six filter dimensions configured in `filters`
+- WHEN the resource is created and read back
+- THEN all six filter dimensions SHALL be present in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: monitor_ids large list (API constraint documentation)
+
+- GIVEN a `synthetics_monitors` panel with `filters.monitor_ids` containing more than 5000 items
+- WHEN the provider sends the API request
+- THEN the API MAY return an error; the provider SHALL surface that error as a diagnostic
+- AND the provider SHALL NOT enforce a plan-time validator for the 5000-item limit (this is an API-side constraint)
 
 ## Traceability
 

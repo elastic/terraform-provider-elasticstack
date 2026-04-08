@@ -51,7 +51,10 @@ type panelConfigValidator struct{}
 func (panelConfigValidator) Description(_ context.Context) string {
 	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
 		"lens panels configure exactly one lens config block or `config_json`, " +
-		"and `time_slider_control` panels use `time_slider_control_config` or omit config. " +
+		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
+		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
+		"`slo_overview` panels configure `slo_overview_config`, " +
+		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
 		"Practitioner-authored `config_json` for `time_slider_control` is rejected only by the `config_json` " +
 		"attribute validator (type allowlist) to avoid duplicate diagnostics."
 }
@@ -87,7 +90,13 @@ func panelConfigSelectionList() string {
 	return strings.Join(options, ", ")
 }
 
-func panelConfigValidateDiags(panelType string, markdownConfig, configJSON panelConfigValueState, lensConfigs map[string]panelConfigValueState, attrPath *path.Path) diag.Diagnostics {
+func panelConfigValidateDiags(
+	panelType string,
+	markdownConfig, configJSON, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
+	lensConfigs map[string]panelConfigValueState,
+	sloOverviewConfig panelConfigValueState,
+	attrPath *path.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	add := func(summary, detail string) {
 		if attrPath != nil {
@@ -98,6 +107,14 @@ func panelConfigValidateDiags(panelType string, markdownConfig, configJSON panel
 	}
 
 	switch panelType {
+	case panelTypeSloOverview:
+		if sloOverviewConfig.Set {
+			return diags
+		}
+		if sloOverviewConfig.Unknown {
+			return diags
+		}
+		add("Missing SLO overview panel configuration", "SLO overview panels require `slo_overview_config`.")
 	case panelTypeMarkdown:
 		if markdownConfig.Set || configJSON.Set {
 			return diags
@@ -133,6 +150,19 @@ func panelConfigValidateDiags(panelType string, markdownConfig, configJSON panel
 			return diags
 		}
 		add("Invalid lens panel configuration", detail)
+	case panelTypeSloBurnRate:
+		if sloBurnRateConfig.Set {
+			return diags
+		}
+		if sloBurnRateConfig.Unknown {
+			return diags
+		}
+		add("Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
+	case panelTypeSloErrorBudget:
+		if sloErrorBudgetConfig.Set || sloErrorBudgetConfig.Unknown {
+			return diags
+		}
+		add("Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
 	}
 
 	return diags
@@ -164,7 +194,10 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		typeValue.ValueString(),
 		panelConfigValueStateFromValue(attrs["markdown_config"]),
 		panelConfigValueStateFromValue(attrs["config_json"]),
+		panelConfigValueStateFromValue(attrs["slo_burn_rate_config"]),
+		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
 		lensConfigs,
+		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
 		&req.Path,
 	)...)
 }

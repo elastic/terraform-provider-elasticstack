@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Pie Chart Panel (Full)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Pie Chart Panel (Full)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -23,20 +28,24 @@ resource "elasticstack_kibana_dashboard" "test" {
     pie_chart_config = {
       title          = "Full Pie Chart"
       description    = "Full pie chart visualization"
-      donut_hole     = "large"
+      donut_hole     = "l"
       label_position = "outside"
-      dataset = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      dataset_json = jsonencode({
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
-      legend = jsonencode({
-        visible = "show"
-        size    = "auto"
-      })
+      legend = {
+        nested               = true
+        size                 = "auto"
+        visible              = "visible"
+        truncate_after_lines = 5
+      }
       metrics = [
         {
           config = jsonencode({
@@ -54,10 +63,16 @@ resource "elasticstack_kibana_dashboard" "test" {
               mode    = "categorical"
               palette = "default"
               mapping = []
-              unassignedColor = {
+              unassigned = {
                 type  = "color_code"
                 value = "#555555"
               }
+            }
+            limit = 5
+            rank_by = {
+              direction = "desc"
+              metric    = 0
+              type      = "column"
             }
           })
         }

@@ -36,24 +36,19 @@ const jsonNullString = "null"
 
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
-	ID                   types.String         `tfsdk:"id"`
-	SpaceID              types.String         `tfsdk:"space_id"`
-	DashboardID          types.String         `tfsdk:"dashboard_id"`
-	Title                types.String         `tfsdk:"title"`
-	Description          types.String         `tfsdk:"description"`
-	TimeFrom             types.String         `tfsdk:"time_from"`
-	TimeTo               types.String         `tfsdk:"time_to"`
-	TimeRangeMode        types.String         `tfsdk:"time_range_mode"`
-	RefreshIntervalPause types.Bool           `tfsdk:"refresh_interval_pause"`
-	RefreshIntervalValue types.Int64          `tfsdk:"refresh_interval_value"`
-	QueryLanguage        types.String         `tfsdk:"query_language"`
-	QueryText            types.String         `tfsdk:"query_text"`
-	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
-	Tags                 types.List           `tfsdk:"tags"`
-	Options              *optionsModel        `tfsdk:"options"`
-	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
-	Panels               []panelModel         `tfsdk:"panels"`
-	Sections             []sectionModel       `tfsdk:"sections"`
+	ID              types.String          `tfsdk:"id"`
+	SpaceID         types.String          `tfsdk:"space_id"`
+	DashboardID     types.String          `tfsdk:"dashboard_id"`
+	Title           types.String          `tfsdk:"title"`
+	Description     types.String          `tfsdk:"description"`
+	TimeRange       *timeRangeModel       `tfsdk:"time_range"`
+	RefreshInterval *refreshIntervalModel `tfsdk:"refresh_interval"`
+	Query           *dashboardQueryModel  `tfsdk:"query"`
+	Tags            types.List            `tfsdk:"tags"`
+	Options         *optionsModel         `tfsdk:"options"`
+	AccessControl   *AccessControlValue   `tfsdk:"access_control"`
+	Panels          []panelModel          `tfsdk:"panels"`
+	Sections        []sectionModel        `tfsdk:"sections"`
 }
 
 // populateFromAPI populates the Terraform model from the API response
@@ -76,41 +71,46 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 		m.Description = types.StringNull()
 	}
 
-	// Map time range
-	m.TimeFrom = types.StringValue(data.Data.TimeRange.From)
-	m.TimeTo = types.StringValue(data.Data.TimeRange.To)
-	// TODO: Dashboards
-	// TimeRange.Mode isn't currently returned by the API on GET requests
-	// if data.Data.TimeRange.Mode != nil {
-	// 	m.TimeRangeMode = types.StringValue(string(*data.Data.TimeRange.Mode))
-	// } else {
-	// 	m.TimeRangeMode = types.StringNull()
-	// }
+	// Map time range (preserve prior time_range.mode when GET omits it; see REQ-009)
+	var preservedMode types.String
+	if m.TimeRange != nil {
+		preservedMode = m.TimeRange.Mode
+	}
+	m.TimeRange = &timeRangeModel{
+		From: types.StringValue(data.Data.TimeRange.From),
+		To:   types.StringValue(data.Data.TimeRange.To),
+		Mode: preservedMode,
+	}
 
 	// Map refresh interval
-	m.RefreshIntervalPause = types.BoolValue(data.Data.RefreshInterval.Pause)
-	m.RefreshIntervalValue = types.Int64Value(int64(data.Data.RefreshInterval.Value))
+	m.RefreshInterval = &refreshIntervalModel{
+		Pause: types.BoolValue(data.Data.RefreshInterval.Pause),
+		Value: types.Int64Value(int64(data.Data.RefreshInterval.Value)),
+	}
 
 	// Map query
-	m.QueryLanguage = types.StringValue(data.Data.Query.Language)
+	q := &dashboardQueryModel{
+		Language: types.StringValue(data.Data.Query.Language),
+	}
 	// Query.Query is a union type with json.RawMessage - can be string or JSON object
 	queryBytes, err := json.Marshal(data.Data.Query.Query)
 	if err != nil {
 		diags.AddError("Failed to marshal query", err.Error())
-		m.QueryText = types.StringNull()
-		m.QueryJSON = jsontypes.NewNormalizedNull()
+		q.Text = types.StringNull()
+		q.JSON = jsontypes.NewNormalizedNull()
 	} else {
 		// Try to unmarshal as string first (KQL/Lucene)
 		var queryString string
 		if err := json.Unmarshal(queryBytes, &queryString); err == nil {
-			m.QueryText = types.StringValue(queryString)
-			m.QueryJSON = jsontypes.NewNormalizedNull()
+			q.Text = types.StringValue(queryString)
+			q.JSON = jsontypes.NewNormalizedNull()
 		} else {
 			// It's a JSON object
-			m.QueryText = types.StringNull()
-			m.QueryJSON = jsontypes.NewNormalizedValue(string(queryBytes))
+			q.Text = types.StringNull()
+			q.JSON = jsontypes.NewNormalizedValue(string(queryBytes))
 		}
 	}
+	m.Query = q
 
 	// Map tags
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
@@ -129,7 +129,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 			s := string(*data.Data.AccessControl.AccessMode)
 			accessMode = &s
 		}
-		m.AccessControl = newAccessControlFromAPI(accessMode, data.Data.AccessControl.Owner)
+		m.AccessControl = newAccessControlFromAPI(accessMode)
 	}
 
 	// Map panels
@@ -142,13 +142,17 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
-func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsIdJSONRequestBody {
-	req := kbapi.PostDashboardsIdJSONRequestBody{}
+func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
+	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Title = m.Title.ValueString()
-	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.TimeRange.From = m.TimeFrom.ValueString()
-	req.TimeRange.To = m.TimeTo.ValueString()
+	if m.RefreshInterval != nil {
+		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
+		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
+	}
+	if m.TimeRange != nil {
+		req.TimeRange.From = m.TimeRange.From.ValueString()
+		req.TimeRange.To = m.TimeRange.To.ValueString()
+	}
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -157,8 +161,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set time range mode
-	if typeutils.IsKnown(m.TimeRangeMode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
+	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.TimeRange.Mode = &mode
 	}
 
@@ -180,13 +184,13 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Options = options
 
+	// Set access control
+	req.AccessControl = m.AccessControl.toCreateAPI()
+
 	// Set panels
 	panels, panelsDiags := m.panelsToAPI()
 	diags.Append(panelsDiags...)
 	req.Panels = panels
-
-	// Set access control
-	req.AccessControl = m.AccessControl.toCreateAPI()
 
 	return req
 }
@@ -195,10 +199,14 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{}
 	req.Title = m.Title.ValueString()
-	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.TimeRange.From = m.TimeFrom.ValueString()
-	req.TimeRange.To = m.TimeTo.ValueString()
+	if m.RefreshInterval != nil {
+		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
+		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
+	}
+	if m.TimeRange != nil {
+		req.TimeRange.From = m.TimeRange.From.ValueString()
+		req.TimeRange.To = m.TimeRange.To.ValueString()
+	}
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -207,8 +215,8 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set time range mode
-	if typeutils.IsKnown(m.TimeRangeMode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
+	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.TimeRange.Mode = &mode
 	}
 
@@ -235,26 +243,37 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(panelsDiags...)
 	req.Panels = panels
 
-	// Set access control
-	req.AccessControl = m.AccessControl.toUpdateAPI()
-
 	return req
 }
 
 func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.Diagnostics) {
-	query := kbapi.KbnEsQueryServerQuerySchema{
-		Language: m.QueryLanguage.ValueString(),
+	query := kbapi.KbnEsQueryServerQuerySchema{}
+	if m.Query == nil {
+		return query, nil
 	}
-	// Set query text - Query is a union type with json.RawMessage
-	if typeutils.IsKnown(m.QueryText) {
-		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
+	query.Language = m.Query.Language.ValueString()
+	textKnown := typeutils.IsKnown(m.Query.Text)
+	jsonKnown := typeutils.IsKnown(m.Query.JSON)
+
+	if textKnown == jsonKnown {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid dashboard query",
+			"Exactly one of `query.text` or `query.json` must be set.",
+		)
+		return query, diags
+	}
+
+	// Query.Query is a union type with json.RawMessage
+	switch {
+	case textKnown:
+		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.Query.Text.ValueString())
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	} else if typeutils.IsKnown(m.QueryJSON) {
-		// For JSON queries, use the raw JSON directly
+	case jsonKnown:
 		var qj map[string]any
-		diags := m.QueryJSON.Unmarshal(&qj)
+		diags := m.Query.JSON.Unmarshal(&qj)
 		if diags.HasError() {
 			return query, diags
 		}
