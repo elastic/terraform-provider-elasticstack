@@ -24,6 +24,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -40,6 +42,30 @@ func TestAccDataSourceIntegration(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
+					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
+	spaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_name": config.StringVariable(spaceID),
+					"space_id":   config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "space_id", spaceID),
 					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
 				),
 			},
