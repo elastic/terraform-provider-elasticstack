@@ -85,7 +85,11 @@ func TestAccDataSourceIngestProcessorDissectOnFailureMulti(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "on_failure.#", "2"),
-					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "on_failure.0", `{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`),
+					CheckResourceJSON(
+						"data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi",
+						"on_failure.0",
+						`{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`,
+					),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "on_failure.1", `{"set":{"field":"event.kind","value":"pipeline_error"}}`),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "json", expectedJSONDissectOnFailureMulti),
 				),

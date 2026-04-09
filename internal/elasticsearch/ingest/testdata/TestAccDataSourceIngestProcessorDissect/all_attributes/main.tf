@@ -4,7 +4,7 @@ provider "elasticstack" {
 
 data "elasticstack_elasticsearch_ingest_processor_dissect" "test" {
   field            = "message"
-  pattern          = "%{clientip} %{ident} %{auth} [%{@timestamp}] \"%{verb} %{request} HTTP/%{httpversion}\" %{status} %{size}"
+  pattern          = "%%{clientip} %%{ident} %%{auth} [%%{@timestamp}] \"%%{verb} %%{request} HTTP/%%{httpversion}\" %%{status} %%{size}"
   append_separator = "|"
   ignore_missing   = true
   ignore_failure   = true

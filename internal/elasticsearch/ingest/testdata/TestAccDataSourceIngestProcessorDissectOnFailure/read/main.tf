@@ -4,7 +4,7 @@ provider "elasticstack" {
 
 data "elasticstack_elasticsearch_ingest_processor_dissect" "test_on_failure" {
   field   = "message"
-  pattern = "%{clientip} %{ident} %{auth}"
+  pattern = "%%{clientip} %%{ident} %%{auth}"
 
   on_failure = [
     jsonencode({
