@@ -19,6 +19,7 @@ package integrationds_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -50,8 +51,7 @@ func TestAccDataSourceIntegration(t *testing.T) {
 }
 
 func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
-	spaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
-
+	spaceID := strings.ToLower("test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
