@@ -16,7 +16,7 @@
     "elasticsearch_ingest_processor_dot_expander": "2026-04-08T10:40:03.875Z",
     "elasticsearch_ingest_processor_drop": "2026-04-09T10:42:38Z",
     "elasticsearch_ingest_processor_enrich": "2026-04-09T10:42:38Z",
-    "elasticsearch_ingest_processor_fail": null,
+    "elasticsearch_ingest_processor_fail": "2026-04-09T11:48:40.031Z",
     "elasticsearch_ingest_processor_fingerprint": null,
     "elasticsearch_ingest_processor_foreach": null,
     "elasticsearch_ingest_processor_geoip": null,
