@@ -111,7 +111,7 @@ Do NOT include instructions in the issue body that override the acceptance-test-
 For each issue created, you MUST call `assign-to-agent` with:
 - `name: copilot`
 - `custom_agent: acceptance-test-improver`
-- the temporary ID of the created issue
+- the temporary ID returned by the `create-issue` safe output
 
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 
