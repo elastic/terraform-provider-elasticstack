@@ -38,6 +38,8 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	planWantsTamperProtection := planModel.IsProtected
+
 	client, err := r.client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
@@ -94,11 +96,44 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		}
 	}
 
+	// POST /api/fleet/agent_policies may not persist is_protected; a follow-up PUT applies it.
+	if policy != nil && typeutils.IsKnown(planWantsTamperProtection) && planWantsTamperProtection.ValueBool() &&
+		feat.SupportsTamperProtection && !policy.IsProtected {
+		existingFeatures := agentFeaturesFromPolicy(policy)
+		updateBody, updateDiags := planModel.toAPIUpdateModel(ctx, feat, existingFeatures)
+		resp.Diagnostics.Append(updateDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		updated, updateDiags := fleet.UpdateAgentPolicy(ctx, client, policy.Id, spaceID, updateBody)
+		resp.Diagnostics.Append(updateDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if updated != nil {
+			policy = updated
+		}
+	}
+
 	// Populate from API response
 	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if typeutils.IsKnown(planWantsTamperProtection) && planWantsTamperProtection.ValueBool() &&
+		typeutils.IsKnown(planModel.IsProtected) && !planModel.IsProtected.ValueBool() {
+		resp.Diagnostics.AddError(
+			"Fleet API did not enable tamper protection",
+			"The agent policy was saved but is_protected is still false. "+
+				"Tamper protection can only be enabled when an Elastic Defend integration policy "+
+				"is attached to this agent policy. First apply with is_protected = false, attach "+
+				"Elastic Defend, then apply again with is_protected = true. Also ensure Elastic "+
+				"Stack 8.10.0 or later, that your license allows tamper protection, and that the "+
+				"Fleet API accepts is_protected on this deployment.",
+		)
 		return
 	}
 

@@ -108,6 +108,12 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Default:     booldefault.StaticBool(false),
 			},
+			"is_protected": schema.BoolAttribute{
+				Description: "Enable tamper protection for this agent policy (Fleet API `is_protected`). When true, agents use uninstall tokens. Requires Elastic Stack 8.10.0 or later.",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
+			},
 			"skip_destroy": schema.BoolAttribute{
 				Description: "Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.",
 				Optional:    true,
