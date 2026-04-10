@@ -29,7 +29,7 @@ jobs:
       should_run: ${{ steps.decide.outputs.should_run }}
     steps:
       - id: decide
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             if (context.eventName === 'pull_request' && context.payload.action === 'ready_for_review') {
@@ -264,7 +264,7 @@ jobs:
       - name: Warn PR for snapshot acceptance failure
         if: steps.tf-acceptance.outcome == 'failure' && endsWith(matrix.version, '-SNAPSHOT') && github.event_name == 'pull_request'
         continue-on-error: true
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const marker = '<!-- tf-acceptance-snapshot-warning:${{ matrix.version }} -->';
