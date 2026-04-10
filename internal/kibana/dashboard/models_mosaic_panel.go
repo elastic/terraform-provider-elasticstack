@@ -282,7 +282,7 @@ func (m *mosaicConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diagnostics) {

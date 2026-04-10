@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,12 +34,13 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceComponentTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceComponentTemplateCreate(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.0.name", "my_template_test"),
@@ -49,37 +51,17 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 	})
 }
 
-func testAccResourceComponentTemplateCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_component_template" "test" {
-  name = "%s"
-
-  template {
-    alias {
-      name = "my_template_test"
-    }
-
-    settings = jsonencode({
-      number_of_shards = "3"
-    })
-  }
-}`, name)
-}
-
 func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceComponentTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceComponentTemplateWithAliasDetails(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.#", "1"),
@@ -99,28 +81,6 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceComponentTemplateWithAliasDetails(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_component_template" "test" {
-  name = "%s"
-
-  template {
-    alias {
-      name           = "detailed_alias"
-      is_hidden      = true
-      is_write_index = true
-      routing        = "shard_1"
-      search_routing = "shard_1"
-      index_routing  = "shard_1"
-    }
-  }
-}`, name)
 }
 
 func checkResourceComponentTemplateDestroy(s *terraform.State) error {

@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -38,13 +39,14 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceDataStreamLifecycleDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamLifecycleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:   testAccResourceDataStreamLifecycleCreate(dsName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -63,11 +65,14 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ResourceName:            "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name", "enabled", "expand_wildcards"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				ResourceName:             "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"name", "enabled", "expand_wildcards"},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
@@ -77,8 +82,10 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:   testAccResourceDataStreamLifecycleUpdate(dsName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -101,8 +108,10 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:   testAccResourceDataStreamLifecycleReEnable(dsName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reenable"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -121,8 +130,10 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:   testAccResourceDataStreamLifecycleSingleDownsampling(dsName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_downsampling"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -139,8 +150,10 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:   testAccResourceDataStreamLifecycleRemoveRetention(dsName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_retention"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -159,7 +172,8 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {
@@ -190,7 +204,8 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 						t.Fatalf("Cannot update lifecycle: %s", err)
 					}
 				},
-				Config: testAccResourceDataStreamLifecycleUpdate(dsName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -231,403 +246,6 @@ func TestAccResourceDataStreamLifecycleInvalidExpandWildcards(t *testing.T) {
 
 func dataStreamLifecycleIDRegexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`.+/%s$`, regexp.QuoteMeta(name)))
-}
-
-func testAccResourceDataStreamLifecycleCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%[1]s"
-
-  index_patterns = ["%[1]s*"]
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_one" {
-  name = "%[1]s-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_two" {
-  name = "%[1]s-multiple-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_three" {
-  name = "%[1]s-multiple-two"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" {
-	name = "%[1]s-one"
-	data_retention = "3d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_one
-	]
-}
-
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle_multiple" {
-	name = "%[1]s-multiple-*"
-	data_retention = "3d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_two,
-		elasticstack_elasticsearch_data_stream.test_ds_three
-	]
-}
-`, name)
-
-}
-
-func testAccResourceDataStreamLifecycleUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%[1]s"
-
-  index_patterns = ["%[1]s*"]
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_one" {
-  name = "%[1]s-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_two" {
-  name = "%[1]s-multiple-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_three" {
-  name = "%[1]s-multiple-two"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" {
-	name = "%[1]s-one"
-	enabled = false
-	expand_wildcards = "all"
-	data_retention = "2d"
-	downsampling = [
-	{
-		after = "2d"
-		fixed_interval = "30m"
-	},
-	{
-		after = "9d"
-		fixed_interval = "2d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_one
-	]
-}
-
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle_multiple" {
-	name = "%[1]s-multiple-*"
-	data_retention = "2d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_two,
-		elasticstack_elasticsearch_data_stream.test_ds_three
-	]
-}
-
-`, name)
-
-}
-
-func testAccResourceDataStreamLifecycleReEnable(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%[1]s"
-
-  index_patterns = ["%[1]s*"]
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_one" {
-  name = "%[1]s-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_two" {
-  name = "%[1]s-multiple-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_three" {
-  name = "%[1]s-multiple-two"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" {
-	name = "%[1]s-one"
-	enabled = true
-	expand_wildcards = "hidden"
-	data_retention = "4d"
-	downsampling = [
-	{
-		after = "4d"
-		fixed_interval = "45m"
-	},
-	{
-		after = "11d"
-		fixed_interval = "3d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_one
-	]
-}
-
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle_multiple" {
-	name = "%[1]s-multiple-*"
-	data_retention = "2d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_two,
-		elasticstack_elasticsearch_data_stream.test_ds_three
-	]
-}
-
-`, name)
-
-}
-
-func testAccResourceDataStreamLifecycleSingleDownsampling(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%[1]s"
-
-  index_patterns = ["%[1]s*"]
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_one" {
-  name = "%[1]s-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_two" {
-  name = "%[1]s-multiple-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_three" {
-  name = "%[1]s-multiple-two"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" {
-	name = "%[1]s-one"
-	enabled = true
-	expand_wildcards = "closed"
-	data_retention = "5d"
-	downsampling = [
-	{
-		after = "5d"
-		fixed_interval = "1h"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_one
-	]
-}
-
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle_multiple" {
-	name = "%[1]s-multiple-*"
-	data_retention = "2d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_two,
-		elasticstack_elasticsearch_data_stream.test_ds_three
-	]
-}
-
-`, name)
-
-}
-
-func testAccResourceDataStreamLifecycleRemoveRetention(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%[1]s"
-
-  index_patterns = ["%[1]s*"]
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_one" {
-  name = "%[1]s-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_two" {
-  name = "%[1]s-multiple-one"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds_three" {
-  name = "%[1]s-multiple-two"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" {
-	name = "%[1]s-one"
-	enabled = false
-	expand_wildcards = "all"
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_one
-	]
-}
-
-resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle_multiple" {
-	name = "%[1]s-multiple-*"
-	data_retention = "2d"
-	downsampling = [
-	{
-		after = "1d"
-		fixed_interval = "10m"
-	},
-	{
-		after = "7d"
-		fixed_interval = "1d"
-	}
-	]
-
-	depends_on = [
-		elasticstack_elasticsearch_data_stream.test_ds_two,
-		elasticstack_elasticsearch_data_stream.test_ds_three
-	]
-}
-
-`, name)
-
 }
 
 func testAccResourceDataStreamLifecycleInvalidExpandWildcards(name, expandWildcards string) string {

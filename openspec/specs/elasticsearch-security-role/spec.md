@@ -13,6 +13,7 @@ Define the Terraform schema and runtime behavior for the `elasticstack_elasticse
 
 ```hcl
 resource "elasticstack_elasticsearch_security_role" "example" {
+  id          = <computed, string> # <cluster_uuid>/<role_name>; UseStateForUnknown
   name        = <required, string>
   description = <optional, string> # requires Elasticsearch >= 8.15.0 when set
 
@@ -365,3 +366,13 @@ When Elasticsearch returns a null `description`, the resource SHALL preserve the
 - GIVEN configuration uses null or empty description and the API returns null
 - WHEN read refreshes state
 - THEN configured null/empty description SHALL be preserved without spurious diff
+
+### Requirement: Plan-time identity preservation (REQ-036)
+
+When the computed resource `id` would otherwise be unknown during planning, the resource SHALL preserve the prior state value for `id` in the plan.
+
+#### Scenario: Preserve prior id during plan
+
+- GIVEN existing Terraform state contains a computed role `id`
+- WHEN Terraform plans an operation where the computed `id` is otherwise unknown
+- THEN the planned `id` value SHALL remain the prior state value

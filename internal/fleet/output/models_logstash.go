@@ -52,6 +52,8 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
+	clearRemoteElasticsearchOnlyFields(model)
+
 	return
 }
 

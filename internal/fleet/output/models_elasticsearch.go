@@ -52,6 +52,8 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
+	clearRemoteElasticsearchOnlyFields(model)
+
 	return
 }
 

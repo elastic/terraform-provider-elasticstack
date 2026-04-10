@@ -226,6 +226,148 @@ func Test_PlanModifyString(t *testing.T) {
 			},
 		},
 		{
+			name: "should carry forward model_settings from state for semantic_text fields when not in config",
+			stateMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+						"model_settings": map[string]any{
+							"dimensions":   1024,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "cosine",
+							"task_type":    "text_embedding",
+						},
+					},
+				},
+			}),
+			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+						"model_settings": map[string]any{
+							"dimensions":   1024,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "cosine",
+							"task_type":    "text_embedding",
+						},
+					},
+				},
+			}),
+		},
+		{
+			name: "should not overwrite model_settings for semantic_text when explicitly specified in config",
+			stateMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".elser-2",
+						"model_settings": map[string]any{
+							"dimensions":   384,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "dot_product",
+							"task_type":    "sparse_embedding",
+						},
+					},
+				},
+			}),
+			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".elser-2",
+						"model_settings": map[string]any{
+							"dimensions":   384,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "dot_product",
+							"task_type":    "sparse_embedding",
+						},
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".elser-2",
+						"model_settings": map[string]any{
+							"dimensions":   384,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "dot_product",
+							"task_type":    "sparse_embedding",
+						},
+					},
+				},
+			}),
+		},
+		{
+			name: "should carry forward model_settings for nested semantic_text field when not in config",
+			stateMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"asset": map[string]any{
+						"properties": map[string]any{
+							"summary": map[string]any{
+								"type":         "semantic_text",
+								"inference_id": ".jina-embeddings-v3",
+								"model_settings": map[string]any{
+									"dimensions":   1024,
+									"element_type": "float",
+									"service":      "elastic",
+									"similarity":   "cosine",
+									"task_type":    "text_embedding",
+								},
+							},
+						},
+					},
+				},
+			}),
+			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"asset": map[string]any{
+						"properties": map[string]any{
+							"summary": map[string]any{
+								"type":         "semantic_text",
+								"inference_id": ".jina-embeddings-v3",
+							},
+						},
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"asset": map[string]any{
+						"properties": map[string]any{
+							"summary": map[string]any{
+								"type":         "semantic_text",
+								"inference_id": ".jina-embeddings-v3",
+								"model_settings": map[string]any{
+									"dimensions":   1024,
+									"element_type": "float",
+									"service":      "elastic",
+									"similarity":   "cosine",
+									"task_type":    "text_embedding",
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
 			name: "requires replace when a sub-fields type is changed",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{

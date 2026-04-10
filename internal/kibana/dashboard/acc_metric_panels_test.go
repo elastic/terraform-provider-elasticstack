@@ -56,8 +56,8 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.sampling", "1"),
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.query", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.expression", ""),
 					// Check JSON fields are set
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.dataset_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.#", "1"),
@@ -81,8 +81,8 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.sampling", "1"),
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.query", "status:active"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.expression", "status:active"),
 					// Check JSON fields are set
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.dataset_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.#", "1"),

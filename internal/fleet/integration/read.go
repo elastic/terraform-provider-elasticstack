@@ -42,7 +42,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
-	pkg, diags := fleet.GetPackage(ctx, client, name, version)
+	pkg, diags := fleet.GetPackage(ctx, client, name, version, stateModel.SpaceID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

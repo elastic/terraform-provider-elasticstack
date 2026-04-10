@@ -10,7 +10,7 @@
     }
   ],
   "paths": {
-    "/api/dashboards/{id}": {
+    "/api/dashboards": {
       "post": {
         "summary": "Create a dashboard with an auto-generated ID or a specified ID",
         "tags": [
@@ -548,6 +548,9 @@
                               "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
                             },
                             {
+                              "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                            },
+                            {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
                             },
                             {
@@ -620,6 +623,9 @@
                                   },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
                                   },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
@@ -708,7 +714,7 @@
         },
         "responses": {
           "201": {
-            "description": "Indicates the dashboard is created successfully",
+            "description": "created",
             "content": {
               "application/json; Elastic-Api-Version=1": {
                 "schema": {
@@ -1245,6 +1251,9 @@
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
                                   },
                                   {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                                  },
+                                  {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
                                   },
                                   {
@@ -1317,6 +1326,9 @@
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
@@ -1401,56 +1413,7 @@
                       ]
                     },
                     "meta": {
-                      "type": "object",
-                      "properties": {
-                        "managed": {
-                          "type": "boolean"
-                        },
-                        "error": {
-                          "type": "object",
-                          "properties": {
-                            "error": {
-                              "type": "string"
-                            },
-                            "message": {
-                              "type": "string"
-                            },
-                            "statusCode": {
-                              "type": "number"
-                            },
-                            "metadata": {
-                              "type": "object",
-                              "properties": {},
-                              "additionalProperties": true
-                            }
-                          },
-                          "additionalProperties": false,
-                          "required": [
-                            "error",
-                            "message",
-                            "statusCode"
-                          ]
-                        },
-                        "owner": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "created_by": {
-                          "type": "string"
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "updated_by": {
-                          "type": "string"
-                        }
-                      },
-                      "additionalProperties": false
+                      "$ref": "#/components/schemas/kbn-as-code-meta"
                     }
                   },
                   "additionalProperties": false,
@@ -1464,13 +1427,10 @@
             }
           },
           "400": {
-            "description": "Indicates an invalid schema or parameters."
+            "description": "invalid request"
           },
           "403": {
-            "description": "Indicates that this call is forbidden."
-          },
-          "409": {
-            "description": "Indicates that a dashboard with the given ID already exists."
+            "description": "forbidden"
           }
         },
         "parameters": [
@@ -1495,22 +1455,176 @@
               "example": "true",
               "type": "string"
             }
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 250
-            },
-            "description": "A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores."
           }
         ],
-        "operationId": "post-dashboards-id",
+        "operationId": "post-dashboards",
         "x-state": "Technical Preview"
       },
+      "get": {
+        "summary": "Search dashboards",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json; Elastic-Api-Version=1": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dashboards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "data": {
+                            "type": "object",
+                            "properties": {
+                              "description": {
+                                "type": "string"
+                              },
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "time_range": {
+                                "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "access_control": {
+                                "type": "object",
+                                "properties": {
+                                  "access_mode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "write_restricted",
+                                      "default"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "time_range",
+                              "title"
+                            ]
+                          },
+                          "meta": {
+                            "$ref": "#/components/schemas/kbn-as-code-meta"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "data",
+                          "meta"
+                        ]
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    },
+                    "page": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "dashboards",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "elastic-api-version",
+            "description": "The version of the API to use",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ],
+              "default": "1"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "The page of dashboards to return"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "The number of dashboards to return per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An Elasticsearch simple_query_string query that filters the dashboards in the response by \"title\" and \"description\""
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are included."
+          },
+          {
+            "name": "excluded_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are excluded."
+          }
+        ],
+        "operationId": "get-dashboards",
+        "x-state": "Technical Preview"
+      }
+    },
+    "/api/dashboards/{id}": {
       "get": {
         "summary": "Get a dashboard",
         "tags": [
@@ -1519,7 +1633,7 @@
         "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
         "responses": {
           "200": {
-            "description": "Indicates the dashboard with the given ID is retrieved successfully",
+            "description": "success",
             "content": {
               "application/json; Elastic-Api-Version=1": {
                 "schema": {
@@ -2056,6 +2170,9 @@
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
                                   },
                                   {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                                  },
+                                  {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
                                   },
                                   {
@@ -2128,6 +2245,9 @@
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
@@ -2212,82 +2332,44 @@
                       ]
                     },
                     "meta": {
-                      "type": "object",
-                      "properties": {
-                        "managed": {
-                          "type": "boolean"
-                        },
-                        "error": {
-                          "type": "object",
-                          "properties": {
-                            "error": {
-                              "type": "string"
-                            },
-                            "message": {
-                              "type": "string"
-                            },
-                            "statusCode": {
-                              "type": "number"
-                            },
-                            "metadata": {
-                              "type": "object",
-                              "properties": {},
-                              "additionalProperties": true
-                            }
-                          },
-                          "additionalProperties": false,
-                          "required": [
-                            "error",
-                            "message",
-                            "statusCode"
-                          ]
-                        },
-                        "owner": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "created_by": {
-                          "type": "string"
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "updated_by": {
-                          "type": "string"
-                        },
-                        "outcome": {
-                          "type": "string",
-                          "enum": [
-                            "exactMatch",
-                            "aliasMatch",
-                            "conflict"
-                          ]
-                        },
-                        "alias_target_id": {
-                          "type": "string"
-                        },
-                        "alias_purpose": {
-                          "type": "string",
-                          "enum": [
-                            "savedObjectConversion",
-                            "savedObjectImport"
-                          ]
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "outcome"
-                      ]
+                      "$ref": "#/components/schemas/kbn-as-code-meta"
                     },
                     "warnings": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "dropped_panel"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "panel_type": {
+                            "type": "string"
+                          },
+                          "panel_config": {
+                            "type": "object",
+                            "properties": {},
+                            "additionalProperties": true
+                          },
+                          "panel_references": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/kbn-content-management-utils-referenceSchema"
+                            }
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "type",
+                          "message",
+                          "panel_type",
+                          "panel_config"
+                        ]
                       }
                     }
                   },
@@ -2302,10 +2384,10 @@
             }
           },
           "403": {
-            "description": "Indicates that this call is forbidden."
+            "description": "forbidden"
           },
           "404": {
-            "description": "Indicates that the dashboard with the given ID is not found."
+            "description": "not found"
           }
         },
         "parameters": [
@@ -2335,7 +2417,7 @@
         "x-state": "Technical Preview"
       },
       "put": {
-        "summary": "Replace current dashboard state with the dashboard state from request body.",
+        "summary": "Upsert dashboard",
         "tags": [
           "Dashboards"
         ],
@@ -2871,6 +2953,9 @@
                               "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
                             },
                             {
+                              "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                            },
+                            {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
                             },
                             {
@@ -2943,6 +3028,9 @@
                                   },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
                                   },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
@@ -3018,7 +3106,7 @@
         },
         "responses": {
           "200": {
-            "description": "Indicates the dashboard is updated successfully",
+            "description": "updated",
             "content": {
               "application/json; Elastic-Api-Version=1": {
                 "schema": {
@@ -3555,6 +3643,9 @@
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
                                   },
                                   {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                                  },
+                                  {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
                                   },
                                   {
@@ -3627,6 +3718,9 @@
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
                                         },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
@@ -3711,50 +3805,720 @@
                       ]
                     },
                     "meta": {
+                      "$ref": "#/components/schemas/kbn-as-code-meta"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json; Elastic-Api-Version=1": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "data": {
                       "type": "object",
                       "properties": {
-                        "managed": {
-                          "type": "boolean"
+                        "pinned_panels": {
+                          "type": "array",
+                          "description": "An array of control panels and their state in the control group.",
+                          "default": [],
+                          "maxItems": 100,
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "options_list_control"
+                                    ]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string",
+                                        "description": "A human-readable title for the control"
+                                      },
+                                      "data_view_id": {
+                                        "type": "string",
+                                        "description": "The ID of the data view that the control is tied to"
+                                      },
+                                      "field_name": {
+                                        "type": "string",
+                                        "description": "The name of the field in the data view that the control is tied to"
+                                      },
+                                      "use_global_filters": {
+                                        "type": "boolean",
+                                        "default": true
+                                      },
+                                      "ignore_validations": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "display_settings": {
+                                        "type": "object",
+                                        "properties": {
+                                          "placeholder": {
+                                            "type": "string"
+                                          },
+                                          "hide_action_bar": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_exclude": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_exists": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_sort": {
+                                            "type": "boolean"
+                                          }
+                                        },
+                                        "additionalProperties": true
+                                      },
+                                      "exclude": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "exists_selected": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "run_past_timeout": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "search_technique": {
+                                        "default": "wildcard",
+                                        "type": "string",
+                                        "enum": [
+                                          "prefix",
+                                          "wildcard",
+                                          "exact"
+                                        ]
+                                      },
+                                      "selected_options": {
+                                        "type": "array",
+                                        "default": [],
+                                        "maxItems": 10000,
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "single_select": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "sort": {
+                                        "type": "object",
+                                        "default": {
+                                          "by": "_count",
+                                          "direction": "desc"
+                                        },
+                                        "properties": {
+                                          "by": {
+                                            "type": "string",
+                                            "enum": [
+                                              "_count",
+                                              "_key"
+                                            ]
+                                          },
+                                          "direction": {
+                                            "type": "string",
+                                            "enum": [
+                                              "asc",
+                                              "desc"
+                                            ]
+                                          }
+                                        },
+                                        "additionalProperties": true,
+                                        "required": [
+                                          "by",
+                                          "direction"
+                                        ]
+                                      }
+                                    },
+                                    "additionalProperties": true,
+                                    "required": [
+                                      "data_view_id",
+                                      "field_name"
+                                    ]
+                                  },
+                                  "uid": {
+                                    "type": "string",
+                                    "description": "The unique ID of the control"
+                                  },
+                                  "width": {
+                                    "description": "Minimum width of the control panel in the control group.",
+                                    "default": "medium",
+                                    "type": "string",
+                                    "enum": [
+                                      "small",
+                                      "medium",
+                                      "large"
+                                    ]
+                                  },
+                                  "grow": {
+                                    "type": "boolean",
+                                    "description": "Expand width of the control panel to fit available space.",
+                                    "default": false
+                                  }
+                                },
+                                "additionalProperties": true,
+                                "title": "options_list_control",
+                                "required": [
+                                  "type",
+                                  "config"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "range_slider_control"
+                                    ]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string",
+                                        "description": "A human-readable title for the control"
+                                      },
+                                      "data_view_id": {
+                                        "type": "string",
+                                        "description": "The ID of the data view that the control is tied to"
+                                      },
+                                      "field_name": {
+                                        "type": "string",
+                                        "description": "The name of the field in the data view that the control is tied to"
+                                      },
+                                      "use_global_filters": {
+                                        "type": "boolean",
+                                        "default": true
+                                      },
+                                      "ignore_validations": {
+                                        "type": "boolean",
+                                        "default": false
+                                      },
+                                      "value": {
+                                        "type": "array",
+                                        "minItems": 2,
+                                        "maxItems": 2,
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "step": {
+                                        "type": "number",
+                                        "default": 1,
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "additionalProperties": true,
+                                    "required": [
+                                      "data_view_id",
+                                      "field_name"
+                                    ]
+                                  },
+                                  "uid": {
+                                    "type": "string",
+                                    "description": "The unique ID of the control"
+                                  },
+                                  "width": {
+                                    "description": "Minimum width of the control panel in the control group.",
+                                    "default": "medium",
+                                    "type": "string",
+                                    "enum": [
+                                      "small",
+                                      "medium",
+                                      "large"
+                                    ]
+                                  },
+                                  "grow": {
+                                    "type": "boolean",
+                                    "description": "Expand width of the control panel to fit available space.",
+                                    "default": false
+                                  }
+                                },
+                                "additionalProperties": true,
+                                "title": "range_slider_control",
+                                "required": [
+                                  "type",
+                                  "config"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "time_slider_control"
+                                    ]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "properties": {
+                                      "start_percentage_of_time_range": {
+                                        "type": "number",
+                                        "default": 0,
+                                        "minimum": 0,
+                                        "maximum": 1
+                                      },
+                                      "end_percentage_of_time_range": {
+                                        "type": "number",
+                                        "default": 1,
+                                        "minimum": 0,
+                                        "maximum": 1
+                                      },
+                                      "is_anchored": {
+                                        "type": "boolean",
+                                        "default": false
+                                      }
+                                    },
+                                    "additionalProperties": true
+                                  },
+                                  "uid": {
+                                    "type": "string",
+                                    "description": "The unique ID of the control"
+                                  },
+                                  "width": {
+                                    "description": "Minimum width of the control panel in the control group.",
+                                    "default": "medium",
+                                    "type": "string",
+                                    "enum": [
+                                      "small",
+                                      "medium",
+                                      "large"
+                                    ]
+                                  },
+                                  "grow": {
+                                    "type": "boolean",
+                                    "description": "Expand width of the control panel to fit available space.",
+                                    "default": false
+                                  }
+                                },
+                                "additionalProperties": true,
+                                "title": "time_slider_control",
+                                "required": [
+                                  "type",
+                                  "config"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "esql_control"
+                                    ]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string",
+                                        "description": "A human-readable title for the control"
+                                      },
+                                      "display_settings": {
+                                        "type": "object",
+                                        "properties": {
+                                          "placeholder": {
+                                            "type": "string"
+                                          },
+                                          "hide_action_bar": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_exclude": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_exists": {
+                                            "type": "boolean"
+                                          },
+                                          "hide_sort": {
+                                            "type": "boolean"
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      },
+                                      "selected_options": {
+                                        "type": "array",
+                                        "maxItems": 10000,
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "single_select": {
+                                        "type": "boolean",
+                                        "default": true
+                                      },
+                                      "variable_name": {
+                                        "type": "string"
+                                      },
+                                      "variable_type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "fields",
+                                          "values",
+                                          "functions",
+                                          "time_literal",
+                                          "multi_values"
+                                        ]
+                                      },
+                                      "esql_query": {
+                                        "type": "string"
+                                      },
+                                      "control_type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "STATIC_VALUES",
+                                          "VALUES_FROM_QUERY"
+                                        ]
+                                      },
+                                      "available_options": {
+                                        "type": "array",
+                                        "maxItems": 1000,
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": true,
+                                    "required": [
+                                      "selected_options",
+                                      "variable_name",
+                                      "variable_type",
+                                      "esql_query",
+                                      "control_type"
+                                    ]
+                                  },
+                                  "uid": {
+                                    "type": "string",
+                                    "description": "The unique ID of the control"
+                                  },
+                                  "width": {
+                                    "description": "Minimum width of the control panel in the control group.",
+                                    "default": "medium",
+                                    "type": "string",
+                                    "enum": [
+                                      "small",
+                                      "medium",
+                                      "large"
+                                    ]
+                                  },
+                                  "grow": {
+                                    "type": "boolean",
+                                    "description": "Expand width of the control panel to fit available space.",
+                                    "default": false
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "esql_control",
+                                "required": [
+                                  "type",
+                                  "config"
+                                ]
+                              }
+                            ]
+                          }
                         },
-                        "error": {
+                        "description": {
+                          "type": "string",
+                          "description": "A short description."
+                        },
+                        "filters": {
+                          "type": "array",
+                          "maxItems": 500,
+                          "items": {
+                            "description": "A filter which can be a condition, group, DSL, or spatial",
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeConditionFilterSchema"
+                              },
+                              {
+                                "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeGroupFilterSchema"
+                              },
+                              {
+                                "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeDSLFilterSchema"
+                              },
+                              {
+                                "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeSpatialFilterSchema"
+                              }
+                            ]
+                          }
+                        },
+                        "options": {
                           "type": "object",
+                          "default": {
+                            "hide_panel_titles": false,
+                            "hide_panel_borders": false,
+                            "use_margins": true,
+                            "auto_apply_filters": true,
+                            "sync_colors": false,
+                            "sync_cursor": true,
+                            "sync_tooltips": false
+                          },
                           "properties": {
-                            "error": {
-                              "type": "string"
+                            "auto_apply_filters": {
+                              "type": "boolean",
+                              "description": "Auto apply control filters.",
+                              "default": true
                             },
-                            "message": {
-                              "type": "string"
+                            "hide_panel_titles": {
+                              "type": "boolean",
+                              "description": "Hide the panel titles in the dashboard.",
+                              "default": false
                             },
-                            "statusCode": {
-                              "type": "number"
+                            "hide_panel_borders": {
+                              "type": "boolean",
+                              "description": "Hide the panel borders in the dashboard.",
+                              "default": false
                             },
-                            "metadata": {
-                              "type": "object",
-                              "properties": {},
-                              "additionalProperties": true
+                            "use_margins": {
+                              "type": "boolean",
+                              "description": "Show margins between panels in the dashboard layout.",
+                              "default": true
+                            },
+                            "sync_colors": {
+                              "type": "boolean",
+                              "description": "Synchronize colors between related panels in the dashboard.",
+                              "default": false
+                            },
+                            "sync_tooltips": {
+                              "type": "boolean",
+                              "description": "Synchronize tooltips between related panels in the dashboard.",
+                              "default": false
+                            },
+                            "sync_cursor": {
+                              "type": "boolean",
+                              "description": "Synchronize cursor position between related panels in the dashboard.",
+                              "default": true
                             }
                           },
-                          "additionalProperties": false,
-                          "required": [
-                            "error",
-                            "message",
-                            "statusCode"
-                          ]
+                          "additionalProperties": false
                         },
-                        "owner": {
+                        "panels": {
+                          "type": "array",
+                          "default": [],
+                          "maxItems": 100,
+                          "items": {
+                            "anyOf": [
+                              {
+                                "discriminator": {
+                                  "propertyName": "type"
+                                },
+                                "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-lens"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-lens-dashboard-app"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-markdown"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-options_list_control"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_error_budget"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-slo_overview"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-synthetics_monitors"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-synthetics_stats_overview"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-time_slider_control"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "description": "Collapsable section",
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "description": "The title of the section."
+                                  },
+                                  "collapsed": {
+                                    "type": "boolean",
+                                    "description": "The collapsed state of the section.",
+                                    "default": false
+                                  },
+                                  "grid": {
+                                    "type": "object",
+                                    "properties": {
+                                      "y": {
+                                        "type": "number",
+                                        "description": "The y coordinate of the section in grid units"
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "y"
+                                    ]
+                                  },
+                                  "panels": {
+                                    "type": "array",
+                                    "description": "The panels that belong to the section.",
+                                    "default": [],
+                                    "maxItems": 100,
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-lens"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-lens-dashboard-app"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-markdown"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-options_list_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-range_slider_control"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_alerts"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_burn_rate"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_error_budget"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-slo_overview"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-synthetics_monitors"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-synthetics_stats_overview"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-time_slider_control"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "uid": {
+                                    "type": "string",
+                                    "description": "The unique ID of the section."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "section",
+                                "required": [
+                                  "title",
+                                  "grid"
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "project_routing": {
                           "type": "string"
                         },
-                        "version": {
-                          "type": "string"
+                        "query": {
+                          "$ref": "#/components/schemas/kbn-es-query-server-querySchema"
                         },
-                        "updated_at": {
-                          "type": "string"
+                        "refresh_interval": {
+                          "$ref": "#/components/schemas/kbn-data-service-server-refreshIntervalSchema"
                         },
-                        "updated_by": {
-                          "type": "string"
+                        "tags": {
+                          "type": "array",
+                          "maxItems": 100,
+                          "items": {
+                            "type": "string",
+                            "description": "An array of tags ids applied to this dashboard"
+                          }
+                        },
+                        "time_range": {
+                          "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "A human-readable title for the dashboard"
+                        },
+                        "access_control": {
+                          "type": "object",
+                          "properties": {
+                            "access_mode": {
+                              "type": "string",
+                              "enum": [
+                                "write_restricted",
+                                "default"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
                         }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "required": [
+                        "query",
+                        "refresh_interval",
+                        "time_range",
+                        "title"
+                      ]
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/kbn-as-code-meta"
                     }
                   },
                   "additionalProperties": false,
@@ -3768,10 +4532,7 @@
             }
           },
           "403": {
-            "description": "Indicates that this call is forbidden."
-          },
-          "404": {
-            "description": "Indicates that the dashboard with the given ID is not found."
+            "description": "forbidden"
           }
         },
         "parameters": [
@@ -3802,19 +4563,11 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 250
             },
-            "description": "A unique identifier for the dashboard."
-          },
-          {
-            "name": "allowUnmappedKeys",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "deprecated": true
-            },
-            "description": "When enabled, dashboard REST endpoints support unmapped keys. Unmapped key schemas can be changed or removed without notice and are not supported."
+            "description": "A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores."
           }
         ],
         "operationId": "put-dashboards-id",
@@ -3828,13 +4581,13 @@
         "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
         "responses": {
           "200": {
-            "description": "Indicates the dashboard is deleted successfully"
+            "description": "deleted"
           },
           "403": {
-            "description": "Indicates that this call is forbidden."
+            "description": "forbidden"
           },
           "404": {
-            "description": "Indicates that the dashboard with the given ID is not found."
+            "description": "not found"
           }
         },
         "parameters": [
@@ -3871,234 +4624,6 @@
           }
         ],
         "operationId": "delete-dashboards-id",
-        "x-state": "Technical Preview"
-      }
-    },
-    "/api/dashboards": {
-      "get": {
-        "summary": "Search dashboards",
-        "tags": [
-          "Dashboards"
-        ],
-        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
-        "responses": {
-          "200": {
-            "description": "Indicates the search is successful and the dashboards are retrieved",
-            "content": {
-              "application/json; Elastic-Api-Version=1": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "dashboards": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "data": {
-                            "type": "object",
-                            "properties": {
-                              "description": {
-                                "type": "string"
-                              },
-                              "tags": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "time_range": {
-                                "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
-                              },
-                              "title": {
-                                "type": "string"
-                              },
-                              "access_control": {
-                                "type": "object",
-                                "properties": {
-                                  "access_mode": {
-                                    "type": "string",
-                                    "enum": [
-                                      "write_restricted",
-                                      "default"
-                                    ]
-                                  }
-                                },
-                                "additionalProperties": false
-                              }
-                            },
-                            "additionalProperties": false,
-                            "required": [
-                              "time_range",
-                              "title"
-                            ]
-                          },
-                          "meta": {
-                            "type": "object",
-                            "properties": {
-                              "managed": {
-                                "type": "boolean"
-                              },
-                              "error": {
-                                "type": "object",
-                                "properties": {
-                                  "error": {
-                                    "type": "string"
-                                  },
-                                  "message": {
-                                    "type": "string"
-                                  },
-                                  "statusCode": {
-                                    "type": "number"
-                                  },
-                                  "metadata": {
-                                    "type": "object",
-                                    "properties": {},
-                                    "additionalProperties": true
-                                  }
-                                },
-                                "additionalProperties": false,
-                                "required": [
-                                  "error",
-                                  "message",
-                                  "statusCode"
-                                ]
-                              },
-                              "owner": {
-                                "type": "string"
-                              },
-                              "version": {
-                                "type": "string"
-                              },
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "created_by": {
-                                "type": "string"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              },
-                              "updated_by": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          }
-                        },
-                        "additionalProperties": false,
-                        "required": [
-                          "id",
-                          "data",
-                          "meta"
-                        ]
-                      }
-                    },
-                    "total": {
-                      "type": "number"
-                    },
-                    "page": {
-                      "type": "number"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "dashboards",
-                    "total",
-                    "page"
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Indicates that this call is forbidden."
-          }
-        },
-        "parameters": [
-          {
-            "in": "header",
-            "name": "elastic-api-version",
-            "description": "The version of the API to use",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "1"
-              ],
-              "default": "1"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number"
-            },
-            "description": "The page of dashboards to return"
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number"
-            },
-            "description": "The number of dashboards to return per page"
-          },
-          {
-            "name": "query",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "An Elasticsearch simple_query_string query that filters the dashboards in the response by \"title\" and \"description\""
-          },
-          {
-            "name": "tags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "maxItems": 100,
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              ]
-            },
-            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are included."
-          },
-          {
-            "name": "excluded_tags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "maxItems": 100,
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              ]
-            },
-            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are excluded."
-          }
-        ],
-        "operationId": "get-dashboards",
         "x-state": "Technical Preview"
       }
     }
@@ -4968,22 +5493,22 @@
         "type": "object",
         "properties": {
           "language": {
-            "default": "kuery",
+            "default": "kql",
             "type": "string",
             "enum": [
-              "kuery",
+              "kql",
               "lucene"
             ]
           },
-          "query": {
+          "expression": {
             "type": "string",
-            "description": "Filter query"
+            "description": "A query expression in KQL or Lucene syntax"
           }
         },
         "additionalProperties": false,
-        "title": "Simple Filter",
+        "title": "Filter",
         "required": [
-          "query"
+          "expression"
         ]
       },
       "dataViewDataset": {
@@ -6312,9 +6837,9 @@
               "description": "Fields to be used for the terms"
             }
           },
-          "size": {
+          "limit": {
             "type": "number",
-            "description": "Size of the terms",
+            "description": "Maximum number of terms",
             "default": 5
           },
           "increase_accuracy": {
@@ -6923,12 +7448,6 @@
           "max_value": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -6940,7 +7459,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column"
             ]
           }
@@ -7006,12 +7524,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "operation": {
-                      "type": "string",
-                      "enum": [
-                        "value"
-                      ]
-                    },
                     "column": {
                       "type": "string",
                       "description": "Column to use"
@@ -7094,10 +7606,11 @@
                       ]
                     },
                     "position": {
-                      "description": "Position of the primary metric value (top or bottom)",
+                      "description": "Position of the primary metric value (top, middle, or bottom)",
                       "type": "string",
                       "enum": [
                         "top",
+                        "middle",
                         "bottom"
                       ]
                     },
@@ -7115,7 +7628,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "operation",
                     "column",
                     "format",
                     "type",
@@ -7128,12 +7640,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "operation": {
-                      "type": "string",
-                      "enum": [
-                        "value"
-                      ]
-                    },
                     "column": {
                       "type": "string",
                       "description": "Column to use"
@@ -7197,7 +7703,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "operation",
                     "column",
                     "format",
                     "type",
@@ -7210,12 +7715,6 @@
           "breakdown_by": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -7238,7 +7737,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format",
               "collapse_by"
@@ -7468,12 +7966,6 @@
           "metric": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -7551,7 +8043,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -7577,12 +8068,12 @@
         ],
         "title": "Legacy Metric Chart"
       },
-      "xyLegendOutside": {
+      "xyLegendOutsideHorizontal": {
         "type": "object",
-        "description": "External legend positioned outside the chart",
+        "description": "Outside legend positioned horizontal (top/bottom) of the chart",
         "properties": {
           "visibility": {
-            "description": "Show the legend",
+            "description": "Legend visibility",
             "type": "string",
             "enum": [
               "auto",
@@ -7617,13 +8108,6 @@
                 "current_and_last_value"
               ]
             }
-          },
-          "truncate_after_lines": {
-            "type": "number",
-            "description": "Maximum lines before truncating legend items (1-10)",
-            "minimum": 1,
-            "maximum": 10,
-            "title": "legendTruncateAfterLines"
           },
           "placement": {
             "type": "string",
@@ -7632,42 +8116,96 @@
             ]
           },
           "layout": {
-            "type": "string",
-            "enum": [
-              "list"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "grid"
+                    ]
+                  },
+                  "truncate": {
+                    "type": "object",
+                    "properties": {
+                      "max_lines": {
+                        "type": "number",
+                        "description": "Maximum lines before truncating legend items (1-10)",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "title": "legendTruncateAfterLines"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "type"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "list"
+                    ]
+                  },
+                  "truncate": {
+                    "type": "object",
+                    "properties": {
+                      "max_pixels": {
+                        "type": "number",
+                        "description": "Maximum pixels before truncating legend items in list layout",
+                        "default": 250,
+                        "minimum": 10,
+                        "maximum": 1000,
+                        "title": "legendTruncateMaxPixels"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "type"
+                ]
+              }
             ]
           },
           "position": {
             "type": "string",
             "enum": [
               "top",
-              "bottom",
-              "left",
-              "right"
-            ]
-          },
-          "size": {
-            "type": "string",
-            "enum": [
-              "small",
-              "medium",
-              "large",
-              "xlarge"
+              "bottom"
             ]
           }
         },
         "additionalProperties": false,
-        "title": "xyLegendOutside",
-        "required": [
-          "visibility"
+        "title": "Outside horizontal"
+      },
+      "legendSize": {
+        "description": "Legend size",
+        "title": "Legend Size",
+        "x-oas-optional": true,
+        "type": "string",
+        "enum": [
+          "auto",
+          "s",
+          "m",
+          "l",
+          "xl"
         ]
       },
-      "xyLegendInside": {
+      "xyLegendOutsideVertical": {
         "type": "object",
-        "description": "Internal legend positioned inside the chart",
+        "description": "Outside legend positioned vertical (left/right) of the chart",
         "properties": {
           "visibility": {
-            "description": "Show the legend",
+            "description": "Legend visibility",
             "type": "string",
             "enum": [
               "auto",
@@ -7703,17 +8241,130 @@
               ]
             }
           },
-          "truncate_after_lines": {
-            "type": "number",
-            "description": "Maximum lines before truncating legend items (1-10)",
-            "minimum": 1,
-            "maximum": 10,
-            "title": "legendTruncateAfterLines"
+          "placement": {
+            "type": "string",
+            "enum": [
+              "outside"
+            ]
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "grid"
+                ]
+              },
+              "truncate": {
+                "type": "object",
+                "properties": {
+                  "max_lines": {
+                    "type": "number",
+                    "description": "Maximum lines before truncating legend items (1-10)",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "title": "legendTruncateAfterLines"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "type"
+            ]
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ]
+          },
+          "size": {
+            "$ref": "#/components/schemas/legendSize"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Outside vertical",
+        "required": [
+          "size"
+        ]
+      },
+      "xyLegendInside": {
+        "type": "object",
+        "description": "Inside legend",
+        "properties": {
+          "visibility": {
+            "description": "Legend visibility",
+            "type": "string",
+            "enum": [
+              "auto",
+              "visible",
+              "hidden"
+            ]
+          },
+          "statistics": {
+            "type": "array",
+            "description": "Statistics to display in legend",
+            "maxItems": 17,
+            "items": {
+              "description": "Statistical functions that can be displayed in chart legend for data series",
+              "type": "string",
+              "enum": [
+                "min",
+                "max",
+                "avg",
+                "median",
+                "range",
+                "last_value",
+                "last_non_null_value",
+                "first_value",
+                "first_non_null_value",
+                "difference",
+                "difference_percentage",
+                "count",
+                "total",
+                "standard_deviation",
+                "variance",
+                "distinct_count",
+                "current_and_last_value"
+              ]
+            }
           },
           "placement": {
             "type": "string",
             "enum": [
               "inside"
+            ]
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "grid"
+                ]
+              },
+              "truncate": {
+                "type": "object",
+                "properties": {
+                  "max_lines": {
+                    "type": "number",
+                    "description": "Maximum lines before truncating legend items (1-10)",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "title": "legendTruncateAfterLines"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "type"
             ]
           },
           "columns": {
@@ -7734,9 +8385,8 @@
           }
         },
         "additionalProperties": false,
-        "title": "xyLegendInside",
+        "title": "Inside",
         "required": [
-          "visibility",
           "placement"
         ]
       },
@@ -7744,7 +8394,10 @@
         "description": "Legend configuration for XY chart",
         "anyOf": [
           {
-            "$ref": "#/components/schemas/xyLegendOutside"
+            "$ref": "#/components/schemas/xyLegendOutsideHorizontal"
+          },
+          {
+            "$ref": "#/components/schemas/xyLegendOutsideVertical"
           },
           {
             "$ref": "#/components/schemas/xyLegendInside"
@@ -8807,12 +9460,6 @@
             "type": "object",
             "description": "ES|QL column for breakdown",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -8833,7 +9480,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format",
               "color",
@@ -8848,12 +9494,6 @@
               "type": "object",
               "description": "ES|QL column for Y-axis metric",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -8878,7 +9518,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color"
@@ -8888,12 +9527,6 @@
           "x": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -8908,7 +9541,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -9044,12 +9676,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -9143,7 +9769,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color"
@@ -9802,12 +10427,6 @@
           "metric": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -9863,12 +10482,6 @@
               "min": {
                 "type": "object",
                 "properties": {
-                  "operation": {
-                    "type": "string",
-                    "enum": [
-                      "value"
-                    ]
-                  },
                   "column": {
                     "type": "string",
                     "description": "Column to use"
@@ -9880,19 +10493,12 @@
                 },
                 "additionalProperties": false,
                 "required": [
-                  "operation",
                   "column"
                 ]
               },
               "max": {
                 "type": "object",
                 "properties": {
-                  "operation": {
-                    "type": "string",
-                    "enum": [
-                      "value"
-                    ]
-                  },
                   "column": {
                     "type": "string",
                     "description": "Column to use"
@@ -9904,19 +10510,12 @@
                 },
                 "additionalProperties": false,
                 "required": [
-                  "operation",
                   "column"
                 ]
               },
               "goal": {
                 "type": "object",
                 "properties": {
-                  "operation": {
-                    "type": "string",
-                    "enum": [
-                      "value"
-                    ]
-                  },
                   "column": {
                     "type": "string",
                     "description": "Column to use"
@@ -9928,14 +10527,12 @@
                 },
                 "additionalProperties": false,
                 "required": [
-                  "operation",
                   "column"
                 ]
               }
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format",
               "color"
@@ -9962,19 +10559,6 @@
         ],
         "title": "Gauge Chart"
       },
-      "legendSize": {
-        "description": "Legend size: auto, small, medium, large, or xlarge",
-        "title": "Legend Size",
-        "x-oas-optional": true,
-        "type": "string",
-        "enum": [
-          "auto",
-          "small",
-          "medium",
-          "large",
-          "xlarge"
-        ]
-      },
       "heatmapLegend": {
         "type": "object",
         "description": "Legend configuration",
@@ -9986,22 +10570,16 @@
             "maximum": 10,
             "title": "legendTruncateAfterLines"
           },
-          "visible": {
-            "type": "boolean",
-            "description": "Show the legend"
+          "visibility": {
+            "description": "Legend visibility",
+            "type": "string",
+            "enum": [
+              "visible",
+              "hidden"
+            ]
           },
           "size": {
             "$ref": "#/components/schemas/legendSize"
-          },
-          "position": {
-            "description": "Legend position",
-            "type": "string",
-            "enum": [
-              "top",
-              "bottom",
-              "left",
-              "right"
-            ]
           }
         },
         "additionalProperties": false,
@@ -10345,12 +10923,6 @@
           "x": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10365,7 +10937,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -10373,12 +10944,6 @@
           "y": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10393,7 +10958,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -10411,12 +10975,6 @@
           "metric": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10434,7 +10992,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format",
               "color"
@@ -10703,12 +11260,6 @@
           "metric": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10723,7 +11274,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -10731,12 +11281,6 @@
           "tag_by": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10754,7 +11298,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format",
               "color"
@@ -10914,12 +11457,6 @@
           "metric": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10934,7 +11471,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -10942,12 +11478,6 @@
           "region": {
             "type": "object",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -10977,7 +11507,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column"
             ]
           }
@@ -11380,12 +11909,6 @@
       "datatableESQLMetric": {
         "type": "object",
         "properties": {
-          "operation": {
-            "type": "string",
-            "enum": [
-              "value"
-            ]
-          },
           "column": {
             "type": "string",
             "description": "Column to use"
@@ -11463,7 +11986,6 @@
         "additionalProperties": false,
         "title": "Datatable Metric (ES|QL)",
         "required": [
-          "operation",
           "column",
           "format"
         ]
@@ -11625,12 +12147,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -11689,7 +12205,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "collapse_by"
@@ -11704,12 +12219,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -11724,7 +12233,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format"
               ]
@@ -11754,7 +12262,7 @@
       },
       "pieLegend": {
         "type": "object",
-        "description": "Legend configuration for pie/donut chart",
+        "description": "Legend configuration for pie chart",
         "properties": {
           "nested": {
             "type": "boolean",
@@ -11816,14 +12324,12 @@
       },
       "pieNoESQL": {
         "type": "object",
-        "description": "Pie/donut chart configuration for standard queries",
+        "description": "Pie chart configuration for standard queries",
         "properties": {
           "type": {
-            "description": "Chart type: pie or donut",
             "type": "string",
             "enum": [
-              "pie",
-              "donut"
+              "pie"
             ]
           },
           "title": {
@@ -11870,14 +12376,14 @@
           },
           "labels": {
             "type": "object",
-            "description": "Label configuration for pie/donut chart slice labels inside or outside the pie",
+            "description": "Label configuration for pie chart slice labels inside or outside the pie",
             "properties": {
               "visible": {
                 "type": "boolean",
                 "description": "Show slice labels"
               },
               "position": {
-                "description": "Renders the pie/donut chart slice labels inside or outside the pie",
+                "description": "Renders pie chart slice labels inside or outside the pie",
                 "type": "string",
                 "enum": [
                   "inside",
@@ -11888,13 +12394,13 @@
             "additionalProperties": false
           },
           "donut_hole": {
-            "description": "Donut hole size: none (pie), small, medium, or large",
+            "description": "Donut hole size: none (pie), or s/m/l",
             "type": "string",
             "enum": [
               "none",
-              "small",
-              "medium",
-              "large"
+              "s",
+              "m",
+              "l"
             ]
           },
           "metrics": {
@@ -11978,7 +12484,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "Pie/Donut Chart (DSL)",
+        "title": "Pie Chart (DSL)",
         "required": [
           "type",
           "filters",
@@ -11991,14 +12497,12 @@
       },
       "pieESQL": {
         "type": "object",
-        "description": "Pie/donut chart configuration for ES|QL queries",
+        "description": "Pie chart configuration for ES|QL queries",
         "properties": {
           "type": {
-            "description": "Chart type: pie or donut",
             "type": "string",
             "enum": [
-              "pie",
-              "donut"
+              "pie"
             ]
           },
           "title": {
@@ -12042,14 +12546,14 @@
           },
           "labels": {
             "type": "object",
-            "description": "Label configuration for pie/donut chart slice labels inside or outside the pie",
+            "description": "Label configuration for pie chart slice labels inside or outside the pie",
             "properties": {
               "visible": {
                 "type": "boolean",
                 "description": "Show slice labels"
               },
               "position": {
-                "description": "Renders the pie/donut chart slice labels inside or outside the pie",
+                "description": "Renders pie chart slice labels inside or outside the pie",
                 "type": "string",
                 "enum": [
                   "inside",
@@ -12060,13 +12564,13 @@
             "additionalProperties": false
           },
           "donut_hole": {
-            "description": "Donut hole size: none (pie), small, medium, or large",
+            "description": "Donut hole size: none (pie), or s/m/l",
             "type": "string",
             "enum": [
               "none",
-              "small",
-              "medium",
-              "large"
+              "s",
+              "m",
+              "l"
             ]
           },
           "metrics": {
@@ -12078,12 +12582,6 @@
               "type": "object",
               "description": "ES|QL column reference for primary metric",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12101,7 +12599,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color"
@@ -12116,12 +12613,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12142,7 +12633,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color",
@@ -12152,7 +12642,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "Pie/Donut Chart (ES|QL)",
+        "title": "Pie Chart (ES|QL)",
         "required": [
           "type",
           "filters",
@@ -12163,7 +12653,7 @@
         ]
       },
       "pieChart": {
-        "description": "Pie/donut chart state: standard query or ES|QL query",
+        "description": "Pie chart state: standard query or ES|QL query",
         "anyOf": [
           {
             "$ref": "#/components/schemas/pieNoESQL"
@@ -12172,7 +12662,7 @@
             "$ref": "#/components/schemas/pieESQL"
           }
         ],
-        "title": "Pie/Donut Chart"
+        "title": "Pie Chart"
       },
       "mosaicLegend": {
         "type": "object",
@@ -12425,12 +12915,6 @@
             "type": "object",
             "description": "Metric configuration for ES|QL mode, combining generic options, primary metric options, and column selection",
             "properties": {
-              "operation": {
-                "type": "string",
-                "enum": [
-                  "value"
-                ]
-              },
               "column": {
                 "type": "string",
                 "description": "Column to use"
@@ -12445,7 +12929,6 @@
             },
             "additionalProperties": false,
             "required": [
-              "operation",
               "column",
               "format"
             ]
@@ -12458,12 +12941,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12484,7 +12961,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color",
@@ -12500,12 +12976,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12526,7 +12996,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color",
@@ -12816,12 +13285,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12839,7 +13302,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color"
@@ -12854,12 +13316,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -12880,7 +13336,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color",
@@ -13156,12 +13611,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -13179,7 +13628,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color"
@@ -13194,12 +13642,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "operation": {
-                  "type": "string",
-                  "enum": [
-                    "value"
-                  ]
-                },
                 "column": {
                   "type": "string",
                   "description": "Column to use"
@@ -13220,7 +13662,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "operation",
                 "column",
                 "format",
                 "color",
@@ -14494,6 +14935,151 @@
           "config"
         ]
       },
+      "slo-alerts-embeddable": {
+        "type": "object",
+        "description": "SLO Alerts embeddable schema",
+        "properties": {
+          "slos": {
+            "type": "array",
+            "description": "List of SLOs to display alerts for",
+            "default": [],
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "slo_id": {
+                  "type": "string",
+                  "description": "SLO ID"
+                },
+                "slo_instance_id": {
+                  "type": "string",
+                  "description": "SLO instance ID",
+                  "default": "*"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "slo_id"
+              ]
+            }
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-alerts-embeddable"
+      },
+      "kbn-dashboard-panel-slo_alerts": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "The x coordinate of the panel in grid units"
+              },
+              "y": {
+                "type": "number",
+                "description": "The y coordinate of the panel in grid units"
+              },
+              "w": {
+                "type": "number",
+                "description": "The width of the panel in grid units",
+                "default": 24,
+                "minimum": 1,
+                "maximum": 48
+              },
+              "h": {
+                "type": "number",
+                "description": "The height of the panel in grid units",
+                "default": 15,
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "uid": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slo_alerts"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/slo-alerts-embeddable"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo_alerts",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
       "slo-burn-rate-embeddable": {
         "type": "object",
         "description": "SLO Burn Rate embeddable schema",
@@ -15209,6 +15795,29 @@
                         "value"
                       ]
                     }
+                  },
+                  "statuses": {
+                    "type": "array",
+                    "description": "Filter by monitor statuses",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -15604,6 +16213,34 @@
           "pause",
           "value"
         ]
+      },
+      "kbn-as-code-meta": {
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "managed": {
+            "type": "boolean"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "kbn-as-code-meta"
       }
     },
     "securitySchemes": {

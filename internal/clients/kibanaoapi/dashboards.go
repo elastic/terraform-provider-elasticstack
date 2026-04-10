@@ -79,10 +79,9 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 }
 
 // CreateDashboard creates a new dashboard.
-func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsIdJSONRequestBody) (*kbapi.PostDashboardsIdResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsIdWithResponse(
-		ctx, dashboardID,
-		req,
+func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
+	resp, err := client.API.PostDashboardsWithResponse(
+		ctx, req,
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)
@@ -101,7 +100,7 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 // UpdateDashboard updates an existing dashboard.
 func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PutDashboardsIdJSONRequestBody) (*kbapi.PutDashboardsIdResponse, diag.Diagnostics) {
 	resp, err := client.API.PutDashboardsIdWithResponse(
-		ctx, dashboardID, &kbapi.PutDashboardsIdParams{}, req,
+		ctx, dashboardID, req,
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)

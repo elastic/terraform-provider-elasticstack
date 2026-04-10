@@ -50,7 +50,7 @@ func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Contex
 
 	pm.DatatableConfig = &datatableConfigModel{}
 
-	if datatableNoESQL, err := datatableChart.AsDatatableNoESQL(); err == nil && (datatableNoESQL.Query.Query != "" || datatableNoESQL.Query.Language != nil) {
+	if datatableNoESQL, err := datatableChart.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		pm.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
 		return pm.DatatableConfig.NoESQL.fromAPI(ctx, datatableNoESQL)
 	}
@@ -153,6 +153,22 @@ type datatableRowModel struct {
 
 type datatableSplitByModel struct {
 	ConfigJSON jsontypes.Normalized `tfsdk:"config_json"`
+}
+
+func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.DatatableNoESQL) bool {
+	body, err := json.Marshal(apiTable.Dataset)
+	if err != nil {
+		return false
+	}
+
+	var dataset struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &dataset); err != nil {
+		return false
+	}
+
+	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
 type datatableDensityModel struct {
@@ -507,7 +523,6 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			Column       string                               `json:"column"`
 			Format       kbapi.FormatType                     `json:"format"`
 			Label        *string                              `json:"label,omitempty"`
-			Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 			Visible      *bool                                `json:"visible,omitempty"`
 			Width        *float32                             `json:"width,omitempty"`
 		}, len(m.Rows))
@@ -524,10 +539,9 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]struct {
-			Column    string                                     `json:"column"`
-			Format    kbapi.FormatType                           `json:"format"`
-			Label     *string                                    `json:"label,omitempty"`
-			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
+			Column string           `json:"column"`
+			Format kbapi.FormatType `json:"format"`
+			Label  *string          `json:"label,omitempty"`
 		}, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
 			if typeutils.IsKnown(splitModel.ConfigJSON) {

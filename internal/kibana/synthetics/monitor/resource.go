@@ -30,10 +30,8 @@ import (
 const resourceName = synthetics.MetadataPrefix + "monitor"
 
 // NewResource creates a new synthetics monitor resource
-func NewResource(validateLocation bool) resource.Resource {
-	return &Resource{
-		validateLocation: validateLocation,
-	}
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
 // Ensure provider-defined types fully satisfy framework interfaces
@@ -45,8 +43,7 @@ var _ synthetics.ESAPIClient = &Resource{}
 
 // Resource represents a synthetics monitor resource
 type Resource struct {
-	validateLocation bool
-	client           *clients.APIClient
+	client *clients.APIClient
 }
 
 func (r *Resource) GetClient() *clients.APIClient {
@@ -83,5 +80,5 @@ func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest,
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
-	response.Schema = monitorConfigSchema(r.validateLocation)
+	response.Schema = monitorConfigSchema()
 }
