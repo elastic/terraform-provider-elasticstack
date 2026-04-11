@@ -92,7 +92,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputElasticsearch{
-		Type: func() *kbapi.UpdateOutputElasticsearchType {
+		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchType {
 			outputType := kbapi.Elasticsearch
 			return &outputType
 		}(),

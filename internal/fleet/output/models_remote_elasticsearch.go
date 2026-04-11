@@ -104,7 +104,7 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 	}
 
 	body := kbapi.UpdateOutputRemoteElasticsearch{
-		Type: func() *kbapi.UpdateOutputRemoteElasticsearchType {
+		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearchType {
 			outputType := kbapi.RemoteElasticsearch
 			return &outputType
 		}(),
