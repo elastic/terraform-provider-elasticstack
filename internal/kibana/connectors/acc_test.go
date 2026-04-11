@@ -271,6 +271,22 @@ func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets", "{}"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_auth_type"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".webhook"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://hooks\.example\.com/services\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"method\":\"post\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"hasAuth\":false`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"Content-Type\":\"application/json\"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets", "{}"),
+				),
+			},
 		},
 	})
 }
