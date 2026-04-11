@@ -30,7 +30,7 @@ Alternative considered: keep the memory logic in prompt prose.
 Rejected because it duplicates deterministic behavior in natural language, increases prompt size, and exposes the internal memory schema as part of the agent contract.
 
 Use a command-oriented interface rather than documenting the JSON schema to the agent.
-The scripts should expose a small set of operations, such as preparing the canonical inventory and selecting entities, then recording analysis completion. The prompt can name those commands and expected outputs without describing the structure of the memory JSON itself.
+The scripts should expose a small set of operations, such as preparing the canonical inventory and selecting entities, then recording analysis completion. Each command should accept the live working memory file path as an argument, the selection command should emit a machine-readable JSON contract, and the prompt can name those commands and outputs without describing the structure of the memory JSON itself.
 
 Alternative considered: continue documenting the memory format and let the agent edit JSON directly.
 Rejected because direct JSON editing is more error-prone and makes future memory-shape changes harder.
@@ -45,7 +45,7 @@ Alternative considered: maintain the tracked entity inventory only in the seed f
 Rejected because the canonical entity set must follow the current provider registrations on each run.
 
 Return machine-readable selection results.
-The selection command should emit structured output that includes entity names and types so the agent can iterate deterministically without reparsing memory internals.
+The selection command should emit a stable JSON array that includes entity names and types so the agent can iterate deterministically without reparsing memory internals. When timestamps are equal, ties should break deterministically by type then name.
 
 Alternative considered: emit only plain-text names.
 Rejected because the agent also needs entity type and should not infer it from naming conventions after selection.
@@ -68,6 +68,6 @@ Rejected because a per-entity update is safer if the run stops partway through a
 
 1. Add a Go command under `scripts/schema-coverage-rotation` for memory preparation, entity selection, and timestamp persistence.
 2. Implement canonical entity discovery by importing the provider registrations from the `provider` package and normalizing Plugin Framework and Plugin SDK entities into the same memory model.
-3. Update `.github/workflows/schema-coverage-rotation.md` so the agent instructions tell the agent which Go command(s) to run after repo-memory hooks complete.
+3. Update the authored workflow source under `.github/workflows-src/schema-coverage-rotation/` so the agent instructions tell the agent which Go command(s) to run after repo-memory hooks complete.
 4. Remove the detailed memory JSON schema and hand-authored selection algorithm from the prompt.
-5. Recompile `.github/workflows/schema-coverage-rotation.lock.yml` and validate the OpenSpec and workflow artifacts.
+5. Recompile `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml`, then validate the OpenSpec and workflow artifacts.

@@ -1,3 +1,11 @@
+# `ci-schema-coverage-rotation-issue-slots` — Deterministic pre-activation issue-slot gating
+
+Workflow implementation: authored source under `.github/workflows-src/schema-coverage-rotation/`, compiled to `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml`.
+
+## Purpose
+
+Define requirements for moving schema-coverage issue-capacity calculation into a deterministic pre-activation workflow path that publishes reusable outputs and skips the agent job entirely when no issue slots remain.
+
 ## ADDED Requirements
 
 ### Requirement: Pre-activation issue-slot calculation

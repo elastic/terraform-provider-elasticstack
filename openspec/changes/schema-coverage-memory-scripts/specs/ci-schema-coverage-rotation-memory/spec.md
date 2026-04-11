@@ -1,3 +1,12 @@
+# `ci-schema-coverage-rotation-memory` — Script-driven schema-coverage memory behavior
+
+Workflow implementation: authored source under `.github/workflows-src/schema-coverage-rotation/`, compiled to `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml`.
+Script implementation: `scripts/schema-coverage-rotation/`.
+
+## Purpose
+
+Define requirements for moving schema-coverage memory bootstrap, entity reconciliation, selection, and timestamp persistence out of workflow prompt prose and into repository-local Go commands that the workflow invokes after repo-memory hooks complete.
+
 ## ADDED Requirements
 
 ### Requirement: Agent prompt uses post-hook memory scripts
@@ -14,8 +23,15 @@ The schema-coverage memory helper SHALL be implemented as a Go command rooted at
 - **WHEN** the agent needs to prepare memory, select entities, or record analysis completion
 - **THEN** it runs the Go-based helper command from `scripts/schema-coverage-rotation`
 
+### Requirement: Memory commands use a caller-supplied working file path
+The schema-coverage memory preparation, selection, and update commands SHALL accept the live working memory file path as an explicit input parameter and SHALL operate on that supplied path rather than hardcoding a runtime-specific repo-memory location.
+
+#### Scenario: Workflow passes the live repo-memory path
+- **WHEN** the workflow invokes a schema-coverage memory command against the current repo-memory workspace
+- **THEN** it provides the working memory file path as a command input and the command operates on that supplied file
+
 ### Requirement: Memory preparation bootstraps and reconciles the canonical entity inventory
-The schema-coverage memory preparation command SHALL initialize the working memory file from `.github/aw/memory/schema-coverage.json` when the working file does not exist, SHALL derive the canonical entity inventory by importing the provider registrations exposed through `provider/plugin_framework.go` and `provider/provider.go`, SHALL preserve entity type as `resource` or `data source`, SHALL ensure newly discovered entities are present in memory with either their existing timestamp or `null`, and SHALL remove memory entries for entities that are no longer registered by either provider implementation.
+The schema-coverage memory preparation command SHALL use the caller-supplied working memory file path, SHALL initialize that file from `.github/aw/memory/schema-coverage.json` when the supplied path does not exist, SHALL derive the canonical entity inventory by importing the provider registrations exposed through `provider/plugin_framework.go` and `provider/provider.go`, SHALL preserve entity type as `resource` or `data source`, SHALL ensure newly discovered entities are present in memory with either their existing timestamp or `null`, SHALL remove memory entries for entities that are no longer registered by either provider implementation, and SHALL write reconciled results via an atomic replace-on-success rename.
 
 #### Scenario: Working memory file is absent
 - **WHEN** the memory preparation command runs and the working memory file does not yet exist
@@ -34,7 +50,7 @@ The schema-coverage memory preparation command SHALL initialize the working memo
 - **THEN** it removes that entity from the working memory file during reconciliation
 
 ### Requirement: Selection is oldest-first across resources and data sources
-The schema-coverage selection command SHALL choose exactly the requested number of entities across both resources and data sources using oldest-first ordering, where `null` timestamps sort before populated timestamps, and SHALL preserve each selected entity's type in its output.
+The schema-coverage selection command SHALL choose exactly the requested number of entities across both resources and data sources using oldest-first ordering, where `null` timestamps sort before populated timestamps, ties on equal timestamp state and value are broken by lexicographic `type` then `name`, and SHALL emit a JSON array on stdout whose entries use stable `type` and `name` fields for each selected entity.
 
 #### Scenario: Mixed analyzed and never-analyzed entities exist
 - **WHEN** the selection command ranks available entities for a run
@@ -42,10 +58,14 @@ The schema-coverage selection command SHALL choose exactly the requested number 
 
 #### Scenario: Selection output is consumed by the agent
 - **WHEN** the agent requests the next entities to analyze
-- **THEN** the command returns structured results that include both entity name and entity type for each selected entry
+- **THEN** the command returns a JSON array whose entries include both stable `type` and `name` fields for each selected entity
+
+#### Scenario: Multiple entities share the same timestamp
+- **WHEN** two or more candidate entities have the same timestamp state and value during selection
+- **THEN** the command orders those tied entities by lexicographic `type` and then lexicographic `name`
 
 ### Requirement: Timestamp persistence is handled by a script command
-The schema-coverage memory update command SHALL persist the analyzed entity's timestamp as the current UTC time after each analysis, regardless of whether that analysis produced an actionable issue.
+The schema-coverage memory update command SHALL accept the caller-supplied working memory file path, SHALL persist the analyzed entity's timestamp as the current UTC time after each analysis, regardless of whether that analysis produced an actionable issue, and SHALL update the memory file via an atomic replace-on-success rename.
 
 #### Scenario: An analyzed entity has actionable gaps
 - **WHEN** the agent finishes analyzing an entity and determines that an issue should be created
