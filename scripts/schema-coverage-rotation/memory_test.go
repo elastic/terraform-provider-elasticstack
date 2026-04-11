@@ -25,9 +25,6 @@ import (
 	"time"
 )
 
-//go:fix inline
-func ptr[T any](t T) *T { return new(t) }
-
 var (
 	ts2020 = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	ts2021 = time.Date(2021, 6, 15, 12, 0, 0, 0, time.UTC)
