@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -283,6 +284,12 @@ func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://hooks\.example\.com/services\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"method\":\"post\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"hasAuth\":false`)),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_action_connector.test", "config", func(value string) error {
+						if strings.Contains(value, `"authType"`) {
+							return fmt.Errorf("expected authType to be omitted from config, got %s", value)
+						}
+						return nil
+					}),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"Content-Type\":\"application/json\"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets", "{}"),
 				),
