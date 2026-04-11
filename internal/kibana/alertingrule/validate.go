@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -57,10 +58,25 @@ func mustNewParamsSchemaSpec(newTarget func() any) paramsSchemaSpec {
 	}
 }
 
-func mustNewParamsSchemaSpecWithKeys(newTarget func() any, additionalAllowedKeys []string) paramsSchemaSpec {
-	spec := mustNewParamsSchemaSpec(newTarget)
-	spec.additionalAllowedKeys = additionalAllowedKeys
-	return spec
+func mustNewParamsSchemaSpecFromContainer(newContainer func() any) paramsSchemaSpec {
+	return mustNewParamsSchemaSpec(func() any {
+		container := newContainer()
+		containerType := reflect.TypeOf(container)
+		if containerType.Kind() != reflect.Pointer {
+			panic(fmt.Sprintf("alerting_rule: params container %T must be a pointer", container))
+		}
+
+		paramsField, ok := containerType.Elem().FieldByName("Params")
+		if !ok {
+			panic(fmt.Sprintf("alerting_rule: params container %T is missing a Params field", container))
+		}
+
+		if paramsField.Type.Kind() == reflect.Pointer {
+			return reflect.New(paramsField.Type.Elem()).Interface()
+		}
+
+		return reflect.New(paramsField.Type).Interface()
+	})
 }
 
 // ValidateConfig is the single validation entry point for rule params. It runs
@@ -105,43 +121,41 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 
 var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	"apm.rules.anomaly": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmAnomaly{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlerting{} }),
 	},
 	"apm.error_rate": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmErrorCount{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlerting{} }),
 	},
 	"apm.transaction_duration": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmTransactionDuration{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionDurationCreateRuleBodyAlerting{} }),
 	},
 	"apm.transaction_error_rate": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmTransactionErrorRate{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionErrorRateCreateRuleBodyAlerting{} }),
 	},
 	".index-threshold": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsIndexThresholdRule{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting{} }),
 	},
 	"metrics.alert.inventory.threshold": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyInfraInventory{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsMetricsAlertInventoryThresholdCreateRuleBodyAlerting{} }),
 	},
 	"metrics.alert.threshold": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyInfraMetricThreshold{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsMetricsAlertThresholdCreateRuleBodyAlerting{} }),
 	},
 	"slo.rules.burnRate": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySloBurnRate{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsSloRulesBurnrateCreateRuleBodyAlerting{} }),
 	},
 	"xpack.uptime.alerts.tls": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySyntheticsUptimeTls{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsTlsCreateRuleBodyAlerting{} }),
 	},
 	"xpack.uptime.alerts.monitorStatus": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySyntheticsMonitorStatus{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting{} }),
 	},
 	".es-query": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryDslRule{} }),
-		mustNewParamsSchemaSpecWithKeys(func() any { return &kbapi.ParamsEsQueryEsqlRule{} }, []string{"termField"}),
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryKqlRule{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsEsQueryCreateRuleBodyAlerting{} }),
 	},
 	"logs.alert.document.count": {
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyLogThreshold0{} }),
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyLogThreshold1{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.KibanaHTTPAPIsLogsAlertDocumentCountCreateRuleBodyAlertingParams0{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.KibanaHTTPAPIsLogsAlertDocumentCountCreateRuleBodyAlertingParams1{} }),
 	},
 }
 

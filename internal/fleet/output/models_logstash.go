@@ -91,7 +91,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputLogstash{
-		Type: func() *kbapi.UpdateOutputLogstashType {
+		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputLogstashType {
 			outputType := kbapi.Logstash
 			return &outputType
 		}(),

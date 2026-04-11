@@ -812,7 +812,7 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	isInside := typeutils.IsKnown(m.Inside) && m.Inside.ValueBool()
 	insideVisibility := kbapi.XyLegendInsideVisibilityAuto
 	outsideHorizontalVisibility := kbapi.XyLegendOutsideHorizontalVisibilityAuto
-	outsideVerticalVisibility := kbapi.XyLegendOutsideVerticalVisibilityAuto
+	outsideVerticalVisibility := kbapi.Auto
 	if typeutils.IsKnown(m.Visibility) {
 		insideVisibility = kbapi.XyLegendInsideVisibility(m.Visibility.ValueString())
 		outsideHorizontalVisibility = kbapi.XyLegendOutsideHorizontalVisibility(m.Visibility.ValueString())
