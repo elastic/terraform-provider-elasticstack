@@ -41,6 +41,27 @@ type paramsSchemaSpec struct {
 	additionalAllowedKeys []string // keys stripped only for this variant
 }
 
+// legacyMonitorStatusParams models the long-standing runtime payload shape that
+// Kibana still accepts for monitor status rules, even though the regenerated
+// spec now also includes a newer `condition` form.
+type legacyMonitorStatusParams struct {
+	Availability *struct {
+		Range     float32 `json:"range"`
+		RangeUnit string  `json:"rangeUnit"`
+		Threshold string  `json:"threshold"`
+	} `json:"availability,omitempty"`
+	Filters *struct {
+		Tags []string `json:"tags,omitempty"`
+	} `json:"filters,omitempty"`
+	NumTimes                float32  `json:"numTimes"`
+	Search                  *string  `json:"search,omitempty"`
+	ShouldCheckAvailability bool     `json:"shouldCheckAvailability"`
+	ShouldCheckStatus       bool     `json:"shouldCheckStatus"`
+	StackVersion            *string  `json:"stackVersion,omitempty"`
+	TimerangeCount          *float32 `json:"timerangeCount,omitempty"`
+	TimerangeUnit           *string  `json:"timerangeUnit,omitempty"`
+}
+
 func mustNewParamsSchemaSpec(newTarget func() any) paramsSchemaSpec {
 	target := newTarget()
 	name := fmt.Sprintf("%T", target)
@@ -149,6 +170,7 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	},
 	"xpack.uptime.alerts.monitorStatus": {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting{} }),
+		mustNewParamsSchemaSpec(func() any { return &legacyMonitorStatusParams{} }),
 	},
 	".es-query": {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsEsQueryCreateRuleBodyAlerting{} }),
@@ -159,30 +181,7 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	},
 }
 
-var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{
-	// The generated type currently models legacy single-window fields, while
-	// Kibana accepts modern multi-window payloads under `windows`.
-	// TODO: remove when upstream Kibana schema models modern window payloads.
-	// Tracking: https://github.com/elastic/kibana/issues/252451
-	"slo.rules.burnRate": {"windows", "dependencies"},
-	// Kibana supports passing selected hit fields to actions, but that key is
-	// currently missing from generated `.es-query` params models.
-	// TODO: remove when upstream Kibana schema includes this key.
-	// Tracking: https://github.com/elastic/kibana/issues/252451
-	// Kibana's runtime API accepts termField for ESQL rules (per-group alerting),
-	// but the generated ESQL params struct omits it.
-	// TODO: remove when upstream Kibana schema includes this key.
-	// Tracking: https://github.com/elastic/kibana/issues/252451
-	".es-query": {"sourceFields"},
-	// Kibana accepts this convenience field alongside filterQuery in metrics
-	// threshold rules.
-	"metrics.alert.threshold": {"filterQueryText"},
-	// Kibana accepts these APM error-rate params, but generated schema currently
-	// misses them in provider validation targets.
-	"apm.error_rate": {"searchConfiguration", "useKqlFilter"},
-	// Kibana accepts stackVersion in uptime monitorStatus params.
-	"xpack.uptime.alerts.monitorStatus": {"stackVersion"},
-}
+var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{}
 
 var ruleTypeAdditionalRequiredParamsKeys = map[string][]string{
 	// Kibana rejects `.es-query` params without `size` even when the generated
@@ -225,7 +224,13 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 
 		missingKeys := missingRequiredKeys(spec.requiredKeys, params, ruleTypeAdditionalRequiredParamsKeys[ruleTypeID])
 		if len(missingKeys) == 0 {
-			return nil
+			postDecodeErrs := validateRuleParamsPostDecode(ruleTypeID, params)
+			if len(postDecodeErrs) == 0 {
+				return nil
+			}
+
+			best.consider(true, formatParamsValidationErrors(postDecodeErrs))
+			continue
 		}
 
 		best.consider(true, fmt.Sprintf("missing required params keys for rule type %q: %s", ruleTypeID, strings.Join(missingKeys, ", ")))
@@ -236,6 +241,17 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 	}
 
 	return []string{best.err}
+}
+
+func validateRuleParamsPostDecode(ruleTypeID string, params map[string]any) []string {
+	switch ruleTypeID {
+	case ".index-threshold":
+		if index, ok := params["index"]; ok && !isJSONArrayLike(index) {
+			return []string{fmt.Sprintf("invalid params for rule type %q: index must be an array of strings", ruleTypeID)}
+		}
+	}
+
+	return nil
 }
 
 type validationCandidate struct {
@@ -260,6 +276,15 @@ func betterValidationCandidate(decoded bool, currentDecoded bool) bool {
 	}
 	// Keep stable variant order for deterministic tie-breaking.
 	return false
+}
+
+func isJSONArrayLike(v any) bool {
+	if v == nil {
+		return false
+	}
+
+	kind := reflect.TypeOf(v).Kind()
+	return kind == reflect.Slice || kind == reflect.Array
 }
 
 func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]any, additionalRequiredKeys []string) []string {
