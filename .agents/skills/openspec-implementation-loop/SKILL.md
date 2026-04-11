@@ -22,7 +22,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 6. Send findings back to the implementor and repeat until clean
 7. Push the branch to `origin`
 8. **Commit mode**: Watch GitHub Actions on the pushed branch/commit  
-   **PR mode**: Create a PR, watch PR checks, poll for PR reviews six times at 10-minute intervals, and address review feedback
+   **PR mode**: Create a PR, watch PR checks, add `verify-openspec` label after PR checks are successful, poll for PR reviews six times at 10-minute intervals, and address review feedback
 9. Report final outcome
 
 **Steps**
@@ -203,6 +203,14 @@ Orchestrate an implementation loop around a single OpenSpec change.
     - prefer PR-centric views: for example `gh pr checks <pr>` and/or workflow runs associated with the PR’s head branch or PR event
     - poll until required checks complete, with the same practical pacing as commit-only mode for long acceptance tests
 
+    **Add `verify-openspec` label after successful Github Actions**:
+    - Decide whether to add the label based on the **current PR head commit**, not an older green run. If new commits were pushed after the last successful checks, wait for checks on the new head commit to finish.
+    - Add the label only when the PR is ready for OpenSpec verification: the PR exists, the relevant GitHub Actions for the latest head commit are green in PR context, and there is no unresolved CI failure you already know needs another fix push first.
+    - Treat the label as a **manual trigger for the OpenSpec verify workflow**. It is appropriate once per green head commit when you want that workflow to review the current PR state.
+    - Apply the label with GitHub CLI: `gh pr edit <pr> --add-label verify-openspec`
+    - Or apply it in the GitHub UI: open the PR, use the labels control, and add `verify-openspec`.
+    - After applying it, confirm the OpenSpec verify workflow starts for that PR. The workflow removes `verify-openspec` automatically after activation, so if later pushes need another verify pass, wait for checks on the new head commit to go green and then add the label again.
+
     **PR reviews — six checks, ten minutes apart**:
     - After the PR exists, perform **six** separate review polls for new or updated reviews.
     - **Schedule**: run the **first** poll as soon as the PR is created (or immediately after). Run polls **two** through **six** each after **waiting 10 minutes** since the previous poll (six polls total, ~50 minutes from first to last if no work interrupts the schedule).
@@ -215,6 +223,8 @@ Orchestrate an implementation loop around a single OpenSpec change.
       - resume the implementor to address feedback with minimal commits
       - push updates; the PR updates automatically
       - re-check PR checks after pushes
+      - when a review thread has been addressed, add a brief reply summarizing the fix and then resolve the thread
+      - only resolve threads that are actually addressed by the current PR state; leave unresolved anything that still needs reviewer confirmation or additional changes
     - If a **late** review round arrives after the sixth poll, surface it to the user (or extend polling if they ask).
 
     If CI fails on the PR:
