@@ -48,7 +48,7 @@ func TestAccDataSourceIngestProcessorGsub(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccDataSourceIngestProcessorGsubAllAttributesConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "field", "field1"),
@@ -67,7 +67,7 @@ func TestAccDataSourceIngestProcessorGsub(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccDataSourceIngestProcessorGsubUpdatedConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "field", "field2"),
@@ -163,55 +163,3 @@ const expectedJSONGsubUpdated = `{
 		"target_field": "normalized_field"
 	}
 }`
-
-const testAccDataSourceIngestProcessorGsubAllAttributesConfig = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_gsub" "test" {
-  field          = "field1"
-  pattern        = "\\."
-  replacement    = "-"
-  target_field   = "normalized_field"
-  ignore_missing = true
-  description    = "Normalize a dotted field"
-  if             = "ctx.message != null"
-  ignore_failure = true
-  on_failure = [
-    jsonencode({
-      append = {
-        field = "errors"
-        value = ["gsub failed"]
-      }
-    })
-  ]
-  tag = "gsub-normalize"
-}
-`
-
-const testAccDataSourceIngestProcessorGsubUpdatedConfig = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_gsub" "test" {
-  field          = "field2"
-  pattern        = ":"
-  replacement    = "_"
-  target_field   = "normalized_field"
-  ignore_missing = true
-  description    = "Normalize colon-delimited field"
-  if             = "ctx.message != null"
-  ignore_failure = true
-  on_failure = [
-    jsonencode({
-      append = {
-        field = "errors"
-        value = ["gsub failed"]
-      }
-    })
-  ]
-  tag = "gsub-normalize"
-}
-`
