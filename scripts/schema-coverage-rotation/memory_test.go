@@ -25,7 +25,8 @@ import (
 	"time"
 )
 
-func ptr[T any](t T) *T { return &t }
+//go:fix inline
+func ptr[T any](t T) *T { return new(t) }
 
 var (
 	ts2020 = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -39,11 +40,11 @@ func TestLoadAndSaveMemory(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_a": ptr(ts2020),
+			"elasticstack_a": new(ts2020),
 			"elasticstack_b": nil,
 		},
 		DataSources: map[string]*time.Time{
-			"elasticstack_ds_a": ptr(ts2021),
+			"elasticstack_ds_a": new(ts2021),
 			"elasticstack_ds_b": nil,
 		},
 	}
@@ -168,7 +169,7 @@ func TestReconcileMemoryPreservesTimestamp(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_existing": ptr(ts2021),
+			"elasticstack_existing": new(ts2021),
 		},
 		DataSources: map[string]*time.Time{},
 	}
@@ -193,8 +194,8 @@ func TestReconcileMemoryRemovesStale(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_stale": ptr(ts2020),
-			"elasticstack_kept":  ptr(ts2021),
+			"elasticstack_stale": new(ts2020),
+			"elasticstack_kept":  new(ts2021),
 		},
 		DataSources: map[string]*time.Time{
 			"elasticstack_stale_ds": nil,
@@ -224,7 +225,7 @@ func TestSelectEntitiesNullFirst(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_analyzed": ptr(ts2020),
+			"elasticstack_analyzed": new(ts2020),
 			"elasticstack_never":    nil,
 		},
 		DataSources: map[string]*time.Time{},
@@ -245,8 +246,8 @@ func TestSelectEntitiesOldestFirst(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_old":    ptr(ts2020),
-			"elasticstack_recent": ptr(ts2022),
+			"elasticstack_old":    new(ts2020),
+			"elasticstack_recent": new(ts2022),
 		},
 		DataSources: map[string]*time.Time{},
 	}
@@ -312,10 +313,10 @@ func TestSelectEntitiesEntityType(t *testing.T) {
 
 	mem := &Memory{
 		Resources: map[string]*time.Time{
-			"elasticstack_res": ptr(ts2021),
+			"elasticstack_res": new(ts2021),
 		},
 		DataSources: map[string]*time.Time{
-			"elasticstack_ds": ptr(ts2020),
+			"elasticstack_ds": new(ts2020),
 		},
 	}
 
