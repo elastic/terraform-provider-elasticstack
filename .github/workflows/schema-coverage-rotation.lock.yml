@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"ed3331e11d0e55d2c1487a331438ddf8061d482b12611c01ae3775d972ca86c5","compiler_version":"v0.68.1","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
-# gh-aw-manifest: {"version":1,"secrets":["COPILOT_GITHUB_TOKEN","GH_AW_AGENT_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/upload-artifact","sha":"bbbca2ddaa5d8feaa63e36b76fdaad77386f024f","version":"v7"},{"repo":"github/gh-aw-actions/setup","sha":"2fe53acc038ba01c3bbdc767d4b25df31ca5bdfc","version":"v0.68.1"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"3742e998f8dfd744e1084c55d44d12b5eba5690b297846de7d3311295def1504","compiler_version":"v0.68.1","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
+# gh-aw-manifest: {"version":1,"secrets":["COPILOT_GITHUB_TOKEN","GH_AW_AGENT_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/upload-artifact","sha":"bbbca2ddaa5d8feaa63e36b76fdaad77386f024f","version":"v7"},{"repo":"github/gh-aw-actions/setup","sha":"2fe53acc038ba01c3bbdc767d4b25df31ca5bdfc","version":"v0.68.1"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -36,6 +36,7 @@
 #   - actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
 #   - actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
 #   - actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+#   - actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
 #   - actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
 #   - github/gh-aw-actions/setup@2fe53acc038ba01c3bbdc767d4b25df31ca5bdfc # v0.68.1
 
@@ -44,6 +45,63 @@ name: "Schema Coverage Rotation"
   schedule:
   - cron: "18 10 * * *"
     # Friendly format: daily (scattered)
+  # steps: # Steps injected into pre-activation job
+  # - id: compute_issue_slots
+    # name: Compute issue slots
+    # uses: actions/github-script@v8
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
+        # const ISSUE_CAP = 3;
+        # 
+        # /**
+         # * Computes schema-coverage issue slot availability.
+         # * @param {number} openIssueCount - The number of currently open schema-coverage issues.
+         # * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+         # */
+        # function computeIssueSlots(openIssueCount) {
+          # const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
+        # 
+          # let gateReason;
+          # if (slotsAvailable === 0) {
+            # gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
+          # } else {
+            # gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+          # }
+        # 
+          # return {
+            # open_schema_coverage_issues: openIssueCount,
+            # issue_slots_available: slotsAvailable,
+            # gate_reason: gateReason,
+          # };
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+        # }
+        # 
+        # const { owner, repo } = context.repo;
+        # 
+        # // Count open schema-coverage issues, excluding pull requests
+        # const issues = await github.paginate(github.rest.issues.listForRepo, {
+          # owner,
+          # repo,
+          # labels: SCHEMA_COVERAGE_LABEL,
+          # state: 'open',
+          # per_page: 100,
+        # });
+        # 
+        # // GitHub issues API may return pull requests — exclude them
+        # const openIssueCount = issues.filter(item => !item.pull_request).length;
+        # 
+        # const result = computeIssueSlots(openIssueCount);
+        # 
+        # core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
+        # core.setOutput('issue_slots_available', String(result.issue_slots_available));
+        # core.setOutput('gate_reason', result.gate_reason);
+        # 
+        # core.info(`Gate reason: ${result.gate_reason}`);
   workflow_dispatch:
     inputs:
       aw_context:
@@ -55,12 +113,15 @@ name: "Schema Coverage Rotation"
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  cancel-in-progress: true
 
 run-name: "Schema Coverage Rotation"
 
 jobs:
   activation:
+    needs: pre_activation
+    if: needs.pre_activation.outputs.activated == 'true' && (needs.pre_activation.outputs.issue_slots_available != '0')
     runs-on: ubuntu-slim
     permissions:
       actions: read
@@ -80,6 +141,7 @@ jobs:
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
+          trace-id: ${{ needs.pre_activation.outputs.setup-trace-id }}
       - name: Generate agentic run info
         id: generate_aw_info
         env:
@@ -154,19 +216,22 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_da33a1824aefda35_EOF'
+          cat << 'GH_AW_PROMPT_90aa663b596c9de7_EOF'
           <system>
-          GH_AW_PROMPT_da33a1824aefda35_EOF
+          GH_AW_PROMPT_90aa663b596c9de7_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt_multi.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_da33a1824aefda35_EOF'
+          cat << 'GH_AW_PROMPT_90aa663b596c9de7_EOF'
           <safe-output-tools>
           Tools: create_issue(max:3), assign_to_agent(max:3), missing_tool, missing_data, noop
           </safe-output-tools>
@@ -198,17 +263,20 @@ jobs:
           {{/if}}
           </github-context>
           
-          GH_AW_PROMPT_da33a1824aefda35_EOF
+          GH_AW_PROMPT_90aa663b596c9de7_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_da33a1824aefda35_EOF'
+          cat << 'GH_AW_PROMPT_90aa663b596c9de7_EOF'
           </system>
           {{#runtime-import .github/workflows/schema-coverage-rotation.md}}
-          GH_AW_PROMPT_da33a1824aefda35_EOF
+          GH_AW_PROMPT_90aa663b596c9de7_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -229,6 +297,10 @@ jobs:
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_MEMORY_ALLOWED_EXTENSIONS: ''
           GH_AW_MEMORY_LIST: "- **schema-coverage-rotation**: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/` (branch: `memory/schema-coverage-rotation`)\n"
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -249,7 +321,11 @@ jobs:
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
                 GH_AW_MEMORY_ALLOWED_EXTENSIONS: process.env.GH_AW_MEMORY_ALLOWED_EXTENSIONS,
-                GH_AW_MEMORY_LIST: process.env.GH_AW_MEMORY_LIST
+                GH_AW_MEMORY_LIST: process.env.GH_AW_MEMORY_LIST,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES
               }
             });
       - name: Validate prompt placeholders
@@ -282,8 +358,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    concurrency:
-      group: "gh-aw-copilot-${{ github.workflow }}"
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
@@ -386,9 +460,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << GH_AW_SAFE_OUTPUTS_CONFIG_73714fbecb2d5511_EOF
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << GH_AW_SAFE_OUTPUTS_CONFIG_0696b01f46546ad0_EOF
           {"assign_to_agent":{"allowed":["copilot"],"custom-agent":"acceptance-test-improver","github-token":"${GH_AW_AGENT_TOKEN}","max":3,"model":"gpt-5.4","name":"copilot","target":"*"},"create_issue":{"labels":["testing","acceptance-tests","schema-coverage"],"max":3,"title_prefix":"[schema-coverage] "},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/schema-coverage-rotation","id":"schema-coverage-rotation","max_file_count":100,"max_file_size":524288,"max_patch_size":102400}]},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_73714fbecb2d5511_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_0696b01f46546ad0_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -609,7 +683,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.17'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_98c1470a899c27e1_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_708a81c042fa959b_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -650,7 +724,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_98c1470a899c27e1_EOF
+          GH_AW_MCP_CONFIG_708a81c042fa959b_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1128,6 +1202,92 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/parse_threat_detection_results.cjs');
             await main();
+
+  pre_activation:
+    runs-on: ubuntu-slim
+    outputs:
+      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      compute_issue_slots_result: ${{ steps.compute_issue_slots.outcome }}
+      gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
+      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+      matched_command: ''
+      open_schema_coverage_issues: ${{ steps.compute_issue_slots.outputs.open_schema_coverage_issues }}
+      setup-trace-id: ${{ steps.setup.outputs.trace-id }}
+    steps:
+      - name: Setup Scripts
+        id: setup
+        uses: github/gh-aw-actions/setup@2fe53acc038ba01c3bbdc767d4b25df31ca5bdfc # v0.68.1
+        with:
+          destination: ${{ runner.temp }}/gh-aw/actions
+          job-name: ${{ github.job }}
+      - name: Check team membership for workflow
+        id: check_membership
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          GH_AW_REQUIRED_ROLES: "admin,maintainer,write"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io, getOctokit);
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
+            await main();
+      - name: Compute issue slots
+        id: compute_issue_slots
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
+            const ISSUE_CAP = 3;
+
+            /**
+             * Computes schema-coverage issue slot availability.
+             * @param {number} openIssueCount - The number of currently open schema-coverage issues.
+             * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+             */
+            function computeIssueSlots(openIssueCount) {
+              const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
+
+              let gateReason;
+              if (slotsAvailable === 0) {
+                gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
+              } else {
+                gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+              }
+
+              return {
+                open_schema_coverage_issues: openIssueCount,
+                issue_slots_available: slotsAvailable,
+                gate_reason: gateReason,
+              };
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+            }
+
+            const { owner, repo } = context.repo;
+
+            // Count open schema-coverage issues, excluding pull requests
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              labels: SCHEMA_COVERAGE_LABEL,
+              state: 'open',
+              per_page: 100,
+            });
+
+            // GitHub issues API may return pull requests — exclude them
+            const openIssueCount = issues.filter(item => !item.pull_request).length;
+
+            const result = computeIssueSlots(openIssueCount);
+
+            core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
+            core.setOutput('issue_slots_available', String(result.issue_slots_available));
+            core.setOutput('gate_reason', result.gate_reason);
+
+            core.info(`Gate reason: ${result.gate_reason}`);
 
   push_repo_memory:
     needs:

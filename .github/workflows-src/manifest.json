@@ -3,6 +3,10 @@
     {
       "template": ".github/workflows-src/openspec-verify-label/workflow.md.tmpl",
       "output": ".github/workflows/openspec-verify-label.md"
+    },
+    {
+      "template": ".github/workflows-src/schema-coverage-rotation/workflow.md.tmpl",
+      "output": ".github/workflows/schema-coverage-rotation.md"
     }
   ]
 }
