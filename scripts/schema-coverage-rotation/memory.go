@@ -57,8 +57,8 @@ func loadMemory(path string) (*Memory, error) {
 
 	// Use raw map to handle null timestamps.
 	var raw struct {
-		Resources   map[string]interface{} `json:"resources"`
-		DataSources map[string]interface{} `json:"data-sources"`
+		Resources   map[string]any `json:"resources"`
+		DataSources map[string]any `json:"data-sources"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse memory file: %w", err)
@@ -82,7 +82,7 @@ func loadMemory(path string) (*Memory, error) {
 }
 
 // parseTimestamp converts a raw JSON value to *time.Time (nil for null).
-func parseTimestamp(v interface{}) *time.Time {
+func parseTimestamp(v any) *time.Time {
 	if v == nil {
 		return nil
 	}
@@ -101,12 +101,12 @@ func parseTimestamp(v interface{}) *time.Time {
 func saveMemory(path string, mem *Memory) error {
 	// Build raw map for serialization (null timestamps as JSON null).
 	type rawMemory struct {
-		Resources   map[string]interface{} `json:"resources"`
-		DataSources map[string]interface{} `json:"data-sources"`
+		Resources   map[string]any `json:"resources"`
+		DataSources map[string]any `json:"data-sources"`
 	}
 	raw := rawMemory{
-		Resources:   make(map[string]interface{}),
-		DataSources: make(map[string]interface{}),
+		Resources:   make(map[string]any),
+		DataSources: make(map[string]any),
 	}
 	for k, v := range mem.Resources {
 		if v == nil {
@@ -269,7 +269,7 @@ func selectEntities(mem *Memory, n int) []entity {
 		n = len(candidates)
 	}
 	result := make([]entity, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		result[i] = candidates[i].entity
 	}
 	return result

@@ -147,8 +147,8 @@ func bootstrapFromSeed(targetPath, seedPath string) error {
 
 	// Parse and re-save via saveMemory to get canonical format.
 	var raw struct {
-		Resources   map[string]interface{} `json:"resources"`
-		DataSources map[string]interface{} `json:"data-sources"`
+		Resources   map[string]any `json:"resources"`
+		DataSources map[string]any `json:"data-sources"`
 	}
 	if err := json.Unmarshal(seedData, &raw); err != nil {
 		return fmt.Errorf("parse seed: %w", err)

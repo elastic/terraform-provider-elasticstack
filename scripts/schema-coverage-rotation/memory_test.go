@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func ptr(t time.Time) *time.Time { return &t }
+func ptr[T any](t T) *T { return &t }
 
 var (
 	ts2020 = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -118,7 +118,7 @@ func TestSaveMemoryAtomic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read file: %v", err)
 	}
-	var check map[string]interface{}
+	var check map[string]any
 	if err := json.Unmarshal(data, &check); err != nil {
 		t.Fatalf("not valid JSON: %v\n%s", err, data)
 	}

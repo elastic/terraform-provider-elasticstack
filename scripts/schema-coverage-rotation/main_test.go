@@ -49,8 +49,6 @@ func TestCmdPrepareMissingMemoryFlag(t *testing.T) {
 
 // TestCmdPrepareBootstrapsFromSeed verifies that a missing working file is bootstrapped.
 func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 
 	// Write a seed file.
@@ -64,11 +62,7 @@ func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
 	}
 
 	// Change to the temp dir so the relative seed path resolves.
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(dir)
 
 	memPath := filepath.Join(dir, "working", "schema-coverage.json")
 	if err := os.MkdirAll(filepath.Dir(memPath), 0o755); err != nil {
@@ -94,8 +88,6 @@ func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
 
 // TestCmdPrepareReconciles verifies that new/stale entities are handled.
 func TestCmdPrepareReconciles(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 
 	// Write a seed that is used as the initial working file.
@@ -108,11 +100,7 @@ func TestCmdPrepareReconciles(t *testing.T) {
 		t.Fatalf("write seed: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(dir)
 
 	memPath := filepath.Join(dir, "schema-coverage.json")
 
