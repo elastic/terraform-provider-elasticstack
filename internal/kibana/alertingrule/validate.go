@@ -244,8 +244,7 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 }
 
 func validateRuleParamsPostDecode(ruleTypeID string, params map[string]any) []string {
-	switch ruleTypeID {
-	case ".index-threshold":
+	if ruleTypeID == ".index-threshold" {
 		if index, ok := params["index"]; ok && !isJSONArrayLike(index) {
 			return []string{fmt.Sprintf("invalid params for rule type %q: index must be an array of strings", ruleTypeID)}
 		}
