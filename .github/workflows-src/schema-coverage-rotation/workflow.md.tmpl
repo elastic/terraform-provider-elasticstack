@@ -94,7 +94,7 @@ The workflow reached this point only because `issue_slots_available` is non-zero
 
 ## Repository toolchain
 
-Deterministic workflow steps have already installed Go from `go.mod`, exported `GOROOT`, `GOPATH`, and `GOMODCACHE` for AWF, installed Node from `package.json`, and run `make setup` at the repository root. Use the resulting `go` and Node/npm tooling (including `npx openspec` when applicable) as-is for repository-local commands such as `go run ./scripts/schema-coverage-rotation ...`. Do **not** install alternate Go or Node versions, run ad hoc toolchain installers, or spend steps discovering toolchain versions.
+Deterministic workflow steps have already installed Go from `go.mod`, exported `GOROOT`, `GOPATH`, and `GOMODCACHE` for AWF, installed Node from `package.json`, and run `make setup` at the repository root. Use the resulting `go` and Node/npm tooling (including `npx openspec` when applicable) as-is for repository-local commands. Do **not** install alternate Go or Node versions, run ad hoc toolchain installers, or spend steps discovering toolchain versions.
 
 ## Memory format
 
