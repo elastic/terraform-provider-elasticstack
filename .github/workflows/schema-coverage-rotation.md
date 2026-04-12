@@ -92,8 +92,27 @@ safe-outputs:
     target: "*"
     max: 3
     github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
+network:
+  allowed: [defaults, node, go]
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
+steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup repository dependencies
+    run: make setup
 jobs:
   pre-activation:
     outputs:
@@ -124,6 +143,10 @@ The workflow reached this point only because `issue_slots_available` is non-zero
   - `docs/data-sources/*.md` for data sources
 - Bootstrap memory seed: `.github/aw/memory/schema-coverage.json`
 - Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
+
+## Repository toolchain
+
+Deterministic workflow steps have already installed Go from `go.mod`, exported `GOROOT`, `GOPATH`, and `GOMODCACHE` for AWF, installed Node from `package.json`, and run `make setup` at the repository root. Use the resulting `go` and Node/npm tooling (including `npx openspec` when applicable) as-is for repository-local commands such as `go run ./scripts/schema-coverage-rotation ...`. Do **not** install alternate Go or Node versions, run ad hoc toolchain installers, or spend steps discovering toolchain versions.
 
 ## Memory format
 
