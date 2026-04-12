@@ -18,16 +18,19 @@
 package agentconfiguration_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	tf_acctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccResourceAgentConfiguration(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
+	expectedID := serviceName + ":production"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -39,7 +42,7 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "go"),
@@ -55,7 +58,7 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "java"),
@@ -71,7 +74,7 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "java"),
@@ -86,6 +89,7 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 
 func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
+	expectedID := serviceName + ":staging"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -97,7 +101,7 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "staging"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "java"),
@@ -115,6 +119,14 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedID := is[0].Attributes["id"]
+					if importedID != expectedID {
+						return fmt.Errorf("expected imported id [%s] to equal [%s]", importedID, expectedID)
+					}
+
+					return nil
+				},
 			},
 		},
 	})
@@ -133,7 +145,7 @@ func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", serviceName),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
 					resource.TestCheckNoResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment"),
 					resource.TestCheckNoResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name"),
@@ -150,6 +162,14 @@ func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedID := is[0].Attributes["id"]
+					if importedID != serviceName {
+						return fmt.Errorf("expected imported id [%s] to equal [%s]", importedID, serviceName)
+					}
+
+					return nil
+				},
 			},
 		},
 	})
