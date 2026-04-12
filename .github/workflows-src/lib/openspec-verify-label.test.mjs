@@ -56,11 +56,13 @@ test('compiled lock wires gh-aw copilot-api-target and LiteLLM for main agent an
 test('compiled lock excludes COPILOT_PROVIDER_API_KEY from AWF --env-all (intentional gh-aw security)', () => {
   const lock = lockSource();
   const agentIdx = lock.indexOf('id: agentic_execution');
+  assert.ok(agentIdx >= 0, 'expected agentic_execution step in lock');
   const agentSlice = lock.slice(agentIdx, agentIdx + 4000);
   assert.match(agentSlice, /--exclude-env COPILOT_PROVIDER_API_KEY/);
   assert.doesNotMatch(agentSlice, /\n\s*COPILOT_PROVIDER_API_KEY:/);
 
   const detIdx = lock.indexOf('id: detection_agentic_execution');
+  assert.ok(detIdx >= 0, 'expected detection_agentic_execution step in lock');
   const detSlice = lock.slice(detIdx, detIdx + 4000);
   assert.match(detSlice, /--exclude-env COPILOT_PROVIDER_API_KEY/);
   assert.doesNotMatch(detSlice, /\n\s*COPILOT_PROVIDER_API_KEY:/);
