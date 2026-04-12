@@ -30,31 +30,32 @@ import (
 )
 
 type panelModel struct {
-	Type                     types.String                                      `tfsdk:"type"`
-	Grid                     panelGridModel                                    `tfsdk:"grid"`
-	UID                      types.String                                      `tfsdk:"uid"`
-	MarkdownConfig           *markdownConfigModel                              `tfsdk:"markdown_config"`
-	XYChartConfig            *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
-	TreemapConfig            *treemapConfigModel                               `tfsdk:"treemap_config"`
-	MosaicConfig             *mosaicConfigModel                                `tfsdk:"mosaic_config"`
-	DatatableConfig          *datatableConfigModel                             `tfsdk:"datatable_config"`
-	TagcloudConfig           *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
-	MetricChartConfig        *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
-	PieChartConfig           *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
-	GaugeConfig              *gaugeConfigModel                                 `tfsdk:"gauge_config"`
-	LegacyMetricConfig       *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
-	RegionMapConfig          *regionMapConfigModel                             `tfsdk:"region_map_config"`
-	HeatmapConfig            *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
-	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
-	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
-	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
-	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
-	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
-	SyntheticsMonitorsConfig *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
-	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	Type                          types.String                                      `tfsdk:"type"`
+	Grid                          panelGridModel                                    `tfsdk:"grid"`
+	UID                           types.String                                      `tfsdk:"uid"`
+	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
+	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
+	TreemapConfig                 *treemapConfigModel                               `tfsdk:"treemap_config"`
+	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"mosaic_config"`
+	DatatableConfig               *datatableConfigModel                             `tfsdk:"datatable_config"`
+	TagcloudConfig                *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
+	MetricChartConfig             *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
+	PieChartConfig                *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
+	GaugeConfig                   *gaugeConfigModel                                 `tfsdk:"gauge_config"`
+	LegacyMetricConfig            *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
+	RegionMapConfig               *regionMapConfigModel                             `tfsdk:"region_map_config"`
+	HeatmapConfig                 *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	WaffleConfig                  *waffleConfigModel                                `tfsdk:"waffle_config"`
+	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
+	SloErrorBudgetConfig          *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
+	EsqlControlConfig             *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
+	OptionsListControlConfig      *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
+	RangeSliderControlConfig      *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
+	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
+	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -218,6 +219,7 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.EsqlControlConfig == nil &&
 		pm.OptionsListControlConfig == nil &&
 		pm.RangeSliderControlConfig == nil &&
+		pm.SyntheticsStatsOverviewConfig == nil &&
 		pm.SyntheticsMonitorsConfig == nil
 }
 
@@ -360,6 +362,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.UID = types.StringPointerValue(sebPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
+	case panelTypeSyntheticsStatsOverview:
+		ssoPanel, err := panelItem.AsKbnDashboardPanelSyntheticsStatsOverview()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
+		pm.UID = types.StringPointerValue(ssoPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel)
 	case panelTypeSyntheticsMonitors:
 		smPanel, err := panelItem.AsKbnDashboardPanelSyntheticsMonitors()
 		if err != nil {
@@ -575,6 +586,29 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.SyntheticsStatsOverviewConfig != nil {
+		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSyntheticsStatsOverviewConfig(pm, &ssoPanel)
+		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeSyntheticsStatsOverview {
+		// Panel type is synthetics_stats_overview with no config block: send empty config.
+		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+			Grid: grid,
+			Uid:  uid,
+		}
+		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
+		}
+		return panelItem, diags
+	}
 	if pm.Type.ValueString() == panelTypeSyntheticsMonitors || pm.SyntheticsMonitorsConfig != nil {
 		smPanel := buildSyntheticsMonitorsPanel(pm, grid, uid)
 		if err := panelItem.FromKbnDashboardPanelSyntheticsMonitors(smPanel); err != nil {
@@ -676,6 +710,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			diags.AddError(
 				"Unsupported panel type for config_json",
 				"The slo_overview panel type must be managed through the typed slo_overview_config block, not config_json.",
+			)
+		case panelTypeSyntheticsStatsOverview:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"The synthetics_stats_overview panel type must be managed through the typed synthetics_stats_overview_config block, not config_json.",
 			)
 		default:
 			diags.AddError(
