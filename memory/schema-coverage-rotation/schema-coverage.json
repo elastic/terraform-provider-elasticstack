@@ -1,6 +1,6 @@
 {
   "resources": {
-    "elasticstack_apm_agent_configuration": null,
+    "elasticstack_apm_agent_configuration": "2026-04-12T12:34:05Z",
     "elasticstack_elasticsearch_cluster_settings": null,
     "elasticstack_elasticsearch_component_template": null,
     "elasticstack_elasticsearch_data_stream": null,
