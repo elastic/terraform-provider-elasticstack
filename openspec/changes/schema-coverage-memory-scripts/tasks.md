@@ -12,5 +12,5 @@
 
 ## 3. Rebuild and verify workflow artifacts
 
-- [ ] 3.1 Recompile `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml` from the authored workflow source under `.github/workflows-src/schema-coverage-rotation/`.
-- [ ] 3.2 Run the relevant OpenSpec and workflow validation checks for memory bootstrap, entity selection, prompt integration, and timestamp persistence behavior.
+- [x] 3.1 Recompile `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml` from the authored workflow source under `.github/workflows-src/schema-coverage-rotation/`.
+- [x] 3.2 Run the relevant OpenSpec and workflow validation checks for memory bootstrap, entity selection, prompt integration, and timestamp persistence behavior.

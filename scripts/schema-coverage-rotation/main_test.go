@@ -275,6 +275,79 @@ func TestCmdRecordInvalidType(t *testing.T) {
 	}
 }
 
+// TestCmdRecordEntitiesJSON verifies that --entities records multiple entities atomically.
+func TestCmdRecordEntitiesJSON(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := writeMemoryFile(t, dir, `{
+		"resources": {"elasticstack_a": null, "elasticstack_b": null},
+		"data-sources": {"elasticstack_ds": null}
+	}`)
+
+	entitiesJSON := `[{"type":"resource","name":"elasticstack_a"},{"type":"data source","name":"elasticstack_ds"}]`
+	before := time.Now().UTC().Truncate(time.Second)
+
+	var stderr bytes.Buffer
+	if err := cmdRecord([]string{"--memory", path, "--entities", entitiesJSON}, &stderr); err != nil {
+		t.Fatalf("cmdRecord: %v\nstderr: %s", err, stderr.String())
+	}
+
+	after := time.Now().UTC().Add(time.Second)
+
+	mem, err := loadMemory(path)
+	if err != nil {
+		t.Fatalf("loadMemory: %v", err)
+	}
+
+	for name, ts := range map[string]*time.Time{
+		"elasticstack_a (resource)":       mem.Resources["elasticstack_a"],
+		"elasticstack_ds (data source)":   mem.DataSources["elasticstack_ds"],
+	} {
+		if ts == nil {
+			t.Errorf("%s: timestamp should not be nil after record", name)
+			continue
+		}
+		if ts.Before(before) || ts.After(after) {
+			t.Errorf("%s: timestamp %v not in range [%v, %v]", name, *ts, before, after)
+		}
+	}
+	// elasticstack_b was not in the entities list and should remain nil.
+	if mem.Resources["elasticstack_b"] != nil {
+		t.Errorf("elasticstack_b: should remain nil, got %v", *mem.Resources["elasticstack_b"])
+	}
+}
+
+// TestCmdRecordEntitiesInvalidJSON checks that malformed --entities JSON is rejected.
+func TestCmdRecordEntitiesInvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := writeMemoryFile(t, dir, `{"resources":{},"data-sources":{}}`)
+	var stderr bytes.Buffer
+	if err := cmdRecord([]string{"--memory", path, "--entities", "not-json"}, &stderr); err == nil {
+		t.Error("expected error for invalid --entities JSON")
+	}
+}
+
+// TestCmdRecordEntitiesMutuallyExclusive verifies --entities and --type/--name cannot be combined.
+func TestCmdRecordEntitiesMutuallyExclusive(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := writeMemoryFile(t, dir, `{"resources":{"elasticstack_x":null},"data-sources":{}}`)
+	var stderr bytes.Buffer
+	err := cmdRecord([]string{
+		"--memory", path,
+		"--entities", `[{"type":"resource","name":"elasticstack_x"}]`,
+		"--type", "resource",
+		"--name", "elasticstack_x",
+	}, &stderr)
+	if err == nil {
+		t.Error("expected error when --entities and --type/--name are combined")
+	}
+}
+
 // TestRunUnknownCommand checks that an unknown command is rejected.
 func TestRunUnknownCommand(t *testing.T) {
 	t.Parallel()

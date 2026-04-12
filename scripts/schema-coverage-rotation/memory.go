@@ -70,31 +70,40 @@ func loadMemory(path string) (*Memory, error) {
 	}
 
 	for k, v := range raw.Resources {
-		ts := parseTimestamp(v)
+		ts, err := parseTimestamp(v)
+		if err != nil {
+			return nil, fmt.Errorf("resource %q: %w", k, err)
+		}
 		mem.Resources[k] = ts
 	}
 	for k, v := range raw.DataSources {
-		ts := parseTimestamp(v)
+		ts, err := parseTimestamp(v)
+		if err != nil {
+			return nil, fmt.Errorf("data-source %q: %w", k, err)
+		}
 		mem.DataSources[k] = ts
 	}
 
 	return mem, nil
 }
 
-// parseTimestamp converts a raw JSON value to *time.Time (nil for null).
-func parseTimestamp(v any) *time.Time {
+// parseTimestamp converts a raw JSON value to *time.Time.
+// A JSON null maps to nil. Any other value must be a valid RFC3339 string;
+// non-string or malformed values are returned as an error so corrupted memory
+// fails fast rather than silently resetting an entity to "never analyzed".
+func parseTimestamp(v any) (*time.Time, error) {
 	if v == nil {
-		return nil
+		return nil, nil
 	}
 	s, ok := v.(string)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("invalid timestamp value %T: expected RFC3339 string or null", v)
 	}
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("invalid RFC3339 timestamp %q: %w", s, err)
 	}
-	return &t
+	return &t, nil
 }
 
 // saveMemory atomically writes memory to path via a temporary file rename.
@@ -130,6 +139,9 @@ func saveMemory(path string, mem *Memory) error {
 	data = append(data, '\n')
 
 	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create memory directory: %w", err)
+	}
 	tmp, err := os.CreateTemp(dir, ".schema-coverage-*.json.tmp")
 	if err != nil {
 		return fmt.Errorf("create temp file: %w", err)

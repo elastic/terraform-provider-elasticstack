@@ -73,7 +73,7 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Commands:")
 	fmt.Fprintln(w, "  prepare  --memory <path>                          Bootstrap and reconcile memory")
 	fmt.Fprintln(w, "  select   --memory <path> --count <n>              Select next N entities (JSON)")
-	fmt.Fprintln(w, "  record   --memory <path> --type <t> --name <n>    Record analysis timestamp")
+	fmt.Fprintln(w, "  record   --memory <path> (--type <t> --name <n> | --entities <json>)    Record analysis timestamps")
 	return errors.New("unknown or missing command")
 }
 
@@ -103,6 +103,9 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("load memory: %w", err)
 	}
+
+	// Include experimental provider entities so they are discovered and tracked.
+	_ = os.Setenv(provider.IncludeExperimentalEnvVar, "true")
 
 	// Discover entities from provider registrations.
 	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
@@ -159,10 +162,18 @@ func bootstrapFromSeed(targetPath, seedPath string) error {
 		DataSources: make(map[string]*time.Time),
 	}
 	for k, v := range raw.Resources {
-		mem.Resources[k] = parseTimestamp(v)
+		ts, err := parseTimestamp(v)
+		if err != nil {
+			return fmt.Errorf("resource %q: %w", k, err)
+		}
+		mem.Resources[k] = ts
 	}
 	for k, v := range raw.DataSources {
-		mem.DataSources[k] = parseTimestamp(v)
+		ts, err := parseTimestamp(v)
+		if err != nil {
+			return fmt.Errorf("data-source %q: %w", k, err)
+		}
+		mem.DataSources[k] = ts
 	}
 
 	return saveMemory(targetPath, mem)
@@ -199,27 +210,58 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// cmdRecord records the current UTC timestamp for an analyzed entity.
+// cmdRecord records the current UTC timestamp for one or more analyzed entities
+// in a single atomic memory write, preventing lost updates when multiple entities
+// are recorded together.
+//
+// Usage (single entity):  record --memory <path> --type <t> --name <n>
+// Usage (multiple entities): record --memory <path> --entities <json>
+//
+// --entities accepts the JSON array produced by the select command so the caller
+// can pass select output directly without re-parsing it.
 func cmdRecord(args []string, stderr io.Writer) error {
 	fs := flag.NewFlagSet("record", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	memPath := fs.String("memory", "", "path to the live working memory file (required)")
-	entityType := fs.String("type", "", "entity type: 'resource' or 'data source' (required)")
-	entityName := fs.String("name", "", "entity name (required)")
+	entityType := fs.String("type", "", "entity type: 'resource' or 'data source'")
+	entityName := fs.String("name", "", "entity name")
+	entitiesJSON := fs.String("entities", "", "JSON array of entities to record (e.g. output of 'select'); mutually exclusive with --type/--name")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *memPath == "" {
 		return errors.New("--memory is required")
 	}
-	if *entityType == "" {
-		return errors.New("--type is required")
+
+	var entities []entity
+	switch {
+	case *entitiesJSON != "" && (*entityType != "" || *entityName != ""):
+		return errors.New("--entities and --type/--name are mutually exclusive")
+	case *entitiesJSON != "":
+		if err := json.Unmarshal([]byte(*entitiesJSON), &entities); err != nil {
+			return fmt.Errorf("parse --entities JSON: %w", err)
+		}
+	default:
+		// Single-entity form.
+		if *entityType == "" {
+			return errors.New("--type is required when --entities is not specified")
+		}
+		if *entityName == "" {
+			return errors.New("--name is required when --entities is not specified")
+		}
+		entities = []entity{{Type: *entityType, Name: *entityName}}
 	}
-	if *entityName == "" {
-		return errors.New("--name is required")
+
+	if len(entities) == 0 {
+		return errors.New("no entities to record")
 	}
-	if *entityType != entityTypeResource && *entityType != entityTypeDataSource {
-		return fmt.Errorf("--type must be %q or %q", entityTypeResource, entityTypeDataSource)
+	for _, e := range entities {
+		if e.Type != entityTypeResource && e.Type != entityTypeDataSource {
+			return fmt.Errorf("invalid entity type %q: must be %q or %q", e.Type, entityTypeResource, entityTypeDataSource)
+		}
+		if e.Name == "" {
+			return errors.New("entity name must not be empty")
+		}
 	}
 
 	mem, err := loadMemory(*memPath)
@@ -228,17 +270,19 @@ func cmdRecord(args []string, stderr io.Writer) error {
 	}
 
 	now := time.Now().UTC()
-	switch *entityType {
-	case entityTypeResource:
-		mem.Resources[*entityName] = &now
-	case entityTypeDataSource:
-		mem.DataSources[*entityName] = &now
+	for _, e := range entities {
+		switch e.Type {
+		case entityTypeResource:
+			mem.Resources[e.Name] = &now
+		case entityTypeDataSource:
+			mem.DataSources[e.Name] = &now
+		}
+		fmt.Fprintf(stderr, "recorded %s %q at %s\n", e.Type, e.Name, now.Format(time.RFC3339))
 	}
 
 	if err := saveMemory(*memPath, mem); err != nil {
 		return fmt.Errorf("save memory: %w", err)
 	}
 
-	fmt.Fprintf(stderr, "recorded %s %q at %s\n", *entityType, *entityName, now.Format(time.RFC3339))
 	return nil
 }

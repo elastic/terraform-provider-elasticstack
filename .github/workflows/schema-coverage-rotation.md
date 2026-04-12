@@ -141,14 +141,13 @@ The workflow reached this point only because `issue_slots_available` is non-zero
 4. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
-   - After analysis (regardless of whether a gap exists), record the entity's analysis timestamp by running:
-     ```
-     go run ./scripts/schema-coverage-rotation record \
-       --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
-       --type "<type>" \
-       --name "<name>"
-     ```
-     where `<type>` is the entity's `type` from the selection output and `<name>` is its `name`.
+5. After completing analysis of all selected entities, persist all analysis timestamps in a single atomic write by running:
+   ```
+   go run ./scripts/schema-coverage-rotation record \
+     --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
+     --entities '<json>'
+   ```
+   where `<json>` is the full JSON array returned by step 3 (the `select` output).
 
 ## Issue creation rules
 
