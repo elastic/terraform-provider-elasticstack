@@ -65,12 +65,12 @@ The schema-coverage selection command SHALL choose exactly the requested number 
 - **THEN** the command orders those tied entities by lexicographic `type` and then lexicographic `name`
 
 ### Requirement: Timestamp persistence is handled by a script command
-The schema-coverage memory update command SHALL accept the caller-supplied working memory file path, SHALL persist the analyzed entity's timestamp as the current UTC time after each analysis, regardless of whether that analysis produced an actionable issue, and SHALL update the memory file via an atomic replace-on-success rename.
+The schema-coverage memory update command SHALL accept the caller-supplied working memory file path and one or more analyzed entities, SHALL persist all analyzed entities' timestamps as the current UTC time in a single atomic write after all selected entities have been analyzed, regardless of whether any individual analysis produced an actionable issue, and SHALL update the memory file via an atomic replace-on-success rename.
 
-#### Scenario: An analyzed entity has actionable gaps
-- **WHEN** the agent finishes analyzing an entity and determines that an issue should be created
-- **THEN** the memory update command records the entity's current UTC analysis timestamp
+#### Scenario: All analyzed entities are recorded in one write
+- **WHEN** the agent completes analysis of all selected entities in a run
+- **THEN** the memory update command records the current UTC analysis timestamp for every analyzed entity in a single atomic write
 
-#### Scenario: An analyzed entity has no actionable gaps
-- **WHEN** the agent finishes analyzing an entity and determines that no issue should be created
-- **THEN** the memory update command still records the entity's current UTC analysis timestamp
+#### Scenario: Entities without actionable gaps are still recorded
+- **WHEN** an analyzed entity has no actionable testing gaps
+- **THEN** the memory update command still includes that entity's current UTC analysis timestamp in the batch write

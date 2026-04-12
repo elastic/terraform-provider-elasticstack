@@ -104,9 +104,6 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return fmt.Errorf("load memory: %w", err)
 	}
 
-	// Include experimental provider entities so they are discovered and tracked.
-	_ = os.Setenv(provider.IncludeExperimentalEnvVar, "true")
-
 	// Discover entities from provider registrations.
 	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
 	sdkProv := provider.New("schema-coverage-rotation")
