@@ -53,6 +53,19 @@ test('compiled lock wires gh-aw copilot-api-target and LiteLLM for main agent an
   assert.match(detSlice, /--allow-domains[^\n]*elastic\.litellm-prod\.ai/);
 });
 
+test('compiled lock excludes COPILOT_PROVIDER_API_KEY from AWF --env-all (intentional gh-aw security)', () => {
+  const lock = lockSource();
+  const agentIdx = lock.indexOf('id: agentic_execution');
+  const agentSlice = lock.slice(agentIdx, agentIdx + 4000);
+  assert.match(agentSlice, /--exclude-env COPILOT_PROVIDER_API_KEY/);
+  assert.doesNotMatch(agentSlice, /\n\s*COPILOT_PROVIDER_API_KEY:/);
+
+  const detIdx = lock.indexOf('id: detection_agentic_execution');
+  const detSlice = lock.slice(detIdx, detIdx + 4000);
+  assert.match(detSlice, /--exclude-env COPILOT_PROVIDER_API_KEY/);
+  assert.doesNotMatch(detSlice, /\n\s*COPILOT_PROVIDER_API_KEY:/);
+});
+
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
   const source = workflowSource();
   assert.match(source, /uses: actions\/setup-node@v6/);
