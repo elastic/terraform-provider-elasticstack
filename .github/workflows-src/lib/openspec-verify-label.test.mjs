@@ -25,7 +25,15 @@ test('verify-label workflow installs Go from go.mod and exports Go paths for AWF
   assert.match(source, /GOROOT=\$\(go env GOROOT\)/);
   assert.match(source, /GOPATH=\$\(go env GOPATH\)/);
   assert.match(source, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
-  assert.match(source, /allowed: \[defaults, node, go\]/);
+  assert.match(source, /allowed: \[defaults, node, go, elastic\.litellm-prod\.ai\]/);
+});
+
+test('verify-label workflow routes Copilot through LiteLLM BYOK with secret-backed API key', () => {
+  const source = workflowSource();
+  assert.match(source, /model: "?llm-gateway\/gpt-5\.4"?/);
+  assert.match(source, /COPILOT_PROVIDER_TYPE:\s*openai/);
+  assert.match(source, /COPILOT_PROVIDER_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/v1"?/);
+  assert.match(source, /COPILOT_PROVIDER_API_KEY:\s*\$\{\{\s*secrets\.COPILOT_LITELLM_PROXY_API_KEY\s*\}\}/);
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
