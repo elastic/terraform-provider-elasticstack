@@ -310,6 +310,128 @@ func TestRemoveDuplicateOneOfRefsFromNode(t *testing.T) {
 	}
 }
 
+func TestTransformRemoveAnyOfWhenOneOfPresent(t *testing.T) {
+	tests := []struct {
+		name       string
+		components Map
+		expected   Map
+	}{
+		{
+			name: "removes anyOf when oneOf is present",
+			components: Map{
+				"schemas": Map{
+					"top_level": Map{
+						"anyOf": Slice{
+							Map{"type": "string"},
+						},
+						"oneOf": Slice{
+							Map{"$ref": "#/components/schemas/Schema1"},
+						},
+					},
+				},
+			},
+			expected: Map{
+				"schemas": Map{
+					"top_level": Map{
+						"oneOf": Slice{
+							Map{"$ref": "#/components/schemas/Schema1"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "keeps anyOf when oneOf is absent",
+			components: Map{
+				"schemas": Map{
+					"any_of_only": Map{
+						"anyOf": Slice{
+							Map{"type": "string"},
+						},
+					},
+					"one_of_only": Map{
+						"oneOf": Slice{
+							Map{"type": "number"},
+						},
+					},
+				},
+			},
+			expected: Map{
+				"schemas": Map{
+					"any_of_only": Map{
+						"anyOf": Slice{
+							Map{"type": "string"},
+						},
+					},
+					"one_of_only": Map{
+						"oneOf": Slice{
+							Map{"type": "number"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "removes nested anyOf when nested oneOf is present",
+			components: Map{
+				"schemas": Map{
+					"nested": Map{
+						"type": "object",
+						"properties": Map{
+							"child": Map{
+								"anyOf": Slice{
+									Map{"type": "integer"},
+								},
+								"oneOf": Slice{
+									Map{"type": "number"},
+								},
+							},
+							"unchanged": Map{
+								"anyOf": Slice{
+									Map{"type": "boolean"},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: Map{
+				"schemas": Map{
+					"nested": Map{
+						"type": "object",
+						"properties": Map{
+							"child": Map{
+								"oneOf": Slice{
+									Map{"type": "number"},
+								},
+							},
+							"unchanged": Map{
+								"anyOf": Slice{
+									Map{"type": "boolean"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema := &Schema{
+				Components: deepCopyMap(tt.components),
+			}
+
+			transformRemoveAnyOfWhenOneOfPresent(schema)
+
+			if !reflect.DeepEqual(schema.Components, tt.expected) {
+				t.Errorf("transformRemoveAnyOfWhenOneOfPresent() =\n%+v\nwant:\n%+v", schema.Components, tt.expected)
+			}
+		})
+	}
+}
+
 // deepCopyMap creates a deep copy of a Map for testing purposes
 func deepCopyMap(m Map) Map {
 	result := make(Map)

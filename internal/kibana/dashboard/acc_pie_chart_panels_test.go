@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -57,7 +58,9 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 
 					// Check JSON fields are set
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend_json"),
+					// Omitted legend in config: schema default matches typical Kibana read-back (size/visibility auto)
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.size", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.visible", "auto"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.0.config"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.group_by.#", "1"),
@@ -86,9 +89,15 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.sampling", "1"),
 
-					// Check JSON fields
+					// Check JSON fields and structured legend (including optional nested / truncate)
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.size", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.visible", "visible"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.nested", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.legend.truncate_after_lines", "5"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.filters.#", "1"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
 
 					// Check metrics and group_by
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.metrics.#", "1"),
@@ -107,11 +116,12 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
+				// Legend attributes are verified in apply steps above; import compares them too.
+				// JSON blobs stay ignored due to normalization; treemap follows the same pattern.
 				ImportStateVerifyIgnore: []string{
 					"panels.0.pie_chart_config.group_by.0.config",
 					"panels.0.pie_chart_config.metrics.0.config",
 					"panels.0.pie_chart_config.dataset_json",
-					"panels.0.pie_chart_config.legend_json",
 				},
 			},
 		},

@@ -21,8 +21,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -34,6 +37,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
@@ -350,6 +354,130 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.random", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "SCRAM-SHA-256"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
+	client, err := clients.NewAcceptanceTestingClient()
+	require.NoError(t, err)
+	kibanaOapiClient, err := client.GetKibanaOapiClient()
+	require.NoError(t, err)
+	remote := true
+	resp, err := kibanaOapiClient.API.PostFleetServiceTokensWithResponse(t.Context(), kbapi.PostFleetServiceTokensJSONRequestBody{
+		Remote: &remote,
+	})
+	require.NoError(t, err)
+	if resp == nil {
+		t.Skip("skipping remote output acceptance test: no response when creating remote service token")
+	}
+	if resp.JSON200 == nil || strings.TrimSpace(resp.JSON200.Value) == "" {
+		t.Skipf("skipping remote output acceptance test: unable to create remote service token (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))
+	}
+	serviceToken := strings.Trim(strings.TrimSpace(resp.JSON200.Value), "\"")
+	if !strings.Contains(serviceToken, ":") {
+		t.Skipf("skipping remote output acceptance test: unexpected remote service token format (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))
+	}
+
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":   config.StringVariable(policyName),
+					"service_token": config.StringVariable(serviceToken),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Remote Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "service_token"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_uninstalled_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "write_to_logs_streams", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":   config.StringVariable(policyName),
+					"service_token": config.StringVariable(serviceToken),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Remote Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "service_token"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_integrations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "sync_uninstalled_integrations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "write_to_logs_streams", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-integrations"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)sync_integrations.*remote_elasticsearch`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-uninstalled-integrations"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)sync_uninstalled_integrations.*remote_elasticsearch`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-write-to-logs-streams"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)write_to_logs_streams.*remote_elasticsearch`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-missing-service-token"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)service_token.*must be set.*remote_elasticsearch`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-service-token-on-elasticsearch"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)service_token.*remote_elasticsearch`),
 			},
 		},
 	})

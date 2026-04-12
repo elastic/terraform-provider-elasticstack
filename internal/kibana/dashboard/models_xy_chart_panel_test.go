@@ -737,7 +737,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 		{
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
-				visibility := kbapi.XyLegendOutsideVerticalVisibilityHidden
+				visibility := kbapi.XyLegendOutsideVerticalVisibility("hidden")
 				position := kbapi.XyLegendOutsideVerticalPositionRight
 				placement := kbapi.XyLegendOutsideVerticalPlacementOutside
 				legend := kbapi.XyLegendOutsideVertical{

@@ -566,17 +566,16 @@ var transformers = []TransformFunc{
 	removeBrokenDiscriminator,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
-	fixGetSyntheticsMonitorsParams,
-	fixGetMaintenanceWindowFindParams,
-	fixGetStreamsAttachmentTypesParams,
-	fixGetWorkflowsExecutionsParams,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
+	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
+	fixAlertingRuleParams,
+	fixSyntheticsMonitorParams,
+	fixAlertingRuleBody,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
-	fixAlertingRuleParams,
 }
 
 //go:embed dashboards.json
@@ -950,24 +949,6 @@ func fixGetSpacesParams(schema *Schema) {
 	schema.MustGetPath("/api/spaces/space").MustGetEndpoint("get").Delete("parameters.1.schema.anyOf")
 }
 
-func fixGetSyntheticsMonitorsParams(schema *Schema) {
-	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Set("parameters.12.schema.oneOf.1.x-go-type", "[]GetSyntheticMonitorsParamsUseLogicalAndFor0")
-}
-
-func fixGetMaintenanceWindowFindParams(schema *Schema) {
-	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetMaintenanceWindowFindParamsStatus0")
-}
-
-func fixGetStreamsAttachmentTypesParams(schema *Schema) {
-	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
-}
-
-func fixGetWorkflowsExecutionsParams(schema *Schema) {
-	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
-	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
-	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
-}
-
 func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath := schema.MustGetPath("/api/dashboards")
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
@@ -1176,12 +1157,6 @@ func transformFleetPaths(schema *Schema) {
 		},
 	})
 
-	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
-	}
-
 	// Package policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/package_policy.ts
@@ -1263,6 +1238,17 @@ func transformOmitEmptyNullable(schema *Schema) {
 	}
 }
 
+func removeAnyOfWhenOneOfPresent(key string, node Map) {
+	if node.Has("anyOf") && node.Has("oneOf") {
+		delete(node, "anyOf")
+	}
+}
+
+func transformRemoveAnyOfWhenOneOfPresent(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeAnyOfWhenOneOfPresent)
+}
+
 // transformRemoveExamples removes all examples.
 func transformRemoveExamples(schema *Schema) {
 	deleteExampleFn := func(key string, node Map) {
@@ -1326,7 +1312,19 @@ func transformRemoveUnusedComponents(schema *Schema) {
 	}
 }
 
+func fixAlertingRuleBody(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body", "requestBody.content.application/json.schema.anyOf.0")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Generic", "requestBody.content.application/json.schema.anyOf.1")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Union", "requestBody.content.application/json.schema")
+}
+
 func fixAlertingRuleParams(schema *Schema) {
 	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.anyOf.1.properties.params")
+}
+
+func fixSyntheticsMonitorParams(schema *Schema) {
+	getEndpoint := schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get")
+	getEndpoint.Set("parameters.12.schema", getEndpoint.MustGetMap("parameters.12.schema.oneOf.0"))
 }
