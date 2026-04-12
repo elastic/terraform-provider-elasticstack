@@ -299,6 +299,7 @@ steps:
       terraform_wrapper: false
   - name: Setup repository dependencies
     run: make setup
+# gh aw default strict mode rejects ${{ secrets.* }} under engine.env (BYOK COPILOT_PROVIDER_API_KEY); compile fails without relaxing strict.
 strict: false
 engine:
   id: copilot
