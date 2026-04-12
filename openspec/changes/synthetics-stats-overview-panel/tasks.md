@@ -2,8 +2,8 @@
 
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with proposal.md / design.md
-- [ ] 1.2 On completion, sync delta into canonical spec or archive
+- [x] 1.1 Keep delta spec aligned with proposal.md / design.md
+- [x] 1.2 On completion, sync delta into canonical spec or archive
 
 ## 2. Implementation
 
