@@ -307,7 +307,8 @@ engine:
     COPILOT_PROVIDER_TYPE: openai
     COPILOT_PROVIDER_BASE_URL: "https://elastic.litellm-prod.ai/v1"
     COPILOT_PROVIDER_API_KEY: ${{ secrets.COPILOT_LITELLM_PROXY_API_KEY }}
-    # gh-aw: drives --copilot-api-target + threat-detection allowlist (COPILOT_PROVIDER_* alone does not).
+    # gh-aw: GITHUB_COPILOT_BASE_URL drives API-proxy routing and --copilot-api-target (incl. threat-detection allowlist); BYOK URL vars alone do not.
+    # gh-aw: COPILOT_PROVIDER_API_KEY stays secret-backed here; compiled AWF passes --exclude-env COPILOT_PROVIDER_API_KEY so it is not in the sandbox env from --env-all—proxy handles outbound provider auth outside that boundary.
     GITHUB_COPILOT_BASE_URL: "https://elastic.litellm-prod.ai/v1"
 permissions:
   contents: read
