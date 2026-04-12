@@ -198,6 +198,18 @@ func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel,
 		return
 	}
 
+	// If the API returned a completely empty config (all fields absent/nil), nil out the block
+	// regardless of prior state. This mirrors the import-path behaviour: an empty API config
+	// round-trips as null in state (REQ-033).
+	// Note: cfg.Filters == nil (strictly absent) is checked here rather than !syntheticsFiltersHasAnyEntry
+	// because a non-nil empty filters object still signals that Kibana acknowledged the filters field;
+	// in that case the block survives (filters are cleared by readSyntheticsStatsOverviewFiltersFromAPI).
+	if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
+		(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && cfg.Filters == nil {
+		pm.SyntheticsStatsOverviewConfig = nil
+		return
+	}
+
 	// Block exists in state — apply null-preservation per field.
 	if typeutils.IsKnown(existing.Title) {
 		existing.Title = types.StringPointerValue(cfg.Title)

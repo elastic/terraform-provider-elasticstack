@@ -510,6 +510,29 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withStatuses(t *testing.
 	assert.Equal(t, "down", pm.SyntheticsStatsOverviewConfig.Filters.Statuses[1].Value.ValueString())
 }
 
+// Test: on refresh (tfPanel != nil), when API returns completely empty config and block existed in prior state — block is nil'd.
+// This verifies that the refresh path matches the import path: empty API config round-trips as null in state.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBlock(t *testing.T) {
+	existing := &syntheticsStatsOverviewConfigModel{
+		Title: types.StringValue("Old Title"),
+		Filters: &syntheticsStatsOverviewFiltersModel{
+			Projects: []syntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+
+	// API returns completely empty config (no title, no description, no drilldowns, no filters).
+	panel := makeSyntheticsAPIConfig()
+
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should be nil when API returns empty config on refresh, matching import-path behaviour")
+}
+
 // Test: on refresh (tfPanel != nil), empty API filters object clears the filters block.
 // This verifies that returning an explicit empty filters object is treated as absent even
 // when prior state had a populated filters block.
@@ -560,8 +583,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 		"explicit empty filters object from API should clear the filters block in state")
 }
 
-// Test: on refresh (tfPanel != nil), nil API filters (field absent) preserves prior filters.
-func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFilters_preservesPrior(t *testing.T) {
+// Test: on refresh (tfPanel != nil), when ALL config fields are nil (including nil filters) — block is nil'd.
+// When the entire config is absent from the API response, it round-trips as null in state (REQ-033).
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(t *testing.T) {
 	existing := &syntheticsStatsOverviewConfigModel{
 		Filters: &syntheticsStatsOverviewFiltersModel{
 			Projects: []syntheticsFilterItemModel{
@@ -573,13 +597,40 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFilters_preservesPri
 	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
-	// API returns nil filters (field not present in response).
+	// API returns nil filters (field not present) AND all other config fields are also nil.
 	panel.Config.Filters = nil
 
 	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
 
-	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should be nil when API returns completely empty config (all fields nil) on refresh")
+}
+
+// Test: on refresh (tfPanel != nil), when API returns some config (title) but nil filters — block survives and prior filters are preserved.
+// The nil-filters preservation guards against false drift when Kibana omits the filters field while returning other config.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConfig_preservesPriorFilters(t *testing.T) {
+	title := "My Panel"
+	existing := &syntheticsStatsOverviewConfigModel{
+		Title: types.StringValue(title),
+		Filters: &syntheticsStatsOverviewFiltersModel{
+			Projects: []syntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns the title but omits the filters field (nil filters).
+	panel.Config.Title = &title
+	panel.Config.Filters = nil
+
+	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should survive when API returns other config fields even if filters field is absent")
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters,
-		"nil filters from API (field absent) should preserve prior state to avoid false drift")
+		"prior filters should be preserved when API omits filters field but returns other config")
 	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Projects, 1)
 }
