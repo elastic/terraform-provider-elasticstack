@@ -6,11 +6,6 @@ variable "endpoint" {
   type = string
 }
 
-variable "bearer_token" {
-  type      = string
-  sensitive = true
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }
@@ -37,12 +32,20 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy" {
   query         = jsonencode({ match_all = {} })
 }
 
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "${var.name}-api-key"
+  role_descriptors = jsonencode({
+    enrich = {
+      cluster = ["all"]
+    }
+  })
+}
+
 data "elasticstack_elasticsearch_enrich_policy" "test" {
   name = elasticstack_elasticsearch_enrich_policy.policy.name
 
   elasticsearch_connection {
-    endpoints                = [var.endpoint]
-    bearer_token             = var.bearer_token
-    es_client_authentication = "Authorization"
+    endpoints = [var.endpoint]
+    api_key   = elasticstack_elasticsearch_security_api_key.test.encoded
   }
 }

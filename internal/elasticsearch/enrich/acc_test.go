@@ -18,13 +18,24 @@
 package enrich_test
 
 import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"io"
+	"math/big"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -427,6 +438,21 @@ func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.headers.X-Terraform-Test", "enrich-policy"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name), "endpoint": config.StringVariable(primaryESEndpoint())},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.api_key"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.headers.%"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.headers.X-Terraform-Test"),
+				),
+			},
 			// Removal step: drop the elasticsearch_connection block and verify the
 			// attributes are no longer present in state.
 			{
@@ -478,6 +504,82 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.password"),
 					// insecure=false was explicitly set in the config and must round-trip
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.insecure", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"endpoint": config.StringVariable(primaryESEndpoint()),
+					"username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.username", username),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.password"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.insecure", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyConnectionTLSInputs(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoint := primaryESEndpoint()
+	tlsMaterial := createEnrichPolicyTLSMaterial(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("inline"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable(name),
+					"endpoint":  config.StringVariable(endpoint),
+					"ca_data":   config.StringVariable(tlsMaterial.caPEM),
+					"cert_data": config.StringVariable(tlsMaterial.certPEM),
+					"key_data":  config.StringVariable(tlsMaterial.keyPEM),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_data", tlsMaterial.caPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.cert_data", tlsMaterial.certPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.key_data", tlsMaterial.keyPEM),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.cert_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.key_file"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("file"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable(name),
+					"endpoint":  config.StringVariable(endpoint),
+					"ca_file":   config.StringVariable(tlsMaterial.caFile),
+					"cert_file": config.StringVariable(tlsMaterial.certFile),
+					"key_file":  config.StringVariable(tlsMaterial.keyFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_file", tlsMaterial.caFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.cert_file", tlsMaterial.certFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.key_file", tlsMaterial.keyFile),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_data"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.cert_data"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.key_data"),
 				),
 			},
 		},
@@ -581,21 +683,16 @@ func TestAccDataSourceEnrichPolicyTermQuery(t *testing.T) {
 	})
 }
 
-// TestAccDataSourceEnrichPolicyBearerToken verifies that the data source
-// correctly stores a bearer_token connection block in state.
-// The test is skipped automatically when ELASTICSEARCH_BEARER_TOKEN is not set,
-// making it an opt-in test for environments that provide a bearer token.
 func TestAccDataSourceEnrichPolicyBearerToken(t *testing.T) {
-	bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN")
-	if bearerToken == "" {
-		t.Skip("ELASTICSEARCH_BEARER_TOKEN must be set to run the bearer-token happy-path coverage test")
-	}
-
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	endpoint := primaryESEndpoint()
+	var bearerToken string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			preCheckESBasicAuth(t)
+			bearerToken = createEnrichPolicyESAccessToken(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -612,8 +709,8 @@ func TestAccDataSourceEnrichPolicyBearerToken(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
-					// bearer_token is sensitive — assert it is stored (non-empty) in state
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.bearer_token"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.bearer_token", bearerToken),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
 				),
 			},
 		},
@@ -669,6 +766,130 @@ func primaryESEndpoint() string {
 
 	return "http://localhost:9200"
 }
+
+func createEnrichPolicyESAccessToken(t *testing.T) string {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance testing client: %v", err)
+	}
+	esClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("failed to get Elasticsearch client: %v", err)
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"grant_type": "password",
+		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
+		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal token request: %v", err)
+	}
+
+	resp, err := esClient.Security.GetToken(
+		bytes.NewReader(payload),
+		esClient.Security.GetToken.WithContext(context.Background()),
+	)
+	if err != nil {
+		t.Fatalf("failed to create Elasticsearch access token: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.IsError() {
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
+		}
+		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResponse struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		t.Fatalf("failed to decode token response: %v", err)
+	}
+	if tokenResponse.AccessToken == "" {
+		t.Fatalf("token response did not include an access_token")
+	}
+
+	return tokenResponse.AccessToken
+}
+
+type enrichPolicyTLSMaterial struct {
+	caPEM    string
+	certPEM  string
+	keyPEM   string
+	caFile   string
+	certFile string
+	keyFile  string
+}
+
+func createEnrichPolicyTLSMaterial(t *testing.T) enrichPolicyTLSMaterial {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+
+	certificateDER, err := x509.CreateCertificate(rand.Reader, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: "enrich-policy-test",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: "enrich-policy-test",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("failed to generate certificate: %v", err)
+	}
+
+	certPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificateDER}))
+	keyPEM := string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}))
+
+	tempDir := t.TempDir()
+	caFile := filepath.Join(tempDir, "ca.pem")
+	certFile := filepath.Join(tempDir, "cert.pem")
+	keyFile := filepath.Join(tempDir, "key.pem")
+
+	for path, contents := range map[string]string{
+		caFile:   certPEM,
+		certFile: certPEM,
+		keyFile:  keyPEM,
+	} {
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatalf("failed to write TLS test file %s: %v", path, err)
+		}
+	}
+
+	return enrichPolicyTLSMaterial{
+		caPEM:    certPEM,
+		certPEM:  certPEM,
+		keyPEM:   keyPEM,
+		caFile:   caFile,
+		certFile: certFile,
+		keyFile:  keyFile,
+	}
+}
+
 func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
 		client, err := clients.NewAcceptanceTestingClient()

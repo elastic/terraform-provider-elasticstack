@@ -6,9 +6,16 @@ variable "endpoint" {
   type = string
 }
 
-variable "bearer_token" {
-  type      = string
-  sensitive = true
+variable "ca_file" {
+  type = string
+}
+
+variable "cert_file" {
+  type = string
+}
+
+variable "key_file" {
+  type = string
 }
 
 provider "elasticstack" {
@@ -41,8 +48,9 @@ data "elasticstack_elasticsearch_enrich_policy" "test" {
   name = elasticstack_elasticsearch_enrich_policy.policy.name
 
   elasticsearch_connection {
-    endpoints                = [var.endpoint]
-    bearer_token             = var.bearer_token
-    es_client_authentication = "Authorization"
+    endpoints = [var.endpoint]
+    ca_file   = var.ca_file
+    cert_file = var.cert_file
+    key_file  = var.key_file
   }
 }
