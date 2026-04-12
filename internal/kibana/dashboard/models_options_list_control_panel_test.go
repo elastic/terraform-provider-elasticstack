@@ -27,19 +27,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeAPIConfig(dataViewID, fieldName string) kbapi.KbnDashboardPanelOptionsListControl_Config {
-	return kbapi.KbnDashboardPanelOptionsListControl_Config{
-		DataViewId: dataViewID,
-		FieldName:  fieldName,
-	}
+const optionsListControlTestDataViewID = "dv1"
+
+func makeAPIConfig(dataViewID, fieldName string) *kbapi.KbnDashboardPanelTypeOptionsListControl {
+	p := &kbapi.KbnDashboardPanelTypeOptionsListControl{}
+	p.Config.DataViewId = dataViewID
+	p.Config.FieldName = fieldName
+	return p
 }
 
 // Test: nil config block with non-nil tfPanel preserves nil intent.
 func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	apiCfg := makeAPIConfig("dv1", "field1")
-	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
+	populateOptionsListControlFromAPI(pm, tfPanel, makeAPIConfig(optionsListControlTestDataViewID, "field1"))
 	assert.Nil(t, pm.OptionsListControlConfig)
 }
 
@@ -49,43 +50,42 @@ func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T
 // post-import drift when users have not explicitly configured them.
 func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 	pm := &panelModel{}
-	st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniquePrefix
-	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
-		DataViewId:        "dv1",
-		FieldName:         "field1",
-		Title:             new("My Control"),
-		UseGlobalFilters:  new(true),
-		IgnoreValidations: new(false),
-		SingleSelect:      new(true),
-		Exclude:           new(false),
-		ExistsSelected:    new(true),
-		RunPastTimeout:    new(false),
-		SearchTechnique:   &st,
-		DisplaySettings: &struct {
-			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-			HideExclude   *bool   `json:"hide_exclude,omitempty"`
-			HideExists    *bool   `json:"hide_exists,omitempty"`
-			HideSort      *bool   `json:"hide_sort,omitempty"`
-			Placeholder   *string `json:"placeholder,omitempty"`
-		}{
-			Placeholder:   new("Select..."),
-			HideActionBar: new(true),
-			HideExclude:   new(false),
-			HideExists:    new(true),
-			HideSort:      new(false),
-		},
-		Sort: &struct {
-			By        kbapi.KbnDashboardPanelOptionsListControlConfigSortBy        `json:"by"`
-			Direction kbapi.KbnDashboardPanelOptionsListControlConfigSortDirection `json:"direction"`
-		}{
-			By:        kbapi.KbnDashboardPanelOptionsListControlConfigSortByUnderscoreKey,
-			Direction: kbapi.KbnDashboardPanelOptionsListControlConfigSortDirectionAsc,
-		},
+	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniquePrefix
+	var api kbapi.KbnDashboardPanelTypeOptionsListControl
+	api.Config.DataViewId = optionsListControlTestDataViewID
+	api.Config.FieldName = "field1"
+	api.Config.Title = new("My Control")
+	api.Config.UseGlobalFilters = new(true)
+	api.Config.IgnoreValidations = new(false)
+	api.Config.SingleSelect = new(true)
+	api.Config.Exclude = new(false)
+	api.Config.ExistsSelected = new(true)
+	api.Config.RunPastTimeout = new(false)
+	api.Config.SearchTechnique = &st
+	api.Config.DisplaySettings = &struct {
+		HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+		HideExclude   *bool   `json:"hide_exclude,omitempty"`
+		HideExists    *bool   `json:"hide_exists,omitempty"`
+		HideSort      *bool   `json:"hide_sort,omitempty"`
+		Placeholder   *string `json:"placeholder,omitempty"`
+	}{
+		Placeholder:   new("Select..."),
+		HideActionBar: new(true),
+		HideExclude:   new(false),
+		HideExists:    new(true),
+		HideSort:      new(false),
 	}
-	populateOptionsListControlFromAPI(pm, nil, apiCfg)
+	api.Config.Sort = &struct {
+		By        kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortBy        `json:"by"`
+		Direction kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirection `json:"direction"`
+	}{
+		By:        kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortByUnderscoreKey,
+		Direction: kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirectionAsc,
+	}
+	populateOptionsListControlFromAPI(pm, nil, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	cfg := pm.OptionsListControlConfig
-	assert.Equal(t, types.StringValue("dv1"), cfg.DataViewID)
+	assert.Equal(t, types.StringValue(optionsListControlTestDataViewID), cfg.DataViewID)
 	assert.Equal(t, types.StringValue("field1"), cfg.FieldName)
 	assert.Equal(t, types.StringValue("My Control"), cfg.Title)
 	assert.Equal(t, types.BoolValue(true), cfg.SingleSelect)
@@ -108,8 +108,7 @@ func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFiel
 // Test: on import with no optional fields, only required fields are populated.
 func Test_populateOptionsListControlFromAPI_import_requiredFieldsOnly(t *testing.T) {
 	pm := &panelModel{}
-	apiCfg := makeAPIConfig("dv2", "status")
-	populateOptionsListControlFromAPI(pm, nil, apiCfg)
+	populateOptionsListControlFromAPI(pm, nil, makeAPIConfig("dv2", "status"))
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Equal(t, types.StringValue("dv2"), pm.OptionsListControlConfig.DataViewID)
 	assert.Equal(t, types.StringValue("status"), pm.OptionsListControlConfig.FieldName)
@@ -128,14 +127,13 @@ func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testin
 		},
 	}
 	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniqueWildcard
-	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
-		DataViewId:       "new-dv",
-		FieldName:        "new-field",
-		UseGlobalFilters: new(true),
-		SearchTechnique:  &st,
-	}
-	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
+	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueWildcard
+	var api kbapi.KbnDashboardPanelTypeOptionsListControl
+	api.Config.DataViewId = "new-dv"
+	api.Config.FieldName = "new-field"
+	api.Config.UseGlobalFilters = new(true)
+	api.Config.SearchTechnique = &st
+	populateOptionsListControlFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Equal(t, types.StringValue("new-dv"), pm.OptionsListControlConfig.DataViewID)
 	assert.Equal(t, types.StringValue("new-field"), pm.OptionsListControlConfig.FieldName)
@@ -147,21 +145,20 @@ func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testin
 func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testing.T) {
 	pm := &panelModel{
 		OptionsListControlConfig: &optionsListControlConfigModel{
-			DataViewID:       types.StringValue("dv1"),
+			DataViewID:       types.StringValue(optionsListControlTestDataViewID),
 			FieldName:        types.StringValue("f1"),
 			UseGlobalFilters: types.BoolNull(),
 			SearchTechnique:  types.StringNull(),
 		},
 	}
 	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniqueExact
-	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
-		DataViewId:       "dv1",
-		FieldName:        "f1",
-		UseGlobalFilters: new(true),
-		SearchTechnique:  &st,
-	}
-	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
+	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueExact
+	var api kbapi.KbnDashboardPanelTypeOptionsListControl
+	api.Config.DataViewId = optionsListControlTestDataViewID
+	api.Config.FieldName = "f1"
+	api.Config.UseGlobalFilters = new(true)
+	api.Config.SearchTechnique = &st
+	populateOptionsListControlFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.True(t, pm.OptionsListControlConfig.UseGlobalFilters.IsNull())
 	assert.True(t, pm.OptionsListControlConfig.SearchTechnique.IsNull())
@@ -171,26 +168,25 @@ func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testin
 func Test_populateOptionsListControlFromAPI_nilDisplaySettings_preservedAsNil(t *testing.T) {
 	pm := &panelModel{
 		OptionsListControlConfig: &optionsListControlConfigModel{
-			DataViewID:      types.StringValue("dv1"),
+			DataViewID:      types.StringValue(optionsListControlTestDataViewID),
 			FieldName:       types.StringValue("f1"),
 			DisplaySettings: nil,
 		},
 	}
 	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
-		DataViewId: "dv1",
-		FieldName:  "f1",
-		DisplaySettings: &struct {
-			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-			HideExclude   *bool   `json:"hide_exclude,omitempty"`
-			HideExists    *bool   `json:"hide_exists,omitempty"`
-			HideSort      *bool   `json:"hide_sort,omitempty"`
-			Placeholder   *string `json:"placeholder,omitempty"`
-		}{
-			Placeholder: new("test"),
-		},
+	var api kbapi.KbnDashboardPanelTypeOptionsListControl
+	api.Config.DataViewId = optionsListControlTestDataViewID
+	api.Config.FieldName = "f1"
+	api.Config.DisplaySettings = &struct {
+		HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+		HideExclude   *bool   `json:"hide_exclude,omitempty"`
+		HideExists    *bool   `json:"hide_exists,omitempty"`
+		HideSort      *bool   `json:"hide_sort,omitempty"`
+		Placeholder   *string `json:"placeholder,omitempty"`
+	}{
+		Placeholder: new("test"),
 	}
-	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
+	populateOptionsListControlFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Nil(t, pm.OptionsListControlConfig.DisplaySettings)
 }
@@ -199,7 +195,7 @@ func Test_populateOptionsListControlFromAPI_nilDisplaySettings_preservedAsNil(t 
 func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 	pm := panelModel{
 		OptionsListControlConfig: &optionsListControlConfigModel{
-			DataViewID:        types.StringValue("dv1"),
+			DataViewID:        types.StringValue(optionsListControlTestDataViewID),
 			FieldName:         types.StringValue("field1"),
 			Title:             types.StringValue("My Title"),
 			UseGlobalFilters:  types.BoolValue(true),
@@ -223,10 +219,10 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 			},
 		},
 	}
-	olPanel := kbapi.KbnDashboardPanelOptionsListControl{}
+	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
 	buildOptionsListControlConfig(pm, &olPanel)
 
-	assert.Equal(t, "dv1", olPanel.Config.DataViewId)
+	assert.Equal(t, optionsListControlTestDataViewID, olPanel.Config.DataViewId)
 	assert.Equal(t, "field1", olPanel.Config.FieldName)
 	require.NotNil(t, olPanel.Config.Title)
 	assert.Equal(t, "My Title", *olPanel.Config.Title)
@@ -237,27 +233,27 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 	require.NotNil(t, olPanel.Config.RunPastTimeout)
 	assert.True(t, *olPanel.Config.RunPastTimeout)
 	require.NotNil(t, olPanel.Config.SearchTechnique)
-	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniqueExact, *olPanel.Config.SearchTechnique)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueExact, *olPanel.Config.SearchTechnique)
 	require.NotNil(t, olPanel.Config.SelectedOptions)
 	require.Len(t, *olPanel.Config.SelectedOptions, 2)
 	require.NotNil(t, olPanel.Config.DisplaySettings)
 	assert.Equal(t, "Pick one", *olPanel.Config.DisplaySettings.Placeholder)
 	assert.True(t, *olPanel.Config.DisplaySettings.HideActionBar)
 	require.NotNil(t, olPanel.Config.Sort)
-	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSortByUnderscoreCount, olPanel.Config.Sort.By)
-	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSortDirectionDesc, olPanel.Config.Sort.Direction)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortByUnderscoreCount, olPanel.Config.Sort.By)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirectionDesc, olPanel.Config.Sort.Direction)
 }
 
 // Test: buildOptionsListControlConfig with null SelectedOptions omits the field.
 func Test_buildOptionsListControlConfig_nullSelectedOptions_omitted(t *testing.T) {
 	pm := panelModel{
 		OptionsListControlConfig: &optionsListControlConfigModel{
-			DataViewID:      types.StringValue("dv1"),
+			DataViewID:      types.StringValue(optionsListControlTestDataViewID),
 			FieldName:       types.StringValue("field1"),
 			SelectedOptions: types.ListNull(types.StringType),
 		},
 	}
-	olPanel := kbapi.KbnDashboardPanelOptionsListControl{}
+	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
 	buildOptionsListControlConfig(pm, &olPanel)
 	assert.Nil(t, olPanel.Config.SelectedOptions)
 }
@@ -266,15 +262,15 @@ func Test_buildOptionsListControlConfig_nullSelectedOptions_omitted(t *testing.T
 func Test_buildOptionsListControlConfig_nullOptionalFields_omitted(t *testing.T) {
 	pm := panelModel{
 		OptionsListControlConfig: &optionsListControlConfigModel{
-			DataViewID:       types.StringValue("dv1"),
+			DataViewID:       types.StringValue(optionsListControlTestDataViewID),
 			FieldName:        types.StringValue("field1"),
 			UseGlobalFilters: types.BoolNull(),
 			SearchTechnique:  types.StringNull(),
 		},
 	}
-	olPanel := kbapi.KbnDashboardPanelOptionsListControl{}
+	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
 	buildOptionsListControlConfig(pm, &olPanel)
-	assert.Equal(t, "dv1", olPanel.Config.DataViewId)
+	assert.Equal(t, optionsListControlTestDataViewID, olPanel.Config.DataViewId)
 	assert.Nil(t, olPanel.Config.UseGlobalFilters)
 	assert.Nil(t, olPanel.Config.SearchTechnique)
 	assert.Nil(t, olPanel.Config.DisplaySettings)
@@ -303,7 +299,7 @@ func Test_optionsListControl_roundTrip(t *testing.T) {
 	}
 
 	pm := panelModel{OptionsListControlConfig: original}
-	olPanel := kbapi.KbnDashboardPanelOptionsListControl{}
+	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
 	buildOptionsListControlConfig(pm, &olPanel)
 
 	out := &panelModel{OptionsListControlConfig: &optionsListControlConfigModel{
@@ -325,7 +321,7 @@ func Test_optionsListControl_roundTrip(t *testing.T) {
 		},
 	}}
 	tfPanel := &panelModel{OptionsListControlConfig: out.OptionsListControlConfig}
-	populateOptionsListControlFromAPI(out, tfPanel, olPanel.Config)
+	populateOptionsListControlFromAPI(out, tfPanel, &olPanel)
 
 	require.NotNil(t, out.OptionsListControlConfig)
 	cfg := out.OptionsListControlConfig
@@ -347,12 +343,12 @@ func Test_optionsListControl_roundTrip(t *testing.T) {
 
 // Test: selectedOptionsToList converts string items.
 func Test_selectedOptionsToList_stringItems(t *testing.T) {
-	var item1 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
-	require.NoError(t, item1.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0("alpha"))
-	var item2 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
-	require.NoError(t, item2.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0("beta"))
+	var item1 kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item1.FromKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0("alpha"))
+	var item2 kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item2.FromKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0("beta"))
 
-	result := selectedOptionsToList([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item{item1, item2})
+	result := selectedOptionsToList([]kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item{item1, item2})
 	require.False(t, result.IsNull())
 	elems := result.Elements()
 	require.Len(t, elems, 2)
@@ -362,12 +358,12 @@ func Test_selectedOptionsToList_stringItems(t *testing.T) {
 
 // Test: selectedOptionsToList converts numeric items using fixed-point notation.
 func Test_selectedOptionsToList_numericItems(t *testing.T) {
-	var item1 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
-	require.NoError(t, item1.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions1(1000000))
-	var item2 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
-	require.NoError(t, item2.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions1(3.14))
+	var item1 kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item1.FromKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions1(1000000))
+	var item2 kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item2.FromKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions1(3.14))
 
-	result := selectedOptionsToList([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item{item1, item2})
+	result := selectedOptionsToList([]kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item{item1, item2})
 	require.False(t, result.IsNull())
 	elems := result.Elements()
 	require.Len(t, elems, 2)

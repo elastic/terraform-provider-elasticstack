@@ -95,7 +95,7 @@ func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
 			SloID: types.StringValue("my-slo-id"),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	assert.Equal(t, "my-slo-id", sebPanel.Config.SloId)
 	assert.Nil(t, sebPanel.Config.SloInstanceId)
@@ -113,7 +113,7 @@ func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
 			SloInstanceID: types.StringValue("my-instance"),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	require.NotNil(t, sebPanel.Config.SloInstanceId)
 	assert.Equal(t, "my-instance", *sebPanel.Config.SloInstanceId)
@@ -126,7 +126,7 @@ func Test_buildSloErrorBudgetConfig_nullSloInstanceID(t *testing.T) {
 			SloInstanceID: types.StringNull(),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	assert.Nil(t, sebPanel.Config.SloInstanceId)
 }
@@ -141,7 +141,7 @@ func Test_buildSloErrorBudgetConfig_withDisplayFields(t *testing.T) {
 			HideBorder:  types.BoolValue(false),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	require.NotNil(t, sebPanel.Config.Title)
 	assert.Equal(t, "My Title", *sebPanel.Config.Title)
@@ -167,7 +167,7 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 			},
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
 	require.Len(t, *sebPanel.Config.Drilldowns, 1)
@@ -196,7 +196,7 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 			},
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelSloErrorBudget
+	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
 	buildSloErrorBudgetConfig(pm, &sebPanel)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
 	d := (*sebPanel.Config.Drilldowns)[0]

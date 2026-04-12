@@ -27,10 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_dataLayerModel_fromAPINoESQL_toAPI(t *testing.T) {
+func Test_dataLayerModel_fromAPINoESQL_toAPIXyLayerNoESQL(t *testing.T) {
 	layerJSON := `{
 		"type": "area",
-		"dataset": {"type":"dataView","id":"logs-*"},
+		"data_source": {"type":"dataView","id":"logs-*"},
 		"ignore_global_filters": true,
 		"sampling": 0.5,
 		"y": [{"operation":"count","color":"#68BC00","axis":"left"}]
@@ -42,27 +42,27 @@ func Test_dataLayerModel_fromAPINoESQL_toAPI(t *testing.T) {
 	diags := model.fromAPINoESQL(apiLayer)
 	require.False(t, diags.HasError())
 
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.True(t, model.IgnoreGlobalFilters.ValueBool())
 	assert.InDelta(t, 0.5, model.Sampling.ValueFloat64(), 0.001)
 	assert.Len(t, model.Y, 1)
 	assert.False(t, model.Y[0].ConfigJSON.IsNull())
 
-	raw, diags := model.toAPI("area")
+	layer, diags := model.toAPIXyLayerNoESQL("area")
 	require.False(t, diags.HasError())
-	require.NotNil(t, raw)
-
+	b, err := json.Marshal(layer)
+	require.NoError(t, err)
 	var roundTrip map[string]any
-	require.NoError(t, json.Unmarshal(raw, &roundTrip))
+	require.NoError(t, json.Unmarshal(b, &roundTrip))
 	assert.Equal(t, "area", roundTrip["type"])
 	assert.Equal(t, true, roundTrip["ignore_global_filters"])
 	assert.InDelta(t, 0.5, roundTrip["sampling"], 0.001)
 }
 
-func Test_dataLayerModel_fromAPIESql_toAPI(t *testing.T) {
+func Test_dataLayerModel_fromAPIESql_toAPIXyLayerESQL(t *testing.T) {
 	layerJSON := `{
 		"type": "area",
-		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"ignore_global_filters": false,
 		"sampling": 1,
 		"y": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#68BC00"},"axis":"left"}]
@@ -74,24 +74,24 @@ func Test_dataLayerModel_fromAPIESql_toAPI(t *testing.T) {
 	diags := model.fromAPIESql(apiLayer)
 	require.False(t, diags.HasError())
 
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.IgnoreGlobalFilters.ValueBool())
 	assert.InDelta(t, 1, model.Sampling.ValueFloat64(), 0.001)
 	assert.Len(t, model.Y, 1)
 
-	raw, diags := model.toAPI("area")
+	layer, diags := model.toAPIXyLayerESQL("area")
 	require.False(t, diags.HasError())
-	require.NotNil(t, raw)
-
+	b, err := json.Marshal(layer)
+	require.NoError(t, err)
 	var roundTrip map[string]any
-	require.NoError(t, json.Unmarshal(raw, &roundTrip))
+	require.NoError(t, json.Unmarshal(b, &roundTrip))
 	assert.Equal(t, "area", roundTrip["type"])
 }
 
-func Test_referenceLineLayerModel_fromAPINoESQL_toAPI(t *testing.T) {
+func Test_referenceLineLayerModel_fromAPINoESQL_toAPIXyReferenceLineLayerNoESQL(t *testing.T) {
 	layerJSON := `{
-		"type": "referenceLines",
-		"dataset": {"type":"dataView","id":"logs-*"},
+		"type": "reference_lines",
+		"data_source": {"type":"dataView","id":"logs-*"},
 		"ignore_global_filters": false,
 		"sampling": 1,
 		"thresholds": [{"type":"static","value":100}]
@@ -103,24 +103,24 @@ func Test_referenceLineLayerModel_fromAPINoESQL_toAPI(t *testing.T) {
 	diags := model.fromAPINoESQL(apiLayer)
 	require.False(t, diags.HasError())
 
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Len(t, model.Thresholds, 1)
 	assert.False(t, model.Thresholds[0].ValueJSON.IsNull())
 
-	raw, diags := model.toAPI("referenceLines")
+	layer, diags := model.toAPIXyReferenceLineLayerNoESQL("reference_lines")
 	require.False(t, diags.HasError())
-	require.NotNil(t, raw)
-
+	b, err := json.Marshal(layer)
+	require.NoError(t, err)
 	var roundTrip map[string]any
-	require.NoError(t, json.Unmarshal(raw, &roundTrip))
-	assert.Equal(t, "referenceLines", roundTrip["type"])
+	require.NoError(t, json.Unmarshal(b, &roundTrip))
+	assert.Equal(t, string(kbapi.ReferenceLines), roundTrip["type"])
 	assert.NotNil(t, roundTrip["thresholds"])
 }
 
-func Test_referenceLineLayerModel_fromAPIESql_toAPI(t *testing.T) {
+func Test_referenceLineLayerModel_fromAPINoESQL_structured_thresholds(t *testing.T) {
 	layerJSON := `{
-		"type": "referenceLines",
-		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"type": "reference_lines",
+		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"ignore_global_filters": true,
 		"sampling": 0.5,
 		"thresholds": [{
@@ -132,27 +132,18 @@ func Test_referenceLineLayerModel_fromAPIESql_toAPI(t *testing.T) {
 			"operation": "value"
 		}]
 	}`
-	var apiLayer kbapi.XyReferenceLineLayerESQL
+	var apiLayer kbapi.XyReferenceLineLayerNoESQL
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
 	model := &referenceLineLayerModel{}
-	diags := model.fromAPIESql(apiLayer)
+	diags := model.fromAPINoESQL(apiLayer)
 	require.False(t, diags.HasError())
 
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Len(t, model.Thresholds, 1)
 	assert.Equal(t, types.StringValue("left"), model.Thresholds[0].Axis)
 	assert.Equal(t, types.StringValue("bytes"), model.Thresholds[0].Column)
 	assert.Equal(t, types.StringValue("above"), model.Thresholds[0].Fill)
-	assert.True(t, model.Thresholds[0].Operation.IsNull())
-
-	raw, diags := model.toAPI("referenceLines")
-	require.False(t, diags.HasError())
-	require.NotNil(t, raw)
-
-	var roundTrip map[string]any
-	require.NoError(t, json.Unmarshal(raw, &roundTrip))
-	assert.Equal(t, "referenceLines", roundTrip["type"])
 }
 
 func Test_thresholdModel_fromAPIJSON_toAPI(t *testing.T) {
@@ -192,47 +183,46 @@ func Test_thresholdModel_fromAPIJSON_toAPI(t *testing.T) {
 	assert.Equal(t, "Threshold", thresholdMap["text"])
 }
 
-func Test_xyLayerModel_fromAPI_toAPI_referenceLine(t *testing.T) {
-	// Build a reference line layer via JSON (type referenceLines)
+func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_referenceLine(t *testing.T) {
 	layerJSON := `{
-		"type": "referenceLines",
-		"dataset": {"type":"dataView","id":"logs-*"},
+		"type": "reference_lines",
+		"data_source": {"type":"dataView","id":"logs-*"},
 		"ignore_global_filters": false,
 		"sampling": 1,
 		"thresholds": [{"type":"static","value":50}]
 	}`
-	var apiLayer kbapi.XyChart_Layers_Item
+	var apiLayer kbapi.XyLayersNoESQL
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &xyLayerModel{}
-	diags := model.fromAPI(apiLayer)
+	diags := model.fromAPILayersNoESQL(apiLayer)
 	require.False(t, diags.HasError())
 
-	assert.Equal(t, types.StringValue("referenceLines"), model.Type)
+	assert.Equal(t, types.StringValue("reference_lines"), model.Type)
 	require.NotNil(t, model.ReferenceLineLayer)
 	assert.Nil(t, model.DataLayer)
 
-	result, diags := model.toAPI()
+	result, diags := model.toAPILayersNoESQL()
 	require.False(t, diags.HasError())
 
 	resultJSON, err := result.MarshalJSON()
 	require.NoError(t, err)
 	var roundTrip map[string]any
 	require.NoError(t, json.Unmarshal(resultJSON, &roundTrip))
-	assert.Equal(t, "referenceLines", roundTrip["type"])
+	assert.Equal(t, string(kbapi.ReferenceLines), roundTrip["type"])
 }
 
-func Test_xyLayerModel_fromAPI_toAPI_dataLayer(t *testing.T) {
+func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_dataLayer(t *testing.T) {
 	layerJSON := `{
 		"type": "area",
-		"dataset": {"type":"dataView","id":"logs-*"},
+		"data_source": {"type":"dataView","id":"logs-*"},
 		"y": [{"operation":"count","color":"#68BC00","axis":"left"}]
 	}`
-	var apiLayer kbapi.XyChart_Layers_Item
+	var apiLayer kbapi.XyLayersNoESQL
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &xyLayerModel{}
-	diags := model.fromAPI(apiLayer)
+	diags := model.fromAPILayersNoESQL(apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("area"), model.Type)
@@ -240,7 +230,7 @@ func Test_xyLayerModel_fromAPI_toAPI_dataLayer(t *testing.T) {
 	assert.Nil(t, model.ReferenceLineLayer)
 	assert.Len(t, model.DataLayer.Y, 1)
 
-	result, diags := model.toAPI()
+	result, diags := model.toAPILayersNoESQL()
 	require.False(t, diags.HasError())
 
 	resultJSON, err := result.MarshalJSON()

@@ -27,8 +27,8 @@ import (
 type lensVisualizationConverter interface {
 	vizType() string
 	handlesTFConfig(pm panelModel) bool
-	populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics
-	buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics)
+	populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
+	buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 }
 
 type lensVisualizationBase struct {
@@ -47,10 +47,75 @@ func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
 	return c.hasTFPanelConfig(pm)
 }
 
-func detectLensVizType(attrs kbapi.LensApiState) string {
-	chart, err := attrs.AsXyChart()
-	if err != nil {
-		return ""
+func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
+	if chart, err := attrs.AsXyChartNoESQL(); err == nil {
+		return string(chart.Type)
 	}
-	return string(chart.Type)
+	if chart, err := attrs.AsXyChartESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsTreemapNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsTreemapESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsMosaicNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsMosaicESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsDatatableNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsDatatableESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsTagcloudNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsTagcloudESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsHeatmapNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsHeatmapESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsRegionMapNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsRegionMapESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsLegacyMetricNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsMetricNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsMetricESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsPieNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsPieESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsGaugeNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsGaugeESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsWaffleNoESQL(); err == nil {
+		return string(chart.Type)
+	}
+	if chart, err := attrs.AsWaffleESQL(); err == nil {
+		return string(chart.Type)
+	}
+	return ""
 }

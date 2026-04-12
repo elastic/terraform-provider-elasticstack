@@ -90,7 +90,7 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 }
 
 // buildTimeSliderControlConfig writes the TF model fields into the API panel struct.
-func buildTimeSliderControlConfig(pm panelModel, tsPanel *kbapi.KbnDashboardPanelTimeSliderControl) {
+func buildTimeSliderControlConfig(pm panelModel, tsPanel *kbapi.KbnDashboardPanelTypeTimeSliderControl) {
 	cfg := pm.TimeSliderControlConfig
 	if cfg == nil {
 		return

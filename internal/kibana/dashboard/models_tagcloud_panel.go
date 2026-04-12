@@ -42,13 +42,8 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	tagcloudChart, err := attrs.AsTagcloudChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	tagcloudNoESQL, err := tagcloudChart.AsTagcloudNoESQL()
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	tagcloudNoESQL, err := attrs.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -58,7 +53,7 @@ func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context
 	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TagcloudConfig
 
@@ -66,20 +61,13 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Lens
 	tagcloudNoESQL, tagcloudDiags := configModel.toAPI()
 	diags.Append(tagcloudDiags...)
 	if diags.HasError() {
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
-	// Convert TagcloudNoESQL to TagcloudChart
-	var tagcloudChart kbapi.TagcloudChart
-	if err := tagcloudChart.FromTagcloudNoESQL(tagcloudNoESQL); err != nil {
-		diags.AddError("Failed to convert tagcloud to schema", err.Error())
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromTagcloudChart(tagcloudChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	if err := attrs.FromTagcloudNoESQL(tagcloudNoESQL); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -88,7 +76,7 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Lens
 type tagcloudConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
@@ -112,12 +100,12 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	m.Description = types.StringPointerValue(api.Description)
 
 	// Handle dataset
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	v, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	v, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
-	m.DatasetJSON = v
+	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -190,8 +178,8 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	}
 
 	// Handle dataset
-	if !m.DatasetJSON.IsNull() {
-		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
+	if !m.DataSourceJSON.IsNull() {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
 		}

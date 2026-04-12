@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -28,7 +28,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     datatable_config = {
       esql = {
         title = "count"
-        dataset_json = jsonencode({
+        data_source_json = jsonencode({
           type  = "esql"
           query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
         })

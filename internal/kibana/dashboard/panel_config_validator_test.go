@@ -85,10 +85,10 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_lens(t *testing.T) {
+func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	t.Run("accepts one typed config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -104,7 +104,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 
 	t.Run("accepts config_json fallback", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
@@ -118,7 +118,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 
 	t.Run("rejects missing config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -129,12 +129,12 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 		)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
-		require.Equal(t, "Missing lens panel configuration", diags[0].Summary())
+		require.Equal(t, "Missing vis panel configuration", diags[0].Summary())
 	})
 
 	t.Run("rejects multiple typed configs", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -148,12 +148,12 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 		)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
-		require.Equal(t, "Invalid lens panel configuration", diags[0].Summary())
+		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
 	})
 
 	t.Run("rejects typed config plus config_json", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
@@ -166,12 +166,12 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 		)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
-		require.Equal(t, "Invalid lens panel configuration", diags[0].Summary())
+		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
 	})
 
 	t.Run("defers when config_json is unknown", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
-			"lens",
+			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},

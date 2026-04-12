@@ -44,29 +44,59 @@ type esqlControlConfigModel struct {
 	DisplaySettings  *esqlControlDisplaySettingsModel `tfsdk:"display_settings"`
 }
 
-// esqlControlSingleSelectFromAPI returns the panel single-select flag when present
-// in the typed API config or in AdditionalProperties (e.g. camelCase keys from Kibana).
-func esqlControlSingleSelectFromAPI(cfg kbapi.KbnDashboardPanelEsqlControl_Config) *bool {
-	if cfg.SingleSelect != nil {
-		return cfg.SingleSelect
-	}
-	if cfg.AdditionalProperties == nil {
-		return nil
-	}
-	for _, key := range []string{"single_select", "singleSelect"} {
-		v, ok := cfg.AdditionalProperties[key]
-		if !ok {
-			continue
+type esqlControlDisplaySettingsAPI = struct {
+	HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+	HideExclude   *bool   `json:"hide_exclude,omitempty"`
+	HideExists    *bool   `json:"hide_exists,omitempty"`
+	HideSort      *bool   `json:"hide_sort,omitempty"`
+	Placeholder   *string `json:"placeholder,omitempty"`
+}
+
+// esqlControlAPIData is a normalized view of either union branch of KbnDashboardPanelTypeEsqlControl_Config.
+type esqlControlAPIData struct {
+	SelectedOptions  []string
+	VariableName     string
+	VariableType     string
+	EsqlQuery        string
+	ControlType      string
+	Title            *string
+	SingleSelect     *bool
+	AvailableOptions []string
+	DisplaySettings  *esqlControlDisplaySettingsAPI
+	ok               bool
+}
+
+func esqlControlAPIDataFromConfig(cfg kbapi.KbnDashboardPanelTypeEsqlControl_Config) esqlControlAPIData {
+	// Prefer static-values first: the VALUES_FROM_QUERY union branch is permissive enough that it
+	// can incorrectly match some STATIC_VALUES payloads, dropping fields like available_options.
+	if sv, err := cfg.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(); err == nil {
+		return esqlControlAPIData{
+			SelectedOptions:  sv.SelectedOptions,
+			VariableName:     sv.VariableName,
+			VariableType:     string(sv.VariableType),
+			EsqlQuery:        "",
+			ControlType:      string(sv.ControlType),
+			Title:            sv.Title,
+			SingleSelect:     sv.SingleSelect,
+			AvailableOptions: sv.AvailableOptions,
+			DisplaySettings:  sv.DisplaySettings,
+			ok:               true,
 		}
-		switch t := v.(type) {
-		case bool:
-			b := t
-			return &b
-		case *bool:
-			return t
+	}
+	if vq, err := cfg.AsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(); err == nil {
+		return esqlControlAPIData{
+			SelectedOptions: vq.SelectedOptions,
+			VariableName:    vq.VariableName,
+			VariableType:    string(vq.VariableType),
+			EsqlQuery:       vq.EsqlQuery,
+			ControlType:     string(vq.ControlType),
+			Title:           vq.Title,
+			SingleSelect:    vq.SingleSelect,
+			DisplaySettings: vq.DisplaySettings,
+			ok:              true,
 		}
 	}
-	return nil
+	return esqlControlAPIData{}
 }
 
 // stringsToList converts a []string to a types.List of string elements.
@@ -96,31 +126,35 @@ func listToStrings(list types.List) []string {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelEsqlControl_Config) {
+func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelTypeEsqlControl_Config) {
+	api := esqlControlAPIDataFromConfig(apiConfig)
+	if !api.ok {
+		return
+	}
 	existing := pm.EsqlControlConfig
 
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
 		singleSelect := types.BoolNull()
-		if p := esqlControlSingleSelectFromAPI(apiConfig); p != nil {
-			singleSelect = types.BoolValue(*p)
+		if api.SingleSelect != nil {
+			singleSelect = types.BoolValue(*api.SingleSelect)
 		}
 		existing = &esqlControlConfigModel{
-			SelectedOptions:  stringsToList(apiConfig.SelectedOptions),
-			VariableName:     types.StringValue(apiConfig.VariableName),
-			VariableType:     types.StringValue(string(apiConfig.VariableType)),
-			EsqlQuery:        types.StringValue(apiConfig.EsqlQuery),
-			ControlType:      types.StringValue(string(apiConfig.ControlType)),
-			Title:            types.StringPointerValue(apiConfig.Title),
+			SelectedOptions:  stringsToList(api.SelectedOptions),
+			VariableName:     types.StringValue(api.VariableName),
+			VariableType:     types.StringValue(api.VariableType),
+			EsqlQuery:        types.StringValue(api.EsqlQuery),
+			ControlType:      types.StringValue(api.ControlType),
+			Title:            types.StringPointerValue(api.Title),
 			SingleSelect:     singleSelect,
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
-		if apiConfig.AvailableOptions != nil {
-			existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
+		if len(api.AvailableOptions) > 0 {
+			existing.AvailableOptions = stringsToList(api.AvailableOptions)
 		}
-		if apiConfig.DisplaySettings != nil {
-			d := apiConfig.DisplaySettings
+		if api.DisplaySettings != nil {
+			d := api.DisplaySettings
 			existing.DisplaySettings = &esqlControlDisplaySettingsModel{
 				Placeholder:   types.StringPointerValue(d.Placeholder),
 				HideActionBar: types.BoolPointerValue(d.HideActionBar),
@@ -137,95 +171,124 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		return
 	}
 
+	prevQuery := existing.EsqlQuery
+	prevTitle := existing.Title
+	prevAvailableOptions := existing.AvailableOptions
+
 	// Required fields always get updated from API.
-	existing.SelectedOptions = stringsToList(apiConfig.SelectedOptions)
-	existing.VariableName = types.StringValue(apiConfig.VariableName)
-	existing.VariableType = types.StringValue(string(apiConfig.VariableType))
-	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
-	existing.ControlType = types.StringValue(string(apiConfig.ControlType))
+	existing.SelectedOptions = stringsToList(api.SelectedOptions)
+	existing.VariableName = types.StringValue(api.VariableName)
+	existing.VariableType = types.StringValue(api.VariableType)
+	existing.EsqlQuery = types.StringValue(api.EsqlQuery)
+	existing.ControlType = types.StringValue(api.ControlType)
 
 	// Optional fields: update only if already known (non-null) in state.
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
+	if typeutils.IsKnown(existing.Title) && api.Title != nil {
+		existing.Title = types.StringValue(*api.Title)
 	}
-	if typeutils.IsKnown(existing.SingleSelect) {
-		if p := esqlControlSingleSelectFromAPI(apiConfig); p != nil {
-			existing.SingleSelect = types.BoolValue(*p)
-		}
+	if typeutils.IsKnown(existing.SingleSelect) && api.SingleSelect != nil {
+		existing.SingleSelect = types.BoolValue(*api.SingleSelect)
 	}
 
 	// available_options: if TF state had it set (known, non-null list), update from API.
-	if typeutils.IsKnown(existing.AvailableOptions) && apiConfig.AvailableOptions != nil {
-		existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
+	if typeutils.IsKnown(existing.AvailableOptions) && len(api.AvailableOptions) > 0 {
+		existing.AvailableOptions = stringsToList(api.AvailableOptions)
 	}
+	preserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
+	preserveKnownStringIfStateBlank(prevTitle, &existing.Title)
+	preserveKnownListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
-	if existing.DisplaySettings != nil && apiConfig.DisplaySettings != nil {
+	if existing.DisplaySettings != nil && api.DisplaySettings != nil {
 		ds := existing.DisplaySettings
-		if typeutils.IsKnown(ds.Placeholder) && apiConfig.DisplaySettings.Placeholder != nil {
-			ds.Placeholder = types.StringValue(*apiConfig.DisplaySettings.Placeholder)
+		apiDS := api.DisplaySettings
+		if typeutils.IsKnown(ds.Placeholder) && apiDS.Placeholder != nil {
+			ds.Placeholder = types.StringValue(*apiDS.Placeholder)
 		}
-		if typeutils.IsKnown(ds.HideActionBar) && apiConfig.DisplaySettings.HideActionBar != nil {
-			ds.HideActionBar = types.BoolValue(*apiConfig.DisplaySettings.HideActionBar)
+		if typeutils.IsKnown(ds.HideActionBar) && apiDS.HideActionBar != nil {
+			ds.HideActionBar = types.BoolValue(*apiDS.HideActionBar)
 		}
-		if typeutils.IsKnown(ds.HideExclude) && apiConfig.DisplaySettings.HideExclude != nil {
-			ds.HideExclude = types.BoolValue(*apiConfig.DisplaySettings.HideExclude)
+		if typeutils.IsKnown(ds.HideExclude) && apiDS.HideExclude != nil {
+			ds.HideExclude = types.BoolValue(*apiDS.HideExclude)
 		}
-		if typeutils.IsKnown(ds.HideExists) && apiConfig.DisplaySettings.HideExists != nil {
-			ds.HideExists = types.BoolValue(*apiConfig.DisplaySettings.HideExists)
+		if typeutils.IsKnown(ds.HideExists) && apiDS.HideExists != nil {
+			ds.HideExists = types.BoolValue(*apiDS.HideExists)
 		}
-		if typeutils.IsKnown(ds.HideSort) && apiConfig.DisplaySettings.HideSort != nil {
-			ds.HideSort = types.BoolValue(*apiConfig.DisplaySettings.HideSort)
+		if typeutils.IsKnown(ds.HideSort) && apiDS.HideSort != nil {
+			ds.HideSort = types.BoolValue(*apiDS.HideSort)
 		}
 	}
 }
 
 // buildEsqlControlConfig writes the TF model fields into the API panel struct.
-func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelEsqlControl) {
+func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) {
 	cfg := pm.EsqlControlConfig
 	if cfg == nil {
 		return
 	}
 
-	esqlPanel.Config.SelectedOptions = listToStrings(cfg.SelectedOptions)
-	esqlPanel.Config.VariableName = cfg.VariableName.ValueString()
-	esqlPanel.Config.VariableType = kbapi.KbnDashboardPanelEsqlControlConfigVariableType(cfg.VariableType.ValueString())
-	esqlPanel.Config.EsqlQuery = cfg.EsqlQuery.ValueString()
-	esqlPanel.Config.ControlType = kbapi.KbnDashboardPanelEsqlControlConfigControlType(cfg.ControlType.ValueString())
-
-	if typeutils.IsKnown(cfg.Title) {
-		esqlPanel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.SingleSelect) {
-		esqlPanel.Config.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.AvailableOptions) {
-		opts := listToStrings(cfg.AvailableOptions)
-		esqlPanel.Config.AvailableOptions = &opts
-	}
-	if cfg.DisplaySettings != nil {
-		ds := cfg.DisplaySettings
-		esqlPanel.Config.DisplaySettings = &struct {
-			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-			HideExclude   *bool   `json:"hide_exclude,omitempty"`
-			HideExists    *bool   `json:"hide_exists,omitempty"`
-			HideSort      *bool   `json:"hide_sort,omitempty"`
-			Placeholder   *string `json:"placeholder,omitempty"`
-		}{}
+	displayToAPI := func(ds *esqlControlDisplaySettingsModel) *esqlControlDisplaySettingsAPI {
+		if ds == nil {
+			return nil
+		}
+		out := &esqlControlDisplaySettingsAPI{}
 		if typeutils.IsKnown(ds.Placeholder) {
-			esqlPanel.Config.DisplaySettings.Placeholder = ds.Placeholder.ValueStringPointer()
+			out.Placeholder = ds.Placeholder.ValueStringPointer()
 		}
 		if typeutils.IsKnown(ds.HideActionBar) {
-			esqlPanel.Config.DisplaySettings.HideActionBar = ds.HideActionBar.ValueBoolPointer()
+			out.HideActionBar = ds.HideActionBar.ValueBoolPointer()
 		}
 		if typeutils.IsKnown(ds.HideExclude) {
-			esqlPanel.Config.DisplaySettings.HideExclude = ds.HideExclude.ValueBoolPointer()
+			out.HideExclude = ds.HideExclude.ValueBoolPointer()
 		}
 		if typeutils.IsKnown(ds.HideExists) {
-			esqlPanel.Config.DisplaySettings.HideExists = ds.HideExists.ValueBoolPointer()
+			out.HideExists = ds.HideExists.ValueBoolPointer()
 		}
 		if typeutils.IsKnown(ds.HideSort) {
-			esqlPanel.Config.DisplaySettings.HideSort = ds.HideSort.ValueBoolPointer()
+			out.HideSort = ds.HideSort.ValueBoolPointer()
 		}
+		return out
 	}
+
+	ct := cfg.ControlType.ValueString()
+	if kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryControlType(ct) == kbapi.VALUESFROMQUERY {
+		vq := kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery{
+			SelectedOptions: listToStrings(cfg.SelectedOptions),
+			VariableName:    cfg.VariableName.ValueString(),
+			VariableType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryVariableType(
+				cfg.VariableType.ValueString(),
+			),
+			EsqlQuery:   cfg.EsqlQuery.ValueString(),
+			ControlType: kbapi.VALUESFROMQUERY,
+		}
+		if typeutils.IsKnown(cfg.Title) {
+			vq.Title = cfg.Title.ValueStringPointer()
+		}
+		if typeutils.IsKnown(cfg.SingleSelect) {
+			vq.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
+		}
+		vq.DisplaySettings = displayToAPI(cfg.DisplaySettings)
+		_ = esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq)
+		return
+	}
+
+	sv := kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+		SelectedOptions: listToStrings(cfg.SelectedOptions),
+		VariableName:    cfg.VariableName.ValueString(),
+		VariableType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableType(
+			cfg.VariableType.ValueString(),
+		),
+		ControlType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesControlType(ct),
+	}
+	if typeutils.IsKnown(cfg.Title) {
+		sv.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.SingleSelect) {
+		sv.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.AvailableOptions) {
+		sv.AvailableOptions = listToStrings(cfg.AvailableOptions)
+	}
+	sv.DisplaySettings = displayToAPI(cfg.DisplaySettings)
+	_ = esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv)
 }

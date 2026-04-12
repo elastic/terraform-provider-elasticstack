@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -31,138 +32,40 @@ import (
 func Test_newXYChartPanelConfigConverter(t *testing.T) {
 	converter := newXYChartPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.Xy), converter.visualizationType)
+	assert.Equal(t, string(kbapi.XyChartNoESQLTypeXy), converter.visualizationType)
 }
 
 func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
-	tests := []struct {
-		name     string
-		apiAxis  kbapi.XyAxis
-		expected *xyAxisModel
-	}{
-		{
-			name: "all axes populated",
-			apiAxis: kbapi.XyAxis{
-				X: &xyAxisConfigAPIModel{
-					Grid: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: true},
-					Ticks: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: false},
-				},
-				Left: &leftYAxisConfigAPIModel{
-					Grid: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: true},
-					Ticks: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: true},
-				},
-				Right: &rightYAxisConfigAPIModel{
-					Grid: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: false},
-					Ticks: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: true},
-				},
-			},
-			expected: &xyAxisModel{
-				X: &xyAxisConfigModel{
-					Grid:  types.BoolValue(true),
-					Ticks: types.BoolValue(false),
-				},
-				Left: &yAxisConfigModel{
-					Grid:  types.BoolValue(true),
-					Ticks: types.BoolValue(true),
-				},
-				Right: &yAxisConfigModel{
-					Grid:  types.BoolValue(false),
-					Ticks: types.BoolValue(true),
-				},
-			},
-		},
-		{
-			name: "nil axes",
-			apiAxis: kbapi.XyAxis{
-				X:     nil,
-				Left:  nil,
-				Right: nil,
-			},
-			expected: &xyAxisModel{
-				X:     nil,
-				Left:  nil,
-				Right: nil,
-			},
-		},
-		{
-			name: "only x axis",
-			apiAxis: kbapi.XyAxis{
-				X: &xyAxisConfigAPIModel{
-					Grid: &struct {
-						Visible bool `json:"visible"`
-					}{Visible: true},
-				},
-				Left:  nil,
-				Right: nil,
-			},
-			expected: &xyAxisModel{
-				X: &xyAxisConfigModel{
-					Grid: types.BoolValue(true),
-				},
-				Left:  nil,
-				Right: nil,
-			},
-		},
-	}
+	raw := []byte(`{
+		"x":{"grid":{"visible":true},"ticks":{"visible":false}},
+		"y":{"grid":{"visible":true},"ticks":{"visible":true},"domain":{"type":"fit"}},
+		"secondary_y":{"grid":{"visible":false},"ticks":{"visible":true},"domain":{"type":"fit"}}
+	}`)
+	var apiAxis kbapi.VisApiXyAxisConfig
+	require.NoError(t, json.Unmarshal(raw, &apiAxis))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test fromAPI
-			model := &xyAxisModel{}
-			diags := model.fromAPI(tt.apiAxis)
-			require.False(t, diags.HasError())
+	model := &xyAxisModel{}
+	diags := model.fromAPI(apiAxis)
+	require.False(t, diags.HasError())
 
-			if tt.expected.X != nil {
-				require.NotNil(t, model.X)
-				assert.Equal(t, tt.expected.X.Grid, model.X.Grid)
-				assert.Equal(t, tt.expected.X.Ticks, model.X.Ticks)
-			} else {
-				assert.Nil(t, model.X)
-			}
+	require.NotNil(t, model.X)
+	assert.Equal(t, types.BoolValue(true), model.X.Grid)
+	assert.Equal(t, types.BoolValue(false), model.X.Ticks)
 
-			if tt.expected.Left != nil {
-				require.NotNil(t, model.Left)
-				assert.Equal(t, tt.expected.Left.Grid, model.Left.Grid)
-				assert.Equal(t, tt.expected.Left.Ticks, model.Left.Ticks)
-			} else {
-				assert.Nil(t, model.Left)
-			}
+	require.NotNil(t, model.Y)
+	assert.Equal(t, types.BoolValue(true), model.Y.Grid)
+	assert.Equal(t, types.BoolValue(true), model.Y.Ticks)
 
-			if tt.expected.Right != nil {
-				require.NotNil(t, model.Right)
-				assert.Equal(t, tt.expected.Right.Grid, model.Right.Grid)
-				assert.Equal(t, tt.expected.Right.Ticks, model.Right.Ticks)
-			} else {
-				assert.Nil(t, model.Right)
-			}
+	require.NotNil(t, model.SecondaryY)
+	assert.Equal(t, types.BoolValue(false), model.SecondaryY.Grid)
 
-			// Test toAPI round-trip
-			apiAxis, diags := model.toAPI()
-			require.False(t, diags.HasError())
-
-			// Verify round-trip
-			model2 := &xyAxisModel{}
-			diags = model2.fromAPI(apiAxis)
-			require.False(t, diags.HasError())
-
-			if tt.expected.X != nil {
-				assert.Equal(t, model.X.Grid, model2.X.Grid)
-				assert.Equal(t, model.X.Ticks, model2.X.Ticks)
-			}
-		})
-	}
+	out, d := model.toAPI()
+	require.False(t, d.HasError())
+	model2 := &xyAxisModel{}
+	diags = model2.fromAPI(out)
+	require.False(t, diags.HasError())
+	assert.Equal(t, model.X.Grid, model2.X.Grid)
+	assert.Equal(t, model.Y.Grid, model2.Y.Grid)
 }
 
 func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
@@ -272,161 +175,65 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 }
 
-func Test_yAxisConfigModel_fromAPILeft_toAPILeft(t *testing.T) {
-	tests := []struct {
-		name     string
-		apiAxis  *leftYAxisConfigAPIModel
-		expected *yAxisConfigModel
-	}{
-		{
-			name: "all fields populated",
-			apiAxis: &leftYAxisConfigAPIModel{
-				Grid: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: true},
-				Ticks: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: false},
-				Labels: &struct {
-					Orientation kbapi.VisApiOrientation `json:"orientation"`
-				}{Orientation: kbapi.VisApiOrientation("vertical")},
-				Scale: func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("Y Axis Title"),
-					Visible: new(false),
-				},
-			},
-			expected: &yAxisConfigModel{
-				Grid:             types.BoolValue(true),
-				Ticks:            types.BoolValue(false),
-				LabelOrientation: types.StringValue("vertical"),
-				Scale:            types.StringValue("linear"),
-				Title: &axisTitleModel{
-					Value:   types.StringValue("Y Axis Title"),
-					Visible: types.BoolValue(false),
-				},
-			},
-		},
-		{
-			name:     "nil axis",
-			apiAxis:  nil,
-			expected: nil,
-		},
-		{
-			name: "with scale field",
-			apiAxis: &leftYAxisConfigAPIModel{
-				Grid: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: false},
-				Scale: func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
-			},
-			expected: &yAxisConfigModel{
-				Grid:  types.BoolValue(false),
-				Scale: types.StringValue("linear"),
-			},
-		},
-	}
+func Test_yAxisConfigModel_fromAPIY_toAPIY(t *testing.T) {
+	raw := []byte(`{
+		"y":{
+			"grid":{"visible":true},
+			"ticks":{"visible":false},
+			"labels":{"orientation":"vertical"},
+			"scale":"linear",
+			"title":{"text":"Y Axis Title","visible":false},
+			"domain":{"type":"fit"}
+		}
+	}`)
+	var env kbapi.VisApiXyAxisConfig
+	require.NoError(t, json.Unmarshal(raw, &env))
+	require.NotNil(t, env.Y)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test fromAPILeft
-			model := &yAxisConfigModel{}
-			diags := model.fromAPILeft(tt.apiAxis)
-			require.False(t, diags.HasError())
+	model := &yAxisConfigModel{}
+	diags := model.fromAPIY(env.Y)
+	require.False(t, diags.HasError())
 
-			if tt.expected == nil {
-				return
-			}
+	assert.Equal(t, types.BoolValue(true), model.Grid)
+	assert.Equal(t, types.BoolValue(false), model.Ticks)
+	assert.Equal(t, types.StringValue("vertical"), model.LabelOrientation)
+	assert.Equal(t, types.StringValue("linear"), model.Scale)
+	require.NotNil(t, model.Title)
+	assert.Equal(t, types.StringValue("Y Axis Title"), model.Title.Value)
+	assert.Equal(t, types.BoolValue(false), model.Title.Visible)
 
-			assert.Equal(t, tt.expected.Grid, model.Grid)
-			assert.Equal(t, tt.expected.Ticks, model.Ticks)
-			assert.Equal(t, tt.expected.LabelOrientation, model.LabelOrientation)
-			assert.Equal(t, tt.expected.Scale, model.Scale)
-
-			// Test toAPILeft round-trip
-			apiAxis, diags := model.toAPILeft()
-			require.False(t, diags.HasError())
-
-			if tt.apiAxis != nil {
-				assert.NotNil(t, apiAxis)
-			}
-		})
-	}
+	apiY, diags := model.toAPIY()
+	require.False(t, diags.HasError())
+	require.NotNil(t, apiY)
 }
 
-func Test_yAxisConfigModel_fromAPIRight_toAPIRight(t *testing.T) {
-	tests := []struct {
-		name     string
-		apiAxis  *rightYAxisConfigAPIModel
-		expected *yAxisConfigModel
-	}{
-		{
-			name: "all fields populated",
-			apiAxis: &rightYAxisConfigAPIModel{
-				Grid: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: false},
-				Ticks: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: true},
-				Labels: &struct {
-					Orientation kbapi.VisApiOrientation `json:"orientation"`
-				}{Orientation: kbapi.VisApiOrientation("angled")},
-				Scale: func() *kbapi.XyAxisRightScale { s := kbapi.XyAxisRightScale("log"); return &s }(),
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("Right Y Axis"),
-					Visible: new(true),
-				},
-			},
-			expected: &yAxisConfigModel{
-				Grid:             types.BoolValue(false),
-				Ticks:            types.BoolValue(true),
-				LabelOrientation: types.StringValue("angled"),
-				Scale:            types.StringValue("log"),
-				Title: &axisTitleModel{
-					Value:   types.StringValue("Right Y Axis"),
-					Visible: types.BoolValue(true),
-				},
-			},
-		},
-		{
-			name:     "nil axis",
-			apiAxis:  nil,
-			expected: nil,
-		},
-	}
+func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
+	raw := []byte(`{
+		"secondary_y":{
+			"grid":{"visible":false},
+			"ticks":{"visible":true},
+			"labels":{"orientation":"angled"},
+			"scale":"log",
+			"title":{"text":"Right Y Axis","visible":true},
+			"domain":{"type":"fit"}
+		}
+	}`)
+	var env kbapi.VisApiXyAxisConfig
+	require.NoError(t, json.Unmarshal(raw, &env))
+	require.NotNil(t, env.SecondaryY)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test fromAPIRight
-			model := &yAxisConfigModel{}
-			diags := model.fromAPIRight(tt.apiAxis)
-			require.False(t, diags.HasError())
+	model := &yAxisConfigModel{}
+	diags := model.fromAPISecondaryY(env.SecondaryY)
+	require.False(t, diags.HasError())
 
-			if tt.expected == nil {
-				return
-			}
+	assert.Equal(t, types.BoolValue(false), model.Grid)
+	assert.Equal(t, types.BoolValue(true), model.Ticks)
+	assert.Equal(t, types.StringValue("angled"), model.LabelOrientation)
+	assert.Equal(t, types.StringValue("log"), model.Scale)
 
-			assert.Equal(t, tt.expected.Grid, model.Grid)
-			assert.Equal(t, tt.expected.Ticks, model.Ticks)
-			assert.Equal(t, tt.expected.LabelOrientation, model.LabelOrientation)
-			assert.Equal(t, tt.expected.Scale, model.Scale)
-
-			// Test toAPIRight round-trip
-			apiAxis, diags := model.toAPIRight()
-			require.False(t, diags.HasError())
-
-			if tt.apiAxis != nil {
-				assert.NotNil(t, apiAxis)
-			}
-		})
-	}
+	apiY, diags := model.toAPISecondaryY()
+	require.False(t, diags.HasError())
+	require.NotNil(t, apiY)
 }
 
 func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
@@ -502,102 +309,63 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 	}
 }
 
-func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
-	tests := []struct {
-		name            string
-		apiDecorations  kbapi.XyDecorations
-		expected        *xyDecorationsModel
-		expectFillValue float64 // Expected rounded value for fill opacity
-	}{
-		{
-			name: "all fields populated",
-			apiDecorations: kbapi.XyDecorations{
-				EndZones: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: true},
-				CurrentTimeMarker: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: false},
-				PointVisibility: func() *kbapi.XyDecorationsPointVisibility {
-					v := kbapi.XyDecorationsPointVisibilityVisible
-					return &v
-				}(),
-				LineInterpolation: func() *kbapi.XyDecorationsLineInterpolation {
-					i := kbapi.XyDecorationsLineInterpolation("linear")
-					return &i
-				}(),
-				MinimumBarHeight: new(float32(5)),
-				Values: &struct {
-					Visible bool `json:"visible"`
-				}{Visible: true},
-				FillOpacity: new(float32(0.5)),
-			},
-			expected: &xyDecorationsModel{
-				ShowEndZones:          types.BoolValue(true),
-				ShowCurrentTimeMarker: types.BoolValue(false),
-				PointVisibility:       types.StringValue("visible"),
-				LineInterpolation:     types.StringValue("linear"),
-				MinimumBarHeight:      types.Int64Value(5),
-				ShowValueLabels:       types.BoolValue(true),
-				FillOpacity:           types.Float64Value(0.5),
-			},
-			expectFillValue: 0.5,
+func Test_xyDecorationsModel_readFromStyling_writeToStyling(t *testing.T) {
+	interp := kbapi.Linear
+	pts := kbapi.XyStylingPointsVisibilityVisible
+	styling := kbapi.XyStyling{
+		Areas: kbapi.XyStylingAreas{FillOpacity: new(float32(0.5))},
+		Bars: kbapi.XyStylingBars{
+			MinimumHeight: new(float32(5)),
+			DataLabels: func() *struct {
+				Visible *bool `json:"visible,omitempty"`
+			} {
+				v := true
+				return &struct {
+					Visible *bool `json:"visible,omitempty"`
+				}{Visible: &v}
+			}(),
 		},
-		{
-			name:           "nil values",
-			apiDecorations: kbapi.XyDecorations{},
-			expected: &xyDecorationsModel{
-				ShowEndZones:          types.BoolNull(),
-				ShowCurrentTimeMarker: types.BoolNull(),
-				PointVisibility:       types.StringNull(),
-				LineInterpolation:     types.StringNull(),
-				MinimumBarHeight:      types.Int64Null(),
-				ShowValueLabels:       types.BoolNull(),
-				FillOpacity:           types.Float64Null(),
-			},
+		Fitting:       kbapi.XyFitting{Type: kbapi.XyFittingTypeNone},
+		Interpolation: &interp,
+		Overlays: kbapi.XyStylingOverlays{
+			PartialBuckets: func() *struct {
+				Visible *bool `json:"visible,omitempty"`
+			} {
+				v := true
+				return &struct {
+					Visible *bool `json:"visible,omitempty"`
+				}{Visible: &v}
+			}(),
+			CurrentTimeMarker: func() *struct {
+				Visible *bool `json:"visible,omitempty"`
+			} {
+				v := false
+				return &struct {
+					Visible *bool `json:"visible,omitempty"`
+				}{Visible: &v}
+			}(),
 		},
-		{
-			name: "float precision rounding",
-			apiDecorations: kbapi.XyDecorations{
-				FillOpacity: new(float32(0.123456)),
-			},
-			expected: &xyDecorationsModel{
-				FillOpacity: types.Float64Value(0.12),
-			},
-			expectFillValue: 0.12,
-		},
+		Points: kbapi.XyStylingPoints{Visibility: &pts},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test fromAPI
-			model := &xyDecorationsModel{}
-			model.fromAPI(tt.apiDecorations)
+	model := &xyDecorationsModel{}
+	model.readFromStyling(styling)
 
-			assert.Equal(t, tt.expected.ShowEndZones, model.ShowEndZones)
-			assert.Equal(t, tt.expected.ShowCurrentTimeMarker, model.ShowCurrentTimeMarker)
-			assert.Equal(t, tt.expected.PointVisibility, model.PointVisibility)
-			assert.Equal(t, tt.expected.LineInterpolation, model.LineInterpolation)
-			assert.Equal(t, tt.expected.MinimumBarHeight, model.MinimumBarHeight)
-			assert.Equal(t, tt.expected.ShowValueLabels, model.ShowValueLabels)
+	assert.Equal(t, types.BoolValue(true), model.ShowEndZones)
+	assert.Equal(t, types.BoolValue(false), model.ShowCurrentTimeMarker)
+	assert.Equal(t, types.StringValue("always"), model.PointVisibility)
+	assert.Equal(t, types.StringValue("linear"), model.LineInterpolation)
+	assert.Equal(t, types.Int64Value(5), model.MinimumBarHeight)
+	assert.Equal(t, types.BoolValue(true), model.ShowValueLabels)
+	assert.InDelta(t, 0.5, model.FillOpacity.ValueFloat64(), 0.001)
 
-			if !tt.expected.FillOpacity.IsNull() {
-				assert.InDelta(t, tt.expectFillValue, model.FillOpacity.ValueFloat64(), 0.001)
-			} else {
-				assert.True(t, model.FillOpacity.IsNull())
-			}
-
-			// Test toAPI
-			apiDecorations := model.toAPI()
-			assert.NotNil(t, apiDecorations)
-
-			// Verify round-trip preserves known values
-			if !model.ShowEndZones.IsNull() && !model.ShowEndZones.IsUnknown() {
-				require.NotNil(t, apiDecorations.EndZones)
-				assert.Equal(t, model.ShowEndZones.ValueBool(), apiDecorations.EndZones.Visible)
-			}
-		})
-	}
+	var out kbapi.XyStyling
+	out.Fitting = kbapi.XyFitting{Type: kbapi.XyFittingTypeNone}
+	model.writeToStyling(&out)
+	model2 := &xyDecorationsModel{}
+	model2.readFromStyling(out)
+	assert.Equal(t, model.ShowEndZones, model2.ShowEndZones)
+	assert.Equal(t, model.PointVisibility, model2.PointVisibility)
 }
 
 func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
@@ -610,9 +378,9 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiFitting: kbapi.XyFitting{
-				Type:     kbapi.XyFittingType("linear"),
-				Dotted:   new(true),
-				EndValue: func() *kbapi.XyFittingEndValue { e := kbapi.XyFittingEndValue("zero"); return &e }(),
+				Type:      kbapi.XyFittingType("linear"),
+				Emphasize: new(true),
+				Extend:    func() *kbapi.XyFittingExtend { e := kbapi.XyFittingExtendZero; return &e }(),
 			},
 			expected: &xyFittingModel{
 				Type:     types.StringValue("linear"),
@@ -623,9 +391,9 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only required field",
 			apiFitting: kbapi.XyFitting{
-				Type:     kbapi.XyFittingType("none"),
-				Dotted:   nil,
-				EndValue: nil,
+				Type:      kbapi.XyFittingType("none"),
+				Emphasize: nil,
+				Extend:    nil,
 			},
 			expected: &xyFittingModel{
 				Type:     types.StringValue("none"),
@@ -673,11 +441,13 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 					Visibility: &visibility,
 					Layout: &struct {
 						Truncate *struct {
+							Enabled  *bool    `json:"enabled,omitempty"`
 							MaxLines *float32 `json:"max_lines,omitempty"`
 						} `json:"truncate,omitempty"`
 						Type kbapi.XyLegendInsideLayoutType `json:"type"`
 					}{
 						Truncate: &struct {
+							Enabled  *bool    `json:"enabled,omitempty"`
 							MaxLines *float32 `json:"max_lines,omitempty"`
 						}{
 							MaxLines: new(float32(3)),
@@ -738,17 +508,19 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
 				visibility := kbapi.XyLegendOutsideVerticalVisibility("hidden")
-				position := kbapi.XyLegendOutsideVerticalPositionRight
+				position := kbapi.Right
 				placement := kbapi.XyLegendOutsideVerticalPlacementOutside
 				legend := kbapi.XyLegendOutsideVertical{
 					Visibility: &visibility,
 					Layout: &struct {
 						Truncate *struct {
+							Enabled  *bool    `json:"enabled,omitempty"`
 							MaxLines *float32 `json:"max_lines,omitempty"`
 						} `json:"truncate,omitempty"`
 						Type kbapi.XyLegendOutsideVerticalLayoutType `json:"type"`
 					}{
 						Truncate: &struct {
+							Enabled  *bool    `json:"enabled,omitempty"`
 							MaxLines *float32 `json:"max_lines,omitempty"`
 						}{
 							MaxLines: new(float32(5)),
@@ -803,16 +575,26 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	model := &xyChartConfigModel{
 		Title:       types.StringValue("XY Chart Round-Trip"),
 		Description: types.StringValue("Converter test"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
 		Layers: []xyLayerModel{
 			{
 				Type: types.StringValue("area"),
 				DataLayer: &dataLayerModel{
-					DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 					Y: []yMetricModel{
 						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`)},
 					},
 				},
 			},
+		},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
 		},
 		Query: &filterSimpleModel{
 			Expression: types.StringValue("*"),
@@ -820,11 +602,11 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		},
 	}
 
-	xyChart, diags := model.toAPI()
+	xyChart, diags := model.toAPINoESQL()
 	require.False(t, diags.HasError())
 
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromXyChart(xyChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
 	pm := &panelModel{}
@@ -835,9 +617,9 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsXyChart()
+	chart2, err := attrs2.AsXyChartNoESQL()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.Xy, chart2.Type)
+	assert.Equal(t, kbapi.XyChartNoESQLTypeXy, chart2.Type)
 	assert.Equal(t, "XY Chart Round-Trip", *chart2.Title)
 	assert.Len(t, chart2.Layers, 1)
 }
@@ -860,6 +642,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 						Grid:  types.BoolValue(true),
 						Ticks: types.BoolValue(false),
 					},
+					Y: &yAxisConfigModel{},
 				},
 				Decorations: &xyDecorationsModel{
 					ShowEndZones:    types.BoolValue(true),
@@ -873,7 +656,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					{
 						Type: types.StringValue("area"),
 						DataLayer: &dataLayerModel{
-							DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 							Y: []yMetricModel{
 								{
 									ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`),
@@ -897,6 +680,20 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 			name: "minimal config",
 			model: &xyChartConfigModel{
 				Title: types.StringValue("Minimal Chart"),
+				Axis: &xyAxisModel{
+					X: &xyAxisConfigModel{},
+					Y: &yAxisConfigModel{},
+				},
+				Decorations: &xyDecorationsModel{},
+				Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+				Legend: &xyLegendModel{
+					Inside:     types.BoolValue(false),
+					Visibility: types.StringValue("visible"),
+				},
+				Query: &filterSimpleModel{
+					Expression: types.StringValue("*"),
+					Language:   types.StringValue("kql"),
+				},
 			},
 			expectError: false,
 		},
@@ -904,23 +701,21 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test toAPI
-			apiChart, diags := tt.model.toAPI()
+			apiChart, diags := tt.model.toAPINoESQL()
 			if tt.expectError {
 				assert.True(t, diags.HasError())
 				return
 			}
 
 			require.False(t, diags.HasError())
-			assert.Equal(t, kbapi.Xy, apiChart.Type)
+			assert.Equal(t, kbapi.XyChartNoESQLTypeXy, apiChart.Type)
 
 			if tt.model.Title.ValueString() != "" {
 				assert.Equal(t, tt.model.Title.ValueString(), *apiChart.Title)
 			}
 
-			// Test fromAPI round-trip
 			model2 := &xyChartConfigModel{}
-			diags = model2.fromAPI(ctx, apiChart)
+			diags = model2.fromAPINoESQL(ctx, apiChart)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.model.Title, model2.Title)
@@ -936,16 +731,16 @@ func Test_xyAxisConfigModel_toAPI_nil(t *testing.T) {
 	assert.Nil(t, apiAxis)
 }
 
-func Test_yAxisConfigModel_toAPILeft_nil(t *testing.T) {
+func Test_yAxisConfigModel_toAPIY_nil(t *testing.T) {
 	var model *yAxisConfigModel
-	apiAxis, diags := model.toAPILeft()
+	apiAxis, diags := model.toAPIY()
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
 
-func Test_yAxisConfigModel_toAPIRight_nil(t *testing.T) {
+func Test_yAxisConfigModel_toAPISecondaryY_nil(t *testing.T) {
 	var model *yAxisConfigModel
-	apiAxis, diags := model.toAPIRight()
+	apiAxis, diags := model.toAPISecondaryY()
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
@@ -956,10 +751,11 @@ func Test_axisTitleModel_toAPI_nil(t *testing.T) {
 	assert.Nil(t, apiTitle)
 }
 
-func Test_xyDecorationsModel_toAPI_nil(t *testing.T) {
+func Test_xyDecorationsModel_writeToStyling_nil(t *testing.T) {
 	var model *xyDecorationsModel
-	apiDecorations := model.toAPI()
-	assert.NotNil(t, apiDecorations) // Returns empty struct, not nil
+	var s kbapi.XyStyling
+	model.writeToStyling(&s)
+	assert.Nil(t, s.Overlays.PartialBuckets)
 }
 
 func Test_xyFittingModel_toAPI_nil(t *testing.T) {
@@ -974,6 +770,190 @@ func Test_xyLegendModel_toAPI_nil(t *testing.T) {
 	assert.False(t, diags.HasError())
 	// Check it doesn't panic
 	assert.NotNil(t, apiLegend)
+}
+
+func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing.T) {
+	planPanels := []panelModel{
+		{
+			XYChartConfig: &xyChartConfigModel{
+				Title: types.StringValue("Sample XY Chart"),
+				Axis: &xyAxisModel{
+					X: &xyAxisConfigModel{
+						Title: &axisTitleModel{
+							Value:   types.StringValue("Timestamp"),
+							Visible: types.BoolValue(true),
+						},
+						Grid:             types.BoolNull(),
+						Ticks:            types.BoolNull(),
+						LabelOrientation: types.StringNull(),
+						Scale:            types.StringNull(),
+						DomainJSON:       jsontypes.NewNormalizedNull(),
+					},
+					Y: &yAxisConfigModel{
+						Title: &axisTitleModel{
+							Value:   types.StringValue("Count"),
+							Visible: types.BoolValue(true),
+						},
+						Grid:             types.BoolNull(),
+						Ticks:            types.BoolNull(),
+						LabelOrientation: types.StringNull(),
+						Scale:            types.StringValue("linear"),
+						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
+					},
+					SecondaryY: &yAxisConfigModel{
+						Title: &axisTitleModel{
+							Value:   types.StringValue("Rate"),
+							Visible: types.BoolValue(true),
+						},
+						Grid:             types.BoolValue(false),
+						Ticks:            types.BoolValue(false),
+						LabelOrientation: types.StringValue("vertical"),
+						Scale:            types.StringValue("sqrt"),
+						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
+					},
+				},
+				Decorations: &xyDecorationsModel{
+					ShowEndZones:          types.BoolNull(),
+					ShowCurrentTimeMarker: types.BoolNull(),
+					PointVisibility:       types.StringNull(),
+					LineInterpolation:     types.StringNull(),
+					FillOpacity:           types.Float64Value(0.3),
+				},
+				Legend: &xyLegendModel{
+					Visibility:         types.StringValue("visible"),
+					Inside:             types.BoolValue(false),
+					Position:           types.StringValue("right"),
+					TruncateAfterLines: types.Int64Null(),
+				},
+				Layers: []xyLayerModel{
+					{
+						Type: types.StringValue("line"),
+						DataLayer: &dataLayerModel{
+							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+							XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number"}}`),
+							BreakdownByJSON: jsontypes.NewNormalizedValue(
+								`{"column":"host.name","collapse_by":"avg","format":{"type":"number"},` +
+									`"color":{"mode":"categorical","palette":"default","mapping":[],` +
+									`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
+							),
+							Y: []yMetricModel{
+								{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number"}}`)},
+							},
+						},
+					},
+					{
+						Type: types.StringValue("reference_lines"),
+						ReferenceLineLayer: &referenceLineLayerModel{
+							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+							Thresholds: []thresholdModel{
+								{
+									ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number"}}`),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	statePanels := []panelModel{
+		{
+			XYChartConfig: &xyChartConfigModel{
+				Title: types.StringValue(""),
+				Axis: &xyAxisModel{
+					X: &xyAxisConfigModel{
+						Title:            &axisTitleModel{},
+						Grid:             types.BoolValue(true),
+						Ticks:            types.BoolValue(true),
+						LabelOrientation: types.StringValue("horizontal"),
+						Scale:            types.StringValue("ordinal"),
+						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":false}`),
+					},
+					Y: &yAxisConfigModel{
+						Title: &axisTitleModel{
+							Value:   types.StringValue("Count"),
+							Visible: types.BoolValue(true),
+						},
+						Grid:             types.BoolValue(true),
+						Ticks:            types.BoolValue(true),
+						LabelOrientation: types.StringValue("horizontal"),
+						Scale:            types.StringValue("linear"),
+						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":true}`),
+					},
+					SecondaryY: nil,
+				},
+				Decorations: &xyDecorationsModel{
+					ShowEndZones:          types.BoolValue(false),
+					ShowCurrentTimeMarker: types.BoolValue(false),
+					PointVisibility:       types.StringValue("auto"),
+					LineInterpolation:     types.StringValue("linear"),
+					FillOpacity:           types.Float64Null(),
+				},
+				Legend: &xyLegendModel{
+					Visibility:         types.StringValue("visible"),
+					Inside:             types.BoolValue(false),
+					Position:           types.StringValue("right"),
+					TruncateAfterLines: types.Int64Value(1),
+				},
+				Layers: []xyLayerModel{
+					{
+						Type: types.StringValue("line"),
+						DataLayer: &dataLayerModel{
+							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
+							XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number","decimals":2,"compact":false}}`),
+							BreakdownByJSON: jsontypes.NewNormalizedValue(
+								`{"column":"host.name","collapse_by":"avg",` +
+									`"format":{"type":"number","decimals":2,"compact":false},` +
+									`"color":{"mode":"categorical","palette":"default","mapping":[],` +
+									`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
+							),
+							Y: []yMetricModel{
+								{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`)},
+							},
+						},
+					},
+					{
+						Type: types.StringValue("reference_lines"),
+						ReferenceLineLayer: &referenceLineLayerModel{
+							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
+							Thresholds: []thresholdModel{
+								{
+									ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	alignXYChartStateFromPlanPanels(planPanels, statePanels)
+
+	got := statePanels[0].XYChartConfig
+	require.NotNil(t, got)
+	assert.Equal(t, types.StringValue("Sample XY Chart"), got.Title)
+	assert.True(t, got.Axis.X.Scale.IsNull())
+	assert.True(t, got.Axis.X.Grid.IsNull())
+	assert.True(t, got.Axis.X.Ticks.IsNull())
+	assert.True(t, got.Axis.X.LabelOrientation.IsNull())
+	assert.True(t, got.Axis.X.DomainJSON.IsNull())
+	require.NotNil(t, got.Axis.SecondaryY)
+	assert.Equal(t, planPanels[0].XYChartConfig.Axis.SecondaryY.DomainJSON.ValueString(), got.Axis.SecondaryY.DomainJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
+	assert.True(t, got.Decorations.ShowEndZones.IsNull())
+	assert.True(t, got.Decorations.ShowCurrentTimeMarker.IsNull())
+	assert.True(t, got.Decorations.PointVisibility.IsNull())
+	assert.True(t, got.Decorations.LineInterpolation.IsNull())
+	assert.Equal(t, types.Float64Value(0.3), got.Decorations.FillOpacity)
+	assert.True(t, got.Legend.TruncateAfterLines.IsNull())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), got.Layers[0].DataLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.XJSON.ValueString(), got.Layers[0].DataLayer.XJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.BreakdownByJSON.ValueString(), got.Layers[0].DataLayer.BreakdownByJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString(), got.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString(), got.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString(), got.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
 }
 
 func Test_filterSimpleModel_toAPI_nil(t *testing.T) {

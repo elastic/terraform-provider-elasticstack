@@ -26,33 +26,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func minimalEsqlAPIConfig() kbapi.KbnDashboardPanelEsqlControl_Config {
-	return kbapi.KbnDashboardPanelEsqlControl_Config{
+func mustWrapStaticEsqlConfig(t *testing.T, sv kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues) kbapi.KbnDashboardPanelTypeEsqlControl_Config {
+	t.Helper()
+	var cfg kbapi.KbnDashboardPanelTypeEsqlControl_Config
+	require.NoError(t, cfg.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv))
+	return cfg
+}
+
+func minimalEsqlAPIConfig(t *testing.T) kbapi.KbnDashboardPanelTypeEsqlControl_Config {
+	return mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
-		VariableType:    "values",
-		EsqlQuery:       "FROM logs-*",
-		ControlType:     "STATIC_VALUES",
-	}
+		VariableType:    kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		ControlType:     kbapi.STATICVALUES,
+	})
 }
 
 // Test: on import (tfPanel == nil) populate all fields from API.
 func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
-	cfg := minimalEsqlAPIConfig()
-	cfg.Title = new("My Control")
-	cfg.SingleSelect = new(true)
 	opts := []string{"a", "b"}
-	cfg.AvailableOptions = &opts
-	cfg.DisplaySettings = &struct {
-		HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-		HideExclude   *bool   `json:"hide_exclude,omitempty"`
-		HideExists    *bool   `json:"hide_exists,omitempty"`
-		HideSort      *bool   `json:"hide_sort,omitempty"`
-		Placeholder   *string `json:"placeholder,omitempty"`
-	}{
-		Placeholder:   new("Select..."),
-		HideActionBar: new(true),
-	}
+	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+		SelectedOptions:  []string{"opt_a"},
+		VariableName:     "my_var",
+		VariableType:     kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		ControlType:      kbapi.STATICVALUES,
+		Title:            new("My Control"),
+		SingleSelect:     new(true),
+		AvailableOptions: opts,
+		DisplaySettings: &struct {
+			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+			HideExclude   *bool   `json:"hide_exclude,omitempty"`
+			HideExists    *bool   `json:"hide_exists,omitempty"`
+			HideSort      *bool   `json:"hide_sort,omitempty"`
+			Placeholder   *string `json:"placeholder,omitempty"`
+		}{
+			Placeholder:   new("Select..."),
+			HideActionBar: new(true),
+		},
+	})
 
 	pm := &panelModel{}
 	populateEsqlControlFromAPI(pm, nil, cfg)
@@ -61,7 +72,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
 	assert.Equal(t, types.StringValue("my_var"), pm.EsqlControlConfig.VariableName)
 	assert.Equal(t, types.StringValue("values"), pm.EsqlControlConfig.VariableType)
-	assert.Equal(t, types.StringValue("FROM logs-*"), pm.EsqlControlConfig.EsqlQuery)
+	assert.Equal(t, types.StringValue(""), pm.EsqlControlConfig.EsqlQuery)
 	assert.Equal(t, types.StringValue("STATIC_VALUES"), pm.EsqlControlConfig.ControlType)
 	assert.Equal(t, types.StringValue("My Control"), pm.EsqlControlConfig.Title)
 	assert.Equal(t, types.BoolValue(true), pm.EsqlControlConfig.SingleSelect)
@@ -75,7 +86,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 func Test_populateEsqlControlFromAPI_nilBlock_preservesNil(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig())
+	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
 	assert.Nil(t, pm.EsqlControlConfig)
 }
 
@@ -92,13 +103,13 @@ func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *test
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig())
+	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
 	assert.Equal(t, types.StringValue("my_var"), pm.EsqlControlConfig.VariableName)
 	assert.Equal(t, types.StringValue("values"), pm.EsqlControlConfig.VariableType)
-	assert.Equal(t, types.StringValue("FROM logs-*"), pm.EsqlControlConfig.EsqlQuery)
+	assert.Equal(t, types.StringValue("FROM old-*"), pm.EsqlControlConfig.EsqlQuery)
 	assert.Equal(t, types.StringValue("STATIC_VALUES"), pm.EsqlControlConfig.ControlType)
 }
 
@@ -117,9 +128,14 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	cfg := minimalEsqlAPIConfig()
-	cfg.Title = new("API Title")
-	cfg.SingleSelect = new(true)
+	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+		SelectedOptions: []string{"opt_a"},
+		VariableName:    "my_var",
+		VariableType:    kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		ControlType:     kbapi.STATICVALUES,
+		Title:           new("API Title"),
+		SingleSelect:    new(true),
+	})
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 
 	require.NotNil(t, pm.EsqlControlConfig)
@@ -141,14 +157,19 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	cfg := minimalEsqlAPIConfig()
-	cfg.DisplaySettings = &struct {
-		HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-		HideExclude   *bool   `json:"hide_exclude,omitempty"`
-		HideExists    *bool   `json:"hide_exists,omitempty"`
-		HideSort      *bool   `json:"hide_sort,omitempty"`
-		Placeholder   *string `json:"placeholder,omitempty"`
-	}{Placeholder: new("hint")}
+	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+		SelectedOptions: []string{"opt_a"},
+		VariableName:    "my_var",
+		VariableType:    kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		ControlType:     kbapi.STATICVALUES,
+		DisplaySettings: &struct {
+			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+			HideExclude   *bool   `json:"hide_exclude,omitempty"`
+			HideExists    *bool   `json:"hide_exists,omitempty"`
+			HideSort      *bool   `json:"hide_sort,omitempty"`
+			Placeholder   *string `json:"placeholder,omitempty"`
+		}{Placeholder: new("hint")},
+	})
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 	assert.Nil(t, pm.EsqlControlConfig.DisplaySettings)
 }
@@ -170,17 +191,22 @@ func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *test
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	cfg := minimalEsqlAPIConfig()
-	cfg.DisplaySettings = &struct {
-		HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-		HideExclude   *bool   `json:"hide_exclude,omitempty"`
-		HideExists    *bool   `json:"hide_exists,omitempty"`
-		HideSort      *bool   `json:"hide_sort,omitempty"`
-		Placeholder   *string `json:"placeholder,omitempty"`
-	}{
-		Placeholder:   new("hint"),
-		HideActionBar: new(false),
-	}
+	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+		SelectedOptions: []string{"opt_a"},
+		VariableName:    "my_var",
+		VariableType:    kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		ControlType:     kbapi.STATICVALUES,
+		DisplaySettings: &struct {
+			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+			HideExclude   *bool   `json:"hide_exclude,omitempty"`
+			HideExists    *bool   `json:"hide_exists,omitempty"`
+			HideSort      *bool   `json:"hide_sort,omitempty"`
+			Placeholder   *string `json:"placeholder,omitempty"`
+		}{
+			Placeholder:   new("hint"),
+			HideActionBar: new(false),
+		},
+	})
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 
 	require.NotNil(t, pm.EsqlControlConfig.DisplaySettings)
@@ -202,18 +228,19 @@ func Test_buildEsqlControlConfig_requiredFields(t *testing.T) {
 			AvailableOptions: types.ListNull(types.StringType),
 		},
 	}
-	esqlPanel := kbapi.KbnDashboardPanelEsqlControl{}
+	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
 	buildEsqlControlConfig(pm, &esqlPanel)
 
-	assert.Equal(t, []string{"opt1", "opt2"}, esqlPanel.Config.SelectedOptions)
-	assert.Equal(t, "my_var", esqlPanel.Config.VariableName)
-	assert.Equal(t, kbapi.KbnDashboardPanelEsqlControlConfigVariableType("values"), esqlPanel.Config.VariableType)
-	assert.Equal(t, "FROM logs-*", esqlPanel.Config.EsqlQuery)
-	assert.Equal(t, kbapi.KbnDashboardPanelEsqlControlConfigControlType("STATIC_VALUES"), esqlPanel.Config.ControlType)
-	assert.Nil(t, esqlPanel.Config.Title)
-	assert.Nil(t, esqlPanel.Config.SingleSelect)
-	assert.Nil(t, esqlPanel.Config.AvailableOptions)
-	assert.Nil(t, esqlPanel.Config.DisplaySettings)
+	sv, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"opt1", "opt2"}, sv.SelectedOptions)
+	assert.Equal(t, "my_var", sv.VariableName)
+	assert.Equal(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues, sv.VariableType)
+	assert.Equal(t, kbapi.STATICVALUES, sv.ControlType)
+	assert.Nil(t, sv.Title)
+	assert.Nil(t, sv.SingleSelect)
+	assert.Nil(t, sv.AvailableOptions)
+	assert.Nil(t, sv.DisplaySettings)
 }
 
 // Test: buildEsqlControlConfig writes optional fields when set.
@@ -237,23 +264,23 @@ func Test_buildEsqlControlConfig_optionalFields(t *testing.T) {
 			},
 		},
 	}
-	esqlPanel := kbapi.KbnDashboardPanelEsqlControl{}
+	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
 	buildEsqlControlConfig(pm, &esqlPanel)
 
-	require.NotNil(t, esqlPanel.Config.Title)
-	assert.Equal(t, "My Control", *esqlPanel.Config.Title)
-	require.NotNil(t, esqlPanel.Config.SingleSelect)
-	assert.True(t, *esqlPanel.Config.SingleSelect)
-	require.NotNil(t, esqlPanel.Config.AvailableOptions)
-	assert.Equal(t, []string{"a"}, *esqlPanel.Config.AvailableOptions)
-	require.NotNil(t, esqlPanel.Config.DisplaySettings)
-	require.NotNil(t, esqlPanel.Config.DisplaySettings.Placeholder)
-	assert.Equal(t, "hint", *esqlPanel.Config.DisplaySettings.Placeholder)
-	require.NotNil(t, esqlPanel.Config.DisplaySettings.HideActionBar)
-	assert.True(t, *esqlPanel.Config.DisplaySettings.HideActionBar)
-	assert.Nil(t, esqlPanel.Config.DisplaySettings.HideExclude)
-	assert.Nil(t, esqlPanel.Config.DisplaySettings.HideExists)
-	assert.Nil(t, esqlPanel.Config.DisplaySettings.HideSort)
+	vq, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery()
+	require.NoError(t, err)
+	require.NotNil(t, vq.Title)
+	assert.Equal(t, "My Control", *vq.Title)
+	require.NotNil(t, vq.SingleSelect)
+	assert.True(t, *vq.SingleSelect)
+	require.NotNil(t, vq.DisplaySettings)
+	require.NotNil(t, vq.DisplaySettings.Placeholder)
+	assert.Equal(t, "hint", *vq.DisplaySettings.Placeholder)
+	require.NotNil(t, vq.DisplaySettings.HideActionBar)
+	assert.True(t, *vq.DisplaySettings.HideActionBar)
+	assert.Nil(t, vq.DisplaySettings.HideExclude)
+	assert.Nil(t, vq.DisplaySettings.HideExists)
+	assert.Nil(t, vq.DisplaySettings.HideSort)
 }
 
 // Test: buildEsqlControlConfig omits nil optional fields.
@@ -270,13 +297,15 @@ func Test_buildEsqlControlConfig_nullOptionalFields_omitted(t *testing.T) {
 			AvailableOptions: types.ListNull(types.StringType),
 		},
 	}
-	esqlPanel := kbapi.KbnDashboardPanelEsqlControl{}
+	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
 	buildEsqlControlConfig(pm, &esqlPanel)
 
-	assert.Nil(t, esqlPanel.Config.Title)
-	assert.Nil(t, esqlPanel.Config.SingleSelect)
-	assert.Nil(t, esqlPanel.Config.AvailableOptions)
-	assert.Nil(t, esqlPanel.Config.DisplaySettings)
+	sv, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues()
+	require.NoError(t, err)
+	assert.Nil(t, sv.Title)
+	assert.Nil(t, sv.SingleSelect)
+	assert.Nil(t, sv.AvailableOptions)
+	assert.Nil(t, sv.DisplaySettings)
 }
 
 // Test: round-trip — set values, build to API, populate back, same values.
@@ -293,7 +322,7 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 	}
 	pm := panelModel{EsqlControlConfig: original}
 
-	esqlPanel := kbapi.KbnDashboardPanelEsqlControl{}
+	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
 	buildEsqlControlConfig(pm, &esqlPanel)
 
 	out := &panelModel{EsqlControlConfig: &esqlControlConfigModel{

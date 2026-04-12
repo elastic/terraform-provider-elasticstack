@@ -97,7 +97,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
 	var yAxis kbapi.HeatmapNoESQL_Y
@@ -120,7 +120,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Query)
 	assert.Equal(t, types.StringValue("status:200"), model.Query.Expression)
 	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.MetricJSON.IsNull())
 	assert.False(t, model.XAxisJSON.IsNull())
 	assert.False(t, model.YAxisJSON.IsNull())
@@ -215,15 +215,12 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			Language:   new(kbapi.FilterSimpleLanguage("kql")),
 		},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
 
-	var heatmapChart kbapi.HeatmapChart
-	require.NoError(t, heatmapChart.FromHeatmapNoESQL(heatmap))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromHeatmapNoESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
@@ -234,9 +231,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsHeatmapChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsHeatmapNoESQL()
+	noESQL2, err := attrs2.AsHeatmapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, noESQL2.Type)
@@ -267,11 +262,8 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var heatmap kbapi.HeatmapESQL
 	require.NoError(t, json.Unmarshal([]byte(esqlRoundTripJSON), &heatmap))
 
-	var heatmapChart kbapi.HeatmapChart
-	require.NoError(t, heatmapChart.FromHeatmapESQL(heatmap))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromHeatmapESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
@@ -282,9 +274,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsHeatmapChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsHeatmapESQL()
+	esql2, err := attrs2.AsHeatmapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, esql2.Type)

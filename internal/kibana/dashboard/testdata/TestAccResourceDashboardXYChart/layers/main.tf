@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -29,8 +29,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample XY Chart"
       description = "Test XY chart visualization"
       axis = {
-        left = {
+        y = {
           scale = "linear"
+          domain_json = jsonencode({
+            type = "fit"
+          })
           title = {
             value   = "Count"
             visible = true
@@ -55,16 +58,22 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset_json = jsonencode({
+            data_source_json = jsonencode({
               type  = "esql"
               query = "FROM metrics-* | KEEP @timestamp, host.name, system.cpu.user.pct | LIMIT 10"
             })
             x_json = jsonencode({
               column = "@timestamp"
+              format = {
+                type = "number"
+              }
             })
             breakdown_by_json = jsonencode({
               column      = "host.name"
               collapse_by = "avg"
+              format = {
+                type = "number"
+              }
               color = {
                 mode    = "categorical"
                 palette = "default"
@@ -87,6 +96,9 @@ resource "elasticstack_kibana_dashboard" "test" {
               {
                 config_json = jsonencode({
                   column = "system.cpu.user.pct"
+                  format = {
+                    type = "number"
+                  }
                   color = {
                     type  = "static"
                     color = "#54B399"

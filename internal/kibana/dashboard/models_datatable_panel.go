@@ -42,19 +42,14 @@ type datatablePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	datatableChart, err := attrs.AsDatatableChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	pm.DatatableConfig = &datatableConfigModel{}
 
-	if datatableNoESQL, err := datatableChart.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
+	if datatableNoESQL, err := attrs.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		pm.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
 		return pm.DatatableConfig.NoESQL.fromAPI(ctx, datatableNoESQL)
 	}
-	datatableESQL, err := datatableChart.AsDatatableESQL()
+	datatableESQL, err := attrs.AsDatatableESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -63,45 +58,39 @@ func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Contex
 	return pm.DatatableConfig.ESQL.fromAPI(ctx, datatableESQL)
 }
 
-func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if pm.DatatableConfig == nil {
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
-	var datatableChart kbapi.DatatableChart
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	switch {
 	case pm.DatatableConfig.NoESQL != nil:
 		noESQL, noDiags := pm.DatatableConfig.NoESQL.toAPI()
 		diags.Append(noDiags...)
 		if diags.HasError() {
-			return kbapi.LensApiState{}, diags
+			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 
-		if err := datatableChart.FromDatatableNoESQL(noESQL); err != nil {
+		if err := attrs.FromDatatableNoESQL(noESQL); err != nil {
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
-			return kbapi.LensApiState{}, diags
+			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 	case pm.DatatableConfig.ESQL != nil:
 		esql, esqlDiags := pm.DatatableConfig.ESQL.toAPI()
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
-			return kbapi.LensApiState{}, diags
+			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 
-		if err := datatableChart.FromDatatableESQL(esql); err != nil {
+		if err := attrs.FromDatatableESQL(esql); err != nil {
 			diags.AddError("Failed to convert datatable esql config", err.Error())
-			return kbapi.LensApiState{}, diags
+			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 	default:
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromDatatableChart(datatableChart); err != nil {
-		diags.AddError("Failed to create datatable attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -115,7 +104,7 @@ type datatableConfigModel struct {
 type datatableNoESQLConfigModel struct {
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized    `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
 	Density             *datatableDensityModel  `tfsdk:"density"`
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
@@ -131,7 +120,7 @@ type datatableNoESQLConfigModel struct {
 type datatableESQLConfigModel struct {
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized    `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
 	Density             *datatableDensityModel  `tfsdk:"density"`
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
@@ -156,7 +145,7 @@ type datatableSplitByModel struct {
 }
 
 func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.DatatableNoESQL) bool {
-	body, err := json.Marshal(apiTable.Dataset)
+	body, err := json.Marshal(apiTable.DataSource)
 	if err != nil {
 		return false
 	}
@@ -198,12 +187,12 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 
-	datasetBytes, err := json.Marshal(api.Dataset)
-	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
-	m.DatasetJSON = dv
+	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -290,8 +279,8 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if typeutils.IsKnown(m.DatasetJSON) {
-		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
 		}
@@ -384,12 +373,12 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 
-	datasetBytes, err := json.Marshal(api.Dataset)
-	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
-	m.DatasetJSON = dv
+	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -473,8 +462,8 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if typeutils.IsKnown(m.DatasetJSON) {
-		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
 		}

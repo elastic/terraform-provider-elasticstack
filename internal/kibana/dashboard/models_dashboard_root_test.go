@@ -20,6 +20,7 @@ package dashboard
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -42,23 +43,21 @@ func Test_dashboardModel_queryToAPI_neitherTextNorJSON(t *testing.T) {
 func Test_dashboardModel_queryToAPI_jsonBranch(t *testing.T) {
 	m := &dashboardModel{
 		Query: &dashboardQueryModel{
-			Language: types.StringValue("kuery"),
+			Language: types.StringValue("kql"),
 			Text:     types.StringNull(),
 			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
 		},
 	}
 	q, diags := m.queryToAPI()
 	require.False(t, diags.HasError())
-	assert.Equal(t, "kuery", q.Language)
-	obj, err := q.Query.AsKbnEsQueryServerQuerySchemaQuery1()
-	require.NoError(t, err)
-	assert.NotNil(t, obj)
+	assert.Equal(t, kbapi.KbnAsCodeQueryLanguage("kql"), q.Language)
+	assert.JSONEq(t, `{"match_all":{}}`, q.Expression)
 }
 
 func Test_dashboardModel_queryToAPI_bothTextAndJSON(t *testing.T) {
 	m := &dashboardModel{
 		Query: &dashboardQueryModel{
-			Language: types.StringValue("kuery"),
+			Language: types.StringValue("kql"),
 			Text:     types.StringValue("response.code:200"),
 			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
 		},

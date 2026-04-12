@@ -19,7 +19,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0

@@ -38,16 +38,13 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 		Title:       new("Round-Trip Tagcloud"),
 		Description: new("Converter round-trip test"),
 	}
-	_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
+	_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource)
 	_ = json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy)
 
-	var tagcloudChart kbapi.TagcloudChart
-	require.NoError(t, tagcloudChart.FromTagcloudNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromTagcloudChart(tagcloudChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromTagcloudNoESQL(api))
 
 	converter := newTagcloudPanelConfigConverter()
 	pm := &panelModel{}
@@ -58,9 +55,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	tagcloudChart2, err := attrs2.AsTagcloudChart()
-	require.NoError(t, err)
-	tagcloudNoESQL2, err := tagcloudChart2.AsTagcloudNoESQL()
+	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Round-Trip Tagcloud", *tagcloudNoESQL2.Title)
 	assert.Equal(t, "Converter round-trip test", *tagcloudNoESQL2.Description)
@@ -98,7 +93,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				}
 
 				// Set dataset as JSON
-				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource)
 				// Set query as JSON
 				_ = json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query)
 				// Set metric as JSON
@@ -132,7 +127,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				}
 
 				// Set dataset as JSON
-				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource)
 				// Set query as JSON
 				_ = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 				// Set metric as JSON
@@ -188,7 +183,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Validate dataset is not null
-			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
+			assert.False(t, model.DataSourceJSON.IsNull(), "Dataset should not be null")
 
 			// Validate metric and tagBy exist when present in API
 			if tt.name == "full tagcloud config" || tt.name == "minimal tagcloud config" {
@@ -283,7 +278,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 			}
 
 			// Set dataset as JSON
-			_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
+			_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource)
 			// Set query as JSON
 			_ = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 			// Set metric as JSON
@@ -357,9 +352,9 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := &tagcloudConfigModel{
-				Title:       types.StringValue("Test"),
-				Description: types.StringValue("Test description"),
-				DatasetJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
+				Title:          types.StringValue("Test"),
+				Description:    types.StringValue("Test description"),
+				DataSourceJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
 				Query: &filterSimpleModel{
 					Expression: types.StringValue("*"),
 				},

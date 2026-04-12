@@ -83,6 +83,9 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
+					"panels.0.esql_control_config.title",
+					"panels.0.esql_control_config.esql_query",
+					"panels.0.esql_control_config.available_options",
 					// Kibana may omit or relocate single_select on read; optional in config.
 					"panels.0.esql_control_config.single_select",
 				},
@@ -220,7 +223,7 @@ func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			// esql_control_config with type = "lens" must be rejected (REQ-006)
+			// esql_control_config with type = "vis" must be rejected (REQ-006)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),

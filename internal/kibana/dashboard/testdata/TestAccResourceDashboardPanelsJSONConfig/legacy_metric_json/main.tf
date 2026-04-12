@@ -20,39 +20,40 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       h = 15
       w = 24
       x = 0
       y = 0
     }
-    uid = "panel-1"
+    id = "panel-1"
     config_json = jsonencode({
-      attributes = {
-        dataset = {
-          type  = "index"
-          index = "metrics-*"
-
-          time_field = "@timestamp"
-        }
-        description           = ""
-        filters               = []
-        ignore_global_filters = false
-        metric = {
-          operation     = "count"
-          empty_as_null = false
-          format = {
-            type     = "number"
-            decimals = 2
-            compact  = false
-          }
-        }
-        sampling = 1
-        title    = ""
-        type     = "legacy_metric"
+      type        = "legacy_metric"
+      title       = ""
+      description = ""
+      filters     = []
+      query = {
+        language   = "kql"
+        expression = ""
       }
-      time_range = { from = "now-15m", to = "now" }
+      data_source = {
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+        time_field    = "@timestamp"
+      }
+      metric = {
+        operation     = "count"
+        empty_as_null = false
+        format = {
+          type     = "number"
+          decimals = 2
+          compact  = false
+        }
+      }
+      sampling              = 1
+      ignore_global_filters = false
+      time_range            = { from = "now-15m", to = "now" }
     })
   }]
 }

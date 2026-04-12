@@ -32,7 +32,7 @@ import (
 func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: "pie", // Visualization type literal used by the Kibana API for pie chart panels
+			visualizationType: string(kbapi.PieNoESQLTypePie),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
 		},
 	}
@@ -42,42 +42,31 @@ type pieChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	pieChart, err := attrs.AsPieChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
 	pm.PieChartConfig = &pieChartConfigModel{}
-	if noESQL, err := pieChart.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
 		return pm.PieChartConfig.fromAPINoESQL(noESQL)
 	}
-	esql, err := pieChart.AsPieESQL()
+	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
 	// Convert the structured model to API schema
-	pieChart, pieDiags := configModel.toAPI()
+	attrs, pieDiags := configModel.toAPI()
 	diags.Append(pieDiags...)
 	if diags.HasError() {
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromPieChart(pieChart); err != nil {
-		diags.AddError("Failed to create pie chart attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -86,7 +75,7 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Lens
 type pieChartConfigModel struct {
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64          `tfsdk:"sampling"`
 	DonutHole           types.String           `tfsdk:"donut_hole"`
@@ -107,7 +96,7 @@ type pieGroupByModel struct {
 }
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
-	body, err := json.Marshal(apiChart.Dataset)
+	body, err := json.Marshal(apiChart.DataSource)
 	if err != nil {
 		return false
 	}
@@ -120,24 +109,6 @@ func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
 	}
 
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
-}
-
-func (m *pieChartConfigModel) fromAPI(_ context.Context, apiChart kbapi.PieChart) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	// Try with non-ESQL first and disambiguate using dataset type.
-	noESQL, err := apiChart.AsPieNoESQL()
-	if err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return m.fromAPINoESQL(noESQL)
-	}
-
-	esql, err := apiChart.AsPieESQL()
-	if err == nil {
-		return m.fromAPIESQL(esql)
-	}
-
-	diags.AddError("Failed to parse pie chart schema", "Could not parse as either PieNoESQL or PieESQL")
-	return diags
 }
 
 func (m *pieChartConfigModel) populateCommonFields(
@@ -173,11 +144,11 @@ func (m *pieChartConfigModel) populateCommonFields(
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
-	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset_json", diags)
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}
-	m.DatasetJSON = dv
+	m.DataSourceJSON = dv
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromPieLegend(legend)
 	m.Filters = populateFiltersFromAPI(filters, diags)
@@ -197,7 +168,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 		s := string(*apiChart.Labels.Position)
 		labelPosition = &s
 	}
-	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
 	if !m.populateCommonFields(
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
@@ -259,7 +230,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 		s := string(*apiChart.Labels.Position)
 		labelPosition = &s
 	}
-	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
 	if !m.populateCommonFields(
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
@@ -307,9 +278,9 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 	return diags
 }
 
-func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
+func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var pieChart kbapi.PieChart
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	// Use PieNoESQL when a non-ESQL query is configured; otherwise, use PieESQL.
 	// This matches MetricChart behavior by checking for the presence of the Query model.
@@ -353,8 +324,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.DatasetJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
+		if !m.DataSourceJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}
@@ -390,7 +361,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieNoESQLTypePie
 
-		if err := pieChart.FromPieNoESQL(chart); err != nil {
+		if err := attrs.FromPieNoESQL(chart); err != nil {
 			diags.AddError("Failed to create PieNoESQL schema", err.Error())
 		}
 	} else {
@@ -431,8 +402,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.DatasetJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
+		if !m.DataSourceJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}
@@ -480,10 +451,10 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieESQLTypePie
 
-		if err := pieChart.FromPieESQL(chart); err != nil {
+		if err := attrs.FromPieESQL(chart); err != nil {
 			diags.AddError("Failed to create PieESQL schema", err.Error())
 		}
 	}
 
-	return pieChart, diags
+	return attrs, diags
 }

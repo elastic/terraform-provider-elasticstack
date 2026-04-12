@@ -15,7 +15,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 0
   }
   query = {
-    language = "kuery"
+    language = "kql"
     json     = jsonencode({ match_all = {} })
   }
 }
