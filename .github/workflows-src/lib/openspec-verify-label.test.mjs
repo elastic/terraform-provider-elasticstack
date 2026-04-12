@@ -30,10 +30,27 @@ test('verify-label workflow installs Go from go.mod and exports Go paths for AWF
 
 test('verify-label workflow routes Copilot through LiteLLM BYOK with secret-backed API key', () => {
   const source = workflowSource();
+  assert.match(source, /engine:\s*\n\s*id:\s*copilot/m);
   assert.match(source, /model: "?llm-gateway\/gpt-5\.4"?/);
   assert.match(source, /COPILOT_PROVIDER_TYPE:\s*openai/);
   assert.match(source, /COPILOT_PROVIDER_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/v1"?/);
   assert.match(source, /COPILOT_PROVIDER_API_KEY:\s*\$\{\{\s*secrets\.COPILOT_LITELLM_PROXY_API_KEY\s*\}\}/);
+  assert.match(source, /GITHUB_COPILOT_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/v1"?/);
+});
+
+test('compiled lock wires gh-aw copilot-api-target and LiteLLM for main agent and threat detection', () => {
+  const lock = lockSource();
+  const agentIdx = lock.indexOf('id: agentic_execution');
+  assert.ok(agentIdx >= 0, 'expected agentic_execution step in lock');
+  const agentSlice = lock.slice(agentIdx, agentIdx + 4000);
+  assert.match(agentSlice, /--copilot-api-target elastic\.litellm-prod\.ai/);
+  assert.match(agentSlice, /--allow-domains[^\n]*elastic\.litellm-prod\.ai/);
+
+  const detIdx = lock.indexOf('id: detection_agentic_execution');
+  assert.ok(detIdx >= 0, 'expected detection_agentic_execution step in lock');
+  const detSlice = lock.slice(detIdx, detIdx + 4000);
+  assert.match(detSlice, /--copilot-api-target elastic\.litellm-prod\.ai/);
+  assert.match(detSlice, /--allow-domains[^\n]*elastic\.litellm-prod\.ai/);
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {

@@ -67,6 +67,8 @@ engine:
     COPILOT_PROVIDER_TYPE: openai
     COPILOT_PROVIDER_BASE_URL: "https://elastic.litellm-prod.ai/v1"
     COPILOT_PROVIDER_API_KEY: ${{ secrets.COPILOT_LITELLM_PROXY_API_KEY }}
+    # gh-aw: drives --copilot-api-target + threat-detection allowlist (COPILOT_PROVIDER_* alone does not).
+    GITHUB_COPILOT_BASE_URL: "https://elastic.litellm-prod.ai/v1"
 permissions:
   contents: read
   pull-requests: read
