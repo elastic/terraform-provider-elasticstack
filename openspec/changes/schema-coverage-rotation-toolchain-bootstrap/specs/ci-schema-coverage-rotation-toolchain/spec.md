@@ -35,4 +35,4 @@ The `schema-coverage-rotation` workflow prompt SHALL rely on deterministic workf
 
 #### Scenario: Prompt begins after bootstrap is complete
 - **WHEN** the agent receives the schema-coverage rotation prompt
-- **THEN** the workflow SHALL already have completed the repository toolchain setup needed for `go run ./scripts/schema-coverage-rotation ...` and `make setup`
+- **THEN** the workflow SHALL already have completed the repository toolchain setup needed for `go run ./scripts/schema-coverage-rotation ...`
