@@ -301,8 +301,8 @@ func TestCmdRecordEntitiesJSON(t *testing.T) {
 	}
 
 	for name, ts := range map[string]*time.Time{
-		"elasticstack_a (resource)":       mem.Resources["elasticstack_a"],
-		"elasticstack_ds (data source)":   mem.DataSources["elasticstack_ds"],
+		"elasticstack_a (resource)":     mem.Resources["elasticstack_a"],
+		"elasticstack_ds (data source)": mem.DataSources["elasticstack_ds"],
 	} {
 		if ts == nil {
 			t.Errorf("%s: timestamp should not be nil after record", name)
