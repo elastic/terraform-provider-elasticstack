@@ -6,6 +6,64 @@ on:
   workflow_dispatch:
   schedule:
     - cron: daily
+  steps:
+    - name: Compute issue slots
+      id: compute_issue_slots
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
+          const ISSUE_CAP = 3;
+          
+          /**
+           * Computes schema-coverage issue slot availability.
+           * @param {number} openIssueCount - The number of currently open schema-coverage issues.
+           * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+           */
+          function computeIssueSlots(openIssueCount) {
+            const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
+          
+            let gateReason;
+            if (slotsAvailable === 0) {
+              gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
+            } else {
+              gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+            }
+          
+            return {
+              open_schema_coverage_issues: openIssueCount,
+              issue_slots_available: slotsAvailable,
+              gate_reason: gateReason,
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+          }
+          
+          const { owner, repo } = context.repo;
+          
+          // Count open schema-coverage issues, excluding pull requests
+          const issues = await github.paginate(github.rest.issues.listForRepo, {
+            owner,
+            repo,
+            labels: SCHEMA_COVERAGE_LABEL,
+            state: 'open',
+            per_page: 100,
+          });
+          
+          // GitHub issues API may return pull requests — exclude them
+          const openIssueCount = issues.filter(item => !item.pull_request).length;
+          
+          const result = computeIssueSlots(openIssueCount);
+          
+          core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
+          core.setOutput('issue_slots_available', String(result.issue_slots_available));
+          core.setOutput('gate_reason', result.gate_reason);
+          
+          core.info(`Gate reason: ${result.gate_reason}`);
+          
 engine:
   id: copilot
   model: "gpt-5.4"
@@ -34,11 +92,29 @@ safe-outputs:
     target: "*"
     max: 3
     github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
+if: >-
+  needs.pre_activation.outputs.issue_slots_available != '0'
+jobs:
+  pre-activation:
+    outputs:
+      open_schema_coverage_issues: ${{ steps.compute_issue_slots.outputs.open_schema_coverage_issues }}
+      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+      gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
 ---
 
 # Schema Coverage Rotation Worker
 
-You are responsible for running schema-coverage analysis on up to 3 provider entities per run, prioritizing the entities that have not been analyzed for the longest time, while keeping the total number of open `schema-coverage` issues capped at 3.
+You are responsible for running schema-coverage analysis on up to `${{ needs.pre_activation.outputs.issue_slots_available }}` provider entities per run, prioritizing the entities that have not been analyzed for the longest time.
+
+## Pre-activation context
+
+A deterministic pre-activation step has already computed schema-coverage issue capacity for this run. Do **not** query GitHub issue counts yourself; use only the values below.
+
+- **Open schema-coverage issues**: `${{ needs.pre_activation.outputs.open_schema_coverage_issues }}`
+- **Issue slots available**: `${{ needs.pre_activation.outputs.issue_slots_available }}`
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+
+The workflow reached this point only because `issue_slots_available` is non-zero. You may open up to `${{ needs.pre_activation.outputs.issue_slots_available }}` new issues in this run.
 
 ## Required inputs and references
 
@@ -48,27 +124,21 @@ You are responsible for running schema-coverage analysis on up to 3 provider ent
 
 ## Execution steps
 
-1. Using GitHub search or API, count currently open issues (excluding pull requests) in this repository with label `schema-coverage` using a query such as `is:issue is:open label:"schema-coverage" repo:<this-repo>`, and calculate:
-   - `open_schema_coverage_issues` = the count of matching issues
-   - `issue_slots_available = max(0, 3 - open_schema_coverage_issues)`
-2. If `issue_slots_available` is `0`:
-   - Exit immediately.
-   - Call `noop` with a short reason indicating the open-issue cap has been reached.
-3. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-4. Prepare memory and build the canonical entity inventory by running:
+1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
+2. Prepare memory and build the canonical entity inventory by running:
    ```
    go run ./scripts/schema-coverage-rotation prepare \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json
    ```
    This command bootstraps the memory file from `.github/aw/memory/schema-coverage.json` if it does not yet exist, then reconciles the entity inventory against the provider's registered resources and data sources.
-5. Select exactly `issue_slots_available` entities to analyze by running:
+3. Select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
    ```
    go run ./scripts/schema-coverage-rotation select \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
-     --count <issue_slots_available>
+     --count ${{ needs.pre_activation.outputs.issue_slots_available }}
    ```
    The command prints a JSON array. Each entry has a `type` field (`"resource"` or `"data source"`) and a `name` field (the Terraform entity name). Use this output to determine which entities to analyze and their types.
-6. For each selected entity:
+4. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
    - After analysis (regardless of whether a gap exists), record the entity's analysis timestamp by running:
@@ -83,7 +153,7 @@ You are responsible for running schema-coverage analysis on up to 3 provider ent
 ## Issue creation rules
 
 - Create one issue per analyzed entity only when actionable testing gaps exist.
-- Never create more issues than `issue_slots_available` for the current run.
+- Never create more issues than `${{ needs.pre_activation.outputs.issue_slots_available }}` for the current run.
 
 Issue content must include:
 - Entity name.
