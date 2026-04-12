@@ -12,11 +12,11 @@ import (
 	"maps"
 	"os"
 	"path"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"gopkg.in/yaml.v3"
 )
 
@@ -337,6 +337,37 @@ func (m Map) MustDelete(key string) {
 	}
 }
 
+func normalizeComparableSchemaValue(value any) any {
+	switch t := value.(type) {
+	case Map:
+		normalized := make(map[string]any, len(t))
+		for key, value := range t {
+			normalized[key] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case map[string]any:
+		normalized := make(map[string]any, len(t))
+		for key, value := range t {
+			normalized[key] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case Slice:
+		normalized := make([]any, len(t))
+		for i, value := range t {
+			normalized[i] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case []any:
+		normalized := make([]any, len(t))
+		for i, value := range t {
+			normalized[i] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	default:
+		return value
+	}
+}
+
 func (m Map) CreateRef(schema *Schema, name string, key string) Map {
 	refTarget := m.MustGet(key) // Check the full path
 	refPath := fmt.Sprintf("schemas.%s", name)
@@ -345,9 +376,10 @@ func (m Map) CreateRef(schema *Schema, name string, key string) Map {
 	// If the component schema already exists and is not the same, panic
 	writeComponent := true
 	if existing, ok := schema.Components.Get(refPath); ok {
-		if reflect.DeepEqual(refTarget, existing) {
+		if cmp.Equal(normalizeComparableSchemaValue(refTarget), normalizeComparableSchemaValue(existing)) {
 			writeComponent = false
 		} else {
+			log.Printf("Component schema diff for %q (-refTarget +existing):\n%s", refPath, cmp.Diff(normalizeComparableSchemaValue(refTarget), normalizeComparableSchemaValue(existing)))
 			log.Panicf("Component schema key already in use and not an exact duplicate: %q", refPath)
 			return nil
 		}
@@ -950,26 +982,19 @@ func fixGetSpacesParams(schema *Schema) {
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
-	dashboardPath := schema.MustGetPath("/api/dashboards")
+	schema.Components.Move("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.anyOf", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.oneOf")
+	schema.Components.Set("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
+	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
+	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
+
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
-
-	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
-	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
-	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
-
+	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
+	dashboardIDPath.Put.Set("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
-	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
-
-	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
-	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
-	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
-
-	const panelTypePrefix = "kbn-dashboard-panel-"
+	const panelTypePrefix = "kbn-dashboard-panel-type-"
 	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
 	panelTypeMapping := Map{}
 	for _, entry := range panelOneOf {
