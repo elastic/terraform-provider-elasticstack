@@ -12,6 +12,21 @@ function workflowSource() {
   return readFileSync(workflowPath, 'utf8');
 }
 
+/** Body between "## Repository toolchain" and the next "## Memory format" (exclusive). */
+function extractRepositoryToolchainSection(source) {
+  const startMarker = '## Repository toolchain';
+  const endMarker = '## Memory format';
+  const startIdx = source.indexOf(startMarker);
+  assert.ok(startIdx !== -1, `missing heading ${JSON.stringify(startMarker)} in ${workflowPath}`);
+  const afterStart = source.slice(startIdx + startMarker.length);
+  const endRel = afterStart.indexOf(endMarker);
+  assert.ok(
+    endRel !== -1,
+    `missing heading ${JSON.stringify(endMarker)} after ${JSON.stringify(startMarker)} in ${workflowPath} (misordered or renamed section?)`,
+  );
+  return afterStart.slice(0, endRel);
+}
+
 test('schema-coverage rotation workflow installs Go from go.mod and exports Go paths for AWF', () => {
   const source = workflowSource();
   assert.match(source, /uses: actions\/setup-go@v6/);
@@ -37,7 +52,7 @@ test('schema-coverage rotation workflow bootstraps the repo with make setup', ()
 
 test('schema-coverage rotation prompt documents deterministic toolchain without self-install', () => {
   const source = workflowSource();
-  const section = source.split('## Repository toolchain')[1].split('## Memory format')[0];
+  const section = extractRepositoryToolchainSection(source);
   assert.match(section, /Deterministic workflow steps have already/);
   assert.match(section, /Do \*\*not\*\* install alternate Go or Node versions/);
   assert.doesNotMatch(section, /scripts\/schema-coverage-rotation/);
