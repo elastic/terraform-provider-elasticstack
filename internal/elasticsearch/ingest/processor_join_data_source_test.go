@@ -32,8 +32,43 @@ func TestAccDataSourceIngestProcessorJoin(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_join.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "joined_array_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "separator", "-"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoin),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_join.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "joined_array_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "separator", "::"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "target_field", "joined_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "description", "Join array values into a single field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "if", "ctx.tags != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.0", `{"set":{"field":"error.message","value":"join failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "tag", "join-tags"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoinAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_join.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "updated_array_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "separator", "|"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoinUpdated),
 				),
 			},
 		},
@@ -45,5 +80,33 @@ const expectedJSONJoin = `{
 		"field": "joined_array_field",
 		"ignore_failure": false,
 		"separator": "-"
+	}
+}`
+
+const expectedJSONJoinAllAttributes = `{
+	"join": {
+		"description": "Join array values into a single field",
+		"field": "joined_array_field",
+		"if": "ctx.tags != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "join failed"
+				}
+			}
+		],
+		"separator": "::",
+		"tag": "join-tags",
+		"target_field": "joined_field"
+	}
+}`
+
+const expectedJSONJoinUpdated = `{
+	"join": {
+		"field": "updated_array_field",
+		"ignore_failure": false,
+		"separator": "|"
 	}
 }`
