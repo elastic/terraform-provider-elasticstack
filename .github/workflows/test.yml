@@ -79,6 +79,9 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       provider_changes: ${{ steps.classify.outputs.provider_changes }}
     steps:
@@ -89,7 +92,7 @@ jobs:
             let changedFiles = [];
 
             if (context.eventName === 'pull_request') {
-              const { data: files } = await github.rest.pulls.listFiles({
+              const files = await github.paginate(github.rest.pulls.listFiles, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.payload.pull_request.number,
@@ -102,6 +105,9 @@ jobs:
                 changedFiles.push(...(commit.added || []));
                 changedFiles.push(...(commit.modified || []));
                 changedFiles.push(...(commit.removed || []));
+              }
+              if (changedFiles.length === 0) {
+                core.info('Push event has no file list in commits payload (may be a force-push or API limitation); defaulting to provider_changes=true (conservative).');
               }
             } else {
               // workflow_dispatch or other events: conservative default
@@ -372,6 +378,11 @@ jobs:
             // Preflight intentionally disabled downstream CI — succeed
             if (preflightShouldRun !== 'true') {
               core.info('Preflight gate intentionally disabled downstream CI; succeeding.');
+              return;
+            }
+
+            if (providerChanges !== 'true' && providerChanges !== 'false') {
+              core.setFailed(`Change classification did not produce a valid output (got '${providerChanges}'). The changes job may have failed or been skipped unexpectedly.`);
               return;
             }
 
