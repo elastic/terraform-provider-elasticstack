@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Provider-level Kibana client only (REQ-004)
+### Requirement: Effective Kibana client selection (REQ-004)
 
 The resource SHALL use the provider's configured Kibana legacy client by default for create and update. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana legacy client for create and update.
 

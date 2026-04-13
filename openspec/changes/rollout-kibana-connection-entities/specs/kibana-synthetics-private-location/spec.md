@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Provider-level Kibana legacy client only (REQ-005)
+### Requirement: Provider-level default Kibana legacy client with optional scoped override (REQ-005)
 
 The resource SHALL use the provider's configured Kibana legacy client by default for create, read, and delete. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana legacy client for create, read, and delete.
 

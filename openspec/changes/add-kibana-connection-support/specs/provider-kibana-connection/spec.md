@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: Entity-local `kibana_connection` schema source of truth
-The provider SHALL define shared SDK and Plugin Framework schema helpers for entity-local `kibana_connection`. Those helpers SHALL use the same field set and validation rules as the provider-level Kibana connection block, SHALL be list-shaped with at most one element, and SHALL NOT expose entity-level deprecation metadata.
+The provider SHALL define shared SDK and Plugin Framework schema helpers for entity-local `kibana_connection`. The SDK entity-local helper SHALL be `internal/schema.GetKibanaConnectionSchema()`, and the Plugin Framework entity-local helper SHALL be `internal/schema.GetKbFWConnectionBlock()`. Those helpers SHALL use the same field set and equivalent validation rules as the provider-level Kibana connection block, SHALL be list-shaped with at most one element, and SHALL NOT expose entity-level deprecation metadata. When path-based validation metadata is required, the entity-local helpers SHALL target the entity-local block path rather than the provider-level `kibana` path.
 
 #### Scenario: Shared helpers define the entity-local block shape
 - **WHEN** an entity-local `kibana_connection` schema or block is defined
-- **THEN** it SHALL come from the shared provider schema helpers rather than an entity-specific variant
+- **THEN** it SHALL come from the shared provider schema helpers rather than an entity-specific variant, and any path-based validation metadata SHALL target the entity-local block path
 
 ### Requirement: Framework scoped Kibana client resolution
-The provider SHALL expose a Plugin Framework helper that accepts an entity-local `kibana_connection` block and a default `*clients.APIClient`. When the block is not configured, the helper SHALL return the default client. When the block is configured, the helper SHALL return a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
+The provider SHALL expose a Plugin Framework helper named `clients.MaybeNewKibanaAPIClientFromFrameworkResource(...)` that accepts an entity-local `kibana_connection` block and a default `*clients.APIClient`. When the block is not configured, the helper SHALL return the default client. When the block is configured, the helper SHALL return a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
 #### Scenario: Framework helper falls back to provider client
 - **WHEN** a Framework entity resolves its effective client and `kibana_connection` is absent
@@ -19,7 +19,7 @@ The provider SHALL expose a Plugin Framework helper that accepts an entity-local
 - **THEN** the helper SHALL return a scoped `*clients.APIClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
 
 ### Requirement: SDK scoped Kibana client resolution
-The provider SHALL expose an SDK helper that accepts resource or data source state and provider meta and resolves an effective `*clients.APIClient` from entity-local `kibana_connection`. When the block is not configured, the helper SHALL use the provider client. When the block is configured, the helper SHALL build a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
+The provider SHALL expose an SDK helper named `clients.NewKibanaAPIClientFromSDKResource(...)` that accepts resource or data source state and provider meta and resolves an effective `*clients.APIClient` from entity-local `kibana_connection`. When the block is not configured, the helper SHALL use the provider client. When the block is configured, the helper SHALL build a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
 #### Scenario: SDK helper falls back to provider client
 - **WHEN** an SDK entity resolves its effective client and `kibana_connection` is absent

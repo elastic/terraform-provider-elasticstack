@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: Approved Kibana and Fleet client sources
-Any `*clients.APIClient` value used at an in-scope Kibana or Fleet sink SHALL originate from the approved helper-derived `kibana_connection` resolution helpers, an explicitly allowlisted wrapper, or an interprocedurally inferred wrapper or factory that the analyzer can prove is helper-derived.
+Any `*clients.APIClient` value used at an in-scope Kibana or Fleet sink SHALL originate from `clients.NewKibanaAPIClientFromSDKResource(...)`, `clients.MaybeNewKibanaAPIClientFromFrameworkResource(...)`, an explicitly allowlisted wrapper, or an interprocedurally inferred wrapper or factory that the analyzer can prove is helper-derived.
 
 #### Scenario: Sink uses approved helper-derived client
 - **WHEN** an in-scope Kibana or Fleet sink uses a `*clients.APIClient` value derived from an approved helper source
 - **THEN** the analyzer SHALL report no diagnostic
 
 ### Requirement: No bypass paths at sink usage
-In-scope Kibana and Fleet sink calls SHALL NOT use `*clients.APIClient` values created through provider-data casts, direct construction, or ad-hoc resolution flows that bypass the approved helper-derived `kibana_connection` path.
+In-scope Kibana and Fleet sink calls SHALL NOT use `*clients.APIClient` values created through provider-data casts, direct construction, or ad-hoc resolution flows that bypass `clients.NewKibanaAPIClientFromSDKResource(...)`, `clients.MaybeNewKibanaAPIClientFromFrameworkResource(...)`, or other approved helper-derived sources.
 
 #### Scenario: Sink uses bypassed client source
 - **WHEN** an in-scope Kibana or Fleet sink consumes a non-helper-derived `*clients.APIClient`

@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Provider-level Kibana client only (REQ-004)
+### Requirement: Provider-level Kibana client by default with scoped override (REQ-004)
 
 The resource SHALL use the provider's configured Kibana OpenAPI client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI client for all workflow operations.
 

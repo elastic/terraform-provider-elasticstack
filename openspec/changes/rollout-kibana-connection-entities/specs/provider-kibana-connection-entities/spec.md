@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: In-scope Kibana entity rollout
-For every Terraform resource or data source registered by the provider whose type name has prefix `elasticstack_kibana_` in the provider's normal constructor set, the entity SHALL expose `kibana_connection` using the shared provider schema helper for its implementation style and SHALL use the effective scoped client derived from that block when it is configured.
+For every Terraform resource or data source registered by the provider whose type name has prefix `elasticstack_kibana_`, where registration is determined by enumerating the SDK provider returned by `provider.New(...)` through its resource and data source maps and the Plugin Framework provider returned by `provider.NewFrameworkProvider(...)` through its resource and data source enumeration methods, the entity SHALL expose `kibana_connection` using the shared provider schema helper for its implementation style and SHALL use the effective scoped client derived from that block when it is configured.
 
 #### Scenario: Covered Kibana entity exposes and honors `kibana_connection`
 - **WHEN** a covered `elasticstack_kibana_*` entity is configured with `kibana_connection`
 - **THEN** the entity SHALL execute its API operations against the scoped client derived from that block
 
 ### Requirement: In-scope Fleet entity rollout
-For every Terraform resource or data source registered by the provider whose type name has prefix `elasticstack_fleet_` in the provider's normal constructor set, the entity SHALL expose `kibana_connection` using the shared provider schema helper for its implementation style and SHALL use the effective scoped client derived from that block when it is configured.
+For every Terraform resource or data source registered by the provider whose type name has prefix `elasticstack_fleet_`, where registration is determined by enumerating the SDK provider returned by `provider.New(...)` through its resource and data source maps and the Plugin Framework provider returned by `provider.NewFrameworkProvider(...)` through its resource and data source enumeration methods, the entity SHALL expose `kibana_connection` using the shared provider schema helper for its implementation style and SHALL use the effective scoped client derived from that block when it is configured.
 
 #### Scenario: Covered Fleet entity exposes and honors `kibana_connection`
 - **WHEN** a covered `elasticstack_fleet_*` entity is configured with `kibana_connection`
