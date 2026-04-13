@@ -131,10 +131,10 @@ func TestMaybeNewKibanaAPIClientFromFrameworkResource_WithConnection(t *testing.
 
 	// Kibana-derived client surfaces must be populated.
 	_, err := result.GetKibanaClient()
-	assert.NoError(t, err, "Kibana legacy client must be present")
+	require.NoError(t, err, "Kibana legacy client must be present")
 
 	_, err = result.GetKibanaOapiClient()
-	assert.NoError(t, err, "Kibana OpenAPI client must be present")
+	require.NoError(t, err, "Kibana OpenAPI client must be present")
 
 	_, err = result.GetFleetClient()
 	assert.NoError(t, err, "Fleet client must be present")
@@ -191,10 +191,10 @@ func TestNewKibanaAPIClientFromSDKResource_WithBlock(t *testing.T) {
 
 	// Kibana-derived surfaces must be populated.
 	_, err := result.GetKibanaClient()
-	assert.NoError(t, err, "Kibana legacy client must be present")
+	require.NoError(t, err, "Kibana legacy client must be present")
 
 	_, err = result.GetKibanaOapiClient()
-	assert.NoError(t, err, "Kibana OpenAPI client must be present")
+	require.NoError(t, err, "Kibana OpenAPI client must be present")
 
 	_, err = result.GetFleetClient()
 	assert.NoError(t, err, "Fleet client must be present")

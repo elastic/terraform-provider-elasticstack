@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	esKey                  string = "elasticsearch"
-	esConnectionKey        string = "elasticsearch_connection"
-	kibanaConnectionKey    string = "kibana_connection"
+	esKey               string = "elasticsearch"
+	esConnectionKey     string = "elasticsearch_connection"
+	kibanaConnectionKey string = "kibana_connection"
 )
 
 func NewFromSDK(d *schema.ResourceData, version string) (Client, diag.Diagnostics) {
