@@ -1,7 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: Entity-local `kibana_connection` schema source of truth
-The provider SHALL define shared SDK and Plugin Framework schema helpers for entity-local `kibana_connection`. The SDK entity-local helper SHALL be `internal/schema.GetKibanaConnectionSchema()`, and the Plugin Framework entity-local helper SHALL be `internal/schema.GetKbFWConnectionBlock()`. Those helpers SHALL use the same field set and equivalent validation rules as the provider-level Kibana connection block, SHALL be list-shaped with at most one element, and SHALL NOT expose entity-level deprecation metadata. When path-based validation metadata is required, the entity-local helpers SHALL target the entity-local block path rather than the provider-level `kibana` path.
+The provider SHALL define shared SDK and Plugin Framework schema helpers for entity-local `kibana_connection`. The SDK entity-local helper SHALL be `internal/schema.GetKibanaEntityConnectionSchema()`, and the Plugin Framework entity-local helper SHALL be `internal/schema.GetKbFWConnectionBlock()`. Those helpers SHALL use the same field set and equivalent validation rules as the provider-level Kibana connection block, SHALL be list-shaped with at most one element, and SHALL NOT expose entity-level deprecation metadata. When path-based validation metadata is required, the entity-local helpers SHALL target the entity-local block path rather than the provider-level `kibana` path.
+
+Note: `internal/schema.GetKibanaConnectionSchema()` is the provider-level helper (used for the `kibana` block in `provider.go`). The entity-level helper uses a distinct name to make the two contracts unambiguous and to keep path-scoped validation metadata correct for each call site. Both functions share a common private implementation (`getKibanaConnectionSchema`) parameterised by key name.
 
 #### Scenario: Shared helpers define the entity-local block shape
 - **WHEN** an entity-local `kibana_connection` schema or block is defined
