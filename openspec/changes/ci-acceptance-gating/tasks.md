@@ -1,4 +1,4 @@
-## 1. Workflow changes
+## 1. Workflow implementation follow-up
 
 - [ ] 1.1 Add a change-classification job to `.github/workflows/test.yml` that reports `provider_changes=false` only when the workflow diff is limited to `openspec/**`.
 - [ ] 1.2 Update the matrix acceptance `test` job to depend on the change classifier and run only when both preflight allows execution and `provider_changes=true`.

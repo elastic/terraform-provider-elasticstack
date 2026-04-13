@@ -4,6 +4,7 @@ The main CI workflow exposes required acceptance checks as per-version matrix jo
 
 ## What Changes
 
+- Define the proposed CI behavior in OpenSpec change artifacts first; the workflow YAML implementation remains a follow-up task before the change can be considered implemented.
 - Update the `ci-build-lint-test` workflow requirements so matrix acceptance tests run only when the current change set includes provider-impacting files; in the first iteration, changes limited to `openspec/**` SHALL be treated as non-provider changes.
 - Add a dedicated workflow validation job that always reports a final test status: it passes when acceptance tests are intentionally skipped for non-provider changes, and it fails when provider changes require acceptance coverage but the matrix test job does not succeed.
 - Change the auto-approve gate to depend on the validation job result instead of raw matrix test success so spec-only pull requests can still satisfy the existing automation contract.
@@ -22,5 +23,5 @@ The main CI workflow exposes required acceptance checks as per-version matrix jo
 ## Impact
 
 - **Specs**: `openspec/specs/ci-build-lint-test/spec.md`
-- **Workflow logic**: `.github/workflows/test.yml` needs a change-classification step, conditional matrix-test execution, a `Test Validation` job, and updated auto-approve gating.
+- **Workflow logic**: `.github/workflows/test.yml` is unchanged in this proposal-only change set and still needs a follow-up implementation change for the change-classification step, conditional matrix-test execution, `Test Validation`, and updated auto-approve gating.
 - **Repository operations**: GitHub branch protection or rulesets must be updated to require the stable validation check instead of individual matrix acceptance checks.

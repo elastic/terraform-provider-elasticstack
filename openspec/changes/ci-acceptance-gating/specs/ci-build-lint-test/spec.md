@@ -2,19 +2,21 @@
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether matrix acceptance tests are required for the current change set via a dedicated change-classification job. In the first iteration, the classifier SHALL set `provider_changes=false` only when every changed file for the workflow run is under `openspec/`; any change set containing a path outside `openspec/` SHALL set `provider_changes=true`.
+The workflow SHALL evaluate whether matrix acceptance tests are required for the current change set via a dedicated change-classification job, but only when the preflight gate permits downstream CI execution by outputting `should_run=true`. When the preflight gate outputs `should_run=false`, the change-classification job SHALL be intentionally skipped. In the first iteration, when the classifier runs, it SHALL set `provider_changes=false` only when every changed file for the workflow run is under `openspec/`; any change set containing a path outside `openspec/` SHALL set `provider_changes=true`.
 
-The change-classification job SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether acceptance coverage is required.
+When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether acceptance coverage is required.
 
 #### Scenario: OpenSpec-only change set
 
 - **GIVEN** a workflow run whose changed files are all under `openspec/`
+- **AND** the preflight gate outputs `should_run=true`
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=false`
 
 #### Scenario: Provider-impacting change set
 
 - **GIVEN** a workflow run whose changed files include at least one path outside `openspec/`
+- **AND** the preflight gate outputs `should_run=true`
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=true`
 
@@ -25,10 +27,15 @@ The workflow SHALL publish a `Test Validation` job that always reports a final a
 The `Test Validation` job SHALL succeed when any of the following is true:
 
 * The preflight gate intentionally disables downstream CI execution
-* The change-classification job reports `provider_changes=false`
+* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job is intentionally skipped
 * The matrix acceptance `test` job completes successfully
 
-The `Test Validation` job SHALL fail when `provider_changes=true` and the matrix acceptance `test` job does not complete successfully. The validation job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks.
+When the preflight gate allows downstream execution, the `Test Validation` job SHALL fail if either of the following is true:
+
+* The change-classification job reports `provider_changes=true` and the matrix acceptance `test` job does not complete successfully
+* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job still runs but does not complete successfully
+
+The validation job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks.
 
 #### Scenario: OpenSpec-only pull request
 
