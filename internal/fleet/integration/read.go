@@ -19,7 +19,9 @@ package integration
 
 import (
 	"context"
+	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,7 +49,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if pkg == nil || (pkg.Status != nil && *pkg.Status != "installed") {
+	if pkg == nil || !fleetPackageInstalled(pkg) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -56,4 +58,29 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
+}
+
+// fleetPackageInstalled mirrors Fleet/EPM semantics for whether a package is installed.
+// Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
+// and status casing can vary.
+func fleetPackageInstalled(pkg *kbapi.PackageInfo) bool {
+	if pkg == nil {
+		return false
+	}
+	if pkg.InstallationInfo != nil {
+		switch pkg.InstallationInfo.InstallStatus {
+		case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
+			return true
+		case kbapi.PackageInfoInstallationInfoInstallStatusInstalling:
+			// Avoid flapping: installation may still be in progress right after apply.
+			return true
+		case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
+			return false
+		}
+	}
+	if pkg.Status != nil {
+		return strings.EqualFold(*pkg.Status, "installed")
+	}
+	// Older responses: GET succeeded but omitted status/installation info.
+	return pkg.InstallationInfo == nil
 }

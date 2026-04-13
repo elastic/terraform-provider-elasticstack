@@ -473,6 +473,96 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 	}
 }
 
+// GetAgentDownloadSource reads a specific agent binary download source from the API.
+func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreateAgentDownloadSource creates a new agent binary download source.
+func CreateAgentDownloadSource(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	req kbapi.PostFleetAgentDownloadSourcesJSONRequestBody,
+) (*kbapi.PostFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
+	resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateAgentDownloadSource updates an existing agent binary download source.
+func UpdateAgentDownloadSource(
+	ctx context.Context,
+	client *Client,
+	id string,
+	spaceID string,
+	req kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody,
+) (*kbapi.PutFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
+	resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteAgentDownloadSource deletes an existing agent binary download source.
+func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// ListAgentDownloadSources reads all agent binary download sources from the API.
+func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentDownloadSourcesWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // GetPackage reads a specific package from the API.
 func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}

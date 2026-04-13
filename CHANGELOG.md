@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_fleet_agent_download_source` resource ([#2801](https://github.com/elastic/terraform-provider-elasticstack/pull/2081))
 - Fix state consistency with semantic text types in `elasticstack_elasticsearch_index` ([#2112](https://github.com/elastic/terraform-provider-elasticstack/pull/2112))
 - Add `elasticstack_elasticsearch_inference_endpoint` resource. ([#1955](https://github.com/elastic/terraform-provider-elasticstack/pull/1955))
 - `elasticstack_kibana_data_view`: Support in-place updates of the `namespaces` field via the Kibana Spaces API (`POST /api/spaces/_update_objects_spaces`), preventing data view recreation when sharing across spaces. Previously, any change to `namespaces` would force replacement of the resource, breaking dependent alerting rules that reference the data view by ID. ([#2129](https://github.com/elastic/terraform-provider-elasticstack/pull/2129))
