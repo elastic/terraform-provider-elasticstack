@@ -282,7 +282,7 @@ For a run triggered by applying the `verify-openspec` label, the workflow SHALL 
 - **THEN** trigger-label cleanup SHALL already be handled without waiting for agent safe outputs
 
 ### Requirement: Review environment bootstraps repository toolchains
-The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, it SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning.
+The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, it SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL allow the Go ecosystem and `elastic.litellm-prod.ai` in the workflow's AWF network policy, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning.
 
 #### Scenario: Node toolchain follows package.json
 - **GIVEN** the repository declares the supported Node version in `package.json`
@@ -301,10 +301,11 @@ The workflow SHALL provision the same core toolchain layers as the `lint` job be
 - **AND** the workflow SHALL export `GOPATH=$(go env GOPATH)` to `GITHUB_ENV`
 - **AND** the workflow SHALL export `GOMODCACHE=$(go env GOMODCACHE)` to `GITHUB_ENV`
 
-#### Scenario: AWF network policy allows the Go ecosystem
-- **GIVEN** agent-executed verification commands may need Go module network access
+#### Scenario: AWF network policy allows the Go ecosystem and LiteLLM host
+- **GIVEN** agent-executed verification commands may need Go module network access and LiteLLM provider access
 - **WHEN** maintainers inspect the workflow frontmatter
 - **THEN** `network.allowed` SHALL include `go`
+- **AND** `network.allowed` SHALL include `elastic.litellm-prod.ai`
 
 #### Scenario: Review bootstrap does not use runtimes.go
 - **GIVEN** the review workflow bootstrap is implemented
@@ -339,6 +340,23 @@ Before the agent performs verification, the workflow SHALL run `make setup` in t
 - **WHEN** an AWF agent command runs Go module-aware verification in chroot mode
 - **THEN** the command SHALL retain access to the configured Go workspace and module cache through the exported Go environment variables
 
+### Requirement: Verification engine uses Copilot BYOK LiteLLM routing (REQ-016)
+The `openspec-verify-label` workflow SHALL keep `engine.id: copilot`, SHALL set `engine.model` to `llm-gateway/gpt-5.4`, and SHALL configure Copilot CLI to use an OpenAI-compatible BYOK provider for model inference by setting `COPILOT_PROVIDER_TYPE` to `openai` and `COPILOT_PROVIDER_BASE_URL` to `https://elastic.litellm-prod.ai/v1`. Any provider credential passed as `COPILOT_PROVIDER_API_KEY` SHALL be sourced from a GitHub Actions secret-backed expression rather than from a checked-in literal.
+
+#### Scenario: Authored workflow preserves the Copilot engine
+- **WHEN** maintainers inspect the authored `openspec-verify-label` workflow source
+- **THEN** `engine.id` SHALL be `copilot`
+- **AND** `engine.model` SHALL be `llm-gateway/gpt-5.4`
+
+#### Scenario: Copilot BYOK provider targets the Elastic LiteLLM endpoint
+- **WHEN** maintainers inspect the verification workflow's engine environment
+- **THEN** `COPILOT_PROVIDER_TYPE` SHALL be `openai`
+- **AND** `COPILOT_PROVIDER_BASE_URL` SHALL be `https://elastic.litellm-prod.ai/v1`
+
+#### Scenario: Provider authentication is secret-backed
+- **WHEN** maintainers inspect the authored workflow source
+- **THEN** any configured `COPILOT_PROVIDER_API_KEY` value SHALL come from a GitHub Actions secret expression rather than a literal API key value committed to the repository
+
 ### Requirement: Deterministic agent setup before verification
 The workflow SHALL use deterministic custom workflow steps to prepare the repository workspace before agent reasoning begins. After the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps.
 
@@ -359,3 +377,21 @@ The workflow SHALL use deterministic pre-activation outputs to decide whether th
 - **GIVEN** deterministic pre-activation gating selected a single active change and classified the pull request as a fork
 - **WHEN** downstream job conditions are evaluated
 - **THEN** the workflow SHALL continue to the agent job while withholding archive/push behavior
+
+### Requirement: Verification engine uses Copilot BYOK LiteLLM routing
+The `openspec-verify-label` workflow SHALL keep `engine.id: copilot`, SHALL set `engine.model` to `llm-gateway/gpt-5.4`, and SHALL configure Copilot CLI to use an OpenAI-compatible BYOK provider for model inference by setting `COPILOT_PROVIDER_TYPE` to `openai` and `COPILOT_PROVIDER_BASE_URL` to `https://elastic.litellm-prod.ai/v1`. Any provider credential passed as `COPILOT_PROVIDER_API_KEY` SHALL be sourced from a GitHub Actions secret-backed expression rather than from a checked-in literal.
+
+#### Scenario: Authored workflow preserves the Copilot engine
+- **WHEN** maintainers inspect the authored `openspec-verify-label` workflow source
+- **THEN** `engine.id` SHALL be `copilot`
+- **AND** `engine.model` SHALL be `llm-gateway/gpt-5.4`
+
+#### Scenario: Copilot BYOK provider targets the Elastic LiteLLM endpoint
+- **WHEN** maintainers inspect the verification workflow's engine environment
+- **THEN** `COPILOT_PROVIDER_TYPE` SHALL be `openai`
+- **AND** `COPILOT_PROVIDER_BASE_URL` SHALL be `https://elastic.litellm-prod.ai/v1`
+
+#### Scenario: Provider authentication is secret-backed
+- **WHEN** maintainers inspect the authored workflow source
+- **THEN** any configured `COPILOT_PROVIDER_API_KEY` value SHALL come from a GitHub Actions secret expression rather than a literal API key value committed to the repository
+
