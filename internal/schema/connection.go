@@ -468,7 +468,7 @@ func getKibanaConnectionSchema(keyName string) *schema.Schema {
 					RequiredWith: []string{usernamePath},
 				},
 				"endpoints": {
-					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Type:        schema.TypeList,
 					Optional:    true,
 					Sensitive:   true,
