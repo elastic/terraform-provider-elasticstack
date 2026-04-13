@@ -76,12 +76,12 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                                 `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                `json:"label"`
-			OpenInNewTab *bool                                                                 `json:"open_in_new_tab,omitempty"`
+			EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                                    `json:"label"`
+			OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
 			Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
 			Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-			Url          string                                                                `json:"url"` //nolint:revive
+			Url          string                                                                    `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
