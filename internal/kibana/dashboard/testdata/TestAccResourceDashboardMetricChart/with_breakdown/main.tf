@@ -3,15 +3,20 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Metric Chart Panel with Filters"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Metric Chart Panel with Filters"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
     type = "lens"
     grid = {
@@ -24,12 +29,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Metric Chart with Filters"
       description = "Test metric chart with filters visualization"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type  = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = "status:active"
+        language   = "kql"
+        expression = "status:active"
       }
       metrics = [
         {
@@ -39,20 +46,13 @@ resource "elasticstack_kibana_dashboard" "test" {
             format = {
               type = "number"
             }
-            alignments = {
-              labels = "center"
-            }
-            icon = {
-              name = "document"
-            }
           })
         }
       ]
       breakdown_by_json = jsonencode({
         operation = "terms"
         fields    = ["category"]
-        size      = 3
-        columns   = 3
+        limit     = 3
         rank_by = {
           direction = "desc"
           metric    = 0

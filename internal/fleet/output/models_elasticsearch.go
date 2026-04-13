@@ -39,7 +39,11 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
+	if data.Ssl != nil {
+		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key)
+	} else {
+		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil)
+	}
 
 	// Note: SpaceIDs is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
@@ -47,6 +51,8 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
+
+	clearRemoteElasticsearchOnlyFields(model)
 
 	return
 }
@@ -58,7 +64,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 	}
 
 	body := kbapi.NewOutputElasticsearch{
-		Type:                 kbapi.NewOutputElasticsearchTypeElasticsearch,
+		Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -67,7 +73,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl,
+		Ssl:                  ssl.toCreateElasticsearch(),
 	}
 
 	var union kbapi.NewOutputUnion
@@ -86,7 +92,10 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputElasticsearch{
-		Type:                 new(kbapi.Elasticsearch),
+		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchType {
+			outputType := kbapi.Elasticsearch
+			return &outputType
+		}(),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -94,7 +103,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl,
+		Ssl:                  ssl.toUpdateElasticsearch(),
 	}
 
 	var union kbapi.UpdateOutputUnion

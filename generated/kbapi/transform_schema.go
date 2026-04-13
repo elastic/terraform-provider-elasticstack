@@ -557,7 +557,6 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
-	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -567,46 +566,16 @@ var transformers = []TransformFunc{
 	removeBrokenDiscriminator,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
-	fixGetSyntheticsMonitorsParams,
-	fixGetMaintenanceWindowFindParams,
-	fixGetStreamsAttachmentTypesParams,
-	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
+	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
+	fixAlertingRuleParams,
+	fixSyntheticsMonitorParams,
+	fixAlertingRuleBody,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
-	fixAlertingRuleParams,
-}
-
-//go:embed workflows.yaml
-var workflowsYaml string
-
-func mergeWorkflowsSchema(schema *Schema) {
-	var workflowsSchema Schema
-	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
-	if err != nil {
-		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
-	}
-
-	// Merge paths
-	for path, pathInfo := range workflowsSchema.Paths {
-		// Only add the path if it doesn't already exist
-		if _, ok := schema.Paths[path]; !ok {
-			schema.Paths[path] = pathInfo
-		}
-	}
-
-	// Merge component schemas
-	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
-	schemaSchemas := schema.Components.MustGetMap("schemas")
-	for key, schemaInfo := range dashboardSchemas {
-		// Only add the schema if it doesn't already exist
-		if _, ok := schemaSchemas[key]; !ok {
-			schemaSchemas[key] = schemaInfo
-		}
-	}
 }
 
 //go:embed dashboards.json
@@ -980,37 +949,21 @@ func fixGetSpacesParams(schema *Schema) {
 	schema.MustGetPath("/api/spaces/space").MustGetEndpoint("get").Delete("parameters.1.schema.anyOf")
 }
 
-func fixGetSyntheticsMonitorsParams(schema *Schema) {
-	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Set("parameters.12.schema.oneOf.1.x-go-type", "[]GetSyntheticMonitorsParamsUseLogicalAndFor0")
-}
-
-func fixGetMaintenanceWindowFindParams(schema *Schema) {
-	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetMaintenanceWindowFindParamsStatus0")
-}
-
-func fixGetStreamsAttachmentTypesParams(schema *Schema) {
-	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
-}
-
-func fixSecurityAPIPageSize(schema *Schema) {
-	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
-	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
-}
-
 func fixDashboardPanelItemRefs(schema *Schema) {
-	dashboardPath := schema.MustGetPath("/api/dashboards/{id}")
+	dashboardPath := schema.MustGetPath("/api/dashboards")
+	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
 
 	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
 	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
 	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
+	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
+	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
+	dashboardIDPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
 	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
 	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
@@ -1162,12 +1115,6 @@ func transformFleetPaths(schema *Schema) {
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
 		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Extract child structs
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
-		}
-
 		// Ideally just remove the "anyOf", however then we would need to make
 		// refs for each of the "oneOf" options. So turn them into an "any" instead.
 		// See: https://github.com/elastic/kibana/issues/197153
@@ -1184,25 +1131,18 @@ func transformFleetPaths(schema *Schema) {
 			  - type: number
 			  - not: {}
 		*/
+	}
 
-		// https://github.com/elastic/kibana/issues/197153
-		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
-		required := schema.Components.MustGetSlice(kafkaRequiredName)
-		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
-			props.Set(key, Map{
-				"type": apiType,
-			})
-			required = slices.DeleteFunc(required, func(item any) bool {
-				itemStr, ok := item.(string)
-				if !ok {
-					return false
-				}
-
-				return itemStr == key
-			})
-		}
-		schema.Components.Set(kafkaRequiredName, required)
+	for _, componentName := range []string{
+		"schemas.Kibana_HTTP_APIs_new_output_kafka",
+		"schemas.Kibana_HTTP_APIs_output_kafka",
+		"schemas.update_output_kafka",
+	} {
+		kafkaComponent := schema.Components.MustGetMap(componentName)
+		kafkaComponent.Delete("properties.compression_level.oneOf")
+		kafkaComponent.Delete("properties.connection_type.oneOf")
+		kafkaComponent.Delete("properties.password.oneOf")
+		kafkaComponent.Delete("properties.username.oneOf")
 	}
 
 	// Add the missing discriminator to the response union
@@ -1217,12 +1157,6 @@ func transformFleetPaths(schema *Schema) {
 		},
 	})
 
-	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
-	}
-
 	// Package policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/package_policy.ts
@@ -1233,31 +1167,46 @@ func transformFleetPaths(schema *Schema) {
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
 	epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
-	epmPoliciesPath.Post.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema") // anyOf.0 is the deprecated array format
-	epmPolicyPath.Put.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema")    // anyOf.0 is the deprecated array format
-	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+
+	epmPoliciesPath.Post.Set("requestBody.content.application/json.schema", epmPolicyPath.Put.MustGetMap("requestBody.content.application/json.schema"))
 
 	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
 	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
-	schema.Components.Move("schemas.package_policy.properties.inputs.anyOf.1", "schemas.package_policy.properties.inputs") // anyOf.0 is the deprecated array format
+	schema.Components.CreateRef(schema, "package_policy_typed_inputs", "schemas.package_policy.properties.inputs.anyOf.0")
+	schema.Components.CreateRef(schema, "package_policy_mapped_inputs", "schemas.package_policy.properties.inputs.anyOf.1")
+	schema.Components.CreateRef(schema, "package_policy_typed_input", "schemas.package_policy_typed_inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_mapped_input", "schemas.package_policy_mapped_inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_typed_input_stream", "schemas.package_policy_typed_input.properties.streams.items")
+	schema.Components.CreateRef(schema, "package_policy_mapped_input_stream", "schemas.package_policy_mapped_input.properties.streams.additionalProperties")
 
-	schema.Components.CreateRef(schema, "package_policy_input", "schemas.package_policy.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_input_stream", "schemas.package_policy_input.properties.streams.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_mapped_inputs.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_typed_inputs.properties.package")
 
-	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request.properties.package")
-	schema.Components.CreateRef(schema, "package_policy_request_input", "schemas.package_policy_request.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_request_input_stream", "schemas.package_policy_request_input.properties.streams.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.package_policy_request_mapped_inputs.properties.inputs.additionalProperties")
+	schema.Components.CreateRef(schema, "package_policy_request_mapped_input_stream", "schemas.package_policy_request_mapped_input.properties.streams.additionalProperties")
+
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.package_policy_request_typed_inputs.properties.inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
 
 	// Simplify all of the vars
 	schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_typed_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_mapped_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_typed_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_mapped_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_inputs.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_mapped_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_inputs.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input.properties.config", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.vars", Map{"type": "object"})
+	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.config", Map{"type": "object"})
 }
 
 func setAllXOmitEmpty(key string, node Map) {
@@ -1287,6 +1236,17 @@ func transformOmitEmptyNullable(schema *Schema) {
 			}
 		}
 	}
+}
+
+func removeAnyOfWhenOneOfPresent(key string, node Map) {
+	if node.Has("anyOf") && node.Has("oneOf") {
+		delete(node, "anyOf")
+	}
+}
+
+func transformRemoveAnyOfWhenOneOfPresent(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeAnyOfWhenOneOfPresent)
 }
 
 // transformRemoveExamples removes all examples.
@@ -1352,7 +1312,19 @@ func transformRemoveUnusedComponents(schema *Schema) {
 	}
 }
 
+func fixAlertingRuleBody(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body", "requestBody.content.application/json.schema.anyOf.0")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Generic", "requestBody.content.application/json.schema.anyOf.1")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Union", "requestBody.content.application/json.schema")
+}
+
 func fixAlertingRuleParams(schema *Schema) {
 	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.anyOf.1.properties.params")
+}
+
+func fixSyntheticsMonitorParams(schema *Schema) {
+	getEndpoint := schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get")
+	getEndpoint.Set("parameters.12.schema", getEndpoint.MustGetMap("parameters.12.schema.oneOf.0"))
 }

@@ -97,7 +97,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	}
 
 	// Perform state transition if needed
-	inDesiredState, fwDiags := r.performStateTransition(ctx, client, data, datafeed.State(datafeedStats.State))
+	inDesiredState, fwDiags := r.performStateTransition(ctx, data, datafeed.State(datafeedStats.State))
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -125,7 +125,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		}
 	} else {
 		var updateDiags diag.Diagnostics
-		finalData, updateDiags = r.updateAfterMissedTransition(ctx, client, data, datafeedStats)
+		finalData, updateDiags = r.updateAfterMissedTransition(ctx, data, datafeedStats)
 		diags.Append(updateDiags...)
 		if diags.HasError() {
 			return diags
@@ -143,12 +143,17 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 
 func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	ctx context.Context,
-	client *clients.APIClient,
 	data MLDatafeedStateData,
 	datafeedStats *models.DatafeedStats,
 ) (*MLDatafeedStateData, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
-	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	statsAfterUpdate, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
+	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -179,14 +184,18 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		data.Start = timetypes.NewRFC3339Null()
 	}
 
-	return &data, nil
+	return &data, diags
 }
 
 // performStateTransition handles the ML datafeed state transition process
-func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, client *clients.APIClient, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
+func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
 	desiredState := datafeed.State(data.State.ValueString())
 	force := data.Force.ValueBool()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return false, diags
+	}
 
 	// Parse timeout duration
 	timeout, parseErrs := data.Timeout.Parse()
@@ -224,7 +233,8 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 	}
 
 	// Wait for state transition to complete
-	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
+	datafeedModel := datafeed.Datafeed{ElasticsearchConnection: data.ElasticsearchConnection}
+	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, datafeedModel, r.client, datafeedID, desiredState)
 	if diags.HasError() {
 		return false, diags
 	}

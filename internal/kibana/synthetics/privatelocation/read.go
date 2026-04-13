@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -53,7 +54,24 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		resourceID = compositeID.ResourceID
 	}
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, resourceID)
+	spaceID := effectiveSpaceID(state.SpaceID, compositeID)
+
+	if requiresSpaceIDMinVersion(spaceID) {
+		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			response.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
+			)
+			return
+		}
+	}
+
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, spaceID, resourceID)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -65,7 +83,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state = toModelV0(*result)
+	state = toModelV0(*result, spaceID)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)

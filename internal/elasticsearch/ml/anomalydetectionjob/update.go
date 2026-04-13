@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -76,7 +77,13 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	esClient, err := r.client.GetESClient()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	esClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return

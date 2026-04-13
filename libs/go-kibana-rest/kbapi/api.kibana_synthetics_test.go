@@ -73,10 +73,10 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 				Label:         fmt.Sprintf("TestKibanaSyntheticsMonitorAdd %s", testUuid),
 				AgentPolicyId: policyId,
 			}
-			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig)
+			location, err := syntheticsAPI.PrivateLocation.Create(ctx, space, locationConfig)
 			assert.NoError(s.T(), err)
 			defer func(id string) {
-				syntheticsAPI.PrivateLocation.Delete(ctx, id)
+				syntheticsAPI.PrivateLocation.Delete(ctx, space, id)
 			}(location.Id)
 
 			f := new(bool)
@@ -441,25 +441,25 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 						Lon: -42.42,
 					},
 				}
-				created, err := pAPI.Create(ctx, cfg)
+				created, err := pAPI.Create(ctx, space_id, cfg)
 
 				assert.NoError(s.T(), err)
 				assert.NotNil(s.T(), created)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 
-				get, err := pAPI.Get(ctx, created.Id)
+				get, err := pAPI.Get(ctx, space_id, created.Id)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				get, err = pAPI.Get(ctx, created.Label)
+				get, err = pAPI.Get(ctx, space_id, created.Label)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				err = pAPI.Delete(ctx, created.Id)
+				err = pAPI.Delete(ctx, space_id, created.Id)
 				assert.NoError(s.T(), err)
 
-				_, err = pAPI.Get(ctx, created.Id)
+				_, err = pAPI.Get(ctx, space_id, created.Id)
 				assert.Error(s.T(), err)
 			})
 		})
@@ -475,7 +475,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
 
 	for _, id := range ids {
 		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s", id), func() {
-			_, err := pAPI.Get(ctx, id)
+			_, err := pAPI.Get(ctx, "", id)
 			assert.Error(s.T(), err)
 			assert.IsType(s.T(), APIError{}, err)
 			assert.Equal(s.T(), 404, err.(APIError).Code)

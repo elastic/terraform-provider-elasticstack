@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -10,13 +27,14 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-github/v84/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const pathPR5Reviews = "/repos/o/r/pulls/5/reviews"
 
 func TestParseRepository(t *testing.T) {
 	t.Parallel()
@@ -36,7 +54,6 @@ func TestParseRepository(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			gotOwner, gotRepo, err := parseRepository(tc.input)
@@ -67,7 +84,6 @@ func TestReadPullRequestNumber(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
@@ -111,7 +127,9 @@ func TestLogJSON(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(out, &got))
 	assert.Equal(t, "evaluation", got["event"])
-	assert.Equal(t, float64(7), got["pull_request"])
+	pr, ok := got["pull_request"].(float64)
+	require.True(t, ok, "pull_request type, got %T", got["pull_request"])
+	assert.InEpsilon(t, 7, pr, 0.0001)
 }
 
 func TestListAllPaginationHelpers(t *testing.T) {
@@ -144,11 +162,11 @@ func TestListAllPaginationHelpers(t *testing.T) {
 		}
 	})
 
-	mux.HandleFunc("/repos/o/r/pulls/5/reviews", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(pathPR5Reviews, func(w http.ResponseWriter, r *http.Request) {
 		page := r.URL.Query().Get("page")
 		switch page {
 		case "", "1":
-			w.Header().Set("Link", fmt.Sprintf(`<%s/repos/o/r/pulls/5/reviews?page=2>; rel="next"`, testServerBaseURL(r)))
+			w.Header().Set("Link", fmt.Sprintf(`<%s%s?page=2>; rel="next"`, testServerBaseURL(r), pathPR5Reviews))
 			_, _ = w.Write([]byte(`[{"id":1,"state":"COMMENTED"}]`))
 		case "2":
 			_, _ = w.Write([]byte(`[{"id":2,"state":"APPROVED"}]`))
@@ -243,12 +261,14 @@ func TestRunApprovesWhenAllGatesPass(t *testing.T) {
 			_, _ = w.Write([]byte(`{"state":"success","statuses":[]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/repos/o/r/commits/abc123/check-runs":
 			_, _ = w.Write([]byte(`{"total_count":1,"check_runs":[{"id":1,"status":"completed","conclusion":"success"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/repos/o/r/pulls/5/reviews":
+		case r.Method == http.MethodGet && r.URL.Path == pathPR5Reviews:
 			_, _ = w.Write([]byte(`[]`))
-		case r.Method == http.MethodPost && r.URL.Path == "/repos/o/r/pulls/5/reviews":
+		case r.Method == http.MethodPost && r.URL.Path == pathPR5Reviews:
 			reviewCreated = true
 			body, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			if err != nil {
+				t.Fatalf("read body: %v", err)
+			}
 			assert.Contains(t, string(body), `"event":"APPROVE"`)
 			_, _ = w.Write([]byte(`{"id":100}`))
 		default:
@@ -294,9 +314,9 @@ func TestRunDoesNotApproveWhenGateFails(t *testing.T) {
 			_, _ = w.Write([]byte(`{"state":"success","statuses":[]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/repos/o/r/commits/abc123/check-runs":
 			_, _ = w.Write([]byte(`{"total_count":1,"check_runs":[{"id":1,"status":"completed","conclusion":"success"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/repos/o/r/pulls/5/reviews":
+		case r.Method == http.MethodGet && r.URL.Path == pathPR5Reviews:
 			_, _ = w.Write([]byte(`[]`))
-		case r.Method == http.MethodPost && r.URL.Path == "/repos/o/r/pulls/5/reviews":
+		case r.Method == http.MethodPost && r.URL.Path == pathPR5Reviews:
 			reviewCreated = true
 			t.Fatalf("unexpected review creation request when gates fail")
 		default:
@@ -348,18 +368,10 @@ func TestLogJSONEncodeError(t *testing.T) {
 	require.NoError(t, w.Close())
 	out, err := io.ReadAll(r)
 	require.NoError(t, err)
-	assert.True(t, strings.Contains(string(out), "log_encode_error"))
+	assert.Contains(t, string(out), "log_encode_error")
 }
 
 func forceSetEnv(t *testing.T, key string, value string) {
 	t.Helper()
-	oldValue, existed := os.LookupEnv(key)
-	require.NoError(t, os.Setenv(key, value))
-	t.Cleanup(func() {
-		if !existed {
-			_ = os.Unsetenv(key)
-			return
-		}
-		_ = os.Setenv(key, oldValue)
-	})
+	t.Setenv(key, value)
 }

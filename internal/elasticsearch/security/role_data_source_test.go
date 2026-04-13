@@ -31,11 +31,11 @@ import (
 func TestAccDataSourceSecurityRole(t *testing.T) {
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityRole,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("additional"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -50,8 +50,9 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				Config:   testAccDataSourceSecurityRoleRemoteIndices,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -68,8 +69,9 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				Config:   testAccDataSourceSecurityRoleWithDescription,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -87,114 +89,3 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 		},
 	})
 }
-
-const testAccDataSourceSecurityRole = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "data_source_test"
-  cluster = ["all"]
-
-  indices {
-    names                    = ["index1", "index2"]
-    privileges               = ["all"]
-    allow_restricted_indices = true
-  }
-
-  applications {
-    application = "myapp"
-    privileges  = ["admin", "read"]
-    resources   = ["*"]
-  }
-
-  run_as = ["other_user"]
-
-  metadata = jsonencode({
-    version = 1
-  })
-}
-
-data "elasticstack_elasticsearch_security_role" "test" {
-  name = elasticstack_elasticsearch_security_role.test.name
-}
-`
-
-const testAccDataSourceSecurityRoleWithDescription = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "data_source_test"
-  cluster = ["all"]
-
-  indices {
-    names                    = ["index1", "index2"]
-    privileges               = ["all"]
-    allow_restricted_indices = true
-  }
-
-  applications {
-    application = "myapp"
-    privileges  = ["admin", "read"]
-    resources   = ["*"]
-  }
-
-  run_as = ["other_user"]
-
-  metadata = jsonencode({
-    version = 1
-  })
-
-  description =  "Test data source"
-}
-
-data "elasticstack_elasticsearch_security_role" "test" {
-  name = elasticstack_elasticsearch_security_role.test.name
-}
-`
-
-const testAccDataSourceSecurityRoleRemoteIndices = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = "data_source_test"
-  cluster = ["all"]
-
-  indices {
-    names                    = ["index1", "index2"]
-    privileges               = ["all"]
-    allow_restricted_indices = true
-  }
-
-  remote_indices {
-	clusters = ["test-cluster2"]
-	field_security {
-	  grant = ["sample"]
-	  except = []
-	}
-	names = ["sample2"]
-	privileges = ["create", "read", "write"]
-  }
-
-  applications {
-    application = "myapp"
-    privileges  = ["admin", "read"]
-    resources   = ["*"]
-  }
-
-  run_as = ["other_user"]
-
-  metadata = jsonencode({
-    version = 1
-  })
-}
-
-data "elasticstack_elasticsearch_security_role" "test" {
-  name = elasticstack_elasticsearch_security_role.test.name
-}
-`

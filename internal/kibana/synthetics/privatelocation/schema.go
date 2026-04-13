@@ -36,6 +36,7 @@ type tfModelV0 struct {
 	ID            types.String   `tfsdk:"id"`
 	Label         types.String   `tfsdk:"label"`
 	AgentPolicyID types.String   `tfsdk:"agent_policy_id"`
+	SpaceID       types.String   `tfsdk:"space_id"`
 	Tags          []types.String `tfsdk:"tags"` // > string
 	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
 }
@@ -65,6 +66,15 @@ func privateLocationSchema() schema.Schema {
 				Optional:            false,
 				Required:            true,
 				MarkdownDescription: agentPolicyIDDescription,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: spaceIDDescription,
+				Optional:            true,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
@@ -106,12 +116,24 @@ func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	return nil, diag.Diagnostics{}
 }
 
-func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
+// effectiveSpaceID returns the Kibana space for API calls. When the resource id
+// is a composite import id (<space_id>/<private_location_id>), the space
+// segment is used if space_id is not yet in state (for example right after import).
+func effectiveSpaceID(spaceID types.String, compositeID *clients.CompositeID) string {
+	s := spaceID.ValueString()
+	if compositeID != nil && (spaceID.IsNull() || spaceID.IsUnknown() || s == "") {
+		return compositeID.ClusterID
+	}
+	return s
+}
+
+func toModelV0(pLoc kbapi.PrivateLocation, spaceID string) tfModelV0 {
 
 	return tfModelV0{
 		ID:            types.StringValue(pLoc.Id),
 		Label:         types.StringValue(pLoc.Label),
 		AgentPolicyID: types.StringValue(pLoc.AgentPolicyId),
+		SpaceID:       types.StringValue(spaceID),
 		Tags:          synthetics.StringSliceValue(pLoc.Tags),
 		Geo:           fromSyntheticGeoConfig(pLoc.Geo),
 	}
@@ -122,6 +144,9 @@ var syntheticsPrivateLocationDescription string
 
 //go:embed agent_policy_id-description.md
 var agentPolicyIDDescription string
+
+//go:embed descriptions/space_id.md
+var spaceIDDescription string
 
 // Geographic configuration schema and types
 func geoConfigSchema() schema.Attribute {

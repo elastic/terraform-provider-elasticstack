@@ -44,7 +44,7 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Retrieves information about existing Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-index.html",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

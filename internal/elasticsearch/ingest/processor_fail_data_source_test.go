@@ -18,6 +18,7 @@
 package ingest_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -26,14 +27,68 @@ import (
 
 func TestAccDataSourceIngestProcessorFail(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorFail,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_fail.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "message", "The production tag is not present, found tags: {{{tags}}}"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "if", "ctx.tags.contains('production') != true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFail),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_fail.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "message", "Document is missing a required deployment identifier"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "description", "Fail when deployment metadata is missing"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "if", "ctx.deployment_id == null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "tag", "fail-missing-deployment-id"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFailAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_fail.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "on_failure.0", `{"set":{"field":"error.message","value":"fail processor triggered"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFailOnFailure),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_fail.test", "id"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "on_failure.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "message", "Reject documents without an event category"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_fail.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFailDefaults),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorFailInvalidOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_on_failure"),
+				ExpectError:              regexp.MustCompile(`"on_failure\.0" contains an invalid JSON`),
 			},
 		},
 	})
@@ -48,13 +103,37 @@ const expectedJSONFail = `{
 }
 `
 
-const testAccDataSourceIngestProcessorFail = `
-provider "elasticstack" {
-  elasticsearch {}
+const expectedJSONFailAllAttributes = `{
+  "fail": {
+		"description": "Fail when deployment metadata is missing",
+		"if": "ctx.deployment_id == null",
+		"ignore_failure": true,
+		"tag": "fail-missing-deployment-id",
+		"message": "Document is missing a required deployment identifier"
+  }
 }
+`
 
-data "elasticstack_elasticsearch_ingest_processor_fail" "test" {
-  if      = "ctx.tags.contains('production') != true"
-  message = "The production tag is not present, found tags: {{{tags}}}"
+const expectedJSONFailOnFailure = `{
+  "fail": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "fail processor triggered"
+				}
+			}
+		],
+		"message": "Reject documents without a service name"
+  }
+}
+`
+
+const expectedJSONFailDefaults = `{
+  "fail": {
+		"message": "Reject documents without an event category",
+		"ignore_failure": false
+  }
 }
 `

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package provider
 
 import (
@@ -11,9 +28,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
@@ -26,6 +45,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
+	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
@@ -33,11 +53,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
+	exportagentbuilderworkflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
@@ -51,6 +73,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
 	kibanaslo "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
@@ -62,9 +85,9 @@ import (
 )
 
 const (
-	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
-	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
-	AccTestVersion               = "acctest"
+	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	AccTestVersion            = "acctest"
+	envVarEnabled             = "true"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -88,10 +111,10 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 	res.Version = p.version
 }
 
-func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
+func (p *Provider) Schema(_ context.Context, _ fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(true),
+			esKeyName:    schema.GetEsFWConnectionBlock(),
 			kbKeyName:    schema.GetKbFWConnectionBlock(),
 			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
@@ -119,7 +142,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	datasources := p.dataSources(ctx)
 
-	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		datasources = append(datasources, p.experimentalDataSources(ctx)...)
 	}
 
@@ -127,17 +150,16 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	validateLocation := !(os.Getenv(SkipLocationValidationEnvVar) == "true")
-	resources := p.resources(ctx, validateLocation)
+	resources := p.resources(ctx)
 
-	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		resources = append(resources, p.experimentalResources(ctx)...)
 	}
 
 	return resources
 }
 
-func (p *Provider) resources(_ context.Context, validateLocation bool) []func() resource.Resource {
+func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
@@ -147,18 +169,22 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return monitor.NewResource(validateLocation) },
+		monitor.NewResource,
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
+		ilm.NewResource,
 		func() resource.Resource { return &connectors.Resource{} },
 		agentpolicy.NewResource,
+		agentbuilderworkflow.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
+		elasticdefendintegrationpolicy.NewResource,
 		output.NewResource,
 		serverhost.NewResource,
 		systemuser.NewSystemUserResource,
 		securityuser.NewUserResource,
 		role.NewRoleResource,
+		inferenceendpoint.NewInferenceEndpointResource,
 		script.NewScriptResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
@@ -183,16 +209,18 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 	}
 }
 
-func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
+func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dashboard.NewResource,
+		streams.NewResource,
 	}
 }
 
-func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		exportagentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,
@@ -202,6 +230,6 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	}
 }
 
-func (p *Provider) experimentalDataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *Provider) experimentalDataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }

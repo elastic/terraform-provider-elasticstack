@@ -41,7 +41,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"ignore_global_filters": true,
 		"sampling": 0.5,
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":"status:200"},
+		"query": {"language":"kql","query":"status:200"},
 		"legend": {"size": "medium"},
 		"metrics": [{"operation":"count"}],
 		"group_by": ` + groupBy + `
@@ -52,7 +52,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()
@@ -92,7 +92,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()
@@ -126,26 +126,26 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimple{
-			Query: "status:200",
+			Expression: "status:200",
 			Language: func() *kbapi.FilterSimpleLanguage {
-				lang := kbapi.FilterSimpleLanguage("kuery")
+				lang := kbapi.FilterSimpleLanguage("kql")
 				return &lang
 			}(),
 		},
 		Legend: kbapi.TreemapLegend{
-			Size: kbapi.LegendSizeMedium,
+			Size: kbapi.LegendSizeM,
 			Nested: func() *bool {
 				b := true
 				return &b
 			}(),
 			TruncateAfterLines: new(float32(4)),
-			Visible: func() *kbapi.TreemapLegendVisible {
-				v := kbapi.TreemapLegendVisibleAuto
+			Visibility: func() *kbapi.TreemapLegendVisibility {
+				v := kbapi.TreemapLegendVisibilityAuto
 				return &v
 			}(),
 		},
-		ValueDisplay: kbapi.ValueDisplay{
-			Mode:            kbapi.ValueDisplayModePercentage,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
 			PercentDecimals: new(float32(2)),
 		},
 	}
@@ -167,9 +167,6 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricItem))
 	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
 
-	lp := kbapi.TreemapNoESQLLabelPositionVisible
-	api.LabelPosition = &lp
-
 	model := &treemapConfigModel{}
 	diags := model.fromAPINoESQL(api)
 	require.False(t, diags.HasError())
@@ -179,14 +176,13 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
-	assert.Equal(t, types.StringValue("status:200"), model.Query.Query)
-	assert.Equal(t, types.StringValue("kuery"), model.Query.Language)
+	assert.Equal(t, types.StringValue("status:200"), model.Query.Expression)
+	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
 	assert.False(t, model.Dataset.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
-	assert.Equal(t, types.StringValue("visible"), model.LabelPosition)
 	require.NotNil(t, model.Legend)
-	assert.Equal(t, types.StringValue("medium"), model.Legend.Size)
+	assert.Equal(t, types.StringValue("m"), model.Legend.Size)
 	require.NotNil(t, model.ValueDisplay)
 	assert.Equal(t, types.StringValue("percentage"), model.ValueDisplay.Mode)
 	assert.Equal(t, types.Float64Value(2), model.ValueDisplay.PercentDecimals)
@@ -213,34 +209,30 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &format))
 
 	groupBy := []struct {
-		CollapseBy kbapi.CollapseBy                  `json:"collapse_by"`
-		Color      kbapi.ColorMapping                `json:"color"`
-		Column     string                            `json:"column"`
-		Format     kbapi.FormatType                  `json:"format"`
-		Label      *string                           `json:"label,omitempty"`
-		Operation  kbapi.TreemapESQLGroupByOperation `json:"operation"`
+		CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+		Color      kbapi.ColorMapping `json:"color"`
+		Column     string             `json:"column"`
+		Format     kbapi.FormatType   `json:"format"`
+		Label      *string            `json:"label,omitempty"`
 	}{
 		{
 			CollapseBy: kbapi.CollapseByAvg,
 			Color:      colorMapping,
 			Column:     "host.name",
 			Format:     format,
-			Operation:  kbapi.TreemapESQLGroupByOperationValue,
 		},
 	}
 
 	metrics := []struct {
-		Color     kbapi.StaticColor                 `json:"color"`
-		Column    string                            `json:"column"`
-		Format    kbapi.FormatType                  `json:"format"`
-		Label     *string                           `json:"label,omitempty"`
-		Operation kbapi.TreemapESQLMetricsOperation `json:"operation"`
+		Color  kbapi.StaticColor `json:"color"`
+		Column string            `json:"column"`
+		Format kbapi.FormatType  `json:"format"`
+		Label  *string           `json:"label,omitempty"`
 	}{
 		{
-			Color:     staticColor,
-			Column:    "bytes",
-			Format:    format,
-			Operation: kbapi.TreemapESQLMetricsOperationValue,
+			Color:  staticColor,
+			Column: "bytes",
+			Format: format,
 		},
 	}
 
@@ -250,17 +242,14 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		Description:         new("ESQL description"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
-		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeSmall},
+		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeS},
 		Metrics:             metrics,
 		GroupBy:             &groupBy,
-		ValueDisplay: kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayModeAbsolute,
+		Values: kbapi.ValueDisplay{
+			Mode: func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
 		},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
-
-	lp := kbapi.TreemapESQLLabelPositionHidden
-	api.LabelPosition = &lp
 
 	model := &treemapConfigModel{}
 	diags := model.fromAPIESQL(api)
@@ -270,7 +259,6 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.False(t, model.Dataset.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
-	assert.Equal(t, types.StringValue("hidden"), model.LabelPosition)
 	assert.Nil(t, model.Query)
 
 	schema, diags := model.toAPI()
@@ -307,8 +295,8 @@ func Test_treemapConfigModel_fromAPINoESQL_preservesKnownWhenAPIIsDefault(t *tes
 		Type:                kbapi.TreemapNoESQLTypeTreemap,
 		IgnoreGlobalFilters: new(false),      // snapshot default
 		Sampling:            new(float32(1)), // snapshot default
-		Query:               kbapi.FilterSimple{Query: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kuery"); return &l }()},
-		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeMedium},
+		Query:               kbapi.FilterSimple{Expression: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }()},
+		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeM},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"x"}`), &api.Dataset))
 	var metricItem kbapi.TreemapNoESQL_Metrics_Item
@@ -350,7 +338,7 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()

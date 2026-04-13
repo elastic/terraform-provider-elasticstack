@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -75,14 +76,14 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 			}
 
 			resource.Test(t, resource.TestCase{
-				PreCheck:                 func() { acctest.PreCheck(t) },
-				CheckDestroy:             checkResourceKibanaConnectorDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
+				PreCheck:     func() { acctest.PreCheck(t) },
+				CheckDestroy: checkResourceKibanaConnectorDestroy,
 				Steps: []resource.TestStep{
 					{
-						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
-						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-						ConfigVariables: vars,
+						ProtoV6ProviderFactories: acctest.Providers,
+						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+						ConfigVariables:          vars,
 						Check: resource.ComposeTestCheckFunc(
 							testCommonAttributes(connectorName, ".cases-webhook"),
 
@@ -116,9 +117,10 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 						),
 					},
 					{
-						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
-						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-						ConfigVariables: vars,
+						ProtoV6ProviderFactories: acctest.Providers,
+						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+						ConfigVariables:          vars,
 						Check: resource.ComposeTestCheckFunc(
 							testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".cases-webhook"),
 
@@ -138,9 +140,10 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 						),
 					},
 					{
-						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
-						ConfigDirectory: acctest.NamedTestCaseDirectory("null_headers"),
-						ConfigVariables: vars,
+						ProtoV6ProviderFactories: acctest.Providers,
+						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("null_headers"),
+						ConfigVariables:          vars,
 						Check: resource.ComposeTestCheckFunc(
 							testCommonAttributes(connectorName, ".cases-webhook"),
 
@@ -208,13 +211,13 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceKibanaConnectorDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -226,8 +229,9 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -236,6 +240,58 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"index\":\"\.kibana\"`)),
 					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"refresh\":false`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".webhook"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://hooks\.example\.com/services\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"method\":\"post\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"hasAuth\":false`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"authType\":null`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"Content-Type\":\"application/json\"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets", "{}"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_auth_type"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".webhook"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"url\":\"https://hooks\.example\.com/services\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"method\":\"post\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"hasAuth\":false`)),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_action_connector.test", "config", func(value string) error {
+						if strings.Contains(value, `"authType"`) {
+							return fmt.Errorf("expected authType to be omitted from config, got %s", value)
+						}
+						return nil
+					}),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"Content-Type\":\"application/json\"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets", "{}"),
 				),
 			},
 		},
@@ -274,7 +330,7 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -320,7 +376,7 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -383,13 +439,13 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 			connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 			resource.Test(t, resource.TestCase{
-				PreCheck:                 func() { acctest.PreCheck(t) },
-				CheckDestroy:             checkResourceKibanaConnectorDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
+				PreCheck:     func() { acctest.PreCheck(t) },
+				CheckDestroy: checkResourceKibanaConnectorDestroy,
 				Steps: []resource.TestStep{
 					{
-						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
-						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+						ProtoV6ProviderFactories: acctest.Providers,
+						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 						ConfigVariables: config.Variables{
 							"connector_name": config.StringVariable(connectorName),
 						},
@@ -398,8 +454,9 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 						),
 					},
 					{
-						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
-						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+						ProtoV6ProviderFactories: acctest.Providers,
+						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 						ConfigVariables: config.Variables{
 							"connector_name": config.StringVariable(connectorName),
 						},

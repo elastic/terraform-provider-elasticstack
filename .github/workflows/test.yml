@@ -29,7 +29,7 @@ jobs:
       should_run: ${{ steps.decide.outputs.should_run }}
     steps:
       - id: decide
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             if (context.eventName === 'pull_request' && context.payload.action === 'ready_for_review') {
@@ -41,7 +41,10 @@ jobs:
               return;
             }
 
-            const copilotAuthorEmail = '198982749+Copilot@users.noreply.github.com';
+            const allowedBotEmails = new Set([
+              '198982749+Copilot@users.noreply.github.com',
+              '41898282+github-actions[bot]@users.noreply.github.com',
+            ]);
             const branch = context.ref.replace('refs/heads/', '');
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -53,20 +56,20 @@ jobs:
 
             const commits = context.payload.commits || [];
             const noOpenPR = pulls.length === 0;
-            const allCopilot =
+            const allAllowedBots =
               commits.length > 0 &&
-              commits.every((c) => (c.author && c.author.email) === copilotAuthorEmail);
-            const shouldRun = noOpenPR || allCopilot;
+              commits.every((c) => allowedBotEmails.has(c.author && c.author.email));
+            const shouldRun = noOpenPR || allAllowedBots;
 
             if (shouldRun) {
               core.info(
                 noOpenPR
                   ? `No open PR found for ${branch}; running workflow for push.`
-                  : `Open PR found for ${branch}, but all ${commits.length} pushed commit(s) are Copilot-authored; running workflow for push.`
+                  : `Open PR found for ${branch}, but all ${commits.length} pushed commit(s) are authored by an allowed bot user; running workflow for push.`
               );
             } else {
               core.info(
-                `Open PR found for ${branch} and not all pushed commits are Copilot-authored; skipping push workflow execution.`
+                `Open PR found for ${branch} and not all pushed commits are authored by an allowed bot user; skipping push workflow execution.`
               );
             }
             core.setOutput('should_run', shouldRun ? 'true' : 'false');
@@ -79,7 +82,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -104,7 +107,7 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: package-lock.json
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -178,7 +181,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -261,7 +264,7 @@ jobs:
       - name: Warn PR for snapshot acceptance failure
         if: steps.tf-acceptance.outcome == 'failure' && endsWith(matrix.version, '-SNAPSHOT') && github.event_name == 'pull_request'
         continue-on-error: true
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const marker = '<!-- tf-acceptance-snapshot-warning:${{ matrix.version }} -->';
@@ -323,7 +326,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
           cache: true
