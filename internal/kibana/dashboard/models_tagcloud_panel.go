@@ -168,6 +168,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 
 	// Set type to "tagcloud"
 	api.Type = kbapi.TagcloudNoESQLTypeTagCloud
+	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -180,7 +181,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	// Handle dataset
 	if !m.DataSourceJSON.IsNull() {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
-			diags.AddError("Failed to unmarshal dataset", err.Error())
+			diags.AddError("Failed to unmarshal tagcloud_config.data_source_json", err.Error())
 			return api, diags
 		}
 	}

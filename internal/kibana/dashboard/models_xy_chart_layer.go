@@ -459,7 +459,11 @@ func (m *referenceLineLayerModel) toAPIXyReferenceLineLayerNoESQL(layerType stri
 		for _, t := range m.Thresholds {
 			if typeutils.IsKnown(t.ValueJSON) {
 				var op any
-				diags.Append(t.ValueJSON.Unmarshal(&op)...)
+				valueDiags := t.ValueJSON.Unmarshal(&op)
+				diags.Append(valueDiags...)
+				if valueDiags.HasError() {
+					continue
+				}
 				opBytes, err := json.Marshal(op)
 				if err != nil {
 					diags.AddError("Failed to marshal reference line threshold", err.Error())

@@ -21,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -221,10 +222,11 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 }
 
 // buildEsqlControlConfig writes the TF model fields into the API panel struct.
-func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) {
+func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
+	var diags diag.Diagnostics
 	cfg := pm.EsqlControlConfig
 	if cfg == nil {
-		return
+		return diags
 	}
 
 	displayToAPI := func(ds *esqlControlDisplaySettingsModel) *esqlControlDisplaySettingsAPI {
@@ -268,8 +270,10 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 			vq.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 		}
 		vq.DisplaySettings = displayToAPI(cfg.DisplaySettings)
-		_ = esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq)
-		return
+		if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq); err != nil {
+			diags.AddError("Failed to build esql control values_from_query config", err.Error())
+		}
+		return diags
 	}
 
 	sv := kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
@@ -290,5 +294,8 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 		sv.AvailableOptions = listToStrings(cfg.AvailableOptions)
 	}
 	sv.DisplaySettings = displayToAPI(cfg.DisplaySettings)
-	_ = esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv)
+	if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
+		diags.AddError("Failed to build esql control static_values config", err.Error())
+	}
+	return diags
 }

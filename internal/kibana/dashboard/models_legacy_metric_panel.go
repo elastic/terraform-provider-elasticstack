@@ -151,6 +151,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		api := kbapi.LegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
+		api.TimeRange = lensPanelTimeRange()
 
 		if typeutils.IsKnown(m.Title) {
 			api.Title = new(m.Title.ValueString())
@@ -177,7 +178,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 
 		if typeutils.IsKnown(m.DataSourceJSON) {
 			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal dataset", err.Error())
+				diags.AddError("Failed to unmarshal legacy_metric_config.data_source_json", err.Error())
 				return result, diags
 			}
 		}

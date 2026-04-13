@@ -45,7 +45,7 @@ func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *
 	}
 }
 
-// These headers and query parameters appear to be required by the Dashboard API at the moment.
+// The Dashboard API currently requires allowUnmappedKeys for these requests.
 func addDashboardRequestShapeEditor() func(ctx context.Context, req *http.Request) error {
 	return func(_ context.Context, req *http.Request) error {
 		query := req.URL.Query()

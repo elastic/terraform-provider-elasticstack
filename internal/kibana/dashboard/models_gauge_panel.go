@@ -136,6 +136,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var api kbapi.GaugeNoESQL
 
 	api.Type = kbapi.GaugeNoESQLTypeGauge
+	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -147,7 +148,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
-			diags.AddError("Failed to unmarshal dataset", err.Error())
+			diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
 			return api, diags
 		}
 	}

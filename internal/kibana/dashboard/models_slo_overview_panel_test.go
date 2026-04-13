@@ -133,13 +133,8 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 
 	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
-		Grid: struct {
-			H *float32 `json:"h,omitempty"`
-			W *float32 `json:"w,omitempty"`
-			X float32  `json:"x"`
-			Y float32  `json:"y"`
-		}{X: 0, Y: 0},
-		Type: kbapi.SloOverview,
+		Grid:   kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
 	}
 
 	pm := &panelModel{}

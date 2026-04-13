@@ -271,6 +271,8 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.KbnDashboardPanelTypeVis
 	variant0 := kbapi.MetricNoESQL{
 		Type: kbapi.MetricNoESQLTypeMetric,
 	}
+	variant0.Styling = kbapi.MetricStyling{}
+	variant0.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -345,6 +347,8 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.KbnDashboardPanelTypeVis
 	variant1 := kbapi.MetricESQL{
 		Type: kbapi.MetricESQLTypeMetric,
 	}
+	variant1.Styling = kbapi.MetricStyling{}
+	variant1.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {

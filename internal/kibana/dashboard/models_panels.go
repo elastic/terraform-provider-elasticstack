@@ -601,7 +601,10 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			Grid: grid,
 			Id:   panelID,
 		}
-		buildEsqlControlConfig(pm, &esqlPanel)
+		diags.Append(buildEsqlControlConfig(pm, &esqlPanel)...)
+		if diags.HasError() {
+			return kbapi.DashboardPanelItem{}, diags
+		}
 		if err := panelItem.FromKbnDashboardPanelTypeEsqlControl(esqlPanel); err != nil {
 			diags.AddError("Failed to create esql control panel", err.Error())
 		}

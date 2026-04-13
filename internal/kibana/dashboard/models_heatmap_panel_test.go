@@ -246,10 +246,10 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"description": "Converter test",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axis": { "x": {}, "y": {} },
+		"axes": { "x": {}, "y": {} },
 		"cells": {},
 		"legend": { "size": "medium" },
-		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"metric": {
 			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
 			"column": "bytes",

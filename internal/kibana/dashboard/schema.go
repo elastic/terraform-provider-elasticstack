@@ -2938,9 +2938,18 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 					NestedObject:        filterItemSchema,
 				},
 				"statuses": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor statuses. Each entry has a `label` (display name) and a `value` (status, e.g. `up`, `down`).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
+					MarkdownDescription: "Filter by monitor statuses. Each entry has a `label` " +
+						"(display name) and a `value` (status, e.g. `up`, `down`). The Kibana " +
+						"Dashboard API does not currently accept this field, so non-empty values " +
+						"are rejected until API support is added.",
+					Optional:     true,
+					NestedObject: filterItemSchema,
+					Validators: []validator.List{
+						unsupportedNonEmptyList(
+							"Unsupported synthetics statuses filter",
+							"The Kibana Dashboard API does not currently accept `synthetics_monitors_config.filters.statuses`, so non-empty values are not supported yet.",
+						),
+					},
 				},
 			},
 		},

@@ -292,6 +292,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		chart.TimeRange = lensPanelTimeRange()
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -326,7 +327,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Dataset
 		if !m.DataSourceJSON.IsNull() {
 			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal dataset", err.Error())
+				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
 			}
 		}
 
@@ -369,6 +370,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		chart.TimeRange = lensPanelTimeRange()
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -404,7 +406,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Dataset
 		if !m.DataSourceJSON.IsNull() {
 			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal dataset", err.Error())
+				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
 			}
 		}
 

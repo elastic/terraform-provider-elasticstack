@@ -1276,8 +1276,7 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyC
 	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
 	diags.Append(legendDiags...)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(kbapi.FilterSimple{})
+	m.Query = nil
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 	return diags

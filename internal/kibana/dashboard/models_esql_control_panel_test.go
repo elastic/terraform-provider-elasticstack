@@ -229,7 +229,8 @@ func Test_buildEsqlControlConfig_requiredFields(t *testing.T) {
 		},
 	}
 	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
-	buildEsqlControlConfig(pm, &esqlPanel)
+	diags := buildEsqlControlConfig(pm, &esqlPanel)
+	require.False(t, diags.HasError())
 
 	sv, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues()
 	require.NoError(t, err)
@@ -265,7 +266,8 @@ func Test_buildEsqlControlConfig_optionalFields(t *testing.T) {
 		},
 	}
 	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
-	buildEsqlControlConfig(pm, &esqlPanel)
+	diags := buildEsqlControlConfig(pm, &esqlPanel)
+	require.False(t, diags.HasError())
 
 	vq, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery()
 	require.NoError(t, err)
@@ -298,7 +300,8 @@ func Test_buildEsqlControlConfig_nullOptionalFields_omitted(t *testing.T) {
 		},
 	}
 	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
-	buildEsqlControlConfig(pm, &esqlPanel)
+	diags := buildEsqlControlConfig(pm, &esqlPanel)
+	require.False(t, diags.HasError())
 
 	sv, err := esqlPanel.Config.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues()
 	require.NoError(t, err)
@@ -323,7 +326,8 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 	pm := panelModel{EsqlControlConfig: original}
 
 	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
-	buildEsqlControlConfig(pm, &esqlPanel)
+	diags := buildEsqlControlConfig(pm, &esqlPanel)
+	require.False(t, diags.HasError())
 
 	out := &panelModel{EsqlControlConfig: &esqlControlConfigModel{
 		SelectedOptions:  original.SelectedOptions,
