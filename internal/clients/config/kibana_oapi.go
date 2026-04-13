@@ -191,7 +191,7 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 // resource-level kibana_connection block for the OpenAPI client.
 func newKibanaOapiConfigFromSDKResource(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
 	config := base.toKibanaOapiConfig()
-	kibConn, ok := d.GetOk("kibana_connection")
+	kibConn, ok := d.GetOk(kibanaConnectionKey)
 	if !ok {
 		return config, nil
 	}

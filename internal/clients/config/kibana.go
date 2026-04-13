@@ -193,7 +193,7 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 // the resulting config is fully scoped to the Kibana endpoint.
 func newKibanaConfigFromSDKResource(d *schema.ResourceData, base baseConfig) (kibanaConfig, sdkdiags.Diagnostics) {
 	config := base.toKibanaConfig()
-	kibConn, ok := d.GetOk("kibana_connection")
+	kibConn, ok := d.GetOk(kibanaConnectionKey)
 	if !ok {
 		return config, nil
 	}

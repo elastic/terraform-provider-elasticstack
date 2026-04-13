@@ -231,10 +231,6 @@ func MaybeNewKibanaAPIClientFromFrameworkResource(ctx context.Context, kibConnLi
 		return nil, diags
 	}
 
-	if cfg == nil {
-		return defaultClient, nil
-	}
-
 	kibanaClient, err := buildKibanaClient(*cfg)
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana client", err.Error())}
