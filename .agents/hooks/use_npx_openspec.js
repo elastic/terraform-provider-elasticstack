@@ -3,15 +3,14 @@
 main();
 
 async function main() {
-  const chunks = [];
-
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
-  }
-
-  const rawInput = Buffer.concat(chunks).toString("utf8");
-
   try {
+    const chunks = [];
+
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk);
+    }
+
+    const rawInput = Buffer.concat(chunks).toString("utf8");
     const payload = rawInput ? JSON.parse(rawInput) : {};
     const toolInput = payload.tool_input ?? {};
     const command = typeof toolInput.command === "string" ? toolInput.command : "";
