@@ -10,7 +10,7 @@
 - **AND** it SHALL return the error `provider Elasticsearch client is not configured: set elasticsearch.endpoints or ELASTICSEARCH_ENDPOINTS`
 
 ### Requirement: Kibana-family accessors require an effective Kibana endpoint
-`(*clients.APIClient).GetKibanaClient()`, `GetKibanaOapiClient()`, and `GetSloClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If neither provider configuration nor environment overrides produce a Kibana endpoint, each accessor SHALL return an error instead of returning a usable client.
+`(*clients.APIClient).GetKibanaClient()`, `(*clients.APIClient).GetKibanaOapiClient()`, and `(*clients.APIClient).GetSloClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If neither provider configuration nor environment overrides produce a Kibana endpoint, each accessor SHALL return an error instead of returning a usable client.
 
 #### Scenario: Missing Kibana endpoint returns actionable error for the legacy Kibana client
 - **GIVEN** a provider client whose effective Kibana endpoint configuration is empty
