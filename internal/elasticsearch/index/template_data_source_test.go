@@ -239,15 +239,14 @@ func TestAccIndexTemplateDataSourceExplicitConnectionAPIKey(t *testing.T) {
 }
 
 func TestAccIndexTemplateDataSourceExplicitConnectionBearerToken(t *testing.T) {
+	preCheckIndexTemplateDataSourceBasicAuth(t)
+
 	templateName := "test-ds-bearer-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	endpoint := indexTemplateDataSourcePrimaryESEndpoint(t)
-	var bearerToken string
+	bearerToken := createIndexTemplateDataSourceESAccessToken(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			preCheckIndexTemplateDataSourceBasicAuth(t)
-			bearerToken = createIndexTemplateDataSourceESAccessToken(t)
-		},
+		PreCheck: func() { preCheckIndexTemplateDataSourceBasicAuth(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
