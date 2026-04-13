@@ -33,7 +33,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
