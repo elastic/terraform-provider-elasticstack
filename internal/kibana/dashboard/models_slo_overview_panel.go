@@ -95,11 +95,11 @@ func sloOverviewToAPI(pm panelModel, grid struct {
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
 	Y float32  `json:"y"`
-}, uid *string) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+}, id *string) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	cfg := pm.SloOverviewConfig
 
-	var config kbapi.KbnDashboardPanelSloOverview_Config
+	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
 
 	if cfg.Single != nil {
 		single, d := singleToAPI(cfg.Single)
@@ -138,25 +138,20 @@ func sloOverviewToAPI(pm panelModel, grid struct {
 		}
 	}
 
-	panel := kbapi.KbnDashboardPanelSloOverview{
+	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
-		Grid: struct {
-			H *float32 `json:"h,omitempty"`
-			W *float32 `json:"w,omitempty"`
-			X float32  `json:"x"`
-			Y float32  `json:"y"`
-		}{
+		Grid: kbapi.KbnDashboardPanelGrid{
 			H: grid.H,
 			W: grid.W,
 			X: grid.X,
 			Y: grid.Y,
 		},
 		Type: kbapi.SloOverview,
-		Uid:  uid,
+		Id:   id,
 	}
 
 	var item kbapi.DashboardPanelItem
-	if err := item.FromKbnDashboardPanelSloOverview(panel); err != nil {
+	if err := item.FromKbnDashboardPanelTypeSloOverview(panel); err != nil {
 		diags.AddError("Failed to create SLO overview panel item", err.Error())
 	}
 	return item, diags
@@ -336,9 +331,9 @@ func groupFiltersToAPI(m *sloGroupFiltersModel) (*struct {
 	return gf, diags
 }
 
-// sloOverviewFromAPI reads a KbnDashboardPanelSloOverview from the API response and
+// sloOverviewFromAPI reads a KbnDashboardPanelTypeSloOverview from the API response and
 // populates the panel model. tfPanel is the prior TF state/plan (may be nil on import).
-func sloOverviewFromAPI(pm *panelModel, tfPanel *panelModel, panel kbapi.KbnDashboardPanelSloOverview) diag.Diagnostics {
+func sloOverviewFromAPI(pm *panelModel, tfPanel *panelModel, panel kbapi.KbnDashboardPanelTypeSloOverview) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	discriminator, err := panel.Config.Discriminator()

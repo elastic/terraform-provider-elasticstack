@@ -44,7 +44,7 @@ type sloBurnRateDrilldownModel struct {
 }
 
 // buildSloBurnRateConfig writes the TF model fields into the API panel struct.
-func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelSloBurnRate) {
+func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) {
 	cfg := pm.SloBurnRateConfig
 	if cfg == nil {
 		return

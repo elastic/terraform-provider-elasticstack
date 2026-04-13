@@ -32,6 +32,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       variable_type    = "fields"
       esql_query       = "FROM logs-* | KEEP host.name"
       control_type     = "VALUES_FROM_QUERY"
+      title            = "Fields Control"
     }
   }]
 }

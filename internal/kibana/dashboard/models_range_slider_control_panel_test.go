@@ -27,34 +27,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func apiRangeSliderConfig(opts ...func(*kbapi.KbnDashboardPanelRangeSliderControl_Config)) kbapi.KbnDashboardPanelRangeSliderControl_Config {
-	cfg := kbapi.KbnDashboardPanelRangeSliderControl_Config{
-		DataViewId: "dv-1",
-		FieldName:  "bytes",
-	}
+func apiRangeSliderConfig(opts ...func(*kbapi.KbnDashboardPanelTypeRangeSliderControl)) *kbapi.KbnDashboardPanelTypeRangeSliderControl {
+	p := &kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+	p.Config.DataViewId = "dv-1"
+	p.Config.FieldName = "bytes"
 	for _, o := range opts {
-		o(&cfg)
+		o(p)
 	}
-	return cfg
+	return p
 }
 
-func rsWithTitle(t string) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
-	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) { c.Title = &t }
+func rsWithTitle(t string) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.Title = &t }
 }
-func withUseGlobalFilters(b bool) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
-	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) { c.UseGlobalFilters = &b }
+func withUseGlobalFilters(b bool) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.UseGlobalFilters = &b }
 }
-func withIgnoreValidations(b bool) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
-	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) { c.IgnoreValidations = &b }
+func withIgnoreValidations(b bool) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.IgnoreValidations = &b }
 }
-func withValue(lo, hi string) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
-	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) {
+func withValue(lo, hi string) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
 		v := []string{lo, hi}
-		c.Value = &v
+		p.Config.Value = &v
 	}
 }
-func withStep(s float32) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
-	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) { c.Step = &s }
+func withStep(s float32) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.Step = &s }
 }
 
 func mustStringList(elems ...string) types.List {
@@ -184,9 +183,7 @@ func Test_buildRangeSliderControlConfig_knownFields(t *testing.T) {
 			Step:              types.Float32Value(5),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
-		Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
-	}
+	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
 	buildRangeSliderControlConfig(pm, &rsPanel)
 	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
 	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
@@ -215,9 +212,7 @@ func Test_buildRangeSliderControlConfig_nullOptionalFields(t *testing.T) {
 			Step:              types.Float32Null(),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
-		Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
-	}
+	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
 	buildRangeSliderControlConfig(pm, &rsPanel)
 	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
 	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
@@ -240,9 +235,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 		Step:              types.Float32Value(10),
 	}
 	pm := panelModel{RangeSliderControlConfig: &original}
-	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
-		Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
-	}
+	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
 	buildRangeSliderControlConfig(pm, &rsPanel)
 
 	out := &panelModel{
@@ -257,7 +250,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 		},
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: out.RangeSliderControlConfig}
-	populateRangeSliderControlFromAPI(context.Background(), out, tfPanel, rsPanel.Config)
+	populateRangeSliderControlFromAPI(context.Background(), out, tfPanel, &rsPanel)
 
 	require.NotNil(t, out.RangeSliderControlConfig)
 	assert.Equal(t, original.DataViewID, out.RangeSliderControlConfig.DataViewID)
@@ -278,9 +271,7 @@ func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
 			Value:      mustStringList("0", "1000"),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
-		Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
-	}
+	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
 	buildRangeSliderControlConfig(pm, &rsPanel)
 	require.NotNil(t, rsPanel.Config.Value)
 	assert.Len(t, *rsPanel.Config.Value, 2)

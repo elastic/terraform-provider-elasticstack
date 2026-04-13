@@ -54,7 +54,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       w = <optional, int64>
       h = <optional, int64>
     }
-    uid = <optional, computed, string> # API uid; UseNonNullStateForUnknown
+    id = <optional, computed, string> # Terraform id aligned with API id; UseNonNullStateForUnknown
 
     markdown_config = <optional, object({
       content     = <optional, string>
@@ -66,19 +66,19 @@ resource "elasticstack_kibana_dashboard" "example" {
     xy_chart_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
-      axis        = <required, object({ x = <optional, object(...)>, left = <optional, object(...)>, right = <optional, object(...)> })>
+      axis        = <required, object({ x = <optional, object({ domain_json = <optional, json string, normalized>, ... })>, y = <optional, object({ domain_json = <required, json string, normalized>, ... })>, secondary_y = <optional, object({ domain_json = <required, json string, normalized>, ... })> })>
       decorations = <required, object(...)>
       fitting     = <required, object({ type = <required, string>, dotted = <optional, bool>, end_value = <optional, string> })>
       layers      = <required, list(object({ type = <required, string>, data_layer = <optional, object(...)>, reference_line_layer = <optional, object(...)> }))> # at least 1
       legend      = <required, object(...)>
       query       = <required, object({ language = <optional, string>, query = <required, string> })>
       filters     = <optional, list(object({ filter_json = <required, json string, normalized> }))>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     treemap_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # required for non-ES|QL mode
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
@@ -88,12 +88,12 @@ resource "elasticstack_kibana_dashboard" "example" {
       label_position        = <optional, string>
       legend                = <required, object(...)>
       value_display         = <optional, object({ mode = <required, string>, percent_decimals = <optional, float64> })>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     mosaic_config = <optional, object({
       title                   = <optional, string>
       description             = <optional, string>
-      dataset_json            = <required, json string, normalized>
+      data_source_json        = <required, json string, normalized>
       query                   = <optional, object({ language = <optional, string>, query = <required, string> })> # required for non-ES|QL mode
       filters                 = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters   = <optional, bool>
@@ -103,13 +103,13 @@ resource "elasticstack_kibana_dashboard" "example" {
       metrics_json            = <required, json string with defaults> # exactly 1 metric in TF model
       legend                  = <required, object(...)>
       value_display           = <optional, object({ mode = <required, string>, percent_decimals = <optional, float64> })>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     datatable_config = <optional, object({
       no_esql = <optional, object({
         title                 = <optional, string>
         description           = <optional, string>
-        dataset_json          = <required, json string, normalized>
+        data_source_json      = <required, json string, normalized>
         density               = <required, object(...)>
         query                 = <required, object({ language = <optional, string>, query = <required, string> })>
         filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
@@ -124,7 +124,7 @@ resource "elasticstack_kibana_dashboard" "example" {
       esql = <optional, object({
         title                 = <optional, string>
         description           = <optional, string>
-        dataset_json          = <required, json string, normalized>
+        data_source_json      = <required, json string, normalized>
         density               = <required, object(...)>
         filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
         ignore_global_filters = <optional, bool>
@@ -135,12 +135,12 @@ resource "elasticstack_kibana_dashboard" "example" {
         sort_by_json          = <optional, json string, normalized>
         paging                = <optional, int64>
       })>
-    })> # only with type = "lens"; `no_esql` and `esql` conflict
+    })> # only with type = "vis"; `no_esql` and `esql` conflict
 
     tagcloud_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <required, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
@@ -149,12 +149,12 @@ resource "elasticstack_kibana_dashboard" "example" {
       font_size             = <optional, object({ min = <optional, float64>, max = <optional, float64> })>
       metric_json           = <required, json string with defaults>
       tag_by_json           = <required, json string with defaults>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     heatmap_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # required for non-ES|QL mode
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
@@ -165,12 +165,12 @@ resource "elasticstack_kibana_dashboard" "example" {
       metric_json           = <required, json string with defaults>
       x_axis_json           = <required, json string, normalized>
       y_axis_json           = <optional, json string, normalized>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     waffle_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # required for non-ES|QL mode; omit for ES|QL mode
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
@@ -181,48 +181,48 @@ resource "elasticstack_kibana_dashboard" "example" {
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # non-ES|QL
       esql_metrics          = <optional, list(object({ column = <required, string>, operation = <required, string>, label = <optional, string>, format_json = <required, json string, normalized>, color = <required, object(...)> }))> # ES|QL; at least 1
       esql_group_by         = <optional, list(object({ column = <required, string>, operation = <required, string>, collapse_by = <required, string>, color_json = <required, json string, normalized>, format_json = <optional, json string, normalized>, label = <optional, string> }))> # ES|QL
-    })> # only with type = "lens"; ES|QL-vs-non-ES|QL consistency validator
+    })> # only with type = "vis"; ES|QL-vs-non-ES|QL consistency validator
 
     region_map_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
       sampling              = <optional, float64>
       metric_json           = <required, json string with defaults>
       region_json           = <required, json string, normalized>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     gauge_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <required, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
       sampling              = <optional, float64>
       metric_json           = <required, json string with defaults>
       shape_json            = <optional, json string, normalized>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     metric_chart_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # non-ES|QL branch
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, bool>
       sampling              = <optional, float64>
       metrics               = <required, list(object({ config_json = <required, json string with defaults> }))> # at most 2
       breakdown_by_json     = <optional, json string, normalized>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     pie_chart_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <optional, json string, normalized>
+      data_source_json      = <optional, json string, normalized>
       query                 = <optional, object({ language = <optional, string>, query = <required, string> })>
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       ignore_global_filters = <optional, computed, bool> # default false
@@ -237,25 +237,25 @@ resource "elasticstack_kibana_dashboard" "example" {
       })> # schema default when omitted (typical size/visibility auto); optional+computed for Terraform
       metrics               = <required, list(object({ config = <required, json string with defaults> }))> # at least 1
       group_by              = <optional, list(object({ config = <required, json string with defaults> }))> # at least 1 when set
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     legacy_metric_config = <optional, object({
       title                 = <optional, string>
       description           = <optional, string>
-      dataset_json          = <required, json string, normalized>
+      data_source_json      = <required, json string, normalized>
       metric_json           = <required, json string with defaults>
-      query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # required for non-ES|QL dataset types
+      query                 = <optional, object({ language = <optional, string>, query = <required, string> })> # required for supported data_view_reference / data_view_spec sources
       filters               = <optional, list(object({ filter_json = <required, json string, normalized> }))>
       sampling              = <optional, float64>
       ignore_global_filters = <optional, bool>
-    })> # only with type = "lens"
+    })> # only with type = "vis"
 
     config_json          = <optional, computed, json string with default-aware semantic equality> # conflicts with all typed panel config blocks
   }))> # each panel requires at least one config block
 
   sections = <optional, list(object({
     title     = <required, string>
-    uid       = <optional, computed, string>
+    id        = <optional, computed, string>
     collapsed = <optional, bool>
     grid = {
       y = <required, int64>
@@ -277,7 +277,7 @@ Notes:
 ## Requirements
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
-The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: header `x-elastic-internal-origin: Kibana` and query parameters `apiVersion=1` and `allowUnmappedKeys=true`.
+The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
 
 #### Scenario: Non-default space request
 
@@ -345,13 +345,13 @@ REQ-006 is extended to include:
 
 #### Scenario: options_list_control_config rejected for non-options_list_control panel
 
-- GIVEN a panel with `type = "lens"` and `options_list_control_config` set
+- GIVEN a panel with `type = "vis"` and `options_list_control_config` set
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
 
 #### Scenario: synthetics_monitors_config rejected for non-synthetics_monitors panel
 
-- GIVEN a panel with `type = "lens"` and `synthetics_monitors_config` set
+- GIVEN a panel with `type = "vis"` and `synthetics_monitors_config` set
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
 
@@ -363,21 +363,21 @@ REQ-006 is extended to include:
 
 ### Requirement: Dashboard root schema API naming (REQ-036)
 
-The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language` with exactly one of `text` or `json` for the query union).
+The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language`, restricted to `kql` or `lucene`, with exactly one of `text` or `json` for the query expression).
 
 The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
 
 #### Scenario: Query union uses text branch
 
-- GIVEN `query = { language = "kuery" text = "http.response.status_code:200" }`
+- GIVEN `query = { language = "kql" text = "http.response.status_code:200" }`
 - WHEN the provider builds the create or update request body
-- THEN it SHALL set the API query to the string branch of `query.query` and SHALL set `query.language` from `query.language`
+- THEN it SHALL set the API query expression from `query.text` and SHALL set `query.language` from `query.language`
 
 #### Scenario: Query union uses json branch
 
-- GIVEN `query = { language = "kuery" json = jsonencode({ ... }) }`
+- GIVEN `query = { language = "kql" json = jsonencode({ ... }) }`
 - WHEN the provider builds the create or update request
-- THEN it SHALL set the API query to the object branch and SHALL reject configurations where both `text` and `json` are set, or where neither is set
+- THEN it SHALL set the API query expression from `query.json` and SHALL reject configurations where both `text` and `json` are set, or where neither is set
 
 #### Scenario: Options include new flags
 
@@ -387,7 +387,7 @@ The resource SHALL expose dashboard `options` with the API-aligned flags `auto_a
 
 ### Requirement: Create and update request mapping (REQ-007)
 
-On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string branch of the API union and `query.json` as the object branch of the API union. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
+On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string form of the API query expression and `query.json` as the JSON-object form of the same expression field. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
 
 #### Scenario: Post-apply authoritative read
 
@@ -407,13 +407,15 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 #### Scenario: Read maps nested query and time_range
 
-- GIVEN a successful refresh after create with `query = { language = "kuery" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
+- GIVEN a successful refresh after create with `query = { language = "kql" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
+
+For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, and `project_routing`, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
 
@@ -425,21 +427,21 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`uid`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
+The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`id`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
 
-On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, and `esql_control`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
+On write, `config_json` SHALL be supported only for `markdown` and `vis` panel types; using `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, and `esql_control`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
 `config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
 
 `config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block; using `config_json` with `type = "synthetics_monitors"` SHALL return an error diagnostic.
 
-**Panel and section identity**: The Terraform attributes **`panels[].uid`** and **`sections[].uid`** replace **`panels[].id`** and **`sections[].id`** to match API `uid`.
+**Panel and section identity**: The Terraform attributes **`panels[].id`** and **`sections[].id`** SHALL align directly with the generated Kibana API field **`id`** for panels and sections.
 
-#### Scenario: Panel uid round-trip
+#### Scenario: Panel id round-trip
 
-- GIVEN a panel with `uid = "panel-a"` in configuration
+- GIVEN a panel with `id = "panel-a"` in configuration
 - WHEN create or update runs
-- THEN the API request SHALL include `uid` (or equivalent panel identity) consistent with `panel-a` for that panel
+- THEN the API request SHALL include the generated API `id` field (or equivalent panel identity) consistent with `panel-a` for that panel
 
 #### Scenario: config_json rejected for options_list_control panel type
 
@@ -455,7 +457,7 @@ On write, `config_json` SHALL be supported only for `markdown` and `lens` panel 
 
 ### Requirement: Panel default normalization and XY-axis drift prevention (REQ-011)
 
-The resource SHALL normalize `config_json` and typed Lens panel data with default-aware semantic equality so Kibana-injected defaults do not cause unnecessary drift. This normalization SHALL include panel-type-specific defaults such as missing empty `filters` arrays and Lens metric/grouping defaults used by the implementation. For XY chart panels, when `axis.x.scale` was unset in configuration and Kibana returns the implicit default `ordinal`, the resource SHALL preserve the unset Terraform value instead of forcing `ordinal` into state.
+The resource SHALL normalize `config_json` and typed `vis` panel data with default-aware semantic equality so Kibana-injected defaults do not cause unnecessary drift. This normalization SHALL include panel-type-specific defaults such as missing empty `filters` arrays and visualization metric/grouping defaults used by the implementation. For XY chart panels, when `axis.x.scale` was unset in configuration and Kibana returns the implicit default `ordinal`, the resource SHALL preserve the unset Terraform value instead of forcing `ordinal` into state.
 
 #### Scenario: Unset XY X-axis scale
 
@@ -473,17 +475,17 @@ For `type = "markdown"` panels, the resource SHALL accept `markdown_config` with
 - WHEN create, update, or read runs
 - THEN the provider SHALL map the markdown fields between Terraform and the dashboard API
 
-### Requirement: XY chart panel behavior and typed Lens `time_range` (REQ-013)
+### Requirement: XY chart panel behavior and typed `vis` `time_range` (REQ-013)
 
-For **typed** Lens panels (those built through the provider’s typed `*_config` blocks and the shared typed Lens write path, not panels managed solely through raw `config_json`), the provider SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window from **`lensPanelTimeRange()`** when assembling the Lens payload. The Terraform schema does not expose that Lens-level `time_range` as a separate configurable attribute for those panels; it remains implementation-defined. REQ-025 governs raw `config_json` Lens panels (no `lensPanelTimeRange()` injection on that path).
+For **typed** `vis` panels (those built through the provider’s typed `*_config` blocks and the shared typed visualization write path, not panels managed solely through raw `config_json`), the provider SHALL set `time_range` on `KbnDashboardPanelTypeVisConfig0` to the implementation’s fixed window from **`lensPanelTimeRange()`** when assembling the visualization payload. The Terraform schema does not expose that visualization-level `time_range` as a separate configurable attribute for those panels; it remains implementation-defined. REQ-025 governs raw `config_json` `vis` panels (no typed `lensPanelTimeRange()` injection on that path).
 
-For XY chart Lens panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both.
+For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both.
 
-#### Scenario: Typed Lens write includes Lens time_range
+#### Scenario: Typed `vis` write includes visualization time_range
 
-- GIVEN a typed Lens panel on create or update (for example XY, heatmap, pie, or treemap panels using their typed configuration blocks)
-- WHEN the provider builds the Lens panel payload through the typed converter path
-- THEN it SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window for typed converters
+- GIVEN a typed `vis` panel on create or update (for example XY, heatmap, pie, or treemap panels using their typed configuration blocks)
+- WHEN the provider builds the visualization payload through the typed converter path
+- THEN it SHALL set `time_range` on `KbnDashboardPanelTypeVisConfig0` to the implementation’s fixed window for typed converters
 
 #### Scenario: XY panel requires layers
 
@@ -493,7 +495,7 @@ For XY chart Lens panels specifically, the resource SHALL require `axis`, `decor
 
 ### Requirement: Treemap panel behavior (REQ-014)
 
-For treemap Lens panels, the resource SHALL require `dataset_json`, `group_by_json`, `metrics_json`, and `legend`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or both `query.query` and `query.language` are null. For semantic equality and read-back reconciliation, treemap `group_by_json` and `metrics_json` SHALL normalize the partition defaults used by the implementation, including terms-style defaults such as `collapse_by`, `format`, `rank_by`, and `size`.
+For treemap `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `metrics_json`, and `legend`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or both `query.query` and `query.language` are null. For semantic equality and read-back reconciliation, treemap `group_by_json` and `metrics_json` SHALL normalize the partition defaults used by the implementation, including terms-style defaults such as `collapse_by`, `format`, `rank_by`, and `size`.
 
 #### Scenario: Treemap mode selection
 
@@ -503,7 +505,7 @@ For treemap Lens panels, the resource SHALL require `dataset_json`, `group_by_js
 
 ### Requirement: Mosaic panel behavior (REQ-015)
 
-For mosaic Lens panels, the resource SHALL require `dataset_json`, `group_by_json`, `group_breakdown_by_json`, `metrics_json`, and `legend`. It SHALL use the same ES|QL-vs-non-ES|QL query rule as treemap panels, and non-ES|QL mosaics SHALL require `query`. `metrics_json` SHALL represent exactly one metric in the Terraform model. On read-back, mosaic partition dimensions SHALL be normalized to drop API-emitted top-level null keys that would otherwise create drift.
+For mosaic `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `group_breakdown_by_json`, `metrics_json`, and `legend`. It SHALL use the same ES|QL-vs-non-ES|QL query rule as treemap panels, and non-ES|QL mosaics SHALL require `query`. `metrics_json` SHALL represent exactly one metric in the Terraform model. On read-back, mosaic partition dimensions SHALL be normalized to drop API-emitted top-level null keys that would otherwise create drift.
 
 #### Scenario: Mosaic requires secondary breakdown
 
@@ -513,7 +515,7 @@ For mosaic Lens panels, the resource SHALL require `dataset_json`, `group_by_jso
 
 ### Requirement: Datatable panel behavior (REQ-016)
 
-For datatable Lens panels, the resource SHALL support exactly one of the `no_esql` and `esql` nested configurations. The non-ES|QL branch SHALL require `query` and SHALL map `dataset_json`, `density`, `metrics`, optional `rows`, optional `split_metrics_by`, optional `sort_by_json`, optional `paging`, optional `filters`, and optional `ignore_global_filters` / `sampling`. The ES|QL branch SHALL map the equivalent table configuration without a `query` block.
+For datatable `vis` panels, the resource SHALL support exactly one of the `no_esql` and `esql` nested configurations. The non-ES|QL branch SHALL require `query` and SHALL map `data_source_json`, `density`, `metrics`, optional `rows`, optional `split_metrics_by`, optional `sort_by_json`, optional `paging`, optional `filters`, and optional `ignore_global_filters` / `sampling`. The ES|QL branch SHALL map the equivalent table configuration without a `query` block.
 
 #### Scenario: Datatable mode blocks are exclusive
 
@@ -523,7 +525,7 @@ For datatable Lens panels, the resource SHALL support exactly one of the `no_esq
 
 ### Requirement: Tagcloud panel behavior (REQ-017)
 
-For tagcloud Lens panels, the resource SHALL support the non-ES|QL tagcloud shape implemented by the provider. It SHALL require `dataset_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
+For tagcloud `vis` panels, the resource SHALL support the non-ES|QL tagcloud shape implemented by the provider. It SHALL require `data_source_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
 
 #### Scenario: Tagcloud terms defaults
 
@@ -533,7 +535,7 @@ For tagcloud Lens panels, the resource SHALL support the non-ES|QL tagcloud shap
 
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axes`, `cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
 
 #### Scenario: Non-ES|QL heatmap requires query
 
@@ -549,7 +551,7 @@ For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cel
 
 ### Requirement: Waffle panel behavior (REQ-019)
 
-For waffle Lens panels, the resource SHALL enforce mutually exclusive non-ES|QL and ES|QL modes. In non-ES|QL mode it SHALL require `query` and at least one `metrics` entry, and it MAY accept `group_by`. In ES|QL mode it SHALL require at least one `esql_metrics` entry, it MAY accept `esql_group_by`, and it SHALL reject `metrics` and `group_by`. On read-back, the provider SHALL preserve the waffle fields that Kibana may omit or materialize differently, including the implementation's merge behavior for `ignore_global_filters`, `sampling`, legend values, visibility, and value-display details. ES|QL number-format JSON for waffle metric formats SHALL normalize the default decimals and compact settings trimmed by the implementation.
+For waffle `vis` panels, the resource SHALL enforce mutually exclusive non-ES|QL and ES|QL modes. In non-ES|QL mode it SHALL require `query` and at least one `metrics` entry, and it MAY accept `group_by`. In ES|QL mode it SHALL require at least one `esql_metrics` entry, it MAY accept `esql_group_by`, and it SHALL reject `metrics` and `group_by`. On read-back, the provider SHALL preserve the waffle fields that Kibana may omit or materialize differently, including the implementation's merge behavior for `ignore_global_filters`, `sampling`, legend values, visibility, and value-display details. ES|QL number-format JSON for waffle metric formats SHALL normalize the default decimals and compact settings trimmed by the implementation.
 
 #### Scenario: Waffle ES|QL validation
 
@@ -559,7 +561,7 @@ For waffle Lens panels, the resource SHALL enforce mutually exclusive non-ES|QL 
 
 ### Requirement: Region map panel behavior (REQ-020)
 
-For region-map Lens panels, the resource SHALL require `dataset_json`, `metric_json`, and `region_json`. It SHALL use the implementation's query-based mode selection: when `query.query` is known it SHALL use the non-ES|QL branch, otherwise it SHALL use the ES|QL branch. Region-map metric normalization SHALL apply the region-map metric defaults used by the implementation.
+For region-map `vis` panels, the resource SHALL require `data_source_json`, `metric_json`, and `region_json`. It SHALL use the implementation's query-based mode selection: when `query.query` is known it SHALL use the non-ES|QL branch, otherwise it SHALL use the ES|QL branch. Region-map metric normalization SHALL apply the region-map metric defaults used by the implementation.
 
 #### Scenario: Region map without known query
 
@@ -569,7 +571,7 @@ For region-map Lens panels, the resource SHALL require `dataset_json`, `metric_j
 
 ### Requirement: Gauge panel behavior (REQ-021)
 
-For gauge Lens panels, the resource SHALL support the non-ES|QL gauge shape implemented by the provider. It SHALL require `dataset_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
+For gauge `vis` panels, the resource SHALL support the non-ES|QL gauge shape implemented by the provider. It SHALL require `data_source_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
 
 #### Scenario: Gauge metric defaults
 
@@ -579,7 +581,7 @@ For gauge Lens panels, the resource SHALL support the non-ES|QL gauge shape impl
 
 ### Requirement: Metric chart panel behavior (REQ-022)
 
-For metric-chart Lens panels, the resource SHALL map the provider's two metric-chart variants: the non-ES|QL branch when `query` is present, and the ES|QL branch when the implementation detects the query as absent or empty. It SHALL require `dataset_json` and `metrics`, and it MAY accept `breakdown_by_json`, `filters`, `ignore_global_filters`, and `sampling`. Each metric `config_json` SHALL use the shared Lens metric default normalization used by the implementation.
+For metric-chart `vis` panels, the resource SHALL map the provider's two metric-chart variants: the non-ES|QL branch when `query` is present, and the ES|QL branch when the implementation detects the query as absent or empty. It SHALL require `data_source_json` and `metrics`, and it MAY accept `breakdown_by_json`, `filters`, `ignore_global_filters`, and `sampling`. Each metric `config_json` SHALL use the shared visualization metric default normalization used by the implementation.
 
 #### Scenario: Metric chart ES|QL read-back
 
@@ -589,9 +591,9 @@ For metric-chart Lens panels, the resource SHALL map the provider's two metric-c
 
 ### Requirement: Pie chart panel behavior (REQ-023)
 
-For pie Lens panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and Lens group-by defaults.
+For pie `vis` panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and visualization group-by defaults.
 
-`dataset_json` SHALL remain a normalized JSON string for the pie dataset object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
+When `data_source_json` is set, it SHALL remain a normalized JSON string for the pie data source object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
 
 #### Scenario: Pie chart API defaults
 
@@ -599,23 +601,23 @@ For pie Lens panels, the resource SHALL require at least one `metrics` entry and
 - WHEN state is refreshed
 - THEN the provider SHALL reconcile those fields as `false` and `1.0`
 
-#### Scenario: Pie chart uses dataset_json
+#### Scenario: Pie chart uses data_source_json
 
-- GIVEN `pie_chart_config` with `dataset_json` set to a normalized JSON string for the pie dataset
-- WHEN the provider builds the Lens attributes
-- THEN it SHALL decode `dataset_json` into the API pie dataset shape
+- GIVEN `pie_chart_config` with `data_source_json` set to a normalized JSON string for the pie data source
+- WHEN the provider builds the visualization attributes
+- THEN it SHALL decode `data_source_json` into the API pie data-source shape
 
 #### Scenario: Pie chart uses structured legend
 
 - GIVEN `pie_chart_config.legend` with `size = "auto"` and `visible = "visible"`
-- WHEN the provider builds the Lens attributes
+- WHEN the provider builds the visualization attributes
 - THEN it SHALL encode the pie legend using the API pie legend shape
 - AND it SHALL map Terraform `visible` to API `visibility`
 
 #### Scenario: Pie chart legend omitted
 
 - GIVEN `pie_chart_config` with no `legend` block
-- WHEN the provider builds the Lens attributes
+- WHEN the provider builds the visualization attributes
 - THEN it SHALL still produce a valid pie legend object for the API
 - AND it SHALL use the implementation default legend size `auto`
 
@@ -628,21 +630,21 @@ For pie Lens panels, the resource SHALL require at least one `metrics` entry and
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
-For legacy-metric Lens panels, the resource SHALL choose its mode from `dataset_json.type`. `dataView` and `index` datasets SHALL use the non-ES|QL branch and SHALL require `query`. `esql` and `table` datasets SHALL use the ES|QL branch and SHALL not require `query`. Legacy metric semantic equality SHALL normalize the implementation's legacy metric defaults, including absent `filters` and the metric/format defaults applied by the resource.
+For legacy-metric `vis` panels, the resource SHALL require `data_source_json.type` to be one of `data_view_reference` or `data_view_spec`. For those supported data source types it SHALL use the non-ES|QL branch and SHALL require `query` and `metric_json`. Data source types such as `esql` or `table` are outside the supported contract and SHALL be rejected with an error diagnostic. Legacy metric semantic equality SHALL normalize the implementation's legacy metric defaults, including absent `filters` and the metric/format defaults applied by the resource.
 
-#### Scenario: Legacy metric dataset mode
+#### Scenario: Unsupported legacy metric data source type
 
-- GIVEN a legacy metric panel whose `dataset_json.type` is `esql`
+- GIVEN a legacy metric panel whose `data_source_json.type` is `esql`
 - WHEN the provider converts the panel
-- THEN it SHALL use the ES|QL branch rather than the non-ES|QL branch
+- THEN it SHALL return an error diagnostic stating that supported data source types are `data_view_reference` and `data_view_spec`
 
 ### Requirement: Raw `config_json` panel behavior (REQ-025)
 
-When a panel is authored through `config_json`, the resource SHALL accept only `markdown` and `lens` panel types for write. It SHALL deserialize the raw JSON into the corresponding dashboard panel config and SHALL fail if that JSON cannot be unmarshaled into the supported API config type. For read-back, it SHALL always refresh `config_json` from the API payload using the implementation's default-aware JSON semantics. When a Lens panel is authored through raw `config_json`, the provider SHALL preserve that raw Lens config path rather than re-expressing it through a typed panel block, and it SHALL not apply the typed-Lens `lensPanelTimeRange()` injection path used by the typed converters.
+When a panel is authored through `config_json`, the resource SHALL accept only `markdown` and `vis` panel types for write. It SHALL deserialize the raw JSON into the corresponding dashboard panel config and SHALL fail if that JSON cannot be unmarshaled into the supported API config type. For read-back, it SHALL always refresh `config_json` from the API payload using the implementation's default-aware JSON semantics. When a `vis` panel is authored through raw `config_json`, the provider SHALL preserve that raw visualization-config path rather than re-expressing it through a typed panel block, and it SHALL not apply the typed `lensPanelTimeRange()` injection path used by the typed converters.
 
 #### Scenario: Unsupported raw config panel type
 
-- GIVEN a panel configured with `config_json` and a panel `type` other than `markdown` or `lens`
+- GIVEN a panel configured with `config_json` and a panel `type` other than `markdown` or `vis`
 - WHEN the provider builds the API request
 - THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
 
@@ -782,7 +784,7 @@ On write (create and update), the resource SHALL map `esql_control_config` to th
 
 On read, the resource SHALL repopulate `esql_control_config` from the API response. Fields that the API response omits SHALL not be forced into state. When `selected_options` is returned by the API, the provider SHALL preserve the API-returned ordering. The provider SHALL NOT apply a typed `config_json` round-trip for `esql_control` panels; such panels are always managed through the typed `esql_control_config` block.
 
-The `esql_control` panel type is a standalone control panel, not a Lens visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. As a result, none of the Lens panel converters, Lens time-range injection, or Lens metric default normalization SHALL apply to `esql_control` panels.
+The `esql_control` panel type is a standalone control panel, not a `vis` visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. As a result, none of the typed visualization converters, typed visualization time-range injection, or visualization metric default normalization SHALL apply to `esql_control` panels.
 
 #### Scenario: Creation of esql_control panel with required fields using STATIC_VALUES
 
@@ -1010,7 +1012,7 @@ For API mapping, the provider SHALL write the `options_list_control_config` attr
 
 For `type = "synthetics_monitors"` panels, the resource SHALL accept an optional `synthetics_monitors_config` block. The block, if present, may contain an optional `filters` nested block. Within `filters`, all six filter dimensions (`projects`, `tags`, `monitor_ids`, `locations`, `monitor_types`, `statuses`) are optional lists of `{ label, value }` objects.
 
-The `synthetics_monitors` panel type is a standalone panel, not a Lens visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. None of the Lens panel converters, Lens time-range injection, or Lens metric default normalization SHALL apply to `synthetics_monitors` panels.
+The `synthetics_monitors` panel type is a standalone panel, not a `vis` visualization. It does not reference a saved object, and its configuration is fully inline in the dashboard document. None of the typed visualization converters, typed visualization time-range injection, or visualization metric default normalization SHALL apply to `synthetics_monitors` panels.
 
 **On write (create and update):**
 
@@ -1084,7 +1086,7 @@ The filter structure used by `synthetics_monitors_config` (lists of `{ label, va
 | Options / access control mapping | `internal/kibana/dashboard/models_options.go`, `internal/kibana/dashboard/models_access_control.go` |
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
-| Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
+| Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
 | Dashboard API status handling | `internal/clients/kibanaoapi/dashboards.go` |
 | Composite id parsing | `internal/clients/api_client.go` |

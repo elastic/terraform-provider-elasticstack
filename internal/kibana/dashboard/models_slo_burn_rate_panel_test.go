@@ -75,7 +75,7 @@ func Test_buildSloBurnRateConfig_requiredFieldsOnly(t *testing.T) {
 			HideBorder:    types.BoolNull(),
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSloBurnRate
+	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 
 	assert.Equal(t, "my-slo-id", panel.Config.SloId)
@@ -100,7 +100,7 @@ func Test_buildSloBurnRateConfig_allOptionalFields(t *testing.T) {
 			HideBorder:    types.BoolValue(false),
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSloBurnRate
+	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.SloInstanceId)
@@ -130,7 +130,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSloBurnRate
+	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Drilldowns)
@@ -159,7 +159,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSloBurnRate
+	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Drilldowns)
@@ -172,7 +172,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 
 func Test_buildSloBurnRateConfig_nilConfig(t *testing.T) {
 	pm := panelModel{}
-	var panel kbapi.KbnDashboardPanelSloBurnRate
+	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 	// Should be empty/zero config — no panic.
 	assert.Empty(t, panel.Config.SloId)

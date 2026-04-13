@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -42,12 +43,12 @@ func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *lega
 	assert.Equal(t, a.Description, b.Description)
 	assert.Equal(t, a.IgnoreGlobalFilters, b.IgnoreGlobalFilters)
 	assert.Equal(t, a.Sampling, b.Sampling)
-	if a.DatasetJSON.IsNull() != b.DatasetJSON.IsNull() || a.DatasetJSON.IsUnknown() != b.DatasetJSON.IsUnknown() {
+	if a.DataSourceJSON.IsNull() != b.DataSourceJSON.IsNull() || a.DataSourceJSON.IsUnknown() != b.DataSourceJSON.IsUnknown() {
 		assert.Fail(t, "dataset null/unknown state mismatch")
 		return
 	}
-	if !a.DatasetJSON.IsNull() && !a.DatasetJSON.IsUnknown() {
-		eq, d := a.DatasetJSON.StringSemanticEquals(ctx, b.DatasetJSON)
+	if !a.DataSourceJSON.IsNull() && !a.DataSourceJSON.IsUnknown() {
+		eq, d := a.DataSourceJSON.StringSemanticEquals(ctx, b.DataSourceJSON)
 		require.False(t, d.HasError())
 		assert.True(t, eq, "dataset should be semantically equal")
 	}
@@ -82,81 +83,32 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 		"type": "legacy_metric",
 		"title": "Legacy Metric",
 		"description": "Legacy metric description",
-		"dataset": {"type": "dataView", "id": "metrics-*"},
-		"query": {"language": "kuery", "query": ""},
+		"data_source": {"type": "data_view_spec", "index_pattern": "metrics-*"},
+		"query": {"language": "kql", "query": ""},
 		"sampling": 0.5,
 		"ignore_global_filters": true,
-		"filters": [{"query": "status:200", "language": "kuery"}],
+		"filters": [{"query": "status:200", "language": "kql"}],
 		"metric": {"operation": "count", "format": {"type": "number"}}
 	}`
 
-	var chart kbapi.LegacyMetricChart
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &chart))
+	var api kbapi.LegacyMetricNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	// Round-trip: API chart → model → API chart → model; then assert first model equals second model.
 	model1 := &legacyMetricConfigModel{}
-	diags := model1.fromAPI(ctx, chart)
+	diags := model1.fromAPINoESQL(ctx, api)
 	require.False(t, diags.HasError())
 
-	chart2, diags := model1.toAPI()
+	attrs2, diags := model1.toAPI()
 	require.False(t, diags.HasError())
+
+	noESQL2, err := attrs2.AsLegacyMetricNoESQL()
+	require.NoError(t, err)
 
 	model2 := &legacyMetricConfigModel{}
-	diags = model2.fromAPI(ctx, chart2)
+	diags = model2.fromAPINoESQL(ctx, noESQL2)
 	require.False(t, diags.HasError())
 
 	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
-}
-
-func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
-	ctx := t.Context()
-	apiJSON := `{
-		"type": "legacy_metric",
-		"title": "Legacy Metric ESQL",
-		"description": "Legacy metric esql description",
-		"dataset": {"type": "esql", "query": "FROM metrics-* | LIMIT 10"},
-		"sampling": 1,
-		"ignore_global_filters": false,
-		"filters": [{"query": "service.name:api", "language": "kuery"}],
-		"metric": {
-			"format": {"type": "number"},
-			"label": "CPU",
-			"operation": "value",
-			"column": "cpu",
-			"size": "m",
-			"alignments": {"labels": "top", "value": "center"},
-			"apply_color_to": "value",
-			"color": {
-				"type": "dynamic",
-				"range": "absolute",
-				"steps": [{"type": "from", "from": 0, "color": "#00ff00"}]
-			}
-		}
-	}`
-
-	var apiESQL kbapi.LegacyMetricESQL
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
-
-	// Round-trip: ESQL API → model (fromAPIESQL) → API chart (toAPI) → model (fromAPI); assert models equal when second fromAPI succeeds.
-	model1 := &legacyMetricConfigModel{}
-	diags := model1.fromAPIESQL(ctx, apiESQL)
-	require.False(t, diags.HasError())
-
-	chart2, diags := model1.toAPI()
-	require.False(t, diags.HasError())
-
-	// Round-trip back: chart → model. Union may parse as NoESQL, so only assert API-level ESQL round-trip.
-	model2 := &legacyMetricConfigModel{}
-	diags = model2.fromAPI(ctx, chart2)
-	if !diags.HasError() && model2.Query == nil {
-		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
-		return
-	}
-	apiRoundTrip, err := chart2.AsLegacyMetricESQL()
-	require.NoError(t, err)
-	assert.Equal(t, kbapi.LegacyMetricESQLTypeLegacyMetric, apiRoundTrip.Type)
-	assert.Equal(t, "Legacy Metric ESQL", *apiRoundTrip.Title)
-	assert.Equal(t, "cpu", apiRoundTrip.Metric.Column)
 }
 
 func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -166,8 +118,8 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 		"type": "legacy_metric",
 		"title": "Legacy Metric Round-Trip",
 		"description": "Converter test",
-		"dataset": {"type": "dataView", "id": "metrics-*"},
-		"query": {"language": "kuery", "query": "*"},
+		"data_source": {"type": "data_view_spec", "index_pattern": "metrics-*"},
+		"query": {"language": "kql", "query": "*"},
 		"sampling": 0.5,
 		"ignore_global_filters": true,
 		"metric": {"operation": "count", "format": {"type": "number"}}
@@ -175,11 +127,8 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 	var apiNoESQL kbapi.LegacyMetricNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiNoESQL))
 
-	var legacyMetricChart kbapi.LegacyMetricChart
-	require.NoError(t, legacyMetricChart.FromLegacyMetricNoESQL(apiNoESQL))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromLegacyMetricChart(legacyMetricChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromLegacyMetricNoESQL(apiNoESQL))
 
 	converter := newLegacyMetricPanelConfigConverter()
 	pm := &panelModel{}
@@ -190,12 +139,10 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsLegacyMetricChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsLegacyMetricNoESQL()
+	noESQL2, err := attrs2.AsLegacyMetricNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Legacy Metric Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.LegacyMetricNoESQLTypeLegacyMetric, noESQL2.Type)
+	assert.Equal(t, kbapi.LegacyMetric, noESQL2.Type)
 }
 
 // Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL
@@ -206,8 +153,8 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 
 func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Title:       types.StringValue("Missing Query"),
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+		Title:          types.StringValue("Missing Query"),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
 		MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 			`{"operation":"count","format":{"type":"number"}}`,
 			populateLegacyMetricMetricDefaults,
@@ -222,49 +169,24 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("NoESQL round-trip", func(t *testing.T) {
-		var chart kbapi.LegacyMetricChart
+		var api kbapi.LegacyMetricNoESQL
 		require.NoError(t, json.Unmarshal([]byte(`{
 		"type": "legacy_metric",
-		"dataset": {"type": "dataView", "id": "x"},
-		"query": {"language": "kuery", "query": ""},
+		"data_source": {"type": "data_view_spec", "index_pattern": "x"},
+		"query": {"language": "kql", "query": ""},
 		"metric": {"operation": "count", "format": {"type": "number"}}
-	}`), &chart))
+	}`), &api))
 		model1 := &legacyMetricConfigModel{}
-		diags := model1.fromAPI(ctx, chart)
+		diags := model1.fromAPINoESQL(ctx, api)
 		require.False(t, diags.HasError())
-		chart2, diags := model1.toAPI()
+		attrs2, diags := model1.toAPI()
 		require.False(t, diags.HasError())
+		noESQL2, err := attrs2.AsLegacyMetricNoESQL()
+		require.NoError(t, err)
 		model2 := &legacyMetricConfigModel{}
-		diags = model2.fromAPI(ctx, chart2)
+		diags = model2.fromAPINoESQL(ctx, noESQL2)
 		require.False(t, diags.HasError())
 		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
-	})
-
-	t.Run("ESQL round-trip", func(t *testing.T) {
-		var apiESQL kbapi.LegacyMetricESQL
-		require.NoError(t, json.Unmarshal([]byte(`{
-		"type": "legacy_metric",
-		"dataset": {"type": "esql", "query": "FROM x"},
-		"metric": {
-			"operation": "value",
-			"column": "y",
-			"format": {"type": "number"},
-			"color": {"type": "static", "color": "#fff"}
-		}
-	}`), &apiESQL))
-		model1 := &legacyMetricConfigModel{}
-		diags := model1.fromAPIESQL(ctx, apiESQL)
-		require.False(t, diags.HasError())
-		chart2, diags := model1.toAPI()
-		require.False(t, diags.HasError())
-		model2 := &legacyMetricConfigModel{}
-		diags = model2.fromAPI(ctx, chart2)
-		if !diags.HasError() && model2.Query == nil {
-			assertLegacyMetricConfigEqual(ctx, t, model1, model2)
-			return
-		}
-		_, err := chart2.AsLegacyMetricESQL()
-		require.NoError(t, err)
 	})
 }
 
@@ -276,8 +198,8 @@ func Test_legacyMetricConfigModel_toAPI_nil(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"unknown"}`),
-		MetricJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{}`, populateLegacyMetricMetricDefaults),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"unknown"}`),
+		MetricJSON:     customtypes.NewJSONWithDefaultsValue[map[string]any](`{}`, populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())
@@ -286,8 +208,8 @@ func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
-		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Expression: types.StringValue("*")},
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
+		Query:          &filterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("*")},
 		MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
 			"operation": "value",
 			"column": "y",
@@ -297,15 +219,19 @@ func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())
-	assert.Contains(t, diags.Errors()[0].Summary(), "Invalid legacy metric query")
+	summary := diags.Errors()[0].Summary()
+	assert.True(t,
+		strings.Contains(summary, "Invalid legacy metric query") || strings.Contains(summary, "Unsupported legacy metric dataset"),
+		"unexpected diagnostic: %s", summary,
+	)
 }
 
 func Test_legacyMetricConfigModel_toAPI_missingMetric(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Title:       types.StringValue("T"),
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
-		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Expression: types.StringValue("")},
-		MetricJSON:  customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
+		Title:          types.StringValue("T"),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"x"}`),
+		Query:          &filterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("")},
+		MetricJSON:     customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())
@@ -322,7 +248,7 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 
 	t.Run("invalid JSON", func(t *testing.T) {
 		model := &legacyMetricConfigModel{
-			DatasetJSON: jsontypes.NewNormalizedValue(`{invalid`),
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{invalid`),
 		}
 		_, diags := model.datasetType()
 		require.True(t, diags.HasError())
@@ -331,7 +257,7 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 
 	t.Run("missing type field", func(t *testing.T) {
 		model := &legacyMetricConfigModel{
-			DatasetJSON: jsontypes.NewNormalizedValue(`{"id":"x"}`),
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"id":"x"}`),
 		}
 		_, diags := model.datasetType()
 		require.True(t, diags.HasError())

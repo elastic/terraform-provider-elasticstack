@@ -32,6 +32,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       variable_type    = "values"
       esql_query       = "FROM logs-* | STATS count = COUNT(*) BY host.name"
       control_type     = "STATIC_VALUES"
+      title            = "My ES|QL Control"
+      available_options = [
+        "option_a",
+        "option_b",
+      ]
       display_settings = {
         placeholder     = "Select a value"
         hide_action_bar = true

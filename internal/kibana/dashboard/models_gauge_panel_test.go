@@ -51,7 +51,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.5)),
 				}
 
-				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query)
 				require.NoError(t, err)
@@ -89,7 +89,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Type: kbapi.GaugeNoESQLTypeGauge,
 				}
 
-				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 				require.NoError(t, err)
@@ -128,7 +128,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Equal(t, tt.expected.Query.Expression, model.Query.Expression, "Query text should match")
 			}
 
-			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
+			assert.False(t, model.DataSourceJSON.IsNull(), "Dataset should not be null")
 			assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
 
 			if tt.name == "full gauge config" {
@@ -172,15 +172,12 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
-	var gaugeChart kbapi.GaugeChart
-	require.NoError(t, gaugeChart.FromGaugeNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromGaugeChart(gaugeChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromGaugeNoESQL(api))
 
 	converter := newGaugePanelConfigConverter()
 	pm := &panelModel{}
@@ -191,9 +188,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	gaugeChart2, err := attrs2.AsGaugeChart()
-	require.NoError(t, err)
-	gaugeNoESQL2, err := gaugeChart2.AsGaugeNoESQL()
+	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Round-Trip Gauge", *gaugeNoESQL2.Title)
 	assert.Equal(t, "Converter round-trip test", *gaugeNoESQL2.Description)

@@ -30,7 +30,7 @@ import (
 
 const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},` +
 	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},` +
-	`"column":"host.name"}`
+	`"column":"host.name","format":{"type":"number"}}`
 
 func TestAccResourceDashboardXYChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -49,7 +49,7 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
@@ -59,9 +59,9 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					// Check axis fields
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.title.value", "Timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.title.visible", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.scale", "linear"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.title.value", "Count"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.scale", "linear"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.title.value", "Count"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.title.visible", "true"),
 					// Check decorations fields
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.decorations.fill_opacity", "0.3"),
 					// Check fitting
@@ -76,7 +76,7 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					// Check layers
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.type", "line"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.data_source_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.#", "1"),
 				),
 			},
@@ -92,18 +92,18 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.ticks", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.grid", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.label_orientation", "angled"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.extent_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.ticks", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.grid", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.label_orientation", "horizontal"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.extent_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.scale", "sqrt"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.title.value", "Rate"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.title.visible", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.ticks", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.grid", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.label_orientation", "vertical"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.right.extent_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.x.domain_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.ticks", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.grid", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.label_orientation", "horizontal"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y.domain_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.scale", "sqrt"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.title.value", "Rate"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.ticks", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.grid", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.label_orientation", "vertical"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.secondary_y.domain_json"),
 				),
 			},
 			{
@@ -209,8 +209,8 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.type", "referenceLines"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.reference_line_layer.dataset_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.type", "reference_lines"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.reference_line_layer.data_source_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.reference_line_layer.ignore_global_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.reference_line_layer.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.1.reference_line_layer.thresholds.#", "1"),
@@ -228,9 +228,24 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.xy_chart_config.layers.0.data_layer.dataset_json",
+					"panels.0.xy_chart_config.title",
+					"panels.0.xy_chart_config.axis.x.domain_json",
+					"panels.0.xy_chart_config.axis.x.grid",
+					"panels.0.xy_chart_config.axis.x.label_orientation",
+					"panels.0.xy_chart_config.axis.x.ticks",
+					"panels.0.xy_chart_config.axis.y.domain_json",
+					"panels.0.xy_chart_config.axis.y.grid",
+					"panels.0.xy_chart_config.axis.y.label_orientation",
+					"panels.0.xy_chart_config.axis.y.ticks",
+					"panels.0.xy_chart_config.decorations.fill_opacity",
+					"panels.0.xy_chart_config.decorations.line_interpolation",
+					"panels.0.xy_chart_config.decorations.point_visibility",
+					"panels.0.xy_chart_config.decorations.show_current_time_marker",
+					"panels.0.xy_chart_config.decorations.show_end_zones",
+					"panels.0.xy_chart_config.legend.truncate_after_lines",
+					"panels.0.xy_chart_config.layers.0.data_layer.data_source_json",
 					"panels.0.xy_chart_config.layers.0.data_layer.y.0.config_json",
-					"panels.0.xy_chart_config.layers.1.reference_line_layer.dataset_json",
+					"panels.0.xy_chart_config.layers.1.reference_line_layer.data_source_json",
 					"panels.0.xy_chart_config.layers.1.reference_line_layer.thresholds.0.value_json",
 				},
 			},

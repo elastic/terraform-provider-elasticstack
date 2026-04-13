@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -28,9 +28,9 @@ resource "elasticstack_kibana_dashboard" "test" {
     metric_chart_config = {
       title       = "Sample Metric Chart with Secondary Metric"
       description = "Test metric chart with secondary metric"
-      dataset_json = jsonencode({
-        type  = "index"
-        index = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
 
         time_field = "@timestamp"
       })
@@ -50,15 +50,17 @@ resource "elasticstack_kibana_dashboard" "test" {
         },
         {
           config_json = jsonencode({
-            type              = "secondary",
-            operation         = "last_value",
-            field             = "@timestamp",
-            sort_by           = "@timestamp",
-            show_array_values = false,
+            type      = "secondary"
+            operation = "sum"
+            field     = "bytes"
+            format = {
+              type = "number"
+            }
             filter = {
-              expression = "\"@timestamp\": *"
+              expression = ""
               language   = "kql"
             }
+            time_scale = "h"
           })
         }
       ]

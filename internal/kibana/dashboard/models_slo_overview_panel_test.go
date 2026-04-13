@@ -128,18 +128,13 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 		Title:         &title,
 	}
 
-	var config kbapi.KbnDashboardPanelSloOverview_Config
+	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
 	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelSloOverview{
+	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
-		Grid: struct {
-			H *float32 `json:"h,omitempty"`
-			W *float32 `json:"w,omitempty"`
-			X float32  `json:"x"`
-			Y float32  `json:"y"`
-		}{X: 0, Y: 0},
-		Type: kbapi.SloOverview,
+		Grid:   kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
 	}
 
 	pm := &panelModel{}
@@ -172,10 +167,10 @@ func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
 		},
 	}
 
-	var config kbapi.KbnDashboardPanelSloOverview_Config
+	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
 	require.NoError(t, config.FromSloGroupOverviewEmbeddable(apiGroups))
 
-	panel := kbapi.KbnDashboardPanelSloOverview{
+	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -209,10 +204,10 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 		SloInstanceId: &defaultInstanceID,
 	}
 
-	var config kbapi.KbnDashboardPanelSloOverview_Config
+	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
 	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelSloOverview{
+	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -253,10 +248,10 @@ func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 		SloInstanceId: &instanceID,
 	}
 
-	var config kbapi.KbnDashboardPanelSloOverview_Config
+	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
 	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelSloOverview{
+	panel := kbapi.KbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -319,9 +314,9 @@ func Test_sloOverviewToAPI_single(t *testing.T) {
 	item, diags := sloOverviewToAPI(pm, grid, nil)
 	require.False(t, diags.HasError())
 
-	panel, err := item.AsKbnDashboardPanelSloOverview()
+	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.SloOverview, panel.Type)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSloOverviewType("slo_overview"), panel.Type)
 	single, err := panel.Config.AsSloSingleOverviewEmbeddable()
 	require.NoError(t, err)
 	assert.Equal(t, "test-slo", single.SloId)
@@ -364,7 +359,7 @@ func Test_sloOverviewToAPI_groups(t *testing.T) {
 	item, diags := sloOverviewToAPI(pm, grid, nil)
 	require.False(t, diags.HasError())
 
-	panel, err := item.AsKbnDashboardPanelSloOverview()
+	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
 	require.NoError(t, err)
 	groups, err := panel.Config.AsSloGroupOverviewEmbeddable()
 	require.NoError(t, err)

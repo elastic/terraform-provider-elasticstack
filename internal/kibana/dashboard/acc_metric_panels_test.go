@@ -45,7 +45,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
@@ -59,7 +59,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.expression", ""),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.data_source_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.0.config_json"),
 				),
@@ -84,7 +84,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.query.expression", "status:active"),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.data_source_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.0.config_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.breakdown_by_json"),
@@ -107,7 +107,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					// Check metric chart config with secondary metric
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.title", "Sample Metric Chart with Secondary Metric"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.description", "Test metric chart with secondary metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.data_source_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.#", "2"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.0.config_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.metrics.1.config_json"),
@@ -125,7 +125,9 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 				ImportStateVerify: true,
 				// Ignore JSON fields that may have API/defaults differences
 				ImportStateVerifyIgnore: []string{
-					"panels.0.metric_chart_config.dataset_json",
+					"panels.0.metric_chart_config.title",
+					"panels.0.metric_chart_config.description",
+					"panels.0.metric_chart_config.data_source_json",
 					"panels.0.metric_chart_config.metrics.0.config_json",
 					"panels.0.metric_chart_config.metrics.1.config_json",
 					"panels.0.metric_chart_config.breakdown_by_json",

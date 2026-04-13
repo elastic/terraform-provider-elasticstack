@@ -43,37 +43,26 @@ type heatmapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	heatmapChart, err := attrs.AsHeatmapChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	pm.HeatmapConfig = &heatmapConfigModel{}
-	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
+	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
 		return pm.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
 	}
-	heatmapESQL, err := heatmapChart.AsHeatmapESQL()
+	heatmapESQL, err := attrs.AsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return pm.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.HeatmapConfig
 
-	heatmapChart, heatmapDiags := configModel.toAPI()
+	attrs, heatmapDiags := configModel.toAPI()
 	diags.Append(heatmapDiags...)
 	if diags.HasError() {
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromHeatmapChart(heatmapChart); err != nil {
-		diags.AddError("Failed to create heatmap attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -82,7 +71,7 @@ func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensA
 type heatmapConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
@@ -96,7 +85,7 @@ type heatmapConfigModel struct {
 }
 
 func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
-	body, err := apiChart.Dataset.MarshalJSON()
+	body, err := apiChart.DataSource.MarshalJSON()
 	if err != nil {
 		return false
 	}
@@ -109,6 +98,23 @@ func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
 	}
 
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
+}
+
+func inferHeatmapXAxisScale(xAxisJSON string) kbapi.HeatmapXAxisScale {
+	var axis map[string]any
+	if err := json.Unmarshal([]byte(xAxisJSON), &axis); err != nil {
+		return kbapi.HeatmapXAxisScaleOrdinal
+	}
+
+	operation, _ := axis["operation"].(string)
+	switch operation {
+	case "date_histogram":
+		return kbapi.HeatmapXAxisScaleTemporal
+	case "histogram":
+		return kbapi.HeatmapXAxisScaleLinear
+	default:
+		return kbapi.HeatmapXAxisScaleOrdinal
+	}
 }
 
 func (m *heatmapConfigModel) populateCommonFields(
@@ -131,11 +137,11 @@ func (m *heatmapConfigModel) populateCommonFields(
 	} else {
 		m.Sampling = types.Float64Null()
 	}
-	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset_json", diags)
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}
-	m.DatasetJSON = dv
+	m.DataSourceJSON = dv
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	m.Axes = &heatmapAxesModel{}
 	axesDiags := m.Axes.fromAPI(axes)
@@ -151,7 +157,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := api.Dataset.MarshalJSON()
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
 	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axes, api.Cells, api.Legend, &diags) {
 		return diags
 	}
@@ -191,7 +197,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := api.Dataset.MarshalJSON()
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
 	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axes, api.Cells, api.Legend, &diags) {
 		return diags
 	}
@@ -224,36 +230,36 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	return diags
 }
 
-func (m *heatmapConfigModel) toAPI() (kbapi.HeatmapChart, diag.Diagnostics) {
+func (m *heatmapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var heatmapChart kbapi.HeatmapChart
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	if m == nil {
-		return heatmapChart, diags
+		return attrs, diags
 	}
 
 	if m.usesESQL() {
 		esql, esqlDiags := m.toAPIESQL()
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
-			return heatmapChart, diags
+			return attrs, diags
 		}
-		if err := heatmapChart.FromHeatmapESQL(esql); err != nil {
+		if err := attrs.FromHeatmapESQL(esql); err != nil {
 			diags.AddError("Failed to create heatmap ESQL schema", err.Error())
 		}
-		return heatmapChart, diags
+		return attrs, diags
 	}
 
 	noESQL, noESQLDiags := m.toAPINoESQL()
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
-		return heatmapChart, diags
+		return attrs, diags
 	}
-	if err := heatmapChart.FromHeatmapNoESQL(noESQL); err != nil {
+	if err := attrs.FromHeatmapNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to create heatmap schema", err.Error())
 	}
 
-	return heatmapChart, diags
+	return attrs, diags
 }
 
 func (m *heatmapConfigModel) usesESQL() bool {
@@ -271,6 +277,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	api := kbapi.HeatmapNoESQL{
 		Type: kbapi.HeatmapNoESQLTypeHeatmap,
 	}
+	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -285,12 +292,12 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.DatasetJSON.IsNull() {
-		diags.AddError("Missing dataset", "heatmap_config.dataset_json must be provided")
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing dataset", "heatmap_config.data_source_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal heatmap_config.data_source_json", err.Error())
 		return api, diags
 	}
 
@@ -327,6 +334,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	}
 	axes, axesDiags := m.Axes.toAPI()
 	diags.Append(axesDiags...)
+	axes.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
 	api.Axes = axes
 
 	if m.Cells == nil {
@@ -359,6 +367,7 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	api := kbapi.HeatmapESQL{
 		Type: kbapi.HeatmapESQLTypeHeatmap,
 	}
+	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -373,12 +382,12 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.DatasetJSON.IsNull() {
-		diags.AddError("Missing dataset", "heatmap_config.dataset_json must be provided")
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing dataset", "heatmap_config.data_source_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset_json", err.Error())
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
 		return api, diags
 	}
 
@@ -429,6 +438,7 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	}
 	axes, axesDiags := m.Axes.toAPI()
 	diags.Append(axesDiags...)
+	axes.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
 	api.Axes = axes
 
 	if m.Cells == nil {

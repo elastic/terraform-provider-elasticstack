@@ -43,13 +43,8 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	gaugeChart, err := attrs.AsGaugeChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	gaugeNoESQL, err := gaugeChart.AsGaugeNoESQL()
+func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -58,26 +53,20 @@ func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, p
 	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.GaugeConfig
 
 	gaugeNoESQL, gaugeDiags := configModel.toAPI()
 	diags.Append(gaugeDiags...)
 	if diags.HasError() {
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
-	var gaugeChart kbapi.GaugeChart
-	if err := gaugeChart.FromGaugeNoESQL(gaugeNoESQL); err != nil {
-		diags.AddError("Failed to convert gauge to schema", err.Error())
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromGaugeChart(gaugeChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	if err := attrs.FromGaugeNoESQL(gaugeNoESQL); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -86,7 +75,7 @@ func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApi
 type gaugeConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
@@ -102,12 +91,12 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	v, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	v, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
-	m.DatasetJSON = v
+	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -147,6 +136,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var api kbapi.GaugeNoESQL
 
 	api.Type = kbapi.GaugeNoESQLTypeGauge
+	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -156,9 +146,9 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if typeutils.IsKnown(m.DatasetJSON) {
-		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
-			diags.AddError("Failed to unmarshal dataset", err.Error())
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
 			return api, diags
 		}
 	}
