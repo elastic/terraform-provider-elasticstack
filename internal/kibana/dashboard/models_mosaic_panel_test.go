@@ -46,7 +46,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 		"description": "Converter test",
 		"ignore_global_filters": true,
 		"sampling": 0.5,
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","query":"status:200"},
 		"legend": {"size": "medium"},
 		"metrics": [{"operation":"count"}],
@@ -56,11 +56,8 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var api kbapi.MosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var mosaicChart kbapi.MosaicChart
-	require.NoError(t, mosaicChart.FromMosaicNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
@@ -71,9 +68,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsMosaicChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsMosaicNoESQL()
+	noESQL2, err := attrs2.AsMosaicNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Mosaic NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.MosaicNoESQLTypeMosaic, noESQL2.Type)
@@ -92,7 +87,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 		"description": "Converter test",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
+		"data_source": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
 		"legend": {"size": "small"},
 		"metrics": [{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}}],
 		"group_by": ` + groupBy + `,
@@ -101,11 +96,8 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var api kbapi.MosaicESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var mosaicChart kbapi.MosaicChart
-	require.NoError(t, mosaicChart.FromMosaicESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMosaicESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
@@ -116,9 +108,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsMosaicChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsMosaicESQL()
+	esql2, err := attrs2.AsMosaicESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Mosaic ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.MosaicESQLTypeMosaic, esql2.Type)
@@ -162,7 +152,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
 
 	var groupByItem kbapi.MosaicNoESQL_GroupBy_Item
 	require.NoError(t, json.Unmarshal([]byte(`{
@@ -201,7 +191,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Query)
 	assert.Equal(t, types.StringValue("status:200"), model.Query.Expression)
 	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
-	assert.False(t, model.Dataset.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.GroupBreakdownBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
@@ -211,10 +201,10 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("percentage"), model.ValueDisplay.Mode)
 	assert.Equal(t, types.Float64Value(2), model.ValueDisplay.PercentDecimals)
 
-	schema, diags := model.toAPI()
+	attrs, diags := model.toAPI()
 	require.False(t, diags.HasError())
 
-	roundTrip, err := schema.AsMosaicNoESQL()
+	roundTrip, err := attrs.AsMosaicNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.MosaicNoESQLTypeMosaic, roundTrip.Type)
 	assert.NotNil(t, roundTrip.GroupBy)
@@ -286,7 +276,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	model := &mosaicConfigModel{}
 	diags := model.fromAPIESQL(api)
@@ -299,10 +289,10 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NotNil(t, model.ValueDisplay)
 	assert.Equal(t, types.StringValue("absolute"), model.ValueDisplay.Mode)
 
-	schema, diags := model.toAPI()
+	attrs, diags := model.toAPI()
 	require.False(t, diags.HasError())
 
-	roundTrip, err := schema.AsMosaicESQL()
+	roundTrip, err := attrs.AsMosaicESQL()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.MosaicESQLTypeMosaic, roundTrip.Type)
 	assert.NotNil(t, roundTrip.GroupBy)
@@ -322,7 +312,7 @@ func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
 		"type": "mosaic",
 		"legend": {"size": "medium"},
 		"metric": {"operation":"count"},
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","query":"status:200"},
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
@@ -346,7 +336,7 @@ func newTestMosaicESQLModel(t *testing.T) *mosaicConfigModel {
 		"type": "mosaic",
 		"legend": {"size": "small"},
 		"metric": {"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},
-		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
+		"data_source": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`

@@ -147,11 +147,12 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 // TestAccResourceDashboardSyntheticsMonitorsInvalidConfig covers schema-level validation:
 // 3.7: config_json on a synthetics_monitors panel is rejected.
 // synthetics_monitors_config on a non-synthetics_monitors panel is rejected.
+// statuses is rejected until the Kibana Dashboard API supports it.
 func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			// synthetics_monitors_config on type=lens is rejected.
+			// synthetics_monitors_config on type=vis is rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -160,6 +161,16 @@ func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`Invalid Configuration`),
+			},
+			// statuses is rejected until the API supports it.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unsupported_statuses"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Unsupported synthetics statuses filter`),
 			},
 			// config_json on type=synthetics_monitors is rejected.
 			{

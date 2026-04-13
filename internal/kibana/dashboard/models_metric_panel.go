@@ -58,42 +58,31 @@ type metricChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
-	metricChart, err := attrs.AsMetricChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
 	// return an empty standard-query object, so query presence is not reliable.
 	pm.MetricChartConfig = &metricChartConfigModel{}
-	if variant0, err := metricChart.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
+	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
 		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
 	}
-	variant1, err := metricChart.AsMetricESQL()
+	variant1, err := attrs.AsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
-func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
+func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.MetricChartConfig
 
 	// Convert the structured model to API schema
-	metricChart, metricDiags := configModel.toAPI()
+	attrs, metricDiags := configModel.toAPI()
 	diags.Append(metricDiags...)
 	if diags.HasError() {
-		return kbapi.LensApiState{}, diags
-	}
-
-	var attrs kbapi.LensApiState
-	if err := attrs.FromMetricChart(metricChart); err != nil {
-		diags.AddError("Failed to create metric chart attributes", err.Error())
-		return kbapi.LensApiState{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -102,7 +91,7 @@ func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.L
 type metricChartConfigModel struct {
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64          `tfsdk:"sampling"`
 	Query               *filterSimpleModel     `tfsdk:"query"`
@@ -116,7 +105,7 @@ type metricItemModel struct {
 }
 
 func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
-	body, err := json.Marshal(apiChart.Dataset)
+	body, err := json.Marshal(apiChart.DataSource)
 	if err != nil {
 		return false
 	}
@@ -131,17 +120,17 @@ func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
-func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChart) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPI(ctx context.Context, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to get the metric chart variant 0 (non-ESQL) or 1 (ESQL)
 	// Both variants share the same "type" field value ("metric"), so we can't use that to distinguish them.
 	// The key difference is the dataset type: data views and indices are no-ESQL,
 	// while ESQL/table datasets belong to the ESQL variant.
-	variant0, err := apiChart.AsMetricNoESQL()
+	variant0, err := attrs.AsMetricNoESQL()
 	if err == nil {
 		if isMetricNoESQLCandidateActuallyESQL(variant0) {
-			variant1, err1 := apiChart.AsMetricESQL()
+			variant1, err1 := attrs.AsMetricESQL()
 			if err1 == nil {
 				return m.fromAPIVariant1(ctx, variant1)
 			}
@@ -149,7 +138,7 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 		return m.fromAPIVariant0(ctx, variant0)
 	}
 
-	variant1, err := apiChart.AsMetricESQL()
+	variant1, err := attrs.AsMetricESQL()
 	if err == nil {
 		return m.fromAPIVariant1(ctx, variant1)
 	}
@@ -179,7 +168,7 @@ func (m *metricChartConfigModel) populateCommonFields(
 	if !ok {
 		return false
 	}
-	m.DatasetJSON = dv
+	m.DataSourceJSON = dv
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }
@@ -188,7 +177,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
@@ -229,7 +218,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
@@ -265,7 +254,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	return diags
 }
 
-func (m *metricChartConfigModel) toAPI() (kbapi.MetricChart, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	// Determine which variant to use based on whether we have a query
 	// Variant 0 (non-ESQL) requires a query
 	// Variant 1 (ESQL) doesn't require a query
@@ -275,13 +264,15 @@ func (m *metricChartConfigModel) toAPI() (kbapi.MetricChart, diag.Diagnostics) {
 	return m.toAPIVariant1()
 }
 
-func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant0() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var metricChart kbapi.MetricChart
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	variant0 := kbapi.MetricNoESQL{
 		Type: kbapi.MetricNoESQLTypeMetric,
 	}
+	variant0.Styling = kbapi.MetricStyling{}
+	variant0.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -299,12 +290,12 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagno
 	}
 
 	// Set dataset
-	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset kbapi.MetricNoESQL_Dataset
-		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		var dataset kbapi.MetricNoESQL_DataSource
+		datasetDiags := m.DataSourceJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
-			variant0.Dataset = dataset
+			variant0.DataSource = dataset
 		}
 	}
 
@@ -342,20 +333,22 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagno
 		}
 	}
 
-	if err := metricChart.FromMetricNoESQL(variant0); err != nil {
+	if err := attrs.FromMetricNoESQL(variant0); err != nil {
 		diags.AddError("Failed to create metric chart schema variant 0", err.Error())
 	}
 
-	return metricChart, diags
+	return attrs, diags
 }
 
-func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant1() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var metricChart kbapi.MetricChart
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	variant1 := kbapi.MetricESQL{
 		Type: kbapi.MetricESQLTypeMetric,
 	}
+	variant1.Styling = kbapi.MetricStyling{}
+	variant1.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -373,12 +366,12 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 	}
 
 	// Set dataset
-	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset kbapi.MetricESQL_Dataset
-		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		var dataset kbapi.EsqlDataSource
+		datasetDiags := m.DataSourceJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
-			variant1.Dataset = dataset
+			variant1.DataSource = dataset
 		}
 	}
 
@@ -421,9 +414,9 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 		}
 	}
 
-	if err := metricChart.FromMetricESQL(variant1); err != nil {
+	if err := attrs.FromMetricESQL(variant1); err != nil {
 		diags.AddError("Failed to create metric chart schema variant 1", err.Error())
 	}
 
-	return metricChart, diags
+	return attrs, diags
 }

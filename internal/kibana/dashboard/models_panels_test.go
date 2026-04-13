@@ -39,7 +39,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	apiJSON := `{
 		"type": "mosaic",
 		"title": "Lens Mosaic",
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metric": {"operation":"count"},
@@ -49,11 +49,8 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	var api kbapi.MosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var chart kbapi.MosaicChart
-	require.NoError(t, chart.FromMosaicNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromMosaicChart(chart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
@@ -61,8 +58,8 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("lens"),
-		UID:          types.StringValue("mosaic-1"),
+		Type:         types.StringValue("vis"),
+		ID:           types.StringValue("mosaic-1"),
 		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		MosaicConfig: pm.MosaicConfig,
 	}
@@ -74,7 +71,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	apiJSON := `{
 		"type": "treemap",
 		"title": "Lens Treemap",
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}],
@@ -83,11 +80,8 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	var api kbapi.TreemapNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var chart kbapi.TreemapChart
-	require.NoError(t, chart.FromTreemapNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromTreemapChart(chart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
@@ -95,8 +89,8 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:          types.StringValue("lens"),
-		UID:           types.StringValue("treemap-1"),
+		Type:          types.StringValue("vis"),
+		ID:            types.StringValue("treemap-1"),
 		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		TreemapConfig: pm.TreemapConfig,
 	}
@@ -108,7 +102,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	apiJSON := `{
 		"type": "waffle",
 		"title": "Lens Waffle",
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}]
@@ -116,11 +110,8 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	var api kbapi.WaffleNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var chart kbapi.WaffleChart
-	require.NoError(t, chart.FromWaffleNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromWaffleChart(chart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromWaffleNoESQL(api))
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
@@ -128,8 +119,8 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("lens"),
-		UID:          types.StringValue("waffle-1"),
+		Type:         types.StringValue("vis"),
+		ID:           types.StringValue("waffle-1"),
 		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
 		WaffleConfig: pm.WaffleConfig,
 	}
@@ -164,7 +155,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						"w": 2,
 						"h": 3
 					},
-					"uid": "1",
+					"id": "1",
 					"type": "markdown",
 					"config": {
 						"title": "My Panel",
@@ -182,7 +173,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(2),
 						H: types.Int64Value(3),
 					},
-					UID: types.StringValue("1"),
+					ID: types.StringValue("1"),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringValue("My Panel"),
 						Content:     types.StringValue("some content"),
@@ -218,7 +209,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Null(),
 						H: types.Int64Null(),
 					},
-					UID: types.StringNull(),
+					ID: types.StringNull(),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringNull(),
 						Content:     types.StringNull(),
@@ -236,7 +227,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"title": "My Section",
 					"grid": { "y": 100 },
 					"collapsed": true,
-					"uid": "section1",
+					"id": "section1",
 					"panels": [
 						{
 							"type": "markdown",
@@ -249,7 +240,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			expectedSections: []sectionModel{
 				{
 					Title:     types.StringValue("My Section"),
-					UID:       types.StringValue("section1"),
+					ID:        types.StringValue("section1"),
 					Collapsed: types.BoolValue(true),
 					Grid: sectionGridModel{
 						Y: types.Int64Value(100),
@@ -263,7 +254,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								W: types.Int64Value(4),
 								H: types.Int64Value(4),
 							},
-							UID: types.StringNull(),
+							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
 								Title:       types.StringValue("Inner Panel"),
 								Content:     types.StringValue("Inner content"),
@@ -282,13 +273,13 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 				{
 					"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
 					"type": "markdown",
-					"uid": "panel1",
+					"id": "panel1",
 					"config": { "title": "Panel 1", "content": "Panel 1 body" }
 				},
 				{
 					"title": "Section 1",
 					"grid": { "y": 100 },
-					"uid": "section1",
+					"id": "section1",
 					"panels": [
 						{
 							"type": "markdown",
@@ -299,8 +290,8 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 				},
 				{
 					"grid": { "x": 6, "y": 0, "w": 6, "h": 6 },
-					"type": "lens",
-					"uid": "panel2",
+					"type": "vis",
+					"id": "panel2",
 					"config": { "title": "Panel 2" }
 				}
 			]`,
@@ -313,7 +304,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(6),
 						H: types.Int64Value(6),
 					},
-					UID: types.StringValue("panel1"),
+					ID: types.StringValue("panel1"),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringValue("Panel 1"),
 						Content:     types.StringValue("Panel 1 body"),
@@ -323,14 +314,14 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`, populatePanelConfigJSONDefaults),
 				},
 				{
-					Type: types.StringValue("lens"),
+					Type: types.StringValue("vis"),
 					Grid: panelGridModel{
 						X: types.Int64Value(6),
 						Y: types.Int64Value(0),
 						W: types.Int64Value(6),
 						H: types.Int64Value(6),
 					},
-					UID:            types.StringValue("panel2"),
+					ID:             types.StringValue("panel2"),
 					MarkdownConfig: nil,
 					ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 2" }`, populatePanelConfigJSONDefaults),
 				},
@@ -338,7 +329,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			expectedSections: []sectionModel{
 				{
 					Title:     types.StringValue("Section 1"),
-					UID:       types.StringValue("section1"),
+					ID:        types.StringValue("section1"),
 					Collapsed: types.BoolNull(),
 					Grid: sectionGridModel{
 						Y: types.Int64Value(100),
@@ -352,7 +343,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								W: types.Int64Value(6),
 								H: types.Int64Value(6),
 							},
-							UID: types.StringNull(),
+							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
 								Title:       types.StringValue("Inner Panel"),
 								Content:     types.StringValue("Inner panel body"),
@@ -395,7 +386,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	t.Helper()
 	assert.Equal(t, expected.Type, actual.Type)
 	assert.Equal(t, expected.Grid, actual.Grid)
-	assert.Equal(t, expected.UID, actual.UID)
+	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
 	assert.Equal(t, expected.XYChartConfig, actual.XYChartConfig)
 	assert.Equal(t, expected.TreemapConfig, actual.TreemapConfig)
@@ -418,7 +409,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 func assertSectionsEqual(t *testing.T, expected, actual sectionModel) {
 	t.Helper()
 	assert.Equal(t, expected.Title, actual.Title)
-	assert.Equal(t, expected.UID, actual.UID)
+	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.Collapsed, actual.Collapsed)
 	assert.Equal(t, expected.Grid, actual.Grid)
 	assert.Len(t, actual.Panels, len(expected.Panels))
@@ -445,7 +436,7 @@ func Test_panelsToAPI(t *testing.T) {
 							W: types.Int64Value(2),
 							H: types.Int64Value(3),
 						},
-						UID: types.StringValue("1"),
+						ID: types.StringValue("1"),
 						MarkdownConfig: &markdownConfigModel{
 							Title:     types.StringValue("My Panel"),
 							Content:   types.StringValue("some content"),
@@ -463,7 +454,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"x": 0,
 						"y": 1
 					},
-					"uid": "1",
+					"id": "1",
 					"type": "markdown",
 					"config": {
 						"content": "some content",
@@ -483,7 +474,7 @@ func Test_panelsToAPI(t *testing.T) {
 							X: types.Int64Value(10),
 							Y: types.Int64Value(20),
 						},
-						UID:            types.StringNull(),
+						ID:             types.StringNull(),
 						MarkdownConfig: nil,
 						ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{"content":"from json"}`, populatePanelConfigJSONDefaults),
 					},
@@ -512,20 +503,18 @@ func Test_panelsToAPI(t *testing.T) {
 			expected: `[
 				{
 					"grid": {"h": 6, "w": 6, "x": 0, "y": 0},
-					"uid": "treemap-1",
-					"type": "lens",
+					"id": "treemap-1",
+					"type": "vis",
 					"config": {
-						"attributes": {
-							"type": "treemap",
-							"title": "Lens Treemap",
-							"dataset": {"type":"dataView","id":"metrics-*"},
-							"filters": [],
-							"query": {"language":"kql","expression":""},
-							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}],
-							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
-							"values": {}
-						},
+						"type": "treemap",
+						"title": "Lens Treemap",
+						"data_source": {"type":"dataView","id":"metrics-*"},
+						"filters": [],
+						"query": {"language":"kql","expression":""},
+						"legend": {"size":"small"},
+						"metrics": [{"operation":"count"}],
+						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
+						"values": {},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
@@ -541,25 +530,23 @@ func Test_panelsToAPI(t *testing.T) {
 			expected: `[
 				{
 					"grid": {"h": 6, "w": 6, "x": 0, "y": 0},
-					"uid": "mosaic-1",
-					"type": "lens",
+					"id": "mosaic-1",
+					"type": "vis",
 					"config": {
-						"attributes": {
-							"type": "mosaic",
-							"title": "Lens Mosaic",
-							"dataset": {"type":"dataView","id":"metrics-*"},
-							"filters": [],
-							"query": {"language":"kql","expression":""},
-							"legend": {"size":"small"},
-							"metric": {"operation":"count"},
-							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
-								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
-								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-							"values": {}
-						},
+						"type": "mosaic",
+						"title": "Lens Mosaic",
+						"data_source": {"type":"dataView","id":"metrics-*"},
+						"filters": [],
+						"query": {"language":"kql","expression":""},
+						"legend": {"size":"small"},
+						"metric": {"operation":"count"},
+						"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
+							"color":{"mode":"categorical","palette":"default","mapping":[],
+							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
+						"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
+							"color":{"mode":"categorical","palette":"default","mapping":[],
+							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
+						"values": {},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
@@ -575,19 +562,17 @@ func Test_panelsToAPI(t *testing.T) {
 			expected: `[
 				{
 					"grid": {"h": 10, "w": 8, "x": 0, "y": 0},
-					"uid": "waffle-1",
-					"type": "lens",
+					"id": "waffle-1",
+					"type": "vis",
 					"config": {
-						"attributes": {
-							"type": "waffle",
-							"title": "Lens Waffle",
-							"dataset": {"type":"dataView","id":"metrics-*"},
-							"filters": [],
-							"query": {"language":"kql","expression":""},
-							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}],
-							"values": {"mode": "percentage"}
-						},
+						"type": "waffle",
+						"title": "Lens Waffle",
+						"data_source": {"type":"dataView","id":"metrics-*"},
+						"filters": [],
+						"query": {"language":"kql","expression":""},
+						"legend": {"size":"small"},
+						"metrics": [{"operation":"count"}],
+						"values": {"mode": "percentage"},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
@@ -599,7 +584,7 @@ func Test_panelsToAPI(t *testing.T) {
 				Sections: []sectionModel{
 					{
 						Title:     types.StringValue("Test Section"),
-						UID:       types.StringValue("sec-1"),
+						ID:        types.StringValue("sec-1"),
 						Collapsed: types.BoolValue(true),
 						Grid:      sectionGridModel{Y: types.Int64Value(50)},
 						Panels: []panelModel{
@@ -617,7 +602,7 @@ func Test_panelsToAPI(t *testing.T) {
 			expected: `[
 				{
 					"title": "Test Section",
-					"uid": "sec-1",
+					"id": "sec-1",
 					"collapsed": true,
 					"grid": {"y": 50},
 					"panels": [
@@ -662,7 +647,7 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":"ignored"}`, populatePanelConfigJSONDefaults),
 			},
 			errorSummary:  "Unsupported panel type for config_json",
-			errorContains: "Only markdown and lens panel types are currently supported",
+			errorContains: "Only markdown and vis panel types are currently supported",
 		},
 		{
 			name: "rejects missing panel configuration",
@@ -685,13 +670,13 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorContains: "unexpected end of JSON input",
 		},
 		{
-			name: "rejects invalid lens config_json",
+			name: "rejects invalid vis config_json",
 			panel: panelModel{
-				Type:       types.StringValue("lens"),
+				Type:       types.StringValue("vis"),
 				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"attributes":`, populatePanelConfigJSONDefaults),
 			},
-			errorSummary:  "Failed to create lens panel",
+			errorSummary:  "Failed to create visualization panel",
 			errorContains: "unexpected end of JSON input",
 		},
 		{

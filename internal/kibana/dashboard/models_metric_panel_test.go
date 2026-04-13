@@ -45,11 +45,8 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
 
-	var apiSchema kbapi.MetricChart
-	require.NoError(t, apiSchema.FromMetricNoESQL(apiChart))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromMetricChart(apiSchema))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 
 	converter := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
@@ -60,9 +57,7 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsMetricChart()
-	require.NoError(t, err)
-	variant0, err := chart2.AsMetricNoESQL()
+	variant0, err := attrs2.AsMetricNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Metric Round-Trip", *variant0.Title)
 	assert.Equal(t, kbapi.MetricNoESQLTypeMetric, variant0.Type)
@@ -119,14 +114,12 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			// Convert API to metric chart schema
-			var apiSchema kbapi.MetricChart
-			err := apiSchema.FromMetricNoESQL(tt.apiChart)
+			var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+			err := attrs.FromMetricNoESQL(tt.apiChart)
 			require.NoError(t, err)
 
-			// Test fromAPI
 			model := &metricChartConfigModel{}
-			diags := model.fromAPI(ctx, apiSchema)
+			diags := model.fromAPI(ctx, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -185,14 +178,10 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 				Description:         new("ESQL Description"),
 				IgnoreGlobalFilters: new(true),
 				Sampling:            new(float32(0.5)),
-				Dataset: func() kbapi.MetricESQL_Dataset {
-					var ds kbapi.MetricESQL_Dataset
-					_ = ds.FromEsqlDataset(kbapi.EsqlDataset{
-						Type:  kbapi.EsqlDatasetTypeEsql,
-						Query: "FROM logs-*",
-					})
-					return ds
-				}(),
+				DataSource: kbapi.EsqlDataSource{
+					Type:  kbapi.EsqlDataSourceTypeEsql,
+					Query: "FROM logs-*",
+				},
 				Metrics: []kbapi.MetricESQL_Metrics_Item{},
 			},
 			expectedTitle:    "ESQL Metric",
@@ -203,14 +192,10 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			name: "minimal ESQL metric chart",
 			apiChart: kbapi.MetricESQL{
 				Type: kbapi.MetricESQLTypeMetric,
-				Dataset: func() kbapi.MetricESQL_Dataset {
-					var ds kbapi.MetricESQL_Dataset
-					_ = ds.FromEsqlDataset(kbapi.EsqlDataset{
-						Type:  kbapi.EsqlDatasetTypeEsql,
-						Query: "FROM *",
-					})
-					return ds
-				}(),
+				DataSource: kbapi.EsqlDataSource{
+					Type:  kbapi.EsqlDataSourceTypeEsql,
+					Query: "FROM *",
+				},
 				Metrics: []kbapi.MetricESQL_Metrics_Item{},
 			},
 			expectedTitle:    "",
@@ -223,14 +208,12 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			// Convert API to metric chart schema
-			var apiSchema kbapi.MetricChart
-			err := apiSchema.FromMetricESQL(tt.apiChart)
+			var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+			err := attrs.FromMetricESQL(tt.apiChart)
 			require.NoError(t, err)
 
-			// Test fromAPI
 			model := &metricChartConfigModel{}
-			diags := model.fromAPI(ctx, apiSchema)
+			diags := model.fromAPI(ctx, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -298,13 +281,12 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 		Metrics: []kbapi.MetricESQL_Metrics_Item{metricItem},
 	}
 
-	var apiSchema kbapi.MetricChart
-	err = apiSchema.FromMetricESQL(apiChart)
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	err = attrs.FromMetricESQL(apiChart)
 	require.NoError(t, err)
 
-	// Test fromAPI
 	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, apiSchema)
+	diags := model.fromAPI(ctx, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify metrics were populated
@@ -332,33 +314,32 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 
 	// Create a dataset
 	datasetJSON := `{"type": "dataview", "id": "test-dataview"}`
-	var dataset kbapi.MetricNoESQL_Dataset
+	var dataset kbapi.MetricNoESQL_DataSource
 	err := json.Unmarshal([]byte(datasetJSON), &dataset)
 	require.NoError(t, err)
 
 	apiChart := kbapi.MetricNoESQL{
-		Type:    kbapi.MetricNoESQLTypeMetric,
-		Dataset: dataset,
+		Type:       kbapi.MetricNoESQLTypeMetric,
+		DataSource: dataset,
 		Query: kbapi.FilterSimple{
 			Expression: "",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
 
-	var apiSchema kbapi.MetricChart
-	err = apiSchema.FromMetricNoESQL(apiChart)
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	err = attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	// Test fromAPI
 	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, apiSchema)
+	diags := model.fromAPI(ctx, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify dataset was populated
-	assert.True(t, typeutils.IsKnown(model.DatasetJSON))
+	assert.True(t, typeutils.IsKnown(model.DataSourceJSON))
 
 	var parsedDataset map[string]any
-	diags = model.DatasetJSON.Unmarshal(&parsedDataset)
+	diags = model.DataSourceJSON.Unmarshal(&parsedDataset)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "dataview", parsedDataset["type"])
 	assert.Equal(t, "test-dataview", parsedDataset["id"])
@@ -368,10 +349,10 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	require.False(t, diags.HasError())
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
 	require.NoError(t, err)
-	resultDatasetJSON, err := json.Marshal(resultVariant0.Dataset)
+	resultDataSourceJSON, err := json.Marshal(resultVariant0.DataSource)
 	require.NoError(t, err)
 	var resultDataset map[string]any
-	require.NoError(t, json.Unmarshal(resultDatasetJSON, &resultDataset))
+	require.NoError(t, json.Unmarshal(resultDataSourceJSON, &resultDataset))
 	assert.Equal(t, "dataview", resultDataset["type"])
 	assert.Equal(t, "test-dataview", resultDataset["id"])
 }
@@ -392,13 +373,12 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
 
-	var apiSchema kbapi.MetricChart
-	err := apiSchema.FromMetricNoESQL(apiChart)
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	err := attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	// Test fromAPI
 	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, apiSchema)
+	diags := model.fromAPI(ctx, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify filters were populated
@@ -432,13 +412,12 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
 
-	var apiSchema kbapi.MetricChart
-	err = apiSchema.FromMetricNoESQL(apiChart)
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	err = attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	// Test fromAPI
 	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, apiSchema)
+	diags := model.fromAPI(ctx, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify breakdown_by was populated

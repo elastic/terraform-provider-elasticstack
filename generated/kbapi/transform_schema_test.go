@@ -3,6 +3,8 @@
 package main
 
 import (
+	"io"
+	"log"
 	"reflect"
 	"testing"
 )
@@ -430,6 +432,161 @@ func TestTransformRemoveAnyOfWhenOneOfPresent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateRefCreatesComponentFromMapField(t *testing.T) {
+	schema := &Schema{
+		Components: Map{
+			"schemas": Map{},
+		},
+	}
+	input := Map{
+		"properties": Map{
+			"child": Map{
+				"type": "string",
+			},
+		},
+	}
+
+	ref := input.CreateRef(schema, "Child", "properties.child")
+
+	expectedRef := Map{"$ref": "#/components/schemas/Child"}
+	expectedInput := Map{
+		"properties": Map{
+			"child": expectedRef,
+		},
+	}
+	expectedComponents := Map{
+		"schemas": Map{
+			"Child": Map{
+				"type": "string",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(ref, expectedRef) {
+		t.Fatalf("CreateRef() returned %+v, want %+v", ref, expectedRef)
+	}
+	if !reflect.DeepEqual(input, expectedInput) {
+		t.Fatalf("CreateRef() mutated input to %+v, want %+v", input, expectedInput)
+	}
+	if !reflect.DeepEqual(schema.Components, expectedComponents) {
+		t.Fatalf("CreateRef() wrote components %+v, want %+v", schema.Components, expectedComponents)
+	}
+}
+
+func TestCreateRefCreatesComponentFromSliceElement(t *testing.T) {
+	schema := &Schema{
+		Components: Map{
+			"schemas": Map{},
+		},
+	}
+	input := Map{
+		"oneOf": Slice{
+			Map{"type": "string"},
+			Map{"type": "number"},
+		},
+	}
+
+	ref := input.CreateRef(schema, "NumberVariant", "oneOf.1")
+
+	expectedRef := Map{"$ref": "#/components/schemas/NumberVariant"}
+	expectedInput := Map{
+		"oneOf": Slice{
+			Map{"type": "string"},
+			expectedRef,
+		},
+	}
+	expectedComponents := Map{
+		"schemas": Map{
+			"NumberVariant": Map{"type": "number"},
+		},
+	}
+
+	if !reflect.DeepEqual(ref, expectedRef) {
+		t.Fatalf("CreateRef() returned %+v, want %+v", ref, expectedRef)
+	}
+	if !reflect.DeepEqual(input, expectedInput) {
+		t.Fatalf("CreateRef() mutated input to %+v, want %+v", input, expectedInput)
+	}
+	if !reflect.DeepEqual(schema.Components, expectedComponents) {
+		t.Fatalf("CreateRef() wrote components %+v, want %+v", schema.Components, expectedComponents)
+	}
+}
+
+func TestCreateRefReusesExistingEquivalentSliceComponent(t *testing.T) {
+	existingChoice := []any{
+		map[string]any{"type": "string"},
+		map[string]any{"type": "number"},
+	}
+	schema := &Schema{
+		Components: Map{
+			"schemas": map[string]any{
+				"Choice": existingChoice,
+			},
+		},
+	}
+	input := Map{
+		"oneOf": Slice{
+			Map{"type": "string"},
+			Map{"type": "number"},
+		},
+	}
+
+	ref := input.CreateRef(schema, "Choice", "oneOf")
+
+	expectedRef := Map{"$ref": "#/components/schemas/Choice"}
+	expectedInput := Map{
+		"oneOf": expectedRef,
+	}
+
+	if !reflect.DeepEqual(ref, expectedRef) {
+		t.Fatalf("CreateRef() returned %+v, want %+v", ref, expectedRef)
+	}
+	if !reflect.DeepEqual(input, expectedInput) {
+		t.Fatalf("CreateRef() mutated input to %+v, want %+v", input, expectedInput)
+	}
+	gotChoice := schema.Components.MustGet("schemas.Choice")
+	if !reflect.DeepEqual(gotChoice, existingChoice) {
+		t.Fatalf("CreateRef() rewrote equivalent component to %+v, want %+v", gotChoice, existingChoice)
+	}
+	if _, ok := gotChoice.([]any); !ok {
+		t.Fatalf("CreateRef() rewrote equivalent component type to %T, want []any", gotChoice)
+	}
+}
+
+func TestCreateRefPanicsWhenExistingComponentDiffers(t *testing.T) {
+	schema := &Schema{
+		Components: Map{
+			"schemas": Map{
+				"Choice": Map{"type": "number"},
+			},
+		},
+	}
+	input := Map{
+		"oneOf": Slice{
+			Map{"type": "string"},
+		},
+	}
+	expectedInput := deepCopyMap(input)
+	expectedComponents := deepCopyMap(schema.Components)
+	originalLogWriter := log.Writer()
+	log.SetOutput(io.Discard)
+	defer log.SetOutput(originalLogWriter)
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("CreateRef() did not panic for conflicting component schema")
+		}
+		if !reflect.DeepEqual(input, expectedInput) {
+			t.Fatalf("CreateRef() mutated input to %+v before panic, want %+v", input, expectedInput)
+		}
+		if !reflect.DeepEqual(schema.Components, expectedComponents) {
+			t.Fatalf("CreateRef() mutated components to %+v before panic, want %+v", schema.Components, expectedComponents)
+		}
+	}()
+
+	input.CreateRef(schema, "Choice", "oneOf")
 }
 
 // deepCopyMap creates a deep copy of a Map for testing purposes

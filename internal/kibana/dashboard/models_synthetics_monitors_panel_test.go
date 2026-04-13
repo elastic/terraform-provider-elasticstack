@@ -51,13 +51,13 @@ func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 	}
 	grid := makeTestGrid()
-	uid := "panel-1"
+	id := "panel-1"
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, &uid)
+	panel := buildSyntheticsMonitorsPanel(pm, grid, &id)
 
 	assert.Equal(t, kbapi.SyntheticsMonitors, panel.Type)
-	require.NotNil(t, panel.Uid)
-	assert.Equal(t, "panel-1", *panel.Uid)
+	require.NotNil(t, panel.Id)
+	assert.Equal(t, "panel-1", *panel.Id)
 	assert.Nil(t, panel.Config.Filters)
 }
 
@@ -111,7 +111,6 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 				MonitorIDs:   []syntheticsFilterItemModel{{Label: types.StringValue("M1"), Value: types.StringValue("m1")}},
 				Locations:    []syntheticsFilterItemModel{{Label: types.StringValue("L1"), Value: types.StringValue("l1")}},
 				MonitorTypes: []syntheticsFilterItemModel{{Label: types.StringValue("http"), Value: types.StringValue("http")}},
-				Statuses:     []syntheticsFilterItemModel{{Label: types.StringValue("Up"), Value: types.StringValue("up")}},
 			},
 		},
 	}
@@ -125,16 +124,15 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 	assert.NotNil(t, panel.Config.Filters.MonitorIds)
 	assert.NotNil(t, panel.Config.Filters.Locations)
 	assert.NotNil(t, panel.Config.Filters.MonitorTypes)
-	assert.NotNil(t, panel.Config.Filters.Statuses)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // populateSyntheticsMonitorsFromAPI (read path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-// makeSyntheticsPanel builds a KbnDashboardPanelSyntheticsMonitors for use in tests.
-func makeSyntheticsPanel() kbapi.KbnDashboardPanelSyntheticsMonitors {
-	return kbapi.KbnDashboardPanelSyntheticsMonitors{
+// makeSyntheticsPanel builds a KbnDashboardPanelTypeSyntheticsMonitors for use in tests.
+func makeSyntheticsPanel() kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
+	return kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
 		Type: kbapi.SyntheticsMonitors,
 	}
 }
@@ -171,10 +169,6 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -218,10 +212,6 @@ func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -261,10 +251,6 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -310,10 +296,6 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -358,10 +340,6 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
