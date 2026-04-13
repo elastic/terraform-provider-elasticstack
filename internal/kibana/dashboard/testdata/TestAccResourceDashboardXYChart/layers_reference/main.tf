@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -29,8 +29,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample XY Chart"
       description = "Test XY chart visualization"
       axis = {
-        left = {
+        y = {
           scale = "linear"
+          domain_json = jsonencode({
+            type = "fit"
+          })
           title = {
             value   = "Count"
             visible = true
@@ -53,11 +56,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         {
           type = "line"
           data_layer = {
-            dataset_json = jsonencode({
-              type  = "index"
-              index = "metrics-*"
-
-              time_field = "@timestamp"
+            data_source_json = jsonencode({
+              type          = "data_view_spec"
+              index_pattern = "metrics-*"
             })
             ignore_global_filters = false
             sampling              = 1
@@ -72,15 +73,13 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
         },
         {
-          type = "referenceLines"
+          type = "reference_lines"
           reference_line_layer = {
             ignore_global_filters = true
             sampling              = 0.5
-            dataset_json = jsonencode({
-              type  = "index"
-              index = "metrics-*"
-
-              time_field = "@timestamp"
+            data_source_json = jsonencode({
+              type          = "data_view_spec"
+              index_pattern = "metrics-*"
             })
             thresholds = [
               {

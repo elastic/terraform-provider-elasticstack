@@ -98,6 +98,17 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, oldMappings 
 				if !reflect.DeepEqual(s, ns) {
 					return true, newMappings, diags
 				}
+				// For semantic_text fields, Elasticsearch auto-populates model_settings
+				// after index creation. Copy model_settings from state into the plan
+				// when the user has not specified them, so the plan matches what ES returns.
+				if s == "semantic_text" {
+					if modelSettings, exists := oldFieldSettings["model_settings"]; exists {
+						if _, configHasModelSettings := newSettings["model_settings"]; !configHasModelSettings {
+							newSettings["model_settings"] = modelSettings
+						}
+					}
+					newMappings[k] = newSettings
+				}
 				continue
 			}
 

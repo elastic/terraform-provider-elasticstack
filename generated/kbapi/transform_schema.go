@@ -12,11 +12,11 @@ import (
 	"maps"
 	"os"
 	"path"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"gopkg.in/yaml.v3"
 )
 
@@ -337,6 +337,37 @@ func (m Map) MustDelete(key string) {
 	}
 }
 
+func normalizeComparableSchemaValue(value any) any {
+	switch t := value.(type) {
+	case Map:
+		normalized := make(map[string]any, len(t))
+		for key, value := range t {
+			normalized[key] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case map[string]any:
+		normalized := make(map[string]any, len(t))
+		for key, value := range t {
+			normalized[key] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case Slice:
+		normalized := make([]any, len(t))
+		for i, value := range t {
+			normalized[i] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	case []any:
+		normalized := make([]any, len(t))
+		for i, value := range t {
+			normalized[i] = normalizeComparableSchemaValue(value)
+		}
+		return normalized
+	default:
+		return value
+	}
+}
+
 func (m Map) CreateRef(schema *Schema, name string, key string) Map {
 	refTarget := m.MustGet(key) // Check the full path
 	refPath := fmt.Sprintf("schemas.%s", name)
@@ -345,9 +376,10 @@ func (m Map) CreateRef(schema *Schema, name string, key string) Map {
 	// If the component schema already exists and is not the same, panic
 	writeComponent := true
 	if existing, ok := schema.Components.Get(refPath); ok {
-		if reflect.DeepEqual(refTarget, existing) {
+		if cmp.Equal(normalizeComparableSchemaValue(refTarget), normalizeComparableSchemaValue(existing)) {
 			writeComponent = false
 		} else {
+			log.Printf("Component schema diff for %q (-refTarget +existing):\n%s", refPath, cmp.Diff(normalizeComparableSchemaValue(refTarget), normalizeComparableSchemaValue(existing)))
 			log.Panicf("Component schema key already in use and not an exact duplicate: %q", refPath)
 			return nil
 		}
@@ -566,17 +598,16 @@ var transformers = []TransformFunc{
 	removeBrokenDiscriminator,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
-	fixGetSyntheticsMonitorsParams,
-	fixGetMaintenanceWindowFindParams,
-	fixGetStreamsAttachmentTypesParams,
-	fixGetWorkflowsExecutionsParams,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
+	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
+	fixAlertingRuleParams,
+	fixSyntheticsMonitorParams,
+	fixAlertingRuleBody,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
-	fixAlertingRuleParams,
 }
 
 //go:embed dashboards.json
@@ -950,45 +981,20 @@ func fixGetSpacesParams(schema *Schema) {
 	schema.MustGetPath("/api/spaces/space").MustGetEndpoint("get").Delete("parameters.1.schema.anyOf")
 }
 
-func fixGetSyntheticsMonitorsParams(schema *Schema) {
-	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Set("parameters.12.schema.oneOf.1.x-go-type", "[]GetSyntheticMonitorsParamsUseLogicalAndFor0")
-}
-
-func fixGetMaintenanceWindowFindParams(schema *Schema) {
-	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetMaintenanceWindowFindParamsStatus0")
-}
-
-func fixGetStreamsAttachmentTypesParams(schema *Schema) {
-	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
-}
-
-func fixGetWorkflowsExecutionsParams(schema *Schema) {
-	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
-	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
-	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
-}
-
 func fixDashboardPanelItemRefs(schema *Schema) {
-	dashboardPath := schema.MustGetPath("/api/dashboards")
+	schema.Components.Move("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.anyOf", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.oneOf")
+	schema.Components.Set("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
+	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
+	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
+
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
-
-	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
-	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
-	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
-
+	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
+	dashboardIDPath.Put.Set("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
-	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardIDPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
-
-	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
-	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
-	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
-
-	const panelTypePrefix = "kbn-dashboard-panel-"
+	const panelTypePrefix = "kbn-dashboard-panel-type-"
 	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
 	panelTypeMapping := Map{}
 	for _, entry := range panelOneOf {
@@ -1176,12 +1182,6 @@ func transformFleetPaths(schema *Schema) {
 		},
 	})
 
-	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
-	}
-
 	// Package policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/package_policy.ts
@@ -1263,6 +1263,17 @@ func transformOmitEmptyNullable(schema *Schema) {
 	}
 }
 
+func removeAnyOfWhenOneOfPresent(key string, node Map) {
+	if node.Has("anyOf") && node.Has("oneOf") {
+		delete(node, "anyOf")
+	}
+}
+
+func transformRemoveAnyOfWhenOneOfPresent(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeAnyOfWhenOneOfPresent)
+}
+
 // transformRemoveExamples removes all examples.
 func transformRemoveExamples(schema *Schema) {
 	deleteExampleFn := func(key string, node Map) {
@@ -1326,7 +1337,19 @@ func transformRemoveUnusedComponents(schema *Schema) {
 	}
 }
 
+func fixAlertingRuleBody(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body", "requestBody.content.application/json.schema.anyOf.0")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Generic", "requestBody.content.application/json.schema.anyOf.1")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Union", "requestBody.content.application/json.schema")
+}
+
 func fixAlertingRuleParams(schema *Schema) {
 	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.anyOf.1.properties.params")
+}
+
+func fixSyntheticsMonitorParams(schema *Schema) {
+	getEndpoint := schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get")
+	getEndpoint.Set("parameters.12.schema", getEndpoint.MustGetMap("parameters.12.schema.oneOf.0"))
 }

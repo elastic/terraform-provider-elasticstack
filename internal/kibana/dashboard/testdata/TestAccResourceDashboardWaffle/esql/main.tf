@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -30,7 +30,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "ESQL Waffle"
       description = "Waffle visualization using ES|QL"
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type = "esql"
         # Single-bucket STATS avoids group-by coloring rules in Lens ("Coloring cannot be
         # assigned to a collapsed grouping dimension" with BY + collapse).

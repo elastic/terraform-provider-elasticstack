@@ -45,7 +45,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
@@ -62,7 +62,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.expression", ""),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.data_source_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.metric_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.tag_by_json"),
 				),
@@ -106,9 +106,11 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 				ImportStateVerify: true,
 				// Ignore JSON fields with API defaults
 				ImportStateVerifyIgnore: []string{
+					"panels.0.tagcloud_config.title",
+					"panels.0.tagcloud_config.description",
 					"panels.0.tagcloud_config.metric_json",
 					"panels.0.tagcloud_config.tag_by_json",
-					"panels.0.tagcloud_config.dataset_json",
+					"panels.0.tagcloud_config.data_source_json",
 				},
 			},
 		},

@@ -61,7 +61,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Expression: "*",
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
@@ -87,7 +87,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.25)),
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
@@ -117,7 +117,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			assert.Equal(t, types.StringValue(tt.expectTitle), model.Title)
-			assert.False(t, model.DatasetJSON.IsNull())
+			assert.False(t, model.DataSourceJSON.IsNull())
 			assert.False(t, model.MetricJSON.IsNull())
 			assert.False(t, model.RegionJSON.IsNull())
 
@@ -163,15 +163,12 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	}
 	lang := kbapi.FilterSimpleLanguage("kql")
 	api.Query = kbapi.FilterSimple{Language: &lang, Expression: "*"}
-	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 	_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
-	var regionMapChart kbapi.RegionMapChart
-	require.NoError(t, regionMapChart.FromRegionMapNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromRegionMapNoESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
@@ -182,9 +179,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsRegionMapChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsRegionMapNoESQL()
+	noESQL2, err := attrs2.AsRegionMapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Region Map Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.RegionMapNoESQLTypeRegionMap, noESQL2.Type)
@@ -200,15 +195,12 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(0.25)),
 	}
-	_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)
+	_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource)
 	_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
-	var regionMapChart kbapi.RegionMapChart
-	require.NoError(t, regionMapChart.FromRegionMapESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromRegionMapESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
@@ -219,9 +211,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsRegionMapChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsRegionMapESQL()
+	esql2, err := attrs2.AsRegionMapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "ESQL Region Map Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.RegionMapESQLTypeRegionMap, esql2.Type)

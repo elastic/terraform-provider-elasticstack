@@ -32,8 +32,66 @@ func TestAccDataSourceIngestProcessorDissect(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJSONDissect),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "append_separator", "|"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "description", "Dissect log line"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "if", "ctx.message != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "tag", "dissect-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJSONDissectAllAttributes),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorDissectOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure", "json", expectedJSONDissectOnFailure),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorDissectOnFailureMulti(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "on_failure.#", "2"),
+					CheckResourceJSON(
+						"data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi",
+						"on_failure.0",
+						`{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`,
+					),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "on_failure.1", `{"set":{"field":"event.kind","value":"pipeline_error"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test_on_failure_multi", "json", expectedJSONDissectOnFailureMulti),
 				),
 			},
 		},
@@ -50,3 +108,58 @@ const expectedJSONDissect = `{
 	}
 }
 `
+
+const expectedJSONDissectAllAttributes = `{
+	"dissect": {
+		"append_separator": "|",
+		"description": "Dissect log line",
+		"field": "message",
+		"if": "ctx.message != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"pattern": "%{clientip} %{ident} %{auth} [%{@timestamp}] \"%{verb} %{request} HTTP/%{httpversion}\" %{status} %{size}",
+		"tag": "dissect-tag"
+	}
+}`
+
+const expectedJSONDissectOnFailure = `{
+	"dissect": {
+		"append_separator": "",
+		"field": "message",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "{{ _ingest.on_failure_message }}"
+				}
+			}
+		],
+		"pattern": "%{clientip} %{ident} %{auth}"
+	}
+}`
+
+const expectedJSONDissectOnFailureMulti = `{
+	"dissect": {
+		"append_separator": "",
+		"field": "message",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "{{ _ingest.on_failure_message }}"
+				}
+			},
+			{
+				"set": {
+					"field": "event.kind",
+					"value": "pipeline_error"
+				}
+			}
+		],
+		"pattern": "%{clientip} %{ident} %{auth}"
+	}
+}`

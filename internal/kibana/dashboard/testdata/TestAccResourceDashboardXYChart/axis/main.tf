@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -29,7 +29,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample XY Chart"
       description = "Test XY chart visualization"
       axis = {
-        left = {
+        y = {
           scale = "linear"
           title = {
             value   = "Count"
@@ -38,13 +38,13 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "horizontal"
-          extent_json = jsonencode({
-            type  = "custom"
-            start = 0
-            end   = 100
+          domain_json = jsonencode({
+            type = "custom"
+            min  = 0
+            max  = 100
           })
         }
-        right = {
+        secondary_y = {
           scale = "sqrt"
           title = {
             value   = "Rate"
@@ -53,8 +53,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = false
           grid              = false
           label_orientation = "vertical"
-          extent_json = jsonencode({
-            type = "focus"
+          domain_json = jsonencode({
+            type = "fit"
           })
         }
         x = {
@@ -65,9 +65,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "angled"
-          extent_json = jsonencode({
-            type             = "full"
-            integer_rounding = true
+          domain_json = jsonencode({
+            type = "fit"
           })
         }
       }
@@ -83,11 +82,9 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset_json = jsonencode({
-              type  = "index"
-              index = "metrics-*"
-
-              time_field = "@timestamp"
+            data_source_json = jsonencode({
+              type          = "data_view_spec"
+              index_pattern = "metrics-*"
             })
             y = [
               {

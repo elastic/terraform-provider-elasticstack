@@ -34,6 +34,16 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.input_field", "foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.output_field", "bar"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "json", expectedJSONInference),
 				),
 			},
@@ -43,9 +53,38 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.input_field", "foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.output_field", "bar"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.content", "text_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "target_field", "ml.inference"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "description", "Run inference on foo"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "if", "ctx.lang == 'en'"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.0", `{"set":{"field":"error.message","value":"inference failed"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "tag", "inference-tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "json", expectedJSONInferenceAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("changed_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "updated_endpoint"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.input_field", "body.content"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.0.output_field", ""),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "target_field", "ml.updated"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "description", "Run inference on body.content"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "if", "ctx.body?.content != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "tag", "updated-inference-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "json", expectedJSONInferenceChangedValues),
 				),
 			},
 		},
@@ -86,5 +125,19 @@ const expectedJSONInferenceAllAttributes = `{
       }
     ],
     "tag": "inference-tag"
+  }
+}`
+
+const expectedJSONInferenceChangedValues = `{
+  "inference": {
+    "model_id": "updated_endpoint",
+    "input_output": {
+      "input_field": "body.content"
+    },
+    "target_field": "ml.updated",
+    "description": "Run inference on body.content",
+    "if": "ctx.body?.content != null",
+    "ignore_failure": false,
+    "tag": "updated-inference-tag"
   }
 }`

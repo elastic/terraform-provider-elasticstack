@@ -299,7 +299,7 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 		name   string
 		fields fields
 		want   *struct {
-			Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
+			Mechanism *kbapi.KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 		}
 		wantErr bool
 	}{
@@ -320,9 +320,9 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 				),
 			},
 			want: &struct {
-				Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
+				Mechanism *kbapi.KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: new(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
+				Mechanism: new(kbapi.KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -382,7 +382,7 @@ func Test_outputKafkaModel_toUpdateAuthType(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   *kbapi.UpdateOutputKafkaAuthType
+		want   *kbapi.KibanaHTTPAPIsUpdateOutputKafkaAuthType
 	}{
 		{
 			name: "returns nil when auth_type is unknown",
@@ -395,8 +395,8 @@ func Test_outputKafkaModel_toUpdateAuthType(t *testing.T) {
 			fields: fields{
 				AuthType: types.StringValue("user"),
 			},
-			want: func() *kbapi.UpdateOutputKafkaAuthType {
-				value := kbapi.UpdateOutputKafkaAuthType("user")
+			want: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaAuthType {
+				value := kbapi.KibanaHTTPAPIsUpdateOutputKafkaAuthType("user")
 				return &value
 			}(),
 		},

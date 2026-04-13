@@ -52,6 +52,8 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
+	clearRemoteElasticsearchOnlyFields(model)
+
 	return
 }
 
@@ -90,7 +92,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputElasticsearch{
-		Type: func() *kbapi.UpdateOutputElasticsearchType {
+		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchType {
 			outputType := kbapi.Elasticsearch
 			return &outputType
 		}(),

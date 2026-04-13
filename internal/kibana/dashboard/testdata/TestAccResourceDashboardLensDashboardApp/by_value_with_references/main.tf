@@ -32,13 +32,15 @@ resource "elasticstack_kibana_dashboard" "test" {
           type    = "metric"
           filters = []
           query   = { expression = "" }
-          dataset = { type = "index", index = "test-*" }
+          data_source = { type = "data_view_spec", index_pattern = "test-*" }
           metrics = [{
             type      = "primary"
             operation = "count"
             filter    = { expression = "" }
             format    = { type = "number" }
           }]
+          styling    = {}
+          time_range = { from = "now-15m", to = "now" }
         })
         references_json = jsonencode([{
           id   = "test-data-view-id"

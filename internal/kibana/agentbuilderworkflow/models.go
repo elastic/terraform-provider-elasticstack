@@ -26,6 +26,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type workflowDataSourceModel struct {
+	ID                types.String                    `tfsdk:"id"`
+	SpaceID           types.String                    `tfsdk:"space_id"`
+	WorkflowID        types.String                    `tfsdk:"workflow_id"`
+	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
+}
+
 type workflowModel struct {
 	ID                types.String                    `tfsdk:"id"`
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`

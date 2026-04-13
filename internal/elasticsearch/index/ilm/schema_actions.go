@@ -219,6 +219,28 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("snapshot_repository")))
 }
 
+// blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
+func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
+	return singleNestedBlock(
+		"Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.",
+		schema.NestedBlockObject{
+			Attributes: map[string]schema.Attribute{
+				"snapshot_repository": schema.StringAttribute{
+					Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
+					Optional:    true,
+				},
+				"force_merge_index": schema.BoolAttribute{
+					Description: "Force merges the managed index to one segment.",
+					Optional:    true,
+					Computed:    true,
+					Default:     booldefault.StaticBool(true),
+				},
+			},
+		},
+		objectvalidator.AlsoRequires(path.MatchRelative().AtName("snapshot_repository")),
+	)
+}
+
 func blockSetPriority() schema.SingleNestedBlock {
 	return singleNestedBlock(setPriorityActionDescription, schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{

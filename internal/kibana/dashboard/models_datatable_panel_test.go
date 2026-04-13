@@ -110,7 +110,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
 	metric := kbapi.DatatableNoESQL_Metrics_Item{}
@@ -140,7 +140,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
 	assert.Equal(t, types.StringValue("NoESQL description"), model.Description)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
@@ -224,7 +224,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		}{split},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`), &api.DataSource))
 
 	sortBy := kbapi.DatatableESQL_SortBy{}
 	require.NoError(t, json.Unmarshal([]byte(`{"column_type":"metric","direction":"desc","index":0}`), &sortBy))
@@ -239,7 +239,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL description"), model.Description)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Equal(t, types.BoolValue(false), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(1), model.Sampling)
 	assert.Len(t, model.Metrics, 1)
@@ -278,14 +278,11 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Query:   kbapi.FilterSimple{},
 		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
-	var datatableChart kbapi.DatatableChart
-	require.NoError(t, datatableChart.FromDatatableNoESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromDatatableNoESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
@@ -296,9 +293,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsDatatableChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsDatatableNoESQL()
+	noESQL2, err := attrs2.AsDatatableNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, noESQL2.Type)
@@ -319,13 +314,10 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Density:             kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)},
 		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
-	var datatableChart kbapi.DatatableChart
-	require.NoError(t, datatableChart.FromDatatableESQL(api))
-
-	var attrs kbapi.LensApiState
-	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromDatatableESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
@@ -336,9 +328,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsDatatableChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsDatatableESQL()
+	esql2, err := attrs2.AsDatatableESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, esql2.Type)

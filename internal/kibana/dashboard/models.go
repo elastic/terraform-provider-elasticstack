@@ -18,12 +18,12 @@
 package dashboard
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -88,27 +88,24 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 		Value: types.Int64Value(int64(data.Data.RefreshInterval.Value)),
 	}
 
-	// Map query
+	// Map query (KbnAsCodeQuery: language + expression string)
 	q := &dashboardQueryModel{
-		Language: types.StringValue(data.Data.Query.Language),
+		Language: types.StringValue(string(data.Data.Query.Language)),
 	}
-	// Query.Query is a union type with json.RawMessage - can be string or JSON object
-	queryBytes, err := json.Marshal(data.Data.Query.Query)
-	if err != nil {
-		diags.AddError("Failed to marshal query", err.Error())
-		q.Text = types.StringNull()
-		q.JSON = jsontypes.NewNormalizedNull()
-	} else {
-		// Try to unmarshal as string first (KQL/Lucene)
-		var queryString string
-		if err := json.Unmarshal(queryBytes, &queryString); err == nil {
-			q.Text = types.StringValue(queryString)
-			q.JSON = jsontypes.NewNormalizedNull()
-		} else {
-			// It's a JSON object
+	expr := data.Data.Query.Expression
+	trimmed := bytes.TrimSpace([]byte(expr))
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var obj map[string]any
+		if err := json.Unmarshal(trimmed, &obj); err == nil {
 			q.Text = types.StringNull()
-			q.JSON = jsontypes.NewNormalizedValue(string(queryBytes))
+			q.JSON = jsontypes.NewNormalizedValue(string(trimmed))
+		} else {
+			q.Text = types.StringValue(expr)
+			q.JSON = jsontypes.NewNormalizedNull()
 		}
+	} else {
+		q.Text = types.StringValue(expr)
+		q.JSON = jsontypes.NewNormalizedNull()
 	}
 	m.Query = q
 
@@ -238,20 +235,22 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Options = options
 
-	// Set panels
+	// Set panels.
 	panels, panelsDiags := m.panelsToAPI()
 	diags.Append(panelsDiags...)
-	req.Panels = panels
+	if panels != nil {
+		req.Panels = panels
+	}
 
 	return req
 }
 
-func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.Diagnostics) {
-	query := kbapi.KbnEsQueryServerQuerySchema{}
+func (m *dashboardModel) queryToAPI() (kbapi.KbnAsCodeQuery, diag.Diagnostics) {
+	query := kbapi.KbnAsCodeQuery{}
 	if m.Query == nil {
 		return query, nil
 	}
-	query.Language = m.Query.Language.ValueString()
+	query.Language = kbapi.KbnAsCodeQueryLanguage(m.Query.Language.ValueString())
 	textKnown := typeutils.IsKnown(m.Query.Text)
 	jsonKnown := typeutils.IsKnown(m.Query.JSON)
 
@@ -264,24 +263,11 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		return query, diags
 	}
 
-	// Query.Query is a union type with json.RawMessage
 	switch {
 	case textKnown:
-		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.Query.Text.ValueString())
-		if err != nil {
-			return query, diagutil.FrameworkDiagFromError(err)
-		}
+		query.Expression = m.Query.Text.ValueString()
 	case jsonKnown:
-		var qj map[string]any
-		diags := m.Query.JSON.Unmarshal(&qj)
-		if diags.HasError() {
-			return query, diags
-		}
-
-		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery1(qj)
-		if err != nil {
-			return query, diagutil.FrameworkDiagFromError(err)
-		}
+		query.Expression = m.Query.JSON.ValueString()
 	}
 
 	return query, nil

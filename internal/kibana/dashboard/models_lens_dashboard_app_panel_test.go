@@ -32,7 +32,7 @@ import (
 // --- Write-path (toAPI) tests ---
 
 func Test_lensDashboardApp_byValue_writeConverter(t *testing.T) {
-	attrsJSON := `{"visualizationType":"lnsXY","title":"My Viz"}`
+	attrsJSON := `{"type":"metric","filters":[],"query":{"expression":""}}`
 	refsJSON := `[{"id":"dv-1","name":"indexpattern-datasource-layer-abc","type":"index-pattern"}]`
 
 	pm := panelModel{
@@ -56,36 +56,37 @@ func Test_lensDashboardApp_byValue_writeConverter(t *testing.T) {
 	panelItem, diags := pm.toAPI()
 	require.False(t, diags.HasError(), "unexpected diags: %v", diags)
 
-	ldaPanel, err := panelItem.AsKbnDashboardPanelLensDashboardApp()
+	ldaPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)
 
-	config0, err := ldaPanel.Config.AsKbnDashboardPanelLensDashboardAppConfig0()
+	config0, err := ldaPanel.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig0()
 	require.NoError(t, err)
 
-	// attributes should be present
-	attrsBytes, err := json.Marshal(config0.Attributes)
+	// Get raw config JSON and verify attributes and references are present.
+	rawBytes, err := config0.MarshalJSON()
 	require.NoError(t, err)
-	assert.JSONEq(t, attrsJSON, string(attrsBytes))
 
-	// references should be present
-	require.NotNil(t, config0.References)
-	assert.Len(t, *config0.References, 1)
-	assert.Equal(t, "dv-1", (*config0.References)[0].Id)
-	assert.Equal(t, "indexpattern-datasource-layer-abc", (*config0.References)[0].Name)
-	assert.Equal(t, "index-pattern", (*config0.References)[0].Type)
+	var m map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(rawBytes, &m))
 
-	// title should be set
-	require.NotNil(t, config0.Title)
-	assert.Equal(t, "My Panel", *config0.Title)
+	// attributes fields should be present
+	assert.Contains(t, m, "type")
+	assert.Contains(t, m, "filters")
+	assert.Contains(t, m, "query")
 
-	// null optional fields should not be set
-	assert.Nil(t, config0.Description)
-	assert.Nil(t, config0.HideTitle)
-	assert.Nil(t, config0.HideBorder)
+	// references should be merged in
+	refsRaw, ok := m["references"]
+	require.True(t, ok, "references should be present in config0 JSON")
+	var refs []kbapi.KbnContentManagementUtilsReferenceSchema
+	require.NoError(t, json.Unmarshal(refsRaw, &refs))
+	assert.Len(t, refs, 1)
+	assert.Equal(t, "dv-1", refs[0].Id)
+	assert.Equal(t, "indexpattern-datasource-layer-abc", refs[0].Name)
+	assert.Equal(t, "index-pattern", refs[0].Type)
 }
 
 func Test_lensDashboardApp_byValue_noReferences_writeConverter(t *testing.T) {
-	attrsJSON := `{"visualizationType":"lnsMetric"}`
+	attrsJSON := `{"type":"metric","filters":[]}`
 
 	pm := panelModel{
 		Type: types.StringValue(panelTypeLensDashboardApp),
@@ -104,14 +105,20 @@ func Test_lensDashboardApp_byValue_noReferences_writeConverter(t *testing.T) {
 	panelItem, diags := pm.toAPI()
 	require.False(t, diags.HasError(), "unexpected diags: %v", diags)
 
-	ldaPanel, err := panelItem.AsKbnDashboardPanelLensDashboardApp()
+	ldaPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)
 
-	config0, err := ldaPanel.Config.AsKbnDashboardPanelLensDashboardAppConfig0()
+	config0, err := ldaPanel.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig0()
 	require.NoError(t, err)
+
+	rawBytes, err := config0.MarshalJSON()
+	require.NoError(t, err)
+
+	var m map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(rawBytes, &m))
 
 	// references should not be set when null
-	assert.Nil(t, config0.References)
+	assert.NotContains(t, m, "references")
 }
 
 func Test_lensDashboardApp_byReference_writeConverter(t *testing.T) {
@@ -135,10 +142,10 @@ func Test_lensDashboardApp_byReference_writeConverter(t *testing.T) {
 	panelItem, diags := pm.toAPI()
 	require.False(t, diags.HasError(), "unexpected diags: %v", diags)
 
-	ldaPanel, err := panelItem.AsKbnDashboardPanelLensDashboardApp()
+	ldaPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)
 
-	config1, err := ldaPanel.Config.AsKbnDashboardPanelLensDashboardAppConfig1()
+	config1, err := ldaPanel.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
 	require.NoError(t, err)
 
 	assert.Equal(t, "abc-123", config1.RefId)
@@ -151,96 +158,52 @@ func Test_lensDashboardApp_byReference_writeConverter(t *testing.T) {
 	assert.Nil(t, config1.Description)
 }
 
-func Test_lensDashboardApp_byValue_withTimeRange_writeConverter(t *testing.T) {
-	attrsJSON := `{"visualizationType":"lnsXY"}`
-
-	pm := panelModel{
-		Type: types.StringValue(panelTypeLensDashboardApp),
-		Grid: panelGridModel{
-			X: types.Int64Value(0),
-			Y: types.Int64Value(0),
-		},
-		LensDashboardAppConfig: &lensDashboardAppConfigModel{
-			ByValue: &lensDashboardAppByValueModel{
-				AttributesJSON: jsontypes.NewNormalizedValue(attrsJSON),
-				ReferencesJSON: jsontypes.NewNormalizedNull(),
-			},
-			TimeRange: &lensDashboardAppTimeRangeModel{
-				From: types.StringValue("now-7d"),
-				To:   types.StringValue("now"),
-			},
-		},
-	}
-
-	panelItem, diags := pm.toAPI()
-	require.False(t, diags.HasError(), "unexpected diags: %v", diags)
-
-	ldaPanel, err := panelItem.AsKbnDashboardPanelLensDashboardApp()
-	require.NoError(t, err)
-
-	config0, err := ldaPanel.Config.AsKbnDashboardPanelLensDashboardAppConfig0()
-	require.NoError(t, err)
-
-	assert.Equal(t, "now-7d", config0.TimeRange.From)
-	assert.Equal(t, "now", config0.TimeRange.To)
-}
-
 // --- Read-path (fromAPI) tests ---
 
-func buildLensDashboardAppByValueAPIPanel(attrsJSON string, refsJSON *string, title *string) kbapi.KbnDashboardPanelLensDashboardApp {
-	var attrs kbapi.LensApiState
-	_ = json.Unmarshal([]byte(attrsJSON), &attrs)
+func buildLensDashboardAppByValueAPIPanel(attrsJSON string, refsJSON *string) kbapi.KbnDashboardPanelTypeLensDashboardApp {
+	// Start with the attributes JSON blob.
+	raw := []byte(attrsJSON)
 
-	config0 := kbapi.KbnDashboardPanelLensDashboardAppConfig0{
-		Attributes: attrs,
-		Title:      title,
-	}
+	// Optionally inject references.
 	if refsJSON != nil {
-		var refs []kbapi.KbnContentManagementUtilsReferenceSchema
-		_ = json.Unmarshal([]byte(*refsJSON), &refs)
-		config0.References = &refs
+		var m map[string]json.RawMessage
+		_ = json.Unmarshal(raw, &m)
+		m["references"] = json.RawMessage(*refsJSON)
+		raw, _ = json.Marshal(m)
 	}
 
-	var cfg kbapi.KbnDashboardPanelLensDashboardApp_Config
-	_ = cfg.FromKbnDashboardPanelLensDashboardAppConfig0(config0)
+	var config0 kbapi.KbnDashboardPanelTypeLensDashboardAppConfig0
+	_ = json.Unmarshal(raw, &config0)
 
-	return kbapi.KbnDashboardPanelLensDashboardApp{
+	var cfg kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	_ = cfg.FromKbnDashboardPanelTypeLensDashboardAppConfig0(config0)
+
+	return kbapi.KbnDashboardPanelTypeLensDashboardApp{
 		Config: cfg,
-		Grid: struct {
-			H *float32 `json:"h,omitempty"`
-			W *float32 `json:"w,omitempty"`
-			X float32  `json:"x"`
-			Y float32  `json:"y"`
-		}{X: 0, Y: 0},
-		Type: kbapi.LensDashboardApp,
+		Grid:   kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.LensDashboardApp,
 	}
 }
 
-func buildLensDashboardAppByReferenceAPIPanel(refID string, title *string) kbapi.KbnDashboardPanelLensDashboardApp {
-	config1 := kbapi.KbnDashboardPanelLensDashboardAppConfig1{
+func buildLensDashboardAppByReferenceAPIPanel(refID string, title *string) kbapi.KbnDashboardPanelTypeLensDashboardApp {
+	config1 := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1{
 		RefId: refID,
 		Title: title,
 	}
 
-	var cfg kbapi.KbnDashboardPanelLensDashboardApp_Config
-	_ = cfg.FromKbnDashboardPanelLensDashboardAppConfig1(config1)
+	var cfg kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	_ = cfg.FromKbnDashboardPanelTypeLensDashboardAppConfig1(config1)
 
-	return kbapi.KbnDashboardPanelLensDashboardApp{
+	return kbapi.KbnDashboardPanelTypeLensDashboardApp{
 		Config: cfg,
-		Grid: struct {
-			H *float32 `json:"h,omitempty"`
-			W *float32 `json:"w,omitempty"`
-			X float32  `json:"x"`
-			Y float32  `json:"y"`
-		}{X: 0, Y: 0},
-		Type: kbapi.LensDashboardApp,
+		Grid:   kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.LensDashboardApp,
 	}
 }
 
 func Test_lensDashboardApp_readConverter_byValue(t *testing.T) {
-	attrsJSON := `{"visualizationType":"lnsXY","title":"My Viz"}`
-	title := "Panel Title"
-	apiPanel := buildLensDashboardAppByValueAPIPanel(attrsJSON, nil, &title)
+	attrsJSON := `{"type":"metric","filters":[],"query":{"expression":""}}`
+	apiPanel := buildLensDashboardAppByValueAPIPanel(attrsJSON, nil)
 
 	pm := panelModel{}
 	diags := populateLensDashboardAppFromAPI(&pm, nil, apiPanel)
@@ -253,18 +216,21 @@ func Test_lensDashboardApp_readConverter_byValue(t *testing.T) {
 	require.NotNil(t, cfg.ByValue)
 	assert.Nil(t, cfg.ByReference)
 
-	// attributes_json should be populated
+	// attributes_json should be populated (references excluded)
 	assert.False(t, cfg.ByValue.AttributesJSON.IsNull())
-	assert.JSONEq(t, attrsJSON, cfg.ByValue.AttributesJSON.ValueString())
+	var m map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(cfg.ByValue.AttributesJSON.ValueString()), &m))
+	assert.Contains(t, m, "type")
+	assert.NotContains(t, m, "references")
 
-	// title should be populated
-	assert.Equal(t, "Panel Title", cfg.Title.ValueString())
+	// references_json should be null when not present
+	assert.True(t, cfg.ByValue.ReferencesJSON.IsNull())
 }
 
 func Test_lensDashboardApp_readConverter_byValue_withReferences(t *testing.T) {
-	attrsJSON := `{"visualizationType":"lnsXY"}`
+	attrsJSON := `{"type":"metric","filters":[]}`
 	refsJSON := `[{"id":"dv-1","name":"ref-name","type":"index-pattern"}]`
-	apiPanel := buildLensDashboardAppByValueAPIPanel(attrsJSON, &refsJSON, nil)
+	apiPanel := buildLensDashboardAppByValueAPIPanel(attrsJSON, &refsJSON)
 
 	pm := panelModel{}
 	diags := populateLensDashboardAppFromAPI(&pm, nil, apiPanel)
@@ -276,6 +242,11 @@ func Test_lensDashboardApp_readConverter_byValue_withReferences(t *testing.T) {
 	require.NotNil(t, cfg.ByValue)
 	assert.False(t, cfg.ByValue.ReferencesJSON.IsNull())
 	assert.JSONEq(t, refsJSON, cfg.ByValue.ReferencesJSON.ValueString())
+
+	// attributes_json should not contain references
+	var m map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(cfg.ByValue.AttributesJSON.ValueString()), &m))
+	assert.NotContains(t, m, "references")
 }
 
 func Test_lensDashboardApp_readConverter_byReference(t *testing.T) {

@@ -29,19 +29,23 @@ import (
 )
 
 type outputModel struct {
-	ID                   types.String `tfsdk:"id"`
-	OutputID             types.String `tfsdk:"output_id"`
-	Name                 types.String `tfsdk:"name"`
-	Type                 types.String `tfsdk:"type"`
-	Hosts                types.List   `tfsdk:"hosts"` // > string
-	CaSha256             types.String `tfsdk:"ca_sha256"`
-	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
-	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
-	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
-	ConfigYaml           types.String `tfsdk:"config_yaml"`
-	SpaceIDs             types.Set    `tfsdk:"space_ids"` // > string
-	Ssl                  types.Object `tfsdk:"ssl"`       // > outputSslModel
-	Kafka                types.Object `tfsdk:"kafka"`     // > outputKafkaModel
+	ID                          types.String `tfsdk:"id"`
+	OutputID                    types.String `tfsdk:"output_id"`
+	Name                        types.String `tfsdk:"name"`
+	Type                        types.String `tfsdk:"type"`
+	Hosts                       types.List   `tfsdk:"hosts"` // > string
+	ServiceToken                types.String `tfsdk:"service_token"`
+	CaSha256                    types.String `tfsdk:"ca_sha256"`
+	CaTrustedFingerprint        types.String `tfsdk:"ca_trusted_fingerprint"`
+	DefaultIntegrations         types.Bool   `tfsdk:"default_integrations"`
+	DefaultMonitoring           types.Bool   `tfsdk:"default_monitoring"`
+	ConfigYaml                  types.String `tfsdk:"config_yaml"`
+	SpaceIDs                    types.Set    `tfsdk:"space_ids"` // > string
+	Ssl                         types.Object `tfsdk:"ssl"`       // > outputSslModel
+	Kafka                       types.Object `tfsdk:"kafka"`     // > outputKafkaModel
+	SyncIntegrations            types.Bool   `tfsdk:"sync_integrations"`
+	SyncUninstalledIntegrations types.Bool   `tfsdk:"sync_uninstalled_integrations"`
+	WriteToLogsStreams          types.Bool   `tfsdk:"write_to_logs_streams"`
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -64,6 +68,8 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 
 	case kbapi.OutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
+	case kbapi.OutputRemoteElasticsearch:
+		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
 	}
@@ -85,6 +91,8 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 		}
 
 		return model.toAPICreateKafkaModel(ctx)
+	case "remote_elasticsearch":
+		return model.toAPICreateRemoteElasticsearchModel(ctx)
 	default:
 		return kbapi.NewOutputUnion{}, diag.Diagnostics{
 			diag.NewErrorDiagnostic(fmt.Sprintf("unhandled output type: %s", outputType), ""),
@@ -106,11 +114,20 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.A
 		}
 
 		return model.toAPIUpdateKafkaModel(ctx)
+	case "remote_elasticsearch":
+		return model.toAPIUpdateRemoteElasticsearchModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
 	}
 
 	return
+}
+
+func clearRemoteElasticsearchOnlyFields(model *outputModel) {
+	model.ServiceToken = types.StringNull()
+	model.SyncIntegrations = types.BoolNull()
+	model.SyncUninstalledIntegrations = types.BoolNull()
+	model.WriteToLogsStreams = types.BoolNull()
 }
 
 func assertKafkaSupport(ctx context.Context, client *clients.APIClient) diag.Diagnostics {

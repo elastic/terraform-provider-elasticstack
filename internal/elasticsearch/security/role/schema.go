@@ -201,6 +201,9 @@ func GetSchema(version int64) schema.Schema {
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "The name of the role.",

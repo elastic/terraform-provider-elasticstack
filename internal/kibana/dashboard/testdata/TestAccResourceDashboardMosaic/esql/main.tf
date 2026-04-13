@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -30,7 +30,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "ESQL Mosaic"
       description = "Mosaic visualization using ES|QL"
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type  = "esql"
         query = "FROM metrics-* | KEEP host.name, service.name, bytes | LIMIT 50"
       })
@@ -39,8 +39,11 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_by_json = jsonencode([
         {
-          operation   = "value"
-          column      = "host.name"
+          operation = "value"
+          column    = "host.name"
+          format = {
+            type = "number"
+          }
           collapse_by = "avg"
           color = {
             mode    = "categorical"
@@ -56,8 +59,11 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_breakdown_by_json = jsonencode([
         {
-          operation   = "value"
-          column      = "service.name"
+          operation = "value"
+          column    = "service.name"
+          format = {
+            type = "number"
+          }
           collapse_by = "avg"
           color = {
             mode    = "categorical"

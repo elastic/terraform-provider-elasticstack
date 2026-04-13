@@ -214,7 +214,7 @@ Optional:
 Optional:
 
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `searchable_snapshot` (Block, Optional) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--frozen--searchable_snapshot))
+- `searchable_snapshot` (Block, Optional) Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--frozen--searchable_snapshot))
 
 <a id="nestedblock--frozen--searchable_snapshot"></a>
 ### Nested Schema for `frozen.searchable_snapshot`

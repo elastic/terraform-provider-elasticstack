@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,48 +34,22 @@ type optionsModel struct {
 	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
 }
 
-func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
+func (m *dashboardModel) optionsToAPI() (kbapi.KbnDashboardOptions, diag.Diagnostics) {
 	if m.Options == nil {
-		return nil, diag.Diagnostics{}
+		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
 	}
-
-	return m.Options.toAPI(), diag.Diagnostics{}
+	o := m.Options.toAPI()
+	if o == nil {
+		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
+	}
+	return *o, diag.Diagnostics{}
 }
 
-// optionsAPIModel introduces a type alias for the generated API model.
-// The current API spec defines these types inline, resulting in anonymous structs.
-// A new type definition won't exactly match the API struct, however an alias will.
-type optionsAPIModel = struct {
-	// AutoApplyFilters Auto apply control filters.
-	AutoApplyFilters *bool `json:"auto_apply_filters,omitempty"`
-
-	// HidePanelBorders Hide the panel borders in the dashboard.
-	HidePanelBorders *bool `json:"hide_panel_borders,omitempty"`
-
-	// HidePanelTitles Hide the panel titles in the dashboard.
-	HidePanelTitles *bool `json:"hide_panel_titles,omitempty"`
-
-	// SyncColors Synchronize colors between related panels in the dashboard.
-	SyncColors *bool `json:"sync_colors,omitempty"`
-
-	// SyncCursor Synchronize cursor position between related panels in the dashboard.
-	SyncCursor *bool `json:"sync_cursor,omitempty"`
-
-	// SyncTooltips Synchronize tooltips between related panels in the dashboard.
-	SyncTooltips *bool `json:"sync_tooltips,omitempty"`
-
-	// UseMargins Show margins between panels in the dashboard layout.
-	UseMargins *bool `json:"use_margins,omitempty"`
-}
-
-func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsModel {
-	if options == nil {
-		return nil
-	}
+func (m *dashboardModel) mapOptionsFromAPI(options kbapi.KbnDashboardOptions) *optionsModel {
 	// Kibana snapshots can materialize dashboard option defaults even when the
 	// options block was omitted in Terraform config. Preserve a nil options block
 	// in that case to avoid "inconsistent result after apply".
-	if m.Options == nil && isDashboardOptionsDefaultSet(options) {
+	if m.Options == nil && isDashboardOptionsDefaultSet(&options) {
 		return nil
 	}
 
@@ -91,8 +66,8 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 	return &model
 }
 
-func (m optionsModel) toAPI() *optionsAPIModel {
-	options := optionsAPIModel{}
+func (m optionsModel) toAPI() *kbapi.KbnDashboardOptions {
+	options := kbapi.KbnDashboardOptions{}
 	if typeutils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
 	}
@@ -118,7 +93,7 @@ func (m optionsModel) toAPI() *optionsAPIModel {
 	return &options
 }
 
-func isDashboardOptionsDefaultSet(options *optionsAPIModel) bool {
+func isDashboardOptionsDefaultSet(options *kbapi.KbnDashboardOptions) bool {
 	if options == nil {
 		return false
 	}

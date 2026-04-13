@@ -86,7 +86,7 @@ func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflo
 
 // DeleteWorkflow deletes an existing workflow.
 func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, nil, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

@@ -79,7 +79,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	alignXYChartXAxisScaleFromPlanPanels(planPanels, readModel.Panels)
+	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)
