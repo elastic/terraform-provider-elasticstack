@@ -74,6 +74,44 @@ jobs:
             }
             core.setOutput('should_run', shouldRun ? 'true' : 'false');
 
+  changes:
+    name: Change classification
+    needs: preflight
+    if: needs.preflight.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      provider_changes: ${{ steps.classify.outputs.provider_changes }}
+    steps:
+      - id: classify
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            let changedFiles = [];
+
+            if (context.eventName === 'pull_request') {
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                per_page: 100,
+              });
+              changedFiles = files.map((f) => f.filename);
+            } else if (context.eventName === 'push') {
+              const commits = context.payload.commits || [];
+              for (const commit of commits) {
+                changedFiles.push(...(commit.added || []));
+                changedFiles.push(...(commit.modified || []));
+                changedFiles.push(...(commit.removed || []));
+              }
+            } else {
+              // workflow_dispatch or other events: conservative default
+              core.setOutput('provider_changes', 'true');
+              return;
+            }
+
+            const allOpenspec = changedFiles.length > 0 && changedFiles.every((f) => f.startsWith('openspec/'));
+            core.setOutput('provider_changes', allOpenspec ? 'false' : 'true');
+
   build:
     name: Build
     needs: preflight
@@ -124,7 +162,8 @@ jobs:
     needs:
       - preflight
       - build
-    if: needs.preflight.outputs.should_run == 'true'
+      - changes
+    if: needs.preflight.outputs.should_run == 'true' && needs.changes.outputs.provider_changes == 'true'
     permissions:
       contents: read
       issues: write
@@ -315,10 +354,52 @@ jobs:
         env:
           STACK_VERSION: ${{ matrix.version }}
 
+  test-validation:
+    name: Test Validation
+    needs: [preflight, changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: validate
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const preflightShouldRun = '${{ needs.preflight.outputs.should_run }}';
+            const providerChanges = '${{ needs.changes.outputs.provider_changes }}';
+            const testResult = '${{ needs.test.result }}';
+
+            // Preflight intentionally disabled downstream CI — succeed
+            if (preflightShouldRun !== 'true') {
+              core.info('Preflight gate intentionally disabled downstream CI; succeeding.');
+              return;
+            }
+
+            // OpenSpec-only change: test job should be skipped or (if it ran) must have succeeded
+            if (providerChanges === 'false') {
+              if (testResult === 'skipped') {
+                core.info('Change classification reports openspec-only change; test was skipped. Succeeding.');
+                return;
+              }
+              if (testResult === 'success') {
+                core.info('Change classification reports openspec-only change; test ran and succeeded. Succeeding.');
+                return;
+              }
+              core.setFailed(`Change classification reports openspec-only change but test result is '${testResult}'. Failing.`);
+              return;
+            }
+
+            // Provider change: test job must have succeeded
+            if (testResult === 'success') {
+              core.info('Provider changes detected and test succeeded. Succeeding.');
+              return;
+            }
+            core.setFailed(`Provider changes detected but test result is '${testResult}'. Failing.`);
+
   auto-approve:
     name: Evaluate and auto-approve PR
-    if: always() && github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || needs.test.result == 'success')
-    needs: [preflight, test]
+    if: always() && github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || needs['test-validation'].result == 'success')
+    needs: [preflight, test-validation]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
