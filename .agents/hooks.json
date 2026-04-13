@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".agents/hooks/use_npx_openspec.js",
+        "matcher": "Shell"
+      }
+    ]
+  }
+}
