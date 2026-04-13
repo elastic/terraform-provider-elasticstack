@@ -12,10 +12,10 @@ function workflowSource() {
   return readFileSync(workflowPath, 'utf8');
 }
 
-/** Body between "## Repository toolchain" and the next "## Memory format" (exclusive). */
+/** Body between "## Repository toolchain" and the next "## Execution steps" (exclusive). */
 function extractRepositoryToolchainSection(source) {
   const startMarker = '## Repository toolchain';
-  const endMarker = '## Memory format';
+  const endMarker = '## Execution steps';
   const startIdx = source.indexOf(startMarker);
   assert.ok(startIdx !== -1, `missing heading ${JSON.stringify(startMarker)} in ${workflowPath}`);
   const afterStart = source.slice(startIdx + startMarker.length);

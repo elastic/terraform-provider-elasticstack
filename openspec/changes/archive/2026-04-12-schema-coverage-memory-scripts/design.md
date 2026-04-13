@@ -50,11 +50,11 @@ The selection command should emit a stable JSON array that includes entity names
 Alternative considered: emit only plain-text names.
 Rejected because the agent also needs entity type and should not infer it from naming conventions after selection.
 
-Persist timestamps through a dedicated post-analysis command.
-After each analyzed entity, the agent should call a script command that records the current UTC timestamp regardless of whether an issue was created. That preserves rotation fairness without requiring the agent to hand-edit the memory file.
+Persist timestamps through a dedicated post-analysis command in a single batch write.
+After all selected entities are analyzed, the agent calls a single script command that records the current UTC timestamp for all analyzed entities in one atomic memory write. Batching eliminates the last-write-wins race that would occur if per-entity writes interleave under parallel or near-simultaneous execution, and it keeps rotation fairness without requiring the agent to hand-edit the memory file.
 
-Alternative considered: batch all timestamp updates at the end of the run.
-Rejected because a per-entity update is safer if the run stops partway through analysis.
+Alternative considered: record timestamps per entity immediately after each analysis.
+Rejected because concurrent per-entity writes can interleave, causing later writes to silently overwrite earlier ones and losing timestamp updates for some entities.
 
 ## Risks / Trade-offs
 
