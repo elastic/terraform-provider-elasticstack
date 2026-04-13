@@ -43,6 +43,21 @@ type entity struct {
 	Name string `json:"name"`
 }
 
+type reconcileStats struct {
+	AddedResources     int
+	RemovedResources   int
+	AddedDataSources   int
+	RemovedDataSources int
+}
+
+func (s reconcileStats) AddedTotal() int {
+	return s.AddedResources + s.AddedDataSources
+}
+
+func (s reconcileStats) RemovedTotal() int {
+	return s.RemovedResources + s.RemovedDataSources
+}
+
 const (
 	entityTypeResource   = "resource"
 	entityTypeDataSource = "data source"
@@ -207,17 +222,21 @@ func discoverEntities(fwProv fwprovider.Provider, sdkResources map[string]struct
 
 // reconcileMemory updates memory to match the canonical entity inventory.
 // It adds missing entities with nil timestamps and removes stale entries.
-func reconcileMemory(mem *Memory, resources, dataSources map[string]struct{}) {
+func reconcileMemory(mem *Memory, resources, dataSources map[string]struct{}) reconcileStats {
+	var stats reconcileStats
+
 	// Add missing resources.
 	for name := range resources {
 		if _, ok := mem.Resources[name]; !ok {
 			mem.Resources[name] = nil
+			stats.AddedResources++
 		}
 	}
 	// Remove stale resources.
 	for name := range mem.Resources {
 		if _, ok := resources[name]; !ok {
 			delete(mem.Resources, name)
+			stats.RemovedResources++
 		}
 	}
 
@@ -225,14 +244,18 @@ func reconcileMemory(mem *Memory, resources, dataSources map[string]struct{}) {
 	for name := range dataSources {
 		if _, ok := mem.DataSources[name]; !ok {
 			mem.DataSources[name] = nil
+			stats.AddedDataSources++
 		}
 	}
 	// Remove stale data sources.
 	for name := range mem.DataSources {
 		if _, ok := dataSources[name]; !ok {
 			delete(mem.DataSources, name)
+			stats.RemovedDataSources++
 		}
 	}
+
+	return stats
 }
 
 // selectEntities selects the n oldest entities across resources and data sources.

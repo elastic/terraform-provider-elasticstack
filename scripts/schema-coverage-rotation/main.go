@@ -89,13 +89,18 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return errors.New("--memory is required")
 	}
 
+	startedFromScratch := false
+
 	// Bootstrap from seed if the working file does not exist.
 	if _, err := os.Stat(*memPath); os.IsNotExist(err) {
+		startedFromScratch = true
 		seedPath := ".github/aw/memory/schema-coverage.json"
 		if err := bootstrapFromSeed(*memPath, seedPath); err != nil {
 			return fmt.Errorf("bootstrap memory: %w", err)
 		}
 		fmt.Fprintf(stderr, "bootstrapped memory from %s\n", seedPath)
+	} else if err != nil {
+		return fmt.Errorf("stat memory: %w", err)
 	}
 
 	// Load current memory.
@@ -118,12 +123,21 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 	}
 
 	resources, dataSources := discoverEntities(fwProv, sdkResources, sdkDataSources)
-	reconcileMemory(mem, resources, dataSources)
+	stats := reconcileMemory(mem, resources, dataSources)
 
 	if err := saveMemory(*memPath, mem); err != nil {
 		return fmt.Errorf("save memory: %w", err)
 	}
 
+	if startedFromScratch {
+		fmt.Fprintf(stderr, "prepare started from scratch at %s\n", *memPath)
+	} else {
+		fmt.Fprintf(stderr, "prepare re-used existing state from %s\n", *memPath)
+	}
+	fmt.Fprintf(stderr, "prepare reconciled state: added %d, removed %d (%d resources added, %d resources removed, %d data-sources added, %d data-sources removed)\n",
+		stats.AddedTotal(), stats.RemovedTotal(),
+		stats.AddedResources, stats.RemovedResources,
+		stats.AddedDataSources, stats.RemovedDataSources)
 	fmt.Fprintf(stderr, "prepared memory: %d resources, %d data-sources\n",
 		len(mem.Resources), len(mem.DataSources))
 	return nil

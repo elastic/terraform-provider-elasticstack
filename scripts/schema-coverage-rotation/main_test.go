@@ -20,11 +20,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/elastic/terraform-provider-elasticstack/provider"
 )
 
 // writeMemoryFile writes a memory file with the given JSON content.
@@ -35,6 +38,23 @@ func writeMemoryFile(t *testing.T, dir, content string) string {
 		t.Fatalf("write memory file: %v", err)
 	}
 	return path
+}
+
+func currentProviderInventory() (map[string]struct{}, map[string]struct{}) {
+	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
+	sdkProv := provider.New("schema-coverage-rotation")
+
+	sdkResources := make(map[string]struct{})
+	for name := range sdkProv.ResourcesMap {
+		sdkResources[name] = struct{}{}
+	}
+
+	sdkDataSources := make(map[string]struct{})
+	for name := range sdkProv.DataSourcesMap {
+		sdkDataSources[name] = struct{}{}
+	}
+
+	return discoverEntities(fwProv, sdkResources, sdkDataSources)
 }
 
 // TestCmdPrepareMissingMemoryFlag checks that --memory is required.
@@ -74,6 +94,14 @@ func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
 		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
 	}
 
+	output := stderr.String()
+	if !strings.Contains(output, "prepare started from scratch at "+memPath) {
+		t.Fatalf("expected scratch log, got stderr: %s", output)
+	}
+	if !strings.Contains(output, "bootstrapped memory from .github/aw/memory/schema-coverage.json") {
+		t.Fatalf("expected bootstrap log, got stderr: %s", output)
+	}
+
 	mem, err := loadMemory(memPath)
 	if err != nil {
 		t.Fatalf("loadMemory: %v", err)
@@ -86,27 +114,42 @@ func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
 	}
 }
 
-// TestCmdPrepareReconciles verifies that new/stale entities are handled.
+// TestCmdPrepareReconciles verifies that new/stale entities are handled and logged.
 func TestCmdPrepareReconciles(t *testing.T) {
 	dir := t.TempDir()
+	resources, dataSources := currentProviderInventory()
 
-	// Write a seed that is used as the initial working file.
-	seedDir := filepath.Join(dir, ".github", "aw", "memory")
-	if err := os.MkdirAll(seedDir, 0o755); err != nil {
-		t.Fatalf("mkdir seed dir: %v", err)
+	staleResource := "elasticstack_test_only_stale_resource"
+	staleDataSource := "elasticstack_test_only_stale_data_source"
+	if _, ok := resources[staleResource]; ok {
+		t.Fatalf("stale resource name unexpectedly registered: %s", staleResource)
 	}
-	if err := os.WriteFile(filepath.Join(seedDir, "schema-coverage.json"),
-		[]byte(`{"resources":{},"data-sources":{}}`), 0o600); err != nil {
-		t.Fatalf("write seed: %v", err)
+	if _, ok := dataSources[staleDataSource]; ok {
+		t.Fatalf("stale data source name unexpectedly registered: %s", staleDataSource)
 	}
 
-	t.Chdir(dir)
-
-	memPath := filepath.Join(dir, "schema-coverage.json")
+	memPath := writeMemoryFile(t, dir, fmt.Sprintf(`{
+		"resources": {"%s": null},
+		"data-sources": {"%s": null}
+	}`, staleResource, staleDataSource))
 
 	var stderr bytes.Buffer
 	if err := cmdPrepare([]string{"--memory", memPath}, &stderr); err != nil {
 		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
+	}
+
+	output := stderr.String()
+	if !strings.Contains(output, "prepare re-used existing state from "+memPath) {
+		t.Fatalf("expected reuse log, got stderr: %s", output)
+	}
+	expectedLog := fmt.Sprintf(
+		"prepare reconciled state: added %d, removed %d (%d resources added, %d resources removed, %d data-sources added, %d data-sources removed)",
+		len(resources)+len(dataSources), 2,
+		len(resources), 1,
+		len(dataSources), 1,
+	)
+	if !strings.Contains(output, expectedLog) {
+		t.Fatalf("expected reconcile log %q, got stderr: %s", expectedLog, output)
 	}
 
 	mem, err := loadMemory(memPath)
@@ -117,6 +160,12 @@ func TestCmdPrepareReconciles(t *testing.T) {
 	// After prepare the memory should contain provider-registered entities.
 	if len(mem.Resources) == 0 && len(mem.DataSources) == 0 {
 		t.Error("expected at least some registered entities after prepare")
+	}
+	if _, ok := mem.Resources[staleResource]; ok {
+		t.Errorf("expected stale resource %q to be removed", staleResource)
+	}
+	if _, ok := mem.DataSources[staleDataSource]; ok {
+		t.Errorf("expected stale data source %q to be removed", staleDataSource)
 	}
 }
 
