@@ -377,3 +377,21 @@ The workflow SHALL use deterministic pre-activation outputs to decide whether th
 - **GIVEN** deterministic pre-activation gating selected a single active change and classified the pull request as a fork
 - **WHEN** downstream job conditions are evaluated
 - **THEN** the workflow SHALL continue to the agent job while withholding archive/push behavior
+
+### Requirement: Verification engine uses Copilot BYOK LiteLLM routing
+The `openspec-verify-label` workflow SHALL keep `engine.id: copilot`, SHALL set `engine.model` to `llm-gateway/gpt-5.4`, and SHALL configure Copilot CLI to use an OpenAI-compatible BYOK provider for model inference by setting `COPILOT_PROVIDER_TYPE` to `openai` and `COPILOT_PROVIDER_BASE_URL` to `https://elastic.litellm-prod.ai/v1`. Any provider credential passed as `COPILOT_PROVIDER_API_KEY` SHALL be sourced from a GitHub Actions secret-backed expression rather than from a checked-in literal.
+
+#### Scenario: Authored workflow preserves the Copilot engine
+- **WHEN** maintainers inspect the authored `openspec-verify-label` workflow source
+- **THEN** `engine.id` SHALL be `copilot`
+- **AND** `engine.model` SHALL be `llm-gateway/gpt-5.4`
+
+#### Scenario: Copilot BYOK provider targets the Elastic LiteLLM endpoint
+- **WHEN** maintainers inspect the verification workflow's engine environment
+- **THEN** `COPILOT_PROVIDER_TYPE` SHALL be `openai`
+- **AND** `COPILOT_PROVIDER_BASE_URL` SHALL be `https://elastic.litellm-prod.ai/v1`
+
+#### Scenario: Provider authentication is secret-backed
+- **WHEN** maintainers inspect the authored workflow source
+- **THEN** any configured `COPILOT_PROVIDER_API_KEY` value SHALL come from a GitHub Actions secret expression rather than a literal API key value committed to the repository
+
