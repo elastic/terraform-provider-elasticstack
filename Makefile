@@ -70,7 +70,7 @@ hook-test: ## Run hook JavaScript unit tests
 	@ node --test .agents/hooks/*.test.mjs
 
 .PHONY: test
-test: workflow-test hook-test ## Run unit tests
+test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
