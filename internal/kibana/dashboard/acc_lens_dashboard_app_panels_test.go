@@ -139,7 +139,7 @@ func TestAccResourceDashboardLensDashboardAppInvalidBothSubblocks(t *testing.T) 
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
@@ -158,7 +158,7 @@ func TestAccResourceDashboardLensDashboardAppInvalidNeitherSubblock(t *testing.T
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
@@ -177,7 +177,7 @@ func TestAccResourceDashboardLensDashboardAppConfigJSONRejected(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("main"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("main"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},

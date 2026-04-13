@@ -29,9 +29,9 @@ resource "elasticstack_kibana_dashboard" "test" {
     lens_dashboard_app_config = {
       by_value = {
         attributes_json = jsonencode({
-          type    = "metric"
-          filters = []
-          query   = { expression = "" }
+          type        = "metric"
+          filters     = []
+          query       = { expression = "" }
           data_source = { type = "data_view_spec", index_pattern = "test-*" }
           metrics = [{
             type      = "primary"
