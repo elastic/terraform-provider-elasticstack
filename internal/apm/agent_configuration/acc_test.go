@@ -120,6 +120,10 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
+					}
+
 					importedID := is[0].Attributes["id"]
 					if importedID != expectedID {
 						return fmt.Errorf("expected imported id [%s] to equal [%s]", importedID, expectedID)
@@ -163,6 +167,10 @@ func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
+					}
+
 					importedID := is[0].Attributes["id"]
 					if importedID != serviceName {
 						return fmt.Errorf("expected imported id [%s] to equal [%s]", importedID, serviceName)
