@@ -479,6 +479,73 @@ func GetKibanaConnectionSchema() *schema.Schema {
 	}
 }
 
+// GetKibanaEntityConnectionSchema returns the schema for a resource-level
+// kibana_connection block. It uses path references scoped to kibana_connection
+// rather than the provider-level kibana block.
+func GetKibanaEntityConnectionSchema() *schema.Schema {
+	return &schema.Schema{
+		Description: "Kibana connection configuration block.",
+		Type:        schema.TypeList,
+		MaxItems:    1,
+		Optional:    true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"api_key": {
+					Description:   "API Key to use for authentication to Kibana",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					ConflictsWith: []string{"kibana_connection.0.password", "kibana_connection.0.username", "kibana_connection.0.bearer_token"},
+				},
+				"bearer_token": {
+					Description:   "Bearer Token to use for authentication to Kibana",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					ConflictsWith: []string{"kibana_connection.0.password", "kibana_connection.0.username", "kibana_connection.0.api_key"},
+				},
+				"username": {
+					Description:  "Username to use for API authentication to Kibana.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					RequiredWith: []string{"kibana_connection.0.password"},
+				},
+				"password": {
+					Description:  "Password to use for API authentication to Kibana.",
+					Type:         schema.TypeString,
+					Optional:     true,
+					Sensitive:    true,
+					RequiredWith: []string{"kibana_connection.0.username"},
+				},
+				"endpoints": {
+					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Type:        schema.TypeList,
+					Optional:    true,
+					Sensitive:   true,
+					MaxItems:    1, // Current API restriction
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"ca_certs": {
+					Description: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					Type:        schema.TypeList,
+					Optional:    true,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"insecure": {
+					Description: "Disable TLS certificate validation",
+					Type:        schema.TypeBool,
+					Optional:    true,
+					Default:     false,
+				},
+			},
+		},
+	}
+}
+
 func GetFleetConnectionSchema() *schema.Schema {
 	return &schema.Schema{
 		Description: "Fleet connection configuration block.",
