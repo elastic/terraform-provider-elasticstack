@@ -75,7 +75,7 @@ For each matrix entry, the job SHALL free disk space, set up Go and Terraform, r
 
 ### Requirement: Auto-approve job (REQ-018–REQ-021)
 
-The `auto-approve` job SHALL depend on successful completion of the `Test Validation` job, except on `ready_for_review` events where it SHALL run without that dependency. The `auto-approve` job SHALL only run on `pull_request` events. The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: read` and `pull-requests: write` permissions.
+The `auto-approve` job SHALL depend on the `Test Validation` job and SHALL only run on `pull_request` events. For non-`ready_for_review` events, `auto-approve` SHALL require `Test Validation` to succeed before it runs. For `ready_for_review` events, `auto-approve` SHALL be eligible to run regardless of `Test Validation`'s outcome (because the preflight gate intentionally skips acceptance work, and `Test Validation` succeeds on the preflight-skip path). The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: read` and `pull-requests: write` permissions.
 
 #### Scenario: Auto-approve after satisfied validation
 
