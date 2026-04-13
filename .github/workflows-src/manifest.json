@@ -7,6 +7,10 @@
     {
       "template": ".github/workflows-src/schema-coverage-rotation/workflow.md.tmpl",
       "output": ".github/workflows/schema-coverage-rotation.md"
+    },
+    {
+      "template": ".github/workflows-src/test/workflow.yml.tmpl",
+      "output": ".github/workflows/test.yml"
     }
   ]
 }
