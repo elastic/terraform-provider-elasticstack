@@ -375,12 +375,12 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
 	case panelTypeSyntheticsStatsOverview:
-		ssoPanel, err := panelItem.AsKbnDashboardPanelSyntheticsStatsOverview()
+		ssoPanel, err := panelItem.AsKbnDashboardPanelTypeSyntheticsStatsOverview()
 		if err != nil {
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
-		pm.UID = types.StringPointerValue(ssoPanel.Uid)
+		pm.ID = types.StringPointerValue(ssoPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel)
 	case panelTypeSyntheticsMonitors:
@@ -600,12 +600,12 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if pm.SyntheticsStatsOverviewConfig != nil {
-		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+		ssoPanel := kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{
 			Grid: grid,
-			Uid:  uid,
+			Id:   panelID,
 		}
 		buildSyntheticsStatsOverviewConfig(pm, &ssoPanel)
-		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+		if err := panelItem.FromKbnDashboardPanelTypeSyntheticsStatsOverview(ssoPanel); err != nil {
 			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
 		}
 		return panelItem, diags
@@ -613,11 +613,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	if pm.Type.ValueString() == panelTypeSyntheticsStatsOverview {
 		// Panel type is synthetics_stats_overview with no config block: send empty config.
-		ssoPanel := kbapi.KbnDashboardPanelSyntheticsStatsOverview{
+		ssoPanel := kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{
 			Grid: grid,
-			Uid:  uid,
+			Id:   panelID,
 		}
-		if err := panelItem.FromKbnDashboardPanelSyntheticsStatsOverview(ssoPanel); err != nil {
+		if err := panelItem.FromKbnDashboardPanelTypeSyntheticsStatsOverview(ssoPanel); err != nil {
 			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
 		}
 		return panelItem, diags

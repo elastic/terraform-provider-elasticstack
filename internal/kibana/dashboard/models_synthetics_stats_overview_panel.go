@@ -55,7 +55,7 @@ type syntheticsStatsOverviewFiltersModel struct {
 
 // buildSyntheticsStatsOverviewConfig writes the TF model into the API panel struct.
 // When the config block is nil or entirely null, an empty config object is sent (valid: shows all monitors).
-func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboardPanelSyntheticsStatsOverview) {
+func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
 	cfg := pm.SyntheticsStatsOverviewConfig
 	if cfg == nil {
 		return
@@ -79,16 +79,16 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 			EncodeUrl    *bool                                                                 `json:"encode_url,omitempty"` //nolint:revive
 			Label        string                                                                `json:"label"`
 			OpenInNewTab *bool                                                                 `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+			Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
 			Url          string                                                                `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
+			drilldowns[i].Trigger = kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -170,7 +170,7 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, all API-returned
 // fields are populated unconditionally (no prior intent to preserve).
-func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview) {
+func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
 	cfg := apiPanel.Config
 
 	// On import (tfPanel == nil), populate unconditionally when at least one API field is set.
@@ -270,7 +270,7 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 // priorDrilldowns is the existing TF state (may be nil on import).
 // Optional bool fields (encode_url, open_in_new_tab) use null-preservation when prior state is available.
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
-	apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview,
+	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorDrilldowns []syntheticsStatsOverviewDrilldownModel,
 ) []syntheticsStatsOverviewDrilldownModel {
 	apiDrilldowns := apiPanel.Config.Drilldowns
@@ -319,7 +319,7 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 // When the API returns an explicit empty filters object, nil is returned regardless of prior state.
 // priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
-	apiPanel kbapi.KbnDashboardPanelSyntheticsStatsOverview,
+	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorFilters *syntheticsStatsOverviewFiltersModel,
 ) *syntheticsStatsOverviewFiltersModel {
 	apiFilters := apiPanel.Config.Filters

@@ -32,7 +32,7 @@ import (
 
 func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
 	pm := panelModel{}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 	// Zero config — no panic, nothing set.
 	assert.Nil(t, panel.Config.Title)
@@ -54,7 +54,7 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
 			Filters:     nil,
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	assert.Nil(t, panel.Config.Title)
@@ -74,7 +74,7 @@ func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
 			HideBorder:  types.BoolValue(false),
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Title)
@@ -101,7 +101,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Drilldowns)
@@ -110,8 +110,8 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 	assert.Equal(t, "https://example.com/{{context.panel.title}}", d.Url)
 	assert.Equal(t, "View details", d.Label)
 	// trigger and type are always hardcoded constants.
-	assert.Equal(t, kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, d.Type)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, d.Type)
 	assert.Nil(t, d.EncodeUrl)
 	assert.Nil(t, d.OpenInNewTab)
 }
@@ -129,7 +129,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Drilldowns)
@@ -156,7 +156,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Filters)
@@ -182,7 +182,7 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 	assert.Nil(t, panel.Config.Filters)
 }
@@ -192,8 +192,8 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 // ─────────────────────────────────────────────────────────────────────────────
 
 // makeSyntheticsAPIConfig builds a minimal API config for test use.
-func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelSyntheticsStatsOverview {
-	return kbapi.KbnDashboardPanelSyntheticsStatsOverview{}
+func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview {
+	return kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{}
 }
 
 // Test: on import (tfPanel == nil) with empty config — block stays null.
@@ -318,15 +318,15 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 		EncodeUrl    *bool                                                                 `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                                                `json:"label"`
 		OpenInNewTab *bool                                                                 `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+		Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
 		Url          string                                                                `json:"url"` //nolint:revive
 	}{
 		{
 			Url:          "https://example.com",
 			Label:        "View",
-			Trigger:      kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KbnDashboardPanelSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
+			Trigger:      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
+			Type:         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
 			EncodeUrl:    &encodeURL,
 			OpenInNewTab: &openInNewTab,
 		},
@@ -443,7 +443,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withStatuses(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelSyntheticsStatsOverview
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 
 	require.NotNil(t, panel.Config.Filters)
