@@ -1,6 +1,6 @@
 ## Context
 
-The repository currently splits unit-style verification across multiple entry points. `make test` runs Go unit tests only, `make check-lint` also runs `workflow-test`, and `.agents/hooks/*.test.js` is not covered by a dedicated Makefile target. CI mirrors that split by running the build job without the workflow or hook tests, while the lint job carries some of the unit-style coverage.
+The repository currently splits unit-style verification across multiple entry points. `make test` runs Go unit tests only, `make check-lint` also runs `workflow-test`, and `.agents/hooks/*.test.mjs` is not covered by a dedicated Makefile target. CI mirrors that split by running the build job without the workflow or hook tests, while the lint job carries some of the unit-style coverage.
 
 This change is intentionally small, but it spans the root `Makefile`, JavaScript test locations, and the main CI workflow. A short design keeps the intended boundaries clear before implementation.
 
@@ -21,7 +21,7 @@ This change is intentionally small, but it spans the root `Makefile`, JavaScript
 1. Add a dedicated `hook-test` Makefile target.
 Rationale: the hook tests already exist as a coherent Node test suite under `.agents/hooks/`. Giving them a named target avoids embedding raw `node --test` commands into multiple aggregate targets and workflows, and keeps CI coupled to the Makefile contract instead of file globs.
 
-Alternative considered: invoke `node --test .agents/hooks/*.test.js` directly from `make test` and CI. Rejected because it duplicates command details and makes future changes harder to centralize.
+Alternative considered: invoke `node --test .agents/hooks/*.test.mjs` directly from `make test` and CI. Rejected because it duplicates command details and makes future changes harder to centralize.
 
 2. Expand `make test` into an aggregate target for all unit-style suites.
 Rationale: contributors expect `make test` to represent the repository's unit-level verification. Making it depend on or invoke Go unit tests, `workflow-test`, and `hook-test` closes the current gap without changing acceptance-test behavior.

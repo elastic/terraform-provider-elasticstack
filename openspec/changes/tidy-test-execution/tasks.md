@@ -1,6 +1,6 @@
 ## 1. Makefile test aggregation
 
-- [ ] 1.1 Add a `hook-test` target that runs `node --test .agents/hooks/*.test.js`
+- [ ] 1.1 Add a `hook-test` target that runs `node --test .agents/hooks/*.test.mjs`
 - [ ] 1.2 Update `test` so it executes Go unit tests plus `workflow-test` and `hook-test`
 - [ ] 1.3 Remove `workflow-test` from the `check-lint` dependency chain while keeping workflow freshness checks intact
 

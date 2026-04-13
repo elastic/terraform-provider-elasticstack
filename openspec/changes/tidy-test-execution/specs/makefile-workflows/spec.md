@@ -19,7 +19,7 @@ The `test` target SHALL run all repository unit-style test suites. It SHALL run 
 
 ### Requirement: Documentation, workflow, and code generation (REQ-038–REQ-042)
 
-The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. The `workflow-generate` target SHALL regenerate the checked-in GitHub workflow artifacts from the repository-authored workflow sources, and it SHALL run only when explicitly requested. Aggregate targets such as `gen`, `lint`, and `build` SHALL NOT depend on `workflow-generate`. The `workflow-test` target SHALL run the repository tests that cover workflow source generation. The `hook-test` target SHALL run `node --test .agents/hooks/*.test.js`. The `check-workflows` target SHALL verify that generated workflow artifacts are up to date without regenerating them. The `gen` target SHALL run documentation generation and `go generate` for the repository.
+The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. The `workflow-generate` target SHALL regenerate the checked-in GitHub workflow artifacts from the repository-authored workflow sources, and it SHALL run only when explicitly requested. Aggregate targets such as `gen`, `lint`, and `build` SHALL NOT depend on `workflow-generate`. The `workflow-test` target SHALL run the repository tests that cover workflow source generation. The `hook-test` target SHALL run `node --test .agents/hooks/*.test.mjs`. The `check-workflows` target SHALL verify that generated workflow artifacts are up to date without regenerating them. The `gen` target SHALL run documentation generation and `go generate` for the repository.
 
 #### Scenario: Docs generation
 
@@ -37,7 +37,7 @@ The `docs-generate` target SHALL regenerate Terraform provider website/markdown 
 
 - GIVEN `make hook-test`
 - WHEN the target runs
-- THEN Node's test runner SHALL execute `.agents/hooks/*.test.js`
+- THEN Node's test runner SHALL execute `.agents/hooks/*.test.mjs`
 
 #### Scenario: Workflow drift check without regeneration
 

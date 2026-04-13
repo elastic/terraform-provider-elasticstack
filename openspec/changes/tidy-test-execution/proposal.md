@@ -5,7 +5,7 @@ The repository's unit-style test execution is split across `make test`, `make ch
 ## What Changes
 
 - Move workflow generation tests from the lint-oriented path into the `test` aggregate so `make test` covers all unit-style test suites.
-- Add hook test execution for `.agents/hooks/*.test.js` to the repository test workflow.
+- Add hook test execution for `.agents/hooks/*.test.mjs` to the repository test workflow.
 - Update CI build job requirements so workflow tests and hook tests run alongside the existing build-oriented checks.
 - Clarify the Makefile and CI specs so they describe the new test placement and CI execution behavior.
 
