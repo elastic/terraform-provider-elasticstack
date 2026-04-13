@@ -495,9 +495,9 @@ func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.api_key"),
-					checkEnrichPolicyDataSourceAttrAbsent("elasticsearch_connection.0.headers.%"),
-					checkEnrichPolicyDataSourceAttrAbsent("elasticsearch_connection.0.headers.X-Terraform-Test"),
-					checkEnrichPolicyDataSourceAttrAbsent("elasticsearch_connection.0.headers.X-Trace"),
+					checkEnrichPolicyTestDataSourceAttrAbsent("elasticsearch_connection.0.headers.%"),
+					checkEnrichPolicyTestDataSourceAttrAbsent("elasticsearch_connection.0.headers.X-Terraform-Test"),
+					checkEnrichPolicyTestDataSourceAttrAbsent("elasticsearch_connection.0.headers.X-Trace"),
 				),
 			},
 			// Removal step: drop the elasticsearch_connection block and verify the
@@ -590,7 +590,7 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.username", username),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.password"),
-					checkEnrichPolicyDataSourceAttrAbsent("elasticsearch_connection.0.insecure"),
+					checkEnrichPolicyTestDataSourceAttrAbsent("elasticsearch_connection.0.insecure"),
 				),
 			},
 		},
@@ -976,7 +976,7 @@ func checkEnrichPolicyResourceAttrExists(resourceName, attr string) resource.Tes
 	}
 }
 
-func checkEnrichPolicyDataSourceAttrAbsent(attr string) resource.TestCheckFunc {
+func checkEnrichPolicyTestDataSourceAttrAbsent(attr string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		const resourceName = "data.elasticstack_elasticsearch_enrich_policy.test"
 
