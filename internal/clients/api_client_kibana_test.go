@@ -19,6 +19,9 @@ package clients
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/disaster37/go-kibana-rest/v8"
@@ -200,23 +203,39 @@ func TestNewKibanaAPIClientFromSDKResource_WithBlock(t *testing.T) {
 	assert.NoError(t, err, "Fleet client must be present")
 }
 
-// TestScopedKibanaClient_ServerVersion_RoutesFromKibana verifies that
-// ServerVersion on a scoped Kibana client (no Elasticsearch) routes through
-// the Kibana status API rather than the Elasticsearch info API. The test uses
-// an unreachable endpoint so the call fails, but the error message must
-// identify the Kibana path.
-func TestScopedKibanaClient_ServerVersion_RoutesFromKibana(t *testing.T) {
-	t.Parallel()
+// newMockKibanaServer returns an httptest.Server that responds to GET /api/status
+// with a minimal Kibana status payload for the given version string.
+// The caller must call Close() on the returned server.
+func newMockKibanaServer(version string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":"default"}}`, version)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+}
+
+// newScopedKibanaClient creates a scoped *APIClient via
+// MaybeNewKibanaAPIClientFromFrameworkResource pointing at the given endpoint.
+// TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT is set via t.Setenv so
+// that environment-variable endpoint overrides do not redirect the client.
+func newScopedKibanaClient(t *testing.T, endpoint string) *APIClient {
+	t.Helper()
+	// Lock the endpoint so the KIBANA_ENDPOINT env var (if set in CI) cannot
+	// override the explicitly configured URL.
+	t.Setenv(config.PreferConfiguredKibanaEndpointEnvVar, "true")
+
 	ctx := context.Background()
 	defaultClient := newTestAPIClient(t)
-
 	conn := config.KibanaConnection{
 		Username:    types.StringValue("kibana-user"),
 		Password:    types.StringValue("kibana-pass"),
 		APIKey:      types.StringValue(""),
 		BearerToken: types.StringValue(""),
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
-			types.StringValue("http://kibana.example.com:5601"),
+			types.StringValue(endpoint),
 		}),
 		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure: types.BoolValue(false),
@@ -230,47 +249,41 @@ func TestScopedKibanaClient_ServerVersion_RoutesFromKibana(t *testing.T) {
 	scoped, diags := MaybeNewKibanaAPIClientFromFrameworkResource(ctx, list, defaultClient)
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
-	require.Nil(t, scoped.elasticsearch, "precondition: scoped Kibana client must have no Elasticsearch client")
+	return scoped
+}
 
-	_, vDiags := scoped.ServerVersion(ctx)
-	require.True(t, vDiags.HasError(), "expected ServerVersion to fail against unreachable Kibana endpoint")
-	require.Contains(t, vDiags[0].Summary, "Kibana API",
-		"error must originate from the Kibana version path, not the Elasticsearch path")
+// TestScopedKibanaClient_ServerVersion_RoutesFromKibana verifies that
+// ServerVersion on a scoped Kibana client (no Elasticsearch) routes through
+// the Kibana status API rather than the Elasticsearch info API.
+func TestScopedKibanaClient_ServerVersion_RoutesFromKibana(t *testing.T) {
+	const wantVersion = "8.18.0"
+	srv := newMockKibanaServer(wantVersion)
+	defer srv.Close()
+
+	scoped := newScopedKibanaClient(t, srv.URL)
+	require.Nil(t, scoped.elasticsearch, "precondition: scoped client must have no Elasticsearch client")
+
+	ver, diags := scoped.ServerVersion(context.Background())
+	require.False(t, diags.HasError(), "ServerVersion must succeed against the mock Kibana server")
+	require.NotNil(t, ver)
+	assert.Equal(t, wantVersion, ver.Original(),
+		"version must come from the mock Kibana server, not from an Elasticsearch path")
 }
 
 // TestScopedKibanaClient_ServerFlavor_RoutesFromKibana verifies that
 // ServerFlavor on a scoped Kibana client routes through the Kibana status API.
 func TestScopedKibanaClient_ServerFlavor_RoutesFromKibana(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	defaultClient := newTestAPIClient(t)
+	const wantVersion = "8.18.0"
+	srv := newMockKibanaServer(wantVersion)
+	defer srv.Close()
 
-	conn := config.KibanaConnection{
-		Username:    types.StringValue("kibana-user"),
-		Password:    types.StringValue("kibana-pass"),
-		APIKey:      types.StringValue(""),
-		BearerToken: types.StringValue(""),
-		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
-			types.StringValue("http://kibana.example.com:5601"),
-		}),
-		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
-		Insecure: types.BoolValue(false),
-	}
-	list, diags := types.ListValueFrom(ctx,
-		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
-		[]config.KibanaConnection{conn},
-	)
-	require.False(t, diags.HasError())
+	scoped := newScopedKibanaClient(t, srv.URL)
+	require.Nil(t, scoped.elasticsearch, "precondition: scoped client must have no Elasticsearch client")
 
-	scoped, diags := MaybeNewKibanaAPIClientFromFrameworkResource(ctx, list, defaultClient)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-	require.Nil(t, scoped.elasticsearch, "precondition: scoped Kibana client must have no Elasticsearch client")
-
-	_, fDiags := scoped.ServerFlavor(ctx)
-	require.True(t, fDiags.HasError(), "expected ServerFlavor to fail against unreachable Kibana endpoint")
-	require.Contains(t, fDiags[0].Summary, "Kibana API",
-		"error must originate from the Kibana flavor path, not the Elasticsearch path")
+	flavor, diags := scoped.ServerFlavor(context.Background())
+	require.False(t, diags.HasError(), "ServerFlavor must succeed against the mock Kibana server")
+	assert.Equal(t, "default", flavor,
+		"flavor must come from the mock Kibana server, not from an Elasticsearch path")
 }
 
 // kibanaConnectionAttrTypes returns the attribute type map for
