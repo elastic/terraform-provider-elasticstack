@@ -67,50 +67,24 @@ func TestCmdPrepareMissingMemoryFlag(t *testing.T) {
 	}
 }
 
-// TestCmdPrepareBootstrapsFromSeed verifies that a missing working file is bootstrapped.
-func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
+// TestCmdPrepareMissingMemoryFile verifies that prepare fails fast when the
+// working memory file does not exist.
+func TestCmdPrepareMissingMemoryFile(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
-
-	// Write a seed file.
-	seedDir := filepath.Join(dir, ".github", "aw", "memory")
-	if err := os.MkdirAll(seedDir, 0o755); err != nil {
-		t.Fatalf("mkdir seed dir: %v", err)
-	}
-	seedContent := `{"resources":{"elasticstack_seed_resource":"2021-01-01T00:00:00Z"},"data-sources":{}}`
-	if err := os.WriteFile(filepath.Join(seedDir, "schema-coverage.json"), []byte(seedContent), 0o600); err != nil {
-		t.Fatalf("write seed: %v", err)
-	}
-
-	// Change to the temp dir so the relative seed path resolves.
-	t.Chdir(dir)
-
 	memPath := filepath.Join(dir, "working", "schema-coverage.json")
-	if err := os.MkdirAll(filepath.Dir(memPath), 0o755); err != nil {
-		t.Fatalf("mkdir working dir: %v", err)
-	}
 
 	var stderr bytes.Buffer
-	if err := cmdPrepare([]string{"--memory", memPath}, &stderr); err != nil {
-		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
+	err := cmdPrepare([]string{"--memory", memPath}, &stderr)
+	if err == nil {
+		t.Fatal("expected error for missing memory file")
 	}
-
-	output := stderr.String()
-	if !strings.Contains(output, "prepare started from scratch at "+memPath) {
-		t.Fatalf("expected scratch log, got stderr: %s", output)
+	if !strings.Contains(err.Error(), fmt.Sprintf("memory file %q does not exist", memPath)) {
+		t.Fatalf("expected missing file error, got: %v", err)
 	}
-	if !strings.Contains(output, "bootstrapped memory from .github/aw/memory/schema-coverage.json") {
-		t.Fatalf("expected bootstrap log, got stderr: %s", output)
-	}
-
-	mem, err := loadMemory(memPath)
-	if err != nil {
-		t.Fatalf("loadMemory: %v", err)
-	}
-
-	// After reconcile, provider registrations determine final state.
-	// Seed entity may not be registered, so just verify the file is valid.
-	if mem.Resources == nil {
-		t.Error("expected non-nil resources map")
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got: %s", stderr.String())
 	}
 }
 

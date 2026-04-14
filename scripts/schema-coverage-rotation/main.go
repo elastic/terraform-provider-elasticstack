@@ -24,7 +24,7 @@
 //
 // Commands:
 //
-//	prepare   Bootstrap and reconcile the memory file from provider registrations.
+//	prepare   Reconcile the existing memory file from provider registrations.
 //	select    Select the next N entities by oldest timestamp; prints a JSON array.
 //	record    Record the current UTC timestamp for an analyzed entity.
 //
@@ -71,13 +71,13 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Usage: schema-coverage-rotation <command> [flags]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Commands:")
-	fmt.Fprintln(w, "  prepare  --memory <path>                          Bootstrap and reconcile memory")
+	fmt.Fprintln(w, "  prepare  --memory <path>                          Reconcile existing memory")
 	fmt.Fprintln(w, "  select   --memory <path> --count <n>              Select next N entities (JSON)")
 	fmt.Fprintln(w, "  record   --memory <path> (--type <t> --name <n> | --entities <json>)    Record analysis timestamps")
 	return errors.New("unknown or missing command")
 }
 
-// cmdPrepare bootstraps the memory file if needed and reconciles the entity inventory.
+// cmdPrepare reconciles the existing memory file with the entity inventory.
 func cmdPrepare(args []string, stderr io.Writer) error {
 	fs := flag.NewFlagSet("prepare", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -89,16 +89,8 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return errors.New("--memory is required")
 	}
 
-	startedFromScratch := false
-
-	// Bootstrap from seed if the working file does not exist.
 	if _, err := os.Stat(*memPath); os.IsNotExist(err) {
-		startedFromScratch = true
-		seedPath := ".github/aw/memory/schema-coverage.json"
-		if err := bootstrapFromSeed(*memPath, seedPath); err != nil {
-			return fmt.Errorf("bootstrap memory: %w", err)
-		}
-		fmt.Fprintf(stderr, "bootstrapped memory from %s\n", seedPath)
+		return fmt.Errorf("memory file %q does not exist", *memPath)
 	} else if err != nil {
 		return fmt.Errorf("stat memory: %w", err)
 	}
@@ -129,11 +121,7 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return fmt.Errorf("save memory: %w", err)
 	}
 
-	if startedFromScratch {
-		fmt.Fprintf(stderr, "prepare started from scratch at %s\n", *memPath)
-	} else {
-		fmt.Fprintf(stderr, "prepare re-used existing state from %s\n", *memPath)
-	}
+	fmt.Fprintf(stderr, "prepare re-used existing state from %s\n", *memPath)
 	fmt.Fprintf(stderr, "prepare reconciled state: added %d, removed %d (%d resources added, %d resources removed, %d data-sources added, %d data-sources removed)\n",
 		stats.AddedTotal(), stats.RemovedTotal(),
 		stats.AddedResources, stats.RemovedResources,
@@ -141,53 +129,6 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 	fmt.Fprintf(stderr, "prepared memory: %d resources, %d data-sources\n",
 		len(mem.Resources), len(mem.DataSources))
 	return nil
-}
-
-// bootstrapFromSeed copies the seed memory file to the target path,
-// creating any intermediate directories.
-func bootstrapFromSeed(targetPath, seedPath string) error {
-	seedData, err := os.ReadFile(seedPath)
-	if err != nil {
-		// If the seed does not exist, start with empty memory.
-		if os.IsNotExist(err) {
-			empty := &Memory{
-				Resources:   make(map[string]*time.Time),
-				DataSources: make(map[string]*time.Time),
-			}
-			return saveMemory(targetPath, empty)
-		}
-		return fmt.Errorf("read seed: %w", err)
-	}
-
-	// Parse and re-save via saveMemory to get canonical format.
-	var raw struct {
-		Resources   map[string]any `json:"resources"`
-		DataSources map[string]any `json:"data-sources"`
-	}
-	if err := json.Unmarshal(seedData, &raw); err != nil {
-		return fmt.Errorf("parse seed: %w", err)
-	}
-
-	mem := &Memory{
-		Resources:   make(map[string]*time.Time),
-		DataSources: make(map[string]*time.Time),
-	}
-	for k, v := range raw.Resources {
-		ts, err := parseTimestamp(v)
-		if err != nil {
-			return fmt.Errorf("resource %q: %w", k, err)
-		}
-		mem.Resources[k] = ts
-	}
-	for k, v := range raw.DataSources {
-		ts, err := parseTimestamp(v)
-		if err != nil {
-			return fmt.Errorf("data-source %q: %w", k, err)
-		}
-		mem.DataSources[k] = ts
-	}
-
-	return saveMemory(targetPath, mem)
 }
 
 // cmdSelect selects the next N entities and emits a JSON array to stdout.
