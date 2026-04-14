@@ -22,12 +22,31 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// KibanaConnectionNullList returns a properly-typed null list value for the
+// kibana_connection block. Use this when building a state struct from scratch
+// (e.g., in ImportState or state upgraders) so the framework can match the
+// list element type against the schema instead of encountering a zero-value.
+func KibanaConnectionNullList() types.List {
+	return types.ListNull(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"api_key":      types.StringType,
+			"bearer_token": types.StringType,
+			"ca_certs":     types.ListType{ElemType: types.StringType},
+			"endpoints":    types.ListType{ElemType: types.StringType},
+			"insecure":     types.BoolType,
+			"password":     types.StringType,
+			"username":     types.StringType,
+		},
+	})
+}
 
 func GetEsFWConnectionBlock() fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")

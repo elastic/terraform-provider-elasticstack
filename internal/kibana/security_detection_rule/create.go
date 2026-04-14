@@ -107,5 +107,6 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	readData.KibanaConnection = data.KibanaConnection
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

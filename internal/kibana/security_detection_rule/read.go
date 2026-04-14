@@ -64,8 +64,9 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// Set the composite ID and state
+	// Set the composite ID and state; preserve KibanaConnection from existing state
 	readData.ID = data.ID
+	readData.KibanaConnection = data.KibanaConnection
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 

@@ -22,6 +22,7 @@ import (
 	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -82,6 +83,7 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 	// Convert V1 model to V2 model
 	stateModelV2 := integrationPolicyModel{
 		ID:                 m.ID,
+		KibanaConnection:   providerschema.KibanaConnectionNullList(),
 		PolicyID:           m.PolicyID,
 		Name:               m.Name,
 		Namespace:          m.Namespace,

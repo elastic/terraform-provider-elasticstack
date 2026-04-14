@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -102,6 +103,7 @@ func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.S
 
 				upgradedState := integrationModel{
 					ID:                        priorState.ID,
+					KibanaConnection:          providerschema.KibanaConnectionNullList(),
 					Name:                      priorState.Name,
 					Version:                   priorState.Version,
 					Force:                     priorState.Force,

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -59,10 +60,11 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	}
 
 	stateModel := dataViewModel{
-		ID:       types.StringValue(req.ID),
-		SpaceID:  types.StringValue(composite.ClusterID),
-		Override: types.BoolValue(false),
-		DataView: types.ObjectUnknown(getDataViewAttrTypes()),
+		ID:               types.StringValue(req.ID),
+		SpaceID:          types.StringValue(composite.ClusterID),
+		Override:         types.BoolValue(false),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes()),
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 
 	diags = resp.State.Set(ctx, stateModel)
