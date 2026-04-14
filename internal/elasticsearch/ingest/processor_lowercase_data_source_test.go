@@ -32,8 +32,45 @@ func TestAccDataSourceIngestProcessorLowercase(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "field", "foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJSONLowercase),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "field", "source_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "target_field", "normalized_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "description", "Normalize message to lowercase"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "if", "ctx.source_field != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "on_failure.0", `{"set":{"field":"error.message","value":"lowercase failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "tag", "lowercase-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJSONLowercaseAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "field", "updated_source_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "target_field", "updated_normalized_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJSONLowercaseUpdatedValues),
 				),
 			},
 		},
@@ -45,5 +82,34 @@ const expectedJSONLowercase = `{
 		"field": "foo",
 		"ignore_failure": false,
 		"ignore_missing": false
+	}
+}`
+
+const expectedJSONLowercaseAllAttributes = `{
+	"lowercase": {
+		"description": "Normalize message to lowercase",
+		"field": "source_field",
+		"if": "ctx.source_field != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "lowercase failed"
+				}
+			}
+		],
+		"tag": "lowercase-tag",
+		"target_field": "normalized_field"
+	}
+}`
+
+const expectedJSONLowercaseUpdatedValues = `{
+	"lowercase": {
+		"field": "updated_source_field",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"target_field": "updated_normalized_field"
 	}
 }`
