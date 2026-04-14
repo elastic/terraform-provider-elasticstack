@@ -9,7 +9,7 @@
 ## 2. Align tests and requirements
 
 - [x] 2.1 Update workflow generation tests under `.github/workflows-src/lib/` to assert the Claude engine, Anthropic proxy environment, explicit tool timeout, and LiteLLM host allowlist.
-- [x] 2.2 Sync the canonical `ci-schema-coverage-rotation-engine` and `ci-schema-coverage-rotation-toolchain` specs with the approved workflow contract from this change.
+- [x] 2.2 Sync the canonical `ci-schema-coverage-rotation-toolchain` spec with the approved workflow contract from this change (engine, proxy, timeout, and network; single capability path for verify structural allowlist pairing).
 
 ## 3. Validate the migration
 

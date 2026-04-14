@@ -16,13 +16,9 @@ This workflow depends on the GitHub Actions repository secret **`CLAUDE_LITELLM_
 
 ## Capabilities
 
-### New Capabilities
-
-- `ci-schema-coverage-rotation-engine`: Define the schema-coverage rotation workflow's Claude engine, Anthropic proxy configuration, and explicit Claude execution budget.
-
 ### Modified Capabilities
 
-- `ci-schema-coverage-rotation-toolchain`: Extend the workflow network requirements so the existing bootstrap/toolchain contract also allows the LiteLLM proxy host needed by the Claude engine.
+- `ci-schema-coverage-rotation-toolchain`: Extend the existing canonical spec so it also covers the Claude engine, Anthropic-compatible LiteLLM proxy configuration, explicit per-tool timeout, and the LiteLLM host in authored `network.allowed` (structural allowlist pairing stays on this single capability id).
 
 ## Impact
 
@@ -30,4 +26,4 @@ This workflow depends on the GitHub Actions repository secret **`CLAUDE_LITELLM_
 - Generated workflow artifacts under `.github/workflows/schema-coverage-rotation.*`
 - GH AW engine authentication, new secret **`CLAUDE_LITELLM_PROXY_API_KEY`**, and effective AWF network surface (authored allowlist keys plus compiler-expanded domain set in the lock)
 - Workflow generation tests under `.github/workflows-src/lib/`
-- OpenSpec requirements for `ci-schema-coverage-rotation-engine` and `ci-schema-coverage-rotation-toolchain`
+- OpenSpec requirements under `ci-schema-coverage-rotation-toolchain` (canonical spec updated in place; no new capability id)
