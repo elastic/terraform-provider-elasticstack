@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 var validToolTypes = []string{"esql", "index_search", "workflow", "mcp"}
@@ -94,6 +96,9 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "The tool configuration as a JSON-encoded string. Use `jsonencode()` to pass a configuration object.",
 				CustomType:          jsontypes.NormalizedType{},
 			},
+		},
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

@@ -20,6 +20,7 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -47,6 +48,9 @@ func (d *WorkflowDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 				Computed:    true,
 				CustomType:  customtypes.NormalizedYamlType{},
 			},
+		},
+		Blocks: map[string]dsschema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

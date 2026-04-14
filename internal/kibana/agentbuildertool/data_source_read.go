@@ -39,7 +39,13 @@ func (d *ToolDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	supported, sdkDiags := d.client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, config.KibanaConnection, d.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -51,7 +57,7 @@ func (d *ToolDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	oapiClient, err := d.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
 		return
@@ -88,7 +94,7 @@ func (d *ToolDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
-		supported, sdkDiags := d.client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
+		supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if resp.Diagnostics.HasError() {
 			return

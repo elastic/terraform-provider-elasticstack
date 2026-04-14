@@ -37,7 +37,13 @@ func (r *ToolResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -58,13 +64,13 @@ func (r *ToolResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Restore space_id from the composite ID so populateFromAPI can use it.
 	stateModel.SpaceID = types.StringValue(compID.ClusterID)
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	tool, diags := kibanaoapi.GetTool(ctx, client, compID.ClusterID, compID.ResourceID)
+	tool, diags := kibanaoapi.GetTool(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

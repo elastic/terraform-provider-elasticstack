@@ -28,6 +28,7 @@ import (
 
 type workflowDataSourceModel struct {
 	ID                types.String                    `tfsdk:"id"`
+	KibanaConnection  types.List                      `tfsdk:"kibana_connection"`
 	SpaceID           types.String                    `tfsdk:"space_id"`
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
@@ -35,6 +36,7 @@ type workflowDataSourceModel struct {
 
 type workflowModel struct {
 	ID                types.String                    `tfsdk:"id"`
+	KibanaConnection  types.List                      `tfsdk:"kibana_connection"`
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`
 	SpaceID           types.String                    `tfsdk:"space_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`

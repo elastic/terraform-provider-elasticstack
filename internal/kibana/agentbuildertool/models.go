@@ -31,17 +31,19 @@ import (
 )
 
 type toolModel struct {
-	ID            types.String         `tfsdk:"id"`
-	ToolID        types.String         `tfsdk:"tool_id"`
-	SpaceID       types.String         `tfsdk:"space_id"`
-	Type          types.String         `tfsdk:"type"`
-	Description   types.String         `tfsdk:"description"`
-	Tags          types.Set            `tfsdk:"tags"`
-	Configuration jsontypes.Normalized `tfsdk:"configuration"`
+	ID               types.String         `tfsdk:"id"`
+	KibanaConnection types.List           `tfsdk:"kibana_connection"`
+	ToolID           types.String         `tfsdk:"tool_id"`
+	SpaceID          types.String         `tfsdk:"space_id"`
+	Type             types.String         `tfsdk:"type"`
+	Description      types.String         `tfsdk:"description"`
+	Tags             types.Set            `tfsdk:"tags"`
+	Configuration    jsontypes.Normalized `tfsdk:"configuration"`
 }
 
 type toolDataSourceModel struct {
 	ID                        types.String                    `tfsdk:"id"`
+	KibanaConnection          types.List                      `tfsdk:"kibana_connection"`
 	SpaceID                   types.String                    `tfsdk:"space_id"`
 	ToolID                    types.String                    `tfsdk:"tool_id"`
 	Type                      types.String                    `tfsdk:"type"`
