@@ -20,6 +20,7 @@ package defaultdataview
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,13 +35,19 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get kibana client", err.Error())
 		return
 	}
 
-	state, diags = r.read(ctx, client, state)
+	state, diags = r.read(ctx, oapiClient, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -50,9 +57,9 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r *Resource) read(ctx context.Context, client *kibanaoapi.Client, state defaultDataViewModel) (defaultDataViewModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, oapiClient *kibanaoapi.Client, state defaultDataViewModel) (defaultDataViewModel, diag.Diagnostics) {
 	spaceID := state.SpaceID.ValueString()
-	defaultDataViewID, diags := kibanaoapi.GetDefaultDataView(ctx, client, spaceID)
+	defaultDataViewID, diags := kibanaoapi.GetDefaultDataView(ctx, oapiClient, spaceID)
 	if diags.HasError() {
 		return state, diags
 	}

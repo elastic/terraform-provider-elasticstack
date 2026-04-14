@@ -20,6 +20,7 @@ package dataview
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -37,7 +38,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -50,7 +57,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	viewID, spaceID := planModel.getViewIDAndSpaceID()
-	dataView, diags := kibanaoapi.UpdateDataView(ctx, client, spaceID, viewID, body)
+	dataView, diags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,7 +79,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 		if !resp.Diagnostics.HasError() {
 			resp.Diagnostics.Append(
-				kibanaoapi.UpdateDataViewNamespaces(ctx, client, viewID, oldNS, newNS)...,
+				kibanaoapi.UpdateDataViewNamespaces(ctx, oapiClient, viewID, oldNS, newNS)...,
 			)
 		}
 	}
