@@ -79,5 +79,5 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 	// We can't trust the response from the PUT request, so read the parameter
 	// again. At least with Kibana 9.0.0, the PUT request responds with the new
 	// values for every field, except `value`, which contains the old value.
-	r.readState(ctx, kibanaClient, resourceID, &response.State, &response.Diagnostics)
+	r.readState(ctx, kibanaClient, resourceID, state.KibanaConnection, &response.State, &response.Diagnostics)
 }

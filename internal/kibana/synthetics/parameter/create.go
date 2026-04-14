@@ -78,5 +78,5 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	// We can't trust the response from the POST request, so read the parameter
 	// again. At least with Kibana 9.0.0, the POST request responds without the
 	// `value` field set.
-	r.readState(ctx, kibanaClient, *createResponse.Id, &response.State, &response.Diagnostics)
+	r.readState(ctx, kibanaClient, *createResponse.Id, plan.KibanaConnection, &response.State, &response.Diagnostics)
 }
