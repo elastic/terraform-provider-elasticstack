@@ -133,7 +133,7 @@ docs-generate: tools ## Generate documentation for the provider
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
-	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --verbose
 	@ gh aw compile
 
 .PHONY: workflow-test

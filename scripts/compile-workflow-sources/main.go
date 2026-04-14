@@ -41,6 +41,7 @@ func run(args []string, stdout, stderr *os.File) error {
 	output := fs.String("output", "", "path to generated workflow output")
 	root := fs.String("root", "", "repository root")
 	template := fs.String("template", "", "path to workflow template")
+	verbose := fs.Bool("verbose", false, "show diffs for out-of-date workflow sources in check mode")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -80,13 +81,14 @@ func run(args []string, stdout, stderr *os.File) error {
 			OutputPath:   resolvePath(rootDir, *output),
 			RootDir:      rootDir,
 			Check:        *check,
+			Verbose:      *verbose,
 		})
 		if err != nil {
 			return err
 		}
 		results = []CompileResult{result}
 	default:
-		results, err = CompileFromManifest(manifestPath, rootDir, *check)
+		results, err = CompileFromManifest(manifestPath, rootDir, *check, *verbose)
 		if err != nil {
 			return err
 		}
@@ -96,11 +98,15 @@ func run(args []string, stdout, stderr *os.File) error {
 		var changed []string
 		for _, result := range results {
 			if result.Changed {
-				changed = append(changed, "- "+normalizeRelativePath(rootDir, result.OutputPath))
+				entry := "- " + normalizeRelativePath(rootDir, result.OutputPath)
+				if *verbose && result.Diff != "" {
+					entry += "\n" + result.Diff
+				}
+				changed = append(changed, entry)
 			}
 		}
 		if len(changed) > 0 {
-			return fmt.Errorf("generated workflow sources are out of date:\n%s", strings.Join(changed, "\n"))
+			return fmt.Errorf("generated workflow sources are out of date:\n%s", strings.Join(changed, "\n\n"))
 		}
 		return nil
 	}
