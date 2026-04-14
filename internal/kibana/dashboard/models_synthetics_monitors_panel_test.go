@@ -73,6 +73,33 @@ func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
 	assert.Nil(t, panel.Config.Filters)
 }
 
+func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
+	pm := panelModel{
+		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{
+			Title:       types.StringValue("Synthetics Monitors"),
+			Description: types.StringValue("Shows the production monitors"),
+			HideTitle:   types.BoolValue(true),
+			HideBorder:  types.BoolValue(false),
+			View:        types.StringValue("compactView"),
+		},
+	}
+	grid := makeTestGrid()
+
+	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+
+	require.NotNil(t, panel.Config.Title)
+	require.NotNil(t, panel.Config.Description)
+	require.NotNil(t, panel.Config.HideTitle)
+	require.NotNil(t, panel.Config.HideBorder)
+	require.NotNil(t, panel.Config.View)
+	assert.Equal(t, "Synthetics Monitors", *panel.Config.Title)
+	assert.Equal(t, "Shows the production monitors", *panel.Config.Description)
+	assert.True(t, *panel.Config.HideTitle)
+	assert.False(t, *panel.Config.HideBorder)
+	assert.Equal(t, kbapi.CompactView, *panel.Config.View)
+}
+
 func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 	pm := panelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
@@ -183,6 +210,31 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 	require.Len(t, pm.SyntheticsMonitorsConfig.Filters.Projects, 1)
 	assert.Equal(t, "My Project", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Label.ValueString())
 	assert.Equal(t, "proj-1", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Value.ValueString())
+}
+
+// On import with display settings returned from the API, config is populated.
+func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testing.T) {
+	pm := &panelModel{}
+	apiPanel := makeSyntheticsPanel()
+	title := "Synthetics Monitors"
+	description := "Shows the production monitors"
+	hideTitle := true
+	hideBorder := false
+	view := kbapi.CompactView
+	apiPanel.Config.Title = &title
+	apiPanel.Config.Description = &description
+	apiPanel.Config.HideTitle = &hideTitle
+	apiPanel.Config.HideBorder = &hideBorder
+	apiPanel.Config.View = &view
+
+	populateSyntheticsMonitorsFromAPI(pm, nil, apiPanel)
+
+	require.NotNil(t, pm.SyntheticsMonitorsConfig)
+	assert.Equal(t, "Synthetics Monitors", pm.SyntheticsMonitorsConfig.Title.ValueString())
+	assert.Equal(t, "Shows the production monitors", pm.SyntheticsMonitorsConfig.Description.ValueString())
+	assert.True(t, pm.SyntheticsMonitorsConfig.HideTitle.ValueBool())
+	assert.False(t, pm.SyntheticsMonitorsConfig.HideBorder.ValueBool())
+	assert.Equal(t, "compactView", pm.SyntheticsMonitorsConfig.View.ValueString())
 }
 
 // Null-preservation: prior state has no config block; API returns filters.

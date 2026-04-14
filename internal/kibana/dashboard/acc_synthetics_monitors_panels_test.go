@@ -29,8 +29,8 @@ import (
 )
 
 // TestAccResourceDashboardSyntheticsMonitors tests the synthetics_monitors panel type.
-// The test cases cover: bare panel (no config block), panel with some filters, and panel
-// with all API-supported filter dimensions. Plan stability is verified by a PlanOnly step after create.
+// The test cases cover: bare panel (no config block), panel with display settings and filters,
+// and panel with all API-supported filter dimensions. Plan stability is verified by a PlanOnly step after create.
 func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Monitors " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -78,7 +78,7 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// 3.2: Panel with some filters (projects and tags).
+			// 3.2: Panel with display settings and some filters (projects and tags).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -88,6 +88,11 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "synthetics_monitors"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.title", "Synthetics Monitors"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.description", "Shows the production monitors"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.hide_border", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.view", "compactView"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.projects.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.projects.0.label", "My Project"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.projects.0.value", "my-project"),
@@ -106,9 +111,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 				PlanOnly: true,
 			},
 			// 3.3: Panel with all currently-supported filter dimensions.
-			// Note: statuses is defined in the schema (REQ-034) but the Kibana API does not yet
-			// accept it (additionalProperties: false), so it is omitted from the test fixture
-			// until the API is updated to support it.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -147,7 +149,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 // TestAccResourceDashboardSyntheticsMonitorsInvalidConfig covers schema-level validation:
 // 3.7: config_json on a synthetics_monitors panel is rejected.
 // synthetics_monitors_config on a non-synthetics_monitors panel is rejected.
-// statuses is rejected until the Kibana Dashboard API supports it.
 func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -161,16 +162,6 @@ func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`Invalid Configuration`),
-			},
-			// statuses is rejected until the API supports it.
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("unsupported_statuses"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable("unused"),
-				},
-				ExpectError: regexp.MustCompile(`Unsupported synthetics statuses filter`),
 			},
 			// config_json on type=synthetics_monitors is rejected.
 			{

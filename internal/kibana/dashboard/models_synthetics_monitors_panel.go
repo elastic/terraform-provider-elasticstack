@@ -19,17 +19,23 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // syntheticsMonitorsConfigModel is the Terraform model for the synthetics_monitors_config block.
 // All fields are optional; the block itself may be omitted for a bare panel with no filtering.
 type syntheticsMonitorsConfigModel struct {
-	Filters *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
+	Title       types.String                    `tfsdk:"title"`
+	Description types.String                    `tfsdk:"description"`
+	HideTitle   types.Bool                      `tfsdk:"hide_title"`
+	HideBorder  types.Bool                      `tfsdk:"hide_border"`
+	View        types.String                    `tfsdk:"view"`
+	Filters     *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
 }
 
 // syntheticsMonitorsFiltersModel holds the optional filter dimensions for a
-// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types, statuses).
+// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types).
 // Each dimension is a list of { label, value } pairs.
 type syntheticsMonitorsFiltersModel struct {
 	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
@@ -37,7 +43,6 @@ type syntheticsMonitorsFiltersModel struct {
 	MonitorIDs   []syntheticsFilterItemModel `tfsdk:"monitor_ids"`
 	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
 	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
-	Statuses     []syntheticsFilterItemModel `tfsdk:"statuses"`
 }
 
 // syntheticsFilterItemModel is a single { label, value } filter entry.
@@ -65,8 +70,29 @@ func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
 	}
 
 	cfg := pm.SyntheticsMonitorsConfig
-	if cfg == nil || cfg.Filters == nil {
-		// No filters configured — emit an empty config object (valid per API schema).
+	if cfg == nil {
+		// No config configured — emit an empty config object (valid per API schema).
+		return panel
+	}
+
+	if typeutils.IsKnown(cfg.Title) {
+		panel.Config.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.Description) {
+		panel.Config.Description = cfg.Description.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.HideTitle) {
+		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.HideBorder) {
+		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.View) {
+		view := kbapi.KbnDashboardPanelTypeSyntheticsMonitorsConfigView(cfg.View.ValueString())
+		panel.Config.View = &view
+	}
+
+	if cfg.Filters == nil {
 		return panel
 	}
 
@@ -197,16 +223,24 @@ func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiP
 
 	// On import (tfPanel == nil), populate config from API unconditionally.
 	if tfPanel == nil {
-		if apiFilters == nil {
-			// API returned no filters — keep config block null on import.
-			return
-		}
 		filters := fromSyntheticsAPIFilters(apiFilters)
-		if filters == nil {
-			// All filter dimensions were empty — keep config null.
+		if apiPanel.Config.Title == nil &&
+			apiPanel.Config.Description == nil &&
+			apiPanel.Config.HideTitle == nil &&
+			apiPanel.Config.HideBorder == nil &&
+			apiPanel.Config.View == nil &&
+			filters == nil {
+			// API returned no meaningful config — keep config block null on import.
 			return
 		}
-		pm.SyntheticsMonitorsConfig = &syntheticsMonitorsConfigModel{Filters: filters}
+		pm.SyntheticsMonitorsConfig = &syntheticsMonitorsConfigModel{
+			Title:       types.StringPointerValue(apiPanel.Config.Title),
+			Description: types.StringPointerValue(apiPanel.Config.Description),
+			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
+			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
+			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
+			Filters:     filters,
+		}
 		return
 	}
 
@@ -217,7 +251,23 @@ func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiP
 		return
 	}
 
-	// Config block exists in state — update filters.
+	// Config block exists in state — update known attributes while preserving omitted/null intent.
+	if typeutils.IsKnown(existing.Title) {
+		existing.Title = types.StringPointerValue(apiPanel.Config.Title)
+	}
+	if typeutils.IsKnown(existing.Description) {
+		existing.Description = types.StringPointerValue(apiPanel.Config.Description)
+	}
+	if typeutils.IsKnown(existing.HideTitle) {
+		existing.HideTitle = types.BoolPointerValue(apiPanel.Config.HideTitle)
+	}
+	if typeutils.IsKnown(existing.HideBorder) {
+		existing.HideBorder = types.BoolPointerValue(apiPanel.Config.HideBorder)
+	}
+	if typeutils.IsKnown(existing.View) {
+		existing.View = syntheticsMonitorsViewValue(apiPanel.Config.View)
+	}
+
 	if apiFilters == nil {
 		// API returned no filters; preserve prior filters block intent.
 		return
@@ -302,4 +352,11 @@ func fromSyntheticsAPIItems(items *[]struct {
 		}
 	}
 	return result
+}
+
+func syntheticsMonitorsViewValue(view *kbapi.KbnDashboardPanelTypeSyntheticsMonitorsConfigView) types.String {
+	if view == nil {
+		return types.StringNull()
+	}
+	return types.StringValue(string(*view))
 }

@@ -1365,11 +1365,6 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 					Optional:            true,
 					NestedObject:        filterItemSchema.NestedObject,
 				},
-				"statuses": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor status (e.g. `up`, `down`).",
-					Optional:            true,
-					NestedObject:        filterItemSchema.NestedObject,
-				},
 			},
 		},
 	}
@@ -3027,6 +3022,29 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 		},
 	}
 	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Display title shown in the panel header.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Descriptive text for the panel.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
+			Optional:            true,
+		},
+		"view": schema.StringAttribute{
+			MarkdownDescription: "View mode for the panel. Valid values are `cardView` and `compactView`.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("cardView", "compactView"),
+			},
+		},
 		"filters": schema.SingleNestedAttribute{
 			MarkdownDescription: "Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors.",
 			Optional:            true,
@@ -3055,20 +3073,6 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 					MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
 					Optional:            true,
 					NestedObject:        filterItemSchema,
-				},
-				"statuses": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor statuses. Each entry has a `label` " +
-						"(display name) and a `value` (status, e.g. `up`, `down`). The Kibana " +
-						"Dashboard API does not currently accept this field, so non-empty values " +
-						"are rejected until API support is added.",
-					Optional:     true,
-					NestedObject: filterItemSchema,
-					Validators: []validator.List{
-						unsupportedNonEmptyList(
-							"Unsupported synthetics statuses filter",
-							"The Kibana Dashboard API does not currently accept `synthetics_monitors_config.filters.statuses`, so non-empty values are not supported yet.",
-						),
-					},
 				},
 			},
 		},
