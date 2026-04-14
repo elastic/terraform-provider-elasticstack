@@ -299,18 +299,12 @@ steps:
       terraform_wrapper: false
   - name: Setup repository dependencies
     run: make setup
-# gh aw default strict mode rejects ${{ secrets.* }} under engine.env (BYOK COPILOT_PROVIDER_API_KEY); compile fails without relaxing strict.
-strict: false
 engine:
-  id: copilot
+  id: claude
   model: "llm-gateway/gpt-5.4"
   env:
-    COPILOT_PROVIDER_TYPE: openai
-    COPILOT_PROVIDER_BASE_URL: "https://elastic.litellm-prod.ai/v1"
-    COPILOT_PROVIDER_API_KEY: ${{ secrets.COPILOT_LITELLM_PROXY_API_KEY }}
-    # gh-aw: GITHUB_COPILOT_BASE_URL drives API-proxy routing and --copilot-api-target (incl. threat-detection allowlist); BYOK URL vars alone do not.
-    # gh-aw: COPILOT_PROVIDER_API_KEY stays secret-backed here; compiled AWF passes --exclude-env COPILOT_PROVIDER_API_KEY so it is not in the sandbox env from --env-all—proxy handles outbound provider auth outside that boundary.
-    GITHUB_COPILOT_BASE_URL: "https://elastic.litellm-prod.ai/v1"
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
   pull-requests: read

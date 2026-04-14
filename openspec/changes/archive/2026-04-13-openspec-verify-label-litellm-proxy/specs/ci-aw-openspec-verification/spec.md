@@ -1,21 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: Verification engine uses Copilot BYOK LiteLLM routing
-The `openspec-verify-label` workflow SHALL keep `engine.id: copilot`, SHALL set `engine.model` to `llm-gateway/gpt-5.4`, and SHALL configure Copilot CLI to use an OpenAI-compatible BYOK provider for model inference by setting `COPILOT_PROVIDER_TYPE` to `openai` and `COPILOT_PROVIDER_BASE_URL` to `https://elastic.litellm-prod.ai/v1`. Any provider credential passed as `COPILOT_PROVIDER_API_KEY` SHALL be sourced from a GitHub Actions secret-backed expression rather than from a checked-in literal.
+### Requirement: Verification engine uses Claude LiteLLM routing
+The `openspec-verify-label` workflow SHALL use `engine.id: claude`, SHALL set `engine.model` to `llm-gateway/gpt-5.4`, and SHALL configure the Claude engine to use the LiteLLM endpoint for model inference by setting `ANTHROPIC_BASE_URL` to `https://elastic.litellm-prod.ai`. Any credential passed as `ANTHROPIC_API_KEY` SHALL be sourced from a GitHub Actions secret-backed expression rather than from a checked-in literal.
 
-#### Scenario: Authored workflow preserves the Copilot engine
+#### Scenario: Authored workflow uses the Claude engine
 - **WHEN** maintainers inspect the authored `openspec-verify-label` workflow source
-- **THEN** `engine.id` SHALL be `copilot`
+- **THEN** `engine.id` SHALL be `claude`
 - **AND** `engine.model` SHALL be `llm-gateway/gpt-5.4`
 
-#### Scenario: Copilot BYOK provider targets the Elastic LiteLLM endpoint
+#### Scenario: Claude engine targets the Elastic LiteLLM endpoint
 - **WHEN** maintainers inspect the verification workflow's engine environment
-- **THEN** `COPILOT_PROVIDER_TYPE` SHALL be `openai`
-- **AND** `COPILOT_PROVIDER_BASE_URL` SHALL be `https://elastic.litellm-prod.ai/v1`
+- **THEN** `ANTHROPIC_BASE_URL` SHALL be `https://elastic.litellm-prod.ai`
 
 #### Scenario: Provider authentication is secret-backed
 - **WHEN** maintainers inspect the authored workflow source
-- **THEN** any configured `COPILOT_PROVIDER_API_KEY` value SHALL come from a GitHub Actions secret expression rather than a literal API key value committed to the repository
+- **THEN** any configured `ANTHROPIC_API_KEY` value SHALL come from a GitHub Actions secret expression rather than a literal API key value committed to the repository
 
 ## MODIFIED Requirements
 
