@@ -13,14 +13,18 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/compute_issue_slots.inline.js
 engine:
-  id: copilot
-  model: "gpt-5.4"
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
   issues: read
   pull-requests: read
   actions: read
 tools:
+  timeout: 300
   repo-memory:
     - id: schema-coverage-rotation
       file-glob: ["memory/schema-coverage-rotation/schema-coverage.json"]
@@ -41,7 +45,7 @@ safe-outputs:
     max: 3
     github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
 network:
-  allowed: [defaults, node, go]
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
 steps:
