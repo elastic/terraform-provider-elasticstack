@@ -20,6 +20,7 @@ package securityenablerule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,7 +36,13 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,7 +53,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "Failed to get Kibana client")
 		return
@@ -56,7 +63,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 	key := model.Key.ValueString()
 	value := model.Value.ValueString()
 
-	allEnabled, checkDiags := kibanaoapi.CheckRulesEnabledByTag(ctx, client, spaceID, key, value)
+	allEnabled, checkDiags := kibanaoapi.CheckRulesEnabledByTag(ctx, oapiClient, spaceID, key, value)
 	resp.Diagnostics.Append(checkDiags...)
 	if resp.Diagnostics.HasError() {
 		return

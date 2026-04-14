@@ -20,6 +20,7 @@ package securitylistdatastreams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,8 +32,14 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -40,14 +47,14 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 
 	// Create the list data streams
 	spaceID := plan.SpaceID.ValueString()
-	_, diags := kibanaoapi.CreateListIndex(ctx, client, spaceID)
+	_, diags = kibanaoapi.CreateListIndex(ctx, oapiClient, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the data streams to get the actual state
-	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, oapiClient, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

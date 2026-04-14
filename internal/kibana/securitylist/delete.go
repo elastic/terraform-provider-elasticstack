@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
 func (r *securityListResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -32,7 +33,13 @@ func (r *securityListResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -45,6 +52,6 @@ func (r *securityListResource) Delete(ctx context.Context, req resource.DeleteRe
 		Id: listID,
 	}
 
-	diags := kibanaoapi.DeleteList(ctx, client, spaceID, params)
+	diags = kibanaoapi.DeleteList(ctx, oapiClient, spaceID, params)
 	resp.Diagnostics.Append(diags...)
 }

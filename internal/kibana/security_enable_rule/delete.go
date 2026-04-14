@@ -20,6 +20,7 @@ package securityenablerule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,7 +35,13 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -45,7 +52,7 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "Failed to get Kibana client")
 		return
@@ -71,5 +78,5 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		"value":    value,
 	})
 
-	resp.Diagnostics.Append(kibanaoapi.DisableRulesByTag(ctx, client, spaceID, key, value)...)
+	resp.Diagnostics.Append(kibanaoapi.DisableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
 }

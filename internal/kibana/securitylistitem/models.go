@@ -31,6 +31,7 @@ import (
 
 type Model struct {
 	ID         types.String         `tfsdk:"id"`
+	KibanaConnection types.List `tfsdk:"kibana_connection"`
 	ListItemID types.String         `tfsdk:"list_item_id"`
 	SpaceID    types.String         `tfsdk:"space_id"`
 	ListID     types.String         `tfsdk:"list_id"`

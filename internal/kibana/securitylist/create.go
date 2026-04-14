@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
 func (r *securityListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -32,8 +33,14 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -48,7 +55,7 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Create the list
 	spaceID := plan.SpaceID.ValueString()
-	createdList, diags := kibanaoapi.CreateList(ctx, client, spaceID, *createReq)
+	createdList, diags := kibanaoapi.CreateList(ctx, oapiClient, spaceID, *createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -64,7 +71,7 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 		Id: createdList.Id,
 	}
 
-	list, diags := kibanaoapi.GetList(ctx, client, spaceID, readParams)
+	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

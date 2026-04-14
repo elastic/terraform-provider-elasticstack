@@ -23,6 +23,7 @@ import (
 
 type enableRuleModel struct {
 	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 	SpaceID          types.String `tfsdk:"space_id"`
 	Key              types.String `tfsdk:"key"`
 	Value            types.String `tfsdk:"value"`

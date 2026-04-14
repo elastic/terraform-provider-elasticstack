@@ -37,6 +37,12 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, data.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Parse ID to get space_id and rule_id
 	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -45,7 +51,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Use the extracted read method
-	readData, diags := r.read(ctx, compID.ResourceID, compID.ClusterID)
+	readData, diags := r.read(ctx, client, compID.ResourceID, compID.ClusterID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -64,14 +70,14 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 }
 
 // read extracts the core functionality of reading a security detection rule
-func (r *securityDetectionRuleResource) read(ctx context.Context, resourceID, spaceID string) (*Data, diag.Diagnostics) {
+func (r *securityDetectionRuleResource) read(ctx context.Context, apiClient *clients.APIClient, resourceID, spaceID string) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	data := &Data{}
 	data.initializeAllFieldsToDefaults()
 
 	// Get the rule using kbapi client
-	kbClient, err := r.client.GetKibanaOapiClient()
+	kbClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(
 			"Error getting Kibana client",

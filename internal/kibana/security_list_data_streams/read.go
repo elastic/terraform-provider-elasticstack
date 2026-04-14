@@ -20,6 +20,7 @@ package securitylistdatastreams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,6 +33,12 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// During import, space_id might not be set yet, derive it from ID
 	if !typeutils.IsKnown(state.SpaceID) && typeutils.IsKnown(state.ID) {
 		state.SpaceID = state.ID
@@ -40,14 +47,14 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 	spaceID := state.SpaceID.ValueString()
 
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
 	}
 
 	// Check if the data streams exist
-	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, oapiClient, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 //go:embed resource-description.md
@@ -94,5 +95,8 @@ func (r *securityListItemResource) Schema(_ context.Context, _ resource.SchemaRe
 				Computed:            true,
 			},
 		},
-	}
+	
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }

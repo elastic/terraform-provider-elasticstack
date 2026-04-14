@@ -34,8 +34,14 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, data.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get the rule using kbapi client
-	kbClient, err := r.client.GetKibanaOapiClient()
+	kbClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting Kibana client",
@@ -82,7 +88,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	readData, diags := r.read(ctx, uid.String(), compID.ClusterID)
+	readData, diags := r.read(ctx, client, uid.String(), compID.ClusterID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

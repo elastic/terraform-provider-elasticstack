@@ -24,6 +24,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
 func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -35,7 +36,13 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -49,7 +56,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Create the exception list
-	createResp, diags := kibanaoapi.CreateExceptionList(ctx, client, plan.SpaceID.ValueString(), *body)
+	createResp, diags := kibanaoapi.CreateExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -75,7 +82,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

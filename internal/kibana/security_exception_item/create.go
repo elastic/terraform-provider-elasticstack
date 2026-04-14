@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,21 +36,27 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
 	}
 
 	// Build the request body using model method
-	body, diags := plan.toCreateRequest(ctx, r.client)
+	body, diags := plan.toCreateRequest(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Create the exception item
-	createResp, diags := kibanaoapi.CreateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
+	createResp, diags := kibanaoapi.CreateExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -74,7 +81,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
