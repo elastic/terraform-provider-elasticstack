@@ -20,6 +20,7 @@ package integrationds
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -35,7 +36,13 @@ func (d *integrationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	client, err := d.client.GetFleetClient()
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, d.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := apiClient.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

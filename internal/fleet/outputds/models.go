@@ -29,9 +29,10 @@ import (
 )
 
 type outputModel struct {
-	ID      types.String `tfsdk:"id"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Outputs types.List   `tfsdk:"outputs"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	Outputs          types.List   `tfsdk:"outputs"`
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {

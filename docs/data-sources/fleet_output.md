@@ -17,12 +17,27 @@ Returns information about a Fleet output. See the [Fleet output API documentatio
 
 ### Optional
 
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `space_id` (String) The Kibana space ID where this output is available.
 
 ### Read-Only
 
 - `id` (String) Generated ID for the outputs.
 - `outputs` (Attributes List) The list of outputs (see [below for nested schema](#nestedatt--outputs))
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
+
 
 <a id="nestedatt--outputs"></a>
 ### Nested Schema for `outputs`

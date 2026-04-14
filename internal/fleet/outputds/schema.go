@@ -20,6 +20,7 @@ package outputds
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -88,6 +89,10 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+		},
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

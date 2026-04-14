@@ -20,6 +20,7 @@ package integrationds
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -56,5 +57,8 @@ should be set to ` + "`true`."
 			Description: "The Kibana space ID to scope the request to. When not specified, the default space is used.",
 			Optional:    true,
 		},
+	}
+	resp.Schema.Blocks = map[string]schema.Block{
+		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 }
