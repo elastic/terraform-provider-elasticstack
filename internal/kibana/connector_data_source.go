@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -70,6 +71,7 @@ func DataSourceConnector() *schema.Resource {
 			Type:        schema.TypeBool,
 			Computed:    true,
 		},
+		"kibana_connection": providerSchema.GetKibanaEntityConnectionSchema(),
 	}
 
 	return &schema.Resource{
@@ -80,7 +82,7 @@ func DataSourceConnector() *schema.Resource {
 }
 
 func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

@@ -19,6 +19,8 @@ package kibana
 
 import (
 	"context"
+
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -238,6 +240,7 @@ func DataSourceRole() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
+		"kibana_connection": providerSchema.GetKibanaEntityConnectionSchema(),
 	}
 
 	return &schema.Resource{
