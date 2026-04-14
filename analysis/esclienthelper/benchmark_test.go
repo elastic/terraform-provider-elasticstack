@@ -27,8 +27,7 @@ import (
 // This exercises the in-scope file precomputation and fact-export phases.
 func BenchmarkAnalyzer_DefaultConfig(b *testing.B) {
 	testdata := analysistest.TestData()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		analysistest.Run(b, testdata, NewAnalyzer(Config{}), "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cases/default")
 	}
 }
@@ -37,8 +36,7 @@ func BenchmarkAnalyzer_DefaultConfig(b *testing.B) {
 // the fact-import path for wrapper functions. This is the hot path for the cached metadata work.
 func BenchmarkAnalyzer_InferredWrapperFacts(b *testing.B) {
 	testdata := analysistest.TestData()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		analysistest.Run(b, testdata, NewAnalyzer(Config{}), "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cases/facts")
 	}
 }
@@ -47,8 +45,7 @@ func BenchmarkAnalyzer_InferredWrapperFacts(b *testing.B) {
 // and multiple assignment/reassignment patterns.
 func BenchmarkAnalyzer_ControlFlow(b *testing.B) {
 	testdata := analysistest.TestData()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		analysistest.Run(b, testdata, NewAnalyzer(Config{}), "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cases/flow")
 	}
 }

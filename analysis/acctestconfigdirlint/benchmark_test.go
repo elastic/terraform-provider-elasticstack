@@ -27,8 +27,7 @@ import (
 // This exercises the narrowed traversal path (only _test.go files, only candidate calls).
 func BenchmarkAnalyzer_Compliant(b *testing.B) {
 	testdata := analysistest.TestData()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		analysistest.Run(b, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/compliant")
 	}
 }
@@ -37,8 +36,7 @@ func BenchmarkAnalyzer_Compliant(b *testing.B) {
 // This exercises the diagnostic-reporting paths in addition to narrowed traversal.
 func BenchmarkAnalyzer_Violations(b *testing.B) {
 	testdata := analysistest.TestData()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		analysistest.Run(b, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")
 	}
 }

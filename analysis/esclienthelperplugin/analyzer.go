@@ -20,6 +20,7 @@ package esclienthelper
 import (
 	"go/ast"
 	"go/types"
+	"maps"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -254,7 +255,7 @@ func inspectStmt(pass *analysis.Pass, stmt ast.Stmt, allowedWrappers map[string]
 		for _, rhs := range s.Rhs {
 			inspectExpr(pass, rhs, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
-		applyAssignment(pass, s, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		applyAssignment(pass, s, allowedWrappers, derivedVars, factCache)
 	case *ast.DeclStmt:
 		gen, ok := s.Decl.(*ast.GenDecl)
 		if !ok {
@@ -268,7 +269,7 @@ func inspectStmt(pass *analysis.Pass, stmt ast.Stmt, allowedWrappers map[string]
 			for _, value := range vs.Values {
 				inspectExpr(pass, value, allowedWrappers, derivedVars, sinkParamCache, factCache)
 			}
-			applyValueSpec(pass, vs, allowedWrappers, derivedVars, sinkParamCache, factCache)
+			applyValueSpec(pass, vs, allowedWrappers, derivedVars, factCache)
 		}
 	case *ast.ExprStmt:
 		inspectExpr(pass, s.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
@@ -350,7 +351,7 @@ func checkSinkCall(pass *analysis.Pass, call *ast.CallExpr, allowedWrappers map[
 
 	// Resolve callee once and reuse for both the sink param cache lookup and arg checks.
 	fnObj := calledFunction(pass, call)
-	argIdxs := elasticsearchClientParamIndicesCached(pass, call, fnObj, sinkParamCache)
+	argIdxs := elasticsearchClientParamIndicesCached(fnObj, sinkParamCache)
 	for _, argIdx := range argIdxs {
 		if argIdx >= len(call.Args) {
 			continue
@@ -377,7 +378,7 @@ func receiverSinkExpr(pass *analysis.Pass, call *ast.CallExpr) (ast.Expr, bool) 
 // elasticsearchClientParamIndicesCached returns the parameter indices of *APIClient parameters
 // for the given function, using sinkParamCache to avoid rescanning the signature on repeat calls.
 // fnObj may be nil (cache will not be populated for nil keys).
-func elasticsearchClientParamIndicesCached(pass *analysis.Pass, call *ast.CallExpr, fnObj *types.Func, sinkParamCache map[*types.Func][]int) []int {
+func elasticsearchClientParamIndicesCached(fnObj *types.Func, sinkParamCache map[*types.Func][]int) []int {
 	if fnObj == nil || fnObj.Pkg() == nil || !strings.HasPrefix(fnObj.Pkg().Path(), esPkg) {
 		return nil
 	}
@@ -415,7 +416,7 @@ func calledFunction(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
 	}
 }
 
-func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
+func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, factCache map[*types.Func]*clientReturnFact) {
 	if len(assign.Rhs) == 1 && len(assign.Lhs) > 1 {
 		derived := isDerivedClientExpr(pass, assign.Rhs[0], allowedWrappers, derivedVars, factCache)
 		for _, lhs := range assign.Lhs {
@@ -443,7 +444,7 @@ func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrapper
 	}
 }
 
-func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
+func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, factCache map[*types.Func]*clientReturnFact) {
 	if len(spec.Values) == 1 && len(spec.Names) > 1 {
 		derived := isDerivedClientExpr(pass, spec.Values[0], allowedWrappers, derivedVars, factCache)
 		for _, name := range spec.Names {
@@ -590,18 +591,10 @@ func isInElasticsearchDir(filename string) bool {
 
 func copyDerivedMap(in map[*types.Var]bool) map[*types.Var]bool {
 	out := make(map[*types.Var]bool, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
+	maps.Copy(out, in)
 	return out
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
 
 func mergeDerivedState(dst, a, b map[*types.Var]bool) {
 	keys := make(map[*types.Var]struct{}, len(a)+len(b))
