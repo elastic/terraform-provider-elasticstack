@@ -25,13 +25,14 @@ The `schema-coverage-rotation` workflow SHALL provision the repository toolchain
 - **THEN** it SHALL run `make setup` before the agent begins executing the prompt instructions
 
 ### Requirement: Schema-coverage rotation allows repository bootstrap ecosystems
-The `schema-coverage-rotation` workflow SHALL declare an AWF network policy that allows the repository bootstrap path to use the default allowlist plus the Node and Go ecosystems.
+The `schema-coverage-rotation` workflow SHALL declare an AWF network policy that allows the repository bootstrap path to use the default allowlist plus the Node and Go ecosystems, and SHALL allow `elastic.litellm-prod.ai` for the Claude engine's Anthropic-compatible proxy access.
 
 #### Scenario: Workflow frontmatter allows required ecosystems
 - **WHEN** maintainers inspect the schema-coverage rotation workflow frontmatter
 - **THEN** `network.allowed` SHALL include `defaults`
 - **AND** `network.allowed` SHALL include `node`
 - **AND** `network.allowed` SHALL include `go`
+- **AND** `network.allowed` SHALL include `elastic.litellm-prod.ai`
 
 ### Requirement: Agent instructions rely on deterministic bootstrap
 The `schema-coverage-rotation` workflow prompt SHALL rely on deterministic workflow setup for repository toolchain provisioning and SHALL NOT require the agent to install or discover the required Go or Node toolchains itself before running repository-local commands.
