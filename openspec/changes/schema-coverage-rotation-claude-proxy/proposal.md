@@ -1,6 +1,6 @@
 ## Why
 
-The `schema-coverage-rotation` workflow currently runs on the GitHub-hosted Copilot engine. The repository wants this workflow to follow the same LiteLLM routing direction as other GH AW migrations, but with the worker itself using the `claude` engine through an Anthropic-compatible proxy at `https://elastic.litellm-prod.ai/`.
+Before this change, the `schema-coverage-rotation` workflow ran its rotation worker on the GitHub-hosted Copilot engine. This change moves it onto the same LiteLLM routing direction as other GH AW migrations, with the worker using the `claude` engine through an Anthropic-compatible proxy at `https://elastic.litellm-prod.ai/`.
 
 ## What Changes
 

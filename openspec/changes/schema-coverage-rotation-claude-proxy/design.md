@@ -1,8 +1,8 @@
 ## Context
 
-The `schema-coverage-rotation` workflow is already structured around deterministic issue-slot gating, repo-memory bookkeeping, repository-local Go commands, and safe outputs that create and assign actionable issues. Today the workflow still uses the `copilot` engine directly.
+The `schema-coverage-rotation` workflow is already structured around deterministic issue-slot gating, repo-memory bookkeeping, repository-local Go commands, and safe outputs that create and assign actionable issues. **Before this change**, the rotation worker ran on the GitHub-hosted **`copilot`** engine.
 
-This proposal is intentionally narrow: it changes only the schema-coverage worker's model-execution path. Unlike the `openspec-verify-label` migration, this workflow should switch engines outright to `claude`, and it should route Claude traffic through the Anthropic-compatible LiteLLM endpoint at `https://elastic.litellm-prod.ai/` using `ANTHROPIC_BASE_URL` and `ANTHROPIC_API_KEY`.
+This proposal is intentionally narrow: it changes only the schema-coverage worker's model-execution path. Unlike the `openspec-verify-label` migration, **this change** switches the worker engine outright to **`claude`** and routes Claude traffic through the Anthropic-compatible LiteLLM endpoint at `https://elastic.litellm-prod.ai/` using `ANTHROPIC_BASE_URL` and `ANTHROPIC_API_KEY`.
 
 The workflow also runs repository-local commands such as `make setup` and `go run ./scripts/schema-coverage-rotation ...`. Under GH AW, the Claude engine has a shorter default per-tool timeout than Copilot, so the migration should make the execution budget explicit instead of relying on engine defaults.
 
