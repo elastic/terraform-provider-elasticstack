@@ -14,5 +14,5 @@
 
 ## 3. Finish rollout docs and regression checks
 
-- [ ] 3.1 Update the affected entity documentation and examples so `kibana_connection` appears everywhere this rollout adds support.
-- [ ] 3.2 Add or update focused entity tests that confirm default provider behavior still works and scoped `kibana_connection` is plumbed through the adopted code paths for the registered rollout set.
+- [x] 3.1 Update the affected entity documentation and examples so `kibana_connection` appears everywhere this rollout adds support.
+- [x] 3.2 Add or update focused entity tests that confirm default provider behavior still works and scoped `kibana_connection` is plumbed through the adopted code paths for the registered rollout set.

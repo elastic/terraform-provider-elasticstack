@@ -36,6 +36,7 @@ EOT
 ### Optional
 
 - `ignore_import_errors` (Boolean) If set to true, errors during the import process will not fail the configuration application
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `overwrite` (Boolean) Overwrites saved objects when they already exist. When used, potential conflict errors are automatically resolved by overwriting the destination object.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
@@ -46,6 +47,20 @@ EOT
 - `success` (Boolean) Indicates when the import was successfully completed. When set to false, some objects may not have been created. For additional information, refer to the errors and success_results properties.
 - `success_count` (Number) Indicates the number of successfully imported records.
 - `success_results` (List of Object) (see [below for nested schema](#nestedatt--success_results))
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
+
 
 <a id="nestedatt--errors"></a>
 ### Nested Schema for `errors`

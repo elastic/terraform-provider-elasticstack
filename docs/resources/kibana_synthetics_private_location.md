@@ -54,6 +54,7 @@ resource "elasticstack_kibana_synthetics_private_location" "example" {
 ### Optional
 
 - `geo` (Attributes) Geographic coordinates (WGS84) for the location (see [below for nested schema](#nestedatt--geo))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `space_id` (String) Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You cannot change the ID using the update operation.
 
 Using a **non-default** space (any non-empty `space_id`) requires **Elastic Stack 9.4.0-SNAPSHOT** or later. Leave unset or empty to use the default space on older stacks.
@@ -70,6 +71,20 @@ Required:
 
 - `lat` (Number) The latitude of the location.
 - `lon` (Number) The longitude of the location.
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 ## Import
 

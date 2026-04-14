@@ -249,6 +249,7 @@ variable "remote_service_token" {
 - `default_integrations` (Boolean) Make this output the default for agent integrations.
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `output_id` (String) Unique identifier of the output.
 - `service_token` (String, Sensitive) Service token for remote Elasticsearch outputs.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
@@ -327,6 +328,20 @@ Optional:
 
 - `mechanism` (String) SASL mechanism.
 
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 
 <a id="nestedatt--ssl"></a>

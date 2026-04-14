@@ -135,6 +135,7 @@ resource "elasticstack_kibana_security_detection_rule" "advanced" {
 - `interval` (String) Frequency of rule execution, using a date math range.
 - `investigation_fields` (List of String) Array of field names to include in alert investigation. Available for all rule types.
 - `items_per_search` (Number) Number of items to search for in each concurrent search. Optional for threat_match rules.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `language` (String) The query language (KQL or Lucene).
 - `license` (String) The rule's license.
 - `machine_learning_job_id` (List of String) Machine learning job ID(s) the rule monitors for anomaly scores. Required for machine_learning rules.
@@ -227,6 +228,20 @@ Required:
 - `list_id` (String) The exception container's list ID.
 - `namespace_type` (String) The namespace type for the exception container.
 - `type` (String) The type of exception container.
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 
 <a id="nestedatt--related_integrations"></a>

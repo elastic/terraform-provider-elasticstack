@@ -53,6 +53,7 @@ resource "elasticstack_kibana_maintenance_window" "my_maintenance_window" {
 ### Optional
 
 - `enabled` (Boolean) Whether the current maintenance window is enabled.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `scope` (Attributes) An object that narrows the scope of what is affected by this maintenance window. (see [below for nested schema](#nestedatt--scope))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
@@ -85,6 +86,20 @@ Optional:
 - `on_month_day` (List of Number) The specific days of the month for a recurring schedule. Valid values are 1-31.
 - `on_week_day` (List of String) The specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`) for a recurring schedule.
 
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 
 <a id="nestedatt--scope"></a>
