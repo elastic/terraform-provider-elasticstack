@@ -174,6 +174,27 @@ golangci-lint-custom: tools
 golangci-lint: golangci-lint-custom
 	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
 
+LINT_PERF_DIR := analysis/lint-perf-output/$(shell date +%Y%m%dT%H%M%S)
+
+.PHONY: lint-perf
+lint-perf: golangci-lint-custom ## Measure isolated custom-linter performance and write timing/profile artifacts
+	@ mkdir -p $(LINT_PERF_DIR)
+	@ echo "Writing per-run artifacts to $(LINT_PERF_DIR)"
+	@ echo "--- esclienthelper (golangci isolated run) ---"
+	@ $(GOBIN)/golangci-lint-custom run --enable-only=esclienthelper --concurrency=1 ./... 2>&1 | tee $(LINT_PERF_DIR)/esclienthelper-lint.txt || true
+	@ echo "--- acctestconfigdirlint (golangci isolated run) ---"
+	@ $(GOBIN)/golangci-lint-custom run --enable-only=acctestconfigdirlint --concurrency=1 ./... 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-lint.txt || true
+	@ echo "--- analyzer benchmarks ---"
+	@ go test ./analysis/acctestconfigdirlint/... -bench=. -benchmem \
+		-cpuprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-cpu.prof \
+		-memprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-mem.prof \
+		-run='^$$' 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-bench.txt || true
+	@ go test ./analysis/esclienthelper/... -bench=. -benchmem \
+		-cpuprofile=$(LINT_PERF_DIR)/esclienthelper-cpu.prof \
+		-memprofile=$(LINT_PERF_DIR)/esclienthelper-mem.prof \
+		-run='^$$' 2>&1 | tee $(LINT_PERF_DIR)/esclienthelper-bench.txt || true
+	@ echo "Artifacts written to $(LINT_PERF_DIR)/"
+
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns

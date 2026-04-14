@@ -1,12 +1,12 @@
 ## 1. Define the performance-measurement contract
 
-- [ ] 1.1 Add the `makefile-workflows` delta spec describing the `lint-perf` target, isolated custom-linter measurement scope, profile outputs, and analyzer benchmark capture.
+- [x] 1.1 Add the `makefile-workflows` delta spec describing the `lint-perf` target, isolated custom-linter measurement scope, profile outputs, and analyzer benchmark capture.
 
 ## 2. Add repository-local measurement tooling
 
-- [ ] 2.1 Add a `lint-perf` target to `Makefile` that builds or reuses the repository's custom golangci binary, runs `esclienthelper` and `acctestconfigdirlint` individually against `./...`, fixes concurrency for repeatable comparisons, and writes timing plus CPU, memory, and trace artifacts to a repo-local output directory.
+- [x] 2.1 Add a `lint-perf` target to `Makefile` that builds or reuses the repository's custom golangci binary, runs `esclienthelper` and `acctestconfigdirlint` individually against `./...`, fixes concurrency for repeatable comparisons, and writes timing plus CPU, memory, and trace artifacts to a repo-local output directory.
 - [ ] 2.2 Add benchmark entry points under `analysis/` for the custom analyzers so `lint-perf` can capture targeted analyzer benchmark output alongside the isolated golangci-lint runs.
-- [ ] 2.3 Ensure the target prints or documents where the per-run artifacts are written so contributors can compare before/after optimization runs.
+- [x] 2.3 Ensure the target prints or documents where the per-run artifacts are written so contributors can compare before/after optimization runs.
 
 ## 3. Optimize `acctestconfigdirlint`
 
