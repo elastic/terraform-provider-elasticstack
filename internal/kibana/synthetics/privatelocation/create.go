@@ -71,7 +71,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	plan = toModelV0(*result, spaceID)
+	plan = toModelV0(*result, spaceID, plan.KibanaConnection)
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

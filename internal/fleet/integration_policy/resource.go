@@ -74,13 +74,13 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	}
 }
 
-func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
-	supportsPolicyIDs, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+func (r *integrationPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.APIClient) (features, diag.Diagnostics) {
+	supportsPolicyIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsOutputID, outputIDDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputID)
+	supportsOutputID, outputIDDiags := apiClient.EnforceMinVersion(ctx, MinVersionOutputID)
 	if outputIDDiags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(outputIDDiags)
 	}

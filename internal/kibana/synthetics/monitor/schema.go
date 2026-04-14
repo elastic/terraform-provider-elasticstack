@@ -674,6 +674,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		ICMP:             icmp,
 		Browser:          browser,
 		RetestOnFailure:  v.RetestOnFailure,
+		KibanaConnection: v.KibanaConnection,
 	}, dg
 }
 

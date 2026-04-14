@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -92,7 +93,7 @@ func Test_roundtrip(t *testing.T) {
 				Namespace:             tt.ns,
 				PrivateLocationConfig: plc,
 			}
-			modelV0 := toModelV0(input, tt.spaceID)
+			modelV0 := toModelV0(input, tt.spaceID, types.List{})
 
 			assert.Equal(t, tt.spaceID, modelV0.SpaceID.ValueString())
 			actual := modelV0.toPrivateLocationConfig()

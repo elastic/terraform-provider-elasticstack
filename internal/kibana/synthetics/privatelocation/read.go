@@ -90,7 +90,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state = toModelV0(*result, spaceID)
+	state = toModelV0(*result, spaceID, state.KibanaConnection)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)

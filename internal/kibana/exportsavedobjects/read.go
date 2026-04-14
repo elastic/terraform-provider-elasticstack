@@ -115,6 +115,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	var state dataSourceModel
 	state.ID = types.StringValue(compositeID.String())
 	state.SpaceID = types.StringValue(spaceID)
+	state.KibanaConnection = config.KibanaConnection
 	state.Objects = config.Objects
 	state.ExcludeExportDetails = types.BoolValue(excludeExportDetails)
 	state.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)

@@ -132,15 +132,16 @@ func effectiveSpaceID(spaceID types.String, compositeID *clients.CompositeID) st
 	return s
 }
 
-func toModelV0(pLoc kbapi.PrivateLocation, spaceID string) tfModelV0 {
+func toModelV0(pLoc kbapi.PrivateLocation, spaceID string, kibanaConnection types.List) tfModelV0 {
 
 	return tfModelV0{
-		ID:            types.StringValue(pLoc.Id),
-		Label:         types.StringValue(pLoc.Label),
-		AgentPolicyID: types.StringValue(pLoc.AgentPolicyId),
-		SpaceID:       types.StringValue(spaceID),
-		Tags:          synthetics.StringSliceValue(pLoc.Tags),
-		Geo:           fromSyntheticGeoConfig(pLoc.Geo),
+		ID:               types.StringValue(pLoc.Id),
+		Label:            types.StringValue(pLoc.Label),
+		AgentPolicyID:    types.StringValue(pLoc.AgentPolicyId),
+		SpaceID:          types.StringValue(spaceID),
+		Tags:             synthetics.StringSliceValue(pLoc.Tags),
+		Geo:              fromSyntheticGeoConfig(pLoc.Geo),
+		KibanaConnection: kibanaConnection,
 	}
 }
 
