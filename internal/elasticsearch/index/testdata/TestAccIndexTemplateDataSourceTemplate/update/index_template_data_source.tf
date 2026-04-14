@@ -24,7 +24,6 @@ resource "elasticstack_elasticsearch_index_template" "test" {
     alias {
       name           = "my_alias_v2"
       filter         = jsonencode({ bool = { must = [{ term = { "service.name" = "api" } }, { term = { status = "active" } }] } })
-      routing        = "shard_2"
       index_routing  = "shard_2"
       search_routing = "shard_2"
       is_hidden      = true

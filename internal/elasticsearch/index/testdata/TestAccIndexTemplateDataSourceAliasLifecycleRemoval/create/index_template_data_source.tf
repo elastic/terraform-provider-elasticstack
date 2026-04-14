@@ -18,7 +18,6 @@ resource "elasticstack_elasticsearch_index_template" "test" {
       filter         = jsonencode({ term = { status = "active" } })
       is_hidden      = true
       is_write_index = true
-      routing        = "shard_1"
       search_routing = "shard_1"
       index_routing  = "shard_1"
     }

@@ -90,7 +90,7 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 }
 
 // TestAccIndexTemplateDataSourceTemplate covers the template subtree:
-// aliases (name, filter, routing, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
+// aliases (name, filter, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
 func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 	templateName := "test-ds-tpl-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -115,7 +115,6 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 						map[string]string{
 							"name":           "my_alias",
 							"filter":         `{"term":{"status":"active"}}`,
-							"routing":        "shard_1",
 							"index_routing":  "shard_1",
 							"search_routing": "shard_1",
 							"is_hidden":      "false",
@@ -144,7 +143,6 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 						map[string]string{
 							"name":           "my_alias_v2",
 							"filter":         `{"bool":{"must":[{"term":{"service.name":"api"}},{"term":{"status":"active"}}]}}`,
-							"routing":        "shard_2",
 							"index_routing":  "shard_2",
 							"search_routing": "shard_2",
 							"is_hidden":      "true",
@@ -563,7 +561,6 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 						map[string]string{
 							"name":           "detailed_alias_initial",
 							"filter":         `{"term":{"status":"active"}}`,
-							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"index_routing":  "shard_1",
 							"is_hidden":      "true",
@@ -600,7 +597,6 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 					testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_hidden"),
 					testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_write_index"),
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "filter"),
-					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "routing"),
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "search_routing"),
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "index_routing"),
 					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#"),
@@ -631,7 +627,6 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 						"template.0.alias.*",
 						map[string]string{
 							"name":           "routing_only_alias",
-							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"index_routing":  "shard_1",
 						},
@@ -863,7 +858,7 @@ func testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent(resourceName, aliasNa
 		}
 
 		value, ok := s.RootModule().Resources[resourceName].Primary.Attributes[aliasPrefix+"."+attrName]
-		if ok && value != "" && value != "false" {
+		if ok && value != "" && value != falseValue {
 			return fmt.Errorf("expected %s.%s to be false or absent, got %q", aliasPrefix, attrName, value)
 		}
 		return nil

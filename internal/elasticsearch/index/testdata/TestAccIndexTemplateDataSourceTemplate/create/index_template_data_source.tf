@@ -24,7 +24,6 @@ resource "elasticstack_elasticsearch_index_template" "test" {
     alias {
       name           = "my_alias"
       filter         = jsonencode({ term = { status = "active" } })
-      routing        = "shard_1"
       index_routing  = "shard_1"
       search_routing = "shard_1"
       is_hidden      = false
