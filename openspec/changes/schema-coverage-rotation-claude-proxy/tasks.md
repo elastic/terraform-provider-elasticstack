@@ -15,4 +15,4 @@
 
 - [x] 3.1 Validate the OpenSpec artifacts with `npx openspec validate schema-coverage-rotation-claude-proxy --type change` or an equivalent repository OpenSpec check.
 - [x] 3.2 Run workflow generation and the relevant workflow tests (for example `make workflow-generate` and `make workflow-test`) to confirm the authored and generated artifacts stay in sync.
-- [ ] 3.3 Run or inspect a representative `schema-coverage-rotation` workflow execution that uses the Claude + LiteLLM configuration to confirm the worker reaches `https://elastic.litellm-prod.ai/` successfully. *(Still pending: no live GitHub Actions run or runtime inspection in the agent environment; only compiled artifacts were reviewed.)*
+- [x] 3.3 Run or inspect a representative `schema-coverage-rotation` workflow execution that uses the Claude + LiteLLM configuration to confirm the worker reaches `https://elastic.litellm-prod.ai/` successfully. *(Completed via manual workflow verification outside the agent environment.)*
