@@ -34,7 +34,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -69,7 +69,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 	plan.ID = types.StringValue(newCompositeID.String())
 
 	// Read the connector back to populate all computed fields
-	client, diags = clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags = clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

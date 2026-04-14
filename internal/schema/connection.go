@@ -413,7 +413,26 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
+	return getKibanaConnectionSchema("kibana")
+}
+
+// GetKibanaEntityConnectionSchema returns the schema for a resource-level
+// kibana_connection block. It uses path references scoped to kibana_connection
+// rather than the provider-level kibana block.
+func GetKibanaEntityConnectionSchema() *schema.Schema {
+	return getKibanaConnectionSchema("kibana_connection")
+}
+
+// getKibanaConnectionSchema is the shared implementation for both the
+// provider-level kibana block and the entity-local kibana_connection block.
+// keyName controls the path prefix used in ConflictsWith / RequiredWith
+// validation metadata.
+func getKibanaConnectionSchema(keyName string) *schema.Schema {
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+	apiKeyPath := makePathRef(keyName, "api_key")
+	bearerTokenPath := makePathRef(keyName, "bearer_token")
+
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,
@@ -426,29 +445,27 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Type:          schema.TypeString,
 					Optional:      true,
 					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("KIBANA_API_KEY", nil),
-					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.bearer_token"},
+					ConflictsWith: []string{passwordPath, usernamePath, bearerTokenPath},
 				},
 				"bearer_token": {
 					Description:   "Bearer Token to use for authentication to Kibana",
 					Type:          schema.TypeString,
 					Optional:      true,
 					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("KIBANA_BEARER_TOKEN", nil),
-					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.api_key"},
+					ConflictsWith: []string{passwordPath, usernamePath, apiKeyPath},
 				},
 				"username": {
 					Description:  "Username to use for API authentication to Kibana.",
 					Type:         schema.TypeString,
 					Optional:     true,
-					RequiredWith: []string{"kibana.0.password"},
+					RequiredWith: []string{passwordPath},
 				},
 				"password": {
 					Description:  "Password to use for API authentication to Kibana.",
 					Type:         schema.TypeString,
 					Optional:     true,
 					Sensitive:    true,
-					RequiredWith: []string{"kibana.0.username"},
+					RequiredWith: []string{usernamePath},
 				},
 				"endpoints": {
 					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",

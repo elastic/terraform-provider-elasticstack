@@ -317,8 +317,17 @@ func TestAccIndicesDataSource_ReadsSlowlogSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_query_warn", "10s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_query_info", "5s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_query_debug", "2s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_query_trace", "500ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_fetch_warn", "1200ms"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_fetch_info", "800ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_fetch_debug", "400ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_fetch_trace", "200ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_threshold_index_warn", "1s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_threshold_index_info", "200ms"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_threshold_index_debug", "10ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_threshold_index_trace", "5ms"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_source", "1000"),
 				),
 			},
@@ -358,7 +367,9 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 // an explicit elasticsearch_connection block and reflects stable connection fields
 // in state while still returning index data.
 func TestAccIndicesDataSource_ExplicitConnection(t *testing.T) {
-	endpoints := indicesDataSourceESEndpoints()
+	preCheckIndicesDataSourceESBasicAuth(t)
+
+	endpoints := indicesDataSourceConnectionEndpoints()
 	endpointVars := make([]config.Variable, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		endpointVars = append(endpointVars, config.StringVariable(endpoint))
@@ -374,29 +385,157 @@ func TestAccIndicesDataSource_ExplicitConnection(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() { preCheckIndicesDataSourceESBasicAuth(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"endpoints": config.ListVariable(endpointVars...),
-					"username":  config.StringVariable(username),
-					"password":  config.StringVariable(password),
+					"headers": config.MapVariable(map[string]config.Variable{
+						"XTerraformTest": config.StringVariable("basic-auth"),
+						"XTrace":         config.StringVariable("indices"),
+					}),
+					"username": config.StringVariable(username),
+					"password": config.StringVariable(password),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", ".security-*"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "target", ".security-*"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.username", username),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.password", password),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_elasticsearch_indices.test_conn",
 						"elasticsearch_connection.0.endpoints.#",
 						fmt.Sprintf("%d", len(endpoints)),
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.%", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.XTerraformTest", "basic-auth"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.XTrace", "indices"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.insecure", "true"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccIndicesDataSource_ExplicitConnectionAPIKey(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	endpoints := indicesDataSourceConnectionEndpoints()
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"endpoints":  config.ListVariable(endpointVars...),
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.api_key"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.%", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.XTerraformTest", "api-key"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.headers.XTrace", "indices"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name", indexName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccIndicesDataSource_ExplicitConnectionBearerToken(t *testing.T) {
+	preCheckIndicesDataSourceESBasicAuth(t)
+
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	endpoint := indicesDataSourcePrimaryESEndpoint(t)
+	bearerToken := acctest.CreateESAccessToken(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckIndicesDataSourceESBasicAuth(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"bearer_token": config.StringVariable(bearerToken),
+					"endpoint":     config.StringVariable(endpoint),
+					"index_name":   config.StringVariable(indexName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.bearer_token", bearerToken),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name", indexName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccIndicesDataSource_ExplicitConnectionTLSInputs(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	endpoint := indicesDataSourcePrimaryESEndpoint(t)
+	tlsMaterial := acctest.CreateTLSMaterial(t, "indices-data-source-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("inline"),
+				ConfigVariables: config.Variables{
+					"ca_data":    config.StringVariable(tlsMaterial.CAPEM),
+					"cert_data":  config.StringVariable(tlsMaterial.CertPEM),
+					"endpoint":   config.StringVariable(endpoint),
+					"index_name": config.StringVariable(indexName),
+					"key_data":   config.StringVariable(tlsMaterial.KeyPEM),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.ca_data", tlsMaterial.CAPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.cert_data", tlsMaterial.CertPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.key_data", tlsMaterial.KeyPEM),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name", indexName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("file"),
+				ConfigVariables: config.Variables{
+					"ca_file":    config.StringVariable(tlsMaterial.CAFile),
+					"cert_file":  config.StringVariable(tlsMaterial.CertFile),
+					"endpoint":   config.StringVariable(endpoint),
+					"index_name": config.StringVariable(indexName),
+					"key_file":   config.StringVariable(tlsMaterial.KeyFile),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "id", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.ca_file", tlsMaterial.CAFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.cert_file", tlsMaterial.CertFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "elasticsearch_connection.0.key_file", tlsMaterial.KeyFile),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test_conn", "indices.0.name", indexName),
 				),
 			},
 		},
@@ -519,4 +658,35 @@ func indicesDataSourceESEndpoints() []string {
 	}
 
 	return endpoints
+}
+
+func indicesDataSourcePrimaryESEndpoint(t *testing.T) string {
+	t.Helper()
+
+	endpoints := indicesDataSourceESEndpoints()
+	if len(endpoints) == 0 {
+		t.Fatal("ELASTICSEARCH_ENDPOINTS must contain at least one endpoint")
+	}
+
+	return endpoints[0]
+}
+
+func indicesDataSourceConnectionEndpoints() []string {
+	endpoints := indicesDataSourceESEndpoints()
+	if len(endpoints) == 0 {
+		endpoints = append(endpoints, "http://localhost:9200")
+	}
+	if len(endpoints) == 1 {
+		endpoints = append(endpoints, endpoints[0])
+	}
+
+	return endpoints[:2]
+}
+
+func preCheckIndicesDataSourceESBasicAuth(t *testing.T) {
+	t.Helper()
+	acctest.PreCheck(t)
+	if os.Getenv("ELASTICSEARCH_USERNAME") == "" || os.Getenv("ELASTICSEARCH_PASSWORD") == "" {
+		t.Skip("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set for explicit basic auth coverage")
+	}
 }

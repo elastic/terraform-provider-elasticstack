@@ -65,8 +65,12 @@ testacc-vs-docker:
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
+.PHONY: hook-test
+hook-test: ## Run hook JavaScript unit tests
+	@ node --test .agents/hooks/*.test.mjs
+
 .PHONY: test
-test: ## Run unit tests
+test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
@@ -175,7 +179,7 @@ lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint workflow-test check-workflows check-fmt check-docs
+check-lint: setup check-openspec golangci-lint check-workflows check-fmt check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)

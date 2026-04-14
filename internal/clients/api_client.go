@@ -209,6 +209,108 @@ func MaybeNewAPIClientFromFrameworkResource(ctx context.Context, esConnList type
 	}, diags
 }
 
+// MaybeNewKibanaAPIClientFromFrameworkResource resolves a scoped *APIClient
+// from an entity-local kibana_connection block. If the block is absent the
+// default client is returned unchanged. If the block is configured a new
+// *APIClient is returned with the Kibana legacy, Kibana OpenAPI, SLO, and
+// Fleet clients rebuilt from the scoped connection. The resulting client does
+// not carry a provider-level Elasticsearch client so that version and identity
+// checks resolve against the scoped Kibana connection.
+func MaybeNewKibanaAPIClientFromFrameworkResource(ctx context.Context, kibConnList types.List, defaultClient *APIClient) (*APIClient, fwdiags.Diagnostics) {
+	var kibConns []config.KibanaConnection
+	if diags := kibConnList.ElementsAs(ctx, &kibConns, true); diags.HasError() {
+		return nil, diags
+	}
+
+	if len(kibConns) == 0 {
+		return defaultClient, nil
+	}
+
+	cfg, diags := config.NewFromFrameworkKibanaResource(ctx, kibConns, defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	kibanaClient, err := buildKibanaClient(*cfg)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana client", err.Error())}
+	}
+
+	kibanaOapiClient, err := buildKibanaOapiClient(*cfg)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana OpenAPI client", err.Error())}
+	}
+
+	fleetClient, err := buildFleetClient(*cfg)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Fleet client", err.Error())}
+	}
+
+	var sloAPI slo.SloAPI
+	if kibanaClient != nil {
+		kibanaHTTPClient := kibanaClient.Client.GetClient()
+		sloAPI = buildSloClient(*cfg, kibanaHTTPClient).SloAPI
+	}
+
+	return &APIClient{
+		kibana:       kibanaClient,
+		kibanaOapi:   kibanaOapiClient,
+		slo:          sloAPI,
+		kibanaConfig: *cfg.Kibana,
+		fleet:        fleetClient,
+		version:      defaultClient.version,
+	}, nil
+}
+
+// NewKibanaAPIClientFromSDKResource resolves a scoped *APIClient from an
+// entity-local kibana_connection block in a Plugin SDK resource. If the block
+// is absent the provider-level default client is returned unchanged. If the
+// block is configured a new *APIClient is returned with all Kibana-derived
+// clients rebuilt from the scoped connection.
+func NewKibanaAPIClientFromSDKResource(d *schema.ResourceData, meta any) (*APIClient, diag.Diagnostics) {
+	defaultClient := meta.(*APIClient)
+	version := defaultClient.version
+
+	resourceConfig, diags := config.NewFromSDKKibanaResource(d, version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if resourceConfig == nil {
+		return defaultClient, nil
+	}
+
+	kibanaClient, err := buildKibanaClient(*resourceConfig)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	kibanaOapiClient, err := buildKibanaOapiClient(*resourceConfig)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	fleetClient, err := buildFleetClient(*resourceConfig)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	var sloAPI slo.SloAPI
+	if kibanaClient != nil {
+		kibanaHTTPClient := kibanaClient.Client.GetClient()
+		sloAPI = buildSloClient(*resourceConfig, kibanaHTTPClient).SloAPI
+	}
+
+	return &APIClient{
+		kibana:       kibanaClient,
+		kibanaOapi:   kibanaOapiClient,
+		slo:          sloAPI,
+		kibanaConfig: *resourceConfig.Kibana,
+		fleet:        fleetClient,
+		version:      version,
+	}, nil
+}
+
 func NewAPIClientFromSDKResource(d *schema.ResourceData, meta any) (*APIClient, diag.Diagnostics) {
 	defaultClient := meta.(*APIClient)
 	version := defaultClient.version
