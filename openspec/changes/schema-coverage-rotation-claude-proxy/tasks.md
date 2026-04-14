@@ -1,3 +1,5 @@
+**Operator note:** Runs require the GitHub Actions secret `CLAUDE_LITELLM_PROXY_API_KEY` (see `proposal.md` / `design.md`).
+
 ## 1. Update the schema-coverage rotation workflow contract
 
 - [x] 1.1 Update `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` so the workflow switches from `engine.id: copilot` to `engine.id: claude` and configures `ANTHROPIC_BASE_URL` for `https://elastic.litellm-prod.ai/`.

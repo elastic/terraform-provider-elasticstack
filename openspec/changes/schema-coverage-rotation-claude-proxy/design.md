@@ -12,7 +12,7 @@ The workflow also runs repository-local commands such as `make setup` and `go ru
 - Move the `schema-coverage-rotation` worker to `engine.id: claude`.
 - Route Claude requests through the Elastic LiteLLM Anthropic-compatible endpoint via `ANTHROPIC_BASE_URL`.
 - Source `ANTHROPIC_API_KEY` from a GitHub Actions secret-backed expression.
-- Extend the workflow firewall contract to allow `elastic.litellm-prod.ai`.
+- Extend the authored workflow `network.allowed` with `elastic.litellm-prod.ai` and accept the compiled Claude lock’s broader AWF domain bundle (see Decision 3).
 - Preserve the workflow's existing issue-slot gating, repo-memory flow, issue creation rules, and `assign-to-agent` behavior.
 - Set an explicit Claude-compatible tool timeout for the workflow's repository-local commands.
 
@@ -52,17 +52,18 @@ Why:
 Alternative considered:
 - Rely on Claude defaults: rejected because the workflow already depends on longer-running repository-local commands and would become more brittle after the engine switch.
 
-### 3. Extend the existing firewall contract without broadening it further
+### 3. Author the LiteLLM host in `network.allowed` while accepting compiler-expanded AWF domains in the lock
 
-The workflow should add `elastic.litellm-prod.ai` to `network.allowed` while keeping the existing `defaults`, `node`, and `go` entries.
+The authored workflow should add `elastic.litellm-prod.ai` to `network.allowed` while keeping the existing `defaults`, `node`, and `go` entries. That is the maintainers’ explicit contract in YAML.
+
+`gh aw compile` then emits a lock file where the Claude engine’s AWF integration merges those keys with a **fixed, compiler-supplied domain bundle** (toolchains, package registries, Claude runtime hosts, and similar). The practical egress surface at runtime is therefore **larger than the four strings in frontmatter**; it is not “only” adding the LiteLLM hostname. This migration intentionally narrows what **repository authors must declare** (including LiteLLM) while acknowledging the reviewed trade-off that **effective** network scope follows the compiler-generated lock.
 
 Why:
-- The workflow already declares an explicit AWF allowlist.
-- Claude traffic routed through LiteLLM will fail unless the proxy host is permitted.
-- Adding only the required host preserves the current least-privilege posture.
+- LiteLLM traffic fails unless `elastic.litellm-prod.ai` appears in the authored allowlist the compiler consumes.
+- The Claude engine path does not reduce the lock to authored keys alone; documenting both layers avoids overstating how small the firewall change is.
 
 Alternative considered:
-- Use a broader or implicit network allowance: rejected because it weakens auditability and expands access beyond what this migration needs.
+- Treat the authored YAML list as the complete runtime firewall: rejected because it misrepresents how GH AW Claude locks behave today.
 
 ### 4. Keep downstream issue-assignment behavior unchanged
 
@@ -78,13 +79,17 @@ Alternative considered:
 ## Risks / Trade-offs
 
 - [LiteLLM endpoint availability becomes part of schema-coverage rotation reliability] -> Mitigation: make the dependency explicit in workflow frontmatter and specs, then validate on a representative run before rollout.
-- [The workflow gains a new provider-auth prerequisite in `ANTHROPIC_API_KEY`] -> Mitigation: require the key to be secret-backed and document it in the workflow contract.
+- [The workflow gains a new provider-auth prerequisite: the Actions secret `CLAUDE_LITELLM_PROXY_API_KEY` mapped to `ANTHROPIC_API_KEY` at runtime] -> Mitigation: document the secret in change artifacts and require secret-backed configuration only (no literals in-repo).
 - [Claude may behave differently from Copilot when following the schema-coverage skill] -> Mitigation: keep the prompt, gating, and safe outputs stable and validate with a representative workflow execution.
 - [The workflow engine and the downstream assignment agent will differ] -> Mitigation: document that the change is intentionally scoped to the rotation worker only.
 
+## Operator prerequisites
+
+Operators must configure the GitHub Actions secret **`CLAUDE_LITELLM_PROXY_API_KEY`** for repositories that run this workflow; the workflow sources it as `ANTHROPIC_API_KEY` for the Claude engine.
+
 ## Migration Plan
 
-1. Update `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` to switch to `engine.id: claude`, set `ANTHROPIC_BASE_URL`, source `ANTHROPIC_API_KEY` from secrets, add `tools.timeout: 300`, and allow `elastic.litellm-prod.ai`.
+1. Update `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` to switch to `engine.id: claude`, set `ANTHROPIC_BASE_URL`, source `ANTHROPIC_API_KEY` from `${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}`, add `tools.timeout: 300`, and allow `elastic.litellm-prod.ai` in authored `network.allowed` (then regenerate the lock and review the compiler’s AWF domain bundle as needed).
 2. Regenerate `.github/workflows/schema-coverage-rotation.md` and `.github/workflows/schema-coverage-rotation.lock.yml`.
 3. Update workflow generation tests and sync the canonical schema-coverage OpenSpec requirements with the approved engine and firewall contract.
 4. Validate the change and run or inspect a representative schema-coverage rotation workflow execution using the Claude + LiteLLM configuration.

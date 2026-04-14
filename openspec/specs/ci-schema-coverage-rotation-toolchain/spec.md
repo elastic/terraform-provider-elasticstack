@@ -1,7 +1,9 @@
 # ci-schema-coverage-rotation-toolchain Specification
 
 ## Purpose
-TBD - created by archiving change schema-coverage-rotation-toolchain-bootstrap. Update Purpose after archive.
+
+Specifies how the `schema-coverage-rotation` workflow prepares the repository (Go, Node, `make setup`) before the agent runs repository-local commands, and which **authored** `network.allowed` entries the workflow declares—including `elastic.litellm-prod.ai` for the Claude engine’s LiteLLM proxy route. (The compiled GH AW lock may still expand AWF egress with additional compiler-managed domains.)
+
 ## Requirements
 ### Requirement: Schema-coverage rotation bootstraps repository toolchains before agent execution
 The `schema-coverage-rotation` workflow SHALL provision the repository toolchains before agent reasoning begins. At a minimum, it SHALL set up Go using `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT`, `GOPATH`, and `GOMODCACHE` after Go setup for AWF chroot mode, SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, and SHALL run `make setup` at the repository root before the agent executes repository-local schema-coverage commands.
