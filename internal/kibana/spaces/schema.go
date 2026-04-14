@@ -20,10 +20,10 @@ package spaces
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 // Schema defines the schema for the data source.
@@ -77,7 +77,7 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				},
 			},
 		},
-	
+
 		Blocks: map[string]schema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		}}

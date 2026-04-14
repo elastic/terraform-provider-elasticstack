@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -49,7 +50,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 type kibanaAPIRequest struct {
@@ -116,7 +116,7 @@ type tfBrowserMonitorFieldsV0 struct {
 
 type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
-	KibanaConnection types.List `tfsdk:"kibana_connection"`
+	KibanaConnection types.List                `tfsdk:"kibana_connection"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
@@ -279,7 +279,7 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: retestOnFailureDescription,
 			},
 		},
-	
+
 		Blocks: map[string]schema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		}}

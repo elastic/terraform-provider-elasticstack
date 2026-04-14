@@ -24,23 +24,23 @@ import (
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 type tfModelV0 struct {
-	ID            types.String   `tfsdk:"id"`
-	KibanaConnection types.List `tfsdk:"kibana_connection"`
-	Label         types.String   `tfsdk:"label"`
-	AgentPolicyID types.String   `tfsdk:"agent_policy_id"`
-	SpaceID       types.String   `tfsdk:"space_id"`
-	Tags          []types.String `tfsdk:"tags"` // > string
-	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
+	ID               types.String   `tfsdk:"id"`
+	KibanaConnection types.List     `tfsdk:"kibana_connection"`
+	Label            types.String   `tfsdk:"label"`
+	AgentPolicyID    types.String   `tfsdk:"agent_policy_id"`
+	SpaceID          types.String   `tfsdk:"space_id"`
+	Tags             []types.String `tfsdk:"tags"` // > string
+	Geo              *tfGeoConfigV0 `tfsdk:"geo"`
 }
 
 func privateLocationSchema() schema.Schema {
@@ -93,7 +93,7 @@ func privateLocationSchema() schema.Schema {
 			},
 			"geo": geoConfigSchema(),
 		},
-	
+
 		Blocks: map[string]schema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		}}

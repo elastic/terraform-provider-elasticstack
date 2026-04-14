@@ -35,8 +35,8 @@ var tfSettingsAttrTypes = map[string]attr.Type{
 }
 
 type tfModel struct {
-	ID types.String `tfsdk:"id"`
-	KibanaConnection types.List `tfsdk:"kibana_connection"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 
 	SloID        types.String `tfsdk:"slo_id"`
 	Name         types.String `tfsdk:"name"`

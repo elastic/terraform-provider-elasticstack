@@ -20,8 +20,8 @@ package securitylistdatastreams
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // Update is a no-op for this resource because the only configurable attribute (space_id)
