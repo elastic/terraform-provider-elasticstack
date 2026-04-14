@@ -20,6 +20,7 @@ package exportsavedobjects
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -72,7 +73,10 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				Computed:    true,
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 type objectModel struct {
@@ -83,6 +87,7 @@ type objectModel struct {
 // dataSourceModel maps the data source schema data.
 type dataSourceModel struct {
 	ID                    types.String `tfsdk:"id"`
+	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
 	SpaceID               types.String `tfsdk:"space_id"`
 	Objects               types.List   `tfsdk:"objects"`
 	ExcludeExportDetails  types.Bool   `tfsdk:"exclude_export_details"`

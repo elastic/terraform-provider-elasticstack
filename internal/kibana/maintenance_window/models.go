@@ -29,12 +29,13 @@ import (
 )
 
 type Model struct {
-	ID             types.String `tfsdk:"id"`
-	SpaceID        types.String `tfsdk:"space_id"`
-	Title          types.String `tfsdk:"title"`
-	Enabled        types.Bool   `tfsdk:"enabled"`
-	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
-	Scope          *Scope       `tfsdk:"scope"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	Title            types.String `tfsdk:"title"`
+	Enabled          types.Bool   `tfsdk:"enabled"`
+	CustomSchedule   Schedule     `tfsdk:"custom_schedule"`
+	Scope            *Scope       `tfsdk:"scope"`
 }
 
 type Scope struct {

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -43,7 +44,13 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	kibanaClient, err := r.client.GetKibanaClient()
+	apiClient, apiClientDiags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	diags.Append(apiClientDiags...)
+	if diags.HasError() {
+		return
+	}
+
+	kibanaClient, err := apiClient.GetKibanaClient()
 	if err != nil {
 		diags.AddError("unable to get kibana client", err.Error())
 		return

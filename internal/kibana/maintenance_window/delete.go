@@ -20,6 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,13 +34,19 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	diags = kibanaoapi.DeleteMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	diags = kibanaoapi.DeleteMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 }

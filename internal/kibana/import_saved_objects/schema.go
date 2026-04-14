@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -134,7 +135,10 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				},
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 type Resource struct {
@@ -153,6 +157,7 @@ func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest,
 
 type modelV0 struct {
 	ID                 types.String `tfsdk:"id"`
+	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
 	SpaceID            types.String `tfsdk:"space_id"`
 	IgnoreImportErrors types.Bool   `tfsdk:"ignore_import_errors"`
 	// CreateNewCopies    types.Bool   `tfsdk:"create_new_copies"`
