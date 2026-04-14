@@ -274,13 +274,25 @@ For create and update, when the API returns a non-200 status code or a transport
 
 ### Requirement: Provider configuration and Kibana client (REQ-006)
 
-On create, read, update, and delete, the resource SHALL obtain the Kibana OAPI client from the provider-configured API client. If the provider did not supply a usable client, the resource SHALL return a configuration error diagnostic and not proceed.
+On create, read, update, and delete, the resource SHALL obtain the Kibana OAPI client from the provider-configured API client by default. If the provider did not supply a usable client, the resource SHALL return a configuration error diagnostic and not proceed. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OAPI client for all operations.
 
 #### Scenario: Unconfigured provider
 
 - GIVEN the resource has no provider-supplied API client
 - WHEN any CRUD operation runs
 - THEN the operation SHALL fail with a provider configuration error
+
+#### Scenario: Provider client used by default
+
+- GIVEN `kibana_connection` is not configured on the resource
+- WHEN any CRUD operation runs
+- THEN the resource SHALL use the provider-configured Kibana OAPI client
+
+#### Scenario: Scoped Kibana connection
+
+- GIVEN `kibana_connection` is configured on the resource
+- WHEN any CRUD operation runs
+- THEN the resource SHALL use the scoped Kibana OAPI client derived from that block
 
 ### Requirement: Identity and composite `id` (REQ-007–REQ-009)
 

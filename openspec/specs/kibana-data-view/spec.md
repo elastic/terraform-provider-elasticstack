@@ -141,15 +141,19 @@ The resource SHALL support Terraform import using an id of the form `<space_id>/
 - WHEN import runs
 - THEN the provider SHALL return an error diagnostic for the required `<space_id>/<data_view_id>` format
 
-### Requirement: Provider-level Kibana client only (REQ-005)
+### Requirement: Provider-level Kibana client by default with optional scoped override (REQ-005)
 
-The resource SHALL use the provider's configured Kibana OpenAPI client for create, read, update, and delete. The resource SHALL NOT support a resource-local connection override in its schema or request path.
+The resource SHALL use the provider's configured Kibana OpenAPI client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI client for create, read, update, and delete.
 
 #### Scenario: Standard provider connection
 
-- GIVEN the provider is configured with Kibana access
-- WHEN the resource performs CRUD
-- THEN all API operations SHALL use that provider-level Kibana OpenAPI client
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** all data view API operations SHALL use the provider-level Kibana OpenAPI client
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** all data view API operations SHALL use the scoped Kibana OpenAPI client derived from that block
 
 ### Requirement: Lifecycle replacement fields (REQ-006)
 

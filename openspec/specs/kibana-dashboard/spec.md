@@ -337,15 +337,19 @@ The resource SHALL support import by passing the imported string directly into t
 - WHEN the resource later refreshes, updates, or deletes that instance
 - THEN the provider SHALL return an error diagnostic describing the required composite id format
 
-### Requirement: Provider-level Kibana client only (REQ-005)
+### Requirement: Effective Kibana client selection (REQ-005)
 
-The resource SHALL use the provider's configured Kibana OpenAPI client for all CRUD operations. The resource SHALL NOT expose or honor a resource-level connection override block for Kibana requests.
+The resource SHALL use the provider's configured Kibana OpenAPI client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI client for all CRUD operations.
 
 #### Scenario: Standard provider connection
 
-- GIVEN the provider is configured with Kibana access
-- WHEN the dashboard resource performs API calls
-- THEN all calls SHALL use that provider-level Kibana OpenAPI client
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** all dashboard API calls SHALL use the provider-level Kibana OpenAPI client
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** all dashboard API calls SHALL use the scoped Kibana OpenAPI client derived from that block
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 

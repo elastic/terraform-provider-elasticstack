@@ -86,15 +86,19 @@ The resource SHALL generate a UUID as the computed `id` on the first create and 
 - WHEN update runs
 - THEN `id` SHALL remain unchanged
 
-### Requirement: Provider-level Kibana client only (REQ-004)
+### Requirement: Effective Kibana client selection (REQ-004)
 
-The resource SHALL use the provider's configured Kibana client for create and update. The resource SHALL NOT support a resource-local connection override in its schema or request path.
+The resource SHALL use the provider's configured Kibana legacy client by default for create and update. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana legacy client for create and update.
 
 #### Scenario: Standard provider connection
 
-- GIVEN the provider is configured with Kibana access
-- WHEN create or update runs
-- THEN all API operations SHALL use the provider-level Kibana client
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** all import saved objects API operations SHALL use the provider-level Kibana legacy client
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** all import saved objects API operations SHALL use the scoped Kibana legacy client derived from that block
 
 ### Requirement: Create and update share the same import logic (REQ-005)
 

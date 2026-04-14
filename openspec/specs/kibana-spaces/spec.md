@@ -57,13 +57,17 @@ The data source SHALL expose a computed `id` with the fixed value `"spaces"` to 
 
 ### Requirement: Connection (REQ-003)
 
-The data source SHALL use the provider's configured Kibana client (`KibanaSpaces` API client) by default. The data source does not support a resource-level connection override.
+The data source SHALL use the provider's configured Kibana client (`KibanaSpaces` API client) by default. When `kibana_connection` is configured on the data source, the data source SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana client for the spaces API call.
 
 #### Scenario: Provider-level Kibana client
 
-- GIVEN no resource-level connection override
-- WHEN any API call runs
-- THEN the provider-level Kibana client SHALL be used
+- **WHEN** `kibana_connection` is not configured on the data source
+- **THEN** the provider-level Kibana client SHALL be used
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the data source
+- **THEN** the scoped Kibana client derived from that block SHALL be used
 
 ### Requirement: Read and state mapping (REQ-004–REQ-005)
 
