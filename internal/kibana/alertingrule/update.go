@@ -35,6 +35,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
+	if r.client == nil {
+		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		return
+	}
+
 	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -46,11 +51,6 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if r.client == nil {
-		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
 		return
 	}
 
