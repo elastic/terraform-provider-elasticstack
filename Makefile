@@ -181,9 +181,17 @@ lint-perf: golangci-lint-custom ## Measure isolated custom-linter performance an
 	@ mkdir -p $(LINT_PERF_DIR)
 	@ echo "Writing per-run artifacts to $(LINT_PERF_DIR)"
 	@ echo "--- esclienthelper (golangci isolated run) ---"
-	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=esclienthelper --concurrency=1 ./... ; } 2>&1 | tee $(LINT_PERF_DIR)/esclienthelper-lint.txt || true
+	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=esclienthelper --concurrency=1 \
+		--cpu-profile-path=$(LINT_PERF_DIR)/esclienthelper-golangci-cpu.prof \
+		--mem-profile-path=$(LINT_PERF_DIR)/esclienthelper-golangci-mem.prof \
+		--trace-path=$(LINT_PERF_DIR)/esclienthelper-golangci-trace.out \
+		./... ; } 2>&1 | tee $(LINT_PERF_DIR)/esclienthelper-lint.txt || true
 	@ echo "--- acctestconfigdirlint (golangci isolated run) ---"
-	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=acctestconfigdirlint --concurrency=1 ./... ; } 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-lint.txt || true
+	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=acctestconfigdirlint --concurrency=1 \
+		--cpu-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-cpu.prof \
+		--mem-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-mem.prof \
+		--trace-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-trace.out \
+		./... ; } 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-lint.txt || true
 	@ echo "--- analyzer benchmarks ---"
 	@ go test ./analysis/acctestconfigdirlint/... -bench=. -benchmem \
 		-cpuprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-cpu.prof \
