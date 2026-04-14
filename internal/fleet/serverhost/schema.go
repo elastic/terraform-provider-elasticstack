@@ -64,6 +64,6 @@ func (r *serverHostResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		},
 	}
 	resp.Schema.Blocks = map[string]schema.Block{
-		"kibana_connection": providerschema.GetFleetFWConnectionBlock(),
+		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 }

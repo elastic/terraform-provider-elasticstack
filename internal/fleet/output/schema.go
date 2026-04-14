@@ -352,7 +352,7 @@ func getSchema() schema.Schema {
 		},
 
 		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetFleetFWConnectionBlock(),
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		}}
 }
 

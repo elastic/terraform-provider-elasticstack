@@ -85,6 +85,6 @@ set ` + "`skip_destroy` to `true`."
 		},
 	}
 	resp.Schema.Blocks = map[string]schema.Block{
-		"kibana_connection": providerschema.GetFleetFWConnectionBlock(),
+		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 }
