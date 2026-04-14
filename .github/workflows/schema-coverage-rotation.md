@@ -138,7 +138,6 @@ The workflow reached this point only because `issue_slots_available` is non-zero
 ## Required inputs and references
 
 - Skill instructions: `.agents/skills/schema-coverage/SKILL.md`
-- Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
 
 ## Repository toolchain
 
@@ -147,12 +146,12 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 ## Execution steps
 
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-2. Build the canonical entity inventory, ensure the *full* output of this comment is echoed back to the user. Use:
+2. Build the canonical entity inventory with:
    ```
    go run ./scripts/schema-coverage-rotation prepare \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json
    ```
-3. Select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
+3. After the inventory has been prepared, select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
    ```
    go run ./scripts/schema-coverage-rotation select \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
@@ -170,7 +169,6 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
      --entities '<json>'
    ```
    where `<json>` is the full JSON array returned by step 3 (the `select` output), unchanged except for shell-safe quoting.
-
 ## Issue creation rules
 
 - Create one issue per analyzed entity only when actionable testing gaps exist.

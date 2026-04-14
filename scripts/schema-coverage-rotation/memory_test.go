@@ -216,6 +216,76 @@ func TestReconcileMemoryRemovesStale(t *testing.T) {
 	}
 }
 
+func TestNormalizeMemoryKeysAddsPrefix(t *testing.T) {
+	t.Parallel()
+
+	mem := &Memory{
+		Resources: map[string]*time.Time{
+			"elasticsearch_index_template": new(ts2021),
+		},
+		DataSources: map[string]*time.Time{
+			"elasticsearch_enrich_policy": nil,
+		},
+	}
+
+	stats := normalizeMemoryKeys(mem)
+
+	if _, ok := mem.Resources["elasticsearch_index_template"]; ok {
+		t.Fatal("expected legacy resource key to be removed")
+	}
+	if _, ok := mem.DataSources["elasticsearch_enrich_policy"]; ok {
+		t.Fatal("expected legacy data-source key to be removed")
+	}
+
+	if got := mem.Resources["elasticstack_elasticsearch_index_template"]; got == nil || !got.Equal(ts2021) {
+		t.Fatalf("expected migrated resource timestamp %v, got %v", ts2021, got)
+	}
+	if _, ok := mem.DataSources["elasticstack_elasticsearch_enrich_policy"]; !ok {
+		t.Fatal("expected migrated data-source key to be present")
+	}
+
+	if stats.MigratedResources != 1 || stats.MigratedDataSources != 1 {
+		t.Fatalf("expected one migrated key per type, got %+v", stats)
+	}
+	if stats.CollisionTotal() != 0 {
+		t.Fatalf("expected no collisions, got %+v", stats)
+	}
+}
+
+func TestNormalizeMemoryKeysCollisionsPreferNewestTimestamp(t *testing.T) {
+	t.Parallel()
+
+	mem := &Memory{
+		Resources: map[string]*time.Time{
+			"elasticsearch_index_template":              new(ts2020),
+			"elasticstack_elasticsearch_index_template": new(ts2021),
+		},
+		DataSources: map[string]*time.Time{
+			"elasticsearch_enrich_policy":              nil,
+			"elasticstack_elasticsearch_enrich_policy": new(ts2022),
+		},
+	}
+
+	stats := normalizeMemoryKeys(mem)
+
+	resourceTS := mem.Resources["elasticstack_elasticsearch_index_template"]
+	if resourceTS == nil || !resourceTS.Equal(ts2021) {
+		t.Fatalf("expected newest resource timestamp %v, got %v", ts2021, resourceTS)
+	}
+
+	dataSourceTS := mem.DataSources["elasticstack_elasticsearch_enrich_policy"]
+	if dataSourceTS == nil || !dataSourceTS.Equal(ts2022) {
+		t.Fatalf("expected non-nil data-source timestamp %v, got %v", ts2022, dataSourceTS)
+	}
+
+	if stats.MigratedResources != 1 || stats.MigratedDataSources != 1 {
+		t.Fatalf("expected one migrated key per type, got %+v", stats)
+	}
+	if stats.MigratedResourceCollisions != 1 || stats.MigratedDataSourceCollisions != 1 {
+		t.Fatalf("expected one collision per type, got %+v", stats)
+	}
+}
+
 // TestSelectEntitiesNullFirst verifies entities with nil timestamps come first.
 func TestSelectEntitiesNullFirst(t *testing.T) {
 	t.Parallel()

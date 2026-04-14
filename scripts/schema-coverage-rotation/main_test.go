@@ -67,24 +67,71 @@ func TestCmdPrepareMissingMemoryFlag(t *testing.T) {
 	}
 }
 
-// TestCmdPrepareMissingMemoryFile verifies that prepare fails fast when the
-// working memory file does not exist.
-func TestCmdPrepareMissingMemoryFile(t *testing.T) {
-	t.Parallel()
-
+// TestCmdPrepareBootstrapsFromSeed verifies that a missing working file is
+// bootstrapped from the repo seed, then reconciled against current registrations.
+func TestCmdPrepareBootstrapsFromSeed(t *testing.T) {
 	dir := t.TempDir()
-	memPath := filepath.Join(dir, "working", "schema-coverage.json")
 
+	seedDir := filepath.Join(dir, ".github", "aw", "memory")
+	if err := os.MkdirAll(seedDir, 0o755); err != nil {
+		t.Fatalf("mkdir seed dir: %v", err)
+	}
+
+	seedContent := `{
+		"resources": {"elasticsearch_index_template": "2021-01-01T00:00:00Z"},
+		"data-sources": {"elasticstack_seed_only": null}
+	}`
+	if err := os.WriteFile(filepath.Join(seedDir, "schema-coverage.json"), []byte(seedContent), 0o600); err != nil {
+		t.Fatalf("write seed: %v", err)
+	}
+
+	t.Chdir(dir)
+
+	memPath := filepath.Join(dir, "working", "schema-coverage.json")
 	var stderr bytes.Buffer
-	err := cmdPrepare([]string{"--memory", memPath}, &stderr)
-	if err == nil {
-		t.Fatal("expected error for missing memory file")
+	if err := cmdPrepare([]string{"--memory", memPath}, &stderr); err != nil {
+		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
 	}
-	if !strings.Contains(err.Error(), fmt.Sprintf("memory file %q does not exist", memPath)) {
-		t.Fatalf("expected missing file error, got: %v", err)
+
+	output := stderr.String()
+	if !strings.Contains(output, "bootstrapped memory from .github/aw/memory/schema-coverage.json") {
+		t.Fatalf("expected bootstrap log, got stderr: %s", output)
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr output, got: %s", stderr.String())
+	if !strings.Contains(output, "prepare started from scratch at "+memPath) {
+		t.Fatalf("expected scratch log, got stderr: %s", output)
+	}
+	if !strings.Contains(output, "prepare migrated legacy keys: 1 resources, 0 data-sources (0 resource collisions, 0 data-source collisions)") {
+		t.Fatalf("expected migration log, got stderr: %s", output)
+	}
+
+	mem, err := loadMemory(memPath)
+	if err != nil {
+		t.Fatalf("loadMemory: %v", err)
+	}
+	if _, ok := mem.Resources["elasticstack_elasticsearch_index_template"]; !ok {
+		t.Fatal("expected bootstrapped resource key to be normalized")
+	}
+	if _, ok := mem.DataSources["elasticstack_seed_only"]; ok {
+		t.Fatal("expected unregistered seed-only data source to be removed during reconcile")
+	}
+}
+
+func TestCmdPrepareMissingMemoryFileWithoutSeedStartsEmpty(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	memPath := filepath.Join(dir, "working", "schema-coverage.json")
+	var stderr bytes.Buffer
+	if err := cmdPrepare([]string{"--memory", memPath}, &stderr); err != nil {
+		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
+	}
+
+	output := stderr.String()
+	if !strings.Contains(output, "bootstrapped memory from .github/aw/memory/schema-coverage.json") {
+		t.Fatalf("expected bootstrap log, got stderr: %s", output)
+	}
+	if !strings.Contains(output, "prepare started from scratch at "+memPath) {
+		t.Fatalf("expected scratch log, got stderr: %s", output)
 	}
 }
 
@@ -140,6 +187,58 @@ func TestCmdPrepareReconciles(t *testing.T) {
 	}
 	if _, ok := mem.DataSources[staleDataSource]; ok {
 		t.Errorf("expected stale data source %q to be removed", staleDataSource)
+	}
+}
+
+func TestCmdPrepareMigratesLegacyKeys(t *testing.T) {
+	t.Parallel()
+
+	resources, dataSources := currentProviderInventory()
+	resourceName := "elasticstack_elasticsearch_index_template"
+	dataSourceName := "elasticstack_elasticsearch_index_template"
+	if _, ok := resources[resourceName]; !ok {
+		t.Fatalf("expected resource %q to be registered", resourceName)
+	}
+	if _, ok := dataSources[dataSourceName]; !ok {
+		t.Fatalf("expected data source %q to be registered", dataSourceName)
+	}
+
+	dir := t.TempDir()
+	memPath := writeMemoryFile(t, dir, `{
+		"resources": {"elasticsearch_index_template": "2021-01-01T00:00:00Z"},
+		"data-sources": {"elasticsearch_index_template": "2022-02-02T00:00:00Z"}
+	}`)
+
+	var stderr bytes.Buffer
+	if err := cmdPrepare([]string{"--memory", memPath}, &stderr); err != nil {
+		t.Fatalf("cmdPrepare: %v\nstderr: %s", err, stderr.String())
+	}
+
+	output := stderr.String()
+	if !strings.Contains(output, "prepare migrated legacy keys: 1 resources, 1 data-sources (0 resource collisions, 0 data-source collisions)") {
+		t.Fatalf("expected migration log, got stderr: %s", output)
+	}
+
+	mem, err := loadMemory(memPath)
+	if err != nil {
+		t.Fatalf("loadMemory: %v", err)
+	}
+
+	if _, ok := mem.Resources["elasticsearch_index_template"]; ok {
+		t.Fatal("expected legacy resource key to be removed")
+	}
+	if _, ok := mem.DataSources["elasticsearch_index_template"]; ok {
+		t.Fatal("expected legacy data-source key to be removed")
+	}
+
+	resourceTS := mem.Resources[resourceName]
+	if resourceTS == nil || resourceTS.Format(time.RFC3339) != "2021-01-01T00:00:00Z" {
+		t.Fatalf("expected migrated resource timestamp to be preserved, got %v", resourceTS)
+	}
+
+	dataSourceTS := mem.DataSources[dataSourceName]
+	if dataSourceTS == nil || dataSourceTS.Format(time.RFC3339) != "2022-02-02T00:00:00Z" {
+		t.Fatalf("expected migrated data-source timestamp to be preserved, got %v", dataSourceTS)
 	}
 }
 

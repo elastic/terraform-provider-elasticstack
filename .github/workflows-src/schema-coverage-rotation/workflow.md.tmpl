@@ -86,8 +86,6 @@ The workflow reached this point only because `issue_slots_available` is non-zero
 ## Required inputs and references
 
 - Skill instructions: `.agents/skills/schema-coverage/SKILL.md`
-- Bootstrap memory seed: `.github/aw/memory/schema-coverage.json`
-- Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
 
 ## Repository toolchain
 
@@ -96,31 +94,29 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 ## Execution steps
 
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-2. Log the output of every `schema-coverage-rotation` script invocation to the GitHub Actions job output. In particular, `prepare` and `record` emit operational logs on stderr, while `select` emits the machine-readable JSON array on stdout. Preserve the `prepare`/`record` logs in the job output, log the exact JSON returned by `select`, and reuse that exact JSON array for step 6 without mixing in non-JSON log lines.
-3. Prepare memory and build the canonical entity inventory by running:
+2. Build the canonical entity inventory with:
    ```
    go run ./scripts/schema-coverage-rotation prepare \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json
    ```
-   This command bootstraps the memory file from `.github/aw/memory/schema-coverage.json` if it does not yet exist, then reconciles the entity inventory against the provider's registered resources and data sources.
-4. Select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
+3. After the inventory has been prepared, select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
    ```
    go run ./scripts/schema-coverage-rotation select \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
      --count ${{ needs.pre_activation.outputs.issue_slots_available }}
    ```
    The command prints a JSON array on stdout. Each entry has a `type` field (`"resource"` or `"data source"`) and a `name` field (the Terraform entity name). Log that exact JSON array to the job output, then use it to determine which entities to analyze and their types.
-5. For each selected entity:
+   Reuse this exact JSON array for step 5 without mixing in non-JSON log lines.
+4. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
-6. After completing analysis of all selected entities, persist all analysis timestamps in a single atomic write by running:
+5. After completing analysis of all selected entities, persist all analysis timestamps in a single atomic write by running:
    ```
    go run ./scripts/schema-coverage-rotation record \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
      --entities '<json>'
    ```
-   where `<json>` is the full JSON array returned by step 4 (the `select` output), unchanged except for shell-safe quoting.
-
+   where `<json>` is the full JSON array returned by step 3 (the `select` output), unchanged except for shell-safe quoting.
 ## Issue creation rules
 
 - Create one issue per analyzed entity only when actionable testing gaps exist.

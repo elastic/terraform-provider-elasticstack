@@ -24,7 +24,7 @@
 //
 // Commands:
 //
-//	prepare   Reconcile the existing memory file from provider registrations.
+//	prepare   Bootstrap and reconcile the memory file from provider registrations.
 //	select    Select the next N entities by oldest timestamp; prints a JSON array.
 //	record    Record the current UTC timestamp for an analyzed entity.
 //
@@ -71,13 +71,13 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Usage: schema-coverage-rotation <command> [flags]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Commands:")
-	fmt.Fprintln(w, "  prepare  --memory <path>                          Reconcile existing memory")
+	fmt.Fprintln(w, "  prepare  --memory <path>                          Bootstrap and reconcile memory")
 	fmt.Fprintln(w, "  select   --memory <path> --count <n>              Select next N entities (JSON)")
 	fmt.Fprintln(w, "  record   --memory <path> (--type <t> --name <n> | --entities <json>)    Record analysis timestamps")
 	return errors.New("unknown or missing command")
 }
 
-// cmdPrepare reconciles the existing memory file with the entity inventory.
+// cmdPrepare bootstraps the memory file if needed and reconciles the entity inventory.
 func cmdPrepare(args []string, stderr io.Writer) error {
 	fs := flag.NewFlagSet("prepare", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -89,8 +89,13 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return errors.New("--memory is required")
 	}
 
+	startedFromScratch := false
+	seedPath := ".github/aw/memory/schema-coverage.json"
 	if _, err := os.Stat(*memPath); os.IsNotExist(err) {
-		return fmt.Errorf("memory file %q does not exist", *memPath)
+		startedFromScratch = true
+		if err := bootstrapFromSeed(*memPath, seedPath); err != nil {
+			return fmt.Errorf("bootstrap memory: %w", err)
+		}
 	} else if err != nil {
 		return fmt.Errorf("stat memory: %w", err)
 	}
@@ -100,6 +105,8 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("load memory: %w", err)
 	}
+
+	migrationStats := normalizeMemoryKeys(mem)
 
 	// Discover entities from provider registrations.
 	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
@@ -121,13 +128,50 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 		return fmt.Errorf("save memory: %w", err)
 	}
 
-	fmt.Fprintf(stderr, "prepare re-used existing state from %s\n", *memPath)
+	if startedFromScratch {
+		fmt.Fprintf(stderr, "bootstrapped memory from %s\n", seedPath)
+		fmt.Fprintf(stderr, "prepare started from scratch at %s\n", *memPath)
+	} else {
+		fmt.Fprintf(stderr, "prepare re-used existing state from %s\n", *memPath)
+	}
+	if migrationStats.MigratedTotal() > 0 || migrationStats.CollisionTotal() > 0 {
+		fmt.Fprintf(stderr, "prepare migrated legacy keys: %d resources, %d data-sources (%d resource collisions, %d data-source collisions)\n",
+			migrationStats.MigratedResources, migrationStats.MigratedDataSources,
+			migrationStats.MigratedResourceCollisions, migrationStats.MigratedDataSourceCollisions)
+	}
 	fmt.Fprintf(stderr, "prepare reconciled state: added %d, removed %d (%d resources added, %d resources removed, %d data-sources added, %d data-sources removed)\n",
 		stats.AddedTotal(), stats.RemovedTotal(),
 		stats.AddedResources, stats.RemovedResources,
 		stats.AddedDataSources, stats.RemovedDataSources)
 	fmt.Fprintf(stderr, "prepared memory: %d resources, %d data-sources\n",
 		len(mem.Resources), len(mem.DataSources))
+	return nil
+}
+
+// bootstrapFromSeed copies the seed memory file to the target path. If the
+// seed file does not exist, it creates an empty memory file instead.
+func bootstrapFromSeed(targetPath, seedPath string) error {
+	var mem *Memory
+
+	if _, err := os.Stat(seedPath); os.IsNotExist(err) {
+		mem = &Memory{
+			Resources:   make(map[string]*time.Time),
+			DataSources: make(map[string]*time.Time),
+		}
+	} else if err != nil {
+		return fmt.Errorf("stat seed: %w", err)
+	} else {
+		var err error
+		mem, err = loadMemory(seedPath)
+		if err != nil {
+			return fmt.Errorf("load seed: %w", err)
+		}
+	}
+
+	if err := saveMemory(targetPath, mem); err != nil {
+		return fmt.Errorf("save bootstrapped memory: %w", err)
+	}
+
 	return nil
 }
 

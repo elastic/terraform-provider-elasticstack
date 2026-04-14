@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -50,6 +51,13 @@ type reconcileStats struct {
 	RemovedDataSources int
 }
 
+type normalizationStats struct {
+	MigratedResources            int
+	MigratedResourceCollisions   int
+	MigratedDataSources          int
+	MigratedDataSourceCollisions int
+}
+
 func (s reconcileStats) AddedTotal() int {
 	return s.AddedResources + s.AddedDataSources
 }
@@ -61,6 +69,7 @@ func (s reconcileStats) RemovedTotal() int {
 const (
 	entityTypeResource   = "resource"
 	entityTypeDataSource = "data source"
+	entityNamePrefix     = "elasticstack_"
 )
 
 // loadMemory reads and parses the memory file at path.
@@ -177,6 +186,75 @@ func saveMemory(path string, mem *Memory) error {
 		return fmt.Errorf("rename temp file: %w", err)
 	}
 	return nil
+}
+
+// normalizeMemoryKeys migrates legacy memory entries to the canonical Terraform
+// type names used by provider discovery.
+func normalizeMemoryKeys(mem *Memory) normalizationStats {
+	resources, migratedResources, resourceCollisions := normalizeMemoryEntries(mem.Resources)
+	dataSources, migratedDataSources, dataSourceCollisions := normalizeMemoryEntries(mem.DataSources)
+
+	mem.Resources = resources
+	mem.DataSources = dataSources
+
+	return normalizationStats{
+		MigratedResources:            migratedResources,
+		MigratedResourceCollisions:   resourceCollisions,
+		MigratedDataSources:          migratedDataSources,
+		MigratedDataSourceCollisions: dataSourceCollisions,
+	}
+}
+
+func (s normalizationStats) MigratedTotal() int {
+	return s.MigratedResources + s.MigratedDataSources
+}
+
+func (s normalizationStats) CollisionTotal() int {
+	return s.MigratedResourceCollisions + s.MigratedDataSourceCollisions
+}
+
+func normalizeMemoryEntries(entries map[string]*time.Time) (map[string]*time.Time, int, int) {
+	normalized := make(map[string]*time.Time, len(entries))
+	var migrated, collisions int
+
+	for name, ts := range entries {
+		normalizedName := normalizeMemoryKey(name)
+		if normalizedName != name {
+			migrated++
+		}
+
+		if existing, ok := normalized[normalizedName]; ok {
+			collisions++
+			normalized[normalizedName] = mergeMemoryTimestamps(existing, ts)
+			continue
+		}
+
+		normalized[normalizedName] = ts
+	}
+
+	return normalized, migrated, collisions
+}
+
+func normalizeMemoryKey(name string) string {
+	if strings.HasPrefix(name, entityNamePrefix) {
+		return name
+	}
+
+	return entityNamePrefix + name
+}
+
+// mergeMemoryTimestamps keeps the newest known analysis time for a canonical key.
+func mergeMemoryTimestamps(existing, incoming *time.Time) *time.Time {
+	switch {
+	case existing == nil:
+		return incoming
+	case incoming == nil:
+		return existing
+	case incoming.After(*existing):
+		return incoming
+	default:
+		return existing
+	}
 }
 
 // discoverEntities builds the canonical entity inventory from provider registrations.
