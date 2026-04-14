@@ -46,35 +46,35 @@ func NewAnalyzer(cfg Config) *analysis.Analyzer {
 		},
 		Run: func(pass *analysis.Pass) (any, error) {
 			allowedWrappers := toSet(cfg.Wrappers)
-			for _, file := range pass.Files {
-				filename := pass.Fset.Position(file.Pos()).Filename
-				if !isInElasticsearchDir(filename) || strings.HasSuffix(filename, "_test.go") {
-					continue
-				}
 
+			// Precompute the in-scope non-test Elasticsearch files once per pass
+			// and reuse across both the fact-export and sink-check phases.
+			inScopeFiles := collectInScopeFiles(pass)
+
+			// Run-scoped caches: keyed by *types.Func for stable per-function metadata.
+			// These stop repeated signature rescans and fact reimports for the same function.
+			sinkParamCache := make(map[*types.Func][]int)
+			factCache := make(map[*types.Func]*clientReturnFact)
+
+			// Phase 1: export facts for functions whose first result is an *APIClient.
+			for _, file := range inScopeFiles {
 				for _, decl := range file.Decls {
 					fd, ok := decl.(*ast.FuncDecl)
 					if !ok || fd.Body == nil {
 						continue
 					}
-
 					exportFunctionFacts(pass, fd, allowedWrappers)
 				}
 			}
 
-			for _, file := range pass.Files {
-				filename := pass.Fset.Position(file.Pos()).Filename
-				if !isInElasticsearchDir(filename) || strings.HasSuffix(filename, "_test.go") {
-					continue
-				}
-
+			// Phase 2: check sink calls in in-scope functions.
+			for _, file := range inScopeFiles {
 				for _, decl := range file.Decls {
 					fd, ok := decl.(*ast.FuncDecl)
 					if !ok || fd.Body == nil {
 						continue
 					}
-
-					inspectFunction(pass, fd, allowedWrappers)
+					inspectFunction(pass, fd, allowedWrappers, sinkParamCache, factCache)
 				}
 			}
 
@@ -84,6 +84,20 @@ func NewAnalyzer(cfg Config) *analysis.Analyzer {
 }
 
 var Analyzer = NewAnalyzer(Config{})
+
+// collectInScopeFiles returns the subset of pass.Files that are non-test files
+// located under an internal/elasticsearch/ directory. This precomputation is
+// done once per pass and shared across both analysis phases.
+func collectInScopeFiles(pass *analysis.Pass) []*ast.File {
+	result := make([]*ast.File, 0, len(pass.Files))
+	for _, file := range pass.Files {
+		filename := pass.Fset.File(file.Pos()).Name()
+		if isInElasticsearchDir(filename) && !strings.HasSuffix(filename, "_test.go") {
+			result = append(result, file)
+		}
+	}
+	return result
+}
 
 type clientReturnFact struct {
 	AlwaysDerived        bool
@@ -105,9 +119,9 @@ func (f *clientReturnFact) String() string {
 	return "client-return: requires-params"
 }
 
-func inspectFunction(pass *analysis.Pass, fd *ast.FuncDecl, allowedWrappers map[string]struct{}) {
+func inspectFunction(pass *analysis.Pass, fd *ast.FuncDecl, allowedWrappers map[string]struct{}, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	derivedVars := map[*types.Var]bool{}
-	inspectBlock(pass, fd.Body, allowedWrappers, derivedVars)
+	inspectBlock(pass, fd.Body, allowedWrappers, derivedVars, sinkParamCache, factCache)
 }
 
 func exportFunctionFacts(pass *analysis.Pass, fd *ast.FuncDecl, allowedWrappers map[string]struct{}) {
@@ -225,22 +239,22 @@ func inferRequiredParamsForDerived(pass *analysis.Pass, expr ast.Expr, paramInde
 	}
 }
 
-func inspectBlock(pass *analysis.Pass, body *ast.BlockStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func inspectBlock(pass *analysis.Pass, body *ast.BlockStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	if body == nil {
 		return
 	}
 	for _, stmt := range body.List {
-		inspectStmt(pass, stmt, allowedWrappers, derivedVars)
+		inspectStmt(pass, stmt, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	}
 }
 
-func inspectStmt(pass *analysis.Pass, stmt ast.Stmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func inspectStmt(pass *analysis.Pass, stmt ast.Stmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	switch s := stmt.(type) {
 	case *ast.AssignStmt:
 		for _, rhs := range s.Rhs {
-			inspectExpr(pass, rhs, allowedWrappers, derivedVars)
+			inspectExpr(pass, rhs, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
-		applyAssignment(pass, s, allowedWrappers, derivedVars)
+		applyAssignment(pass, s, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.DeclStmt:
 		gen, ok := s.Decl.(*ast.GenDecl)
 		if !ok {
@@ -252,95 +266,97 @@ func inspectStmt(pass *analysis.Pass, stmt ast.Stmt, allowedWrappers map[string]
 				continue
 			}
 			for _, value := range vs.Values {
-				inspectExpr(pass, value, allowedWrappers, derivedVars)
+				inspectExpr(pass, value, allowedWrappers, derivedVars, sinkParamCache, factCache)
 			}
-			applyValueSpec(pass, vs, allowedWrappers, derivedVars)
+			applyValueSpec(pass, vs, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
 	case *ast.ExprStmt:
-		inspectExpr(pass, s.X, allowedWrappers, derivedVars)
+		inspectExpr(pass, s.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.ReturnStmt:
 		for _, result := range s.Results {
-			inspectExpr(pass, result, allowedWrappers, derivedVars)
+			inspectExpr(pass, result, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
 	case *ast.IfStmt:
 		if s.Init != nil {
-			inspectStmt(pass, s.Init, allowedWrappers, derivedVars)
+			inspectStmt(pass, s.Init, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
-		inspectExpr(pass, s.Cond, allowedWrappers, derivedVars)
+		inspectExpr(pass, s.Cond, allowedWrappers, derivedVars, sinkParamCache, factCache)
 
 		thenState := copyDerivedMap(derivedVars)
-		inspectBlock(pass, s.Body, allowedWrappers, thenState)
+		inspectBlock(pass, s.Body, allowedWrappers, thenState, sinkParamCache, factCache)
 
 		elseState := copyDerivedMap(derivedVars)
 		if s.Else != nil {
-			inspectStmt(pass, s.Else, allowedWrappers, elseState)
+			inspectStmt(pass, s.Else, allowedWrappers, elseState, sinkParamCache, factCache)
 		}
 		mergeDerivedState(derivedVars, thenState, elseState)
 	case *ast.BlockStmt:
-		inspectBlock(pass, s, allowedWrappers, derivedVars)
+		inspectBlock(pass, s, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.ForStmt:
 		if s.Init != nil {
-			inspectStmt(pass, s.Init, allowedWrappers, derivedVars)
+			inspectStmt(pass, s.Init, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
 		if s.Cond != nil {
-			inspectExpr(pass, s.Cond, allowedWrappers, derivedVars)
+			inspectExpr(pass, s.Cond, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
-		inspectBlock(pass, s.Body, allowedWrappers, copyDerivedMap(derivedVars))
+		inspectBlock(pass, s.Body, allowedWrappers, copyDerivedMap(derivedVars), sinkParamCache, factCache)
 		if s.Post != nil {
-			inspectStmt(pass, s.Post, allowedWrappers, derivedVars)
+			inspectStmt(pass, s.Post, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
 	case *ast.RangeStmt:
-		inspectExpr(pass, s.X, allowedWrappers, derivedVars)
-		inspectBlock(pass, s.Body, allowedWrappers, copyDerivedMap(derivedVars))
+		inspectExpr(pass, s.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectBlock(pass, s.Body, allowedWrappers, copyDerivedMap(derivedVars), sinkParamCache, factCache)
 	}
 }
 
-func inspectExpr(pass *analysis.Pass, expr ast.Expr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func inspectExpr(pass *analysis.Pass, expr ast.Expr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	if expr == nil {
 		return
 	}
 
 	switch e := expr.(type) {
 	case *ast.CallExpr:
-		checkSinkCall(pass, e, allowedWrappers, derivedVars)
+		checkSinkCall(pass, e, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		for _, arg := range e.Args {
-			inspectExpr(pass, arg, allowedWrappers, derivedVars)
+			inspectExpr(pass, arg, allowedWrappers, derivedVars, sinkParamCache, factCache)
 		}
 	case *ast.BinaryExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
-		inspectExpr(pass, e.Y, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectExpr(pass, e.Y, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.UnaryExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.ParenExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.IndexExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
-		inspectExpr(pass, e.Index, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectExpr(pass, e.Index, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.SelectorExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.TypeAssertExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	case *ast.SliceExpr:
-		inspectExpr(pass, e.X, allowedWrappers, derivedVars)
-		inspectExpr(pass, e.Low, allowedWrappers, derivedVars)
-		inspectExpr(pass, e.High, allowedWrappers, derivedVars)
-		inspectExpr(pass, e.Max, allowedWrappers, derivedVars)
+		inspectExpr(pass, e.X, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectExpr(pass, e.Low, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectExpr(pass, e.High, allowedWrappers, derivedVars, sinkParamCache, factCache)
+		inspectExpr(pass, e.Max, allowedWrappers, derivedVars, sinkParamCache, factCache)
 	}
 }
 
-func checkSinkCall(pass *analysis.Pass, call *ast.CallExpr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func checkSinkCall(pass *analysis.Pass, call *ast.CallExpr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	receiverExpr, hasReceiverSink := receiverSinkExpr(pass, call)
-	if hasReceiverSink && !isDerivedClientExpr(pass, receiverExpr, allowedWrappers, derivedVars) {
+	if hasReceiverSink && !isDerivedClientExpr(pass, receiverExpr, allowedWrappers, derivedVars, factCache) {
 		pass.Reportf(receiverExpr.Pos(), sinkDiagnosticMessage)
 	}
 
-	argIdxs := elasticsearchClientParamIndices(pass, call)
+	// Resolve callee once and reuse for both the sink param cache lookup and arg checks.
+	fnObj := calledFunction(pass, call)
+	argIdxs := elasticsearchClientParamIndicesCached(pass, call, fnObj, sinkParamCache)
 	for _, argIdx := range argIdxs {
 		if argIdx >= len(call.Args) {
 			continue
 		}
 		argExpr := call.Args[argIdx]
-		if !isDerivedClientExpr(pass, argExpr, allowedWrappers, derivedVars) {
+		if !isDerivedClientExpr(pass, argExpr, allowedWrappers, derivedVars, factCache) {
 			pass.Reportf(argExpr.Pos(), sinkDiagnosticMessage)
 		}
 	}
@@ -358,13 +374,21 @@ func receiverSinkExpr(pass *analysis.Pass, call *ast.CallExpr) (ast.Expr, bool) 
 	return sel.X, isAPIClientPointer(selection.Recv())
 }
 
-func elasticsearchClientParamIndices(pass *analysis.Pass, call *ast.CallExpr) []int {
-	fnObj := calledFunction(pass, call)
+// elasticsearchClientParamIndicesCached returns the parameter indices of *APIClient parameters
+// for the given function, using sinkParamCache to avoid rescanning the signature on repeat calls.
+// fnObj may be nil (cache will not be populated for nil keys).
+func elasticsearchClientParamIndicesCached(pass *analysis.Pass, call *ast.CallExpr, fnObj *types.Func, sinkParamCache map[*types.Func][]int) []int {
 	if fnObj == nil || fnObj.Pkg() == nil || !strings.HasPrefix(fnObj.Pkg().Path(), esPkg) {
 		return nil
 	}
+
+	if cached, ok := sinkParamCache[fnObj]; ok {
+		return cached
+	}
+
 	sig, ok := fnObj.Type().(*types.Signature)
 	if !ok {
+		sinkParamCache[fnObj] = nil
 		return nil
 	}
 
@@ -374,6 +398,7 @@ func elasticsearchClientParamIndices(pass *analysis.Pass, call *ast.CallExpr) []
 			result = append(result, i)
 		}
 	}
+	sinkParamCache[fnObj] = result
 	return result
 }
 
@@ -390,9 +415,9 @@ func calledFunction(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
 	}
 }
 
-func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	if len(assign.Rhs) == 1 && len(assign.Lhs) > 1 {
-		derived := isDerivedClientExpr(pass, assign.Rhs[0], allowedWrappers, derivedVars)
+		derived := isDerivedClientExpr(pass, assign.Rhs[0], allowedWrappers, derivedVars, factCache)
 		for _, lhs := range assign.Lhs {
 			id, ok := lhs.(*ast.Ident)
 			if !ok || id.Name == "_" {
@@ -414,13 +439,13 @@ func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrapper
 		if !ok || v == nil {
 			continue
 		}
-		derivedVars[v] = isDerivedClientExpr(pass, assign.Rhs[i], allowedWrappers, derivedVars)
+		derivedVars[v] = isDerivedClientExpr(pass, assign.Rhs[i], allowedWrappers, derivedVars, factCache)
 	}
 }
 
-func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
+func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, sinkParamCache map[*types.Func][]int, factCache map[*types.Func]*clientReturnFact) {
 	if len(spec.Values) == 1 && len(spec.Names) > 1 {
-		derived := isDerivedClientExpr(pass, spec.Values[0], allowedWrappers, derivedVars)
+		derived := isDerivedClientExpr(pass, spec.Values[0], allowedWrappers, derivedVars, factCache)
 		for _, name := range spec.Names {
 			if v, ok := pass.TypesInfo.ObjectOf(name).(*types.Var); ok && v != nil {
 				derivedVars[v] = derived
@@ -434,14 +459,14 @@ func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers ma
 		if !ok || v == nil {
 			continue
 		}
-		derivedVars[v] = isDerivedClientExpr(pass, spec.Values[i], allowedWrappers, derivedVars)
+		derivedVars[v] = isDerivedClientExpr(pass, spec.Values[i], allowedWrappers, derivedVars, factCache)
 	}
 }
 
-func isDerivedClientExpr(pass *analysis.Pass, expr ast.Expr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) bool {
+func isDerivedClientExpr(pass *analysis.Pass, expr ast.Expr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, factCache map[*types.Func]*clientReturnFact) bool {
 	switch e := expr.(type) {
 	case *ast.ParenExpr:
-		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars)
+		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars, factCache)
 	case *ast.Ident:
 		v, ok := pass.TypesInfo.ObjectOf(e).(*types.Var)
 		if !ok || v == nil {
@@ -452,24 +477,36 @@ func isDerivedClientExpr(pass *analysis.Pass, expr ast.Expr, allowedWrappers map
 		if isApprovedSourceCall(pass, e, allowedWrappers) {
 			return true
 		}
-		return isFactDerivedCall(pass, e, allowedWrappers, derivedVars)
+		fnObj := calledFunction(pass, e)
+		return isFactDerivedCallWithFn(pass, e, fnObj, allowedWrappers, derivedVars, factCache)
 	case *ast.TypeAssertExpr:
-		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars)
+		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars, factCache)
 	case *ast.UnaryExpr:
-		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars)
+		return isDerivedClientExpr(pass, e.X, allowedWrappers, derivedVars, factCache)
 	default:
 		return false
 	}
 }
 
-func isFactDerivedCall(pass *analysis.Pass, call *ast.CallExpr, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) bool {
-	fnObj := calledFunction(pass, call)
+// isFactDerivedCallWithFn checks whether the call returns a derived client by importing the fact
+// for fnObj. fnObj is passed in so the caller can reuse an already-resolved *types.Func without
+// calling calledFunction again. factCache avoids repeated pass.ImportObjectFact calls for the
+// same function across the pass.
+func isFactDerivedCallWithFn(pass *analysis.Pass, call *ast.CallExpr, fnObj *types.Func, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool, factCache map[*types.Func]*clientReturnFact) bool {
 	if fnObj == nil {
 		return false
 	}
 
-	fact := &clientReturnFact{}
-	if !pass.ImportObjectFact(fnObj, fact) {
+	fact, ok := factCache[fnObj]
+	if !ok {
+		f := &clientReturnFact{}
+		if pass.ImportObjectFact(fnObj, f) {
+			fact = f
+		}
+		factCache[fnObj] = fact // nil means "no fact available"
+	}
+
+	if fact == nil {
 		return false
 	}
 
@@ -484,7 +521,7 @@ func isFactDerivedCall(pass *analysis.Pass, call *ast.CallExpr, allowedWrappers 
 		if idx < 0 || idx >= len(call.Args) {
 			return false
 		}
-		if !isDerivedClientExpr(pass, call.Args[idx], allowedWrappers, derivedVars) {
+		if !isDerivedClientExpr(pass, call.Args[idx], allowedWrappers, derivedVars, factCache) {
 			return false
 		}
 	}

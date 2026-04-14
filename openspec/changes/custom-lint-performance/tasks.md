@@ -16,9 +16,9 @@
 
 ## 4. Optimize `esclienthelper`
 
-- [ ] 4.1 Refactor `analysis/esclienthelperplugin/analyzer.go` to precompute the in-scope non-test Elasticsearch files once per pass and reuse that scoped file list across the fact-export and sink-check phases.
-- [ ] 4.2 Add run-scoped caches for stable per-function metadata such as Elasticsearch sink parameter indices and imported client-return facts so repeated sink checks stop rescanning the same signatures and reimporting the same facts.
-- [ ] 4.3 Refactor sink and provenance helpers to reuse resolved callees where practical while preserving the current conservative provenance model and diagnostics.
+- [x] 4.1 Refactor `analysis/esclienthelperplugin/analyzer.go` to precompute the in-scope non-test Elasticsearch files once per pass and reuse that scoped file list across the fact-export and sink-check phases.
+- [x] 4.2 Add run-scoped caches for stable per-function metadata such as Elasticsearch sink parameter indices and imported client-return facts so repeated sink checks stop rescanning the same signatures and reimporting the same facts.
+- [x] 4.3 Refactor sink and provenance helpers to reuse resolved callees where practical while preserving the current conservative provenance model and diagnostics.
 - [x] 4.4 Add or update analyzer tests and benchmarks so current compliant and violating sink behaviors remain unchanged while the cached path is exercised.
 
 ## 5. Validate behavior and performance
