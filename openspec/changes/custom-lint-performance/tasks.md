@@ -23,5 +23,5 @@
 
 ## 5. Validate behavior and performance
 
-- [ ] 5.1 Capture before/after isolated measurements for both custom analyzers with `make lint-perf` and inspect the generated timing/profile artifacts to confirm the expected hot paths shrink.
-- [ ] 5.2 Run targeted analyzer tests and the relevant repository lint checks to confirm the optimizations do not change the enforced lint behavior.
+- [x] 5.1 Capture before/after isolated measurements for both custom analyzers with `make lint-perf` and inspect the generated timing/profile artifacts to confirm the expected hot paths shrink.
+- [x] 5.2 Run targeted analyzer tests and the relevant repository lint checks to confirm the optimizations do not change the enforced lint behavior.
