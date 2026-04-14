@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,13 +38,19 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx, r.client)
+	body, diags := planModel.toAPICreateModel(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -59,7 +66,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	output, diags := fleet.CreateOutput(ctx, client, spaceID, body)
+	output, diags := fleet.CreateOutput(ctx, fleetClient, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

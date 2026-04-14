@@ -20,6 +20,7 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,7 +38,13 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -59,7 +66,7 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 	}
 
-	host, diags := fleet.CreateFleetServerHost(ctx, client, spaceID, body)
+	host, diags := fleet.CreateFleetServerHost(ctx, fleetClient, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

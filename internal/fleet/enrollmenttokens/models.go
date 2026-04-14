@@ -28,10 +28,11 @@ import (
 )
 
 type enrollmentTokensModel struct {
-	ID       types.String `tfsdk:"id"`
-	PolicyID types.String `tfsdk:"policy_id"`
-	SpaceID  types.String `tfsdk:"space_id"`
-	Tokens   types.List   `tfsdk:"tokens"` // > enrollmentTokenModel
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	PolicyID         types.String `tfsdk:"policy_id"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	Tokens           types.List   `tfsdk:"tokens"` // > enrollmentTokenModel
 }
 
 type enrollmentTokenModel struct {

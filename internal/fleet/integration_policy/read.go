@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -36,7 +37,13 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -52,7 +59,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Query using the operational space from STATE
-	policy, diags := fleet.GetPackagePolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleet.GetPackagePolicy(ctx, fleetClient, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -85,7 +92,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
+	pkg, diags := getPackageInfo(ctx, fleetClient, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

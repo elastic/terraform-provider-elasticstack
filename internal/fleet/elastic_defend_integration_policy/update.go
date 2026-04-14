@@ -20,6 +20,7 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,13 +36,19 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	diags = req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -71,7 +78,7 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 	}
 	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
 
-	_, diags = fleetclient.UpdateDefendPackagePolicy(ctx, client, policyID, spaceID, updateReq)
+	_, diags = fleetclient.UpdateDefendPackagePolicy(ctx, fleetClient, policyID, spaceID, updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -79,7 +86,7 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 
 	// The PUT response does not include spaceIds, so do a GET to retrieve the
 	// full policy state (including spaceIds and the server-managed artifact_manifest).
-	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

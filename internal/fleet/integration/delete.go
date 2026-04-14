@@ -20,6 +20,7 @@ package integration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,7 +36,13 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -56,6 +63,6 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		spaceID = stateModel.SpaceID.ValueString()
 	}
 
-	diags = fleet.Uninstall(ctx, client, name, version, spaceID, force)
+	diags = fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 	resp.Diagnostics.Append(diags...)
 }

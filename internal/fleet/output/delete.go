@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,7 +35,13 @@ func (r *outputResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -52,6 +59,6 @@ func (r *outputResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// Delete using the operational space from STATE
-	diags = fleet.DeleteOutput(ctx, client, outputID, spaceID)
+	diags = fleet.DeleteOutput(ctx, fleetClient, outputID, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

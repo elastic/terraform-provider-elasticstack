@@ -20,6 +20,7 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,7 +35,13 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -49,7 +56,7 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 		return
 	}
 
-	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

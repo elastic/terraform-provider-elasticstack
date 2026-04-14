@@ -20,6 +20,7 @@ package agentpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,7 +35,13 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -50,7 +57,7 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	// Query using the operational space from STATE
-	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleet.GetAgentPolicy(ctx, fleetClient, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

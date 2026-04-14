@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -37,13 +38,19 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	diags = req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -72,7 +79,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// Update using the operational space from STATE
 	// The API will handle adding/removing policy from spaces based on space_ids in body
-	policy, diags := fleet.UpdatePackagePolicy(ctx, client, policyID, spaceID, body)
+	policy, diags := fleet.UpdatePackagePolicy(ctx, fleetClient, policyID, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -97,7 +104,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
+	pkg, diags := getPackageInfo(ctx, fleetClient, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -36,7 +37,13 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	client, err := d.client.GetFleetClient()
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, d.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -48,13 +55,13 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 
 	// Query enrollment tokens with space context if needed
 	if policyID == "" {
-		tokens, diags = fleet.GetEnrollmentTokens(ctx, client, spaceID)
+		tokens, diags = fleet.GetEnrollmentTokens(ctx, fleetClient, spaceID)
 	} else {
 		// Get tokens by policy, with space awareness if specified
 		if spaceID != "" && spaceID != "default" {
-			tokens, diags = fleet.GetEnrollmentTokensByPolicyInSpace(ctx, client, policyID, spaceID)
+			tokens, diags = fleet.GetEnrollmentTokensByPolicyInSpace(ctx, fleetClient, policyID, spaceID)
 		} else {
-			tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, client, policyID)
+			tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
 		}
 	}
 	resp.Diagnostics.Append(diags...)
@@ -65,7 +72,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 	if policyID != "" {
 		model.ID = types.StringValue(policyID)
 	} else {
-		hash, err := schemautil.StringToHash(client.URL)
+		hash, err := schemautil.StringToHash(fleetClient.URL)
 		if err != nil {
 			resp.Diagnostics.AddError(err.Error(), "")
 			return
