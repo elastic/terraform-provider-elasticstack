@@ -10,8 +10,8 @@
 
 ## 3. Optimize `acctestconfigdirlint`
 
-- [ ] 3.1 Refactor `analysis/acctestconfigdirlintplugin/analyzer.go` to iterate `pass.Files`, skip non-`*_test.go` files before AST walking, and inspect only candidate acceptance-test calls rather than traversing every package call expression through `inspect.Analyzer`.
-- [ ] 3.2 Preserve the current typed confirmation and diagnostics for `resource.Test` / `resource.ParallelTest` inline `resource.TestCase` handling while removing duplicate local work such as repeated composite-literal element scans and unnecessary filename position materialization.
+- [x] 3.1 Refactor `analysis/acctestconfigdirlintplugin/analyzer.go` to iterate `pass.Files`, skip non-`*_test.go` files before AST walking, and inspect only candidate acceptance-test calls rather than traversing every package call expression through `inspect.Analyzer`.
+- [x] 3.2 Preserve the current typed confirmation and diagnostics for `resource.Test` / `resource.ParallelTest` inline `resource.TestCase` handling while removing duplicate local work such as repeated composite-literal element scans and unnecessary filename position materialization.
 - [x] 3.3 Add or update analyzer tests and benchmarks so current compliant and violating cases remain unchanged while the narrowed traversal path is exercised.
 
 ## 4. Optimize `esclienthelper`

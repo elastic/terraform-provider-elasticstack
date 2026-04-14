@@ -23,8 +23,6 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 const (
@@ -34,48 +32,62 @@ const (
 )
 
 var Analyzer = &analysis.Analyzer{
-	Name:     "acctestconfigdirlint",
-	Doc:      "enforce directory-backed fixtures and step-local provider wiring in acceptance tests (resource.TestCase must be a composite literal as the second argument to resource.Test or resource.ParallelTest)",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
-	Run:      run,
+	Name: "acctestconfigdirlint",
+	Doc:  "enforce directory-backed fixtures and step-local provider wiring in acceptance tests (resource.TestCase must be a composite literal as the second argument to resource.Test or resource.ParallelTest)",
+	Run:  run,
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
+	for _, file := range pass.Files {
+		// Skip non-test files early, before any typed lookup.
+		filename := pass.Fset.File(file.Pos()).Name()
+		if !strings.HasSuffix(filename, "_test.go") {
+			continue
+		}
 
-	// Only process _test.go files.
-	nodeFilter := []ast.Node{
-		(*ast.CallExpr)(nil),
+		// Walk only this test file for candidate acceptance-test calls.
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+
+			// Cheap syntactic guard: only consider selector calls whose
+			// selector name is "Test" or "ParallelTest" before paying for
+			// the typed calledFunction lookup.
+			if !isCandidateCallExpr(call) {
+				return true
+			}
+
+			// Typed confirmation: the call must resolve to resource.Test or
+			// resource.ParallelTest from the testing helper package.
+			if !isAcceptanceTestCall(pass, call) {
+				return true
+			}
+
+			// The call is resource.Test(t, testCase) or resource.ParallelTest(t, testCase).
+			// The second argument should be the resource.TestCase.
+			if len(call.Args) < 2 {
+				return true
+			}
+
+			inspectTestCase(pass, call.Args[1])
+			return true
+		})
 	}
 
-	insp.Preorder(nodeFilter, func(n ast.Node) {
-		call, ok := n.(*ast.CallExpr)
-		if !ok {
-			return
-		}
-
-		// Check if this is a call to resource.Test or resource.ParallelTest.
-		if !isAcceptanceTestCall(pass, call) {
-			return
-		}
-
-		// The call is resource.Test(t, testCase) or resource.ParallelTest(t, testCase).
-		// The second argument should be the resource.TestCase.
-		if len(call.Args) < 2 {
-			return
-		}
-
-		// Get the filename to check it's a _test.go file.
-		pos := pass.Fset.Position(call.Pos())
-		if !strings.HasSuffix(pos.Filename, "_test.go") {
-			return
-		}
-
-		testCaseArg := call.Args[1]
-		inspectTestCase(pass, testCaseArg)
-	})
-
 	return nil, nil
+}
+
+// isCandidateCallExpr returns true if call is syntactically a selector call whose
+// selector name is "Test" or "ParallelTest". This is a cheap guard before typed lookup.
+func isCandidateCallExpr(call *ast.CallExpr) bool {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	name := sel.Sel.Name
+	return name == "Test" || name == "ParallelTest"
 }
 
 // isAcceptanceTestCall returns true if call is resource.Test(...) or resource.ParallelTest(...).
@@ -105,6 +117,8 @@ func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
 		return
 	}
 
+	// Single pass over elements: check ProtoV6ProviderFactories and gather the Steps slice.
+	var stepsLit *ast.CompositeLit
 	for _, elt := range lit.Elts {
 		kv, ok := elt.(*ast.KeyValueExpr)
 		if !ok {
@@ -114,34 +128,26 @@ func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
 		if !ok {
 			continue
 		}
-		if key.Name == "ProtoV6ProviderFactories" {
+		switch key.Name {
+		case "ProtoV6ProviderFactories":
 			pass.Reportf(kv.Value.Pos(), msgTestCaseProtoV6ProviderFactories)
+		case "Steps":
+			if sl, ok := kv.Value.(*ast.CompositeLit); ok {
+				stepsLit = sl
+			}
 		}
 	}
 
-	for _, elt := range lit.Elts {
-		kv, ok := elt.(*ast.KeyValueExpr)
+	if stepsLit == nil {
+		return
+	}
+
+	for _, stepElt := range stepsLit.Elts {
+		stepLit, ok := stepElt.(*ast.CompositeLit)
 		if !ok {
 			continue
 		}
-		key, ok := kv.Key.(*ast.Ident)
-		if !ok || key.Name != "Steps" {
-			continue
-		}
-
-		// The value should be a slice literal of resource.TestStep.
-		sliceLit, ok := kv.Value.(*ast.CompositeLit)
-		if !ok {
-			continue
-		}
-
-		for _, stepElt := range sliceLit.Elts {
-			stepLit, ok := stepElt.(*ast.CompositeLit)
-			if !ok {
-				continue
-			}
-			inspectTestStep(pass, stepLit)
-		}
+		inspectTestStep(pass, stepLit)
 	}
 }
 
