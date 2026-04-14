@@ -49,6 +49,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 type kibanaAPIRequest struct {
@@ -115,6 +116,7 @@ type tfBrowserMonitorFieldsV0 struct {
 
 type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
+	KibanaConnection types.List `tfsdk:"kibana_connection"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
@@ -277,7 +279,10 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: retestOnFailureDescription,
 			},
 		},
-	}
+	
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 func browserMonitorFieldsSchema() schema.Attribute {

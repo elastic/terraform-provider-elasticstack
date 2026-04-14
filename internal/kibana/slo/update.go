@@ -20,6 +20,7 @@ package slo
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,13 +39,19 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	apiModel, diags := plan.toAPIModel()
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -91,13 +98,13 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	_, sdkDiags = clientkibana.UpdateSlo(ctx, r.client, apiModel, supportsMultipleGroupBy)
+	_, sdkDiags = clientkibana.UpdateSlo(ctx, apiClient, apiModel, supportsMultipleGroupBy)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	r.readAndPopulate(ctx, &plan, &response.Diagnostics)
+	r.readAndPopulate(ctx, apiClient, &plan, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

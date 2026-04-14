@@ -20,7 +20,6 @@ package spaces
 import (
 	"context"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
@@ -38,7 +37,7 @@ func NewDataSource() datasource.DataSource {
 
 // dataSource is the data source implementation.
 type dataSource struct {
-	client *kbapi.KibanaSpacesAPI
+	client *clients.APIClient
 }
 
 // Metadata returns the data source type name.
@@ -60,11 +59,5 @@ func (d *dataSource) Configure(_ context.Context, req datasource.ConfigureReques
 		return
 	}
 
-	kibanaClient, err := client.GetKibanaClient()
-	if err != nil {
-		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
-		return
-	}
-
-	d.client = kibanaClient.KibanaSpaces
+	d.client = client
 }

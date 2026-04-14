@@ -37,6 +37,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 //go:embed resource-description.md
@@ -44,6 +45,7 @@ var syntheticsParameterDescription string
 
 type tfModelV0 struct {
 	ID                types.String   `tfsdk:"id"`
+	KibanaConnection types.List `tfsdk:"kibana_connection"`
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
@@ -110,7 +112,10 @@ func parameterSchema() schema.Schema {
 				},
 			},
 		},
-	}
+	
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {

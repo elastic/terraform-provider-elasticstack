@@ -37,6 +37,7 @@ const (
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
 	ID            types.String        `tfsdk:"id"`
+	KibanaConnection types.List `tfsdk:"kibana_connection"`
 	SpaceID       types.String        `tfsdk:"space_id"`
 	Name          types.String        `tfsdk:"name"`
 	Description   types.String        `tfsdk:"description"`

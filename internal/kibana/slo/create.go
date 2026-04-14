@@ -40,13 +40,19 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	apiModel, diags := plan.toAPIModel()
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -93,7 +99,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	res, sdkDiags := clientkibana.CreateSlo(ctx, r.client, apiModel, supportsMultipleGroupBy)
+	res, sdkDiags := clientkibana.CreateSlo(ctx, apiClient, apiModel, supportsMultipleGroupBy)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -103,7 +109,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	plan.ID = types.StringValue(compositeID)
 
 	// Read back to populate computed fields.
-	r.readAndPopulate(ctx, &plan, &response.Diagnostics)
+	r.readAndPopulate(ctx, apiClient, &plan, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

@@ -22,16 +22,12 @@ import (
 	"fmt"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
@@ -39,7 +35,18 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromAPIClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
 	if response.Diagnostics.HasError() {
 		return
 	}

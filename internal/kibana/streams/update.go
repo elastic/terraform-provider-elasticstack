@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -33,7 +34,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
+	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,7 +53,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	readModel := r.upsert(ctx, planModel, &resp.Diagnostics)
+	readModel := r.upsert(ctx, client, planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

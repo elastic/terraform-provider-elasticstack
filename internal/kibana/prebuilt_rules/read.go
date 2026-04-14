@@ -20,6 +20,7 @@ package prebuiltrules
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
@@ -34,7 +35,13 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	apiClient, clientDiags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,7 +53,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

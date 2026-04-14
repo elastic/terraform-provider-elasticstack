@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -54,15 +55,21 @@ func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Clien
 }
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	kibanaClient := synthetics.GetKibanaOAPIClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var state tfModelV0
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaOAPIClientFromAPIClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 

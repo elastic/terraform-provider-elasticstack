@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -29,11 +30,6 @@ import (
 var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
@@ -41,7 +37,18 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromAPIClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
 	if response.Diagnostics.HasError() {
 		return
 	}

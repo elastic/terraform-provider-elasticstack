@@ -39,6 +39,12 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
+	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
 	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
@@ -46,6 +52,6 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	// Note: internal/clients/kibana.DeleteSlo expects (spaceId, sloId).
-	sdkDiags := clientkibana.DeleteSlo(ctx, r.client, compID.ClusterID, compID.ResourceID)
+	sdkDiags := clientkibana.DeleteSlo(ctx, apiClient, compID.ClusterID, compID.ResourceID)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 }
