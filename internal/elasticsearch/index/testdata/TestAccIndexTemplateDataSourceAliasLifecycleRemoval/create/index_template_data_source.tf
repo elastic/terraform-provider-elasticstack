@@ -6,33 +6,26 @@ variable "template_name" {
   type = string
 }
 
-variable "mappings" {
-  # Expected to be a JSON-encoded string.
-  type = string
-}
-
-variable "settings" {
-  # Expected to be a JSON-encoded string.
-  type = string
-}
-
 resource "elasticstack_elasticsearch_index_template" "test" {
   name           = var.template_name
   index_patterns = ["${var.template_name}-*"]
 
+  data_stream {}
+
   template {
     alias {
-      name           = "my_alias"
+      name           = "detailed_alias_initial"
       filter         = jsonencode({ term = { status = "active" } })
-      routing        = "shard_1"
-      index_routing  = "shard_1"
-      search_routing = "shard_1"
-      is_hidden      = false
+      is_hidden      = true
       is_write_index = true
+      routing        = "shard_1"
+      search_routing = "shard_1"
+      index_routing  = "shard_1"
     }
 
-    mappings = var.mappings
-    settings = var.settings
+    lifecycle {
+      data_retention = "30d"
+    }
   }
 }
 
