@@ -73,7 +73,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl.toCreateElasticsearch(),
+		Ssl:                  ssl.toAPI(),
 	}
 
 	var union kbapi.NewOutputUnion
@@ -103,7 +103,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl.toUpdateElasticsearch(),
+		Ssl:                  ssl.toAPI(),
 	}
 
 	var union kbapi.UpdateOutputUnion
