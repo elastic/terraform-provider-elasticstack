@@ -9,9 +9,5 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_watch" "test" {
   watch_id = var.watch_id
 
-  trigger = <<EOF
-  {
-    "schedule" : { "cron" : "0 0/1 * * * ?" }
-  }
-EOF
+  trigger = jsonencode({ schedule = { cron = "0 0/1 * * * ?" } })
 }
