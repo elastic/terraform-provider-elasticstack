@@ -72,16 +72,19 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Optional:    true,
 			},
 			"create_new_copies": schema.BoolAttribute{
-				Description: "Creates copies of saved objects, regenerates each object ID, and resets the origin. When used, potential conflict errors are avoided. Cannot be used with overwrite or compatibility_mode.",
-				Optional:    true,
+				Description: "Creates copies of saved objects, regenerates each object ID, and resets the origin. " +
+					"When used, potential conflict errors are avoided. Cannot be used with overwrite or compatibility_mode.",
+				Optional: true,
 			},
 			"overwrite": schema.BoolAttribute{
 				Description: "Overwrites saved objects when they already exist. When used, potential conflict errors are automatically resolved by overwriting the destination object.",
 				Optional:    true,
 			},
 			"compatibility_mode": schema.BoolAttribute{
-				Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions. Use this option only if you encounter issues with imported saved objects. Cannot be used with create_new_copies.",
-				Optional:    true,
+				Description: "Applies various adjustments to the saved objects that are being imported to maintain " +
+					"compatibility between different Kibana versions. Use this option only if you encounter issues with " +
+					"imported saved objects. Cannot be used with create_new_copies.",
+				Optional: true,
 			},
 			"file_contents": schema.StringAttribute{
 				Description: "The contents of the exported saved objects file.",

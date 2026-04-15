@@ -85,25 +85,17 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	diags.Append(state.SetAttribute(ctx, path.Root("success"), result.Success)...)
 	diags.Append(state.SetAttribute(ctx, path.Root("success_count"), result.SuccessCount)...)
 
-	errors, errDiags := mapImportErrors(result.Errors)
-	diags.Append(errDiags...)
-	if diags.HasError() {
-		return
-	}
+	errors := mapImportErrors(result.Errors)
 	diags.Append(state.SetAttribute(ctx, path.Root("errors"), errors)...)
 
-	successResults, srDiags := mapSuccessResults(result.SuccessResults)
-	diags.Append(srDiags...)
-	if diags.HasError() {
-		return
-	}
+	successResults := mapSuccessResults(result.SuccessResults)
 	diags.Append(state.SetAttribute(ctx, path.Root("success_results"), successResults)...)
 
 	if diags.HasError() {
 		return
 	}
 
-	if !result.Success && !(typeutils.IsKnown(model.IgnoreImportErrors) && model.IgnoreImportErrors.ValueBool()) {
+	if !result.Success && (!typeutils.IsKnown(model.IgnoreImportErrors) || !model.IgnoreImportErrors.ValueBool()) {
 		var detail strings.Builder
 		for i, e := range errors {
 			fmt.Fprintf(&detail, "import error [%d]: %s\n", i, e)
@@ -125,7 +117,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 }
 
 // mapImportErrors converts the raw map slice from the API response into typed importError structs.
-func mapImportErrors(raw []map[string]any) ([]importError, diag.Diagnostics) {
+func mapImportErrors(raw []map[string]any) []importError {
 	result := make([]importError, 0, len(raw))
 	for _, m := range raw {
 		ie := importError{}
@@ -155,11 +147,11 @@ func mapImportErrors(raw []map[string]any) ([]importError, diag.Diagnostics) {
 		}
 		result = append(result, ie)
 	}
-	return result, nil
+	return result
 }
 
 // mapSuccessResults converts the raw map slice from the API response into typed importSuccess structs.
-func mapSuccessResults(raw []map[string]any) ([]importSuccess, diag.Diagnostics) {
+func mapSuccessResults(raw []map[string]any) []importSuccess {
 	result := make([]importSuccess, 0, len(raw))
 	for _, m := range raw {
 		is := importSuccess{}
@@ -184,7 +176,7 @@ func mapSuccessResults(raw []map[string]any) ([]importSuccess, diag.Diagnostics)
 		}
 		result = append(result, is)
 	}
-	return result, nil
+	return result
 }
 
 type importSuccess struct {

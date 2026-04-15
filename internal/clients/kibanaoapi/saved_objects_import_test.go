@@ -40,10 +40,10 @@ func TestImportSavedObjects_MultipartFormat(t *testing.T) {
 	var capturedContentType string
 	var capturedBody []byte
 
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		capturedContentType = req.Header.Get("Content-Type")
-		body, err := io.ReadAll(req.Body)
-		require.NoError(t, err)
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		capturedContentType = r.Header.Get("Content-Type")
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
 		capturedBody = body
 
 		rw.Header().Set("Content-Type", "application/json")
@@ -90,7 +90,7 @@ func TestImportSavedObjects_MultipartFormat(t *testing.T) {
 
 	partContent, err := io.ReadAll(part)
 	require.NoError(t, err)
-	assert.Equal(t, ndjsonContent, string(partContent))
+	assert.Equal(t, ndjsonContent, string(partContent)) //nolint:testifylint // NDJSON is not a single JSON document; JSONEq does not apply
 
 	// Verify no more parts
 	_, err = mr.NextPart()
@@ -129,7 +129,7 @@ func TestImportSavedObjects_SpaceAwarePath(t *testing.T) {
 }
 
 func TestImportSavedObjects_400Response(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(rw).Encode(map[string]any{
@@ -157,7 +157,7 @@ func TestImportSavedObjects_400Response(t *testing.T) {
 }
 
 func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte("internal server error"))
 	}))
@@ -180,7 +180,7 @@ func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {
 }
 
 func TestImportSavedObjects_SuccessCountConvertedToInt64(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(rw).Encode(map[string]any{
