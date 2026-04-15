@@ -164,13 +164,29 @@ func TestDeleteMonitor_200(t *testing.T) {
 		ids, _ := body["ids"].([]any)
 		assert.Len(t, ids, 1)
 		assert.Equal(t, "monitor-id", ids[0])
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{"id":"monitor-id","deleted":true}]`))
 	}))
 	defer srv.Close()
 
 	client := newTestClient(t, srv)
 	diags := DeleteMonitor(context.Background(), client, "default", "monitor-id")
 	assert.False(t, diags.HasError(), diags)
+}
+
+func TestDeleteMonitor_200_deletedFalse(t *testing.T) {
+	// When the bulk delete responds 200 but deleted=false for the monitor, it should be an error.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{"id":"monitor-id","deleted":false}]`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(t, srv)
+	diags := DeleteMonitor(context.Background(), client, "default", "monitor-id")
+	assert.True(t, diags.HasError(), "expected error when deleted=false")
 }
 
 func TestDeleteMonitor_404(t *testing.T) {

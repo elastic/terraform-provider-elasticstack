@@ -281,11 +281,19 @@ func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 	}
 }
 
+// monitorDeleteStatus represents a single item in the Kibana bulk-delete response body.
+type monitorDeleteStatus struct {
+	ID      string `json:"id"`
+	Deleted bool   `json:"deleted"`
+}
+
 // DeleteMonitor deletes a synthetics monitor via DELETE /api/synthetics/monitors.
 // It uses the bulk-delete endpoint (body: {"ids": [monitorID]}) which is supported
 // across all Kibana versions that have the synthetics monitor resource (8.14+).
 // The per-id endpoint (DELETE /api/synthetics/monitors/{id}) was not available in
 // older Kibana versions and would return 404, causing silent deletion failures.
+// The response body is parsed to detect per-item failures reported as HTTP 200 with
+// deleted=false (e.g., when the monitor is in use or an internal error occurs).
 func DeleteMonitor(ctx context.Context, client *Client, spaceID string, monitorID string) diag.Diagnostics {
 	body, err := json.Marshal(map[string]any{"ids": []string{monitorID}})
 	if err != nil {
@@ -307,11 +315,26 @@ func DeleteMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	respBody, _ := io.ReadAll(resp.Body)
+
 	switch resp.StatusCode {
-	case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
+	case http.StatusNoContent, http.StatusNotFound:
+		return nil
+	case http.StatusOK:
+		// Parse the per-item result array to detect partial failures.
+		var results []monitorDeleteStatus
+		if jsonErr := json.Unmarshal(respBody, &results); jsonErr != nil {
+			// If the response body cannot be parsed, assume success — the HTTP 200
+			// indicates the request was accepted by the server.
+			return nil
+		}
+		for _, r := range results {
+			if r.ID == monitorID && !r.Deleted {
+				return diagutil.FrameworkDiagFromError(fmt.Errorf("monitor %s was not deleted by Kibana", monitorID))
+			}
+		}
 		return nil
 	default:
-		respBody, _ := io.ReadAll(resp.Body)
 		return diagutil.FrameworkDiagFromError(fmt.Errorf("unexpected status %d deleting monitor %s: %s", resp.StatusCode, monitorID, string(respBody)))
 	}
 }
