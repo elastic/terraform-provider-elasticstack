@@ -124,7 +124,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 }
 
 // mapImportErrors converts the raw map slice from the API response into typed importError structs.
-func mapImportErrors(raw []map[string]interface{}) ([]importError, diag.Diagnostics) {
+func mapImportErrors(raw []map[string]any) ([]importError, diag.Diagnostics) {
 	result := make([]importError, 0, len(raw))
 	for _, m := range raw {
 		ie := importError{}
@@ -137,12 +137,12 @@ func mapImportErrors(raw []map[string]interface{}) ([]importError, diag.Diagnost
 		if v, ok := m["title"].(string); ok {
 			ie.Title = v
 		}
-		if errMap, ok := m["error"].(map[string]interface{}); ok {
+		if errMap, ok := m["error"].(map[string]any); ok {
 			if v, ok := errMap["type"].(string); ok {
 				ie.Error = importErrorType{Type: v}
 			}
 		}
-		if metaMap, ok := m["meta"].(map[string]interface{}); ok {
+		if metaMap, ok := m["meta"].(map[string]any); ok {
 			meta := importMeta{}
 			if v, ok := metaMap["icon"].(string); ok {
 				meta.Icon = v
@@ -158,7 +158,7 @@ func mapImportErrors(raw []map[string]interface{}) ([]importError, diag.Diagnost
 }
 
 // mapSuccessResults converts the raw map slice from the API response into typed importSuccess structs.
-func mapSuccessResults(raw []map[string]interface{}) ([]importSuccess, diag.Diagnostics) {
+func mapSuccessResults(raw []map[string]any) ([]importSuccess, diag.Diagnostics) {
 	result := make([]importSuccess, 0, len(raw))
 	for _, m := range raw {
 		is := importSuccess{}
@@ -171,7 +171,7 @@ func mapSuccessResults(raw []map[string]interface{}) ([]importSuccess, diag.Diag
 		if v, ok := m["destinationId"].(string); ok {
 			is.DestinationID = v
 		}
-		if metaMap, ok := m["meta"].(map[string]interface{}); ok {
+		if metaMap, ok := m["meta"].(map[string]any); ok {
 			meta := importMeta{}
 			if v, ok := metaMap["icon"].(string); ok {
 				meta.Icon = v

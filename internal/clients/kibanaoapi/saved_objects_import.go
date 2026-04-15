@@ -33,8 +33,8 @@ import (
 type ImportSavedObjectsResult struct {
 	Success        bool
 	SuccessCount   int64
-	Errors         []map[string]interface{}
-	SuccessResults []map[string]interface{}
+	Errors         []map[string]any
+	SuccessResults []map[string]any
 }
 
 // ImportSavedObjects calls the Kibana Saved Objects Import API with the provided
