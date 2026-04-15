@@ -48,12 +48,12 @@ func isValidEmbeddedCompatConfig(pass *analysis.Pass, expr ast.Expr) bool {
 	if !isStringKind(v.Type()) {
 		return false
 	}
-	gd, ok := findGenDeclForVar(pass, v)
-	if !ok || gd.Tok != token.VAR {
+	vs, ok := findValueSpecForVar(pass, v)
+	if !ok || vs == nil || len(vs.Names) == 0 || vs.Names[0] == nil {
 		return false
 	}
-	pos := pass.Fset.Position(gd.TokPos)
-	paths := goEmbedPathsAboveLine(pass, pos.Filename, pos.Line)
+	pos := pass.Fset.Position(vs.Names[0].Pos())
+	paths := goEmbedPathsAboveValueSpec(pass, pos.Filename, pos.Line)
 	for _, p := range paths {
 		if isTestdataMainTFEmbedPath(p) {
 			return true
@@ -80,7 +80,7 @@ func isStringKind(typ types.Type) bool {
 	return ok && b.Kind() == types.String
 }
 
-func findGenDeclForVar(pass *analysis.Pass, v *types.Var) (*ast.GenDecl, bool) {
+func findValueSpecForVar(pass *analysis.Pass, v *types.Var) (*ast.ValueSpec, bool) {
 	for _, f := range pass.Files {
 		for _, decl := range f.Decls {
 			gd, ok := decl.(*ast.GenDecl)
@@ -97,7 +97,7 @@ func findGenDeclForVar(pass *analysis.Pass, v *types.Var) (*ast.GenDecl, bool) {
 						continue
 					}
 					if pass.TypesInfo.Defs[name] == v {
-						return gd, true
+						return vs, true
 					}
 				}
 			}
@@ -106,9 +106,11 @@ func findGenDeclForVar(pass *analysis.Pass, v *types.Var) (*ast.GenDecl, bool) {
 	return nil, false
 }
 
-// goEmbedPathsAboveLine collects //go:embed path tokens from consecutive directive lines
-// immediately above the line containing the `var` keyword (1-based line number).
-func goEmbedPathsAboveLine(pass *analysis.Pass, filename string, varKeywordLine1Based int) []string {
+// goEmbedPathsAboveValueSpec collects //go:embed path tokens from consecutive directive lines
+// immediately above the ValueSpec (anchored at the first bound identifier's line). For
+// parenthesized `var (` blocks, lines containing only `(`, `)`, or `var` / `var (` are skipped
+// so a //go:embed placed directly above an inner declaration is still found.
+func goEmbedPathsAboveValueSpec(pass *analysis.Pass, filename string, valueSpecNameLine1Based int) []string {
 	if pass.ReadFile == nil {
 		return nil
 	}
@@ -118,12 +120,15 @@ func goEmbedPathsAboveLine(pass *analysis.Pass, filename string, varKeywordLine1
 	}
 	lines := strings.Split(string(content), "\n")
 	var paths []string
-	for i := varKeywordLine1Based - 2; i >= 0; i-- {
+	for i := valueSpecNameLine1Based - 2; i >= 0; i-- {
 		if i >= len(lines) {
 			continue
 		}
 		line := strings.TrimSpace(lines[i])
 		if line == "" {
+			continue
+		}
+		if isVarGroupBoundaryLine(line) {
 			continue
 		}
 		const prefix = "//go:embed"
@@ -141,6 +146,27 @@ func goEmbedPathsAboveLine(pass *analysis.Pass, filename string, varKeywordLine1
 		paths[i], paths[j] = paths[j], paths[i]
 	}
 	return paths
+}
+
+func isVarGroupBoundaryLine(line string) bool {
+	s := strings.TrimSpace(line)
+	switch s {
+	case "(", ")", "var":
+		return true
+	}
+	if strings.HasPrefix(s, "var") {
+		rest := strings.TrimSpace(strings.TrimPrefix(s, "var"))
+		if rest == "(" || rest == "()" {
+			return true
+		}
+		if len(rest) > 0 && rest[0] == '(' {
+			after := strings.TrimSpace(rest[1:])
+			if after == "" || after == ")" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isTestdataMainTFEmbedPath(path string) bool {

@@ -110,7 +110,7 @@ func TestViolation_ExternalProvidersWithoutConfig(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ExternalProviders: map[string]resource.ExternalProvider{ // want `sets ExternalProviders without inline Config`
+				ExternalProviders: map[string]resource.ExternalProvider{ // want `resource.TestStep sets ExternalProviders without Config`
 					"aws": {Source: "hashicorp/aws"},
 				},
 				// No Config, no ConfigDirectory
@@ -194,6 +194,20 @@ func TestViolation_CompatibilityConfigSprintf(t *testing.T) {
 					"aws": {Source: "hashicorp/aws"},
 				},
 				Config: fmt.Sprintf(`resource "null_resource" "s" { id = "%s" }`, "x"), // want `resource.TestStep sets ExternalProviders with Config that is not`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigConcat rejects string-concatenated Config with ExternalProviders.
+func TestViolation_CompatibilityConfigConcat(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: `resource "null_resource" "a" {}` + "\n" + `resource "null_resource" "b" {}`, // want `resource.TestStep sets ExternalProviders with Config that is not`
 			},
 		},
 	})

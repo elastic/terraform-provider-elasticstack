@@ -31,13 +31,15 @@ const (
 
 	// msgExternalProvidersWithoutConfig is reported when ExternalProviders is set but Config is not.
 	// Compatibility steps that declare ExternalProviders must also set inline Config (no ConfigDirectory).
-	msgExternalProvidersWithoutConfig = "resource.TestStep sets ExternalProviders without inline Config; " +
-		"compatibility steps must pair ExternalProviders with Config: \"...\", not with ConfigDirectory"
+	msgExternalProvidersWithoutConfig = "resource.TestStep sets ExternalProviders without Config; " +
+		"compatibility steps must set Config to a package-level string variable populated by " +
+		"//go:embed from testdata/.../main.tf (not ConfigDirectory), matching the repository fixture pattern"
 
 	// msgExternalProvidersWithConfigDirectory is reported when both ExternalProviders and ConfigDirectory are set.
 	// This is an invalid mix: compatibility steps use ExternalProviders + Config, not ConfigDirectory.
 	msgExternalProvidersWithConfigDirectory = "resource.TestStep sets both ExternalProviders and ConfigDirectory; " +
-		"compatibility steps must pair ExternalProviders with Config: \"...\", not with ConfigDirectory"
+		"compatibility steps must drop ConfigDirectory and use Config with a package-level string variable " +
+		"populated by //go:embed from testdata/.../main.tf"
 
 	// msgTestCaseProtoV6ProviderFactories is reported when resource.TestCase sets ProtoV6ProviderFactories.
 	msgTestCaseProtoV6ProviderFactories = "resource.TestCase sets ProtoV6ProviderFactories; " +

@@ -28,6 +28,16 @@ import (
 //go:embed testdata/sdk_compat/main.tf
 var sdkCompatEmbeddedTF string
 
+var (
+	//go:embed testdata/grouped_embed_compat/main.tf
+	groupedCompatEmbeddedTF string
+)
+
+//go:embed testdata/outer_paren_embed_compat/main.tf
+var (
+	outerParenCompatEmbeddedTF string
+)
+
 // TestOrdinaryStep verifies that a step using ConfigDirectory: acctest.NamedTestCaseDirectory(...)
 // inside resource.Test is compliant and produces no diagnostic.
 func TestOrdinaryStep(t *testing.T) {
@@ -64,6 +74,34 @@ func TestCompatibilityStep(t *testing.T) {
 					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
 				},
 				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepGroupedVarEmbed verifies //go:embed immediately above a ValueSpec inside var ( ... ).
+func TestCompatibilityStepGroupedVarEmbed(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: groupedCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepOuterEmbedBeforeParen verifies //go:embed above a parenthesized var block.
+func TestCompatibilityStepOuterEmbedBeforeParen(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: outerParenCompatEmbeddedTF,
 			},
 		},
 	})
