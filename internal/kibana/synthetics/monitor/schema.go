@@ -538,7 +538,7 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 	}
 }
 
-func toNormalizedValue(jsObj map[string]interface{}) (jsontypes.Normalized, error) {
+func toNormalizedValue(jsObj map[string]any) (jsontypes.Normalized, error) {
 	res, err := json.Marshal(jsObj)
 	if err != nil {
 		return jsontypes.NewNormalizedUnknown(), err
@@ -546,11 +546,11 @@ func toNormalizedValue(jsObj map[string]interface{}) (jsontypes.Normalized, erro
 	return jsontypes.NewNormalizedValue(string(res)), nil
 }
 
-func toJSONObject(v jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+func toJSONObject(v jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
 	if v.IsNull() {
 		return nil, diag.Diagnostics{}
 	}
-	var res map[string]interface{}
+	var res map[string]any
 	dg := v.Unmarshal(&res)
 	if dg.HasError() {
 		return nil, dg

@@ -90,7 +90,7 @@ type SyntheticsMonitor struct {
 	Alert          *SyntheticsMonitorAlert    `json:"alert,omitempty"`
 	APMServiceName string                     `json:"service.name,omitempty"`
 	Timeout        json.Number                `json:"timeout,omitempty"`
-	Params         map[string]interface{}     `json:"params,omitempty"`
+	Params         map[string]any             `json:"params,omitempty"`
 	RetestOnFailure *bool                     `json:"retest_on_failure,omitempty"`
 
 	// HTTP-specific fields
@@ -101,10 +101,10 @@ type SyntheticsMonitor struct {
 	Ipv6         *bool                  `json:"ipv6,omitempty"`
 	Username     string                 `json:"username,omitempty"`
 	Password     string                 `json:"password,omitempty"`
-	ProxyHeaders map[string]interface{} `json:"proxy_headers,omitempty"`
+	ProxyHeaders map[string]any `json:"proxy_headers,omitempty"`
 	// Response and Check are preserved as raw JSON to match existing behavior.
-	Response map[string]interface{} `json:"response,omitempty"`
-	Check    map[string]interface{} `json:"check,omitempty"`
+	Response map[string]any `json:"response,omitempty"`
+	Check    map[string]any `json:"check,omitempty"`
 
 	// HTTP and TCP shared fields
 	ProxyUrl              string   `json:"proxy_url,omitempty"`
@@ -131,7 +131,7 @@ type SyntheticsMonitor struct {
 	IgnoreHttpsErrors *bool                  `json:"ignore_https_errors,omitempty"`
 	InlineScript      string                 `json:"inline_script"`
 	SyntheticsArgs    []string               `json:"synthetics_args,omitempty"`
-	PlaywrightOptions map[string]interface{} `json:"playwright_options,omitempty"`
+	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
 }
 
 // SyntheticsMonitorRequest is the wire body sent for POST and PUT monitor requests.
@@ -152,7 +152,7 @@ type SyntheticsMonitorRequest struct {
 	APMServiceName   string                  `json:"service.name,omitempty"`
 	TimeoutSeconds   int                     `json:"timeout,omitempty"`
 	Namespace        string                  `json:"namespace,omitempty"`
-	Params           map[string]interface{}  `json:"params,omitempty"`
+	Params           map[string]any          `json:"params,omitempty"`
 	RetestOnFailure  *bool                   `json:"retest_on_failure,omitempty"`
 
 	// HTTP-specific
@@ -164,10 +164,10 @@ type SyntheticsMonitorRequest struct {
 	Ipv6         *bool                  `json:"ipv6,omitempty"`
 	Username     string                 `json:"username,omitempty"`
 	Password     string                 `json:"password,omitempty"`
-	ProxyHeader  map[string]interface{} `json:"proxy_headers,omitempty"`
-	ProxyUrl     string                 `json:"proxy_url,omitempty"`
-	Response     map[string]interface{} `json:"response,omitempty"`
-	Check        map[string]interface{} `json:"check,omitempty"`
+	ProxyHeader  map[string]any `json:"proxy_headers,omitempty"`
+	ProxyUrl     string         `json:"proxy_url,omitempty"`
+	Response     map[string]any `json:"response,omitempty"`
+	Check        map[string]any `json:"check,omitempty"`
 
 	// TCP-specific
 	Host                  string `json:"host,omitempty"`
@@ -183,7 +183,7 @@ type SyntheticsMonitorRequest struct {
 	Screenshots       string                 `json:"screenshots,omitempty"`
 	SyntheticsArgs    []string               `json:"synthetics_args,omitempty"`
 	IgnoreHttpsErrors *bool                  `json:"ignore_https_errors,omitempty"`
-	PlaywrightOptions map[string]interface{} `json:"playwright_options,omitempty"`
+	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
 }
 
 // SyntheticsSSLConfig holds SSL/TLS configuration for monitors.

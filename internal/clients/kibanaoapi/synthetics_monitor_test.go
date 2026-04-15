@@ -37,12 +37,13 @@ func newTestClient(t *testing.T, srv *httptest.Server) *Client {
 }
 
 func TestGetMonitor_200(t *testing.T) {
+	enabled := true
 	monitor := SyntheticsMonitor{
 		ID:        "abc123",
 		Name:      "my-http-monitor",
 		Type:      SyntheticsMonitorTypeHTTP,
 		Namespace: "default",
-		Enabled:   boolPtr(true),
+		Enabled:   &enabled,
 		Schedule:  &SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
 		Url:       "https://example.com",
 	}
@@ -96,7 +97,7 @@ func TestCreateMonitor_200(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		// Validate the request body contains required fields
-		var body map[string]interface{}
+		var body map[string]any
 		err := json.NewDecoder(r.Body).Decode(&body)
 		assert.NoError(t, err)
 		assert.Equal(t, "http", body["type"])
@@ -134,7 +135,7 @@ func TestUpdateMonitor_200(t *testing.T) {
 		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Contains(t, r.URL.Path, "monitor-id")
 
-		var body map[string]interface{}
+		var body map[string]any
 		err := json.NewDecoder(r.Body).Decode(&body)
 		assert.NoError(t, err)
 		assert.Equal(t, "updated-monitor", body["name"])
@@ -273,8 +274,4 @@ func TestSyntheticsMonitorRequestMarshal_TypeDiscriminator(t *testing.T) {
 			assert.Contains(t, m, "labels", "labels must always be present")
 		})
 	}
-}
-
-func boolPtr(v bool) *bool {
-	return &v
 }
