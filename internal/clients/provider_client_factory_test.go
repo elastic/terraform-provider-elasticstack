@@ -24,6 +24,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	kibana "github.com/disaster37/go-kibana-rest/v8"
+	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	goversion "github.com/hashicorp/go-version"
@@ -286,3 +288,72 @@ func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 	assert.True(t, ok, "serverless must always satisfy any version gate")
 }
 
+// --- ConvertMetaToFactory ---
+
+func TestConvertMetaToFactory_Nil(t *testing.T) {
+	t.Parallel()
+	factory, diags := ConvertMetaToFactory(nil)
+	require.False(t, diags.HasError())
+	assert.Nil(t, factory)
+}
+
+func TestConvertMetaToFactory_WrongType(t *testing.T) {
+	t.Parallel()
+	_, diags := ConvertMetaToFactory("unexpected-string")
+	assert.True(t, diags.HasError())
+}
+
+func TestConvertMetaToFactory_Valid(t *testing.T) {
+	t.Parallel()
+	f := newTestFactory(t)
+	result, diags := ConvertMetaToFactory(f)
+	require.False(t, diags.HasError())
+	assert.Same(t, f, result)
+}
+
+// --- NewKibanaScopedClientFromFactory ---
+
+func TestNewKibanaScopedClientFromFactory_NilFactory(t *testing.T) {
+	t.Parallel()
+	result := NewKibanaScopedClientFromFactory(nil)
+	assert.Nil(t, result)
+}
+
+func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
+	t.Parallel()
+	f := newTestFactory(t)
+	result := NewKibanaScopedClientFromFactory(f)
+	require.NotNil(t, result)
+	_, err := result.GetKibanaClient()
+	require.NoError(t, err)
+}
+
+// --- KibanaScopedClient.SetSloAuthContext ---
+
+func TestSetSloAuthContext_ApiKey(t *testing.T) {
+	t.Parallel()
+	scoped := &KibanaScopedClient{
+		kibanaConfig: kibana.Config{ApiKey: "my-api-key"},
+	}
+
+	ctx := scoped.SetSloAuthContext(context.Background())
+	keys, ok := ctx.Value(slo.ContextAPIKeys).(map[string]slo.APIKey)
+	require.True(t, ok, "expected ContextAPIKeys in context")
+	key, exists := keys["apiKeyAuth"]
+	require.True(t, exists, "expected apiKeyAuth key")
+	assert.Equal(t, "ApiKey", key.Prefix)
+	assert.Equal(t, "my-api-key", key.Key)
+}
+
+func TestSetSloAuthContext_BasicAuth(t *testing.T) {
+	t.Parallel()
+	scoped := &KibanaScopedClient{
+		kibanaConfig: kibana.Config{Username: "user", Password: "pass"},
+	}
+
+	ctx := scoped.SetSloAuthContext(context.Background())
+	auth, ok := ctx.Value(slo.ContextBasicAuth).(slo.BasicAuth)
+	require.True(t, ok, "expected ContextBasicAuth in context")
+	assert.Equal(t, "user", auth.UserName)
+	assert.Equal(t, "pass", auth.Password)
+}
