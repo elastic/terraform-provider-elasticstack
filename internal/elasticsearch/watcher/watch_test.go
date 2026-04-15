@@ -65,6 +65,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionAlways),
 					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsEmpty),
 					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataEmpty),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "5000"),
 				),
 			},
 			{
@@ -82,6 +83,15 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "transform", watchTransformExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -107,6 +117,22 @@ func TestResourceWatch(t *testing.T) {
 				ImportStateVerify:        true,
 				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerUpdateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputSimpleExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionNever),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
+					resource.TestCheckResourceAttr(watchResourceName, "transform", watchTransformExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
+				),
+			},
 		},
 	})
 }
@@ -126,6 +152,10 @@ func TestResourceWatch_defaultsOmitted(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "5000"),
 					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputNoneExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionAlways),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsEmpty),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataEmpty),
 				),
 			},
 			{
