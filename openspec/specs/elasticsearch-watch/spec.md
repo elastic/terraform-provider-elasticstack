@@ -138,7 +138,7 @@ On delete, the resource SHALL parse `id` to extract the watch identifier and cal
 
 ### Requirement: JSON field mapping — create/update (REQ-018–REQ-022)
 
-On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. The `transform` attribute SHALL be included in the API request body only when it is present in config; if present, it SHALL be unmarshalled into a `map[string]any` before inclusion. The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
+On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. When `transform` is configured, the resource SHALL include its JSON object in the Put Watch request body. When `transform` is not configured on **create**, the `transform` field SHALL be omitted from the Put Watch JSON body. When `transform` is not configured on **update**, the Put Watch JSON body SHALL include `transform` with an empty JSON object `{}` so Elasticsearch clears any existing transform (omitting the field is not sufficient on update). The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
 
 #### Scenario: Invalid JSON in trigger
 
@@ -146,21 +146,43 @@ On create and update, the resource SHALL unmarshal each JSON string attribute (`
 - WHEN create or update runs
 - THEN the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API
 
-#### Scenario: transform omitted when not set
+#### Scenario: transform omitted when not set on create
 
 - GIVEN `transform` is not configured
-- WHEN create or update builds the request body
-- THEN the `transform` field SHALL be omitted from the API request body
+- WHEN create builds the request body
+- THEN the `transform` field SHALL be omitted from the Put Watch JSON body
+
+#### Scenario: transform omitted when not set on update
+
+- GIVEN `transform` is not configured
+- WHEN update builds the request body for an existing watch
+- THEN the Put Watch JSON body SHALL include `transform` with an empty JSON object
+
+### Requirement: Defaulted watch attributes (REQ-028)
+
+When `active` is omitted from configuration, the resource SHALL behave as if `active` were `true`. When `throttle_period_in_millis` is omitted, the resource SHALL submit the default throttle period and SHALL store the refreshed value in state. When `input`, `condition`, `actions`, or `metadata` are omitted, the resource SHALL use their documented JSON defaults during create and update.
+
+#### Scenario: active omitted from configuration
+
+- GIVEN a watch configuration that omits `active`
+- WHEN the resource is created and refreshed
+- THEN the `active` attribute in state SHALL be `true`
+
+#### Scenario: throttle period omitted from configuration
+
+- GIVEN a watch configuration that omits `throttle_period_in_millis`
+- WHEN the resource is created and refreshed
+- THEN the `throttle_period_in_millis` attribute in state SHALL be `5000`
 
 ### Requirement: JSON field mapping — read/state (REQ-023–REQ-027)
 
-On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, `actions`, and `metadata` back into JSON strings and store them in state. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a JSON string and store it in state; when the API response has a nil `transform`, the resource SHALL NOT overwrite the `transform` state attribute. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL use `DiffSuppressFunc` (`tfsdkutils.DiffJSONSuppress`) to suppress semantically equivalent JSON diffs.
+On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, `actions`, and `metadata` back into JSON strings and store them in state. When the API response includes a non-empty `transform` object (at least one top-level key), the resource SHALL marshal it to a JSON string and store it in state. When the API response omits `transform`, has a null `transform`, or has an empty JSON object `{}` for `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL use `DiffSuppressFunc` (`tfsdkutils.DiffJSONSuppress`) to suppress semantically equivalent JSON diffs.
 
-#### Scenario: transform nil in API response
+#### Scenario: transform removed from the remote watch
 
-- GIVEN the API response has no transform field
-- WHEN read runs
-- THEN `transform` in state SHALL not be overwritten (remains as previously stored)
+- GIVEN the watch previously had a `transform` stored in Terraform state
+- WHEN read runs and the API response has no `transform` field, a null `transform`, or an empty `transform` object
+- THEN the `transform` attribute SHALL be cleared from state
 
 #### Scenario: active synced from watch status
 

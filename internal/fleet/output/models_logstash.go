@@ -72,7 +72,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl.toCreateLogstash(),
+		Ssl:                  ssl.toAPI(),
 	}
 
 	var union kbapi.NewOutputUnion
@@ -102,7 +102,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl.toUpdateLogstash(),
+		Ssl:                  ssl.toAPI(),
 	}
 
 	var union kbapi.UpdateOutputUnion

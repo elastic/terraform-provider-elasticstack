@@ -50,7 +50,7 @@ func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T
 // post-import drift when users have not explicitly configured them.
 func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 	pm := &panelModel{}
-	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniquePrefix
+	st := kbapi.Prefix
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = optionsListControlTestDataViewID
 	api.Config.FieldName = "field1"
@@ -127,7 +127,7 @@ func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testin
 		},
 	}
 	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueWildcard
+	st := kbapi.Wildcard
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = "new-dv"
 	api.Config.FieldName = "new-field"
@@ -152,7 +152,7 @@ func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testin
 		},
 	}
 	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueExact
+	st := kbapi.Exact
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = optionsListControlTestDataViewID
 	api.Config.FieldName = "f1"
@@ -233,7 +233,7 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 	require.NotNil(t, olPanel.Config.RunPastTimeout)
 	assert.True(t, *olPanel.Config.RunPastTimeout)
 	require.NotNil(t, olPanel.Config.SearchTechnique)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechniqueExact, *olPanel.Config.SearchTechnique)
+	assert.Equal(t, kbapi.Exact, *olPanel.Config.SearchTechnique)
 	require.NotNil(t, olPanel.Config.SelectedOptions)
 	require.Len(t, *olPanel.Config.SelectedOptions, 2)
 	require.NotNil(t, olPanel.Config.DisplaySettings)

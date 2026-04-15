@@ -30,13 +30,22 @@ import (
 )
 
 func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watch *models.PutWatch) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	watchBodyBytes, err := json.Marshal(watch.Body)
 	if err != nil {
+		var diags fwdiag.Diagnostics
 		diags.AddError("Unable to marshal watch body", err.Error())
 		return diags
 	}
+	return putWatchBytes(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
+}
+
+// PutWatchBodyJSON sends a pre-encoded watch document (the JSON object under the watch id) to Put Watch.
+func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
+	return putWatchBytes(ctx, apiClient, watchID, active, watchBodyJSON)
+}
+
+func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyBytes []byte) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -45,8 +54,8 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	}
 
 	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBodyBytes))
-	active := esClient.Watcher.PutWatch.WithActive(watch.Active)
-	res, err := esClient.Watcher.PutWatch(watch.WatchID, active, body, esClient.Watcher.PutWatch.WithContext(ctx))
+	putActive := esClient.Watcher.PutWatch.WithActive(active)
+	res, err := esClient.Watcher.PutWatch(watchID, putActive, body, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		diags.AddError("Unable to create or update watch", err.Error())
 		return diags

@@ -21,7 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -71,176 +71,12 @@ func objectValueToSSLUpdate(ctx context.Context, obj types.Object) (*outputSSLAP
 	return ssl, diags
 }
 
-func (ssl *outputSSLAPIModel) toCreateElasticsearch() *struct {
-	Certificate            *string                                                        `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                      `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                        `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-} {
+func (ssl *outputSSLAPIModel) toAPI() *kbapi.KibanaHTTPAPIsOutputSsl {
 	if ssl == nil {
 		return nil
 	}
 
-	return &struct {
-		Certificate            *string                                                        `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                      `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                        `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toCreateKafka() *struct {
-	Certificate            *string                                                `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                              `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputKafkaSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                              `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputKafkaSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toCreateLogstash() *struct {
-	Certificate            *string                                                   `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                   `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                   `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                   `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toUpdateElasticsearch() *struct {
-	Certificate            *string                                                           `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                         `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                           `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                           `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                         `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                           `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toUpdateKafka() *struct {
-	Certificate            *string                                                   `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                   `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputKafkaSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                   `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                 `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                   `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputKafkaSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toUpdateLogstash() *struct {
-	Certificate            *string                                                      `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                    `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                      `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                      `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                    `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                      `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toCreateRemoteElasticsearch() *struct {
-	Certificate            *string                                                              `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                            `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                              `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                              `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                            `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                              `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
-		Certificate:            ssl.Certificate,
-		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
-	}
-}
-
-func (ssl *outputSSLAPIModel) toUpdateRemoteElasticsearch() *struct {
-	Certificate            *string                                                                 `json:"certificate,omitempty"`
-	CertificateAuthorities *[]string                                                               `json:"certificate_authorities,omitempty"`
-	Key                    *string                                                                 `json:"key,omitempty"`
-	VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-} {
-	if ssl == nil {
-		return nil
-	}
-
-	return &struct {
-		Certificate            *string                                                                 `json:"certificate,omitempty"`
-		CertificateAuthorities *[]string                                                               `json:"certificate_authorities,omitempty"`
-		Key                    *string                                                                 `json:"key,omitempty"`
-		VerificationMode       *kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearchSslVerificationMode `json:"verification_mode,omitempty"`
-	}{
+	return &kbapi.KibanaHTTPAPIsOutputSsl{
 		Certificate:            ssl.Certificate,
 		CertificateAuthorities: ssl.CertificateAuthorities,
 		Key:                    ssl.Key,

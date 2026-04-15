@@ -311,7 +311,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 
 func Test_xyDecorationsModel_readFromStyling_writeToStyling(t *testing.T) {
 	interp := kbapi.Linear
-	pts := kbapi.XyStylingPointsVisibilityVisible
+	pts := kbapi.Visible
 	styling := kbapi.XyStyling{
 		Areas: kbapi.XyStylingAreas{FillOpacity: new(float32(0.5))},
 		Bars: kbapi.XyStylingBars{
