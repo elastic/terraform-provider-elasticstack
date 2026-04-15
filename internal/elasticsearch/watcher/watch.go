@@ -184,14 +184,14 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 		return diag.FromErr(err)
 	}
 	// On update, Elasticsearch keeps an existing transform when the field is omitted from Put
-	// Watch JSON. Sending explicit null clears it. On create, omit the field: including
-	// "transform":null breaks parsing on Elasticsearch 8.3 (parse_exception: unknown transform type).
+	// Watch JSON. Sending an empty transform object clears it. On create, omit the field:
+	// sending either null or an empty object changes semantics or breaks parsing on older versions.
 	if _, ok := d.GetOk("transform"); !ok && !d.IsNewResource() {
 		var body map[string]any
 		if err := json.Unmarshal(watchBodyBytes, &body); err != nil {
 			return diag.FromErr(err)
 		}
-		body["transform"] = nil
+		body["transform"] = map[string]any{}
 		watchBodyBytes, err = json.Marshal(body)
 		if err != nil {
 			return diag.FromErr(err)

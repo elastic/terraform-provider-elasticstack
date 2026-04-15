@@ -138,7 +138,7 @@ On delete, the resource SHALL parse `id` to extract the watch identifier and cal
 
 ### Requirement: JSON field mapping — create/update (REQ-018–REQ-022)
 
-On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. When `transform` is configured, the resource SHALL include its JSON object in the Put Watch request body. When `transform` is not configured on **create**, the `transform` field SHALL be omitted from the Put Watch JSON body. When `transform` is not configured on **update**, the Put Watch JSON body SHALL include `"transform": null` so Elasticsearch clears any existing transform (omitting the field is not sufficient on update). The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
+On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. When `transform` is configured, the resource SHALL include its JSON object in the Put Watch request body. When `transform` is not configured on **create**, the `transform` field SHALL be omitted from the Put Watch JSON body. When `transform` is not configured on **update**, the Put Watch JSON body SHALL include `transform` with an empty JSON object `{}` so Elasticsearch clears any existing transform (omitting the field is not sufficient on update). The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
 
 #### Scenario: Invalid JSON in trigger
 
@@ -156,7 +156,7 @@ On create and update, the resource SHALL unmarshal each JSON string attribute (`
 
 - GIVEN `transform` is not configured
 - WHEN update builds the request body for an existing watch
-- THEN the Put Watch JSON body SHALL include `transform` with JSON value `null`
+- THEN the Put Watch JSON body SHALL include `transform` with an empty JSON object
 
 ### Requirement: Defaulted watch attributes (REQ-028)
 
