@@ -21,7 +21,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -278,20 +281,37 @@ func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 	}
 }
 
-// DeleteMonitor deletes a synthetics monitor via DELETE /api/synthetics/monitors/{id}.
+// DeleteMonitor deletes a synthetics monitor via DELETE /api/synthetics/monitors.
+// It uses the bulk-delete endpoint (body: {"ids": [monitorID]}) which is supported
+// across all Kibana versions that have the synthetics monitor resource (8.14+).
+// The per-id endpoint (DELETE /api/synthetics/monitors/{id}) was not available in
+// older Kibana versions and would return 404, causing silent deletion failures.
 func DeleteMonitor(ctx context.Context, client *Client, spaceID string, monitorID string) diag.Diagnostics {
-	resp, err := client.API.DeleteSyntheticMonitorWithResponse(
-		ctx, monitorID,
-		SpaceAwarePathRequestEditor(spaceID),
-	)
+	body, err := json.Marshal(map[string]any{"ids": []string{monitorID}})
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
+	path := BuildSpaceAwarePath(spaceID, "/api/synthetics/monitors")
+	url := strings.TrimRight(client.URL, "/") + path
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, bytes.NewReader(body))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.HTTP.Do(req)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		respBody, _ := io.ReadAll(resp.Body)
+		return diagutil.FrameworkDiagFromError(fmt.Errorf("unexpected status %d deleting monitor %s: %s", resp.StatusCode, monitorID, string(respBody)))
 	}
 }

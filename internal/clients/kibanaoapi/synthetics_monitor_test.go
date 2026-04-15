@@ -157,7 +157,13 @@ func TestUpdateMonitor_200(t *testing.T) {
 func TestDeleteMonitor_200(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodDelete, r.Method)
-		assert.Contains(t, r.URL.Path, "monitor-id")
+		// Bulk delete endpoint: DELETE /api/synthetics/monitors with body {"ids": [...]}
+		assert.Equal(t, "/api/synthetics/monitors", r.URL.Path)
+		var body map[string]any
+		assert.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		ids, _ := body["ids"].([]any)
+		assert.Len(t, ids, 1)
+		assert.Equal(t, "monitor-id", ids[0])
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
