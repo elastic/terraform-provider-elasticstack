@@ -876,7 +876,8 @@ func (v *tfModelV0) populateTypeFields(ctx context.Context, req *kibanaoapi.Synt
 		v.populateICMPFields(req)
 		return dg
 	case v.Browser != nil:
-		return v.populateBrowserFields(req)
+		dg.Append(v.populateBrowserFields(req)...)
+		return dg
 	}
 	dg.AddError("Unsupported monitor type config", "one of http,tcp,icmp,browser monitor fields is required")
 	return dg
