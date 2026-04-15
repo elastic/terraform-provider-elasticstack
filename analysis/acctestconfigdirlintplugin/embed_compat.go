@@ -169,9 +169,29 @@ func isVarGroupBoundaryLine(line string) bool {
 	return false
 }
 
+// isTestdataMainTFEmbedPath reports whether path matches the repository contract for
+// compatibility-step fixtures: under testdata/, end with /main.tf (or be exactly
+// testdata/main.tf), with no "." / ".." / empty path segments that could escape the
+// fixture tree after normalization.
 func isTestdataMainTFEmbedPath(path string) bool {
-	if path == "testdata/main.tf" {
-		return true
+	if path == "" || strings.Contains(path, "\\") {
+		return false
 	}
-	return strings.HasPrefix(path, "testdata/") && strings.HasSuffix(path, "/main.tf")
+	if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "../") {
+		return false
+	}
+	switch {
+	case path == "testdata/main.tf":
+		// ok
+	case strings.HasPrefix(path, "testdata/") && strings.HasSuffix(path, "/main.tf"):
+		// ok
+	default:
+		return false
+	}
+	for _, seg := range strings.Split(path, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return false
+		}
+	}
+	return true
 }

@@ -107,6 +107,34 @@ func TestCompatibilityStepOuterEmbedBeforeParen(t *testing.T) {
 	})
 }
 
+// TestCompatibilityStepParenConfig verifies parenthesized Config still resolves to the embedded variable.
+func TestCompatibilityStepParenConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: (sdkCompatEmbeddedTF),
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepParallel verifies ExternalProviders compatibility wiring under resource.ParallelTest.
+func TestCompatibilityStepParallel(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
 // TestImportOnlyStep verifies that a step with neither Config nor ConfigDirectory
 // (e.g. import-only or refresh-only) still declares provider wiring via ProtoV6ProviderFactories.
 func TestImportOnlyStep(t *testing.T) {
