@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var minVersionCompatibilityMode = version.Must(version.NewVersion("8.6.0"))
+var minVersionCompatibilityMode = version.Must(version.NewVersion("8.8.0"))
 
 func TestAccResourceImportSavedObjects(t *testing.T) {
 	resource.Test(t, resource.TestCase{
