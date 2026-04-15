@@ -36,10 +36,10 @@ import (
 )
 
 // newMockElasticsearchServer returns an httptest.Server that responds to GET /
-// with a minimal Elasticsearch info payload for the given version and flavor.
-// It sets the X-Elastic-Product header that the go-elasticsearch client requires
-// for product-check validation.
-func newMockElasticsearchServer(version, buildFlavor string) *httptest.Server {
+// with a minimal Elasticsearch info payload for the given version using the
+// "default" build flavor. It sets the X-Elastic-Product header that the
+// go-elasticsearch client requires for product-check validation.
+func newMockElasticsearchServer(version string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/" {
 			w.Header().Set("Content-Type", "application/json")
@@ -48,7 +48,7 @@ func newMockElasticsearchServer(version, buildFlavor string) *httptest.Server {
 				"cluster_uuid": "test-cluster-uuid",
 				"version": map[string]any{
 					"number":       version,
-					"build_flavor": buildFlavor,
+					"build_flavor": "default",
 				},
 			}
 			_ = json.NewEncoder(w).Encode(payload)
@@ -174,7 +174,7 @@ func TestGetElasticsearchClient_NullList(t *testing.T) {
 }
 
 func TestGetElasticsearchClient_WithConnection(t *testing.T) {
-	srv := newMockElasticsearchServer("8.19.0", "default")
+	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
@@ -201,7 +201,7 @@ func TestGetElasticsearchClientFromSDK_AbsentBlock(t *testing.T) {
 }
 
 func TestGetElasticsearchClientFromSDK_WithBlock(t *testing.T) {
-	srv := newMockElasticsearchServer("8.19.0", "default")
+	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
 	factory := newTestFactory(t)
@@ -241,7 +241,7 @@ func TestGetElasticsearchClientFromSDK_WithBlock(t *testing.T) {
 
 func TestElasticsearchScopedClient_ServerVersion_ViaFactory(t *testing.T) {
 	const wantVersion = "8.19.0"
-	srv := newMockElasticsearchServer(wantVersion, "default")
+	srv := newMockElasticsearchServer(wantVersion)
 	defer srv.Close()
 
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
@@ -254,7 +254,7 @@ func TestElasticsearchScopedClient_ServerVersion_ViaFactory(t *testing.T) {
 
 func TestElasticsearchScopedClient_ServerFlavor_ViaFactory(t *testing.T) {
 	const wantVersion = "8.19.0"
-	srv := newMockElasticsearchServer(wantVersion, "default")
+	srv := newMockElasticsearchServer(wantVersion)
 	defer srv.Close()
 
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
@@ -287,7 +287,7 @@ func TestElasticsearchScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 }
 
 func TestElasticsearchScopedClient_EnforceMinVersion_Satisfied(t *testing.T) {
-	srv := newMockElasticsearchServer("8.19.0", "default")
+	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
@@ -301,7 +301,7 @@ func TestElasticsearchScopedClient_EnforceMinVersion_Satisfied(t *testing.T) {
 }
 
 func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) {
-	srv := newMockElasticsearchServer("7.17.0", "default")
+	srv := newMockElasticsearchServer("7.17.0")
 	defer srv.Close()
 
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)

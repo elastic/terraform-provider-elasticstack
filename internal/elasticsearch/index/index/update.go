@@ -98,7 +98,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 func (r *Resource) updateAliases(
 	ctx context.Context,
-	planModel tfModel,
+	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planAliases map[string]models.IndexAlias,
@@ -133,7 +133,7 @@ func (r *Resource) updateAliases(
 
 func (r *Resource) updateSettings(
 	ctx context.Context,
-	planModel tfModel,
+	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planSettings map[string]any,
@@ -174,7 +174,7 @@ func (r *Resource) updateSettings(
 
 func (r *Resource) updateMappings(
 	ctx context.Context,
-	planModel tfModel,
+	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planMappings jsontypes.Normalized,
