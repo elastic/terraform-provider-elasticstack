@@ -30,7 +30,7 @@ When the provider cannot obtain the Kibana OpenAPI client, create and update ope
 
 #### Scenario: Import API returns client error response
 
-- **WHEN** create or update runs and the Import API responds with a non-2xx HTTP status or a body that cannot be interpreted as a successful import result
+- **WHEN** create or update runs and the Import API responds with an HTTP status other than 200, or responds with HTTP 200 but with a body that cannot be interpreted as a successful import result
 - **THEN** the provider SHALL surface an error diagnostic with available detail from the response
 
 ### Requirement: Effective Kibana client selection (REQ-004)
