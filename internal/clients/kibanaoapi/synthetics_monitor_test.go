@@ -45,7 +45,7 @@ func TestGetMonitor_200(t *testing.T) {
 		Namespace: "default",
 		Enabled:   &enabled,
 		Schedule:  &SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
-		Url:       "https://example.com",
+		URL:       "https://example.com",
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func TestGetMonitor_200(t *testing.T) {
 }
 
 func TestGetMonitor_404(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -85,7 +85,7 @@ func TestCreateMonitor_200(t *testing.T) {
 		Schedule:  5,
 		Locations: []string{"us_east"},
 		Labels:    map[string]string{},
-		Url:       "https://example.com",
+		URL:       "https://example.com",
 	}
 	expectedResponse := SyntheticsMonitor{
 		ID:   "created-id",
@@ -122,13 +122,13 @@ func TestUpdateMonitor_200(t *testing.T) {
 		Type:   SyntheticsMonitorTypeHTTP,
 		Name:   "updated-monitor",
 		Labels: map[string]string{},
-		Url:    "https://updated.example.com",
+		URL:    "https://updated.example.com",
 	}
 	expectedResponse := SyntheticsMonitor{
 		ID:   "monitor-id",
 		Name: "updated-monitor",
 		Type: SyntheticsMonitorTypeHTTP,
-		Url:  "https://updated.example.com",
+		URL:  "https://updated.example.com",
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +169,7 @@ func TestDeleteMonitor_200(t *testing.T) {
 
 func TestDeleteMonitor_404(t *testing.T) {
 	// 404 on delete should be treated as success (already deleted)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -198,7 +198,7 @@ func TestCreateMonitor_SpaceAwarePath(t *testing.T) {
 		Type:   SyntheticsMonitorTypeHTTP,
 		Name:   "space-monitor",
 		Labels: map[string]string{},
-		Url:    "https://example.com",
+		URL:    "https://example.com",
 	}
 	result, diags := CreateMonitor(context.Background(), client, "my-space", req)
 	assert.False(t, diags.HasError(), diags)
@@ -220,7 +220,7 @@ func TestSyntheticsMonitorRequestMarshal_TypeDiscriminator(t *testing.T) {
 				Type:   SyntheticsMonitorTypeHTTP,
 				Name:   "http-mon",
 				Labels: map[string]string{},
-				Url:    "https://example.com",
+				URL:    "https://example.com",
 			},
 			wantType: "http",
 			wantKey:  "url",
@@ -265,7 +265,7 @@ func TestSyntheticsMonitorRequestMarshal_TypeDiscriminator(t *testing.T) {
 			data, err := json.Marshal(tc.req)
 			require.NoError(t, err)
 
-			var m map[string]interface{}
+			var m map[string]any
 			require.NoError(t, json.Unmarshal(data, &m))
 
 			assert.Equal(t, tc.wantType, m["type"], "type discriminator mismatch")

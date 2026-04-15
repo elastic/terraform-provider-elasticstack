@@ -65,7 +65,7 @@ type SyntheticsMonitorAlertStatus struct {
 // SyntheticsMonitorAlert holds the alert configuration for a monitor.
 type SyntheticsMonitorAlert struct {
 	Status *SyntheticsMonitorAlertStatus `json:"status,omitempty"`
-	Tls    *SyntheticsMonitorAlertStatus `json:"tls,omitempty"`
+	TLS    *SyntheticsMonitorAlertStatus `json:"tls,omitempty"`
 }
 
 // SyntheticsMonitor is the wire representation of a Kibana synthetics monitor as returned
@@ -94,7 +94,7 @@ type SyntheticsMonitor struct {
 	RetestOnFailure *bool                     `json:"retest_on_failure,omitempty"`
 
 	// HTTP-specific fields
-	Url          string                 `json:"url,omitempty"`
+	URL          string                 `json:"url,omitempty"`
 	Mode         string                 `json:"mode"`
 	MaxRedirects string                 `json:"max_redirects"`
 	Ipv4         *bool                  `json:"ipv4,omitempty"`
@@ -107,7 +107,7 @@ type SyntheticsMonitor struct {
 	Check    map[string]any `json:"check,omitempty"`
 
 	// HTTP and TCP shared fields
-	ProxyUrl              string   `json:"proxy_url,omitempty"`
+	ProxyURL              string   `json:"proxy_url,omitempty"`
 	SslVerificationMode   string   `json:"ssl.verification_mode"`
 	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
 	SslCertificateAuthorities []string `json:"ssl.certificate_authorities,omitempty"`
@@ -127,9 +127,9 @@ type SyntheticsMonitor struct {
 	Wait json.Number `json:"wait,omitempty"`
 
 	// Browser-specific fields
-	Screenshots       string                 `json:"screenshots,omitempty"`
-	IgnoreHttpsErrors *bool                  `json:"ignore_https_errors,omitempty"`
-	InlineScript      string                 `json:"inline_script"`
+	Screenshots        string         `json:"screenshots,omitempty"`
+	IgnoreHTTPSErrors  *bool          `json:"ignore_https_errors,omitempty"`
+	InlineScript       string         `json:"inline_script"`
 	SyntheticsArgs    []string               `json:"synthetics_args,omitempty"`
 	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
 }
@@ -156,18 +156,18 @@ type SyntheticsMonitorRequest struct {
 	RetestOnFailure  *bool                   `json:"retest_on_failure,omitempty"`
 
 	// HTTP-specific
-	Url          string                 `json:"url,omitempty"`
-	Ssl          *SyntheticsSSLConfig   `json:"ssl,omitempty"`
-	MaxRedirects string                 `json:"max_redirects,omitempty"`
-	Mode         string                 `json:"mode,omitempty"`
-	Ipv4         *bool                  `json:"ipv4,omitempty"`
-	Ipv6         *bool                  `json:"ipv6,omitempty"`
-	Username     string                 `json:"username,omitempty"`
-	Password     string                 `json:"password,omitempty"`
-	ProxyHeader  map[string]any `json:"proxy_headers,omitempty"`
-	ProxyUrl     string         `json:"proxy_url,omitempty"`
-	Response     map[string]any `json:"response,omitempty"`
-	Check        map[string]any `json:"check,omitempty"`
+	URL          string               `json:"url,omitempty"`
+	Ssl          *SyntheticsSSLConfig `json:"ssl,omitempty"`
+	MaxRedirects string               `json:"max_redirects,omitempty"`
+	Mode         string               `json:"mode,omitempty"`
+	Ipv4         *bool                `json:"ipv4,omitempty"`
+	Ipv6         *bool                `json:"ipv6,omitempty"`
+	Username     string               `json:"username,omitempty"`
+	Password     string               `json:"password,omitempty"`
+	ProxyHeader  map[string]any       `json:"proxy_headers,omitempty"`
+	ProxyURL     string               `json:"proxy_url,omitempty"`
+	Response     map[string]any       `json:"response,omitempty"`
+	Check        map[string]any       `json:"check,omitempty"`
 
 	// TCP-specific
 	Host                  string `json:"host,omitempty"`
@@ -179,11 +179,11 @@ type SyntheticsMonitorRequest struct {
 	Wait string `json:"wait,omitempty"`
 
 	// Browser-specific
-	InlineScript      string                 `json:"inline_script,omitempty"`
-	Screenshots       string                 `json:"screenshots,omitempty"`
-	SyntheticsArgs    []string               `json:"synthetics_args,omitempty"`
-	IgnoreHttpsErrors *bool                  `json:"ignore_https_errors,omitempty"`
-	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
+	InlineScript       string         `json:"inline_script,omitempty"`
+	Screenshots        string         `json:"screenshots,omitempty"`
+	SyntheticsArgs     []string       `json:"synthetics_args,omitempty"`
+	IgnoreHTTPSErrors  *bool          `json:"ignore_https_errors,omitempty"`
+	PlaywrightOptions  map[string]any `json:"playwright_options,omitempty"`
 }
 
 // SyntheticsSSLConfig holds SSL/TLS configuration for monitors.

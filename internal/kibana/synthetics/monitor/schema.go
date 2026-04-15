@@ -692,7 +692,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		Host:                  types.StringValue(api.Host),
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
-		ProxyURL:              types.StringValue(api.ProxyUrl),
+		ProxyURL:              types.StringValue(api.ProxyURL),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
 		tfSSLConfig:           sslCfg,
 	}
@@ -734,7 +734,7 @@ func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kibanaoapi.Sy
 		InlineScript:      inlineScript,
 		Screenshots:       types.StringValue(api.Screenshots),
 		SyntheticsArgs:    syntheticsArgs,
-		IgnoreHTTPSErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
+		IgnoreHTTPSErrors: types.BoolPointerValue(api.IgnoreHTTPSErrors),
 		PlaywrightOptions: playwrightOptions,
 	}, nil
 }
@@ -771,7 +771,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		return nil
 	}
 	return &tfHTTPMonitorFieldsV0{
-		URL:          types.StringValue(api.Url),
+		URL:          types.StringValue(api.URL),
 		MaxRedirects: types.Int64Value(maxRedirects),
 		Mode:         types.StringValue(api.Mode),
 		IPv4:         types.BoolPointerValue(api.Ipv4),
@@ -779,7 +779,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		Username:     username,
 		Password:     password,
 		ProxyHeader:  proxyHeaders,
-		ProxyURL:     types.StringValue(api.ProxyUrl),
+		ProxyURL:     types.StringValue(api.ProxyURL),
 		Check:        v.Check,
 		Response:     v.Response,
 		tfSSLConfig:  sslCfg,
@@ -812,7 +812,7 @@ func toTfAlertConfigV0(ctx context.Context, alert *kibanaoapi.SyntheticsMonitorA
 
 	tfAlertConfig := tfAlertConfigV0{
 		Status: toTfStatusConfigV0(alert.Status),
-		TLS:    toTfStatusConfigV0(alert.Tls),
+		TLS:    toTfStatusConfigV0(alert.TLS),
 	}
 
 	return types.ObjectValueFrom(ctx, alertAttributes, &tfAlertConfig)
@@ -975,7 +975,7 @@ func (v *tfModelV0) populateHTTPFields(ctx context.Context, req *kibanaoapi.Synt
 	}
 
 	req.Type = kibanaoapi.SyntheticsMonitorTypeHTTP
-	req.Url = h.URL.ValueString()
+	req.URL = h.URL.ValueString()
 	req.Ssl = ssl
 	req.MaxRedirects = tfInt64ToString(h.MaxRedirects)
 	req.Mode = h.Mode.ValueString()
@@ -984,7 +984,7 @@ func (v *tfModelV0) populateHTTPFields(ctx context.Context, req *kibanaoapi.Synt
 	req.Username = h.Username.ValueString()
 	req.Password = h.Password.ValueString()
 	req.ProxyHeader = proxyHeaders
-	req.ProxyUrl = h.ProxyURL.ValueString()
+	req.ProxyURL = h.ProxyURL.ValueString()
 	req.Response = response
 	req.Check = check
 	return dg
@@ -1002,7 +1002,7 @@ func (v *tfModelV0) populateTCPFields(ctx context.Context, req *kibanaoapi.Synth
 	req.Host = tcp.Host.ValueString()
 	req.CheckSend = tcp.CheckSend.ValueString()
 	req.CheckReceive = tcp.CheckReceive.ValueString()
-	req.ProxyUrl = tcp.ProxyURL.ValueString()
+	req.ProxyURL = tcp.ProxyURL.ValueString()
 	req.ProxyUseLocalResolver = tcp.ProxyUseLocalResolver.ValueBoolPointer()
 	req.Ssl = ssl
 	return dg
@@ -1024,7 +1024,7 @@ func (v *tfModelV0) populateBrowserFields(req *kibanaoapi.SyntheticsMonitorReque
 	req.InlineScript = v.Browser.InlineScript.ValueString()
 	req.Screenshots = v.Browser.Screenshots.ValueString()
 	req.SyntheticsArgs = synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)
-	req.IgnoreHttpsErrors = v.Browser.IgnoreHTTPSErrors.ValueBoolPointer()
+	req.IgnoreHTTPSErrors = v.Browser.IgnoreHTTPSErrors.ValueBoolPointer()
 	req.PlaywrightOptions = playwrightOptions
 	return dg
 }
@@ -1048,7 +1048,7 @@ func (v tfAlertConfigV0) toAPIAlertConfig() *kibanaoapi.SyntheticsMonitorAlert {
 	}
 	return &kibanaoapi.SyntheticsMonitorAlert{
 		Status: status,
-		Tls:    tls,
+		TLS:    tls,
 	}
 }
 
