@@ -124,8 +124,8 @@ func TestFrameworkKibanaEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	resourceEntities := frameworkKibanaResourceEntities(ctx, baseProvider)
 	dataSourceEntities := frameworkKibanaDataSourceEntities(ctx, baseProvider)
 
-	runFrameworkKibanaResourceSubtests(ctx, t, resourceEntities, expected)
-	runFrameworkKibanaDataSourceSubtests(ctx, t, dataSourceEntities, expected)
+	runFrameworkResourceSubtests(ctx, t, resourceEntities, expected)
+	runFrameworkDataSourceSubtests(ctx, t, dataSourceEntities, expected)
 }
 
 func TestFrameworkFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
@@ -136,8 +136,8 @@ func TestFrameworkFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	resourceEntities := frameworkFleetResourceEntities(ctx, baseProvider)
 	dataSourceEntities := frameworkFleetDataSourceEntities(ctx, baseProvider)
 
-	runFrameworkKibanaResourceSubtests(ctx, t, resourceEntities, expected)
-	runFrameworkKibanaDataSourceSubtests(ctx, t, dataSourceEntities, expected)
+	runFrameworkResourceSubtests(ctx, t, resourceEntities, expected)
+	runFrameworkDataSourceSubtests(ctx, t, dataSourceEntities, expected)
 }
 
 func frameworkKibanaResourceEntities(ctx context.Context, p fwprovider.Provider) []frameworkResourceEntity {
@@ -182,7 +182,7 @@ func collectFrameworkDataSourceEntities(ctx context.Context, p fwprovider.Provid
 	return entities
 }
 
-func runFrameworkKibanaResourceSubtests(ctx context.Context, t *testing.T, entities []frameworkResourceEntity, expected any) {
+func runFrameworkResourceSubtests(ctx context.Context, t *testing.T, entities []frameworkResourceEntity, expected any) {
 	t.Helper()
 
 	for _, e := range entities {
@@ -207,7 +207,7 @@ func runFrameworkKibanaResourceSubtests(ctx context.Context, t *testing.T, entit
 	}
 }
 
-func runFrameworkKibanaDataSourceSubtests(ctx context.Context, t *testing.T, entities []frameworkDataSourceEntity, expected any) {
+func runFrameworkDataSourceSubtests(ctx context.Context, t *testing.T, entities []frameworkDataSourceEntity, expected any) {
 	t.Helper()
 
 	for _, e := range entities {
