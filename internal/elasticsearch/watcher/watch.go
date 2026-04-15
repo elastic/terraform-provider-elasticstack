@@ -179,7 +179,24 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 
 	watch.Body.ThrottlePeriodInMillis = d.Get("throttle_period_in_millis").(int)
 
-	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
+	watchBodyBytes, err := json.Marshal(watch.Body)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	// Elasticsearch keeps an existing transform when the field is omitted from Put Watch JSON.
+	// When transform is not configured, send explicit JSON null so the cluster clears it.
+	if _, ok := d.GetOk("transform"); !ok {
+		var body map[string]any
+		if err := json.Unmarshal(watchBodyBytes, &body); err != nil {
+			return diag.FromErr(err)
+		}
+		body["transform"] = nil
+		watchBodyBytes, err = json.Marshal(body)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if diags := elasticsearch.PutWatchBodyJSON(ctx, client, watch.WatchID, watch.Active, watchBodyBytes); diags.HasError() {
 		return diags
 	}
 
@@ -254,7 +271,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) di
 		return diag.FromErr(err)
 	}
 
-	if watch.Body.Transform != nil {
+	if len(watch.Body.Transform) > 0 {
 		transform, err := json.Marshal(watch.Body.Transform)
 		if err != nil {
 			return diag.FromErr(err)

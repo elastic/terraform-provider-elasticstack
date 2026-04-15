@@ -138,7 +138,7 @@ On delete, the resource SHALL parse `id` to extract the watch identifier and cal
 
 ### Requirement: JSON field mapping — create/update (REQ-018–REQ-022)
 
-On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. The `transform` attribute SHALL be included in the API request body only when it is present in config; if present, it SHALL be unmarshalled into a `map[string]any` before inclusion. The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
+On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. When `transform` is configured, the resource SHALL include its JSON object in the Put Watch request body. When `transform` is not configured, the Put Watch JSON body SHALL include `"transform": null` so Elasticsearch clears any existing transform (omitting the field is not sufficient for removal). The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
 
 #### Scenario: Invalid JSON in trigger
 
@@ -150,7 +150,7 @@ On create and update, the resource SHALL unmarshal each JSON string attribute (`
 
 - GIVEN `transform` is not configured
 - WHEN create or update builds the request body
-- THEN the `transform` field SHALL be omitted from the API request body
+- THEN the Put Watch JSON body SHALL include `transform` with JSON value `null`
 
 ### Requirement: Defaulted watch attributes (REQ-028)
 
@@ -170,12 +170,12 @@ When `active` is omitted from configuration, the resource SHALL behave as if `ac
 
 ### Requirement: JSON field mapping — read/state (REQ-023–REQ-027)
 
-On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, `actions`, and `metadata` back into JSON strings and store them in state. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a JSON string and store it in state. When the API response has a nil `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL use `DiffSuppressFunc` (`tfsdkutils.DiffJSONSuppress`) to suppress semantically equivalent JSON diffs.
+On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, `actions`, and `metadata` back into JSON strings and store them in state. When the API response includes a non-empty `transform` object (at least one top-level key), the resource SHALL marshal it to a JSON string and store it in state. When the API response omits `transform`, has a null `transform`, or has an empty JSON object `{}` for `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL use `DiffSuppressFunc` (`tfsdkutils.DiffJSONSuppress`) to suppress semantically equivalent JSON diffs.
 
 #### Scenario: transform removed from the remote watch
 
 - GIVEN the watch previously had a `transform` stored in Terraform state
-- WHEN read runs and the API response has no `transform` field
+- WHEN read runs and the API response has no `transform` field, a null `transform`, or an empty `transform` object
 - THEN the `transform` attribute SHALL be cleared from state
 
 #### Scenario: active synced from watch status
