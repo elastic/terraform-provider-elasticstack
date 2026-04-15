@@ -43,6 +43,8 @@ const (
 	watchMetadataExample       = `{"example_key":"example_value"}`
 	watchTransformExpected     = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
 		`"search_type":"query_then_fetch"}}}`
+
+	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
 
 func TestResourceWatch(t *testing.T) {
@@ -56,13 +58,13 @@ func TestResourceWatch(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", watchInputNoneExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionAlways),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsEmpty),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataEmpty),
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "false"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputNoneExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionAlways),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsEmpty),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataEmpty),
 				),
 			},
 			{
@@ -70,16 +72,70 @@ func TestResourceWatch(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerUpdateExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", watchInputSimpleExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionNever),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsLogExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataExample),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "transform", watchTransformExpected),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerUpdateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputSimpleExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionNever),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
+					resource.TestCheckResourceAttr(watchResourceName, "transform", watchTransformExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_transform"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerUpdateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputSimpleExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionNever),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
+					resource.TestCheckNoResourceAttr(watchResourceName, "transform"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_transform"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+			},
+		},
+	})
+}
+
+func TestResourceWatch_defaultsOmitted(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "5000"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
 		},
 	})
