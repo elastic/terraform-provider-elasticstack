@@ -19,10 +19,10 @@ resource "elasticstack_elasticsearch_watch" "test" {
   transform = jsonencode({
     search = {
       request = {
-        body                  = { query = { match_all = {} } }
-        indices               = []
+        body                   = { query = { match_all = {} } }
+        indices                = []
         rest_total_hits_as_int = true
-        search_type           = "query_then_fetch"
+        search_type            = "query_then_fetch"
       }
     }
   })
