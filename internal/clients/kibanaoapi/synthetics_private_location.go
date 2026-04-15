@@ -19,7 +19,6 @@ package kibanaoapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -28,8 +27,7 @@ import (
 )
 
 // CreatePrivateLocation creates a new Synthetics private location via the OpenAPI client.
-// On success it returns the normalized SyntheticsGetPrivateLocation obtained by unmarshaling
-// the raw POST response body so that create and read share one mapping path.
+// On success it returns the SyntheticsGetPrivateLocation from the POST response body.
 func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, body kbapi.PostPrivateLocationJSONRequestBody) (*kbapi.SyntheticsGetPrivateLocation, diag.Diagnostics) {
 	resp, err := client.API.PostPrivateLocationWithResponse(ctx, body, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
@@ -44,23 +42,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 				fmt.Sprintf("Create private location returned an empty response with HTTP status code [%d].", resp.StatusCode()),
 			)}
 		}
-		// The generated POST response is typed as *map[string]interface{}.
-		// Normalize into SyntheticsGetPrivateLocation so create and read share one mapper.
-		rawJSON, marshalErr := json.Marshal(resp.JSON200)
-		if marshalErr != nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Failed to re-encode create private location response",
-				marshalErr.Error(),
-			)}
-		}
-		var loc kbapi.SyntheticsGetPrivateLocation
-		if unmarshalErr := json.Unmarshal(rawJSON, &loc); unmarshalErr != nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Failed to decode create private location response into typed model",
-				unmarshalErr.Error(),
-			)}
-		}
-		return &loc, nil
+		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}

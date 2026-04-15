@@ -824,6 +824,16 @@ func transformKibanaPaths(schema *Schema) {
 	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
 	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
 
+	// The POST /api/synthetics/private_locations endpoint returns the same schema as
+	// Synthetics_getPrivateLocation (already a named component used by the GET endpoints).
+	// Point the POST 200 response at that component so the generated client uses the
+	// typed struct instead of map[string]interface{}.
+	syntheticsPrivateLocationsPath := schema.MustGetPath("/api/synthetics/private_locations")
+	syntheticsPrivateLocationsPath.Post.Set(
+		"responses.200.content.application/json.schema",
+		Map{"$ref": "#/components/schemas/Synthetics_getPrivateLocation"},
+	)
+
 	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
 	schema.Components.CreateRef(schema, "Data_views_runtimefieldmap_script", "schemas.Data_views_runtimefieldmap.properties.script")
