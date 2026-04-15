@@ -187,7 +187,7 @@ On read, the resource SHALL marshal the API response fields `trigger`, `input`, 
 
 #### Scenario: transform removed from the remote watch
 - **GIVEN** the watch previously had a `transform` stored in Terraform state
-- **WHEN** read runs and the API response has no `transform` field
+- **WHEN** read runs and the API response has no `transform` field, a null `transform`, or an empty `transform` object
 - **THEN** the `transform` attribute SHALL be cleared from state
 
 #### Scenario: active synced from watch status
