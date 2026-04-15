@@ -26,76 +26,85 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watch *models.PutWatch) diag.Diagnostics {
-	var diags diag.Diagnostics
+func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watch *models.PutWatch) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
 	watchBodyBytes, err := json.Marshal(watch.Body)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to marshal watch body", err.Error())
+		return diags
 	}
+
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
 	}
+
 	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBodyBytes))
 	active := esClient.Watcher.PutWatch.WithActive(watch.Active)
 	res, err := esClient.Watcher.PutWatch(watch.WatchID, active, body, esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create or update watch"); diags.HasError() {
+		diags.AddError("Unable to create or update watch", err.Error())
 		return diags
 	}
+	defer res.Body.Close()
 
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to create or update watch")
 }
 
-func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return nil, diags
 	}
 
 	res, err := esClient.Watcher.GetWatch(watchID, esClient.Watcher.GetWatch.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to get watch", err.Error())
+		return nil, diags
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, "Unable to find watch on cluster."); diags.HasError() {
-		return nil, diags
+
+	if d := diagutil.CheckErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+		return nil, d
 	}
 
 	var watch models.Watch
 	if err := json.NewDecoder(res.Body).Decode(&watch); err != nil {
-		return nil, diag.FromErr(err)
+		diags.AddError("Unable to decode watch response", err.Error())
+		return nil, diags
 	}
 
 	watch.WatchID = watchID
 	return &watch, diags
 }
 
-func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
-
-	if err != nil && res.IsError() {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete watch"); diags.HasError() {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
 	}
-	return diags
+
+	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
+	if err != nil {
+		diags.AddError("Unable to delete watch", err.Error())
+		return diags
+	}
+	defer res.Body.Close()
+
+	return diagutil.CheckErrorFromFW(res, "Unable to delete watch")
 }

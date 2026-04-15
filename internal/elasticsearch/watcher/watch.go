@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -183,7 +184,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 
 	watch.Body.ThrottlePeriodInMillis = d.Get("throttle_period_in_millis").(int)
 
-	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
+	if diags := diagutil.SDKDiagsFromFramework(elasticsearch.PutWatch(ctx, client, &watch)); diags.HasError() {
 		return diags
 	}
 
@@ -205,8 +206,9 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) di
 		return diags
 	}
 
-	watch, diags := elasticsearch.GetWatch(ctx, client, resourceID)
-	if watch == nil && diags == nil {
+	watch, fwDiags := elasticsearch.GetWatch(ctx, client, resourceID)
+	diags = diagutil.SDKDiagsFromFramework(fwDiags)
+	if watch == nil && !diags.HasError() {
 		tflog.Warn(ctx, fmt.Sprintf(`Watch "%s" not found, removing from state`, resourceID))
 		d.SetId("")
 		return diags
@@ -293,7 +295,7 @@ func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteWatch(ctx, client, resourceID); diags.HasError() {
+	if diags := diagutil.SDKDiagsFromFramework(elasticsearch.DeleteWatch(ctx, client, resourceID)); diags.HasError() {
 		return diags
 	}
 	return nil
