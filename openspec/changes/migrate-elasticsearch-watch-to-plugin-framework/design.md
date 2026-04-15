@@ -20,7 +20,7 @@ This change is intentionally separate from the watch hardening change. The migra
 ## Decisions
 
 Model the migrated resource after existing Elasticsearch Plugin Framework resources.
-The new watch package should follow the repo's standard Framework layout with `resource.go`, `schema.go`, `models.go`, and CRUD files. It should use `providerschema.GetEsFWConnectionBlock()` plus `clients.MaybeNewAPIClientFromFrameworkResource()` so connection override handling matches other Elasticsearch resources.
+The new watch package should follow the repo's standard Framework layout with `resource.go`, `schema.go`, `models.go`, and CRUD files. It should use `providerschema.GetEsFWConnectionBlock()` plus `ProviderClientFactory.GetElasticsearchClient()` so connection override handling matches other Elasticsearch resources.
 
 Alternative considered: keep most logic inside the existing SDK file and adapt it minimally.
 Rejected because it would preserve SDK-specific patterns and make future maintenance inconsistent with the rest of the Framework resources.

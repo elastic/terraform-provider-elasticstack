@@ -98,6 +98,10 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnos
 	d.WatchID = types.StringValue(watch.WatchID)
 	d.Active = types.BoolValue(watch.Status.State.Active)
 
+	if watch.Body.Trigger == nil {
+		diags.AddError("API Response Error", "Watch trigger is missing from API response")
+		return diags
+	}
 	trigger, err := json.Marshal(watch.Body.Trigger)
 	if err != nil {
 		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling trigger: %s", err))
@@ -105,33 +109,49 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnos
 	}
 	d.Trigger = jsontypes.NewNormalizedValue(string(trigger))
 
-	input, err := json.Marshal(watch.Body.Input)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
-		return diags
+	if watch.Body.Input == nil {
+		d.Input = jsontypes.NewNormalizedValue(`{"none":{}}`)
+	} else {
+		input, err := json.Marshal(watch.Body.Input)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
+			return diags
+		}
+		d.Input = jsontypes.NewNormalizedValue(string(input))
 	}
-	d.Input = jsontypes.NewNormalizedValue(string(input))
 
-	condition, err := json.Marshal(watch.Body.Condition)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling condition: %s", err))
-		return diags
+	if watch.Body.Condition == nil {
+		d.Condition = jsontypes.NewNormalizedValue(`{"always":{}}`)
+	} else {
+		condition, err := json.Marshal(watch.Body.Condition)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling condition: %s", err))
+			return diags
+		}
+		d.Condition = jsontypes.NewNormalizedValue(string(condition))
 	}
-	d.Condition = jsontypes.NewNormalizedValue(string(condition))
 
-	actions, err := json.Marshal(watch.Body.Actions)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
-		return diags
+	if watch.Body.Actions == nil {
+		d.Actions = jsontypes.NewNormalizedValue(`{}`)
+	} else {
+		actions, err := json.Marshal(watch.Body.Actions)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
+			return diags
+		}
+		d.Actions = jsontypes.NewNormalizedValue(string(actions))
 	}
-	d.Actions = jsontypes.NewNormalizedValue(string(actions))
 
-	metadata, err := json.Marshal(watch.Body.Metadata)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata: %s", err))
-		return diags
+	if watch.Body.Metadata == nil {
+		d.Metadata = jsontypes.NewNormalizedValue(`{}`)
+	} else {
+		metadata, err := json.Marshal(watch.Body.Metadata)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata: %s", err))
+			return diags
+		}
+		d.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 	}
-	d.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 
 	if watch.Body.Transform != nil {
 		transform, err := json.Marshal(watch.Body.Transform)

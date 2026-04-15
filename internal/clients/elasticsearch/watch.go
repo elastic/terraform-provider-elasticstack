@@ -106,5 +106,9 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode == http.StatusNotFound {
+		return diags // already gone, treat as success
+	}
+
 	return diagutil.CheckErrorFromFW(res, "Unable to delete watch")
 }
