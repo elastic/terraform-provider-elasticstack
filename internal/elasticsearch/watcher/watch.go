@@ -183,9 +183,10 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	// Elasticsearch keeps an existing transform when the field is omitted from Put Watch JSON.
-	// When transform is not configured, send explicit JSON null so the cluster clears it.
-	if _, ok := d.GetOk("transform"); !ok {
+	// On update, Elasticsearch keeps an existing transform when the field is omitted from Put
+	// Watch JSON. Sending explicit null clears it. On create, omit the field: including
+	// "transform":null breaks parsing on Elasticsearch 8.3 (parse_exception: unknown transform type).
+	if _, ok := d.GetOk("transform"); !ok && !d.IsNewResource() {
 		var body map[string]any
 		if err := json.Unmarshal(watchBodyBytes, &body); err != nil {
 			return diag.FromErr(err)
