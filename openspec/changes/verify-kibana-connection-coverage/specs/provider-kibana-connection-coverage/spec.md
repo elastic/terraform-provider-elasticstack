@@ -15,7 +15,7 @@ For every Terraform resource or data source registered by the provider whose typ
 - **THEN** the provider coverage tests SHALL fail and identify that entity by name
 
 ### Requirement: Shared-helper equivalence
-Covered SDK entities SHALL expose a `kibana_connection` schema exactly equivalent to `internal/schema.GetKibanaConnectionSchema()`, and covered Plugin Framework entities SHALL expose a `kibana_connection` block exactly equivalent to `internal/schema.GetKbFWConnectionBlock()`. Covered entity-local definitions SHALL NOT expose deprecation metadata.
+Covered SDK entities SHALL expose a `kibana_connection` schema exactly equivalent to `internal/schema.GetKibanaEntityConnectionSchema()`, and covered Plugin Framework entities SHALL expose a `kibana_connection` block exactly equivalent to `internal/schema.GetKbFWConnectionBlock()`. Covered entity-local definitions SHALL NOT expose deprecation metadata.
 
 #### Scenario: Covered entity matches shared helper
 - **WHEN** a covered Kibana or Fleet entity is examined by the provider coverage tests
