@@ -27,8 +27,8 @@ import (
 )
 
 // isValidEmbeddedCompatConfig reports whether expr is a reference to a package-level
-// string variable populated by //go:embed from testdata/.../main.tf (repository convention
-// for ExternalProviders compatibility steps).
+// string variable populated by //go:embed from a Terraform file under testdata/
+// (repository convention for ExternalProviders compatibility steps).
 func isValidEmbeddedCompatConfig(pass *analysis.Pass, expr ast.Expr) bool {
 	expr = unwrapParenExpr(expr)
 	id, ok := expr.(*ast.Ident)
@@ -55,7 +55,7 @@ func isValidEmbeddedCompatConfig(pass *analysis.Pass, expr ast.Expr) bool {
 	pos := pass.Fset.Position(vs.Names[0].Pos())
 	paths := goEmbedPathsAboveValueSpec(pass, pos.Filename, pos.Line)
 	for _, p := range paths {
-		if isTestdataMainTFEmbedPath(p) {
+		if isTestdataTFEmbedPath(p) {
 			return true
 		}
 	}
@@ -174,23 +174,17 @@ func isVarGroupBoundaryLine(line string) bool {
 	return false
 }
 
-// isTestdataMainTFEmbedPath reports whether path matches the repository contract for
-// compatibility-step fixtures: under testdata/, end with /main.tf (or be exactly
-// testdata/main.tf), with no "." / ".." / empty path segments that could escape the
-// fixture tree after normalization.
-func isTestdataMainTFEmbedPath(path string) bool {
+// isTestdataTFEmbedPath reports whether path matches the repository contract for
+// compatibility-step fixtures: under testdata/, end with .tf, and contain no ".",
+// "..", or empty path segments that could escape the fixture tree after normalization.
+func isTestdataTFEmbedPath(path string) bool {
 	if path == "" || strings.Contains(path, "\\") {
 		return false
 	}
 	if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "../") {
 		return false
 	}
-	switch {
-	case path == "testdata/main.tf":
-		// ok
-	case strings.HasPrefix(path, "testdata/") && strings.HasSuffix(path, "/main.tf"):
-		// ok
-	default:
+	if !strings.HasPrefix(path, "testdata/") || !strings.HasSuffix(path, ".tf") {
 		return false
 	}
 	for _, seg := range strings.Split(path, "/") {

@@ -2,14 +2,14 @@
 
 The current `acceptance-test-config-directory-lint` capability enforces relationships between `Config`, `ConfigDirectory`, `ExternalProviders`, and `ProtoV6ProviderFactories` inside inline `resource.TestCase` literals. That catches ordinary inline-config drift, but it still treats every `ExternalProviders` step with `Config` as valid regardless of whether the Terraform module is a checked-in fixture or an ad hoc string assembled in Go.
 
-This leaves a narrow but recurring exception path in SDK/backwards-compatibility tests: contributors can hide static Terraform modules in raw string literals, `fmt.Sprintf` heredocs, or helper functions that return HCL. The desired repository pattern is stricter and still mechanical: compatibility steps may continue using `Config`, but only when `Config` references a package-level string variable populated by `//go:embed` from `testdata/.../main.tf`.
+This leaves a narrow but recurring exception path in SDK/backwards-compatibility tests: contributors can hide static Terraform modules in raw string literals, `fmt.Sprintf` heredocs, or helper functions that return HCL. The desired repository pattern is stricter and still mechanical: compatibility steps may continue using `Config`, but only when `Config` references a package-level string variable populated by `//go:embed` from a `.tf` fixture under `testdata/`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Extend the existing analyzer so it validates the declaration shape behind `resource.TestStep.Config` for `ExternalProviders` compatibility steps.
-- Allow a single accepted compatibility-step config pattern: `Config` points to a package-level embedded string fixture sourced from `testdata/.../main.tf`.
+- Allow a single accepted compatibility-step config pattern: `Config` points to a package-level embedded string fixture sourced from a `.tf` file under `testdata/`.
 - Reject mechanically detectable static inline-config patterns defined in Go, including raw literals, `fmt.Sprintf`, concatenation, and helper-returned Terraform modules.
 - Preserve the existing ordinary-step rule set: current-provider steps continue using `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`.
 - Provide diagnostics that tell contributors to move static Terraform into fixture files and load it through `//go:embed`.
@@ -26,9 +26,9 @@ This leaves a narrow but recurring exception path in SDK/backwards-compatibility
 
 - **Extend the existing `go/analysis` plugin instead of adding a regex rule**: Pattern matching can catch raw heredocs, but it becomes noisy and incomplete once `Config` values flow through identifiers. The existing analyzer already has typed access to the relevant `resource.TestStep` literals, so adding declaration-aware checks there gives more precise diagnostics with less false-positive risk.
 
-- **Use declaration-aware validation, not full SSA/data-flow**: The analyzer should inspect the `Config` expression shape and, when it is an identifier, resolve that identifier to its declaration. For v1, the accepted declaration shape is a package-level `string` variable with an attached `//go:embed` directive that targets a `testdata/.../main.tf` fixture. This captures the real repository pattern without taking on the maintenance cost of whole-program flow analysis.
+- **Use declaration-aware validation, not full SSA/data-flow**: The analyzer should inspect the `Config` expression shape and, when it is an identifier, resolve that identifier to its declaration. For v1, the accepted declaration shape is a package-level `string` variable with an attached `//go:embed` directive that targets a `.tf` fixture under `testdata/`. This captures the real repository pattern without taking on the maintenance cost of whole-program flow analysis.
 
-- **Treat non-identifier `Config` expressions as invalid for compatibility steps**: Raw string literals, `fmt.Sprintf(...)`, concatenation, selector-based builders, and helper-function calls should all produce diagnostics. The fix is always the same: extract the static module to `testdata/.../main.tf`, embed it at package scope, and reference that variable from `Config`.
+- **Treat non-identifier `Config` expressions as invalid for compatibility steps**: Raw string literals, `fmt.Sprintf(...)`, concatenation, selector-based builders, and helper-function calls should all produce diagnostics. The fix is always the same: extract the static module to a `.tf` file under `testdata/`, embed it at package scope, and reference that variable from `Config`.
 
 - **Require direct package-scope ownership for the embedded fixture variable**: The accepted config source should be declared in the same test package as the acceptance test, not passed through helper layers. That keeps the fixture reference auditable next to the test and avoids analyzer complexity around imported symbols or transitive aliases.
 
@@ -38,7 +38,7 @@ This leaves a narrow but recurring exception path in SDK/backwards-compatibility
 
 ## Risks / Trade-offs
 
-- **[Risk] The accepted source shape is stricter than the minimum needed to load equivalent Terraform** -> Mitigation: document the exact approved pattern in the spec and diagnostics so contributors know to use `//go:embed` plus `testdata/.../main.tf` instead of inventing variants.
+- **[Risk] The accepted source shape is stricter than the minimum needed to load equivalent Terraform** -> Mitigation: document the exact approved pattern in the spec and diagnostics so contributors know to use `//go:embed` plus a `.tf` fixture under `testdata/` instead of inventing variants.
 
 - **[Risk] Some compatibility tests may currently rely on light parameterization inside helper functions** -> Mitigation: move runtime values into `ConfigVariables` where possible and keep the embedded fixture static.
 
@@ -51,7 +51,7 @@ This leaves a narrow but recurring exception path in SDK/backwards-compatibility
 1. Update the `acceptance-test-config-directory-lint` delta spec to describe the new compatibility-step config-source restriction and expected diagnostics.
 2. Extend `analysis/acctestconfigdirlintplugin` so `ExternalProviders` steps validate the origin of `Config`.
 3. Add analyzer regression tests for accepted embedded fixture vars and rejected static inline-config patterns.
-4. Convert existing compatibility tests that still define Terraform modules in Go to `testdata/.../main.tf` plus package-level `//go:embed`.
+4. Convert existing compatibility tests that still define Terraform modules in Go to `.tf` fixtures under `testdata/` plus package-level `//go:embed`.
 5. Run targeted analyzer tests and repository lint to verify the stricter rule is enforceable without repository-wide failures.
 
 ## Open Questions

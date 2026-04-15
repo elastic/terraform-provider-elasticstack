@@ -28,6 +28,9 @@ import (
 //go:embed testdata/sdk_compat/main.tf
 var sdkCompatEmbeddedTF string
 
+//go:embed testdata/non_main_compat/compat.tf
+var nonMainCompatEmbeddedTF string
+
 var (
 	//go:embed testdata/grouped_embed_compat/main.tf
 	groupedCompatEmbeddedTF string
@@ -71,7 +74,7 @@ func TestOrdinaryStepParallel(t *testing.T) {
 }
 
 // TestCompatibilityStep verifies that a step using ExternalProviders + Config referencing
-// a package-level //go:embed testdata/.../main.tf variable inside resource.Test is compliant.
+// a package-level //go:embed testdata/.../*.tf variable inside resource.Test is compliant.
 func TestCompatibilityStep(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
@@ -80,6 +83,20 @@ func TestCompatibilityStep(t *testing.T) {
 					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
 				},
 				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepNonMainFixture verifies non-main .tf fixture names are accepted too.
+func TestCompatibilityStepNonMainFixture(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: nonMainCompatEmbeddedTF,
 			},
 		},
 	})

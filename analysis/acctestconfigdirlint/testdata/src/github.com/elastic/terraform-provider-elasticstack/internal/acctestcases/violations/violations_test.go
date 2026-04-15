@@ -31,7 +31,7 @@ func violationCompatConfigFromHelper() string {
 	return `resource "null_resource" "helper" {}`
 }
 
-//go:embed testdata/wrong_embed_suffix/not_main.tf
+//go:embed testdata/wrong_embed_suffix/not_tf.txt
 var violationCompatWrongEmbedSuffix string
 
 var violationCompatPlainStringVar = `resource "null_resource" "plain" {}`
@@ -241,7 +241,7 @@ func TestViolation_CompatibilityConfigPlainVar(t *testing.T) {
 	})
 }
 
-// TestViolation_CompatibilityConfigWrongEmbedSuffix rejects go:embed paths that are not testdata/.../main.tf.
+// TestViolation_CompatibilityConfigWrongEmbedSuffix rejects go:embed paths that are not testdata/.../*.tf.
 func TestViolation_CompatibilityConfigWrongEmbedSuffix(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{

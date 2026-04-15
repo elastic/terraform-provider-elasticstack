@@ -14,7 +14,7 @@ Any in-scope `resource.TestStep` that sets `Config` SHALL also set `ExternalProv
 - **THEN** the analyzer SHALL report no diagnostic for using `Config`
 
 ### Requirement: External-provider compatibility steps stay on inline config
-Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use `Config`, SHALL NOT use `ConfigDirectory`, and SHALL NOT set `ProtoV6ProviderFactories`. For these compatibility steps, `Config` SHALL resolve to a package-level `string` variable populated by a `//go:embed` directive whose embedded fixture path points to `testdata/.../main.tf`. The analyzer SHALL reject raw string literals, formatted strings, concatenated strings, helper-function-returned strings, and identifiers that do not resolve to that embedded-fixture declaration shape.
+Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use `Config`, SHALL NOT use `ConfigDirectory`, and SHALL NOT set `ProtoV6ProviderFactories`. For these compatibility steps, `Config` SHALL resolve to a package-level `string` variable populated by a `//go:embed` directive whose embedded fixture path points to a `.tf` file under `testdata/`. The analyzer SHALL reject raw string literals, formatted strings, concatenated strings, helper-function-returned strings, and identifiers that do not resolve to that embedded-fixture declaration shape.
 
 #### Scenario: External-provider compatibility step mixes config sources
 - **GIVEN** an in-scope acceptance `resource.TestStep`
@@ -33,23 +33,23 @@ Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use `Config
 
 #### Scenario: External-provider compatibility step uses an embedded fixture variable
 - **GIVEN** an in-scope acceptance `resource.TestStep`
-- **WHEN** the step sets `ExternalProviders` and `Config` references a package-level `string` variable populated by `//go:embed testdata/.../main.tf`
+- **WHEN** the step sets `ExternalProviders` and `Config` references a package-level `string` variable populated by `//go:embed testdata/.../*.tf`
 - **THEN** the analyzer SHALL report no diagnostic for the config source
 
 #### Scenario: External-provider compatibility step uses a raw Terraform string
 - **GIVEN** an in-scope acceptance `resource.TestStep`
 - **WHEN** the step sets `ExternalProviders` and `Config` to a raw string literal, a formatted string expression, or a concatenated string expression
-- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `main.tf` fixture variable
+- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `.tf` fixture variable under `testdata/`
 
 #### Scenario: External-provider compatibility step uses a helper-returned Terraform string
 - **GIVEN** an in-scope acceptance `resource.TestStep`
 - **WHEN** the step sets `ExternalProviders` and `Config` to a helper call that returns Terraform text
-- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `main.tf` fixture variable
+- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `.tf` fixture variable under `testdata/`
 
 #### Scenario: External-provider compatibility step uses a non-embedded string variable
 - **GIVEN** an in-scope acceptance `resource.TestStep`
-- **WHEN** the step sets `ExternalProviders` and `Config` references a string variable that is not populated by `//go:embed testdata/.../main.tf`
-- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `main.tf` fixture variable
+- **WHEN** the step sets `ExternalProviders` and `Config` references a string variable that is not populated by `//go:embed testdata/.../*.tf`
+- **THEN** the analyzer SHALL emit a diagnostic requiring the config to come from a package-level embedded `.tf` fixture variable under `testdata/`
 
 ### Requirement: Field-relationship diagnostics are actionable
 When the lint rule reports a violation, the diagnostic SHALL identify the invalid `resource.TestCase` or `resource.TestStep` field relationship or invalid compatibility-step config source and SHALL direct contributors toward the accepted shape for that step.
@@ -57,7 +57,7 @@ When the lint rule reports a violation, the diagnostic SHALL identify the invali
 #### Scenario: Diagnostic explains the accepted replacement
 - **GIVEN** a non-compliant in-scope acceptance `resource.TestStep`
 - **WHEN** the analyzer emits a diagnostic
-- **THEN** the diagnostic SHALL tell the contributor whether to move `ProtoV6ProviderFactories` onto the step, switch to `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`, keep the step as an `ExternalProviders` plus `Config` compatibility case, or move static Terraform into `testdata/.../main.tf` and load it through package-level `//go:embed`
+- **THEN** the diagnostic SHALL tell the contributor whether to move `ProtoV6ProviderFactories` onto the step, switch to `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`, keep the step as an `ExternalProviders` plus `Config` compatibility case, or move static Terraform into `testdata/.../*.tf` and load it through package-level `//go:embed`
 
 ### Requirement: Repository lint enforces the rule
 The analyzer SHALL be wired into repository lint execution so `make check-lint` fails on violations, and regression tests SHALL cover compliant and non-compliant step shapes for both config sourcing and provider wiring, including accepted embedded compatibility fixtures and rejected static Terraform strings defined in Go.

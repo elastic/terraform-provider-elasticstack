@@ -19,14 +19,16 @@ package acctestconfigdirlint
 
 import "testing"
 
-func TestIsTestdataMainTFEmbedPath(t *testing.T) {
+func TestIsTestdataTFEmbedPath(t *testing.T) {
 	tests := []struct {
 		path string
 		want bool
 	}{
 		{"testdata/main.tf", true},
 		{"testdata/case/main.tf", true},
+		{"testdata/case/compat.tf", true},
 		{"testdata/a/b/c/main.tf", true},
+		{"testdata/a/b/c/compatibility.tf", true},
 		{"testdata/../evil/main.tf", false},
 		{"testdata/a/../b/main.tf", false},
 		{"testdata//x/main.tf", false},
@@ -34,13 +36,14 @@ func TestIsTestdataMainTFEmbedPath(t *testing.T) {
 		{"../testdata/x/main.tf", false},
 		{"testdata/x/main.tf.extra", false},
 		{"other/testdata/x/main.tf", false},
-		{"testdata/x/notmain.tf", false},
+		{"testdata/x/notmain.tf", true},
+		{"testdata/x/not_tf.txt", false},
 		{`testdata\x\main.tf`, false},
 		{"", false},
 	}
 	for _, tt := range tests {
-		if got := isTestdataMainTFEmbedPath(tt.path); got != tt.want {
-			t.Errorf("isTestdataMainTFEmbedPath(%q) = %v, want %v", tt.path, got, tt.want)
+		if got := isTestdataTFEmbedPath(tt.path); got != tt.want {
+			t.Errorf("isTestdataTFEmbedPath(%q) = %v, want %v", tt.path, got, tt.want)
 		}
 	}
 }

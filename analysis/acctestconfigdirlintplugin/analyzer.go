@@ -241,10 +241,10 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 		return
 	}
 
-	// ExternalProviders compatibility steps must source Config from an embedded testdata/.../main.tf fixture.
+	// ExternalProviders compatibility steps must source Config from an embedded testdata/.../*.tf fixture.
 	if hasExternalProviders && hasConfig && !hasConfigDir {
 		if !isValidEmbeddedCompatConfig(pass, configExpr) {
-			pass.Reportf(configExpr.Pos(), msgCompatibilityConfigMustBeEmbeddedMainTF)
+			pass.Reportf(configExpr.Pos(), msgCompatibilityConfigMustBeEmbeddedTF)
 		}
 	}
 
