@@ -18,12 +18,14 @@
 package kibana_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -124,7 +126,12 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 }
 
 func checkResourceSecurityRoleDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+
+	oapiClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		return err
 	}
@@ -135,12 +142,8 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compID := rs.Primary.ID
 
-		kibanaClient, err := client.GetKibanaClient()
-		if err != nil {
-			return err
-		}
-		res, err := kibanaClient.KibanaRoleManagement.Get(compID)
-		if err != nil || res != nil {
+		role, diags := kibanaoapi.GetSecurityRole(context.Background(), oapiClient, compID)
+		if diags.HasError() || role != nil {
 			return fmt.Errorf("Role (%s) still exists", compID)
 		}
 	}
