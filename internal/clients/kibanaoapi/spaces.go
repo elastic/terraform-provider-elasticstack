@@ -37,7 +37,12 @@ func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwd
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		if resp.JSON200 == nil {
-			return nil, nil
+			return nil, fwdiag.Diagnostics{
+				fwdiag.NewErrorDiagnostic(
+					"Unexpected empty response from Kibana Spaces API",
+					"Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
+				),
+			}
 		}
 		return *resp.JSON200, nil
 	default:
@@ -55,6 +60,14 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, fwdiag.Diagnostics{
+				fwdiag.NewErrorDiagnostic(
+					"Unexpected empty response from Kibana Spaces API",
+					"Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
+				),
+			}
+		}
 		return resp.JSON200, nil
 	case http.StatusNotFound:
 		return nil, nil
@@ -79,6 +92,13 @@ func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceRe
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, sdkdiag.Diagnostics{{
+				Severity: sdkdiag.Error,
+				Summary:  "Unexpected empty response from Kibana Spaces API",
+				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
+			}}
+		}
 		return resp.JSON200, nil
 	case http.StatusNotFound:
 		return nil, nil
@@ -102,6 +122,13 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, sdkdiag.Diagnostics{{
+				Severity: sdkdiag.Error,
+				Summary:  "Unexpected empty response from Kibana Spaces API",
+				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
+			}}
+		}
 		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
@@ -123,6 +150,13 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, sdkdiag.Diagnostics{{
+				Severity: sdkdiag.Error,
+				Summary:  "Unexpected empty response from Kibana Spaces API",
+				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
+			}}
+		}
 		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)

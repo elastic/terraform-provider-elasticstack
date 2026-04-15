@@ -269,15 +269,19 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta any) di
 	if err := d.Set("disabled_features", disabledFeatures); err != nil {
 		return diag.FromErr(err)
 	}
+	initials := ""
 	if space.Initials != nil {
-		if err := d.Set("initials", *space.Initials); err != nil {
-			return diag.FromErr(err)
-		}
+		initials = *space.Initials
 	}
+	if err := d.Set("initials", initials); err != nil {
+		return diag.FromErr(err)
+	}
+	color := ""
 	if space.Color != nil {
-		if err := d.Set("color", *space.Color); err != nil {
-			return diag.FromErr(err)
-		}
+		color = *space.Color
+	}
+	if err := d.Set("color", color); err != nil {
+		return diag.FromErr(err)
 	}
 	if space.Solution != nil {
 		if err := d.Set("solution", *space.Solution); err != nil {
