@@ -218,7 +218,7 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 	return resourceSpaceRead(ctx, d, meta)
 }
 
-func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	factory, diags := clients.ConvertMetaToFactory(meta)
 	if diags.HasError() {
 		return diags
@@ -237,7 +237,7 @@ func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag
 		return diag.FromErr(err)
 	}
 
-	space, sdkDiags := kibanaoapi.GetSpaceSDK(context.Background(), oapiClient, id)
+	space, sdkDiags := kibanaoapi.GetSpaceSDK(ctx, oapiClient, id)
 	if sdkDiags.HasError() {
 		return sdkDiags
 	}
@@ -293,7 +293,7 @@ func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag
 	return diags
 }
 
-func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	factory, diags := clients.ConvertMetaToFactory(meta)
 	if diags.HasError() {
 		return diags
@@ -312,7 +312,7 @@ func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) di
 		return diag.FromErr(err)
 	}
 
-	if sdkDiags := kibanaoapi.DeleteSpace(context.Background(), oapiClient, id); sdkDiags.HasError() {
+	if sdkDiags := kibanaoapi.DeleteSpace(ctx, oapiClient, id); sdkDiags.HasError() {
 		return sdkDiags
 	}
 
