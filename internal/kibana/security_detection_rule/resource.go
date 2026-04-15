@@ -41,7 +41,8 @@ func (r *securityDetectionRuleResource) Metadata(_ context.Context, req resource
 	resp.TypeName = req.ProviderTypeName + "_kibana_security_detection_rule"
 }
 
-func (r *securityDetectionRuleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *securityDetectionRuleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = factory
 }

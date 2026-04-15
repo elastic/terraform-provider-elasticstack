@@ -53,7 +53,8 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = factory
 }

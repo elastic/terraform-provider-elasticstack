@@ -39,7 +39,8 @@ type integrationDataSource struct {
 	client *clients.ProviderClientFactory
 }
 
-func (d *integrationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (d *integrationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	d.client = factory
 }

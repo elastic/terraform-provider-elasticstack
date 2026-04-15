@@ -21,8 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -96,8 +96,12 @@ func (f *ProviderClientFactory) GetKibanaClientFromSDK(d *schema.ResourceData) (
 	if fwDiags.HasError() {
 		var sdkDiags diag.Diagnostics
 		for _, d := range fwDiags {
+			severity := diag.Error
+			if d.Severity() == fwdiags.SeverityWarning {
+				severity = diag.Warning
+			}
 			sdkDiags = append(sdkDiags, diag.Diagnostic{
-				Severity: diag.Error,
+				Severity: severity,
 				Summary:  d.Summary(),
 				Detail:   d.Detail(),
 			})
@@ -137,6 +141,13 @@ func (f *ProviderClientFactory) GetDefaultClient() *APIClient {
 // buildKibanaScopedClientFromConfig builds a *KibanaScopedClient from a
 // config.Client that has already been populated from a scoped kibana_connection.
 func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*KibanaScopedClient, fwdiags.Diagnostics) {
+	if cfg.Kibana == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Missing Kibana config",
+			"kibana_connection is required but the Kibana configuration was not set",
+		)}
+	}
+
 	kibanaClient, err := buildKibanaClient(cfg)
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana client", err.Error())}

@@ -183,7 +183,7 @@ func ConvertProviderData(providerData any) (*APIClient, fwdiags.Diagnostics) {
 	if !ok {
 		diags.AddError(
 			"Unexpected Provider Data",
-			fmt.Sprintf("Expected *ProviderClientFactory, got: %T. Please report this issue to the provider developers.", providerData),
+			fmt.Sprintf("Expected *ProviderClientFactory or *APIClient, got: %T. Please report this issue to the provider developers.", providerData),
 		)
 
 		return nil, diags
@@ -361,7 +361,10 @@ func extractDefaultClientFromMeta(meta any) *APIClient {
 		return factory.GetDefaultClient()
 	}
 	// Legacy path: meta is a bare *APIClient (e.g. in unit tests).
-	return meta.(*APIClient)
+	if client, ok := meta.(*APIClient); ok {
+		return client
+	}
+	panic(fmt.Sprintf("extractDefaultClientFromMeta: unsupported meta type %T", meta))
 }
 
 func (a *APIClient) GetESClient() (*elasticsearch.Client, error) {

@@ -44,7 +44,8 @@ func (r *securityListResource) Metadata(_ context.Context, req resource.Metadata
 	resp.TypeName = req.ProviderTypeName + "_kibana_security_list"
 }
 
-func (r *securityListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *securityListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = factory
 }

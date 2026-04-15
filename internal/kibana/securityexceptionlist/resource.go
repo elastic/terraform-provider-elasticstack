@@ -41,7 +41,8 @@ type ExceptionListResource struct {
 	client *clients.ProviderClientFactory
 }
 
-func (r *ExceptionListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *ExceptionListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = factory
 }

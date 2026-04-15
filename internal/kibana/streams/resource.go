@@ -43,7 +43,8 @@ type Resource struct {
 	client *clients.ProviderClientFactory
 }
 
-func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -47,7 +47,8 @@ type outputResource struct {
 	client *clients.ProviderClientFactory
 }
 
-func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = factory
 }

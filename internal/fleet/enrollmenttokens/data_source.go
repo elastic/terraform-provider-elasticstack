@@ -43,7 +43,8 @@ func (d *enrollmentTokensDataSource) Metadata(_ context.Context, req datasource.
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_enrollment_tokens")
 }
 
-func (d *enrollmentTokensDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (d *enrollmentTokensDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	d.client = factory
 }

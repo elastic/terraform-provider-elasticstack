@@ -44,7 +44,8 @@ func (r *securityListDataStreamsResource) Metadata(_ context.Context, req resour
 	resp.TypeName = req.ProviderTypeName + "_kibana_security_list_data_streams"
 }
 
-func (r *securityListDataStreamsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+func (r *securityListDataStreamsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = factory
 }
