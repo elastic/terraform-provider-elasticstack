@@ -98,36 +98,6 @@ func (k *KibanaScopedClient) SetSloAuthContext(ctx context.Context) context.Cont
 // ServerVersion returns the version of the Kibana server. Version is always
 // derived from the Kibana status API; there is no Elasticsearch fallback.
 func (k *KibanaScopedClient) ServerVersion(_ context.Context) (*version.Version, diag.Diagnostics) {
-	return k.versionFromKibana()
-}
-
-// ServerFlavor returns the flavor (e.g. "serverless", "default") of the Kibana
-// server. Flavor is always derived from the Kibana status API.
-func (k *KibanaScopedClient) ServerFlavor(_ context.Context) (string, diag.Diagnostics) {
-	return k.flavorFromKibana()
-}
-
-// EnforceMinVersion returns true when the Kibana server version is greater than
-// or equal to minVersion, or when the server is running in serverless mode.
-func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
-	flavor, diags := k.ServerFlavor(ctx)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	if flavor == ServerlessFlavor {
-		return true, nil
-	}
-
-	serverVersion, diags := k.ServerVersion(ctx)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	return serverVersion.GreaterThanOrEqual(minVersion), nil
-}
-
-func (k *KibanaScopedClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 	kibClient, err := k.GetKibanaClient()
 	if err != nil {
 		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
@@ -158,7 +128,9 @@ func (k *KibanaScopedClient) versionFromKibana() (*version.Version, diag.Diagnos
 	return serverVersion, nil
 }
 
-func (k *KibanaScopedClient) flavorFromKibana() (string, diag.Diagnostics) {
+// ServerFlavor returns the flavor (e.g. "serverless", "default") of the Kibana
+// server. Flavor is always derived from the Kibana status API.
+func (k *KibanaScopedClient) ServerFlavor(_ context.Context) (string, diag.Diagnostics) {
 	kibClient, err := k.GetKibanaClient()
 	if err != nil {
 		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
@@ -184,6 +156,26 @@ func (k *KibanaScopedClient) flavorFromKibana() (string, diag.Diagnostics) {
 	}
 
 	return serverFlavor, nil
+}
+
+// EnforceMinVersion returns true when the Kibana server version is greater than
+// or equal to minVersion, or when the server is running in serverless mode.
+func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	flavor, diags := k.ServerFlavor(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if flavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, diags := k.ServerVersion(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	return serverVersion.GreaterThanOrEqual(minVersion), nil
 }
 
 // kibanaScopedClientFromAPIClient constructs a KibanaScopedClient from the
