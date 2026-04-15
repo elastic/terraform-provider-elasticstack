@@ -79,6 +79,37 @@ func buildRawConfig(t *testing.T, r resource.Resource, createNewCopies, overwrit
 	}
 }
 
+func TestConfigValidators_NoConflictWhenFalse(t *testing.T) {
+	tr := true
+	fa := false
+	r := importsavedobjects.NewResource()
+	rWithValidators := r.(resource.ResourceWithConfigValidators)
+	validators := rWithValidators.ConfigValidators(context.Background())
+	require.Len(t, validators, 2)
+
+	// create_new_copies = false, overwrite = false — should NOT error
+	config := buildRawConfig(t, r, &fa, &fa, nil)
+	req := resource.ValidateConfigRequest{Config: config}
+	var allDiags diag.Diagnostics
+	for _, v := range validators {
+		resp := &resource.ValidateConfigResponse{}
+		v.ValidateResource(context.Background(), req, resp)
+		allDiags.Append(resp.Diagnostics...)
+	}
+	assert.False(t, allDiags.HasError(), "validators must not fire when both attributes are false")
+
+	// create_new_copies = false, overwrite = true — should NOT error
+	allDiags = nil
+	config = buildRawConfig(t, r, &fa, &tr, nil)
+	req = resource.ValidateConfigRequest{Config: config}
+	for _, v := range validators {
+		resp := &resource.ValidateConfigResponse{}
+		v.ValidateResource(context.Background(), req, resp)
+		allDiags.Append(resp.Diagnostics...)
+	}
+	assert.False(t, allDiags.HasError(), "validators must not fire when only overwrite is true")
+}
+
 func TestConfigValidators_CreateNewCopiesConflictsWithOverwrite(t *testing.T) {
 	tr := true
 	r := importsavedobjects.NewResource()
