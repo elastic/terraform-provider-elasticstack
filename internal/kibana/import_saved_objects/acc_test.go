@@ -59,6 +59,16 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "1"),
 				),
 			},
+			{
+				// Ensure compatibility_mode flag is accepted and import succeeds
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("compatibility_mode"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+				),
+			},
 		},
 	})
 }

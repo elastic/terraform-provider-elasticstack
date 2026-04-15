@@ -19,12 +19,14 @@ package importsavedobjects_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	importsavedobjects "github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -87,16 +89,22 @@ func TestConfigValidators_CreateNewCopiesConflictsWithOverwrite(t *testing.T) {
 	config := buildRawConfig(t, r, &tr, &tr, nil)
 	req := resource.ValidateConfigRequest{Config: config}
 
-	gotError := false
+	var allDiags diag.Diagnostics
 	for _, v := range validators {
 		resp := &resource.ValidateConfigResponse{}
 		v.ValidateResource(context.Background(), req, resp)
-		if resp.Diagnostics.HasError() {
-			gotError = true
+		allDiags.Append(resp.Diagnostics...)
+	}
+	require.True(t, allDiags.HasError(), "expected a conflict diagnostic when create_new_copies and overwrite are both true")
+
+	found := false
+	for _, d := range allDiags.Errors() {
+		if strings.Contains(d.Detail(), "create_new_copies") && strings.Contains(d.Detail(), "overwrite") {
+			found = true
 			break
 		}
 	}
-	assert.True(t, gotError, "expected a conflict diagnostic when create_new_copies and overwrite are both true")
+	assert.True(t, found, "expected conflict diagnostic to mention both create_new_copies and overwrite")
 }
 
 func TestConfigValidators_CreateNewCopiesConflictsWithCompatibilityMode(t *testing.T) {
@@ -109,14 +117,20 @@ func TestConfigValidators_CreateNewCopiesConflictsWithCompatibilityMode(t *testi
 	config := buildRawConfig(t, r, &tr, nil, &tr)
 	req := resource.ValidateConfigRequest{Config: config}
 
-	gotError := false
+	var allDiags diag.Diagnostics
 	for _, v := range validators {
 		resp := &resource.ValidateConfigResponse{}
 		v.ValidateResource(context.Background(), req, resp)
-		if resp.Diagnostics.HasError() {
-			gotError = true
+		allDiags.Append(resp.Diagnostics...)
+	}
+	require.True(t, allDiags.HasError(), "expected a conflict diagnostic when create_new_copies and compatibility_mode are both true")
+
+	found := false
+	for _, d := range allDiags.Errors() {
+		if strings.Contains(d.Detail(), "create_new_copies") && strings.Contains(d.Detail(), "compatibility_mode") {
+			found = true
 			break
 		}
 	}
-	assert.True(t, gotError, "expected a conflict diagnostic when create_new_copies and compatibility_mode are both true")
+	assert.True(t, found, "expected conflict diagnostic to mention both create_new_copies and compatibility_mode")
 }
