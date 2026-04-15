@@ -34,10 +34,9 @@ import (
 // sources use the factory to obtain typed clients rather than consuming a broad
 // *APIClient directly.
 //
-// During the Kibana/Fleet typed-client phase the factory exposes:
+// The factory exposes typed resolution methods for all supported connection types:
 //   - Typed Kibana/Fleet resolution methods returning *KibanaScopedClient
-//   - Transitional legacy Elasticsearch resolution methods returning *APIClient
-//     so unconverted Elasticsearch entities continue to work unchanged
+//   - Typed Elasticsearch resolution methods returning *ElasticsearchScopedClient
 type ProviderClientFactory struct {
 	// defaultClient holds provider-level clients built from the provider
 	// configuration block. It is used as the fallback when an entity does not

@@ -167,7 +167,6 @@ require (
 	github.com/dprotaso/go-yit v0.0.0-20250513223454-5ece0c5aa76c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin v0.0.0
-	github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin v0.0.0
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
@@ -434,7 +433,5 @@ tool (
 	go.uber.org/mock/mockgen
 	gotest.tools/gotestsum
 )
-
-replace github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin => ./analysis/esclienthelperplugin
 
 replace github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin => ./analysis/acctestconfigdirlintplugin

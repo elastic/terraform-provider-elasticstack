@@ -70,7 +70,7 @@ func skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey bool) func() (bool
 func skipValidateAndStart(t *testing.T) {
 	t.Helper()
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 }
 
 func checkInferenceEndpointDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

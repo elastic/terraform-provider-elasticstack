@@ -1,0 +1,315 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package clients
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	goversion "github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newMockElasticsearchServer returns an httptest.Server that responds to GET /
+// with a minimal Elasticsearch info payload for the given version and flavor.
+// It sets the X-Elastic-Product header that the go-elasticsearch client requires
+// for product-check validation.
+func newMockElasticsearchServer(version, buildFlavor string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			payload := map[string]any{
+				"cluster_uuid": "test-cluster-uuid",
+				"version": map[string]any{
+					"number":       version,
+					"build_flavor": buildFlavor,
+				},
+			}
+			_ = json.NewEncoder(w).Encode(payload)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+}
+
+// elasticsearchConnectionAttrTypes returns the attribute type map for
+// config.ElasticsearchConnection so we can build framework type values in tests.
+func elasticsearchConnectionAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"username":                types.StringType,
+		"password":                types.StringType,
+		"api_key":                 types.StringType,
+		"bearer_token":            types.StringType,
+		"es_client_authentication": types.StringType,
+		"endpoints":               types.ListType{ElemType: types.StringType},
+		"headers":                 types.MapType{ElemType: types.StringType},
+		"insecure":                types.BoolType,
+		"ca_file":                 types.StringType,
+		"ca_data":                 types.StringType,
+		"cert_file":               types.StringType,
+		"key_file":                types.StringType,
+		"cert_data":               types.StringType,
+		"key_data":                types.StringType,
+	}
+}
+
+// newScopedElasticsearchClientFromFactory creates an *ElasticsearchScopedClient
+// via the factory pointing at the given endpoint.
+func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *ElasticsearchScopedClient {
+	t.Helper()
+
+	ctx := context.Background()
+	factory := newTestFactory(t)
+	conn := config.ElasticsearchConnection{
+		Username:               types.StringValue("elastic"),
+		Password:               types.StringValue("changeme"),
+		APIKey:                 types.StringValue(""),
+		BearerToken:            types.StringValue(""),
+		ESClientAuthentication: types.StringValue(""),
+		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue(endpoint),
+		}),
+		Headers:  types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		Insecure: types.BoolValue(true),
+		CAFile:   types.StringValue(""),
+		CAData:   types.StringValue(""),
+		CertFile: types.StringValue(""),
+		KeyFile:  types.StringValue(""),
+		CertData: types.StringValue(""),
+		KeyData:  types.StringValue(""),
+	}
+
+	list, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{conn},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, list)
+	require.False(t, diags.HasError())
+	return scoped
+}
+
+// --- GetESClient ---
+
+func TestElasticsearchScopedClient_GetESClient_Nil(t *testing.T) {
+	t.Parallel()
+	sc := &ElasticsearchScopedClient{}
+	_, err := sc.GetESClient()
+	assert.Error(t, err, "GetESClient must return an error when elasticsearch is nil")
+}
+
+func TestElasticsearchScopedClient_GetESClient_Present(t *testing.T) {
+	t.Parallel()
+	factory := newTestFactory(t)
+	// Build a scoped client from provider defaults (newTestAPIClient has no ES client set,
+	// but the factory wraps the APIClient fields). Here we verify the method exists and
+	// the scoped client built from a real factory does not panic.
+	ctx := context.Background()
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, emptyList)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+}
+
+// --- GetElasticsearchClient (Framework) ---
+
+func TestGetElasticsearchClient_EmptyList(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, emptyList)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+}
+
+func TestGetElasticsearchClient_NullList(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	nullList := types.ListNull(types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()})
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, nullList)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+}
+
+func TestGetElasticsearchClient_WithConnection(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0", "default")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	require.NotNil(t, scoped)
+
+	esClient, err := scoped.GetESClient()
+	require.NoError(t, err, "GetESClient must return a valid client when connection is configured")
+	require.NotNil(t, esClient)
+}
+
+// --- GetElasticsearchClientFromSDK ---
+
+func TestGetElasticsearchClientFromSDK_AbsentBlock(t *testing.T) {
+	t.Parallel()
+	factory := newTestFactory(t)
+
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
+	}, map[string]any{})
+
+	scoped, diags := factory.GetElasticsearchClientFromSDK(rd)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+}
+
+func TestGetElasticsearchClientFromSDK_WithBlock(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0", "default")
+	defer srv.Close()
+
+	factory := newTestFactory(t)
+
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
+	}, map[string]any{
+		"elasticsearch_connection": []any{
+			map[string]any{
+				"username":                 "elastic",
+				"password":                 "changeme",
+				"api_key":                  "",
+				"bearer_token":             "",
+				"es_client_authentication": "",
+				"endpoints":                []any{srv.URL},
+				"insecure":                 true,
+				"ca_file":                  "",
+				"ca_data":                  "",
+				"cert_file":                "",
+				"key_file":                 "",
+				"cert_data":                "",
+				"key_data":                 "",
+			},
+		},
+	})
+
+	scoped, diags := factory.GetElasticsearchClientFromSDK(rd)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+
+	esClient, err := scoped.GetESClient()
+	require.NoError(t, err, "GetESClient must return a valid client")
+	require.NotNil(t, esClient)
+}
+
+// --- ElasticsearchScopedClient version / flavor routing ---
+
+func TestElasticsearchScopedClient_ServerVersion_ViaFactory(t *testing.T) {
+	const wantVersion = "8.19.0"
+	srv := newMockElasticsearchServer(wantVersion, "default")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	ver, diags := scoped.ServerVersion(context.Background())
+	require.False(t, diags.HasError())
+	require.NotNil(t, ver)
+	assert.Equal(t, wantVersion, ver.Original())
+}
+
+func TestElasticsearchScopedClient_ServerFlavor_ViaFactory(t *testing.T) {
+	const wantVersion = "8.19.0"
+	srv := newMockElasticsearchServer(wantVersion, "default")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	flavor, diags := scoped.ServerFlavor(context.Background())
+	require.False(t, diags.HasError())
+	assert.Equal(t, "default", flavor)
+}
+
+func TestElasticsearchScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"serverless-uuid","version":{"number":"8.19.0","build_flavor":"serverless"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	require.NotNil(t, scoped)
+
+	// Any version gate must pass for serverless.
+	ver, _ := goversion.NewVersion("99.0.0")
+	ok, diags := scoped.EnforceMinVersion(context.Background(), ver)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must always satisfy any version gate")
+}
+
+func TestElasticsearchScopedClient_EnforceMinVersion_Satisfied(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0", "default")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	minVer, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minVer)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "8.19.0 must satisfy min version 8.0.0")
+}
+
+func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) {
+	srv := newMockElasticsearchServer("7.17.0", "default")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	minVer, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minVer)
+	require.False(t, diags.HasError())
+	assert.False(t, ok, "7.17.0 must not satisfy min version 8.0.0")
+}
