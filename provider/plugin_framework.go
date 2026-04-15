@@ -133,8 +133,9 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 		return
 	}
 
-	res.DataSourceData = client
-	res.ResourceData = client
+	factory := clients.NewProviderClientFactory(client)
+	res.DataSourceData = factory
+	res.ResourceData = factory
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
