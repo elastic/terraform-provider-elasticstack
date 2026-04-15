@@ -42,8 +42,6 @@ import (
 type ElasticsearchScopedClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
-	// version is the provider version string used to tag API user-agent headers.
-	version string
 }
 
 // GetESClient returns the underlying go-elasticsearch client. It satisfies the
@@ -168,7 +166,6 @@ func elasticsearchScopedClientFromAPIClient(a *APIClient) *ElasticsearchScopedCl
 	return &ElasticsearchScopedClient{
 		elasticsearch:            a.elasticsearch,
 		elasticsearchClusterInfo: a.elasticsearchClusterInfo,
-		version:                  a.version,
 	}
 }
 

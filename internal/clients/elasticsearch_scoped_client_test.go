@@ -313,3 +313,162 @@ func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) 
 	require.False(t, diags.HasError())
 	assert.False(t, ok, "7.17.0 must not satisfy min version 8.0.0")
 }
+
+// --- ClusterID ---
+
+func TestElasticsearchScopedClient_ClusterID_Valid(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"abc-123","version":{"number":"8.19.0","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	id, diags := scoped.ClusterID(context.Background())
+	require.False(t, diags.HasError())
+	require.NotNil(t, id)
+	assert.Equal(t, "abc-123", *id)
+}
+
+func TestElasticsearchScopedClient_ClusterID_NA(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"_na_","version":{"number":"8.19.0","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	id, diags := scoped.ClusterID(context.Background())
+	assert.True(t, diags.HasError(), "ClusterID must return an error when cluster_uuid is '_na_'")
+	assert.Nil(t, id)
+}
+
+func TestElasticsearchScopedClient_ClusterID_Empty(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"","version":{"number":"8.19.0","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	id, diags := scoped.ClusterID(context.Background())
+	assert.True(t, diags.HasError(), "ClusterID must return an error when cluster_uuid is empty")
+	assert.Nil(t, id)
+}
+
+// --- ID ---
+
+func TestElasticsearchScopedClient_ID_Valid(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"abc-123","version":{"number":"8.19.0","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	composite, diags := scoped.ID(context.Background(), "my-resource")
+	require.False(t, diags.HasError())
+	require.NotNil(t, composite)
+	assert.Equal(t, "abc-123", composite.ClusterID)
+	assert.Equal(t, "my-resource", composite.ResourceID)
+}
+
+// --- serverInfo cache ---
+
+func TestElasticsearchScopedClient_ServerInfo_IsCached(t *testing.T) {
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			callCount++
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"abc-123","version":{"number":"8.19.0","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	_, diags := scoped.ServerVersion(context.Background())
+	require.False(t, diags.HasError())
+
+	_, diags = scoped.ServerVersion(context.Background())
+	require.False(t, diags.HasError())
+
+	assert.Equal(t, 1, callCount, "serverInfo must only call the Elasticsearch Info API once (result must be cached)")
+}
+
+// --- ServerVersion error paths ---
+
+func TestElasticsearchScopedClient_ServerVersion_InvalidVersion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"abc-123","version":{"number":"not-a-version","build_flavor":"default"}}`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	_, diags := scoped.ServerVersion(context.Background())
+	assert.True(t, diags.HasError(), "ServerVersion must return an error for an unparseable version string")
+}
+
+// --- Nil-factory guard tests ---
+
+func TestGetElasticsearchClient_NilFactory(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var f *ProviderClientFactory
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	_, diags = f.GetElasticsearchClient(ctx, emptyList)
+	assert.True(t, diags.HasError(), "GetElasticsearchClient on a nil factory must return an error diagnostic")
+}
+
+func TestGetElasticsearchClientFromSDK_NilFactory(t *testing.T) {
+	t.Parallel()
+	var f *ProviderClientFactory
+
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
+	}, map[string]any{})
+
+	_, diags := f.GetElasticsearchClientFromSDK(rd)
+	assert.True(t, diags.HasError(), "GetElasticsearchClientFromSDK on a nil factory must return an error diagnostic")
+}

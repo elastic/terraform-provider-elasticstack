@@ -158,10 +158,18 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
 	}
+	if esClient == nil {
+		var diags fwdiags.Diagnostics
+		diags.AddError(
+			"Elasticsearch client not configured",
+			"The elasticsearch_connection block did not produce a valid Elasticsearch client. "+
+				"Ensure the connection block includes Elasticsearch endpoint configuration.",
+		)
+		return nil, diags
+	}
 
 	return &ElasticsearchScopedClient{
 		elasticsearch: esClient,
-		version:       f.defaultClient.version,
 	}, nil
 }
 
@@ -192,14 +200,26 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
+	if esClient == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Elasticsearch client not configured",
+			Detail: "The elasticsearch_connection block did not produce a valid Elasticsearch client. " +
+				"Ensure the connection block includes Elasticsearch endpoint configuration.",
+		}}
+	}
 
 	return &ElasticsearchScopedClient{
 		elasticsearch: esClient,
-		version:       f.defaultClient.version,
 	}, nil
 }
 
 // GetDefaultClient returns the provider-level default *APIClient.
+// This is an internal bridge shim retained for cross-cutting legacy adapter
+// code (ConvertProviderData, MaybeNewAPIClientFromFrameworkResource, etc.) that
+// has not yet been migrated to a typed resolution method. It is not an
+// Elasticsearch entity resolution method and must not be used as a substitute
+// for GetElasticsearchClient or GetElasticsearchClientFromSDK.
 func (f *ProviderClientFactory) GetDefaultClient() *APIClient {
 	return f.defaultClient
 }
