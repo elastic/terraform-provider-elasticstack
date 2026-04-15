@@ -1,18 +1,18 @@
 ## ADDED Requirements
 
 ### Requirement: Provider injects a client factory
-The provider SHALL inject a `ProviderClientFactory` into Plugin Framework `ProviderData` and SDK `meta` as the provider-scoped client-resolution surface for resources and data sources.
+The provider SHALL inject a `*clients.ProviderClientFactory` into Plugin Framework `ProviderData` and SDK `meta` as the provider-scoped client-resolution surface for resources and data sources.
 
 #### Scenario: Framework configure receives a factory
 - **WHEN** the Plugin Framework provider configures a resource or data source
-- **THEN** the configured provider data SHALL be a `ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
+- **THEN** the configured provider data SHALL be a `*clients.ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
 
 #### Scenario: SDK configure receives a factory
 - **WHEN** the SDK provider configures a resource or data source
-- **THEN** the configured `meta` value SHALL be a `ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
+- **THEN** the configured `meta` value SHALL be a `*clients.ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
 
 ### Requirement: Factory supports phased migration
-During the Kibana/Fleet typed-client phase, the `ProviderClientFactory` SHALL provide typed Kibana/Fleet scoped-client resolution and SHALL also preserve explicit legacy Elasticsearch resolution methods so unconverted Elasticsearch entities continue to behave as they did before the factory migration.
+During the Kibana/Fleet typed-client phase, the `*clients.ProviderClientFactory` SHALL provide typed Kibana/Fleet scoped-client resolution and SHALL also preserve explicit legacy Elasticsearch resolution methods so unconverted Elasticsearch entities continue to behave as they did before the factory migration.
 
 #### Scenario: Kibana entity resolves typed client
 - **WHEN** a Kibana or Fleet entity resolves its effective client through the factory
