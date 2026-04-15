@@ -52,7 +52,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-
 type tfStatusConfigV0 struct {
 	Enabled types.Bool `tfsdk:"enabled"`
 }

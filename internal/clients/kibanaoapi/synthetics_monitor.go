@@ -75,45 +75,45 @@ type SyntheticsMonitorAlert struct {
 // existing mappers in schema.go can target this type with only import changes.
 type SyntheticsMonitor struct {
 	// Common identity fields
-	ID       string `json:"id"`
-	ConfigID string `json:"config_id"`
-	Name     string `json:"name"`
+	ID       string                `json:"id"`
+	ConfigID string                `json:"config_id"`
+	Name     string                `json:"name"`
 	Type     SyntheticsMonitorType `json:"type"`
 
 	// Common config fields
-	Namespace      string                     `json:"namespace"`
-	Enabled        *bool                      `json:"enabled,omitempty"`
-	Schedule       *SyntheticsMonitorSchedule `json:"schedule,omitempty"`
-	Locations      []SyntheticsLocationConfig `json:"locations,omitempty"`
-	Tags           []string                   `json:"tags,omitempty"`
-	Labels         map[string]string          `json:"labels,omitempty"`
-	Alert          *SyntheticsMonitorAlert    `json:"alert,omitempty"`
-	APMServiceName string                     `json:"service.name,omitempty"`
-	Timeout        json.Number                `json:"timeout,omitempty"`
-	Params         map[string]any             `json:"params,omitempty"`
-	RetestOnFailure *bool                     `json:"retest_on_failure,omitempty"`
+	Namespace       string                     `json:"namespace"`
+	Enabled         *bool                      `json:"enabled,omitempty"`
+	Schedule        *SyntheticsMonitorSchedule `json:"schedule,omitempty"`
+	Locations       []SyntheticsLocationConfig `json:"locations,omitempty"`
+	Tags            []string                   `json:"tags,omitempty"`
+	Labels          map[string]string          `json:"labels,omitempty"`
+	Alert           *SyntheticsMonitorAlert    `json:"alert,omitempty"`
+	APMServiceName  string                     `json:"service.name,omitempty"`
+	Timeout         json.Number                `json:"timeout,omitempty"`
+	Params          map[string]any             `json:"params,omitempty"`
+	RetestOnFailure *bool                      `json:"retest_on_failure,omitempty"`
 
 	// HTTP-specific fields
-	URL          string                 `json:"url,omitempty"`
-	Mode         string                 `json:"mode"`
-	MaxRedirects string                 `json:"max_redirects"`
-	Ipv4         *bool                  `json:"ipv4,omitempty"`
-	Ipv6         *bool                  `json:"ipv6,omitempty"`
-	Username     string                 `json:"username,omitempty"`
-	Password     string                 `json:"password,omitempty"`
+	URL          string         `json:"url,omitempty"`
+	Mode         string         `json:"mode"`
+	MaxRedirects string         `json:"max_redirects"`
+	Ipv4         *bool          `json:"ipv4,omitempty"`
+	Ipv6         *bool          `json:"ipv6,omitempty"`
+	Username     string         `json:"username,omitempty"`
+	Password     string         `json:"password,omitempty"`
 	ProxyHeaders map[string]any `json:"proxy_headers,omitempty"`
 	// Response and Check are preserved as raw JSON to match existing behavior.
 	Response map[string]any `json:"response,omitempty"`
 	Check    map[string]any `json:"check,omitempty"`
 
 	// HTTP and TCP shared fields
-	ProxyURL              string   `json:"proxy_url,omitempty"`
-	SslVerificationMode   string   `json:"ssl.verification_mode"`
-	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+	ProxyURL                  string   `json:"proxy_url,omitempty"`
+	SslVerificationMode       string   `json:"ssl.verification_mode"`
+	SslSupportedProtocols     []string `json:"ssl.supported_protocols"`
 	SslCertificateAuthorities []string `json:"ssl.certificate_authorities,omitempty"`
-	SslCertificate        string   `json:"ssl.certificate,omitempty"`
-	SslKey                string   `json:"ssl.key,omitempty"`
-	SslKeyPassphrase      string   `json:"ssl.key_passphrase,omitempty"`
+	SslCertificate            string   `json:"ssl.certificate,omitempty"`
+	SslKey                    string   `json:"ssl.key,omitempty"`
+	SslKeyPassphrase          string   `json:"ssl.key_passphrase,omitempty"`
 
 	// TCP and ICMP shared field
 	Host string `json:"host,omitempty"`
@@ -127,10 +127,10 @@ type SyntheticsMonitor struct {
 	Wait json.Number `json:"wait,omitempty"`
 
 	// Browser-specific fields
-	Screenshots        string         `json:"screenshots,omitempty"`
-	IgnoreHTTPSErrors  *bool          `json:"ignore_https_errors,omitempty"`
-	InlineScript       string         `json:"inline_script"`
-	SyntheticsArgs    []string               `json:"synthetics_args,omitempty"`
+	Screenshots       string         `json:"screenshots,omitempty"`
+	IgnoreHTTPSErrors *bool          `json:"ignore_https_errors,omitempty"`
+	InlineScript      string         `json:"inline_script"`
+	SyntheticsArgs    []string       `json:"synthetics_args,omitempty"`
 	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
 }
 
@@ -179,11 +179,11 @@ type SyntheticsMonitorRequest struct {
 	Wait string `json:"wait,omitempty"`
 
 	// Browser-specific
-	InlineScript       string         `json:"inline_script,omitempty"`
-	Screenshots        string         `json:"screenshots,omitempty"`
-	SyntheticsArgs     []string       `json:"synthetics_args,omitempty"`
-	IgnoreHTTPSErrors  *bool          `json:"ignore_https_errors,omitempty"`
-	PlaywrightOptions  map[string]any `json:"playwright_options,omitempty"`
+	InlineScript      string         `json:"inline_script,omitempty"`
+	Screenshots       string         `json:"screenshots,omitempty"`
+	SyntheticsArgs    []string       `json:"synthetics_args,omitempty"`
+	IgnoreHTTPSErrors *bool          `json:"ignore_https_errors,omitempty"`
+	PlaywrightOptions map[string]any `json:"playwright_options,omitempty"`
 }
 
 // SyntheticsSSLConfig holds SSL/TLS configuration for monitors.
