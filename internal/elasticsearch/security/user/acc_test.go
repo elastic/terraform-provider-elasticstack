@@ -210,7 +210,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceSecurityUserFromSDK/create/user.tf
+//go:embed testdata/TestAccResourceSecurityUserFromSDK/create/main.tf
 var sdkCreateConfig string
 
 func TestAccResourceSecurityUserFromSDK(t *testing.T) {

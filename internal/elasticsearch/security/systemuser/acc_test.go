@@ -80,7 +80,7 @@ func TestAccResourceSecuritySystemUserNotFound(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceSecuritySystemUserFromSDK/system_user.tf
+//go:embed testdata/TestAccResourceSecuritySystemUserFromSDK/main.tf
 var sdkCreateTestConfig string
 
 func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {

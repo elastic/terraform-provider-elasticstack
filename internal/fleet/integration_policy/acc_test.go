@@ -283,7 +283,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceIntegrationPolicySecretsFromSDK/legacy/integration_policy.tf
+//go:embed testdata/TestAccResourceIntegrationPolicySecretsFromSDK/legacy/main.tf
 var sdkCreateTestConfig string
 
 func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {

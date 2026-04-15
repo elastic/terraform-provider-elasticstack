@@ -38,10 +38,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-//go:embed testdata/TestAccResourceKibanaConnectorFromSDK/connector.tf
+//go:embed testdata/TestAccResourceKibanaConnectorFromSDK/main.tf
 var sdkIndexConnectorConfig string
 
-//go:embed testdata/TestAccResourceKibanaConnectorEmptyConfigFromSDK/connector.tf
+//go:embed testdata/TestAccResourceKibanaConnectorEmptyConfigFromSDK/main.tf
 var sdkSlackConnectorConfig string
 
 func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
