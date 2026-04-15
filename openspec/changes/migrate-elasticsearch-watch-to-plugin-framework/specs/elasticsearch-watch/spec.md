@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: SDK-to-Framework watch state compatibility
+### Requirement: SDK-to-Framework watch state compatibility (REQ-028)
 After the watch resource is migrated to the Terraform Plugin Framework, the resource SHALL continue to manage state created by the last SDK-backed provider release without requiring import, recreation, or changes to the configured resource type. The migrated resource SHALL preserve the existing composite `id` format, `watch_id` semantics, and import identifier format.
 
 #### Scenario: upgrade an SDK-managed watch

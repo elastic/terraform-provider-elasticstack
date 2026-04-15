@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Defaulted watch attributes
+### Requirement: Defaulted watch attributes (REQ-028)
 When `active` is omitted from configuration, the resource SHALL behave as if `active` were `true`. When `throttle_period_in_millis` is omitted, the resource SHALL submit the default throttle period and SHALL store the refreshed value in state. When `input`, `condition`, `actions`, or `metadata` are omitted, the resource SHALL use their documented JSON defaults during create and update.
 
 #### Scenario: active omitted from configuration
