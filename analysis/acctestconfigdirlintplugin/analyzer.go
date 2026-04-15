@@ -240,6 +240,14 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 		pass.Reportf(protoV6Expr.Pos(), msgMixedStepProviderWiring)
 		return
 	}
+
+	// ExternalProviders compatibility steps must source Config from an embedded testdata/.../main.tf fixture.
+	if hasExternalProviders && hasConfig && !hasConfigDir {
+		if !isValidEmbeddedCompatConfig(pass, configExpr) {
+			pass.Reportf(configExpr.Pos(), msgCompatibilityConfigMustBeEmbeddedMainTF)
+		}
+	}
+
 	if !hasProtoV6 && !hasExternalProviders {
 		pass.Reportf(lit.Lbrace, msgMissingStepProviderWiring)
 	}
