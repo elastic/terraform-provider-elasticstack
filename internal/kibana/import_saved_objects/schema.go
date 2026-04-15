@@ -144,6 +144,11 @@ type Resource struct {
 	client *clients.ProviderClientFactory
 }
 
+// NewResource returns a new Resource instance. Used in tests and provider registration.
+func NewResource() *Resource {
+	return &Resource{}
+}
+
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)

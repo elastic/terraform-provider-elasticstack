@@ -207,3 +207,41 @@ func TestImportSavedObjects_SuccessCountConvertedToInt64(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, int64(42), result.SuccessCount)
 }
+
+func TestImportSavedObjects_QueryParamWiring(t *testing.T) {
+	var capturedQuery map[string][]string
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		capturedQuery = map[string][]string(req.URL.Query())
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(rw).Encode(map[string]any{
+			"success":        true,
+			"successCount":   float32(0),
+			"errors":         []any{},
+			"successResults": []any{},
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("ELASTICSEARCH_URL", server.URL)
+	t.Setenv("KIBANA_ENDPOINT", server.URL)
+
+	apiClient, err := clients.NewAcceptanceTestingClient()
+	require.NoError(t, err)
+
+	oapiClient, err := apiClient.GetKibanaOapiClient()
+	require.NoError(t, err)
+
+	trueVal := true
+	params := kbapi.PostSavedObjectsImportParams{
+		Overwrite:         &trueVal,
+		CreateNewCopies:   &trueVal,
+		CompatibilityMode: &trueVal,
+	}
+	_, _ = kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte("{}"), params)
+
+	assert.Equal(t, []string{"true"}, capturedQuery["overwrite"], "overwrite query param should be set")
+	assert.Equal(t, []string{"true"}, capturedQuery["createNewCopies"], "createNewCopies query param should be set")
+	assert.Equal(t, []string{"true"}, capturedQuery["compatibilityMode"], "compatibilityMode query param should be set")
+}

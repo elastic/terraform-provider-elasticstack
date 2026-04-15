@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -57,15 +58,15 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	}
 
 	params := kbapi.PostSavedObjectsImportParams{}
-	if model.Overwrite.ValueBool() {
+	if typeutils.IsKnown(model.Overwrite) && model.Overwrite.ValueBool() {
 		v := true
 		params.Overwrite = &v
 	}
-	if model.CreateNewCopies.ValueBool() {
+	if typeutils.IsKnown(model.CreateNewCopies) && model.CreateNewCopies.ValueBool() {
 		v := true
 		params.CreateNewCopies = &v
 	}
-	if model.CompatibilityMode.ValueBool() {
+	if typeutils.IsKnown(model.CompatibilityMode) && model.CompatibilityMode.ValueBool() {
 		v := true
 		params.CompatibilityMode = &v
 	}
@@ -102,7 +103,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	if !result.Success && !model.IgnoreImportErrors.ValueBool() {
+	if !result.Success && !(typeutils.IsKnown(model.IgnoreImportErrors) && model.IgnoreImportErrors.ValueBool()) {
 		var detail strings.Builder
 		for i, e := range errors {
 			fmt.Fprintf(&detail, "import error [%d]: %s\n", i, e)
