@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test_roundtrip verifies that the full create → read round-trip produces consistent Terraform models.
+// Test_roundtrip verifies Terraform model → create request body mapping for private locations.
 func Test_roundtrip(t *testing.T) {
 	tests := []struct {
 		name          string
