@@ -18,6 +18,7 @@
 package watch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -91,6 +92,22 @@ func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics
 	return put, diags
 }
 
+// marshalCompact marshals v to compact JSON. It returns an error if marshaling
+// or compaction fails. Using json.Compact ensures the stored value is always
+// compact regardless of what format the API returned (e.g. pretty-printed on
+// older Elasticsearch versions).
+func marshalCompact(v any) (string, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, raw); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 // fromAPIModel populates the Data model from an API watch response.
 func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -102,64 +119,64 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnos
 		diags.AddError("API Response Error", "Watch trigger is missing from API response")
 		return diags
 	}
-	trigger, err := json.Marshal(watch.Body.Trigger)
+	trigger, err := marshalCompact(watch.Body.Trigger)
 	if err != nil {
 		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling trigger: %s", err))
 		return diags
 	}
-	d.Trigger = jsontypes.NewNormalizedValue(string(trigger))
+	d.Trigger = jsontypes.NewNormalizedValue(trigger)
 
 	if watch.Body.Input == nil {
 		d.Input = jsontypes.NewNormalizedValue(`{"none":{}}`)
 	} else {
-		input, err := json.Marshal(watch.Body.Input)
+		input, err := marshalCompact(watch.Body.Input)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
 			return diags
 		}
-		d.Input = jsontypes.NewNormalizedValue(string(input))
+		d.Input = jsontypes.NewNormalizedValue(input)
 	}
 
 	if watch.Body.Condition == nil {
 		d.Condition = jsontypes.NewNormalizedValue(`{"always":{}}`)
 	} else {
-		condition, err := json.Marshal(watch.Body.Condition)
+		condition, err := marshalCompact(watch.Body.Condition)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling condition: %s", err))
 			return diags
 		}
-		d.Condition = jsontypes.NewNormalizedValue(string(condition))
+		d.Condition = jsontypes.NewNormalizedValue(condition)
 	}
 
 	if watch.Body.Actions == nil {
 		d.Actions = jsontypes.NewNormalizedValue(`{}`)
 	} else {
-		actions, err := json.Marshal(watch.Body.Actions)
+		actions, err := marshalCompact(watch.Body.Actions)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
 			return diags
 		}
-		d.Actions = jsontypes.NewNormalizedValue(string(actions))
+		d.Actions = jsontypes.NewNormalizedValue(actions)
 	}
 
 	if watch.Body.Metadata == nil {
 		d.Metadata = jsontypes.NewNormalizedValue(`{}`)
 	} else {
-		metadata, err := json.Marshal(watch.Body.Metadata)
+		metadata, err := marshalCompact(watch.Body.Metadata)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata: %s", err))
 			return diags
 		}
-		d.Metadata = jsontypes.NewNormalizedValue(string(metadata))
+		d.Metadata = jsontypes.NewNormalizedValue(metadata)
 	}
 
 	if watch.Body.Transform != nil {
-		transform, err := json.Marshal(watch.Body.Transform)
+		transform, err := marshalCompact(watch.Body.Transform)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling transform: %s", err))
 			return diags
 		}
-		d.Transform = jsontypes.NewNormalizedValue(string(transform))
+		d.Transform = jsontypes.NewNormalizedValue(transform)
 	} else {
 		d.Transform = jsontypes.NewNormalizedNull()
 	}
