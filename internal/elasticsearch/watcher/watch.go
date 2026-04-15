@@ -262,6 +262,8 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) di
 		if err := d.Set("transform", string(transform)); err != nil {
 			return diag.FromErr(err)
 		}
+	} else if err := d.Set("transform", nil); err != nil {
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("throttle_period_in_millis", watch.Body.ThrottlePeriodInMillis); err != nil {
