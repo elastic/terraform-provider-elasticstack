@@ -48,11 +48,11 @@ func TestImportSavedObjects_MultipartFormat(t *testing.T) {
 
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"success":        true,
 			"successCount":   float32(1),
-			"errors":         []interface{}{},
-			"successResults": []interface{}{},
+			"errors":         []any{},
+			"successResults": []any{},
 		}
 		_ = json.NewEncoder(rw).Encode(resp)
 	}))
@@ -104,11 +104,11 @@ func TestImportSavedObjects_SpaceAwarePath(t *testing.T) {
 		capturedPath = req.URL.Path
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
+		_ = json.NewEncoder(rw).Encode(map[string]any{
 			"success":        true,
 			"successCount":   float32(0),
-			"errors":         []interface{}{},
-			"successResults": []interface{}{},
+			"errors":         []any{},
+			"successResults": []any{},
 		})
 	}))
 	defer server.Close()
@@ -132,7 +132,7 @@ func TestImportSavedObjects_400Response(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
+		_ = json.NewEncoder(rw).Encode(map[string]any{
 			"error":      "Bad Request",
 			"message":    "invalid file format",
 			"statusCode": 400,
@@ -183,11 +183,11 @@ func TestImportSavedObjects_SuccessCountConvertedToInt64(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
+		_ = json.NewEncoder(rw).Encode(map[string]any{
 			"success":        true,
 			"successCount":   float32(42),
-			"errors":         []interface{}{},
-			"successResults": []interface{}{},
+			"errors":         []any{},
+			"successResults": []any{},
 		})
 	}))
 	defer server.Close()
