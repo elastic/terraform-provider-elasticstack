@@ -25,4 +25,4 @@
 ## 5. Cleanup
 
 - [x] 5.1 Remove unused legacy imports from `internal/kibana/synthetics/monitor`; verify no remaining references to legacy `kbapi` monitor types in that tree.
-- [ ] 5.2 If no other package uses legacy synthetics monitor kbapi types, consider a follow-up change to trim `go-kibana-rest` usage (optional, separate task if scope bleeds).
+- [x] 5.2 If no other package uses legacy synthetics monitor kbapi types, consider a follow-up change to trim `go-kibana-rest` usage (optional, separate task if scope bleeds). — Investigated: other packages still reference legacy kbapi types; full removal deferred to a separate follow-up change.
