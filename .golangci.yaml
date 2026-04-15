@@ -22,6 +22,7 @@ linters:
     - usetesting
     - revive
     - esclienthelper
+    - kbclienthelper
     - acctestconfigdirlint
   exclusions:
     generated: lax
@@ -45,6 +46,9 @@ linters:
       esclienthelper:
         type: module
         description: Enforce Elasticsearch entity client helper usage.
+      kbclienthelper:
+        type: module
+        description: Enforce Kibana and Fleet entity client helper usage.
       acctestconfigdirlint:
         type: module
         description: Enforce directory-backed fixture usage in acceptance test steps.
