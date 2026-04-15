@@ -19,6 +19,7 @@ package kibanaoapi_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -147,8 +148,9 @@ func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
 	var capturedBody []byte
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		capturedBody = make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(capturedBody)
+		var err error
+		capturedBody, err = io.ReadAll(r.Body)
+		require.NoError(t, err)
 		rw.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()

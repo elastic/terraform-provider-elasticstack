@@ -187,7 +187,7 @@ Optional:
 
 Optional:
 
-- `except` (Set of String) List of the fields to which the grants will not be allowed.
+- `except` (Set of String) List of the fields to which the grants will not be applied.
 - `grant` (Set of String) List of the fields to grant the access to.
 
 

@@ -155,7 +155,7 @@ func ResourceRole() *schema.Resource {
 												},
 											},
 											"except": {
-												Description: "List of the fields to which the grants will not be allowed.",
+												Description: "List of the fields to which the grants will not be applied.",
 												Type:        schema.TypeSet,
 												Optional:    true,
 												Elem: &schema.Schema{
@@ -386,10 +386,12 @@ func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta any) dia
 	if err := d.Set("kibana", flattenKibanaRoleKibanaData(role.Kibana)); err != nil {
 		return diag.FromErr(err)
 	}
+	description := ""
 	if role.Description != nil {
-		if err := d.Set("description", *role.Description); err != nil {
-			return diag.FromErr(err)
-		}
+		description = *role.Description
+	}
+	if err := d.Set("description", description); err != nil {
+		return diag.FromErr(err)
 	}
 	if role.Metadata != nil {
 		metadata, err := json.Marshal(*role.Metadata)
