@@ -24,7 +24,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,29 +45,29 @@ func boolPointer(v bool) *bool {
 func TestLabelsFieldConversion(t *testing.T) {
 	testcases := []struct {
 		name     string
-		input    kbapi.SyntheticsMonitor
+		input    kibanaoapi.SyntheticsMonitor
 		expected types.Map
 	}{
 		{
 			name: "monitor with nil labels",
-			input: kbapi.SyntheticsMonitor{
-				Type:   kbapi.Http,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type:   kibanaoapi.SyntheticsMonitorTypeHTTP,
 				Labels: nil,
 			},
 			expected: types.MapNull(types.StringType),
 		},
 		{
 			name: "monitor with empty labels",
-			input: kbapi.SyntheticsMonitor{
-				Type:   kbapi.Http,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type:   kibanaoapi.SyntheticsMonitorTypeHTTP,
 				Labels: map[string]string{},
 			},
 			expected: types.MapValueMust(types.StringType, map[string]attr.Value{}),
 		},
 		{
 			name: "monitor with labels",
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Http,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeHTTP,
 				Labels: map[string]string{
 					"environment": "production",
 					"team":        "platform",
@@ -105,13 +105,13 @@ func toAlertObject(t *testing.T, v tfAlertConfigV0) basetypes.ObjectValue {
 func TestToModelV0(t *testing.T) {
 	testcases := []struct {
 		name     string
-		input    kbapi.SyntheticsMonitor
+		input    kibanaoapi.SyntheticsMonitor
 		expected tfModelV0
 	}{
 		{
 			name: "HTTP monitor empty data",
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Http,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeHTTP,
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -146,8 +146,8 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "TCP monitor empty data",
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Tcp,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeTCP,
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -176,8 +176,8 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "ICMP monitor empty data",
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Icmp,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeICMP,
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -197,8 +197,8 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "Browser monitor empty data",
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Browser,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeBrowser,
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -219,49 +219,37 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "HTTP monitor",
-			input: kbapi.SyntheticsMonitor{
-				Id:             "test-id-http",
+			input: kibanaoapi.SyntheticsMonitor{
+				ID:             "test-id-http",
 				Name:           "test-name-http",
 				Namespace:      "default",
 				Enabled:        tBool,
-				Alert:          &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}, Tls: &kbapi.SyntheticsStatusConfig{Enabled: fBool}},
-				Schedule:       &kbapi.MonitorScheduleConfig{Number: "5", Unit: "m"},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}, Tls: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: fBool}},
+				Schedule:       &kibanaoapi.SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
 				Tags:           []string{"tag1", "tag2"},
 				APMServiceName: "test-service-http",
 				Timeout:        json.Number("30"),
-				Locations: []kbapi.MonitorLocationConfig{
-					{Label: "North America - US East", Id: "us-east4-a", IsServiceManaged: true},
+				Locations: []kibanaoapi.SyntheticsLocationConfig{
+					{Label: "North America - US East", ID: "us-east4-a", IsServiceManaged: true},
 					{Label: "test private location", IsServiceManaged: false},
 				},
-				Origin:                      "origin",
-				Params:                      kbapi.JsonObject{"param1": "value1"},
-				MaxAttempts:                 3,
-				Revision:                    1,
-				Ui:                          kbapi.JsonObject{"is_tls_enabled": false},
-				Type:                        kbapi.Http,
-				Url:                         "https://example.com",
-				Mode:                        kbapi.HttpMonitorMode("all"),
-				MaxRedirects:                "5",
-				Ipv4:                        tBool,
-				Ipv6:                        fBool,
-				Username:                    "user",
-				Password:                    "pass",
-				ProxyHeaders:                kbapi.JsonObject{"header1": "value1"},
-				ProxyUrl:                    "https://proxy.com",
-				CheckResponseBodyPositive:   []string{"foo", "bar"},
-				CheckResponseStatus:         []string{"200", "201"},
-				ResponseIncludeBody:         "always",
-				ResponseIncludeHeaders:      true,
-				ResponseIncludeBodyMaxBytes: "1024",
-				CheckRequestBody:            kbapi.JsonObject{"type": "text", "value": "name=first&email=someemail%40someemailprovider.com"},
-				CheckRequestHeaders:         kbapi.JsonObject{"Content-Type": "application/x-www-form-urlencoded"},
-				CheckRequestMethod:          "POST",
-				SslVerificationMode:         "full",
-				SslSupportedProtocols:       []string{"TLSv1.2", "TLSv1.3"},
-				SslCertificateAuthorities:   []string{"cert1", "cert2"},
-				SslCertificate:              "cert",
-				SslKey:                      "key",
-				SslKeyPassphrase:            "passphrase",
+				Params:                    map[string]interface{}{"param1": "value1"},
+				Type:                      kibanaoapi.SyntheticsMonitorTypeHTTP,
+				Url:                       "https://example.com",
+				Mode:                      "all",
+				MaxRedirects:              "5",
+				Ipv4:                      tBool,
+				Ipv6:                      fBool,
+				Username:                  "user",
+				Password:                  "pass",
+				ProxyHeaders:              map[string]interface{}{"header1": "value1"},
+				ProxyUrl:                  "https://proxy.com",
+				SslVerificationMode:       "full",
+				SslSupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
+				SslCertificateAuthorities: []string{"cert1", "cert2"},
+				SslCertificate:            "cert",
+				SslKey:                    "key",
+				SslKeyPassphrase:          "passphrase",
 			},
 			expected: tfModelV0{
 				ID:               types.StringValue("default/test-id-http"),
@@ -304,25 +292,21 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "TCP monitor",
-			input: kbapi.SyntheticsMonitor{
-				Id:             "test-id-tcp",
+			input: kibanaoapi.SyntheticsMonitor{
+				ID:             "test-id-tcp",
 				Name:           "test-name-tcp",
 				Namespace:      "default-2",
 				Enabled:        tBool,
-				Alert:          &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-				Schedule:       &kbapi.MonitorScheduleConfig{Number: "5", Unit: "m"},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				Schedule:       &kibanaoapi.SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
 				Tags:           nil,
 				APMServiceName: "test-service-tcp",
 				Timeout:        json.Number("30"),
-				Locations: []kbapi.MonitorLocationConfig{
+				Locations: []kibanaoapi.SyntheticsLocationConfig{
 					{Label: "test private location", IsServiceManaged: false},
 				},
-				Origin:                    "origin",
-				Params:                    kbapi.JsonObject{"param1": "value1"},
-				MaxAttempts:               3,
-				Revision:                  1,
-				Ui:                        kbapi.JsonObject{"is_tls_enabled": false},
-				Type:                      kbapi.Tcp,
+				Params:                    map[string]interface{}{"param1": "value1"},
+				Type:                      kibanaoapi.SyntheticsMonitorTypeTCP,
 				SslVerificationMode:       "full",
 				SslSupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
 				SslCertificateAuthorities: []string{"cert1", "cert2"},
@@ -371,25 +355,21 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "ICMP monitor",
-			input: kbapi.SyntheticsMonitor{
-				Id:             "test-id-icmp",
+			input: kibanaoapi.SyntheticsMonitor{
+				ID:             "test-id-icmp",
 				Name:           "test-name-icmp",
 				Namespace:      "default",
 				Enabled:        tBool,
-				Alert:          &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-				Schedule:       &kbapi.MonitorScheduleConfig{Number: "5", Unit: "m"},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				Schedule:       &kibanaoapi.SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
 				Tags:           nil,
 				APMServiceName: "test-service-tcp",
 				Timeout:        json.Number("30"),
-				Locations: []kbapi.MonitorLocationConfig{
+				Locations: []kibanaoapi.SyntheticsLocationConfig{
 					{Label: "test private location", IsServiceManaged: false},
 				},
-				Origin:                "origin",
-				Params:                kbapi.JsonObject{"param1": "value1"},
-				MaxAttempts:           3,
-				Revision:              1,
-				Ui:                    kbapi.JsonObject{"is_tls_enabled": false},
-				Type:                  kbapi.Icmp,
+				Params:                map[string]interface{}{"param1": "value1"},
+				Type:                  kibanaoapi.SyntheticsMonitorTypeICMP,
 				SslVerificationMode:   "full",
 				SslSupportedProtocols: []string{"TLSv1.2", "TLSv1.3"},
 				ProxyUrl:              "http://proxy.com",
@@ -419,25 +399,21 @@ func TestToModelV0(t *testing.T) {
 		},
 		{
 			name: "Browser monitor",
-			input: kbapi.SyntheticsMonitor{
-				Id:             "test-id-browser",
+			input: kibanaoapi.SyntheticsMonitor{
+				ID:             "test-id-browser",
 				Name:           "test-name-browser",
 				Namespace:      "default",
 				Enabled:        tBool,
-				Alert:          &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-				Schedule:       &kbapi.MonitorScheduleConfig{Number: "5", Unit: "m"},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				Schedule:       &kibanaoapi.SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
 				Tags:           nil,
 				APMServiceName: "test-service-tcp",
 				Timeout:        json.Number("30"),
-				Locations: []kbapi.MonitorLocationConfig{
+				Locations: []kibanaoapi.SyntheticsLocationConfig{
 					{Label: "test private location", IsServiceManaged: false},
 				},
-				Origin:                "origin",
-				Params:                kbapi.JsonObject{"param1": "value1"},
-				MaxAttempts:           3,
-				Revision:              1,
-				Ui:                    kbapi.JsonObject{"is_tls_enabled": false},
-				Type:                  kbapi.Browser,
+				Params:                map[string]interface{}{"param1": "value1"},
+				Type:                  kibanaoapi.SyntheticsMonitorTypeBrowser,
 				SslVerificationMode:   "full",
 				SslSupportedProtocols: []string{"TLSv1.2", "TLSv1.3"},
 				ProxyUrl:              "http://proxy.com",
@@ -445,9 +421,9 @@ func TestToModelV0(t *testing.T) {
 				IgnoreHttpsErrors:     tBool,
 				InlineScript:          `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
 				SyntheticsArgs:        []string{"--no-sandbox", "--disable-setuid-sandbox"},
-				PlaywrightOptions: map[string]any{
+				PlaywrightOptions: map[string]interface{}{
 					"ignoreHTTPSErrors": false,
-					"httpCredentials": map[string]any{
+					"httpCredentials": map[string]interface{}{
 						"username": "test",
 						"password": "test",
 					},
@@ -493,18 +469,16 @@ func TestToKibanaAPIRequest(t *testing.T) {
 	testcases := []struct {
 		name     string
 		input    tfModelV0
-		expected kibanaAPIRequest
+		expected kibanaoapi.SyntheticsMonitorRequest
 	}{
 		{
 			name: "Empty HTTP monitor",
 			input: tfModelV0{
 				HTTP: &tfHTTPMonitorFieldsV0{},
 			},
-			expected: kibanaAPIRequest{
-				fields: kbapi.HTTPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{
-					Labels: map[string]string{},
-				},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:   kibanaoapi.SyntheticsMonitorTypeHTTP,
+				Labels: map[string]string{},
 			},
 		},
 		{
@@ -512,11 +486,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			input: tfModelV0{
 				TCP: &tfTCPMonitorFieldsV0{},
 			},
-			expected: kibanaAPIRequest{
-				fields: kbapi.TCPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{
-					Labels: map[string]string{},
-				},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:   kibanaoapi.SyntheticsMonitorTypeTCP,
+				Labels: map[string]string{},
 			},
 		},
 		{
@@ -524,11 +496,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			input: tfModelV0{
 				ICMP: &tfICMPMonitorFieldsV0{},
 			},
-			expected: kibanaAPIRequest{
-				fields: kbapi.ICMPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{
-					Labels: map[string]string{},
-				},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:   kibanaoapi.SyntheticsMonitorTypeICMP,
+				Labels: map[string]string{},
 			},
 		},
 		{
@@ -536,11 +506,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			input: tfModelV0{
 				Browser: &tfBrowserMonitorFieldsV0{},
 			},
-			expected: kibanaAPIRequest{
-				fields: kbapi.BrowserMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{
-					Labels: map[string]string{},
-				},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:   kibanaoapi.SyntheticsMonitorTypeBrowser,
+				Labels: map[string]string{},
 			},
 		},
 		{
@@ -583,42 +551,39 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					},
 				},
 			},
-			expected: kibanaAPIRequest{
-				config: kbapi.SyntheticsMonitorConfig{
-					Name:             "test-name-http",
-					Schedule:         kbapi.MonitorSchedule(5),
-					Locations:        []kbapi.MonitorLocation{"us_east"},
-					PrivateLocations: []string{"test private location"},
-					Enabled:          tBool,
-					Tags:             []string{"tag1", "tag2"},
-					Labels:           map[string]string{},
-					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}, Tls: &kbapi.SyntheticsStatusConfig{Enabled: fBool}},
-					APMServiceName:   "test-service-http",
-					Namespace:        "default-3",
-					TimeoutSeconds:   30,
-					Params:           kbapi.JsonObject{"param1": "value1"},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:             kibanaoapi.SyntheticsMonitorTypeHTTP,
+				Name:             "test-name-http",
+				Schedule:         5,
+				Locations:        []string{"us_east"},
+				PrivateLocations: []string{"test private location"},
+				Enabled:          tBool,
+				Tags:             []string{"tag1", "tag2"},
+				Labels:           map[string]string{},
+				Alert:            &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}, Tls: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: fBool}},
+				APMServiceName:   "test-service-http",
+				Namespace:        "default-3",
+				TimeoutSeconds:   30,
+				Params:           map[string]interface{}{"param1": "value1"},
+				Url:              "https://example.com",
+				Ssl: &kibanaoapi.SyntheticsSSLConfig{
+					VerificationMode:       "full",
+					SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
+					CertificateAuthorities: []string{"cert1", "cert2"},
+					Certificate:            "cert",
+					Key:                    "key",
+					KeyPassphrase:          "passphrase",
 				},
-				fields: kbapi.HTTPMonitorFields{
-					Url: "https://example.com",
-					Ssl: &kbapi.SSLConfig{
-						VerificationMode:       "full",
-						SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
-						CertificateAuthorities: []string{"cert1", "cert2"},
-						Certificate:            "cert",
-						Key:                    "key",
-						KeyPassphrase:          "passphrase",
-					},
-					MaxRedirects: "5",
-					Mode:         "all",
-					Ipv4:         tBool,
-					Ipv6:         fBool,
-					Username:     "user",
-					Password:     "pass",
-					ProxyHeader:  kbapi.JsonObject{"header1": "value1"},
-					ProxyUrl:     "https://proxy.com",
-					Response:     kbapi.JsonObject{"response1": "value1"},
-					Check:        kbapi.JsonObject{"check1": "value1"},
-				},
+				MaxRedirects: "5",
+				Mode:         "all",
+				Ipv4:         tBool,
+				Ipv6:         fBool,
+				Username:     "user",
+				Password:     "pass",
+				ProxyHeader:  map[string]interface{}{"header1": "value1"},
+				ProxyUrl:     "https://proxy.com",
+				Response:     map[string]interface{}{"response1": "value1"},
+				Check:        map[string]interface{}{"check1": "value1"},
 			},
 		},
 		{
@@ -655,36 +620,32 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					ProxyUseLocalResolver: types.BoolPointerValue(tBool),
 				},
 			},
-			expected: kibanaAPIRequest{
-				config: kbapi.SyntheticsMonitorConfig{
-					Name:             "test-name-tcp",
-					Schedule:         kbapi.MonitorSchedule(5),
-					Locations:        []kbapi.MonitorLocation{"us_east"},
-					PrivateLocations: nil,
-					Enabled:          tBool,
-					Tags:             []string{"tag1", "tag2"},
-					Labels:           map[string]string{},
-					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-					APMServiceName:   "test-service-tcp",
-					Namespace:        "default",
-					TimeoutSeconds:   30,
-					Params:           kbapi.JsonObject{"param1": "value1"},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:           kibanaoapi.SyntheticsMonitorTypeTCP,
+				Name:           "test-name-tcp",
+				Schedule:       5,
+				Locations:      []string{"us_east"},
+				Enabled:        tBool,
+				Tags:           []string{"tag1", "tag2"},
+				Labels:         map[string]string{},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				APMServiceName: "test-service-tcp",
+				Namespace:      "default",
+				TimeoutSeconds: 30,
+				Params:         map[string]interface{}{"param1": "value1"},
+				Host:           "example.com:9200",
+				Ssl: &kibanaoapi.SyntheticsSSLConfig{
+					VerificationMode:       "full",
+					SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
+					CertificateAuthorities: []string{"cert1", "cert2"},
+					Certificate:            "cert",
+					Key:                    "key",
+					KeyPassphrase:          "passphrase",
 				},
-				fields: kbapi.TCPMonitorFields{
-					Host: "example.com:9200",
-					Ssl: &kbapi.SSLConfig{
-						VerificationMode:       "full",
-						SupportedProtocols:     []string{"TLSv1.2", "TLSv1.3"},
-						CertificateAuthorities: []string{"cert1", "cert2"},
-						Certificate:            "cert",
-						Key:                    "key",
-						KeyPassphrase:          "passphrase",
-					},
-					CheckSend:             "hello",
-					CheckReceive:          "world",
-					ProxyUrl:              "http://proxy.com",
-					ProxyUseLocalResolver: tBool,
-				},
+				CheckSend:             "hello",
+				CheckReceive:          "world",
+				ProxyUrl:              "http://proxy.com",
+				ProxyUseLocalResolver: tBool,
 			},
 		},
 		{
@@ -708,25 +669,21 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					Wait: types.Int64Value(30),
 				},
 			},
-			expected: kibanaAPIRequest{
-				config: kbapi.SyntheticsMonitorConfig{
-					Name:             "test-name-icmp",
-					Schedule:         kbapi.MonitorSchedule(5),
-					Locations:        []kbapi.MonitorLocation{"us_east"},
-					PrivateLocations: nil,
-					Enabled:          tBool,
-					Tags:             []string{"tag1", "tag2"},
-					Labels:           map[string]string{},
-					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-					APMServiceName:   "test-service-tcp",
-					Namespace:        "default",
-					TimeoutSeconds:   30,
-					Params:           kbapi.JsonObject{"param1": "value1"},
-				},
-				fields: kbapi.ICMPMonitorFields{
-					Host: "example.com:9200",
-					Wait: "30",
-				},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:           kibanaoapi.SyntheticsMonitorTypeICMP,
+				Name:           "test-name-icmp",
+				Schedule:       5,
+				Locations:      []string{"us_east"},
+				Enabled:        tBool,
+				Tags:           []string{"tag1", "tag2"},
+				Labels:         map[string]string{},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				APMServiceName: "test-service-tcp",
+				Namespace:      "default",
+				TimeoutSeconds: 30,
+				Params:         map[string]interface{}{"param1": "value1"},
+				Host:           "example.com:9200",
+				Wait:           "30",
 			},
 		},
 		{
@@ -753,32 +710,28 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					PlaywrightOptions: jsontypes.NewNormalizedValue(`{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),
 				},
 			},
-			expected: kibanaAPIRequest{
-				config: kbapi.SyntheticsMonitorConfig{
-					Name:             "test-name-browser",
-					Schedule:         kbapi.MonitorSchedule(5),
-					Locations:        []kbapi.MonitorLocation{"us_east"},
-					PrivateLocations: nil,
-					Enabled:          tBool,
-					Tags:             []string{"tag1", "tag2"},
-					Labels:           map[string]string{},
-					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
-					APMServiceName:   "test-service-tcp",
-					Namespace:        "default",
-					TimeoutSeconds:   30,
-					Params:           kbapi.JsonObject{"param1": "value1"},
-				},
-				fields: kbapi.BrowserMonitorFields{
-					Screenshots:       "off",
-					IgnoreHttpsErrors: tBool,
-					InlineScript:      `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
-					SyntheticsArgs:    []string{"--no-sandbox", "--disable-setuid-sandbox"},
-					PlaywrightOptions: map[string]any{
-						"ignoreHTTPSErrors": false,
-						"httpCredentials": map[string]any{
-							"username": "test",
-							"password": "test",
-						},
+			expected: kibanaoapi.SyntheticsMonitorRequest{
+				Type:           kibanaoapi.SyntheticsMonitorTypeBrowser,
+				Name:           "test-name-browser",
+				Schedule:       5,
+				Locations:      []string{"us_east"},
+				Enabled:        tBool,
+				Tags:           []string{"tag1", "tag2"},
+				Labels:         map[string]string{},
+				Alert:          &kibanaoapi.SyntheticsMonitorAlert{Status: &kibanaoapi.SyntheticsMonitorAlertStatus{Enabled: tBool}},
+				APMServiceName: "test-service-tcp",
+				Namespace:      "default",
+				TimeoutSeconds: 30,
+				Params:         map[string]interface{}{"param1": "value1"},
+				Screenshots:    "off",
+				IgnoreHttpsErrors: tBool,
+				InlineScript:   `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
+				SyntheticsArgs: []string{"--no-sandbox", "--disable-setuid-sandbox"},
+				PlaywrightOptions: map[string]interface{}{
+					"ignoreHTTPSErrors": false,
+					"httpCredentials": map[string]interface{}{
+						"password": "test",
+						"username": "test",
 					},
 				},
 			},
@@ -798,7 +751,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 
 	testcases := []struct {
 		name     string
-		input    kbapi.SyntheticsMonitor
+		input    kibanaoapi.SyntheticsMonitor
 		state    tfModelV0
 		expected tfModelV0
 	}{
@@ -815,8 +768,8 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				Params:          jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				RetestOnFailure: types.BoolValue(true),
 			},
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Http,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeHTTP,
 			},
 			expected: tfModelV0{
 				ID:              types.StringValue("/"),
@@ -859,10 +812,10 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 					CheckReceive: types.StringValue("world"),
 				},
 			},
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Tcp,
-				Locations: []kbapi.MonitorLocationConfig{
-					{Label: "North America - US East", Id: "us-east4-a", IsServiceManaged: true},
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeTCP,
+				Locations: []kibanaoapi.SyntheticsLocationConfig{
+					{Label: "North America - US East", ID: "us-east4-a", IsServiceManaged: true},
 				},
 			},
 			expected: tfModelV0{
@@ -898,8 +851,8 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 					SyntheticsArgs: []types.String{types.StringValue("aaa"), types.StringValue("bbb")},
 				},
 			},
-			input: kbapi.SyntheticsMonitor{
-				Type: kbapi.Browser,
+			input: kibanaoapi.SyntheticsMonitor{
+				Type: kibanaoapi.SyntheticsMonitorTypeBrowser,
 			},
 			expected: tfModelV0{
 				ID:             types.StringValue("/"),
@@ -930,22 +883,22 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 	}
 }
 
-func TestToSyntheticsMonitorConfig(t *testing.T) {
+func TestToKibanaAPIRequestLabels(t *testing.T) {
 	testcases := []struct {
-		name     string
-		input    tfModelV0
-		expected kbapi.SyntheticsMonitorConfig
+		name           string
+		input          tfModelV0
+		expectedName   string
+		expectedLabels map[string]string
 	}{
 		{
 			name: "monitor config with nil labels",
 			input: tfModelV0{
 				Name:   types.StringValue("test-monitor"),
 				Labels: types.MapNull(types.StringType),
+				HTTP:   &tfHTTPMonitorFieldsV0{},
 			},
-			expected: kbapi.SyntheticsMonitorConfig{
-				Name:   "test-monitor",
-				Labels: map[string]string{},
-			},
+			expectedName:   "test-monitor",
+			expectedLabels: map[string]string{},
 		},
 		{
 			name: "monitor config with empty labels",
@@ -955,11 +908,10 @@ func TestToSyntheticsMonitorConfig(t *testing.T) {
 					mapValue, _ := types.MapValue(types.StringType, map[string]attr.Value{})
 					return mapValue
 				}(),
+				HTTP: &tfHTTPMonitorFieldsV0{},
 			},
-			expected: kbapi.SyntheticsMonitorConfig{
-				Name:   "test-monitor",
-				Labels: map[string]string{},
-			},
+			expectedName:   "test-monitor",
+			expectedLabels: map[string]string{},
 		},
 		{
 			name: "monitor config with labels",
@@ -973,23 +925,22 @@ func TestToSyntheticsMonitorConfig(t *testing.T) {
 					mapValue, _ := types.MapValue(types.StringType, elements)
 					return mapValue
 				}(),
+				HTTP: &tfHTTPMonitorFieldsV0{},
 			},
-			expected: kbapi.SyntheticsMonitorConfig{
-				Name: "test-monitor",
-				Labels: map[string]string{
-					"environment": "production",
-					"team":        "platform",
-				},
+			expectedName: "test-monitor",
+			expectedLabels: map[string]string{
+				"environment": "production",
+				"team":        "platform",
 			},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, diags := tc.input.toSyntheticsMonitorConfig(context.Background())
+			result, diags := tc.input.toKibanaAPIRequest(context.Background())
 			assert.False(t, diags.HasError())
-			assert.Equal(t, tc.expected.Name, result.Name)
-			assert.Equal(t, tc.expected.Labels, result.Labels)
+			assert.Equal(t, tc.expectedName, result.Name)
+			assert.Equal(t, tc.expectedLabels, result.Labels)
 		})
 	}
 }

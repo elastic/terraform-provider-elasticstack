@@ -26,8 +26,8 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -52,10 +52,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type kibanaAPIRequest struct {
-	fields kbapi.MonitorFields
-	config kbapi.SyntheticsMonitorConfig
-}
 
 type tfStatusConfigV0 struct {
 	Enabled types.Bool `tfsdk:"enabled"`
@@ -542,7 +538,7 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 	}
 }
 
-func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
+func toNormalizedValue(jsObj map[string]interface{}) (jsontypes.Normalized, error) {
 	res, err := json.Marshal(jsObj)
 	if err != nil {
 		return jsontypes.NewNormalizedUnknown(), err
@@ -550,11 +546,11 @@ func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	return jsontypes.NewNormalizedValue(string(res)), nil
 }
 
-func toJSONObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
+func toJSONObject(v jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
 	if v.IsNull() {
 		return nil, diag.Diagnostics{}
 	}
-	var res kbapi.JsonObject
+	var res map[string]interface{}
 	dg := v.Unmarshal(&res)
 	if dg.HasError() {
 		return nil, dg
@@ -571,7 +567,7 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kibanaoapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
 	dg := diag.Diagnostics{}
@@ -596,31 +592,31 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		return nil, dg
 	}
 
-	var http *tfHTTPMonitorFieldsV0
+	var httpFields *tfHTTPMonitorFieldsV0
 	var tcp *tfTCPMonitorFieldsV0
 	var icmp *tfICMPMonitorFieldsV0
 	var browser *tfBrowserMonitorFieldsV0
 
 	switch mType := api.Type; mType {
-	case kbapi.Http:
-		http = &tfHTTPMonitorFieldsV0{}
+	case kibanaoapi.SyntheticsMonitorTypeHTTP:
+		httpFields = &tfHTTPMonitorFieldsV0{}
 		if v.HTTP != nil {
-			http = v.HTTP
+			httpFields = v.HTTP
 		}
-		http = http.toTfHTTPMonitorFieldsV0(ctx, dg, api)
-	case kbapi.Tcp:
+		httpFields = httpFields.toTfHTTPMonitorFieldsV0(ctx, dg, api)
+	case kibanaoapi.SyntheticsMonitorTypeTCP:
 		tcp = &tfTCPMonitorFieldsV0{}
 		if v.TCP != nil {
 			tcp = v.TCP
 		}
 		tcp = tcp.toTfTCPMonitorFieldsV0(ctx, dg, api)
-	case kbapi.Icmp:
+	case kibanaoapi.SyntheticsMonitorTypeICMP:
 		icmp = &tfICMPMonitorFieldsV0{}
 		if v.ICMP != nil {
 			icmp = v.ICMP
 		}
 		icmp, err = icmp.toTfICMPMonitorFieldsV0(api)
-	case kbapi.Browser:
+	case kibanaoapi.SyntheticsMonitorTypeBrowser:
 		browser = &tfBrowserMonitorFieldsV0{}
 		if v.Browser != nil {
 			browser = v.Browser
@@ -646,7 +642,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 
 	resourceID := clients.CompositeID{
 		ClusterID:  space,
-		ResourceID: string(api.Id),
+		ResourceID: api.ID,
 	}
 
 	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
@@ -669,7 +665,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
 		Params:           params,
-		HTTP:             http,
+		HTTP:             httpFields,
 		TCP:              tcp,
 		ICMP:             icmp,
 		Browser:          browser,
@@ -678,7 +674,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 	}, dg
 }
 
-func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
+func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kibanaoapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
 	checkSend := v.CheckSend
 	if api.CheckSend != "" {
 		checkSend = types.StringValue(api.CheckSend)
@@ -702,7 +698,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	}
 }
 
-func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfICMPMonitorFieldsV0, error) {
+func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kibanaoapi.SyntheticsMonitor) (*tfICMPMonitorFieldsV0, error) {
 	wait, err := stringToInt64(string(api.Wait))
 	if err != nil {
 		return nil, err
@@ -713,7 +709,7 @@ func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMon
 	}, nil
 }
 
-func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
+func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kibanaoapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
 
 	var err error
 	playwrightOptions := v.PlaywrightOptions
@@ -743,7 +739,7 @@ func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.Synthet
 	}, nil
 }
 
-func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
+func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kibanaoapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
 
 	var err error
 	proxyHeaders := v.ProxyHeader
@@ -777,7 +773,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 	return &tfHTTPMonitorFieldsV0{
 		URL:          types.StringValue(api.Url),
 		MaxRedirects: types.Int64Value(maxRedirects),
-		Mode:         types.StringValue(string(api.Mode)),
+		Mode:         types.StringValue(api.Mode),
 		IPv4:         types.BoolPointerValue(api.Ipv4),
 		IPv6:         types.BoolPointerValue(api.Ipv6),
 		Username:     username,
@@ -790,7 +786,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 	}
 }
 
-func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
+func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kibanaoapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
 	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 	return tfSSLConfig{
 		SslVerificationMode:       types.StringValue(api.SslVerificationMode),
@@ -802,7 +798,7 @@ func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.Syntheti
 	}, dg
 }
 
-func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (basetypes.ObjectValue, diag.Diagnostics) {
+func toTfAlertConfigV0(ctx context.Context, alert *kibanaoapi.SyntheticsMonitorAlert) (basetypes.ObjectValue, diag.Diagnostics) {
 
 	dg := diag.Diagnostics{}
 
@@ -822,7 +818,7 @@ func toTfAlertConfigV0(ctx context.Context, alert *kbapi.MonitorAlertConfig) (ba
 	return types.ObjectValueFrom(ctx, alertAttributes, &tfAlertConfig)
 }
 
-func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 {
+func toTfStatusConfigV0(status *kibanaoapi.SyntheticsMonitorAlertStatus) *tfStatusConfigV0 {
 	if status == nil {
 		return nil
 	}
@@ -831,52 +827,7 @@ func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 
 	}
 }
 
-func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, diag.Diagnostics) {
-
-	fields, dg := v.toMonitorFields(ctx)
-	if dg.HasError() {
-		return nil, dg
-	}
-	config, dg := v.toSyntheticsMonitorConfig(ctx)
-	if dg.HasError() {
-		return nil, dg
-	}
-	return &kibanaAPIRequest{
-		fields: fields,
-		config: *config,
-	}, dg
-}
-
-func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	dg := diag.Diagnostics{}
-
-	switch {
-	case v.HTTP != nil:
-		return v.toHTTPMonitorFields(ctx)
-	case v.TCP != nil:
-		return v.toTCPMonitorFields(ctx)
-	case v.ICMP != nil:
-		return v.toICMPMonitorFields(), dg
-	case v.Browser != nil:
-		return v.toBrowserMonitorFields()
-	}
-
-	dg.AddError("Unsupported monitor type config", "one of http,tcp,icmp,browser monitor fields is required")
-	return nil, dg
-}
-
-func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.MonitorAlertConfig {
-	var alert *kbapi.MonitorAlertConfig
-	if !v.IsNull() && !v.IsUnknown() {
-		tfAlert := tfAlertConfigV0{}
-		tfsdk.ValueAs(ctx, v, &tfAlert)
-		alert = tfAlert.toTfAlertConfigV0()
-	}
-	return alert
-}
-
-func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
-	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
+func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaoapi.SyntheticsMonitorRequest, diag.Diagnostics) {
 	params, dg := toJSONObject(v.Params)
 	if dg.HasError() {
 		return nil, dg
@@ -886,26 +837,59 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 	if dg.HasError() {
 		return nil, dg
 	}
-
 	if labels == nil {
 		labels = map[string]string{}
 	}
 
-	return &kbapi.SyntheticsMonitorConfig{
+	locations := Map[types.String, string](v.Locations, func(s types.String) string { return s.ValueString() })
+
+	req := &kibanaoapi.SyntheticsMonitorRequest{
 		Name:             v.Name.ValueString(),
-		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
+		Schedule:         v.Schedule.ValueInt64(),
 		Locations:        locations,
 		PrivateLocations: synthetics.ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             synthetics.ValueStringSlice(v.Tags),
 		Labels:           labels,
-		Alert:            toTFAlertConfig(ctx, v.Alert),
+		Alert:            toAPIAlertConfig(ctx, v.Alert),
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.Namespace.ValueString(),
 		Params:           params,
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
-	}, dg
+	}
+
+	dg = v.populateTypeFields(ctx, req, dg)
+	if dg.HasError() {
+		return nil, dg
+	}
+
+	return req, dg
+}
+
+func (v *tfModelV0) populateTypeFields(ctx context.Context, req *kibanaoapi.SyntheticsMonitorRequest, dg diag.Diagnostics) diag.Diagnostics {
+	switch {
+	case v.HTTP != nil:
+		return v.populateHTTPFields(ctx, req, dg)
+	case v.TCP != nil:
+		return v.populateTCPFields(ctx, req, dg)
+	case v.ICMP != nil:
+		v.populateICMPFields(req)
+		return dg
+	case v.Browser != nil:
+		return v.populateBrowserFields(req)
+	}
+	dg.AddError("Unsupported monitor type config", "one of http,tcp,icmp,browser monitor fields is required")
+	return dg
+}
+
+func toAPIAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kibanaoapi.SyntheticsMonitorAlert {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	tfAlert := tfAlertConfigV0{}
+	tfsdk.ValueAs(ctx, v, &tfAlert)
+	return tfAlert.toAPIAlertConfig()
 }
 
 func tfInt64ToString(v types.Int64) string {
@@ -916,21 +900,21 @@ func tfInt64ToString(v types.Int64) string {
 	return res
 }
 
-func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SSLConfig, diag.Diagnostics) {
+func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kibanaoapi.SyntheticsSSLConfig, diag.Diagnostics) {
 
-	var ssl *kbapi.SSLConfig
+	var ssl *kibanaoapi.SyntheticsSSLConfig
 	if !v.SslSupportedProtocols.IsNull() && !v.SslSupportedProtocols.IsUnknown() {
 		sslSupportedProtocols := typeutils.ListTypeToSliceString(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 		if dg.HasError() {
 			return nil, dg
 		}
-		ssl = &kbapi.SSLConfig{}
+		ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		ssl.SupportedProtocols = sslSupportedProtocols
 	}
 
 	if !v.SslVerificationMode.IsNull() && !v.SslVerificationMode.IsUnknown() {
 		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
+			ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		}
 		ssl.VerificationMode = v.SslVerificationMode.ValueString()
 	}
@@ -938,104 +922,111 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 	certAuths := synthetics.ValueStringSlice(v.SslCertificateAuthorities)
 	if len(certAuths) > 0 {
 		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
+			ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		}
 		ssl.CertificateAuthorities = certAuths
 	}
 
 	if !v.SslCertificate.IsUnknown() && !v.SslCertificate.IsNull() {
 		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
+			ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		}
 		ssl.Certificate = v.SslCertificate.ValueString()
 	}
 
 	if !v.SslKey.IsUnknown() && !v.SslKey.IsNull() {
 		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
+			ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		}
 		ssl.Key = v.SslKey.ValueString()
 	}
 
 	if !v.SslKeyPassphrase.IsUnknown() && !v.SslKeyPassphrase.IsNull() {
 		if ssl == nil {
-			ssl = &kbapi.SSLConfig{}
+			ssl = &kibanaoapi.SyntheticsSSLConfig{}
 		}
 		ssl.KeyPassphrase = v.SslKeyPassphrase.ValueString()
 	}
 	return ssl, dg
 }
 
-func (v *tfModelV0) toHTTPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-	http := v.HTTP
-	proxyHeaders, dg := toJSONObject(http.ProxyHeader)
+func (v *tfModelV0) populateHTTPFields(ctx context.Context, req *kibanaoapi.SyntheticsMonitorRequest, dg diag.Diagnostics) diag.Diagnostics {
+	h := v.HTTP
+	proxyHeaders, d := toJSONObject(h.ProxyHeader)
+	dg.Append(d...)
 	if dg.HasError() {
-		return nil, dg
+		return dg
 	}
-	response, dg := toJSONObject(http.Response)
+	response, d := toJSONObject(h.Response)
+	dg.Append(d...)
 	if dg.HasError() {
-		return nil, dg
+		return dg
 	}
-	check, dg := toJSONObject(http.Check)
+	check, d := toJSONObject(h.Check)
+	dg.Append(d...)
 	if dg.HasError() {
-		return nil, dg
+		return dg
 	}
 
-	ssl, dg := toSSLConfig(ctx, dg, http.tfSSLConfig, "http")
+	ssl, d := toSSLConfig(ctx, dg, h.tfSSLConfig, "http")
+	dg.Append(d...)
+	if dg.HasError() {
+		return dg
+	}
 
-	maxRedirects := tfInt64ToString(http.MaxRedirects)
-	return kbapi.HTTPMonitorFields{
-		Url:          http.URL.ValueString(),
-		Ssl:          ssl,
-		MaxRedirects: maxRedirects,
-		Mode:         kbapi.HttpMonitorMode(http.Mode.ValueString()),
-		Ipv4:         http.IPv4.ValueBoolPointer(),
-		Ipv6:         http.IPv6.ValueBoolPointer(),
-		Username:     http.Username.ValueString(),
-		Password:     http.Password.ValueString(),
-		ProxyHeader:  proxyHeaders,
-		ProxyUrl:     http.ProxyURL.ValueString(),
-		Response:     response,
-		Check:        check,
-	}, dg
+	req.Type = kibanaoapi.SyntheticsMonitorTypeHTTP
+	req.Url = h.URL.ValueString()
+	req.Ssl = ssl
+	req.MaxRedirects = tfInt64ToString(h.MaxRedirects)
+	req.Mode = h.Mode.ValueString()
+	req.Ipv4 = h.IPv4.ValueBoolPointer()
+	req.Ipv6 = h.IPv6.ValueBoolPointer()
+	req.Username = h.Username.ValueString()
+	req.Password = h.Password.ValueString()
+	req.ProxyHeader = proxyHeaders
+	req.ProxyUrl = h.ProxyURL.ValueString()
+	req.Response = response
+	req.Check = check
+	return dg
 }
 
-func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
-
+func (v *tfModelV0) populateTCPFields(ctx context.Context, req *kibanaoapi.SyntheticsMonitorRequest, dg diag.Diagnostics) diag.Diagnostics {
 	tcp := v.TCP
-
-	dg := diag.Diagnostics{}
-	ssl, dg := toSSLConfig(ctx, dg, tcp.tfSSLConfig, "tcp")
-
-	return kbapi.TCPMonitorFields{
-		Host:                  tcp.Host.ValueString(),
-		CheckSend:             tcp.CheckSend.ValueString(),
-		CheckReceive:          tcp.CheckReceive.ValueString(),
-		ProxyUrl:              tcp.ProxyURL.ValueString(),
-		ProxyUseLocalResolver: tcp.ProxyUseLocalResolver.ValueBoolPointer(),
-		Ssl:                   ssl,
-	}, dg
-}
-
-func (v *tfModelV0) toICMPMonitorFields() kbapi.MonitorFields {
-	return kbapi.ICMPMonitorFields{
-		Host: v.ICMP.Host.ValueString(),
-		Wait: tfInt64ToString(v.ICMP.Wait),
+	ssl, d := toSSLConfig(ctx, dg, tcp.tfSSLConfig, "tcp")
+	dg.Append(d...)
+	if dg.HasError() {
+		return dg
 	}
+
+	req.Type = kibanaoapi.SyntheticsMonitorTypeTCP
+	req.Host = tcp.Host.ValueString()
+	req.CheckSend = tcp.CheckSend.ValueString()
+	req.CheckReceive = tcp.CheckReceive.ValueString()
+	req.ProxyUrl = tcp.ProxyURL.ValueString()
+	req.ProxyUseLocalResolver = tcp.ProxyUseLocalResolver.ValueBoolPointer()
+	req.Ssl = ssl
+	return dg
 }
 
-func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+func (v *tfModelV0) populateICMPFields(req *kibanaoapi.SyntheticsMonitorRequest) {
+	req.Type = kibanaoapi.SyntheticsMonitorTypeICMP
+	req.Host = v.ICMP.Host.ValueString()
+	req.Wait = tfInt64ToString(v.ICMP.Wait)
+}
+
+func (v *tfModelV0) populateBrowserFields(req *kibanaoapi.SyntheticsMonitorRequest) diag.Diagnostics {
 	playwrightOptions, dg := toJSONObject(v.Browser.PlaywrightOptions)
 	if dg.HasError() {
-		return nil, dg
+		return dg
 	}
-	return kbapi.BrowserMonitorFields{
-		InlineScript:      v.Browser.InlineScript.ValueString(),
-		Screenshots:       kbapi.ScreenshotOption(v.Browser.Screenshots.ValueString()),
-		SyntheticsArgs:    synthetics.ValueStringSlice(v.Browser.SyntheticsArgs),
-		IgnoreHttpsErrors: v.Browser.IgnoreHTTPSErrors.ValueBoolPointer(),
-		PlaywrightOptions: playwrightOptions,
-	}, diag.Diagnostics{} // dg
+
+	req.Type = kibanaoapi.SyntheticsMonitorTypeBrowser
+	req.InlineScript = v.Browser.InlineScript.ValueString()
+	req.Screenshots = v.Browser.Screenshots.ValueString()
+	req.SyntheticsArgs = synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)
+	req.IgnoreHttpsErrors = v.Browser.IgnoreHTTPSErrors.ValueBoolPointer()
+	req.PlaywrightOptions = playwrightOptions
+	return dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {
@@ -1046,23 +1037,23 @@ func Map[T, U any](ts []T, f func(T) U) []U {
 	return us
 }
 
-func (v tfAlertConfigV0) toTfAlertConfigV0() *kbapi.MonitorAlertConfig {
-	var status *kbapi.SyntheticsStatusConfig
+func (v tfAlertConfigV0) toAPIAlertConfig() *kibanaoapi.SyntheticsMonitorAlert {
+	var status *kibanaoapi.SyntheticsMonitorAlertStatus
 	if v.Status != nil {
-		status = v.Status.toTfStatusConfigV0()
+		status = v.Status.toAPIAlertStatus()
 	}
-	var tls *kbapi.SyntheticsStatusConfig
+	var tls *kibanaoapi.SyntheticsMonitorAlertStatus
 	if v.TLS != nil {
-		tls = v.TLS.toTfStatusConfigV0()
+		tls = v.TLS.toAPIAlertStatus()
 	}
-	return &kbapi.MonitorAlertConfig{
+	return &kibanaoapi.SyntheticsMonitorAlert{
 		Status: status,
 		Tls:    tls,
 	}
 }
 
-func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
-	return &kbapi.SyntheticsStatusConfig{
+func (v tfStatusConfigV0) toAPIAlertStatus() *kibanaoapi.SyntheticsMonitorAlertStatus {
+	return &kibanaoapi.SyntheticsMonitorAlertStatus{
 		Enabled: v.Enabled.ValueBoolPointer(),
 	}
 }
