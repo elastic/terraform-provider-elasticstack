@@ -19,6 +19,7 @@ package watch_test
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -49,6 +50,9 @@ const (
 
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
+
+//go:embed testdata/TestAccResourceWatchFromSDK/upgrade/main.tf
+var watchFromSDKCreateConfig string
 
 // canonicalJSONBytes re-encodes JSON so semantically equivalent documents compare equal (key order, spacing).
 func canonicalJSONBytes(raw string) ([]byte, error) {
@@ -245,7 +249,10 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 						VersionConstraint: "<= 0.14.3",
 					},
 				},
-				Config: testAccWatchCreateFromSDK(watchID),
+				Config: watchFromSDKCreateConfig,
+				ConfigVariables: config.Variables{
+					"watch_id": config.StringVariable(watchID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
@@ -269,21 +276,6 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccWatchCreateFromSDK(watchID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_watch" "test" {
-  watch_id = %q
-  active   = false
-
-  trigger = jsonencode({ schedule = { cron = "0 0/1 * * * ?" } })
-}
-`, watchID)
 }
 
 func checkResourceWatchDestroy(s *terraform.State) error {
