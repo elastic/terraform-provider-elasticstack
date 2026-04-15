@@ -219,7 +219,11 @@ func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedCli
 // ConvertMetaToFactory converts the SDK meta value into a *ProviderClientFactory.
 func ConvertMetaToFactory(meta any) (*ProviderClientFactory, diag.Diagnostics) {
 	if meta == nil {
-		return nil, nil
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unconfigured Client Factory",
+			Detail:   "Expected configured provider client factory, got nil. Report this issue to the provider developers.",
+		}}
 	}
 
 	factory, ok := meta.(*ProviderClientFactory)

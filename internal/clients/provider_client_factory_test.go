@@ -290,10 +290,10 @@ func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 
 // --- ConvertMetaToFactory ---
 
-func TestConvertMetaToFactory_Nil(t *testing.T) {
+func TestConvertMetaToFactory_NilMeta(t *testing.T) {
 	t.Parallel()
 	factory, diags := ConvertMetaToFactory(nil)
-	require.False(t, diags.HasError())
+	assert.True(t, diags.HasError(), "nil meta must return an error diagnostic")
 	assert.Nil(t, factory)
 }
 
