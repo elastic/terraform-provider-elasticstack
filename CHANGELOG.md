@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix `elasticstack_elasticsearch_watch` updates when Watcher redacts nested action secrets on refresh. ([#2296](https://github.com/elastic/terraform-provider-elasticstack/pull/2296))
 - Migrated `elasticstack_elasticsearch_watch` to the Terraform Plugin Framework ([#2287](https://github.com/elastic/terraform-provider-elasticstack/pull/2287))
 - Add `elasticstack_kibana_agentbuilder_tool` resource and data source ([#2111](https://github.com/elastic/terraform-provider-elasticstack/pull/2111))
 - Fix state consistency with semantic text types in `elasticstack_elasticsearch_index` ([#2112](https://github.com/elastic/terraform-provider-elasticstack/pull/2112))
