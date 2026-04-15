@@ -70,7 +70,7 @@ func runSDKKibanaFleetEntitySubtests(t *testing.T, entityKind string, entities m
 
 	names := make([]string, 0, len(entities))
 	for name := range entities {
-		if isCoveredKibanaFleetEntity(name, prefix) {
+		if strings.HasPrefix(name, prefix) {
 			names = append(names, name)
 		}
 	}
@@ -215,8 +215,4 @@ func runFrameworkKibanaDataSourceSubtests(ctx context.Context, t *testing.T, ent
 			}
 		})
 	}
-}
-
-func isCoveredKibanaFleetEntity(entityName, prefix string) bool {
-	return strings.HasPrefix(entityName, prefix)
 }
