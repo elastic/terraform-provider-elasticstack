@@ -655,6 +655,11 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kibanaoapi.SyntheticsMon
 		SpaceID:          types.StringValue(space),
 		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
+		// Locations (managed/service-managed) are preserved from prior state per REQ-015:
+		// the Kibana API returns location objects with both ID and Label, but the provider
+		// spec requires using the practitioner-configured identifiers (from state) rather
+		// than re-deriving from the API response. Private locations are re-derived from
+		// the API response where IsServiceManaged == false.
 		Locations:        v.Locations,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
