@@ -106,8 +106,9 @@ func findValueSpecForVar(pass *analysis.Pass, v *types.Var) (*ast.ValueSpec, boo
 	return nil, false
 }
 
-// goEmbedPathsAboveValueSpec collects //go:embed path tokens from consecutive directive lines
-// immediately above the ValueSpec (anchored at the first bound identifier's line). For
+// goEmbedPathsAboveValueSpec collects //go:embed path tokens from directive lines above the
+// ValueSpec (anchored at the first bound identifier's line). Ordinary // line comments between
+// //go:embed and the declaration are skipped, matching allowed go:embed layouts. For
 // parenthesized `var (` blocks, lines containing only `(`, `)`, or `var` / `var (` are skipped
 // so a //go:embed placed directly above an inner declaration is still found.
 func goEmbedPathsAboveValueSpec(pass *analysis.Pass, filename string, valueSpecNameLine1Based int) []string {
@@ -138,6 +139,10 @@ func goEmbedPathsAboveValueSpec(pass *analysis.Pass, filename string, valueSpecN
 				p = strings.Trim(p, "`\"")
 				paths = append(paths, p)
 			}
+			continue
+		}
+		// Other // line comments may appear between //go:embed and the variable (valid in Go).
+		if strings.HasPrefix(line, "//") {
 			continue
 		}
 		break

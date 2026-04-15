@@ -38,6 +38,12 @@ var (
 	outerParenCompatEmbeddedTF string
 )
 
+var (
+	//go:embed testdata/comment_sep_compat/main.tf
+	// optional line comment between embed directive and declaration (allowed by go:embed)
+	commentSepCompatEmbeddedTF string
+)
+
 // TestOrdinaryStep verifies that a step using ConfigDirectory: acctest.NamedTestCaseDirectory(...)
 // inside resource.Test is compliant and produces no diagnostic.
 func TestOrdinaryStep(t *testing.T) {
@@ -130,6 +136,20 @@ func TestCompatibilityStepParallel(t *testing.T) {
 					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
 				},
 				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepEmbedWithLineCommentBetween verifies //go:embed separated from the var by a // comment.
+func TestCompatibilityStepEmbedWithLineCommentBetween(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: commentSepCompatEmbeddedTF,
 			},
 		},
 	})

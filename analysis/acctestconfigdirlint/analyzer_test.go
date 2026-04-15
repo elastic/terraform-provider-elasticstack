@@ -27,7 +27,7 @@ import (
 // Covered patterns:
 //   - ordinary step: step-level ProtoV6ProviderFactories + ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.Test
 //   - ordinary step: same inside resource.ParallelTest
-//   - compatibility step: ExternalProviders + Config from package-level //go:embed testdata/.../main.tf (single-line var or grouped var block; resource.Test and resource.ParallelTest; parenthesized Config)
+//   - compatibility step: ExternalProviders + Config from package-level //go:embed testdata/.../main.tf (single-line var or grouped var block; resource.Test and resource.ParallelTest; parenthesized Config; // comment between embed and var)
 //   - import-only step: step-level ProtoV6ProviderFactories, neither Config nor ConfigDirectory
 func TestAnalyzer_CompliantCases(t *testing.T) {
 	testdata := analysistest.TestData()

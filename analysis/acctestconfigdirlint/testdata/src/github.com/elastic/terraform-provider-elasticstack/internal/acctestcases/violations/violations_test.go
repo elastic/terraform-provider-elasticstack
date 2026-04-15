@@ -179,7 +179,7 @@ func TestViolation_CompatibilityConfigRawLiteral(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"aws": {Source: "hashicorp/aws"},
 				},
-				Config: `resource "null_resource" "inline" {}`, // want `resource.TestStep sets ExternalProviders with Config that is not`
+				Config: `resource "null_resource" "inline" {}`, // want `extract static Terraform`
 			},
 		},
 	})
