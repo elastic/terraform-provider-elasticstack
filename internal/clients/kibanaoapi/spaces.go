@@ -23,8 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 // ListSpaces returns all Kibana spaces.
