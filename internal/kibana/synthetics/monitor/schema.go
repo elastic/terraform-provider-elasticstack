@@ -579,11 +579,8 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kibanaoapi.SyntheticsMon
 	}
 
 	var privateLocLabels []string
-	var managedLocLabels []string
 	for _, l := range api.Locations {
-		if l.IsServiceManaged {
-			managedLocLabels = append(managedLocLabels, l.Label)
-		} else {
+		if !l.IsServiceManaged {
 			privateLocLabels = append(privateLocLabels, l.Label)
 		}
 	}
@@ -658,7 +655,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kibanaoapi.SyntheticsMon
 		SpaceID:          types.StringValue(space),
 		Namespace:        types.StringValue(api.Namespace),
 		Schedule:         types.Int64Value(schedule),
-		Locations:        synthetics.StringSliceValue(managedLocLabels),
+		Locations:        v.Locations,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             synthetics.StringSliceValue(api.Tags),

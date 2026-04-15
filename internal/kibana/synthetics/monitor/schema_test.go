@@ -257,7 +257,7 @@ func TestToModelV0(t *testing.T) {
 				SpaceID:          types.StringValue("default"),
 				Namespace:        types.StringValue("default"),
 				Schedule:         types.Int64Value(5),
-				Locations:        []types.String{types.StringValue("North America - US East")},
+				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
@@ -827,7 +827,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
-				Locations:      []types.String{types.StringValue("North America - US East")},
+				Locations:      []types.String{types.StringValue("us_east")},
 				TCP: &tfTCPMonitorFieldsV0{
 					Host:         types.StringValue(""),
 					CheckSend:    types.StringValue("hello"),
