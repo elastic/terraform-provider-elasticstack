@@ -34,7 +34,13 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -50,7 +56,7 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// Query using the operational space from STATE
-	output, diags := fleet.GetOutput(ctx, client, outputID, spaceID)
+	output, diags := fleet.GetOutput(ctx, fleetClient, outputID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.State.RemoveResource(ctx)

@@ -35,7 +35,7 @@ func NewRoleMappingResource() resource.Resource {
 }
 
 type roleMappingResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *roleMappingResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -43,7 +43,7 @@ func (r *roleMappingResource) Metadata(_ context.Context, req resource.MetadataR
 }
 
 func (r *roleMappingResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

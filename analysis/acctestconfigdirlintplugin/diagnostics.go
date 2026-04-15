@@ -31,13 +31,15 @@ const (
 
 	// msgExternalProvidersWithoutConfig is reported when ExternalProviders is set but Config is not.
 	// Compatibility steps that declare ExternalProviders must also set inline Config (no ConfigDirectory).
-	msgExternalProvidersWithoutConfig = "resource.TestStep sets ExternalProviders without inline Config; " +
-		"compatibility steps must pair ExternalProviders with Config: \"...\", not with ConfigDirectory"
+	msgExternalProvidersWithoutConfig = "resource.TestStep sets ExternalProviders without Config; " +
+		"compatibility steps must set Config to a package-level string variable populated by " +
+		"//go:embed from testdata/.../*.tf (not ConfigDirectory), matching the repository fixture pattern"
 
 	// msgExternalProvidersWithConfigDirectory is reported when both ExternalProviders and ConfigDirectory are set.
 	// This is an invalid mix: compatibility steps use ExternalProviders + Config, not ConfigDirectory.
 	msgExternalProvidersWithConfigDirectory = "resource.TestStep sets both ExternalProviders and ConfigDirectory; " +
-		"compatibility steps must pair ExternalProviders with Config: \"...\", not with ConfigDirectory"
+		"compatibility steps must drop ConfigDirectory and use Config with a package-level string variable " +
+		"populated by //go:embed from testdata/.../*.tf"
 
 	// msgTestCaseProtoV6ProviderFactories is reported when resource.TestCase sets ProtoV6ProviderFactories.
 	msgTestCaseProtoV6ProviderFactories = "resource.TestCase sets ProtoV6ProviderFactories; " +
@@ -47,9 +49,16 @@ const (
 	// msgMissingStepProviderWiring is reported when a step sets neither ProtoV6ProviderFactories nor ExternalProviders.
 	msgMissingStepProviderWiring = "resource.TestStep sets neither ProtoV6ProviderFactories nor ExternalProviders; " +
 		"ordinary steps must set ProtoV6ProviderFactories on the step, " +
-		"and backwards-compatibility steps must set ExternalProviders (with inline Config)"
+		"and backwards-compatibility steps must set ExternalProviders with Config from a package-level " +
+		"//go:embed testdata/.../*.tf string variable"
 
 	// msgMixedStepProviderWiring is reported when a step sets both wiring modes.
 	msgMixedStepProviderWiring = "resource.TestStep sets both ProtoV6ProviderFactories and ExternalProviders; " +
 		"choose exactly one: ProtoV6ProviderFactories for ordinary coverage, or ExternalProviders for compatibility steps"
+
+	// msgCompatibilityConfigMustBeEmbeddedTF is reported when ExternalProviders is paired with Config that is not
+	// a package-level string variable loaded via //go:embed from testdata/.../*.tf.
+	msgCompatibilityConfigMustBeEmbeddedTF = "resource.TestStep sets ExternalProviders with Config that is not a " +
+		"package-level string variable populated by //go:embed from testdata/.../*.tf; " +
+		"extract static Terraform into testdata/<case>/*.tf and reference it from Config via that embedded variable"
 )

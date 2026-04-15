@@ -35,7 +35,13 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -56,7 +62,7 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Update the exception list
-	updateResp, diags := kibanaoapi.UpdateExceptionList(ctx, client, plan.SpaceID.ValueString(), *body)
+	updateResp, diags := kibanaoapi.UpdateExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +87,7 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

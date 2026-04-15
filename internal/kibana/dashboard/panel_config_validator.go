@@ -50,7 +50,7 @@ type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
 	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
-		"lens panels configure exactly one lens config block or `config_json`, " +
+		"`vis` panels configure exactly one visualization config block or `config_json`, " +
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
@@ -123,7 +123,7 @@ func panelConfigValidateDiags(
 			return diags
 		}
 		add("Missing markdown panel configuration", "Markdown panels require either `markdown_config` or `config_json`.")
-	case panelTypeLens:
+	case panelTypeVis:
 		setCount := 0
 		hasUnknown := configJSON.Unknown
 		if configJSON.Set {
@@ -144,12 +144,12 @@ func panelConfigValidateDiags(
 			return diags
 		}
 
-		detail := fmt.Sprintf("Lens panels require exactly one of %s.", panelConfigSelectionList())
+		detail := fmt.Sprintf("Panels with `type = \"vis\"` require exactly one of %s.", panelConfigSelectionList())
 		if setCount == 0 {
-			add("Missing lens panel configuration", detail)
+			add("Missing vis panel configuration", detail)
 			return diags
 		}
-		add("Invalid lens panel configuration", detail)
+		add("Invalid vis panel configuration", detail)
 	case panelTypeSloBurnRate:
 		if sloBurnRateConfig.Set {
 			return diags

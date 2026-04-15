@@ -18,10 +18,33 @@
 package compliant_test
 
 import (
+	_ "embed"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+//go:embed testdata/sdk_compat/main.tf
+var sdkCompatEmbeddedTF string
+
+//go:embed testdata/non_main_compat/compat.tf
+var nonMainCompatEmbeddedTF string
+
+var (
+	//go:embed testdata/grouped_embed_compat/main.tf
+	groupedCompatEmbeddedTF string
+)
+
+//go:embed testdata/outer_paren_embed_compat/main.tf
+var (
+	outerParenCompatEmbeddedTF string
+)
+
+var (
+	//go:embed testdata/comment_sep_compat/main.tf
+	// optional line comment between embed directive and declaration (allowed by go:embed)
+	commentSepCompatEmbeddedTF string
 )
 
 // TestOrdinaryStep verifies that a step using ConfigDirectory: acctest.NamedTestCaseDirectory(...)
@@ -50,8 +73,8 @@ func TestOrdinaryStepParallel(t *testing.T) {
 	})
 }
 
-// TestCompatibilityStep verifies that a step using ExternalProviders + Config: "..."
-// inside resource.Test is compliant and produces no diagnostic.
+// TestCompatibilityStep verifies that a step using ExternalProviders + Config referencing
+// a package-level //go:embed testdata/.../*.tf variable inside resource.Test is compliant.
 func TestCompatibilityStep(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
@@ -59,7 +82,91 @@ func TestCompatibilityStep(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
 				},
-				Config: `resource "aws_instance" "example" {}`,
+				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepNonMainFixture verifies non-main .tf fixture names are accepted too.
+func TestCompatibilityStepNonMainFixture(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: nonMainCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepGroupedVarEmbed verifies //go:embed immediately above a ValueSpec inside var ( ... ).
+func TestCompatibilityStepGroupedVarEmbed(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: groupedCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepOuterEmbedBeforeParen verifies //go:embed above a parenthesized var block.
+func TestCompatibilityStepOuterEmbedBeforeParen(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: outerParenCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepParenConfig verifies parenthesized Config still resolves to the embedded variable.
+func TestCompatibilityStepParenConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: (sdkCompatEmbeddedTF),
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepParallel verifies ExternalProviders compatibility wiring under resource.ParallelTest.
+func TestCompatibilityStepParallel(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: sdkCompatEmbeddedTF,
+			},
+		},
+	})
+}
+
+// TestCompatibilityStepEmbedWithLineCommentBetween verifies //go:embed separated from the var by a // comment.
+func TestCompatibilityStepEmbedWithLineCommentBetween(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
+				},
+				Config: commentSepCompatEmbeddedTF,
 			},
 		},
 	})
@@ -99,7 +206,7 @@ func TestMixedCompliantSteps(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"aws": {Source: "hashicorp/aws"},
 				},
-				Config: `resource "aws_instance" "example" {}`,
+				Config: sdkCompatEmbeddedTF,
 			},
 		},
 	})

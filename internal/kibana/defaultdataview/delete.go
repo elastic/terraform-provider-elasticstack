@@ -33,12 +33,18 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// If skip_delete is true, leave the default data view unchanged
 	if state.SkipDelete.ValueBool() {
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get kibana client", err.Error())
 		return
@@ -51,6 +57,6 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		Force: new(true),
 	}
 
-	diags = kibanaoapi.SetDefaultDataView(ctx, client, spaceID, setReq)
+	diags = kibanaoapi.SetDefaultDataView(ctx, oapiClient, spaceID, setReq)
 	resp.Diagnostics.Append(diags...)
 }

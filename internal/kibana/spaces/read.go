@@ -25,11 +25,28 @@ import (
 )
 
 // Read refreshes the Terraform state with the latest data.
-func (d *dataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state dataSourceModel
 
+	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := d.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient, err := apiClient.GetKibanaClient()
+	if err != nil {
+		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
+		return
+	}
+
 	// Call client API
-	spaces, err := d.client.List()
+	spaces, err := kibanaClient.KibanaSpaces.List()
 	if err != nil {
 		resp.Diagnostics.AddError("unable to list spaces", err.Error())
 		return
@@ -61,7 +78,7 @@ func (d *dataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *d
 	state.ID = types.StringValue("spaces")
 
 	// Set state
-	diags := resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

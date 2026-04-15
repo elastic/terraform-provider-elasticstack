@@ -37,6 +37,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Generate API request body from plan
 	body, diags := planMaintenanceWindow.toAPICreateRequest(ctx)
 
@@ -45,7 +51,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	isSupported, sdkDiags := r.client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
+	isSupported, sdkDiags := client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -56,14 +62,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	spaceID := planMaintenanceWindow.SpaceID.ValueString()
-	createMaintenanceWindowResponse, diags := kibanaoapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
+	createMaintenanceWindowResponse, diags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -75,7 +81,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
 	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
-	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

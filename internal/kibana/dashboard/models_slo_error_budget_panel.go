@@ -41,7 +41,7 @@ type sloErrorBudgetDrilldownModel struct {
 }
 
 // buildSloErrorBudgetConfig writes the TF model fields into the API panel struct.
-func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelSloErrorBudget) {
+func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelTypeSloErrorBudget) {
 	cfg := pm.SloErrorBudgetConfig
 	if cfg == nil {
 		return

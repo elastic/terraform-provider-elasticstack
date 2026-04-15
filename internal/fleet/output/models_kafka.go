@@ -19,6 +19,7 @@ package output
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -234,58 +235,22 @@ func (m outputKafkaModel) toUpdateAuthType() *kbapi.KibanaHTTPAPIsUpdateOutputKa
 	return &authType
 }
 
-func newCreateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsNewOutputKafka_ConnectionType, error) {
-	var connectionType kbapi.KibanaHTTPAPIsNewOutputKafka_ConnectionType
-	if err := connectionType.FromKibanaHTTPAPIsNewOutputKafkaConnectionType4(value); err != nil {
-		return nil, err
+func newCreateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsNewOutputKafkaConnectionType, error) {
+	connectionType := kbapi.KibanaHTTPAPIsNewOutputKafkaConnectionType(value)
+	if !connectionType.Valid() {
+		return nil, fmt.Errorf("invalid Kafka connection_type %q", value)
 	}
 
 	return &connectionType, nil
 }
 
-func newUpdateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsUpdateOutputKafka_ConnectionType, error) {
-	var connectionType kbapi.KibanaHTTPAPIsUpdateOutputKafka_ConnectionType
-	if err := connectionType.FromKibanaHTTPAPIsUpdateOutputKafkaConnectionType0(kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType0(value)); err != nil {
-		return nil, err
+func newUpdateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType, error) {
+	connectionType := kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType(value)
+	if !connectionType.Valid() {
+		return nil, fmt.Errorf("invalid Kafka connection_type %q", value)
 	}
 
 	return &connectionType, nil
-}
-
-func newCreateKafkaUsername(value string) (*kbapi.KibanaHTTPAPIsNewOutputKafka_Username, error) {
-	var username kbapi.KibanaHTTPAPIsNewOutputKafka_Username
-	if err := username.FromKibanaHTTPAPIsNewOutputKafkaUsername4(value); err != nil {
-		return nil, err
-	}
-
-	return &username, nil
-}
-
-func newUpdateKafkaUsername(value string) (*kbapi.KibanaHTTPAPIsUpdateOutputKafka_Username, error) {
-	var username kbapi.KibanaHTTPAPIsUpdateOutputKafka_Username
-	if err := username.FromKibanaHTTPAPIsUpdateOutputKafkaUsername0(value); err != nil {
-		return nil, err
-	}
-
-	return &username, nil
-}
-
-func newCreateKafkaPassword(value string) (*kbapi.KibanaHTTPAPIsNewOutputKafka_Password, error) {
-	var password kbapi.KibanaHTTPAPIsNewOutputKafka_Password
-	if err := password.FromKibanaHTTPAPIsNewOutputKafkaPassword4(value); err != nil {
-		return nil, err
-	}
-
-	return &password, nil
-}
-
-func newUpdateKafkaPassword(value string) (*kbapi.KibanaHTTPAPIsUpdateOutputKafka_Password, error) {
-	var password kbapi.KibanaHTTPAPIsUpdateOutputKafka_Password
-	if err := password.FromKibanaHTTPAPIsUpdateOutputKafkaPassword0(value); err != nil {
-		return nil, err
-	}
-
-	return &password, nil
 }
 
 func kafkaStringValue(value types.String) *string {
@@ -296,57 +261,22 @@ func kafkaStringValue(value types.String) *string {
 	return value.ValueStringPointer()
 }
 
-func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputKafka_ConnectionType) *string {
+func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputKafkaConnectionType) *string {
 	if value == nil {
 		return nil
 	}
 
-	connectionType, err := value.AsKibanaHTTPAPIsOutputKafkaConnectionType4()
-	if err != nil {
-		return nil
-	}
-
+	connectionType := string(*value)
 	return &connectionType
 }
 
-func readOutputKafkaCompressionLevel(value *kbapi.KibanaHTTPAPIsOutputKafka_CompressionLevel) *int64 {
+func readOutputKafkaCompressionLevel(value *float32) *int64 {
 	if value == nil {
 		return nil
 	}
 
-	compressionLevel, err := value.AsKibanaHTTPAPIsOutputKafkaCompressionLevel2()
-	if err != nil {
-		return nil
-	}
-
-	converted := int64(compressionLevel)
+	converted := int64(*value)
 	return &converted
-}
-
-func readOutputKafkaUsername(value *kbapi.KibanaHTTPAPIsOutputKafka_Username) *string {
-	if value == nil {
-		return nil
-	}
-
-	username, err := value.AsKibanaHTTPAPIsOutputKafkaUsername4()
-	if err != nil {
-		return nil
-	}
-
-	return &username
-}
-
-func readOutputKafkaPassword(value *kbapi.KibanaHTTPAPIsOutputKafka_Password) *string {
-	if value == nil {
-		return nil
-	}
-
-	password, err := value.AsKibanaHTTPAPIsOutputKafkaPassword4()
-	if err != nil {
-		return nil
-	}
-
-	return &password
 }
 
 func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
@@ -378,25 +308,9 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 	diags.Append(saslDiags...)
 
 	var err error
-	var connectionType *kbapi.KibanaHTTPAPIsNewOutputKafka_ConnectionType
+	var connectionType *kbapi.KibanaHTTPAPIsNewOutputKafkaConnectionType
 	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newCreateKafkaConnectionType(*connectionTypeValue)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-		}
-	}
-
-	var username *kbapi.KibanaHTTPAPIsNewOutputKafka_Username
-	if usernameValue := kafkaStringValue(kafkaModel.Username); usernameValue != nil {
-		username, err = newCreateKafkaUsername(*usernameValue)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-		}
-	}
-
-	var password *kbapi.KibanaHTTPAPIsNewOutputKafka_Password
-	if passwordValue := kafkaStringValue(kafkaModel.Password); passwordValue != nil {
-		password, err = newCreateKafkaPassword(*passwordValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 		}
@@ -412,7 +326,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl.toCreateKafka(),
+		Ssl:                  ssl.toAPI(),
 		// Kafka-specific fields
 		AuthType: kafkaModel.toAuthType(),
 		BrokerTimeout: func() *float32 {
@@ -430,17 +344,12 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 			comp := kbapi.KibanaHTTPAPIsNewOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
-		CompressionLevel: func() *kbapi.KibanaHTTPAPIsNewOutputKafka_CompressionLevel {
+		CompressionLevel: func() *float32 {
 			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
 				return nil
 			}
 
-			var compressionLevel kbapi.KibanaHTTPAPIsNewOutputKafka_CompressionLevel
-			if err := compressionLevel.FromKibanaHTTPAPIsNewOutputKafkaCompressionLevel2(kbapi.KibanaHTTPAPIsNewOutputKafkaCompressionLevel2(kafkaModel.CompressionLevel.ValueInt64())); err != nil {
-				diags.AddError(err.Error(), "")
-				return nil
-			}
-
+			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
 			return &compressionLevel
 		}(),
 		ConnectionType: connectionType,
@@ -468,8 +377,8 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 			return &val
 		}(),
 		Version:    kafkaModel.Version.ValueStringPointer(),
-		Username:   username,
-		Password:   password,
+		Username:   kafkaStringValue(kafkaModel.Username),
+		Password:   kafkaStringValue(kafkaModel.Password),
 		Key:        kafkaModel.Key.ValueStringPointer(),
 		Headers:    headers,
 		Hash:       hash,
@@ -517,25 +426,9 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	diags.Append(saslDiags...)
 
 	var err error
-	var connectionType *kbapi.KibanaHTTPAPIsUpdateOutputKafka_ConnectionType
+	var connectionType *kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType
 	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newUpdateKafkaConnectionType(*connectionTypeValue)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-		}
-	}
-
-	var username *kbapi.KibanaHTTPAPIsUpdateOutputKafka_Username
-	if usernameValue := kafkaStringValue(kafkaModel.Username); usernameValue != nil {
-		username, err = newUpdateKafkaUsername(*usernameValue)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-		}
-	}
-
-	var password *kbapi.KibanaHTTPAPIsUpdateOutputKafka_Password
-	if passwordValue := kafkaStringValue(kafkaModel.Password); passwordValue != nil {
-		password, err = newUpdateKafkaPassword(*passwordValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 		}
@@ -553,7 +446,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl.toUpdateKafka(),
+		Ssl:                  ssl.toAPI(),
 		// Kafka-specific fields
 		AuthType: kafkaModel.toUpdateAuthType(),
 		BrokerTimeout: func() *float32 {
@@ -571,17 +464,12 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 			comp := kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
-		CompressionLevel: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafka_CompressionLevel {
+		CompressionLevel: func() *float32 {
 			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
 				return nil
 			}
 
-			var compressionLevel kbapi.KibanaHTTPAPIsUpdateOutputKafka_CompressionLevel
-			if err := compressionLevel.FromKibanaHTTPAPIsUpdateOutputKafkaCompressionLevel0(kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompressionLevel0(kafkaModel.CompressionLevel.ValueInt64())); err != nil {
-				diags.AddError(err.Error(), "")
-				return nil
-			}
-
+			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
 			return &compressionLevel
 		}(),
 		ConnectionType: connectionType,
@@ -608,8 +496,8 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 			return &val
 		}(),
 		Version:    kafkaModel.Version.ValueStringPointer(),
-		Username:   username,
-		Password:   password,
+		Username:   kafkaStringValue(kafkaModel.Username),
+		Password:   kafkaStringValue(kafkaModel.Password),
 		Key:        kafkaModel.Key.ValueStringPointer(),
 		Headers:    headers,
 		Hash:       hash,
@@ -669,8 +557,8 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 
 	kafkaModel.Timeout = types.Float32PointerValue(data.Timeout)
 	kafkaModel.Version = types.StringPointerValue(data.Version)
-	kafkaModel.Username = types.StringPointerValue(readOutputKafkaUsername(data.Username))
-	kafkaModel.Password = types.StringPointerValue(readOutputKafkaPassword(data.Password))
+	kafkaModel.Username = types.StringPointerValue(data.Username)
+	kafkaModel.Password = types.StringPointerValue(data.Password)
 	kafkaModel.Key = types.StringPointerValue(data.Key)
 
 	// Handle headers

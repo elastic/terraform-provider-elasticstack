@@ -70,7 +70,7 @@ type inferenceGetResponse struct {
 	Endpoints []InferenceEndpoint `json:"endpoints"`
 }
 
-func PutInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, endpoint *InferenceEndpoint) fwdiag.Diagnostics {
+func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, endpoint *InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	reqBody := inferenceEndpointCreateRequest{
@@ -110,7 +110,7 @@ func PutInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, end
 	return diagutil.CheckErrorFromFW(res, "Unable to create or update inference endpoint")
 }
 
-func GetInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, inferenceID string) (*InferenceEndpoint, fwdiag.Diagnostics) {
+func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) (*InferenceEndpoint, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -150,7 +150,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, inf
 	return &response.Endpoints[0], nil
 }
 
-func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, update *InferenceEndpointUpdate) fwdiag.Diagnostics {
+func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, update *InferenceEndpointUpdate) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	reqBody := inferenceEndpointUpdateRequest{
@@ -189,7 +189,7 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, 
 	return diagutil.CheckErrorFromFW(res, "Unable to update inference endpoint")
 }
 
-func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, inferenceID string) fwdiag.Diagnostics {
+func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()

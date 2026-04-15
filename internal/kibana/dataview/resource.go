@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,13 +39,16 @@ func NewResource() resource.Resource {
 }
 
 type Resource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -59,10 +63,11 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	}
 
 	stateModel := dataViewModel{
-		ID:       types.StringValue(req.ID),
-		SpaceID:  types.StringValue(composite.ClusterID),
-		Override: types.BoolValue(false),
-		DataView: types.ObjectUnknown(getDataViewAttrTypes()),
+		ID:               types.StringValue(req.ID),
+		SpaceID:          types.StringValue(composite.ClusterID),
+		Override:         types.BoolValue(false),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes()),
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

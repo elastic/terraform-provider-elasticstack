@@ -36,7 +36,13 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
@@ -46,7 +52,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -93,7 +99,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	res, sdkDiags := clientkibana.CreateSlo(ctx, r.client, apiModel, supportsMultipleGroupBy)
+	res, sdkDiags := clientkibana.CreateSlo(ctx, apiClient, apiModel, supportsMultipleGroupBy)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -103,7 +109,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	plan.ID = types.StringValue(compositeID)
 
 	// Read back to populate computed fields.
-	r.readAndPopulate(ctx, &plan, &response.Diagnostics)
+	r.readAndPopulate(ctx, apiClient, &plan, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

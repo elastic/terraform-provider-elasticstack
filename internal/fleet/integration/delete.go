@@ -35,7 +35,13 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -56,6 +62,6 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		spaceID = stateModel.SpaceID.ValueString()
 	}
 
-	diags = fleet.Uninstall(ctx, client, name, version, spaceID, force)
+	diags = fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 	resp.Diagnostics.Append(diags...)
 }

@@ -43,7 +43,11 @@ type rangeSliderControlConfigModel struct {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelRangeSliderControl_Config) {
+func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPanel *panelModel, rs *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+	if rs == nil {
+		return
+	}
+	apiConfig := &rs.Config
 	existing := pm.RangeSliderControlConfig
 
 	// On import (tfPanel == nil) there is no prior intent. Populate from API unconditionally.
@@ -100,7 +104,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 }
 
 // buildRangeSliderControlConfig writes the TF model fields into the API panel struct.
-func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPanelRangeSliderControl) {
+func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
 		return

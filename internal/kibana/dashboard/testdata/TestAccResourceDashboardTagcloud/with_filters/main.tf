@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -28,9 +28,9 @@ resource "elasticstack_kibana_dashboard" "test" {
     tagcloud_config = {
       title       = "Filtered Tagcloud"
       description = "Tagcloud with filters and custom settings"
-      dataset_json = jsonencode({
-        type  = "index"
-        index = "logs-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "logs-*"
 
         time_field = "@timestamp"
       })

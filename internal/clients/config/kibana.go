@@ -187,6 +187,123 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 	return config.withEnvironmentOverrides(), nil
 }
 
+// newKibanaConfigFromSDKResource reads kibana connection settings from a
+// resource-level kibana_connection block (distinct from the provider-level
+// kibana block). It does NOT fall back to Elasticsearch credentials so that
+// the resulting config is fully scoped to the Kibana endpoint.
+func newKibanaConfigFromSDKResource(d *schema.ResourceData, base baseConfig) (kibanaConfig, sdkdiags.Diagnostics) {
+	config := base.toKibanaConfig()
+	kibConn, ok := d.GetOk(kibanaConnectionKey)
+	if !ok {
+		return config, nil
+	}
+
+	kibConnList, ok := kibConn.([]any)
+	if !ok || len(kibConnList) == 0 {
+		return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection must be a non-empty list")
+	}
+
+	if kib := kibConnList[0]; kib != nil {
+		kibConfig, ok := kib.(map[string]any)
+		if !ok {
+			return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection[0] must be an object")
+		}
+
+		if usernameRaw, usernameOk := kibConfig["username"]; usernameOk {
+			switch v := usernameRaw.(type) {
+			case string:
+				if v != "" {
+					config.Username = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.username must be a string")
+			}
+		}
+
+		if passwordRaw, passwordOk := kibConfig["password"]; passwordOk {
+			switch v := passwordRaw.(type) {
+			case string:
+				if v != "" {
+					config.Password = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.password must be a string")
+			}
+		}
+
+		if apiKeyRaw, apiKeyOk := kibConfig["api_key"]; apiKeyOk {
+			switch v := apiKeyRaw.(type) {
+			case string:
+				if v != "" {
+					config.ApiKey = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.api_key must be a string")
+			}
+		}
+
+		if bearerTokenRaw, bearerTokenOk := kibConfig["bearer_token"]; bearerTokenOk {
+			switch v := bearerTokenRaw.(type) {
+			case string:
+				if v != "" {
+					config.BearerToken = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.bearer_token must be a string")
+			}
+		}
+
+		if endpointsRaw, endpointsOk := kibConfig["endpoints"]; endpointsOk {
+			endpointsList, ok := endpointsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list")
+			}
+			if len(endpointsList) > 0 {
+				if endpoint := endpointsList[0]; endpoint != nil {
+					endpointStr, ok := endpoint.(string)
+					if !ok {
+						return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list of strings")
+					}
+					config.Address = endpointStr
+				}
+			}
+		}
+
+		if caCertsRaw, caCertsOk := kibConfig["ca_certs"]; caCertsOk {
+			caCerts, ok := caCertsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list")
+			}
+			for _, elem := range caCerts {
+				if elem == nil {
+					continue
+				}
+				vStr, ok := elem.(string)
+				if !ok {
+					return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list of strings")
+				}
+				config.CAs = append(config.CAs, vStr)
+			}
+		}
+
+		if insecureRaw, insecureOk := kibConfig["insecure"]; insecureOk {
+			insecure, ok := insecureRaw.(bool)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.insecure must be a bool")
+			}
+			if insecure {
+				config.DisableVerifySSL = true
+			}
+		}
+	}
+
+	return config.withEnvironmentOverrides(), nil
+}
+
 func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")

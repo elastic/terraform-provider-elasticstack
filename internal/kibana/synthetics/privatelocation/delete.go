@@ -28,15 +28,21 @@ import (
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
 
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var plan tfModelV0
 	diags := request.State.Get(ctx, &plan)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
@@ -55,7 +61,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	spaceID := effectiveSpaceID(plan.SpaceID, compositeID)
 
 	if requiresSpaceIDMinVersion(spaceID) {
-		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
 		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if response.Diagnostics.HasError() {
 			return

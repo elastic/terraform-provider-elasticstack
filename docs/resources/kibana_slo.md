@@ -246,6 +246,7 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `apm_latency_indicator` (Block List) (see [below for nested schema](#nestedblock--apm_latency_indicator))
 - `group_by` (List of String) Optional group by fields to use to generate an SLO per distinct value.
 - `histogram_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `kql_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--kql_custom_indicator))
 - `metric_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `objective` (Block List) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
@@ -337,6 +338,20 @@ Optional:
 - `from` (Number)
 - `to` (Number)
 
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 
 <a id="nestedblock--kql_custom_indicator"></a>

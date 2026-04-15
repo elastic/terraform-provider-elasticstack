@@ -34,7 +34,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	readModel, diags := r.read(ctx, stateModel)
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readModel, diags := r.read(ctx, client, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -48,7 +54,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
 }
 
-func (r *Resource) read(ctx context.Context, stateModel streamModel) (*streamModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel streamModel) (*streamModel, diag.Diagnostics) {
 	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {
 		return nil, diags
@@ -57,7 +63,7 @@ func (r *Resource) read(ctx context.Context, stateModel streamModel) (*streamMod
 	spaceID := composite.ClusterID
 	name := composite.ResourceID
 
-	kibanaClient, err := r.client.GetKibanaOapiClient()
+	kibanaClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana client", err.Error())
 		return nil, diags

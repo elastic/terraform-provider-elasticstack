@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 func (r *WorkflowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -83,6 +85,9 @@ func getSchema() schema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Whether the workflow configuration is valid.",
 			},
+		},
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

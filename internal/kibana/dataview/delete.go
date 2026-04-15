@@ -33,13 +33,19 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	viewID, spaceID := stateModel.getViewIDAndSpaceID()
-	diags = kibanaoapi.DeleteDataView(ctx, client, spaceID, viewID)
+	diags = kibanaoapi.DeleteDataView(ctx, oapiClient, spaceID, viewID)
 	resp.Diagnostics.Append(diags...)
 }

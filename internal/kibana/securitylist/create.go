@@ -32,8 +32,14 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -48,7 +54,7 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Create the list
 	spaceID := plan.SpaceID.ValueString()
-	createdList, diags := kibanaoapi.CreateList(ctx, client, spaceID, *createReq)
+	createdList, diags := kibanaoapi.CreateList(ctx, oapiClient, spaceID, *createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -64,7 +70,7 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 		Id: createdList.Id,
 	}
 
-	list, diags := kibanaoapi.GetList(ctx, client, spaceID, readParams)
+	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

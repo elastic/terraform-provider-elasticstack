@@ -34,7 +34,13 @@ func (r *securityListResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -56,7 +62,7 @@ func (r *securityListResource) Read(ctx context.Context, req resource.ReadReques
 		Id: listID,
 	}
 
-	list, diags := kibanaoapi.GetList(ctx, client, spaceID, params)
+	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

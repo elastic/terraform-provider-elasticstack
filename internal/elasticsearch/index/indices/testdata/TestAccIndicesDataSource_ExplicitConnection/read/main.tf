@@ -2,6 +2,10 @@ variable "endpoints" {
   type = list(string)
 }
 
+variable "headers" {
+  type = map(string)
+}
+
 variable "username" {
   type = string
 }
@@ -22,6 +26,7 @@ data "elasticstack_elasticsearch_indices" "test_conn" {
     username  = var.username
     password  = var.password
     endpoints = var.endpoints
+    headers   = var.headers
     insecure  = true
   }
 }

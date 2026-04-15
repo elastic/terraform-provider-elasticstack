@@ -82,6 +82,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
 - `host_name_format` (String) Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.
 - `inactivity_timeout` (String) The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
@@ -170,6 +171,20 @@ Optional:
 
 - `number_value` (Number) Number value for the field. If this is set, string_value must not be defined.
 - `string_value` (String) String value for the field. If this is set, number_value must not be defined.
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 ## Import
 

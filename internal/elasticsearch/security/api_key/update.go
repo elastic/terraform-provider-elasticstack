@@ -20,7 +20,6 @@ package apikey
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,7 +54,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 }
 
 func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}
@@ -72,7 +71,7 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 }
 
 func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}

@@ -43,7 +43,13 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	respDiags.Append(apiClientDiags...)
+	if respDiags.HasError() {
+		return
+	}
+
+	fleetClient, err := apiClient.GetFleetClient()
 	if err != nil {
 		respDiags.AddError(err.Error(), "")
 		return
@@ -60,7 +66,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	// Check if version-dependent parameters are set and validate version support
 	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
 	if needsVersionCheck {
-		serverVersion, versionDiags := r.client.ServerVersion(ctx)
+		serverVersion, versionDiags := apiClient.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		if respDiags.HasError() {
 			return
@@ -98,7 +104,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
-	diags = fleet.InstallPackage(ctx, client, name, version, installOptions)
+	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
 		return

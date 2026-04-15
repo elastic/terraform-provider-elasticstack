@@ -30,15 +30,21 @@ import (
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
 
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var state tfModelV0
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
@@ -57,7 +63,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	spaceID := effectiveSpaceID(state.SpaceID, compositeID)
 
 	if requiresSpaceIDMinVersion(spaceID) {
-		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
 		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if response.Diagnostics.HasError() {
 			return
@@ -83,7 +89,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state = toModelV0(*result, spaceID)
+	state = toModelV0(*result, spaceID, state.KibanaConnection)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)

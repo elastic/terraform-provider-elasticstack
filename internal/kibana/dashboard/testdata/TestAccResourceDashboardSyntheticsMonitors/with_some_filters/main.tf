@@ -27,6 +27,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
     synthetics_monitors_config = {
+      title       = "Synthetics Monitors"
+      description = "Shows the production monitors"
+      hide_title  = true
+      hide_border = false
+      view        = "compactView"
       filters = {
         projects = [
           { label = "My Project", value = "my-project" }

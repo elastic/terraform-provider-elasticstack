@@ -34,7 +34,13 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -49,7 +55,7 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 		return
 	}
 
-	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

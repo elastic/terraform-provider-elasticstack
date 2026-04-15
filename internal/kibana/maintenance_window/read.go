@@ -21,7 +21,7 @@ import (
 	"context"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -29,25 +29,36 @@ import (
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel Model
 
-	req.State.GetAttribute(ctx, path.Root("id"), &stateModel.ID)
-	req.State.GetAttribute(ctx, path.Root("space_id"), &stateModel.SpaceID)
-
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	if sdkDiags.HasError() {
+	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	serverFlavor, sdkDiags := r.client.ServerFlavor(ctx)
-	if sdkDiags.HasError() {
+	apiClient, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags := validateMaintenanceWindowServer(serverVersion, serverFlavor)
-	if diags.HasError() {
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	serverFlavor, sdkDiags := apiClient.ServerFlavor(ctx)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

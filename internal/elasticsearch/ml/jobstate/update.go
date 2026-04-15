@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -65,7 +64,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, fwDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -123,7 +122,7 @@ func (r *mlJobStateResource) performStateTransition(ctx context.Context, data ML
 	jobID := data.JobID.ValueString()
 	desiredState := data.State.ValueString()
 	force := data.Force.ValueBool()
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}

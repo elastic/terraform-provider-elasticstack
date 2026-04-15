@@ -28,11 +28,6 @@ import (
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
 
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var plan tfModelV0
 	diags := request.Plan.Get(ctx, &plan)
 	response.Diagnostics.Append(diags...)
@@ -40,11 +35,22 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
 	input := plan.toPrivateLocationConfig()
 	spaceID := plan.SpaceID.ValueString()
 
 	if requiresSpaceIDMinVersion(spaceID) {
-		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
 		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if response.Diagnostics.HasError() {
 			return
@@ -64,7 +70,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	plan = toModelV0(*result, spaceID)
+	plan = toModelV0(*result, spaceID, plan.KibanaConnection)
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

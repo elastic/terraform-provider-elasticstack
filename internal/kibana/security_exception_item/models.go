@@ -41,25 +41,26 @@ import (
 var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 type ExceptionItemModel struct {
-	ID            types.String         `tfsdk:"id"`
-	SpaceID       types.String         `tfsdk:"space_id"`
-	ItemID        types.String         `tfsdk:"item_id"`
-	ListID        types.String         `tfsdk:"list_id"`
-	Name          types.String         `tfsdk:"name"`
-	Description   types.String         `tfsdk:"description"`
-	Type          types.String         `tfsdk:"type"`
-	NamespaceType types.String         `tfsdk:"namespace_type"`
-	OsTypes       types.Set            `tfsdk:"os_types"`
-	Tags          types.Set            `tfsdk:"tags"`
-	Meta          jsontypes.Normalized `tfsdk:"meta"`
-	Entries       types.List           `tfsdk:"entries"`
-	Comments      types.List           `tfsdk:"comments"`
-	ExpireTime    timetypes.RFC3339    `tfsdk:"expire_time"`
-	CreatedAt     types.String         `tfsdk:"created_at"`
-	CreatedBy     types.String         `tfsdk:"created_by"`
-	UpdatedAt     types.String         `tfsdk:"updated_at"`
-	UpdatedBy     types.String         `tfsdk:"updated_by"`
-	TieBreakerID  types.String         `tfsdk:"tie_breaker_id"`
+	ID               types.String         `tfsdk:"id"`
+	KibanaConnection types.List           `tfsdk:"kibana_connection"`
+	SpaceID          types.String         `tfsdk:"space_id"`
+	ItemID           types.String         `tfsdk:"item_id"`
+	ListID           types.String         `tfsdk:"list_id"`
+	Name             types.String         `tfsdk:"name"`
+	Description      types.String         `tfsdk:"description"`
+	Type             types.String         `tfsdk:"type"`
+	NamespaceType    types.String         `tfsdk:"namespace_type"`
+	OsTypes          types.Set            `tfsdk:"os_types"`
+	Tags             types.Set            `tfsdk:"tags"`
+	Meta             jsontypes.Normalized `tfsdk:"meta"`
+	Entries          types.List           `tfsdk:"entries"`
+	Comments         types.List           `tfsdk:"comments"`
+	ExpireTime       timetypes.RFC3339    `tfsdk:"expire_time"`
+	CreatedAt        types.String         `tfsdk:"created_at"`
+	CreatedBy        types.String         `tfsdk:"created_by"`
+	UpdatedAt        types.String         `tfsdk:"updated_at"`
+	UpdatedBy        types.String         `tfsdk:"updated_by"`
+	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
 
 type CommentModel struct {

@@ -18,12 +18,23 @@
 package violations_test
 
 import (
+	_ "embed"
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func violationCompatConfigFromHelper() string {
+	return `resource "null_resource" "helper" {}`
+}
+
+//go:embed testdata/wrong_embed_suffix/not_tf.txt
+var violationCompatWrongEmbedSuffix string
+
+var violationCompatPlainStringVar = `resource "null_resource" "plain" {}`
 
 // TestViolation1_InlineConfigWithoutExternalProviders exercises violation 1:
 // a step sets Config without ExternalProviders.
@@ -99,7 +110,7 @@ func TestViolation_ExternalProvidersWithoutConfig(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ExternalProviders: map[string]resource.ExternalProvider{ // want `sets ExternalProviders without inline Config`
+				ExternalProviders: map[string]resource.ExternalProvider{ // want `resource.TestStep sets ExternalProviders without Config`
 					"aws": {Source: "hashicorp/aws"},
 				},
 				// No Config, no ConfigDirectory
@@ -155,6 +166,90 @@ func TestViolation_MixedProtoV6AndExternalProviders(t *testing.T) {
 					"aws": {Source: "hashicorp/aws"},
 				},
 				Config: `resource "aws_instance" "example" {}`,
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigRawLiteral rejects raw string Config with ExternalProviders.
+func TestViolation_CompatibilityConfigRawLiteral(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: `resource "null_resource" "inline" {}`, // want `extract static Terraform`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigSprintf rejects fmt.Sprintf-built Config with ExternalProviders.
+func TestViolation_CompatibilityConfigSprintf(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: fmt.Sprintf(`resource "null_resource" "s" { id = "%s" }`, "x"), // want `resource.TestStep sets ExternalProviders with Config that is not`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigConcat rejects string-concatenated Config with ExternalProviders.
+func TestViolation_CompatibilityConfigConcat(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: `resource "null_resource" "a" {}` + "\n" + `resource "null_resource" "b" {}`, // want `resource.TestStep sets ExternalProviders with Config that is not`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigHelper rejects helper-returned Config with ExternalProviders.
+func TestViolation_CompatibilityConfigHelper(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: violationCompatConfigFromHelper(), // want `resource.TestStep sets ExternalProviders with Config that is not`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigPlainVar rejects a package string var without //go:embed.
+func TestViolation_CompatibilityConfigPlainVar(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: violationCompatPlainStringVar, // want `resource.TestStep sets ExternalProviders with Config that is not`
+			},
+		},
+	})
+}
+
+// TestViolation_CompatibilityConfigWrongEmbedSuffix rejects go:embed paths that are not testdata/.../*.tf.
+func TestViolation_CompatibilityConfigWrongEmbedSuffix(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: violationCompatWrongEmbedSuffix, // want `resource.TestStep sets ExternalProviders with Config that is not`
 			},
 		},
 	})

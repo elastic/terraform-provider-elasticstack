@@ -81,6 +81,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `enabled` (Boolean) Whether the monitor is enabled. Default: `true`
 - `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
 - `icmp` (Attributes) ICMP Monitor specific fields (see [below for nested schema](#nestedatt--icmp))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `labels` (Map of String) Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
 - `namespace` (String) The data stream namespace. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, ", <, >, |, whitespace, ,, #, :, or -. Default: `default`
@@ -175,6 +176,20 @@ Required:
 Optional:
 
 - `wait` (Number) Wait time in seconds. Default: `1`
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 
 <a id="nestedatt--tcp"></a>

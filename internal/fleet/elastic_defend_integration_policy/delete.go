@@ -34,7 +34,13 @@ func (r *elasticDefendIntegrationPolicyResource) Delete(ctx context.Context, req
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -52,6 +58,6 @@ func (r *elasticDefendIntegrationPolicyResource) Delete(ctx context.Context, req
 
 	// Re-use the generic DeletePackagePolicy helper since delete doesn't need
 	// the typed input format.
-	diags = fleetclient.DeletePackagePolicy(ctx, client, policyID, spaceID, force)
+	diags = fleetclient.DeletePackagePolicy(ctx, fleetClient, policyID, spaceID, force)
 	resp.Diagnostics.Append(diags...)
 }

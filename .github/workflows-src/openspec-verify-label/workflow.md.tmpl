@@ -60,8 +60,11 @@ steps:
   - name: Setup repository dependencies
     run: make setup
 engine:
-  id: copilot
-  model: "gpt-5.4"
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
   pull-requests: read
@@ -83,7 +86,7 @@ tools:
   github:
     toolsets: [repos, pull_requests]
 network:
-  allowed: [defaults, node, go]
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
 checkout:
   fetch-depth: 0
 safe-outputs:
@@ -129,6 +132,12 @@ Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
    - `npx openspec instructions apply --change "${{ needs.pre_activation.outputs.selected_change }}" --json`
 
 2. Read **`.agents/skills/openspec-verify-change/SKILL.md`** and perform verification **rooted at** `openspec/changes/<id>/` using the skill's steps (status / apply JSON for context files, completeness / correctness / coherence, **Issues by priority**: CRITICAL, WARNING, SUGGESTION, **Final assessment**).
+
+Whilst reviewing the implementation, do not raise issues covered by CI. For example, do not:
+  - Consider syntactic correctness of code.
+  - Run tests.
+
+Instead, check the results of Github actions runs for the PR.
 
 ## Structural allowlist and relevance
 

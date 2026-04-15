@@ -20,7 +20,6 @@ package datastreamlifecycle
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -40,7 +39,7 @@ func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.Stat
 		return diags
 	}
 
-	client, d := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, d := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags

@@ -37,7 +37,13 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -58,7 +64,7 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 	// Restore space_id from the composite ID so populateFromAPI can use it.
 	planModel.SpaceID = types.StringValue(compID.ClusterID)
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -66,13 +72,13 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 
 	body := planModel.toAPIUpdateModel()
 
-	diags = kibanaoapi.UpdateWorkflow(ctx, client, compID.ClusterID, compID.ResourceID, body)
+	diags = kibanaoapi.UpdateWorkflow(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ClusterID, compID.ResourceID)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

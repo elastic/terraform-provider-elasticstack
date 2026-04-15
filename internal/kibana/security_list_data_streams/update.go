@@ -34,5 +34,11 @@ func (r *securityListDataStreamsResource) Update(ctx context.Context, req resour
 		return
 	}
 
+	_, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

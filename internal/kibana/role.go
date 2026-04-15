@@ -27,6 +27,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -262,6 +263,7 @@ func ResourceRole() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
+		"kibana_connection": providerSchema.GetKibanaEntityConnectionSchema(),
 	}
 
 	return &schema.Resource{
@@ -281,7 +283,11 @@ func ResourceRole() *schema.Resource {
 }
 
 func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -341,7 +347,11 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) d
 }
 
 func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -388,7 +398,11 @@ func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.
 }
 
 func resourceRoleDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

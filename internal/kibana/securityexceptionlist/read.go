@@ -37,7 +37,13 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -63,7 +69,7 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 		params.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, client, compID.ClusterID, params)
+	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, compID.ClusterID, params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -74,7 +80,7 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 	if readResp == nil && !typeutils.IsKnown(state.NamespaceType) {
 		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
 		params.NamespaceType = &agnosticNsType
-		readResp, diags = kibanaoapi.GetExceptionList(ctx, client, compID.ClusterID, params)
+		readResp, diags = kibanaoapi.GetExceptionList(ctx, oapiClient, compID.ClusterID, params)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

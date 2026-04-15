@@ -35,6 +35,7 @@ import (
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
 	ID                  types.String         `tfsdk:"id"`
+	KibanaConnection    types.List           `tfsdk:"kibana_connection"`
 	RuleID              types.String         `tfsdk:"rule_id"`
 	SpaceID             types.String         `tfsdk:"space_id"`
 	Name                types.String         `tfsdk:"name"`

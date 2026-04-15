@@ -35,7 +35,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
@@ -46,6 +52,6 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	// Note: internal/clients/kibana.DeleteSlo expects (spaceId, sloId).
-	sdkDiags := clientkibana.DeleteSlo(ctx, r.client, compID.ClusterID, compID.ResourceID)
+	sdkDiags := clientkibana.DeleteSlo(ctx, apiClient, compID.ClusterID, compID.ResourceID)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 }

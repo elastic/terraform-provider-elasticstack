@@ -65,8 +65,12 @@ testacc-vs-docker:
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
+.PHONY: hook-test
+hook-test: ## Run hook JavaScript unit tests
+	@ node --test .agents/hooks/*.test.mjs
+
 .PHONY: test
-test: ## Run unit tests
+test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
@@ -143,7 +147,7 @@ workflow-test: ## Run unit tests for workflow source generation
 
 .PHONY: check-workflows
 check-workflows: ## Check generated workflow markdown sources
-	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check --verbose
 
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
@@ -170,12 +174,32 @@ golangci-lint-custom: tools
 golangci-lint: golangci-lint-custom
 	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
 
+LINT_PERF_DIR := $(CURDIR)/analysis/lint-perf-output/$(shell date +%Y%m%dT%H%M%S)
+
+.PHONY: lint-perf
+lint-perf: golangci-lint-custom ## Measure isolated custom-linter performance and write timing/profile artifacts
+	@ mkdir -p $(LINT_PERF_DIR)
+	@ echo "Writing per-run artifacts to $(LINT_PERF_DIR)"
+	@ echo "--- acctestconfigdirlint (golangci isolated run) ---"
+	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=acctestconfigdirlint --concurrency=1 \
+		--cpu-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-cpu.prof \
+		--mem-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-mem.prof \
+		--trace-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-trace.out \
+		./... ; } 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-lint.txt || true
+	@ echo "--- analyzer benchmarks ---"
+	@ go test ./analysis/acctestconfigdirlint/... -bench=. -benchmem \
+		-cpuprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-cpu.prof \
+		-memprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-mem.prof \
+		-trace=$(LINT_PERF_DIR)/acctestconfigdirlint-trace.out \
+		-run='^$$' 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-bench.txt || true
+	@ echo "Artifacts written to $(LINT_PERF_DIR)/"
+
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint workflow-test check-workflows check-fmt check-docs
+check-lint: setup check-openspec golangci-lint check-workflows check-fmt check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)

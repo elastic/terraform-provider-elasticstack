@@ -43,7 +43,13 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	kibanaClient, err := r.client.GetKibanaClient()
+	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	diags.Append(apiClientDiags...)
+	if diags.HasError() {
+		return
+	}
+
+	kibanaClient, err := apiClient.GetKibanaClient()
 	if err != nil {
 		diags.AddError("unable to get kibana client", err.Error())
 		return

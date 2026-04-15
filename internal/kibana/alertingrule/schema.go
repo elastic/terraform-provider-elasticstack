@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -205,6 +206,7 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			"actions": schema.ListNestedBlock{
 				Description: "An action that runs under defined conditions.",
 				NestedObject: schema.NestedBlockObject{

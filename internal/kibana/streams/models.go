@@ -36,15 +36,16 @@ const (
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
-	ID            types.String        `tfsdk:"id"`
-	SpaceID       types.String        `tfsdk:"space_id"`
-	Name          types.String        `tfsdk:"name"`
-	Description   types.String        `tfsdk:"description"`
-	WiredConfig   *wiredConfigModel   `tfsdk:"wired_config"`
-	ClassicConfig *classicConfigModel `tfsdk:"classic_config"`
-	QueryConfig   *queryConfigModel   `tfsdk:"query_config"`
-	Dashboards    types.List          `tfsdk:"dashboards"`
-	Queries       []streamQueryModel  `tfsdk:"queries"`
+	ID               types.String        `tfsdk:"id"`
+	KibanaConnection types.List          `tfsdk:"kibana_connection"`
+	SpaceID          types.String        `tfsdk:"space_id"`
+	Name             types.String        `tfsdk:"name"`
+	Description      types.String        `tfsdk:"description"`
+	WiredConfig      *wiredConfigModel   `tfsdk:"wired_config"`
+	ClassicConfig    *classicConfigModel `tfsdk:"classic_config"`
+	QueryConfig      *queryConfigModel   `tfsdk:"query_config"`
+	Dashboards       types.List          `tfsdk:"dashboards"`
+	Queries          []streamQueryModel  `tfsdk:"queries"`
 }
 
 // streamQueryModel is the Terraform model for an attached ES|QL query.

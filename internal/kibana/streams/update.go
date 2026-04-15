@@ -33,7 +33,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,7 +52,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	readModel := r.upsert(ctx, planModel, &resp.Diagnostics)
+	readModel := r.upsert(ctx, client, planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

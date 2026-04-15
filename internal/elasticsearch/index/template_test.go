@@ -38,6 +38,8 @@ import (
 
 var minSupportedAllowCustomRoutingVersion = version.Must(version.NewVersion("8.0.0"))
 
+const falseValue = "false"
+
 func TestAccResourceIndexTemplate(t *testing.T) {
 	// generate random template name
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -874,7 +876,7 @@ func testCheckTemplateAliasBoolAttrFalseOrAbsent(aliasName, attrName string) res
 		}
 
 		value, ok := s.RootModule().Resources[resourceName].Primary.Attributes[aliasPrefix+"."+attrName]
-		if ok && value != "" && value != "false" {
+		if ok && value != "" && value != falseValue {
 			return fmt.Errorf("expected %s.%s to be false or absent, got %q", aliasPrefix, attrName, value)
 		}
 		return nil
@@ -922,7 +924,7 @@ func testCheckDataStreamAttrFalseOrAbsent(resourceName, attrName string) resourc
 		}
 
 		value, ok := rs.Primary.Attributes["data_stream.0."+attrName]
-		if ok && value != "false" && value != "" {
+		if ok && value != falseValue && value != "" {
 			return fmt.Errorf("expected data_stream.0.%s to be false or absent, got %q", attrName, value)
 		}
 		return nil

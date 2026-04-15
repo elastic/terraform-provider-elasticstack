@@ -38,7 +38,7 @@ var transformFeatureMinSupportedVersion = version.Must(version.NewVersion("7.2.0
 
 var apiOperationTimeoutParamMinSupportedVersion = version.Must(version.NewVersion("7.17.0"))
 
-func PutTransform(ctx context.Context, apiClient *clients.APIClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
+func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -103,7 +103,7 @@ func PutTransform(ctx context.Context, apiClient *clients.APIClient, transform *
 	return diags
 }
 
-func GetTransform(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.Transform, diag.Diagnostics) {
+func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
@@ -152,7 +152,7 @@ func GetTransform(ctx context.Context, apiClient *clients.APIClient, name *strin
 	return foundTransform, diags
 }
 
-func GetTransformStats(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.TransformStats, diag.Diagnostics) {
+func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.TransformStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -198,7 +198,7 @@ func GetTransformStats(ctx context.Context, apiClient *clients.APIClient, name *
 	return foundTransformStats, diags
 }
 
-func UpdateTransform(ctx context.Context, apiClient *clients.APIClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
+func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -268,7 +268,7 @@ func UpdateTransform(ctx context.Context, apiClient *clients.APIClient, transfor
 	return diags
 }
 
-func DeleteTransform(ctx context.Context, apiClient *clients.APIClient, name *string) diag.Diagnostics {
+func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()

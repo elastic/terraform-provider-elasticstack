@@ -41,6 +41,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Classic streams cannot be created via the API — they must be imported.
 	if planModel.ClassicConfig != nil {
 		resp.Diagnostics.AddError(
@@ -53,7 +59,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
+	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,7 +77,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
 	planModel.ID = types.StringValue(compositeID.String())
 
-	readModel := r.upsert(ctx, planModel, &resp.Diagnostics)
+	readModel := r.upsert(ctx, client, planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

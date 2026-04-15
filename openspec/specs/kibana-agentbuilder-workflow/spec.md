@@ -73,15 +73,19 @@ Before create, read, update, and delete, the resource SHALL verify that the targ
 - WHEN any workflow resource operation runs
 - THEN the operation SHALL fail with an unsupported-version diagnostic before calling the workflow API
 
-### Requirement: Provider-level Kibana client only (REQ-004)
+### Requirement: Provider-level Kibana client by default with scoped override (REQ-004)
 
-The resource SHALL use the provider's configured Kibana OpenAPI client for all workflow operations. The schema SHALL NOT expose a resource-local connection override block for this entity.
+The resource SHALL use the provider's configured Kibana OpenAPI client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI client for all workflow operations.
 
 #### Scenario: Standard provider configuration
 
-- GIVEN the provider is configured with Kibana access
-- WHEN the resource performs create, read, update, or delete
-- THEN all workflow API calls SHALL use that provider-level Kibana OpenAPI client
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** all workflow API calls SHALL use the provider-level Kibana OpenAPI client
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** all workflow API calls SHALL use the scoped Kibana OpenAPI client derived from that block
 
 ### Requirement: Identity and canonical `id` (REQ-005)
 

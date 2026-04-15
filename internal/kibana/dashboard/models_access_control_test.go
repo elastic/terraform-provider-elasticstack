@@ -47,7 +47,7 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		}
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		mode := kbapi.PostDashboardsJSONBodyAccessControlAccessMode("private")
+		mode := kbapi.KbnDashboardDataAccessControlAccessMode("private")
 		assert.Equal(t, &mode, apiModel.AccessMode)
 	})
 }

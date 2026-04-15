@@ -32,6 +32,12 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	var state Model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -46,7 +52,7 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -54,7 +60,7 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Update the list
 	spaceID := plan.SpaceID.ValueString()
-	updatedList, diags := kibanaoapi.UpdateList(ctx, client, spaceID, *updateReq)
+	updatedList, diags := kibanaoapi.UpdateList(ctx, oapiClient, spaceID, *updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -70,7 +76,7 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 		Id: updatedList.Id,
 	}
 
-	list, diags := kibanaoapi.GetList(ctx, client, spaceID, readParams)
+	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

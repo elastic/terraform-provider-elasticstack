@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func GetSlo(ctx context.Context, apiClient *clients.APIClient, id, spaceID string) (*models.Slo, diag.Diagnostics) {
+func GetSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, id, spaceID string) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -55,7 +55,7 @@ func GetSlo(ctx context.Context, apiClient *clients.APIClient, id, spaceID strin
 	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHTTPError(res, "Unable to get slo with ID "+id)
 }
 
-func DeleteSlo(ctx context.Context, apiClient *clients.APIClient, sloID string, spaceID string) diag.Diagnostics {
+func DeleteSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, sloID string, spaceID string) diag.Diagnostics {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return diag.FromErr(err)
@@ -77,7 +77,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.APIClient, sloID string, 
 	return diagutil.CheckHTTPError(res, "Unable to delete slo with ID "+sloID)
 }
 
-func UpdateSlo(ctx context.Context, apiClient *clients.APIClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
+func UpdateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -120,7 +120,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.APIClient, s models.Slo, 
 	return &s, diag.Diagnostics{}
 }
 
-func CreateSlo(ctx context.Context, apiClient *clients.APIClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
+func CreateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)

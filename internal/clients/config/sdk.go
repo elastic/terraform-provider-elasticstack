@@ -18,6 +18,8 @@
 package config
 
 import (
+	"net/http"
+
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -26,8 +28,9 @@ import (
 )
 
 const (
-	esKey           string = "elasticsearch"
-	esConnectionKey string = "elasticsearch_connection"
+	esKey               string = "elasticsearch"
+	esConnectionKey     string = "elasticsearch_connection"
+	kibanaConnectionKey string = "kibana_connection"
 )
 
 func NewFromSDK(d *schema.ResourceData, version string) (Client, diag.Diagnostics) {
@@ -41,6 +44,44 @@ func NewFromSDKResource(d *schema.ResourceData, version string) (*Client, diag.D
 
 	client, diags := newFromSDK(d, version, esConnectionKey)
 	return &client, diags
+}
+
+// NewFromSDKKibanaResource builds a Kibana-scoped Client from a resource-level
+// kibana_connection block. It returns nil when the block is absent so callers can
+// fall back to the provider-level default client.
+func NewFromSDKKibanaResource(d *schema.ResourceData, version string) (*Client, diag.Diagnostics) {
+	if _, ok := d.GetOk(kibanaConnectionKey); !ok {
+		return nil, nil
+	}
+
+	ua := buildUserAgent(version)
+	base := baseConfig{
+		UserAgent: ua,
+		Header:    http.Header{"User-Agent": []string{ua}},
+	}
+
+	client := Client{
+		UserAgent: base.UserAgent,
+	}
+
+	kibanaCfg, diags := newKibanaConfigFromSDKResource(d, base)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	client.Kibana = (*kibana.Config)(&kibanaCfg)
+
+	kibanaOapiCfg, diags := newKibanaOapiConfigFromSDKResource(d, base)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
+
+	fleetCfg := kibanaOapiCfg.toFleetConfig().withEnvironmentOverrides()
+	client.Fleet = (*fleet.Config)(&fleetCfg)
+
+	return &client, nil
 }
 
 func newFromSDK(d *schema.ResourceData, version, esConfigKey string) (Client, diag.Diagnostics) {

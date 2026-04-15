@@ -35,7 +35,13 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -49,7 +55,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 
 	// Step 1: Bootstrap create using ENDPOINT_INTEGRATION_CONFIG input type
 	bootstrapReq := buildBootstrapRequest(&planModel)
-	bootstrapPolicy, d := fleetclient.CreateDefendPackagePolicy(ctx, client, spaceID, bootstrapReq)
+	bootstrapPolicy, d := fleetclient.CreateDefendPackagePolicy(ctx, fleetClient, spaceID, bootstrapReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -90,7 +96,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
 
-	_, d = fleetclient.UpdateDefendPackagePolicy(ctx, client, bootstrapPolicy.Id, spaceID, finalizeReq)
+	_, d = fleetclient.UpdateDefendPackagePolicy(ctx, fleetClient, bootstrapPolicy.Id, spaceID, finalizeReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -98,7 +104,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 
 	// The PUT response does not include spaceIds, so do a GET to retrieve the
 	// full policy state (including spaceIds and the server-managed artifact_manifest).
-	finalPolicy, d := fleetclient.GetDefendPackagePolicy(ctx, client, bootstrapPolicy.Id, spaceID)
+	finalPolicy, d := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, bootstrapPolicy.Id, spaceID)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return

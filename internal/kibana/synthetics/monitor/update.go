@@ -27,11 +27,6 @@ import (
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
@@ -39,7 +34,18 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
 	if response.Diagnostics.HasError() {
 		return
 	}

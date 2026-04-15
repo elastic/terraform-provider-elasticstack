@@ -38,13 +38,19 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	feat, diags := r.buildFeatures(ctx)
+	feat, diags := r.buildFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -69,7 +75,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Create package policy with appropriate space context
-	policy, diags := fleet.CreatePackagePolicy(ctx, client, spaceID, body)
+	policy, diags := fleet.CreatePackagePolicy(ctx, fleetClient, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -101,7 +107,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
+	pkg, diags := getPackageInfo(ctx, fleetClient, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

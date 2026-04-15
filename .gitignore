@@ -45,3 +45,6 @@ certs
 .ci/.gpg_*
 .ci/.github_*
 .terraform.lock.hcl
+
+# Custom linter performance measurement artifacts
+analysis/lint-perf-output/

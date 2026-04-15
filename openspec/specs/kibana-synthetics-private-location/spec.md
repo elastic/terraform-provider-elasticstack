@@ -93,15 +93,19 @@ The resource SHALL support Terraform import using `ImportStatePassthroughID`. On
 - WHEN import runs
 - THEN the provider SHALL return an error diagnostic describing the required format
 
-### Requirement: Provider-level Kibana legacy client only (REQ-005)
+### Requirement: Provider-level default Kibana legacy client with optional scoped override (REQ-005)
 
-The resource SHALL use the provider's configured Kibana legacy client for create, read, and delete. The resource SHALL NOT support a resource-level connection override block.
+The resource SHALL use the provider's configured Kibana legacy client by default for create, read, and delete. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana legacy client for create, read, and delete.
 
 #### Scenario: Standard provider connection
 
-- GIVEN the provider is configured with Kibana access
-- WHEN the resource performs create, read, or delete
-- THEN all API operations SHALL use the provider-level Kibana legacy client
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** all private location API operations SHALL use the provider-level Kibana legacy client
+
+#### Scenario: Scoped Kibana connection
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** all private location API operations SHALL use the scoped Kibana legacy client derived from that block
 
 ### Requirement: Update not supported (REQ-006)
 

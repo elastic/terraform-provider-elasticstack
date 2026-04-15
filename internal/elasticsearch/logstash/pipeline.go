@@ -201,7 +201,11 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -241,7 +245,11 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -304,7 +312,11 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

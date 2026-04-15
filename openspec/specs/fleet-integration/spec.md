@@ -102,13 +102,17 @@ When the `name` attribute changes, the resource SHALL require replacement. When 
 
 ### Requirement: Connection (REQ-008)
 
-The resource and data source SHALL use the provider-level Fleet client obtained via `clients.ConvertProviderData`. No resource-level connection override is supported.
+The resource and data source SHALL use the provider-level Fleet client obtained from provider configuration by default. When `kibana_connection` is configured on the resource or data source, the entity SHALL resolve an effective scoped client from that block and SHALL use the Fleet client derived from the scoped connection for the API call.
 
-#### Scenario: Provider client is used
+#### Scenario: Provider Fleet client used by default
 
-- GIVEN a configured provider
-- WHEN any CRUD or read operation runs
-- THEN the Fleet client SHALL be obtained from the provider configuration
+- **WHEN** `kibana_connection` is not configured on the resource or data source
+- **THEN** the entity SHALL obtain its Fleet client from the provider configuration
+
+#### Scenario: Scoped Fleet client used when overridden
+
+- **WHEN** `kibana_connection` is configured on the resource or data source
+- **THEN** the entity SHALL obtain its effective Fleet client from the scoped connection for the read or lifecycle operation
 
 ### Requirement: Compatibility — version-gated parameters (REQ-009–REQ-010)
 

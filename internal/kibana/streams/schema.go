@@ -20,6 +20,7 @@ package streams
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -124,7 +125,10 @@ func getSchema() schema.Schema {
 				NestedObject:        getStreamQuerySchema(),
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 // getWiredConfigSchema returns the schema for wired stream configuration.

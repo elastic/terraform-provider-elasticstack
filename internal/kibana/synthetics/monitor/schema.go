@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -115,6 +116,7 @@ type tfBrowserMonitorFieldsV0 struct {
 
 type tfModelV0 struct {
 	ID               types.String              `tfsdk:"id"`
+	KibanaConnection types.List                `tfsdk:"kibana_connection"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
@@ -277,7 +279,10 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: retestOnFailureDescription,
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 func browserMonitorFieldsSchema() schema.Attribute {
@@ -669,6 +674,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		ICMP:             icmp,
 		Browser:          browser,
 		RetestOnFailure:  v.RetestOnFailure,
+		KibanaConnection: v.KibanaConnection,
 	}, dg
 }
 
@@ -1061,7 +1067,7 @@ func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
 	}
 }
 
-func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.APIClient) diag.Diagnostics {
+func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
 	if typeutils.IsKnown(v.Labels) {
 		isSupported, sdkDiags := client.EnforceMinVersion(ctx, MinLabelsVersion)
 		diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)

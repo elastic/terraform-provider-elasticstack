@@ -37,7 +37,7 @@ func NewEnrichPolicyDataSource() datasource.DataSource {
 }
 
 type enrichPolicyDataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (d *enrichPolicyDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -45,7 +45,7 @@ func (d *enrichPolicyDataSource) Metadata(_ context.Context, req datasource.Meta
 }
 
 func (d *enrichPolicyDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	d.client = client
 }
@@ -104,7 +104,7 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	policyName := data.Name.ValueString()
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
+	client, diags := d.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

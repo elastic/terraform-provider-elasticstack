@@ -34,7 +34,13 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	apiClient, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,7 +52,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

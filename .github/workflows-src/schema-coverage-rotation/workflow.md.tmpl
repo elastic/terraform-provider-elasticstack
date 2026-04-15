@@ -13,14 +13,18 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/compute_issue_slots.inline.js
 engine:
-  id: copilot
-  model: "gpt-5.4"
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
   issues: read
   pull-requests: read
   actions: read
 tools:
+  timeout: 300
   repo-memory:
     - id: schema-coverage-rotation
       file-glob: ["memory/schema-coverage-rotation/schema-coverage.json"]
@@ -41,7 +45,7 @@ safe-outputs:
     max: 3
     github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
 network:
-  allowed: [defaults, node, go]
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
 steps:
@@ -86,54 +90,37 @@ The workflow reached this point only because `issue_slots_available` is non-zero
 ## Required inputs and references
 
 - Skill instructions: `.agents/skills/schema-coverage/SKILL.md`
-- Provider entity sources of truth:
-  - `docs/resources/*.md` for resources
-  - `docs/data-sources/*.md` for data sources
-- Bootstrap memory seed: `.github/aw/memory/schema-coverage.json`
-- Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
 
 ## Repository toolchain
 
 Deterministic workflow steps have already installed Go from `go.mod`, exported `GOROOT`, `GOPATH`, and `GOMODCACHE` for AWF, installed Node from `package.json`, and run `make setup` at the repository root. Use the resulting `go` and Node/npm tooling (including `npx openspec` when applicable) as-is for repository-local commands. Do **not** install alternate Go or Node versions, run ad hoc toolchain installers, or spend steps discovering toolchain versions.
 
-## Memory format
-
-Use this JSON object format:
-
-```json
-{
-  "resources": {
-    "elasticstack_example_resource": "2026-03-05T04:15:00Z"
-  },
-  "data-sources": {
-    "elasticstack_example_data_source": null
-  }
-}
-```
-
-Timestamp value rules:
-- RFC3339 UTC string when analyzed.
-- `null` if known but never analyzed.
-
 ## Execution steps
 
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-2. Load `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
-   - If it does not exist, initialize it from `.github/aw/memory/schema-coverage.json`.
-3. Build the current canonical entity list from docs only:
-   - Resources from `docs/resources/*.md` (exclude non-entity pages such as `index.md` if present).
-   - Data sources from `docs/data-sources/*.md`.
-   - Derive Terraform entity names from doc filenames (without extension), preserving entity type from directory (`resources` vs `data-sources`).
-   - Merge and deduplicate names within each type.
-   - Ensure discovered resources are present under `resources` with a timestamp or `null`.
-   - Ensure discovered data sources are present under `data-sources` with a timestamp or `null`.
-4. Select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities by oldest timestamp across both types (`null` first, then oldest datetime), while preserving each selected entity's type (`resource` or `data source`).
-5. For each selected entity:
+2. Build the canonical entity inventory with:
+   ```
+   go run ./scripts/schema-coverage-rotation prepare \
+     --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json
+   ```
+3. After the inventory has been prepared, select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
+   ```
+   go run ./scripts/schema-coverage-rotation select \
+     --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
+     --count ${{ needs.pre_activation.outputs.issue_slots_available }}
+   ```
+   The command prints a JSON array on stdout. Each entry has a `type` field (`"resource"` or `"data source"`) and a `name` field (the Terraform entity name). Log that exact JSON array to the job output, then use it to determine which entities to analyze and their types.
+   Reuse this exact JSON array for step 5 without mixing in non-JSON log lines.
+4. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
-   - Update the entity timestamp to the current UTC time after analysis, regardless of whether a gap exists.
-6. Persist the updated memory file to `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
-
+5. After completing analysis of all selected entities, persist all analysis timestamps in a single atomic write by running:
+   ```
+   go run ./scripts/schema-coverage-rotation record \
+     --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
+     --entities '<json>'
+   ```
+   where `<json>` is the full JSON array returned by step 3 (the `select` output), unchanged except for shell-safe quoting.
 ## Issue creation rules
 
 - Create one issue per analyzed entity only when actionable testing gaps exist.

@@ -34,7 +34,13 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -42,7 +48,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
-	pkg, diags := fleet.GetPackage(ctx, client, name, version, stateModel.SpaceID.ValueString())
+	pkg, diags := fleet.GetPackage(ctx, fleetClient, name, version, stateModel.SpaceID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

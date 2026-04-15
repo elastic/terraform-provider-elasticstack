@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"strings"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -151,7 +152,10 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 				Computed:            true,
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 func wrapInBackticks(strs []string) []string {

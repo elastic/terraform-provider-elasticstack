@@ -50,13 +50,16 @@ func NewResource() resource.Resource {
 }
 
 type integrationPolicyResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *integrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *integrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -74,13 +77,13 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	}
 }
 
-func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
-	supportsPolicyIDs, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+func (r *integrationPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
+	supportsPolicyIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsOutputID, outputIDDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputID)
+	supportsOutputID, outputIDDiags := apiClient.EnforceMinVersion(ctx, MinVersionOutputID)
 	if outputIDDiags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(outputIDDiags)
 	}

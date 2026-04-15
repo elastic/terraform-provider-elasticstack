@@ -34,7 +34,13 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
@@ -44,7 +50,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
@@ -91,13 +97,13 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	_, sdkDiags = clientkibana.UpdateSlo(ctx, r.client, apiModel, supportsMultipleGroupBy)
+	_, sdkDiags = clientkibana.UpdateSlo(ctx, apiClient, apiModel, supportsMultipleGroupBy)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	r.readAndPopulate(ctx, &plan, &response.Diagnostics)
+	r.readAndPopulate(ctx, apiClient, &plan, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

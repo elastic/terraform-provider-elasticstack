@@ -51,13 +51,13 @@ func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 	}
 	grid := makeTestGrid()
-	uid := "panel-1"
+	id := "panel-1"
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, &uid)
+	panel := buildSyntheticsMonitorsPanel(pm, grid, &id)
 
 	assert.Equal(t, kbapi.SyntheticsMonitors, panel.Type)
-	require.NotNil(t, panel.Uid)
-	assert.Equal(t, "panel-1", *panel.Uid)
+	require.NotNil(t, panel.Id)
+	assert.Equal(t, "panel-1", *panel.Id)
 	assert.Nil(t, panel.Config.Filters)
 }
 
@@ -71,6 +71,33 @@ func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
 	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
 
 	assert.Nil(t, panel.Config.Filters)
+}
+
+func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
+	pm := panelModel{
+		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{
+			Title:       types.StringValue("Synthetics Monitors"),
+			Description: types.StringValue("Shows the production monitors"),
+			HideTitle:   types.BoolValue(true),
+			HideBorder:  types.BoolValue(false),
+			View:        types.StringValue("compactView"),
+		},
+	}
+	grid := makeTestGrid()
+
+	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+
+	require.NotNil(t, panel.Config.Title)
+	require.NotNil(t, panel.Config.Description)
+	require.NotNil(t, panel.Config.HideTitle)
+	require.NotNil(t, panel.Config.HideBorder)
+	require.NotNil(t, panel.Config.View)
+	assert.Equal(t, "Synthetics Monitors", *panel.Config.Title)
+	assert.Equal(t, "Shows the production monitors", *panel.Config.Description)
+	assert.True(t, *panel.Config.HideTitle)
+	assert.False(t, *panel.Config.HideBorder)
+	assert.Equal(t, kbapi.CompactView, *panel.Config.View)
 }
 
 func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
@@ -111,7 +138,6 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 				MonitorIDs:   []syntheticsFilterItemModel{{Label: types.StringValue("M1"), Value: types.StringValue("m1")}},
 				Locations:    []syntheticsFilterItemModel{{Label: types.StringValue("L1"), Value: types.StringValue("l1")}},
 				MonitorTypes: []syntheticsFilterItemModel{{Label: types.StringValue("http"), Value: types.StringValue("http")}},
-				Statuses:     []syntheticsFilterItemModel{{Label: types.StringValue("Up"), Value: types.StringValue("up")}},
 			},
 		},
 	}
@@ -125,16 +151,15 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 	assert.NotNil(t, panel.Config.Filters.MonitorIds)
 	assert.NotNil(t, panel.Config.Filters.Locations)
 	assert.NotNil(t, panel.Config.Filters.MonitorTypes)
-	assert.NotNil(t, panel.Config.Filters.Statuses)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // populateSyntheticsMonitorsFromAPI (read path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-// makeSyntheticsPanel builds a KbnDashboardPanelSyntheticsMonitors for use in tests.
-func makeSyntheticsPanel() kbapi.KbnDashboardPanelSyntheticsMonitors {
-	return kbapi.KbnDashboardPanelSyntheticsMonitors{
+// makeSyntheticsPanel builds a KbnDashboardPanelTypeSyntheticsMonitors for use in tests.
+func makeSyntheticsPanel() kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
+	return kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
 		Type: kbapi.SyntheticsMonitors,
 	}
 }
@@ -171,10 +196,6 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -189,6 +210,31 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 	require.Len(t, pm.SyntheticsMonitorsConfig.Filters.Projects, 1)
 	assert.Equal(t, "My Project", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Label.ValueString())
 	assert.Equal(t, "proj-1", pm.SyntheticsMonitorsConfig.Filters.Projects[0].Value.ValueString())
+}
+
+// On import with display settings returned from the API, config is populated.
+func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testing.T) {
+	pm := &panelModel{}
+	apiPanel := makeSyntheticsPanel()
+	title := "Synthetics Monitors"
+	description := "Shows the production monitors"
+	hideTitle := true
+	hideBorder := false
+	view := kbapi.CompactView
+	apiPanel.Config.Title = &title
+	apiPanel.Config.Description = &description
+	apiPanel.Config.HideTitle = &hideTitle
+	apiPanel.Config.HideBorder = &hideBorder
+	apiPanel.Config.View = &view
+
+	populateSyntheticsMonitorsFromAPI(pm, nil, apiPanel)
+
+	require.NotNil(t, pm.SyntheticsMonitorsConfig)
+	assert.Equal(t, "Synthetics Monitors", pm.SyntheticsMonitorsConfig.Title.ValueString())
+	assert.Equal(t, "Shows the production monitors", pm.SyntheticsMonitorsConfig.Description.ValueString())
+	assert.True(t, pm.SyntheticsMonitorsConfig.HideTitle.ValueBool())
+	assert.False(t, pm.SyntheticsMonitorsConfig.HideBorder.ValueBool())
+	assert.Equal(t, "compactView", pm.SyntheticsMonitorsConfig.View.ValueString())
 }
 
 // Null-preservation: prior state has no config block; API returns filters.
@@ -218,10 +264,6 @@ func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -261,10 +303,6 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -310,10 +348,6 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -358,10 +392,6 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`

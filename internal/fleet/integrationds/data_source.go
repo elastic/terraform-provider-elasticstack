@@ -36,13 +36,16 @@ func NewDataSource() datasource.DataSource {
 }
 
 type integrationDataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (d *integrationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	d.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	d.client = factory
 }
 
 func (d *integrationDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

@@ -90,13 +90,17 @@ When `policy_id` changes (e.g. a user provides an explicit value that differs fr
 
 ### Requirement: Connection (REQ-008)
 
-The resource SHALL use the provider-level Fleet client obtained via `clients.ConvertProviderData`. No resource-level connection override is supported.
+The resource SHALL use the provider-level Fleet client obtained from provider configuration by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the Fleet client derived from the scoped connection for all CRUD operations.
 
-#### Scenario: Provider client is used
+#### Scenario: Provider Fleet client used by default
 
-- GIVEN a configured provider
-- WHEN any CRUD or read operation runs
-- THEN the Fleet client SHALL be obtained from the provider configuration
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** the resource SHALL obtain its Fleet client from the provider configuration
+
+#### Scenario: Scoped Fleet client used when overridden
+
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** the resource SHALL obtain its effective Fleet client from the scoped connection for create, read, update, and delete
 
 ### Requirement: Compatibility — agent_policy_ids (REQ-009)
 

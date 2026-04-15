@@ -19,6 +19,7 @@ package apikey_test
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -39,6 +40,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceSecurityAPIKeyFromSDK/no_expiration/main.tf
+var testAccResourceSecurityAPIKeyFromSDKConfig string
 
 func TestAccResourceSecurityAPIKey(t *testing.T) {
 	// generate a random name
@@ -327,7 +331,7 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 
 func SkipWhenAPIKeysAreNotSupportedOrRestrictionsAreSupported(minAPIKeySupportedVersion *version.Version, minRestrictionSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return false, err
 		}
@@ -358,7 +362,10 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				Config:   testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName),
+				Config:   testAccResourceSecurityAPIKeyFromSDKConfig,
+				ConfigVariables: config.Variables{
+					"api_key_name": config.StringVariable(apiKeyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),
@@ -396,31 +403,8 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 	})
 }
 
-func testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_api_key" "test" {
-  name = "%s"
-
-  role_descriptors = jsonencode({
-    role-a = {
-      cluster = ["all"]
-      indices = [{
-        names = ["index-a*"]
-        privileges = ["read"]
-        allow_restricted_indices = false
-      }]
-	}
-  })
-}
-	`, apiKeyName)
-}
-
 func checkResourceSecurityAPIKeyDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

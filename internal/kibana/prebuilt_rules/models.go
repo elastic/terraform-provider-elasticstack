@@ -25,6 +25,7 @@ import (
 type prebuiltRuleModel struct {
 	ID                    types.String `tfsdk:"id"`
 	SpaceID               types.String `tfsdk:"space_id"`
+	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
 	RulesInstalled        types.Int64  `tfsdk:"rules_installed"`
 	RulesNotInstalled     types.Int64  `tfsdk:"rules_not_installed"`
 	RulesNotUpdated       types.Int64  `tfsdk:"rules_not_updated"`

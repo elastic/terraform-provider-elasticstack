@@ -42,7 +42,7 @@ import (
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
 
-//go:embed testdata/TestAccResourceOutputElasticsearchFromSDK/create/output.tf
+//go:embed testdata/TestAccResourceOutputElasticsearchFromSDK/create/main.tf
 var sdkCreateTestConfig string
 
 func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
@@ -151,7 +151,7 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceOutputLogstashFromSDK/create/output.tf
+//go:embed testdata/TestAccResourceOutputLogstashFromSDK/create/main.tf
 var logstashSDKCreateTestConfig string
 
 func TestAccResourceOutputLogstashFromSDK(t *testing.T) {

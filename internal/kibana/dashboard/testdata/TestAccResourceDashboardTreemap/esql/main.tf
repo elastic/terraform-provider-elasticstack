@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -27,10 +27,10 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
 
     treemap_config = {
-      title       = "ESQL Treemap"
-      description = "Treemap visualization using ES|QL"
+      title       = ""
+      description = ""
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type  = "esql"
         query = "FROM metrics-* | KEEP host.name, bytes | LIMIT 50"
       })
@@ -39,7 +39,19 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_by_json = jsonencode([
         {
-          column      = "host.name"
+          column = "host.name"
+          format = {
+            type = "number"
+          }
+          color = {
+            mode    = "categorical"
+            palette = "default"
+            mapping = []
+            unassigned = {
+              type  = "color_code"
+              value = "#D3DAE6"
+            }
+          }
           collapse_by = "avg"
         }
       ])

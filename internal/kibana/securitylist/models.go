@@ -31,21 +31,22 @@ import (
 )
 
 type Model struct {
-	ID           types.String         `tfsdk:"id"`
-	SpaceID      types.String         `tfsdk:"space_id"`
-	ListID       types.String         `tfsdk:"list_id"`
-	Name         types.String         `tfsdk:"name"`
-	Description  types.String         `tfsdk:"description"`
-	Type         types.String         `tfsdk:"type"`
-	Meta         jsontypes.Normalized `tfsdk:"meta"`
-	Version      types.Int64          `tfsdk:"version"`
-	VersionID    types.String         `tfsdk:"version_id"`
-	Immutable    types.Bool           `tfsdk:"immutable"`
-	CreatedAt    types.String         `tfsdk:"created_at"`
-	CreatedBy    types.String         `tfsdk:"created_by"`
-	UpdatedAt    types.String         `tfsdk:"updated_at"`
-	UpdatedBy    types.String         `tfsdk:"updated_by"`
-	TieBreakerID types.String         `tfsdk:"tie_breaker_id"`
+	ID               types.String         `tfsdk:"id"`
+	KibanaConnection types.List           `tfsdk:"kibana_connection"`
+	SpaceID          types.String         `tfsdk:"space_id"`
+	ListID           types.String         `tfsdk:"list_id"`
+	Name             types.String         `tfsdk:"name"`
+	Description      types.String         `tfsdk:"description"`
+	Type             types.String         `tfsdk:"type"`
+	Meta             jsontypes.Normalized `tfsdk:"meta"`
+	Version          types.Int64          `tfsdk:"version"`
+	VersionID        types.String         `tfsdk:"version_id"`
+	Immutable        types.Bool           `tfsdk:"immutable"`
+	CreatedAt        types.String         `tfsdk:"created_at"`
+	CreatedBy        types.String         `tfsdk:"created_by"`
+	UpdatedAt        types.String         `tfsdk:"updated_at"`
+	UpdatedBy        types.String         `tfsdk:"updated_by"`
+	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
 
 // toCreateRequest converts the Terraform model to API create request

@@ -78,7 +78,7 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Da
 	var data Data
 	var diags diag.Diagnostics
 
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateData.ElasticsearchConnection, r.client)
+	client, fwDiags := r.client.GetElasticsearchClient(ctx, stateData.ElasticsearchConnection)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return data, diags

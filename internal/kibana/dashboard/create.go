@@ -35,8 +35,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get the Kibana client
-	kibanaClient, err := r.client.GetKibanaOapiClient()
+	kibanaClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
 		return
@@ -68,7 +74,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	planModel.DashboardID = types.StringValue(createResp.JSON201.Id)
 
 	planPanels := planModel.Panels
-	readModel, diags := r.read(ctx, planModel)
+	readModel, diags := r.read(ctx, client, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -79,7 +85,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	alignXYChartXAxisScaleFromPlanPanels(planPanels, readModel.Panels)
+	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)

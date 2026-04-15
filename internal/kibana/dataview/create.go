@@ -35,20 +35,26 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	body, diags := planModel.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	spaceID := planModel.SpaceID.ValueString()
-	dataView, diags := createOrReconcileManagedDataView(ctx, client, spaceID, body)
+	dataView, diags := createOrReconcileManagedDataView(ctx, oapiClient, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -66,11 +72,11 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 func createOrReconcileManagedDataView(
 	ctx context.Context,
-	client *kibanaoapi.Client,
+	oapiClient *kibanaoapi.Client,
 	spaceID string,
 	body kbapi.DataViewsCreateDataViewRequestObject,
 ) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
-	dataView, createDiags := kibanaoapi.CreateDataView(ctx, client, spaceID, body)
+	dataView, createDiags := kibanaoapi.CreateDataView(ctx, oapiClient, spaceID, body)
 	if !createDiags.HasError() {
 		return dataView, nil
 	}
@@ -79,7 +85,7 @@ func createOrReconcileManagedDataView(
 		return nil, createDiags
 	}
 
-	recoveredDataView, readDiags := kibanaoapi.GetDataView(ctx, client, spaceID, *body.DataView.Id)
+	recoveredDataView, readDiags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, *body.DataView.Id)
 	if readDiags.HasError() || recoveredDataView == nil {
 		return nil, createDiags
 	}

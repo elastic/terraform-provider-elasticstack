@@ -23,6 +23,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -90,6 +91,7 @@ func ResourceSpace() *schema.Resource {
 			Computed:     true,
 			ValidateFunc: validation.StringInSlice([]string{"security", "oblt", "es", "classic"}, false),
 		},
+		"kibana_connection": providerSchema.GetKibanaEntityConnectionSchema(),
 	}
 
 	return &schema.Resource{
@@ -109,7 +111,11 @@ func ResourceSpace() *schema.Resource {
 }
 
 func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -185,7 +191,11 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 }
 
 func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -235,7 +245,11 @@ func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag
 }
 
 func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

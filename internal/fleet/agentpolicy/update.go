@@ -34,13 +34,19 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	feat, diags := r.buildFeatures(ctx)
+	feat, diags := r.buildFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -60,7 +66,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Read current policy to get existing AgentFeatures (so we can preserve other features)
-	currentPolicy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
+	currentPolicy, diags := fleet.GetAgentPolicy(ctx, fleetClient, policyID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -80,7 +86,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 
 	// Update using the operational space from STATE
 	// The API will handle adding/removing the policy from spaces based on space_ids in body
-	policy, diags := fleet.UpdateAgentPolicy(ctx, client, policyID, spaceID, body)
+	policy, diags := fleet.UpdateAgentPolicy(ctx, fleetClient, policyID, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

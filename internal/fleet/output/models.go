@@ -30,6 +30,7 @@ import (
 
 type outputModel struct {
 	ID                          types.String `tfsdk:"id"`
+	KibanaConnection            types.List   `tfsdk:"kibana_connection"`
 	OutputID                    types.String `tfsdk:"output_id"`
 	Name                        types.String `tfsdk:"name"`
 	Type                        types.String `tfsdk:"type"`
@@ -77,7 +78,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.APIClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
+func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.KibanaScopedClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -100,7 +101,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 	}
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.APIClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.KibanaScopedClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -130,7 +131,7 @@ func clearRemoteElasticsearchOnlyFields(model *outputModel) {
 	model.WriteToLogsStreams = types.BoolNull()
 }
 
-func assertKafkaSupport(ctx context.Context, client *clients.APIClient) diag.Diagnostics {
+func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check minimum version requirement for Kafka output type

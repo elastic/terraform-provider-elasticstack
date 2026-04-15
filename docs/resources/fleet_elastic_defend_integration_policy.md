@@ -28,6 +28,7 @@ Manages an Elastic Defend Fleet integration policy (package policy for the `endp
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `policy_id` (String) Unique identifier of the Elastic Defend integration policy. Used as the import key.
 - `preset` (String) Elastic Defend preset configuration. Maps to `endpointConfig.preset` in the Defend API. Common values include `"NGAv1"`, `"NGAV"`, `"dataCollection"`, `"EDRComplete"`, `"EDREssential"`.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy.
@@ -388,3 +389,19 @@ Optional:
 
 - `mode` (String) Protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
 - `supported` (Boolean) Whether this protection is supported on the platform.
+
+
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.

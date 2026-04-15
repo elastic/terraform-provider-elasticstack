@@ -20,7 +20,6 @@ package apikey
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -60,7 +59,7 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 		return nil, diags
 	}
 
-	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	client, connDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return nil, diags

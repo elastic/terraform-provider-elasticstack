@@ -70,6 +70,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 - `force` (Boolean) Set to true to force the requested action.
 - `ignore_constraints` (Boolean) Set to true to ignore constraint errors during package installation.
 - `ignore_mapping_update_errors` (Boolean) Set to true to ignore mapping update errors during package installation.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `prerelease` (Boolean) Set to true to allow installation of prerelease (beta, non-GA) packages.
 - `skip_data_stream_rollover` (Boolean) Set to true to skip data stream rollover during package installation.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
@@ -78,3 +79,16 @@ resource "elasticstack_fleet_integration" "test_integration" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.

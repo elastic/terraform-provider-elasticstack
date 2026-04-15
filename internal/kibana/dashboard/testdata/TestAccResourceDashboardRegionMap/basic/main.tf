@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -28,9 +28,9 @@ resource "elasticstack_kibana_dashboard" "test" {
     region_map_config = {
       title       = "Sample Region Map"
       description = "Test region map visualization"
-      dataset_json = jsonencode({
-        type  = "index"
-        index = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
 
         time_field = "@timestamp"
       })

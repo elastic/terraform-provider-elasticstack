@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
@@ -68,7 +67,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		return diags
 	}
 
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, fwDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -147,7 +146,7 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	datafeedStats *models.DatafeedStats,
 ) (*MLDatafeedStateData, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -192,7 +191,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, da
 	datafeedID := data.DatafeedID.ValueString()
 	desiredState := datafeed.State(data.State.ValueString())
 	force := data.Force.ValueBool()
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -233,8 +232,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, da
 	}
 
 	// Wait for state transition to complete
-	datafeedModel := datafeed.Datafeed{ElasticsearchConnection: data.ElasticsearchConnection}
-	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, datafeedModel, r.client, datafeedID, desiredState)
+	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
 	if diags.HasError() {
 		return false, diags
 	}

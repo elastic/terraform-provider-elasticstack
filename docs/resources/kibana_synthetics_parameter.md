@@ -41,12 +41,26 @@ resource "elasticstack_kibana_synthetics_parameter" "example" {
 ### Optional
 
 - `description` (String) A description of the parameter.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `share_across_spaces` (Boolean) Whether the parameter should be shared across spaces.
 - `tags` (List of String) An array of tags to categorize the parameter.
 
 ### Read-Only
 
 - `id` (String) Generated id for the parameter.
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 ## Import
 

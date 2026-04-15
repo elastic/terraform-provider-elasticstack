@@ -34,8 +34,14 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, data.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create the rule using kbapi client
-	kbClient, err := r.client.GetKibanaOapiClient()
+	kbClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting Kibana client",
@@ -45,7 +51,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Build the create request
-	createProps, diags := data.toCreateProps(ctx, r.client)
+	createProps, diags := data.toCreateProps(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -87,7 +93,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		ResourceID: id,
 	}
 	data.ID = types.StringValue(compID.String())
-	readData, diags := r.read(ctx, id, data.SpaceID.ValueString())
+	readData, diags := r.read(ctx, client, id, data.SpaceID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -101,5 +107,6 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	readData.KibanaConnection = data.KibanaConnection
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

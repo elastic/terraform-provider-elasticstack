@@ -117,13 +117,19 @@ When `connector_type_id`, `connector_id`, or `space_id` changes, the resource SH
 
 ### Requirement: Connection (REQ-008–REQ-009)
 
-The resource SHALL use the provider's configured client by default. When the `kibana_connection` block is configured on the resource, the resource SHALL use that connection to create a Kibana client for all API calls of that instance.
+The resource SHALL use the provider's configured Kibana client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana client for all API calls of that instance.
 
-#### Scenario: Resource-scoped Kibana connection
+#### Scenario: Provider client used by default
 
-- GIVEN `kibana_connection` is set on the resource
-- WHEN any API call runs for that instance
-- THEN the client SHALL be built from that block
+- GIVEN `kibana_connection` is not configured on the resource
+- WHEN any resource API call runs
+- THEN the resource SHALL use the provider-configured Kibana client
+
+#### Scenario: Scoped Kibana connection on resource
+
+- GIVEN `kibana_connection` is configured on the resource
+- WHEN any resource API call runs
+- THEN the resource SHALL use the scoped Kibana client derived from that block
 
 ### Requirement: Compatibility — connector_id requires Kibana >= 8.8.0 (REQ-010)
 
@@ -253,10 +259,16 @@ When a single matching connector is found, the data source SHALL populate the co
 
 ### Requirement: Connection (REQ-DS-008)
 
-The data source SHALL use the provider's configured client by default. When `NewAPIClientFromSDKResource` resolves a resource-level `elasticsearch_connection` block, the data source SHALL use that scoped client for the API call.
+The data source SHALL use the provider's configured Kibana client by default. When `kibana_connection` is configured on the data source, the data source SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana client for its read operation.
 
-#### Scenario: Provider-level Kibana client
+#### Scenario: Provider client used by default for data source
 
-- GIVEN no `elasticsearch_connection` block is present
-- WHEN the API call runs
-- THEN the provider-level client SHALL be used
+- GIVEN `kibana_connection` is not configured on the data source
+- WHEN the data source read runs
+- THEN the data source SHALL use the provider-configured Kibana client
+
+#### Scenario: Scoped Kibana connection on data source
+
+- GIVEN `kibana_connection` is configured on the data source
+- WHEN the data source read runs
+- THEN the data source SHALL use the scoped Kibana client derived from that block

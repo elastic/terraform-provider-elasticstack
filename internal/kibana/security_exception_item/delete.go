@@ -35,6 +35,12 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Parse composite ID to get space_id and resource_id
 	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
 	resp.Diagnostics.Append(compIDDiags...)
@@ -42,7 +48,7 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -54,6 +60,6 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 		Id: &id,
 	}
 
-	diags = kibanaoapi.DeleteExceptionListItem(ctx, client, compID.ClusterID, params)
+	diags = kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, compID.ClusterID, params)
 	resp.Diagnostics.Append(diags...)
 }

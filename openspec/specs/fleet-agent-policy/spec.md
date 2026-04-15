@@ -145,13 +145,17 @@ Changing `policy_id` SHALL require resource replacement. Changing `sys_monitorin
 
 ### Requirement: Connection — provider client (REQ-008)
 
-The resource SHALL use the provider-level Fleet client for all API calls. There is no resource-level connection override for this resource.
+The resource SHALL use the provider-level Fleet client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the Fleet client derived from the scoped connection for all API calls.
 
-#### Scenario: Provider client used
+#### Scenario: Provider client used by default
 
-- GIVEN a valid provider configuration
-- WHEN any CRUD operation runs
-- THEN the resource SHALL obtain its Fleet client from the provider
+- WHEN `kibana_connection` is not configured on the resource
+- THEN the resource SHALL obtain its Fleet client from the provider configuration
+
+#### Scenario: Scoped Fleet client used when overridden
+
+- WHEN `kibana_connection` is configured on the resource
+- THEN the resource SHALL obtain its effective Fleet client from the scoped connection for all CRUD operations
 
 ### Requirement: Compatibility — version-gated features (REQ-009–REQ-017)
 

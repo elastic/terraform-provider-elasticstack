@@ -20,14 +20,15 @@ package streams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // upsert sends a PUT /api/streams/{name} request and reads the result back
 // into a new model. It is shared by Create and Update.
-func (r *Resource) upsert(ctx context.Context, planModel streamModel, diags *diag.Diagnostics) *streamModel {
-	kibanaClient, err := r.client.GetKibanaOapiClient()
+func (r *Resource) upsert(ctx context.Context, apiClient *clients.KibanaScopedClient, planModel streamModel, diags *diag.Diagnostics) *streamModel {
+	kibanaClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana client", err.Error())
 		return nil
@@ -47,7 +48,7 @@ func (r *Resource) upsert(ctx context.Context, planModel streamModel, diags *dia
 		return nil
 	}
 
-	readModel, readDiags := r.read(ctx, planModel)
+	readModel, readDiags := r.read(ctx, apiClient, planModel)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return nil

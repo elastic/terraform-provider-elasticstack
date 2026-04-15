@@ -35,8 +35,14 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	prevPanels := stateModel.Panels
-	readModel, diags := r.read(ctx, stateModel)
+	readModel, diags := r.read(ctx, client, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -48,13 +54,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	alignXYChartXAxisScaleFromPlanPanels(prevPanels, readModel.Panels)
+	alignDashboardStateFromPlanPanels(prevPanels, readModel.Panels)
 
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
 }
 
-func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
 	// Parse composite ID
 	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {
@@ -65,7 +71,7 @@ func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashbo
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, err := r.client.GetKibanaOapiClient()
+	kibanaClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana client", err.Error())
 		return nil, diags
