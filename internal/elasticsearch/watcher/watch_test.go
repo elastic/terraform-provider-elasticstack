@@ -233,9 +233,11 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
-
-		if res.StatusCode != http.StatusNotFound {
+		status := res.StatusCode
+		if err := res.Body.Close(); err != nil {
+			return fmt.Errorf("close GetWatch response body: %w", err)
+		}
+		if status != http.StatusNotFound {
 			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
 		}
 	}
