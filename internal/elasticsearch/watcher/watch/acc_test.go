@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -56,6 +57,7 @@ func TestAccResourceWatch(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_watch.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
@@ -63,6 +65,8 @@ func TestAccResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionAlways),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsEmpty),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "5000"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_watch.test", "transform"),
 				),
 			},
 			{
@@ -79,6 +83,23 @@ func TestAccResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataExample),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "transform", watchTransformExpected),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
+				),
+			},
+			{
+				// Revert to minimal (create) config — verify defaults are restored and optional fields cleared.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", watchInputNoneExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionAlways),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "5000"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_watch.test", "transform"),
 				),
 			},
 		},
@@ -99,8 +120,9 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 				// Create the watch with the last provider version where the watch resource was built on the SDK.
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
-						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.14.3",
+						Source: "elastic/elasticstack",
+						// last SDK-backed release — do not bump without re-checking upgrade compatibility
+						VersionConstraint: "<= 0.14.3",
 					},
 				},
 				Config: testAccWatchCreateFromSDK(watchID),
@@ -114,6 +136,11 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
@@ -162,6 +189,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
+		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
