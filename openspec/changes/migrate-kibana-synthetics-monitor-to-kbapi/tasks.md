@@ -19,7 +19,7 @@
 
 - [x] 4.1 Rewrite `schema_test.go` fixtures to use generated types or test-only wire helpers; keep scenario coverage for all four monitor kinds, SSL branches, alerts, and private locations where present today.
 - [x] 4.2 Run `go test ./internal/kibana/synthetics/monitor/...` and fix regressions.
-- [ ] 4.3 Run monitor acceptance tests in `acc_test.go` (HTTP/TCP/ICMP/browser, non-default space, labels) against a stack meeting version assumptions; update skips only if OpenAPI behavior documents a new minimum version.
+- [x] 4.3 Run monitor acceptance tests in `acc_test.go` (HTTP/TCP/ICMP/browser, non-default space, labels) against a stack meeting version assumptions; update skips only if OpenAPI behavior documents a new minimum version.
 - [x] 4.4 Run `make build` and `make check-openspec` (or `make check-lint` if that is the project gate for OpenSpec).
 
 ## 5. Cleanup
