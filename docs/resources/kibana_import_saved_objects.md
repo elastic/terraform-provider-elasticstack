@@ -35,6 +35,8 @@ EOT
 
 ### Optional
 
+- `compatibility_mode` (Boolean) Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions. Use this option only if you encounter issues with imported saved objects. Cannot be used with create_new_copies.
+- `create_new_copies` (Boolean) Creates copies of saved objects, regenerates each object ID, and resets the origin. When used, potential conflict errors are avoided. Cannot be used with overwrite or compatibility_mode.
 - `ignore_import_errors` (Boolean) If set to true, errors during the import process will not fail the configuration application
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `overwrite` (Boolean) Overwrites saved objects when they already exist. When used, potential conflict errors are automatically resolved by overwriting the destination object.
