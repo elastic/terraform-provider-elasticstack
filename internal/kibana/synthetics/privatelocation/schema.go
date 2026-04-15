@@ -231,11 +231,17 @@ func geoConfigSchema() schema.Attribute {
 				Optional:            false,
 				Required:            true,
 				MarkdownDescription: "The latitude of the location.",
+				PlanModifiers: []planmodifier.Float64{
+					Float32Precision(),
+				},
 			},
 			"lon": schema.Float64Attribute{
 				Optional:            false,
 				Required:            true,
 				MarkdownDescription: "The longitude of the location.",
+				PlanModifiers: []planmodifier.Float64{
+					Float32Precision(),
+				},
 			},
 		},
 	}
