@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package watcher_test
+package watch_test
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -48,6 +50,9 @@ const (
 
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
+
+//go:embed testdata/TestAccResourceWatchFromSDK/upgrade/main.tf
+var watchFromSDKCreateConfig string
 
 // canonicalJSONBytes re-encodes JSON so semantically equivalent documents compare equal (key order, spacing).
 func canonicalJSONBytes(raw string) ([]byte, error) {
@@ -110,6 +115,7 @@ func TestResourceWatch(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(watchResourceName, "id"),
 					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
 					resource.TestCheckResourceAttr(watchResourceName, "active", "false"),
 					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
@@ -118,6 +124,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsEmpty),
 					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataEmpty),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "5000"),
+					resource.TestCheckNoResourceAttr(watchResourceName, "transform"),
 				),
 			},
 			{
@@ -223,8 +230,55 @@ func TestResourceWatch_defaultsOmitted(t *testing.T) {
 	})
 }
 
-func checkResourceWatchDestroy(s *terraform.State) error {
+// TestAccResourceWatchFromSDK verifies that state created by the last SDK-based
+// provider release (v0.14.3) can be read and updated without recreation by the
+// current Plugin Framework implementation.
+func TestAccResourceWatchFromSDK(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the watch with the last provider version where the watch resource was built on the SDK.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source: "elastic/elasticstack",
+						// last SDK-backed release — do not bump without re-checking upgrade compatibility
+						VersionConstraint: "<= 0.14.3",
+					},
+				},
+				Config: watchFromSDKCreateConfig,
+				ConfigVariables: config.Variables{
+					"watch_id": config.StringVariable(watchID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
+				),
+			},
+			{
+				// Read and verify with the current PF implementation — must not force recreation.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
+				),
+			},
+		},
+	})
+}
+
+func checkResourceWatchDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
 		return err
