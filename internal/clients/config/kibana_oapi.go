@@ -36,7 +36,7 @@ func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana
 	config := base.toKibanaOapiConfig()
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return config, nil
+		return config.withEnvironmentOverrides(), nil
 	}
 
 	kibConnList, ok := kibConn.([]any)
