@@ -86,8 +86,8 @@ func Test_roundtrip(t *testing.T) {
 			var geo *tfGeoConfigV0
 			if tt.geo != nil {
 				geo = &tfGeoConfigV0{
-					Lat: types.Float64Value(float64(tt.geo.Lat)),
-					Lon: types.Float64Value(float64(tt.geo.Lon)),
+					Lat: NewFloat32PrecisionValue(float64(tt.geo.Lat)),
+					Lon: NewFloat32PrecisionValue(float64(tt.geo.Lon)),
 				}
 			}
 			model := tfModelV0{

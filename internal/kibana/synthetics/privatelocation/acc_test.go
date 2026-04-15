@@ -73,7 +73,13 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				// The Kibana API stores geo coordinates as float32. On import, there is no
+				// prior plan to restore the user-supplied float64 precision, so the imported
+				// state reflects the float32-degraded values (e.g. 42.42 → 42.41999816894531).
+				// The Float32PrecisionType custom type ensures subsequent plans detect no diff,
+				// but the raw state values differ from what was set during create.
+				ImportStateVerifyIgnore: []string{"geo.lat", "geo.lon"},
+				ConfigDirectory:         acctest.NamedTestCaseDirectory("import"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},

@@ -64,6 +64,15 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		}
 	}
 
+	// Preserve the planned geo values before the API call. The Kibana API stores geo
+	// coordinates as float32 and returns float32-precision values on read (e.g.
+	// 42.42 → 42.41999816894531). If we blindly set state from the API response, the
+	// state value differs from the plan value, which Terraform rejects as an
+	// inconsistent result. We use the planned values (from config) so state matches
+	// the plan. The Float32PrecisionType custom type handles subsequent semantic
+	// equality checks so that subsequent plans detect no diff.
+	plannedGeo := plan.Geo
+
 	body := privateLocationToCreateBody(plan)
 	result, dg := kibanaoapi.CreatePrivateLocation(ctx, kibanaClient, spaceID, body)
 	response.Diagnostics.Append(dg...)
@@ -72,6 +81,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	plan = privateLocationFromAPI(*result, spaceID, plan.KibanaConnection)
+	// Restore geo from plan to keep state consistent with what was planned.
+	plan.Geo = plannedGeo
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

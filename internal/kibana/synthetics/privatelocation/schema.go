@@ -180,6 +180,8 @@ func tagsFromAdditionalProperties(loc kbapi.SyntheticsGetPrivateLocation) []stri
 }
 
 // geoFromAPIResponse converts the nested geo struct from the API response to a tfGeoConfigV0.
+// The API returns float32 values, which we wrap in Float32PrecisionValue so that Terraform
+// treats them as semantically equal to the user-supplied float64 config values.
 func geoFromAPIResponse(geo *struct {
 	Lat float32 `json:"lat"`
 	Lon float32 `json:"lon"`
@@ -188,8 +190,8 @@ func geoFromAPIResponse(geo *struct {
 		return nil
 	}
 	return &tfGeoConfigV0{
-		Lat: types.Float64Value(float64(geo.Lat)),
-		Lon: types.Float64Value(float64(geo.Lon)),
+		Lat: NewFloat32PrecisionValue(float64(geo.Lat)),
+		Lon: NewFloat32PrecisionValue(float64(geo.Lon)),
 	}
 }
 
@@ -230,24 +232,20 @@ func geoConfigSchema() schema.Attribute {
 			"lat": schema.Float64Attribute{
 				Optional:            false,
 				Required:            true,
+				CustomType:          Float32PrecisionType{},
 				MarkdownDescription: "The latitude of the location.",
-				PlanModifiers: []planmodifier.Float64{
-					Float32Precision(),
-				},
 			},
 			"lon": schema.Float64Attribute{
 				Optional:            false,
 				Required:            true,
+				CustomType:          Float32PrecisionType{},
 				MarkdownDescription: "The longitude of the location.",
-				PlanModifiers: []planmodifier.Float64{
-					Float32Precision(),
-				},
 			},
 		},
 	}
 }
 
 type tfGeoConfigV0 struct {
-	Lat types.Float64 `tfsdk:"lat"`
-	Lon types.Float64 `tfsdk:"lon"`
+	Lat Float32PrecisionValue `tfsdk:"lat"`
+	Lon Float32PrecisionValue `tfsdk:"lon"`
 }
