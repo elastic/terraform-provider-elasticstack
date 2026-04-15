@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -41,7 +42,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -75,11 +76,6 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		}
 	}
 
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, spaceID, resourceID)
-
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`", resourceID), err.Error())
-		return
-	}
-
+	dg = kibanaoapi.DeletePrivateLocation(ctx, kibanaClient, spaceID, resourceID)
+	response.Diagnostics.Append(dg...)
 }

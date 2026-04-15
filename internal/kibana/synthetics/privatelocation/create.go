@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -41,12 +42,11 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
 
-	input := plan.toPrivateLocationConfig()
 	spaceID := plan.SpaceID.ValueString()
 
 	if requiresSpaceIDMinVersion(spaceID) {
@@ -64,13 +64,14 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		}
 	}
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, spaceID, input)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`", input.Label), err.Error())
+	body := privateLocationToCreateBody(plan)
+	result, dg := kibanaoapi.CreatePrivateLocation(ctx, kibanaClient, spaceID, body)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
-	plan = toModelV0(*result, spaceID, plan.KibanaConnection)
+	plan = privateLocationFromAPI(*result, spaceID, plan.KibanaConnection)
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

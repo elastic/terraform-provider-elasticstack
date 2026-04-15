@@ -21,7 +21,7 @@ import (
 	_ "embed"
 	"strings"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -99,17 +99,97 @@ func privateLocationSchema() schema.Schema {
 		}}
 }
 
-func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
-	var geoConfig *kbapi.SyntheticGeoConfig
-	if m.Geo != nil {
-		geoConfig = m.Geo.toSyntheticGeoConfig()
-	}
-
-	return kbapi.PrivateLocationConfig{
+// privateLocationToCreateBody converts a Terraform model into a kbapi create request body.
+// Tags are passed as *[]string and geo coordinates are explicitly converted from float64 to float32.
+func privateLocationToCreateBody(m tfModelV0) kbapi.PostPrivateLocationJSONRequestBody {
+	body := kbapi.PostPrivateLocationJSONRequestBody{
 		Label:         m.Label.ValueString(),
 		AgentPolicyId: m.AgentPolicyID.ValueString(),
-		Tags:          synthetics.ValueStringSlice(m.Tags),
-		Geo:           geoConfig,
+	}
+
+	tags := synthetics.ValueStringSlice(m.Tags)
+	if len(tags) > 0 {
+		body.Tags = &tags
+	}
+
+	if m.Geo != nil {
+		body.Geo = &struct {
+			Lat float32 `json:"lat"`
+			Lon float32 `json:"lon"`
+		}{
+			Lat: float32(m.Geo.Lat.ValueFloat64()),
+			Lon: float32(m.Geo.Lon.ValueFloat64()),
+		}
+	}
+
+	return body
+}
+
+// privateLocationFromAPI maps a SyntheticsGetPrivateLocation API response onto a tfModelV0.
+// Tags are read from AdditionalProperties["tags"] when the field is not a first-class struct field.
+func privateLocationFromAPI(loc kbapi.SyntheticsGetPrivateLocation, spaceID string, kibanaConnection types.List) tfModelV0 {
+	id := ""
+	if loc.Id != nil {
+		id = *loc.Id
+	}
+
+	label := ""
+	if loc.Label != nil {
+		label = *loc.Label
+	}
+
+	agentPolicyID := ""
+	if loc.AgentPolicyId != nil {
+		agentPolicyID = *loc.AgentPolicyId
+	}
+
+	// Tags are not a first-class field on SyntheticsGetPrivateLocation; they may land
+	// in AdditionalProperties when the generated model omits them.
+	tags := tagsFromAdditionalProperties(loc)
+
+	return tfModelV0{
+		ID:               types.StringValue(id),
+		Label:            types.StringValue(label),
+		AgentPolicyID:    types.StringValue(agentPolicyID),
+		SpaceID:          types.StringValue(spaceID),
+		Tags:             synthetics.StringSliceValue(tags),
+		Geo:              geoFromAPIResponse(loc.Geo),
+		KibanaConnection: kibanaConnection,
+	}
+}
+
+// tagsFromAdditionalProperties extracts the tags slice from the API response.
+// The generated OpenAPI struct does not have a first-class Tags field, so tags are
+// stored in AdditionalProperties["tags"] as []interface{}.
+func tagsFromAdditionalProperties(loc kbapi.SyntheticsGetPrivateLocation) []string {
+	val, found := loc.Get("tags")
+	if !found || val == nil {
+		return nil
+	}
+	rawSlice, ok := val.([]any)
+	if !ok {
+		return nil
+	}
+	tags := make([]string, 0, len(rawSlice))
+	for _, v := range rawSlice {
+		if s, ok := v.(string); ok {
+			tags = append(tags, s)
+		}
+	}
+	return tags
+}
+
+// geoFromAPIResponse converts the nested geo struct from the API response to a tfGeoConfigV0.
+func geoFromAPIResponse(geo *struct {
+	Lat float32 `json:"lat"`
+	Lon float32 `json:"lon"`
+}) *tfGeoConfigV0 {
+	if geo == nil {
+		return nil
+	}
+	return &tfGeoConfigV0{
+		Lat: types.Float64Value(float64(geo.Lat)),
+		Lon: types.Float64Value(float64(geo.Lon)),
 	}
 }
 
@@ -130,19 +210,6 @@ func effectiveSpaceID(spaceID types.String, compositeID *clients.CompositeID) st
 		return compositeID.ClusterID
 	}
 	return s
-}
-
-func toModelV0(pLoc kbapi.PrivateLocation, spaceID string, kibanaConnection types.List) tfModelV0 {
-
-	return tfModelV0{
-		ID:               types.StringValue(pLoc.Id),
-		Label:            types.StringValue(pLoc.Label),
-		AgentPolicyID:    types.StringValue(pLoc.AgentPolicyId),
-		SpaceID:          types.StringValue(spaceID),
-		Tags:             synthetics.StringSliceValue(pLoc.Tags),
-		Geo:              fromSyntheticGeoConfig(pLoc.Geo),
-		KibanaConnection: kibanaConnection,
-	}
 }
 
 //go:embed resource-description.md
@@ -177,21 +244,4 @@ func geoConfigSchema() schema.Attribute {
 type tfGeoConfigV0 struct {
 	Lat types.Float64 `tfsdk:"lat"`
 	Lon types.Float64 `tfsdk:"lon"`
-}
-
-func (m *tfGeoConfigV0) toSyntheticGeoConfig() *kbapi.SyntheticGeoConfig {
-	return &kbapi.SyntheticGeoConfig{
-		Lat: m.Lat.ValueFloat64(),
-		Lon: m.Lon.ValueFloat64(),
-	}
-}
-
-func fromSyntheticGeoConfig(v *kbapi.SyntheticGeoConfig) *tfGeoConfigV0 {
-	if v == nil {
-		return nil
-	}
-	return &tfGeoConfigV0{
-		Lat: types.Float64Value(v.Lat),
-		Lon: types.Float64Value(v.Lon),
-	}
 }

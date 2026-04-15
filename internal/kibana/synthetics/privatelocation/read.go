@@ -19,10 +19,9 @@ package privatelocation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,7 +42,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -77,19 +76,19 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		}
 	}
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, spaceID, resourceID)
-	if err != nil {
-		var apiError *kbapi.APIError
-		if errors.As(err, &apiError) && apiError.Code == 404 {
-			response.State.RemoveResource(ctx)
-			return
-		}
-
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get private location `%s`", resourceID), err.Error())
+	result, dg := kibanaoapi.GetPrivateLocation(ctx, kibanaClient, spaceID, resourceID)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
-	state = toModelV0(*result, spaceID, state.KibanaConnection)
+	// nil result means HTTP 404 — resource no longer exists.
+	if result == nil {
+		response.State.RemoveResource(ctx)
+		return
+	}
+
+	state = privateLocationFromAPI(*result, spaceID, state.KibanaConnection)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)
