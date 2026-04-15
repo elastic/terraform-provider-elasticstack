@@ -19,12 +19,14 @@ package clients
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	elasticsearch "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	goversion "github.com/hashicorp/go-version"
@@ -116,6 +118,21 @@ func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *Ela
 	return scoped
 }
 
+// newMockScopedClient creates an ElasticsearchScopedClient whose elasticsearch
+// transport points at the given HTTP server. It bypasses the provider factory
+// to avoid environment-variable endpoint overrides in acceptance test environments.
+func newMockScopedClient(t *testing.T, srv *httptest.Server) *ElasticsearchScopedClient {
+	t.Helper()
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{srv.URL},
+		Username:  "elastic",
+		Password:  "changeme",
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, //nolint:gosec
+	})
+	require.NoError(t, err)
+	return &ElasticsearchScopedClient{elasticsearch: esClient}
+}
+
 // --- GetESClient ---
 
 func TestElasticsearchScopedClient_GetESClient_Nil(t *testing.T) {
@@ -177,6 +194,9 @@ func TestGetElasticsearchClient_WithConnection(t *testing.T) {
 	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
+	// Use the factory path to verify wiring; do not assert specific server
+	// responses because the factory may pick up ELASTICSEARCH_ENDPOINTS from
+	// the environment in CI.
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
 	require.NotNil(t, scoped)
 
@@ -239,12 +259,12 @@ func TestGetElasticsearchClientFromSDK_WithBlock(t *testing.T) {
 
 // --- ElasticsearchScopedClient version / flavor routing ---
 
-func TestElasticsearchScopedClient_ServerVersion_ViaFactory(t *testing.T) {
+func TestElasticsearchScopedClient_ServerVersion(t *testing.T) {
 	const wantVersion = "8.19.0"
 	srv := newMockElasticsearchServer(wantVersion)
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	ver, diags := scoped.ServerVersion(context.Background())
 	require.False(t, diags.HasError())
@@ -252,12 +272,12 @@ func TestElasticsearchScopedClient_ServerVersion_ViaFactory(t *testing.T) {
 	assert.Equal(t, wantVersion, ver.Original())
 }
 
-func TestElasticsearchScopedClient_ServerFlavor_ViaFactory(t *testing.T) {
+func TestElasticsearchScopedClient_ServerFlavor(t *testing.T) {
 	const wantVersion = "8.19.0"
 	srv := newMockElasticsearchServer(wantVersion)
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	flavor, diags := scoped.ServerFlavor(context.Background())
 	require.False(t, diags.HasError())
@@ -276,7 +296,7 @@ func TestElasticsearchScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 	require.NotNil(t, scoped)
 
 	// Any version gate must pass for serverless.
@@ -290,7 +310,7 @@ func TestElasticsearchScopedClient_EnforceMinVersion_Satisfied(t *testing.T) {
 	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	minVer, err := goversion.NewVersion("8.0.0")
 	require.NoError(t, err)
@@ -304,7 +324,7 @@ func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) 
 	srv := newMockElasticsearchServer("7.17.0")
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	minVer, err := goversion.NewVersion("8.0.0")
 	require.NoError(t, err)
@@ -328,7 +348,7 @@ func TestElasticsearchScopedClient_ClusterID_Valid(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	id, diags := scoped.ClusterID(context.Background())
 	require.False(t, diags.HasError())
@@ -348,7 +368,7 @@ func TestElasticsearchScopedClient_ClusterID_NA(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	id, diags := scoped.ClusterID(context.Background())
 	assert.True(t, diags.HasError(), "ClusterID must return an error when cluster_uuid is '_na_'")
@@ -367,7 +387,7 @@ func TestElasticsearchScopedClient_ClusterID_Empty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	id, diags := scoped.ClusterID(context.Background())
 	assert.True(t, diags.HasError(), "ClusterID must return an error when cluster_uuid is empty")
@@ -388,7 +408,7 @@ func TestElasticsearchScopedClient_ID_Valid(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	composite, diags := scoped.ID(context.Background(), "my-resource")
 	require.False(t, diags.HasError())
@@ -413,7 +433,7 @@ func TestElasticsearchScopedClient_ServerInfo_IsCached(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	_, diags := scoped.ServerVersion(context.Background())
 	require.False(t, diags.HasError())
@@ -438,7 +458,7 @@ func TestElasticsearchScopedClient_ServerVersion_InvalidVersion(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	scoped := newMockScopedClient(t, srv)
 
 	_, diags := scoped.ServerVersion(context.Background())
 	assert.True(t, diags.HasError(), "ServerVersion must return an error for an unparseable version string")
