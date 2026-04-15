@@ -69,7 +69,7 @@ func TestRoleIndexFieldSecurityRoundTrip(t *testing.T) {
 	assert.ElementsMatch(t, []string{"field1", "field2"}, (*idx.FieldSecurity)["grant"])
 	assert.ElementsMatch(t, []string{"secret"}, (*idx.FieldSecurity)["except"])
 	require.NotNil(t, idx.Query)
-	assert.Equal(t, `{"match_all":{}}`, *idx.Query)
+	assert.JSONEq(t, `{"match_all":{}}`, *idx.Query)
 
 	// Round-trip through JSON into SecurityRoleESIndex
 	idxJSON, err := json.Marshal(indices)
