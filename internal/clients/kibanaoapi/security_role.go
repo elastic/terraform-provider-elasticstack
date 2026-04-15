@@ -50,8 +50,8 @@ type SecurityRoleESRemoteIndex struct {
 // SecurityRoleES holds the elasticsearch section of a Kibana role.
 type SecurityRoleES struct {
 	Cluster       *[]string                    `json:"cluster,omitempty"`
-	Indices       *[]SecurityRoleESIndex        `json:"indices,omitempty"`
-	RemoteIndices *[]SecurityRoleESRemoteIndex  `json:"remote_indices,omitempty"`
+	Indices       *[]SecurityRoleESIndex       `json:"indices,omitempty"`
+	RemoteIndices *[]SecurityRoleESRemoteIndex `json:"remote_indices,omitempty"`
 	RunAs         *[]string                    `json:"run_as,omitempty"`
 }
 
