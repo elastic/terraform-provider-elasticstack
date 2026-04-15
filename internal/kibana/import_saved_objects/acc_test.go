@@ -21,8 +21,12 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+var minVersionCompatibilityMode = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccResourceImportSavedObjects(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -60,7 +64,8 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 				),
 			},
 			{
-				// Ensure compatibility_mode flag is accepted and import succeeds
+				// Ensure compatibility_mode flag is accepted and import succeeds (requires Kibana 8.6+)
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionCompatibilityMode),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("compatibility_mode"),
 				Check: resource.ComposeTestCheckFunc(
