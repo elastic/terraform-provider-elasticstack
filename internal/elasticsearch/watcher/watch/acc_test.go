@@ -271,6 +271,7 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 	})
 }
 
+
 func testAccWatchCreateFromSDK(watchID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -281,9 +282,7 @@ resource "elasticstack_elasticsearch_watch" "test" {
   watch_id = %q
   active   = false
 
-  trigger = jsonencode({
-    schedule = { cron = "0 0/1 * * * ?" }
-  })
+  trigger = jsonencode({ schedule = { cron = "0 0/1 * * * ?" } })
 }
 `, watchID)
 }

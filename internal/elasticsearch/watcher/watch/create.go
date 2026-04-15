@@ -81,19 +81,19 @@ func (r *watchResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	// Preserve the ID from state since it won't be in the plan.
-	var state Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	data.ID = state.ID
-
 	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	watchID := data.WatchID.ValueString()
+	id, sdkDiags := client.ID(ctx, watchID)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	data.ID = types.StringValue(id.String())
 
 	put, modelDiags := data.toPutModel(ctx)
 	resp.Diagnostics.Append(modelDiags...)
