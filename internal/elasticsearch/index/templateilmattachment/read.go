@@ -48,7 +48,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 
-	found, diags := readILMAttachment(ctx, &state, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	found, diags := readILMAttachment(ctx, &state, client)
 	if !found {
 		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)

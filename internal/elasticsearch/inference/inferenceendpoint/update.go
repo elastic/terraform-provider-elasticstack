@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,7 +43,7 @@ func (r *inferenceEndpointResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	client, clientDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	client, clientDiags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)

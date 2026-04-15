@@ -20,7 +20,6 @@ package datafeed
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -50,7 +49,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -63,7 +62,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	needsRestart, diags := r.maybeStopDatafeed(ctx, plan, r.client, datafeedID)
+	needsRestart, diags := r.maybeStopDatafeed(ctx, client, datafeedID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -85,7 +84,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		}
 
 		// Wait for the datafeed to reach started state
-		_, waitDiags := WaitForDatafeedState(ctx, plan, r.client, datafeedID, StateStarted)
+		_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStarted)
 		resp.Diagnostics.Append(waitDiags...)
 		if resp.Diagnostics.HasError() {
 			return

@@ -44,7 +44,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
@@ -99,16 +99,12 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 func (r *Resource) updateAliases(
 	ctx context.Context,
 	planModel tfModel,
-	client *clients.APIClient,
+	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planAliases map[string]models.IndexAlias,
 	stateAliases map[string]models.IndexAlias,
 ) diag.Diagnostics {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
-	if diags.HasError() {
-		return diags
-	}
-
+	var diags diag.Diagnostics
 	aliasesToDelete := []string{}
 	for aliasName := range stateAliases {
 		if _, ok := planAliases[aliasName]; !ok {
@@ -138,15 +134,12 @@ func (r *Resource) updateAliases(
 func (r *Resource) updateSettings(
 	ctx context.Context,
 	planModel tfModel,
-	client *clients.APIClient,
+	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planSettings map[string]any,
 	stateSettings map[string]any,
 ) diag.Diagnostics {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
-	if diags.HasError() {
-		return diags
-	}
+	var diags diag.Diagnostics
 
 	planDynamicSettings := map[string]any{}
 	stateDynamicSettings := map[string]any{}
@@ -182,15 +175,12 @@ func (r *Resource) updateSettings(
 func (r *Resource) updateMappings(
 	ctx context.Context,
 	planModel tfModel,
-	client *clients.APIClient,
+	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planMappings jsontypes.Normalized,
 	stateMappings jsontypes.Normalized,
 ) diag.Diagnostics {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
-	if diags.HasError() {
-		return diags
-	}
+	var diags diag.Diagnostics
 
 	areEqual, diags := planMappings.StringSemanticEquals(ctx, stateMappings)
 	if diags.HasError() {

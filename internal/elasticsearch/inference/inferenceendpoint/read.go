@@ -55,7 +55,7 @@ func (r *inferenceEndpointResource) read(ctx context.Context, data Data) (*Data,
 		return nil, diags
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return nil, diags
 	}

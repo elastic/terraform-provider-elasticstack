@@ -20,7 +20,6 @@ package datafeed
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -38,7 +37,7 @@ func (r *datafeedResource) read(ctx context.Context, model *Datafeed) (bool, fwd
 		return false, diags
 	}
 
-	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	client, connDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return false, diags

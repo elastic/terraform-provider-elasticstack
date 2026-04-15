@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutWatch(ctx context.Context, apiClient *clients.APIClient, watch *models.PutWatch) diag.Diagnostics {
+func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watch *models.PutWatch) diag.Diagnostics {
 	var diags diag.Diagnostics
 	watchBodyBytes, err := json.Marshal(watch.Body)
 	if err != nil {
@@ -53,7 +53,7 @@ func PutWatch(ctx context.Context, apiClient *clients.APIClient, watch *models.P
 	return diags
 }
 
-func GetWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) (*models.Watch, diag.Diagnostics) {
+func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -82,7 +82,7 @@ func GetWatch(ctx context.Context, apiClient *clients.APIClient, watchID string)
 	return &watch, diags
 }
 
-func DeleteWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) diag.Diagnostics {
+func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {

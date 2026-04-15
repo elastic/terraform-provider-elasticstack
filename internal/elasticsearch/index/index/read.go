@@ -33,7 +33,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	model, diags := readIndex(ctx, stateModel, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	model, diags := readIndex(ctx, stateModel, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -47,12 +53,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func readIndex(ctx context.Context, stateModel tfModel, defaultClient *clients.APIClient) (*tfModel, diag.Diagnostics) {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, defaultClient)
-	if diags.HasError() {
-		return nil, diags
-	}
-
+func readIndex(ctx context.Context, stateModel tfModel, client *clients.ElasticsearchScopedClient) (*tfModel, diag.Diagnostics) {
 	id, diags := stateModel.GetID()
 	if diags.HasError() {
 		return nil, diags

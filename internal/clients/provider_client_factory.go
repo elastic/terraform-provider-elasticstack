@@ -126,27 +126,81 @@ func (f *ProviderClientFactory) GetKibanaClientFromSDK(d *schema.ResourceData) (
 	return scoped, nil
 }
 
-// --- Transitional legacy Elasticsearch resolution methods ---
-//
-// These methods preserve the existing broad *APIClient behavior for
-// unconverted Elasticsearch entities. They are intentionally transitional and
-// will be replaced in the follow-up Elasticsearch typed-client phase.
+// --- Typed Elasticsearch resolution methods ---
 
-// GetElasticsearchClient resolves the effective *APIClient for a Plugin
-// Framework Elasticsearch entity, applying resource-local elasticsearch_connection
-// if present. Mirrors the behavior of the previous MaybeNewAPIClientFromFrameworkResource.
-func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esConnList types.List) (*APIClient, fwdiags.Diagnostics) {
-	return MaybeNewAPIClientFromFrameworkResource(ctx, esConnList, f.defaultClient)
+// GetElasticsearchClient resolves the effective *ElasticsearchScopedClient for
+// a Plugin Framework Elasticsearch entity. When esConnList is empty or null the
+// factory returns a typed client built from provider-level defaults. When the
+// list contains a connection block, the factory returns a new typed scoped
+// client whose Elasticsearch client is rebuilt from that scoped connection.
+func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esConnList types.List) (*ElasticsearchScopedClient, fwdiags.Diagnostics) {
+	if f == nil || f.defaultClient == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Provider not configured",
+			"Expected configured provider client factory. Please report this issue to the provider developers.",
+		)}
+	}
+
+	var esConns []config.ElasticsearchConnection
+	if diags := esConnList.ElementsAs(ctx, &esConns, true); diags.HasError() {
+		return nil, diags
+	}
+
+	if len(esConns) == 0 {
+		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
+	}
+
+	cfg, diags := config.NewFromFramework(ctx, config.ProviderConfiguration{Elasticsearch: esConns}, f.defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	esClient, err := buildEsClient(cfg)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+	}
+
+	return &ElasticsearchScopedClient{
+		elasticsearch: esClient,
+		version:       f.defaultClient.version,
+	}, nil
 }
 
-// GetElasticsearchClientFromSDK resolves the effective *APIClient for an SDK
-// Elasticsearch entity. Mirrors the behavior of the previous NewAPIClientFromSDKResource.
-func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.ResourceData, meta any) (*APIClient, diag.Diagnostics) {
-	return NewAPIClientFromSDKResource(d, meta)
+// GetElasticsearchClientFromSDK resolves the effective *ElasticsearchScopedClient
+// for an SDK Elasticsearch entity. When the elasticsearch_connection block is
+// absent from d the factory returns a typed client built from provider-level
+// defaults. When the block is configured a new typed scoped client is returned
+// with the Elasticsearch client rebuilt from the scoped connection.
+func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.ResourceData) (*ElasticsearchScopedClient, diag.Diagnostics) {
+	if f == nil || f.defaultClient == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Provider not configured",
+			Detail:   "Expected configured provider client factory. Please report this issue to the provider developers.",
+		}}
+	}
+
+	resourceConfig, diags := config.NewFromSDKResource(d, f.defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if resourceConfig == nil {
+		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
+	}
+
+	esClient, err := buildEsClient(*resourceConfig)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return &ElasticsearchScopedClient{
+		elasticsearch: esClient,
+		version:       f.defaultClient.version,
+	}, nil
 }
 
 // GetDefaultClient returns the provider-level default *APIClient.
-// This method is for transitional use only; prefer the typed resolution methods above.
 func (f *ProviderClientFactory) GetDefaultClient() *APIClient {
 	return f.defaultClient
 }
