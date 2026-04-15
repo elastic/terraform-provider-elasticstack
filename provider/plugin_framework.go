@@ -42,6 +42,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
@@ -185,6 +186,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securityuser.NewUserResource,
 		role.NewRoleResource,
 		inferenceendpoint.NewInferenceEndpointResource,
+		watch.NewWatchResource,
 		script.NewScriptResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
