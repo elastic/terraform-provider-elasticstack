@@ -31,14 +31,14 @@ import (
 )
 
 func TestConfigValidators_Count(t *testing.T) {
-	r := importsavedobjects.NewResource()
+	r := importsavedobjects.NewResource().(resource.ResourceWithConfigValidators)
 	validators := r.ConfigValidators(context.Background())
 	assert.Len(t, validators, 2, "expected exactly 2 config validators")
 }
 
 // buildRawConfig constructs a tftypes.Value matching the resource schema with the
 // given boolean flag values. Unspecified flags are set to null.
-func buildRawConfig(t *testing.T, r *importsavedobjects.Resource, createNewCopies, overwrite, compatibilityMode *bool) tfsdk.Config {
+func buildRawConfig(t *testing.T, r resource.Resource, createNewCopies, overwrite, compatibilityMode *bool) tfsdk.Config {
 	t.Helper()
 	schemaResp := &resource.SchemaResponse{}
 	r.Schema(context.Background(), resource.SchemaRequest{}, schemaResp)
@@ -80,7 +80,8 @@ func buildRawConfig(t *testing.T, r *importsavedobjects.Resource, createNewCopie
 func TestConfigValidators_CreateNewCopiesConflictsWithOverwrite(t *testing.T) {
 	tr := true
 	r := importsavedobjects.NewResource()
-	validators := r.ConfigValidators(context.Background())
+	rWithValidators := r.(resource.ResourceWithConfigValidators)
+	validators := rWithValidators.ConfigValidators(context.Background())
 	require.Len(t, validators, 2)
 
 	config := buildRawConfig(t, r, &tr, &tr, nil)
@@ -101,7 +102,8 @@ func TestConfigValidators_CreateNewCopiesConflictsWithOverwrite(t *testing.T) {
 func TestConfigValidators_CreateNewCopiesConflictsWithCompatibilityMode(t *testing.T) {
 	tr := true
 	r := importsavedobjects.NewResource()
-	validators := r.ConfigValidators(context.Background())
+	rWithValidators := r.(resource.ResourceWithConfigValidators)
+	validators := rWithValidators.ConfigValidators(context.Background())
 	require.Len(t, validators, 2)
 
 	config := buildRawConfig(t, r, &tr, nil, &tr)

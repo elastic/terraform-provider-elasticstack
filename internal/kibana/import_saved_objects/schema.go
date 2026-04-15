@@ -147,8 +147,8 @@ type Resource struct {
 	client *clients.ProviderClientFactory
 }
 
-// NewResource returns a new Resource instance. Used in tests and provider registration.
-func NewResource() *Resource {
+// NewResource returns a new Resource instance for provider registration and tests.
+func NewResource() resource.Resource {
 	return &Resource{}
 }
 

@@ -161,7 +161,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
-		func() resource.Resource { return &importsavedobjects.Resource{} },
+		importsavedobjects.NewResource,
 		alertingrule.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
