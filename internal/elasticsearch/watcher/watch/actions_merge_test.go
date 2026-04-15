@@ -119,7 +119,7 @@ func TestMergePreserveRedactedLeaves_nonStringLeavesUnchanged(t *testing.T) {
 	api := map[string]any{"n": float64(42), "b": true}
 	prior := map[string]any{"n": float64(1), "b": false}
 	got := mergePreserveRedactedLeaves(api, prior).(map[string]any)
-	require.Equal(t, float64(42), got["n"])
+	require.InEpsilon(t, float64(42), got["n"], 1e-9)
 	require.Equal(t, true, got["b"])
 }
 
