@@ -457,7 +457,7 @@ func DeleteAPIKey(apiClient *clients.ElasticsearchScopedClient, id string) fwdia
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
-	if err != nil && res.IsError() {
+	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()

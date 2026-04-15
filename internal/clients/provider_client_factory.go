@@ -149,6 +149,15 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
 	}
 
+	if len(esConns) > 1 {
+		var diags fwdiags.Diagnostics
+		diags.AddError(
+			"Invalid elasticsearch_connection",
+			"At most one elasticsearch_connection block is allowed.",
+		)
+		return nil, diags
+	}
+
 	cfg, diags := config.NewFromFramework(ctx, config.ProviderConfiguration{Elasticsearch: esConns}, f.defaultClient.version)
 	if diags.HasError() {
 		return nil, diags

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -42,6 +43,7 @@ import (
 type ElasticsearchScopedClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
+	mu                       sync.Mutex
 }
 
 // GetESClient returns the underlying go-elasticsearch client. It satisfies the
@@ -54,7 +56,12 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 }
 
 // serverInfo fetches and caches the Elasticsearch cluster info.
+// It is safe for concurrent use: the mutex ensures only one goroutine fetches
+// the info from the server, and subsequent callers use the cached result.
 func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
 	if e.elasticsearchClusterInfo != nil {
 		return e.elasticsearchClusterInfo, nil
 	}
@@ -141,7 +148,12 @@ func (e *ElasticsearchScopedClient) ServerFlavor(ctx context.Context) (string, d
 
 // EnforceMinVersion returns true when the server version is greater than or
 // equal to minVersion, or when the server is running in serverless mode.
+// If minVersion is nil, no minimum is enforced and the method returns true.
 func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	if minVersion == nil {
+		return true, nil
+	}
+
 	flavor, diags := e.ServerFlavor(ctx)
 	if diags.HasError() {
 		return false, diags

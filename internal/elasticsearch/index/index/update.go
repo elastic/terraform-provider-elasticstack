@@ -71,18 +71,18 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	if !planModel.Alias.Equal(stateModel.Alias) {
-		resp.Diagnostics.Append(r.updateAliases(ctx, planModel, client, name, planAPIModel.Aliases, stateAPIModel.Aliases)...)
+		resp.Diagnostics.Append(r.updateAliases(ctx, client, name, planAPIModel.Aliases, stateAPIModel.Aliases)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	resp.Diagnostics.Append(r.updateSettings(ctx, planModel, client, name, planAPIModel.Settings, stateAPIModel.Settings)...)
+	resp.Diagnostics.Append(r.updateSettings(ctx, client, name, planAPIModel.Settings, stateAPIModel.Settings)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(r.updateMappings(ctx, planModel, client, name, planModel.Mappings, stateModel.Mappings)...)
+	resp.Diagnostics.Append(r.updateMappings(ctx, client, name, planModel.Mappings, stateModel.Mappings)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -98,7 +98,6 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 func (r *Resource) updateAliases(
 	ctx context.Context,
-	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planAliases map[string]models.IndexAlias,
@@ -133,7 +132,6 @@ func (r *Resource) updateAliases(
 
 func (r *Resource) updateSettings(
 	ctx context.Context,
-	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planSettings map[string]any,
@@ -174,7 +172,6 @@ func (r *Resource) updateSettings(
 
 func (r *Resource) updateMappings(
 	ctx context.Context,
-	_ tfModel,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planMappings jsontypes.Normalized,
