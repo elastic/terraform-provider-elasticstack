@@ -20,11 +20,11 @@ package enrich_test
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	_ "embed"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
