@@ -271,7 +271,6 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 	})
 }
 
-
 func testAccWatchCreateFromSDK(watchID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
