@@ -62,20 +62,20 @@ func newMockElasticsearchServer(version string) *httptest.Server {
 // config.ElasticsearchConnection so we can build framework type values in tests.
 func elasticsearchConnectionAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"username":                types.StringType,
-		"password":                types.StringType,
-		"api_key":                 types.StringType,
-		"bearer_token":            types.StringType,
+		"username":                 types.StringType,
+		"password":                 types.StringType,
+		"api_key":                  types.StringType,
+		"bearer_token":             types.StringType,
 		"es_client_authentication": types.StringType,
-		"endpoints":               types.ListType{ElemType: types.StringType},
-		"headers":                 types.MapType{ElemType: types.StringType},
-		"insecure":                types.BoolType,
-		"ca_file":                 types.StringType,
-		"ca_data":                 types.StringType,
-		"cert_file":               types.StringType,
-		"key_file":                types.StringType,
-		"cert_data":               types.StringType,
-		"key_data":                types.StringType,
+		"endpoints":                types.ListType{ElemType: types.StringType},
+		"headers":                  types.MapType{ElemType: types.StringType},
+		"insecure":                 types.BoolType,
+		"ca_file":                  types.StringType,
+		"ca_data":                  types.StringType,
+		"cert_file":                types.StringType,
+		"key_file":                 types.StringType,
+		"cert_data":                types.StringType,
+		"key_data":                 types.StringType,
 	}
 }
 
