@@ -21,4 +21,4 @@
 
 - [x] 4.1 Run OpenSpec validation for the new change artifacts
 - [x] 4.2 Run targeted Go tests for updated Elasticsearch client and entity packages plus `make build`
-- [ ] 4.3 Run repository lint after analyzer removal to confirm the new compile-time enforcement model replaces the deleted custom lint task
+- [x] 4.3 Run repository lint after analyzer removal to confirm the new compile-time enforcement model replaces the deleted custom lint task
