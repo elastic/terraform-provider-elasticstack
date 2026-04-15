@@ -18,4 +18,4 @@
 
 ## 4. OpenSpec sync
 
-- [ ] 4.1 After implementation, run `make check-openspec` (or `openspec validate`) and archive or sync per project workflow so `openspec/specs/kibana-security-role/spec.md` absorbs the delta.
+- [x] 4.1 After implementation, run `make check-openspec` (or `openspec validate`) and archive or sync per project workflow so `openspec/specs/kibana-security-role/spec.md` absorbs the delta.
