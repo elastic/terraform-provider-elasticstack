@@ -75,6 +75,9 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
 	r.client = factory
 }
 

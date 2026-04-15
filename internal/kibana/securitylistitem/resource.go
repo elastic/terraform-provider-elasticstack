@@ -47,6 +47,9 @@ func (r *securityListItemResource) Metadata(_ context.Context, req resource.Meta
 func (r *securityListItemResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	r.client = factory
 }
 

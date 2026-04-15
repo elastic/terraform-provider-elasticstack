@@ -41,7 +41,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromAPIClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

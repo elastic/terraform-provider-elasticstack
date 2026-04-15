@@ -176,7 +176,15 @@ func ConvertProviderData(providerData any) (*APIClient, fwdiags.Diagnostics) {
 			)
 			return nil, diags
 		}
-		return factory.GetDefaultClient(), diags
+		client := factory.GetDefaultClient()
+		if client == nil {
+			diags.AddError(
+				"Unconfigured Client",
+				"Expected configured client. Please report this issue to the provider developers.",
+			)
+			return nil, diags
+		}
+		return client, diags
 	}
 
 	client, ok := providerData.(*APIClient)

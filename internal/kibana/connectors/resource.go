@@ -44,6 +44,9 @@ type Resource struct {
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
 	r.client = factory
 }
 

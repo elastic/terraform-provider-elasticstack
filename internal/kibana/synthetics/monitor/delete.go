@@ -40,7 +40,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromAPIClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

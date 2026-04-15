@@ -60,6 +60,13 @@ func NewProviderClientFactory(defaultClient *APIClient) *ProviderClientFactory {
 // client whose Kibana legacy client, Kibana OpenAPI client, SLO client, and
 // Fleet client are rebuilt from that scoped connection.
 func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnList types.List) (*KibanaScopedClient, fwdiags.Diagnostics) {
+	if f == nil || f.defaultClient == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Provider not configured",
+			"Expected configured provider client factory. Please report this issue to the provider developers.",
+		)}
+	}
+
 	var kibConns []config.KibanaConnection
 	if diags := kibanaConnList.ElementsAs(ctx, &kibConns, true); diags.HasError() {
 		return nil, diags
@@ -83,6 +90,14 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 // block is configured a new typed scoped client is returned with all
 // Kibana-derived clients rebuilt from the scoped connection.
 func (f *ProviderClientFactory) GetKibanaClientFromSDK(d *schema.ResourceData) (*KibanaScopedClient, diag.Diagnostics) {
+	if f == nil || f.defaultClient == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Provider not configured",
+			Detail:   "Expected configured provider client factory. Please report this issue to the provider developers.",
+		}}
+	}
+
 	resourceConfig, diags := config.NewFromSDKKibanaResource(d, f.defaultClient.version)
 	if diags.HasError() {
 		return nil, diags
@@ -232,6 +247,13 @@ func ConvertMetaToFactory(meta any) (*ProviderClientFactory, diag.Diagnostics) {
 			Severity: diag.Error,
 			Summary:  "Unexpected meta type",
 			Detail:   fmt.Sprintf("Expected *ProviderClientFactory, got: %T. Please report this issue to the provider developers.", meta),
+		}}
+	}
+	if factory == nil {
+		return nil, diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unconfigured Client Factory",
+			Detail:   "Expected configured provider client factory, got nil. Report this issue to the provider developers.",
 		}}
 	}
 	return factory, nil

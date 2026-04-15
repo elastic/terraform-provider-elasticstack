@@ -46,5 +46,8 @@ func (d *enrollmentTokensDataSource) Metadata(_ context.Context, req datasource.
 func (d *enrollmentTokensDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	d.client = factory
 }
