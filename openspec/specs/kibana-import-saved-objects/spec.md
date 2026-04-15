@@ -105,7 +105,7 @@ The resource SHALL use the provider's configured Kibana OpenAPI client (`GetKiba
 
 ### Requirement: Create and update share the same import logic (REQ-005)
 
-Create and update SHALL both invoke the same import logic: reading the plan, calling the Kibana Saved Objects Import API, and writing the result to state. Changing `file_contents`, `overwrite`, or `space_id` SHALL trigger an in-place update that re-runs the import.
+Create and update SHALL both invoke the same import logic: reading the plan, calling the Kibana Saved Objects Import API, and writing the result to state. Changing `file_contents`, `overwrite`, `space_id`, `create_new_copies`, or `compatibility_mode` SHALL trigger an in-place update that re-runs the import.
 
 #### Scenario: Update re-imports objects
 
@@ -188,21 +188,41 @@ The resource SHALL pass the `overwrite` attribute value to the Kibana Saved Obje
 - WHEN create or update runs
 - THEN the provider SHALL send `overwrite: true` to the Import API, resolving conflicts automatically
 
-### Requirement: create_new_copies and compatibility_mode flags (REQ-011)
+### Requirement: create_new_copies flag (REQ-011)
 
-The resource SHALL pass `create_new_copies` and `compatibility_mode` to the Kibana Saved Objects Import API via `PostSavedObjectsImportParams` when set to `true`. The resource SHALL enforce mutual exclusion: `create_new_copies` conflicts with `overwrite`, and `create_new_copies` conflicts with `compatibility_mode`. These constraints SHALL be enforced via `ResourceWithConfigValidators` before any API call is made.
+The resource SHALL expose an optional `create_new_copies` boolean attribute. When set to `true`, the provider SHALL send `createNewCopies=true` on the Import API request. When unset or `false`, the provider SHALL omit the query parameter.
 
-#### Scenario: create_new_copies conflict
+#### Scenario: create_new_copies forwarded to API
 
-- GIVEN both `create_new_copies = true` and `overwrite = true` (or `compatibility_mode = true`)
-- WHEN Terraform validates the configuration
-- THEN the provider SHALL return a validation error before attempting the import
-
-#### Scenario: compatibility_mode
-
-- GIVEN `compatibility_mode = true`
+- GIVEN `create_new_copies = true`, a valid export in `file_contents`, and no conflicting `overwrite` or `compatibility_mode` flags in configuration
 - WHEN create or update runs
-- THEN the provider SHALL send `compatibilityMode: true` to the Import API
+- THEN the provider SHALL include `createNewCopies=true` on the Import API request
+
+### Requirement: compatibility_mode flag (REQ-012)
+
+The resource SHALL expose an optional `compatibility_mode` boolean attribute. When set to `true`, the provider SHALL send `compatibilityMode=true` on the Import API request. When unset or `false`, the provider SHALL omit the query parameter.
+
+#### Scenario: compatibility_mode forwarded to API
+
+- GIVEN `compatibility_mode = true`, a valid export in `file_contents`, and `create_new_copies` is not set to `true` in configuration
+- WHEN create or update runs
+- THEN the provider SHALL include `compatibilityMode=true` on the Import API request
+
+### Requirement: Mutually exclusive import flags (REQ-013)
+
+The resource SHALL reject, at plan time, combinations of `overwrite`, `create_new_copies`, and `compatibility_mode` that the Kibana Saved Objects Import API rejects. Specifically, `create_new_copies` is incompatible with `overwrite` and with `compatibility_mode`. These constraints SHALL be enforced via `ResourceWithConfigValidators` before any API call is made.
+
+#### Scenario: create_new_copies conflicts with overwrite
+
+- GIVEN both `create_new_copies = true` and `overwrite = true`
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a configuration error diagnostic explaining the conflict
+
+#### Scenario: create_new_copies conflicts with compatibility_mode
+
+- GIVEN both `create_new_copies = true` and `compatibility_mode = true`
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a configuration error diagnostic explaining the conflict
 
 ## Traceability
 

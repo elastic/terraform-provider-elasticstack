@@ -64,7 +64,7 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 				),
 			},
 			{
-				// Ensure compatibility_mode flag is accepted and import succeeds (requires Kibana 8.6+)
+				// Ensure compatibility_mode flag is accepted and import succeeds (requires Kibana 8.8+)
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionCompatibilityMode),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("compatibility_mode"),
