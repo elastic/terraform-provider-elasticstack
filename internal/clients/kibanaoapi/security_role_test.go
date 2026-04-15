@@ -146,11 +146,10 @@ func TestPutSecurityRole_200(t *testing.T) {
 
 func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
 	var capturedBody []byte
+	var captureErr error
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		var err error
-		capturedBody, err = io.ReadAll(r.Body)
-		require.NoError(t, err)
+		capturedBody, captureErr = io.ReadAll(r.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -171,6 +170,7 @@ func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
 	params := kbapi.PutSecurityRoleNameParams{}
 	diags := kibanaoapi.PutSecurityRole(t.Context(), oapiClient, "test-role", params, body)
 	assert.Nil(t, diags)
+	require.NoError(t, captureErr)
 
 	// Verify kibana.base is correctly serialized in the request body
 	var sent map[string]any
