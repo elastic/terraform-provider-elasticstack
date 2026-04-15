@@ -351,7 +351,7 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) d
 	return resourceRoleRead(ctx, d, meta)
 }
 
-func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	factory, diags := clients.ConvertMetaToFactory(meta)
 	if diags.HasError() {
 		return diags
@@ -368,7 +368,7 @@ func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.
 
 	name := d.Id()
 
-	role, ds := kibanaoapi.GetSecurityRole(context.Background(), oapiClient, name)
+	role, ds := kibanaoapi.GetSecurityRole(ctx, oapiClient, name)
 	if ds != nil {
 		return ds
 	}
@@ -403,7 +403,7 @@ func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.
 	return diags
 }
 
-func resourceRoleDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	factory, diags := clients.ConvertMetaToFactory(meta)
 	if diags.HasError() {
 		return diags
@@ -420,7 +420,7 @@ func resourceRoleDelete(_ context.Context, d *schema.ResourceData, meta any) dia
 
 	resourceID := d.Id()
 
-	if ds := kibanaoapi.DeleteSecurityRole(context.Background(), oapiClient, resourceID); ds != nil {
+	if ds := kibanaoapi.DeleteSecurityRole(ctx, oapiClient, resourceID); ds != nil {
 		return ds
 	}
 
@@ -458,10 +458,7 @@ func expandKibanaRoleElasticsearchInto(v any, serverVersion *version.Version, es
 		if v, ok := userElasticConfig["indices"]; ok {
 			definedIndices := v.(*schema.Set)
 			if definedIndices.Len() > 0 {
-				indices, diags := expandIndices(definedIndices)
-				if diags != nil {
-					return diags
-				}
+				indices := expandIndices(definedIndices)
 				es.Indices = &indices
 			}
 		}
@@ -473,10 +470,7 @@ func expandKibanaRoleElasticsearchInto(v any, serverVersion *version.Version, es
 					return diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Kibana v%s and above", minSupportedRemoteIndicesVersion.String()))
 				}
 
-				remoteIndices, diags := expandRemoteIndices(definedRemoteIndices)
-				if diags != nil {
-					return diags
-				}
+				remoteIndices := expandRemoteIndices(definedRemoteIndices)
 				es.RemoteIndices = &remoteIndices
 			}
 		}
@@ -495,7 +489,7 @@ func expandKibanaRoleElasticsearchInto(v any, serverVersion *version.Version, es
 	return nil
 }
 
-func expandIndices(definedIndices *schema.Set) ([]kibanaoapi.SecurityRoleESIndex, diag.Diagnostics) {
+func expandIndices(definedIndices *schema.Set) []kibanaoapi.SecurityRoleESIndex {
 	indices := make([]kibanaoapi.SecurityRoleESIndex, definedIndices.Len())
 	for i, idx := range definedIndices.List() {
 		index := idx.(map[string]any)
@@ -528,10 +522,10 @@ func expandIndices(definedIndices *schema.Set) ([]kibanaoapi.SecurityRoleESIndex
 
 		indices[i] = entry
 	}
-	return indices, nil
+	return indices
 }
 
-func expandRemoteIndices(definedRemoteIndices *schema.Set) ([]kibanaoapi.SecurityRoleESRemoteIndex, diag.Diagnostics) {
+func expandRemoteIndices(definedRemoteIndices *schema.Set) []kibanaoapi.SecurityRoleESRemoteIndex {
 	remoteIndices := make([]kibanaoapi.SecurityRoleESRemoteIndex, definedRemoteIndices.Len())
 	for i, idx := range definedRemoteIndices.List() {
 		index := idx.(map[string]any)
@@ -570,7 +564,7 @@ func expandRemoteIndices(definedRemoteIndices *schema.Set) ([]kibanaoapi.Securit
 
 		remoteIndices[i] = entry
 	}
-	return remoteIndices, nil
+	return remoteIndices
 }
 
 func expandFieldSecurity(definedFieldSec map[string]any) map[string][]string {

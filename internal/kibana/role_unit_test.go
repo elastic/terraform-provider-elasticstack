@@ -28,8 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func strPtr(s string) *string { return &s }
-
 // expandESForTest calls expandKibanaRoleElasticsearchInto and returns the SecurityRoleES for testing.
 func expandESForTest(t *testing.T, esSet *schema.Set, ver *version.Version) kibanaoapi.SecurityRoleES {
 	t.Helper()
@@ -63,15 +61,15 @@ func TestRoleIndexFieldSecurityRoundTrip(t *testing.T) {
 		Schema: map[string]*schema.Schema{},
 	}), []any{indexEntry})
 
-	indices, diags := expandIndices(indexSet)
-	require.Nil(t, diags)
+	indices := expandIndices(indexSet)
 	require.Len(t, indices, 1)
 
 	idx := indices[0]
 	require.NotNil(t, idx.FieldSecurity)
 	assert.ElementsMatch(t, []string{"field1", "field2"}, (*idx.FieldSecurity)["grant"])
 	assert.ElementsMatch(t, []string{"secret"}, (*idx.FieldSecurity)["except"])
-	assert.Equal(t, strPtr(`{"match_all":{}}`), idx.Query)
+	require.NotNil(t, idx.Query)
+	assert.Equal(t, `{"match_all":{}}`, *idx.Query)
 
 	// Round-trip through JSON into SecurityRoleESIndex
 	idxJSON, err := json.Marshal(indices)
@@ -86,7 +84,7 @@ func TestRoleIndexFieldSecurityRoundTrip(t *testing.T) {
 	flatIdx := flatResult[0].(map[string]any)
 	assert.ElementsMatch(t, []string{"logs-*"}, flatIdx["names"])
 	assert.ElementsMatch(t, []string{"read", "write"}, flatIdx["privileges"])
-	assert.Equal(t, `{"match_all":{}}`, flatIdx["query"])
+	assert.JSONEq(t, `{"match_all":{}}`, flatIdx["query"].(string))
 
 	fsec := flatIdx["field_security"].([]any)[0].(map[string]any)
 	assert.ElementsMatch(t, []string{"field1", "field2"}, fsec["grant"])
@@ -116,8 +114,7 @@ func TestRoleRemoteIndicesRoundTrip(t *testing.T) {
 
 	remoteSet := schema.NewSet(schema.HashResource(&schema.Resource{Schema: map[string]*schema.Schema{}}), []any{remoteEntry})
 
-	remoteIndices, diags := expandRemoteIndices(remoteSet)
-	require.Nil(t, diags)
+	remoteIndices := expandRemoteIndices(remoteSet)
 	require.Len(t, remoteIndices, 1)
 
 	ri := remoteIndices[0]

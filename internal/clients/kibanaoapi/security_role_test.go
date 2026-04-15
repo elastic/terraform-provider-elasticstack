@@ -62,7 +62,7 @@ func TestGetSecurityRole_200(t *testing.T) {
 		},
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(rw).Encode(roleBody)
@@ -79,7 +79,7 @@ func TestGetSecurityRole_200(t *testing.T) {
 }
 
 func TestGetSecurityRole_404(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -92,7 +92,7 @@ func TestGetSecurityRole_404(t *testing.T) {
 }
 
 func TestGetSecurityRole_InvalidJSON(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		_, _ = rw.Write([]byte("not-valid-json"))
@@ -108,7 +108,7 @@ func TestGetSecurityRole_InvalidJSON(t *testing.T) {
 }
 
 func TestGetSecurityRole_500(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(`{"error":"internal server error"}`))
 	}))
@@ -123,7 +123,7 @@ func TestGetSecurityRole_500(t *testing.T) {
 }
 
 func TestPutSecurityRole_200(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -184,7 +184,7 @@ func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
 }
 
 func TestPutSecurityRole_Error(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusBadRequest)
 		_, _ = rw.Write([]byte(`{"error":"bad request"}`))
 	}))
@@ -201,7 +201,7 @@ func TestPutSecurityRole_Error(t *testing.T) {
 }
 
 func TestDeleteSecurityRole_200(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -212,7 +212,7 @@ func TestDeleteSecurityRole_200(t *testing.T) {
 }
 
 func TestDeleteSecurityRole_404(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -223,7 +223,7 @@ func TestDeleteSecurityRole_404(t *testing.T) {
 }
 
 func TestDeleteSecurityRole_Error(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(`{"error":"internal error"}`))
 	}))
