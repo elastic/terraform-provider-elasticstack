@@ -18,6 +18,8 @@
 package watcher_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -46,6 +48,41 @@ const (
 
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
+
+// canonicalJSONBytes re-encodes JSON so semantically equivalent documents compare equal (key order, spacing).
+func canonicalJSONBytes(raw string) ([]byte, error) {
+	var v any
+	if err := json.Unmarshal([]byte(raw), &v); err != nil {
+		return nil, err
+	}
+	return json.Marshal(v)
+}
+
+func testCheckWatchTransformSemanticallyEqual(t *testing.T, expected string) resource.TestCheckFunc {
+	t.Helper()
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[watchResourceName]
+		if !ok {
+			return fmt.Errorf("%s not found in state", watchResourceName)
+		}
+		got, ok := rs.Primary.Attributes["transform"]
+		if !ok {
+			return fmt.Errorf("transform not found in state for %s", watchResourceName)
+		}
+		wantCanon, err := canonicalJSONBytes(expected)
+		if err != nil {
+			return fmt.Errorf("canonical expected transform: %w", err)
+		}
+		gotCanon, err := canonicalJSONBytes(got)
+		if err != nil {
+			return fmt.Errorf("canonical actual transform: %w", err)
+		}
+		if !bytes.Equal(wantCanon, gotCanon) {
+			return fmt.Errorf("transform JSON mismatch (semantic)\nwant: %s\ngot:  %s", string(wantCanon), string(gotCanon))
+		}
+		return nil
+	}
+}
 
 func TestResourceWatch(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -80,7 +117,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionNever),
 					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
-					resource.TestCheckResourceAttr(watchResourceName, "transform", watchTransformExpected),
+					testCheckWatchTransformSemanticallyEqual(t, watchTransformExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
 				),
 			},
@@ -129,7 +166,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionNever),
 					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
-					resource.TestCheckResourceAttr(watchResourceName, "transform", watchTransformExpected),
+					testCheckWatchTransformSemanticallyEqual(t, watchTransformExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
 				),
 			},
@@ -182,7 +219,10 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_watch" {
 			continue
 		}
-		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+		compID, idDiags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if idDiags.HasError() {
+			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
+		}
 
 		esClient, err := client.GetESClient()
 		if err != nil {
@@ -193,6 +233,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
+		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusNotFound {
 			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
