@@ -19,18 +19,11 @@ package provider_test
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-	"sort"
 	"strings"
 	"testing"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
-	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
-	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -43,8 +36,12 @@ func TestSDKKibanaEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	p := provider.New("dev")
 	expected := providerschema.GetKibanaEntityConnectionSchema()
 
-	runSDKKibanaEntitySubtests(t, "resource", p.ResourcesMap, expected)
-	runSDKKibanaEntitySubtests(t, "data_source", p.DataSourcesMap, expected)
+	runSDKConnectionEntitySubtests(t, "resource", p.ResourcesMap, kbConnectionBlockKey, expected, func(_, name string) bool {
+		return strings.HasPrefix(name, kbEntityPrefix)
+	})
+	runSDKConnectionEntitySubtests(t, "data_source", p.DataSourcesMap, kbConnectionBlockKey, expected, func(_, name string) bool {
+		return strings.HasPrefix(name, kbEntityPrefix)
+	})
 }
 
 func TestSDKFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
@@ -66,54 +63,12 @@ func TestSDKFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 		t.Skip("no SDK fleet entities registered — kept as a future safety net")
 	}
 
-	runSDKFleetEntitySubtests(t, "resource", p.ResourcesMap, expected)
-	runSDKFleetEntitySubtests(t, "data_source", p.DataSourcesMap, expected)
-}
-
-func runSDKKibanaEntitySubtests(t *testing.T, entityKind string, entities map[string]*sdkschema.Resource, expected *sdkschema.Schema) {
-	t.Helper()
-	runSDKKibanaFleetEntitySubtests(t, entityKind, entities, expected, kbEntityPrefix)
-}
-
-func runSDKFleetEntitySubtests(t *testing.T, entityKind string, entities map[string]*sdkschema.Resource, expected *sdkschema.Schema) {
-	t.Helper()
-	runSDKKibanaFleetEntitySubtests(t, entityKind, entities, expected, fleetEntityPrefix)
-}
-
-func runSDKKibanaFleetEntitySubtests(t *testing.T, entityKind string, entities map[string]*sdkschema.Resource, expected *sdkschema.Schema, prefix string) {
-	t.Helper()
-
-	names := make([]string, 0, len(entities))
-	for name := range entities {
-		if strings.HasPrefix(name, prefix) {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
-		entityName := name
-		entity := entities[entityName]
-
-		t.Run(fmt.Sprintf("sdk/%s/%s", entityKind, entityName), func(t *testing.T) {
-			if entity == nil {
-				t.Fatalf("entity %q is nil", entityName)
-			}
-
-			actual, ok := entity.Schema[kbConnectionBlockKey]
-			if !ok {
-				t.Fatalf("entity %q is missing %q schema", entityName, kbConnectionBlockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("entity %q %q schema does not exactly match helper definition", entityName, kbConnectionBlockKey)
-			}
-
-			if actual.Deprecated != "" {
-				t.Fatalf("entity %q %q schema has unexpected deprecation warning: %q", entityName, kbConnectionBlockKey, actual.Deprecated)
-			}
-		})
-	}
+	runSDKConnectionEntitySubtests(t, "resource", p.ResourcesMap, kbConnectionBlockKey, expected, func(_, name string) bool {
+		return strings.HasPrefix(name, fleetEntityPrefix)
+	})
+	runSDKConnectionEntitySubtests(t, "data_source", p.DataSourcesMap, kbConnectionBlockKey, expected, func(_, name string) bool {
+		return strings.HasPrefix(name, fleetEntityPrefix)
+	})
 }
 
 func TestFrameworkKibanaEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
@@ -121,11 +76,15 @@ func TestFrameworkKibanaEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	baseProvider := provider.NewFrameworkProvider("dev")
 	expected := providerschema.GetKbFWConnectionBlock()
 
-	resourceEntities := frameworkKibanaResourceEntities(ctx, baseProvider)
-	dataSourceEntities := frameworkKibanaDataSourceEntities(ctx, baseProvider)
+	resourceEntities := collectFrameworkResourceEntities(ctx, baseProvider, func(name string) bool {
+		return strings.HasPrefix(name, kbEntityPrefix)
+	})
+	dataSourceEntities := collectFrameworkDataSourceEntities(ctx, baseProvider, func(name string) bool {
+		return strings.HasPrefix(name, kbEntityPrefix)
+	})
 
-	runFrameworkKbConnectionResourceSubtests(ctx, t, resourceEntities, expected)
-	runFrameworkKbConnectionDataSourceSubtests(ctx, t, dataSourceEntities, expected)
+	runFrameworkConnectionResourceSubtests(ctx, t, resourceEntities, kbConnectionBlockKey, expected)
+	runFrameworkConnectionDataSourceSubtests(ctx, t, dataSourceEntities, kbConnectionBlockKey, expected)
 }
 
 func TestFrameworkFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
@@ -133,101 +92,13 @@ func TestFrameworkFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	baseProvider := provider.NewFrameworkProvider("dev")
 	expected := providerschema.GetKbFWConnectionBlock()
 
-	resourceEntities := frameworkFleetResourceEntities(ctx, baseProvider)
-	dataSourceEntities := frameworkFleetDataSourceEntities(ctx, baseProvider)
+	resourceEntities := collectFrameworkResourceEntities(ctx, baseProvider, func(name string) bool {
+		return strings.HasPrefix(name, fleetEntityPrefix)
+	})
+	dataSourceEntities := collectFrameworkDataSourceEntities(ctx, baseProvider, func(name string) bool {
+		return strings.HasPrefix(name, fleetEntityPrefix)
+	})
 
-	runFrameworkKbConnectionResourceSubtests(ctx, t, resourceEntities, expected)
-	runFrameworkKbConnectionDataSourceSubtests(ctx, t, dataSourceEntities, expected)
-}
-
-func frameworkKibanaResourceEntities(ctx context.Context, p fwprovider.Provider) []frameworkResourceEntity {
-	return collectFrameworkResourceEntities(ctx, p, kbEntityPrefix)
-}
-
-func frameworkFleetResourceEntities(ctx context.Context, p fwprovider.Provider) []frameworkResourceEntity {
-	return collectFrameworkResourceEntities(ctx, p, fleetEntityPrefix)
-}
-
-func collectFrameworkResourceEntities(ctx context.Context, p fwprovider.Provider, prefix string) []frameworkResourceEntity {
-	entities := make([]frameworkResourceEntity, 0)
-	for _, factory := range p.Resources(ctx) {
-		r := factory()
-		name := frameworkResourceTypeName(ctx, r)
-		if strings.HasPrefix(name, prefix) {
-			entities = append(entities, frameworkResourceEntity{name: name, resource: r})
-		}
-	}
-	sort.Slice(entities, func(i, j int) bool { return entities[i].name < entities[j].name })
-	return entities
-}
-
-func frameworkKibanaDataSourceEntities(ctx context.Context, p fwprovider.Provider) []frameworkDataSourceEntity {
-	return collectFrameworkDataSourceEntities(ctx, p, kbEntityPrefix)
-}
-
-func frameworkFleetDataSourceEntities(ctx context.Context, p fwprovider.Provider) []frameworkDataSourceEntity {
-	return collectFrameworkDataSourceEntities(ctx, p, fleetEntityPrefix)
-}
-
-func collectFrameworkDataSourceEntities(ctx context.Context, p fwprovider.Provider, prefix string) []frameworkDataSourceEntity {
-	entities := make([]frameworkDataSourceEntity, 0)
-	for _, factory := range p.DataSources(ctx) {
-		d := factory()
-		name := frameworkDataSourceTypeName(ctx, d)
-		if strings.HasPrefix(name, prefix) {
-			entities = append(entities, frameworkDataSourceEntity{name: name, dataSource: d})
-		}
-	}
-	sort.Slice(entities, func(i, j int) bool { return entities[i].name < entities[j].name })
-	return entities
-}
-
-func runFrameworkKbConnectionResourceSubtests(ctx context.Context, t *testing.T, entities []frameworkResourceEntity, expected any) {
-	t.Helper()
-
-	for _, e := range entities {
-		entity := e
-		t.Run(fmt.Sprintf("framework/resource/%s", entity.name), func(t *testing.T) {
-			resp := fwresource.SchemaResponse{}
-			entity.resource.Schema(ctx, fwresource.SchemaRequest{}, &resp)
-
-			actual, ok := resp.Schema.Blocks[kbConnectionBlockKey]
-			if !ok {
-				t.Fatalf("resource %q is missing %q block", entity.name, kbConnectionBlockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("resource %q %q block does not exactly match helper definition", entity.name, kbConnectionBlockKey)
-			}
-
-			if msg := actual.GetDeprecationMessage(); msg != "" {
-				t.Fatalf("resource %q %q block has unexpected deprecation message: %q", entity.name, kbConnectionBlockKey, msg)
-			}
-		})
-	}
-}
-
-func runFrameworkKbConnectionDataSourceSubtests(ctx context.Context, t *testing.T, entities []frameworkDataSourceEntity, expected any) {
-	t.Helper()
-
-	for _, e := range entities {
-		entity := e
-		t.Run(fmt.Sprintf("framework/data_source/%s", entity.name), func(t *testing.T) {
-			resp := datasource.SchemaResponse{}
-			entity.dataSource.Schema(ctx, datasource.SchemaRequest{}, &resp)
-
-			actual, ok := resp.Schema.Blocks[kbConnectionBlockKey]
-			if !ok {
-				t.Fatalf("data source %q is missing %q block", entity.name, kbConnectionBlockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("data source %q %q block does not exactly match helper definition", entity.name, kbConnectionBlockKey)
-			}
-
-			if msg := actual.GetDeprecationMessage(); msg != "" {
-				t.Fatalf("data source %q %q block has unexpected deprecation message: %q", entity.name, kbConnectionBlockKey, msg)
-			}
-		})
-	}
+	runFrameworkConnectionResourceSubtests(ctx, t, resourceEntities, kbConnectionBlockKey, expected)
+	runFrameworkConnectionDataSourceSubtests(ctx, t, dataSourceEntities, kbConnectionBlockKey, expected)
 }
