@@ -35,7 +35,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, stateModel.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -60,7 +60,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
 }
 
-func (r *Resource) read(ctx context.Context, apiClient *clients.APIClient, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
 	// Parse composite ID
 	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {

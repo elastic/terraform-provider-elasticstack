@@ -37,7 +37,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, data.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, data.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,7 +71,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 }
 
 // read extracts the core functionality of reading a security detection rule
-func (r *securityDetectionRuleResource) read(ctx context.Context, apiClient *clients.APIClient, resourceID, spaceID string) (*Data, diag.Diagnostics) {
+func (r *securityDetectionRuleResource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, resourceID, spaceID string) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	data := &Data{}

@@ -27,7 +27,7 @@ import (
 
 // upsert sends a PUT /api/streams/{name} request and reads the result back
 // into a new model. It is shared by Create and Update.
-func (r *Resource) upsert(ctx context.Context, apiClient *clients.APIClient, planModel streamModel, diags *diag.Diagnostics) *streamModel {
+func (r *Resource) upsert(ctx context.Context, apiClient *clients.KibanaScopedClient, planModel streamModel, diags *diag.Diagnostics) *streamModel {
 	kibanaClient, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana client", err.Error())

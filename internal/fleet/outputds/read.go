@@ -20,7 +20,6 @@ package outputds
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
@@ -32,7 +31,7 @@ func (d *outputDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, d.client)
+	apiClient, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

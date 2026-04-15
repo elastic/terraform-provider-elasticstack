@@ -751,7 +751,7 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 }
 
 func checkResourceSloDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

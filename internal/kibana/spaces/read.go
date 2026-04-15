@@ -20,7 +20,6 @@ package spaces
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,7 +33,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, d.client)
+	apiClient, diags := d.client.GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

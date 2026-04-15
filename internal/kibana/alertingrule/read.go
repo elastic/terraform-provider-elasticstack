@@ -28,7 +28,7 @@ import (
 
 // readRuleFromAPI reads the alerting rule from the API and populates the model.
 // Returns (exists, diagnostics).
-func (r *Resource) readRuleFromAPI(ctx context.Context, apiClient *clients.APIClient, model *alertingRuleModel) (bool, diag.Diagnostics) {
+func (r *Resource) readRuleFromAPI(ctx context.Context, apiClient *clients.KibanaScopedClient, model *alertingRuleModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	ruleID, spaceID := model.getRuleIDAndSpaceID()
@@ -66,7 +66,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

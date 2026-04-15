@@ -37,7 +37,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

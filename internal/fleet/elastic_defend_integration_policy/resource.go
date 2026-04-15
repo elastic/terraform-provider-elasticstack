@@ -38,13 +38,12 @@ func NewResource() resource.Resource {
 }
 
 type elasticDefendIntegrationPolicyResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
-func (r *elasticDefendIntegrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+func (r *elasticDefendIntegrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	r.client = factory
 }
 
 func (r *elasticDefendIntegrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

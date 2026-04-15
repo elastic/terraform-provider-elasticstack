@@ -37,11 +37,11 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -61,7 +61,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	response.Diagnostics.Append(response.State.Set(ctx, state)...)
 }
 
-func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.APIClient, state *tfModel) (bool, diag.Diagnostics) {
+func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.KibanaScopedClient, state *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	compID, idDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
@@ -88,7 +88,7 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.APICli
 	return true, diags
 }
 
-func (r *Resource) readAndPopulate(ctx context.Context, apiClient *clients.APIClient, plan *tfModel, diags *diag.Diagnostics) {
+func (r *Resource) readAndPopulate(ctx context.Context, apiClient *clients.KibanaScopedClient, plan *tfModel, diags *diag.Diagnostics) {
 	exists, readDiags := r.readSloFromAPI(ctx, apiClient, plan)
 	diags.Append(readDiags...)
 	if diags.HasError() {

@@ -195,6 +195,16 @@ func ConvertProviderDataToFactory(providerData any) (*ProviderClientFactory, fwd
 	return factory, diags
 }
 
+// NewKibanaScopedClientFromFactory returns a *KibanaScopedClient built from the
+// factory's provider-level defaults. This is the typed Kibana surface
+// equivalent of calling GetKibanaClient with an empty connection list.
+func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedClient {
+	if f == nil || f.defaultClient == nil {
+		return nil
+	}
+	return kibanaScopedClientFromAPIClient(f.defaultClient)
+}
+
 // ConvertMetaToFactory converts the SDK meta value into a *ProviderClientFactory.
 func ConvertMetaToFactory(meta any) (*ProviderClientFactory, diag.Diagnostics) {
 	if meta == nil {
