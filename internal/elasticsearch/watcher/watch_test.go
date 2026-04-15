@@ -84,6 +84,21 @@ func testCheckWatchTransformSemanticallyEqual(t *testing.T, expected string) res
 	}
 }
 
+func testCheckWatchTransformCleared(t *testing.T) resource.TestCheckFunc {
+	t.Helper()
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[watchResourceName]
+		if !ok {
+			return fmt.Errorf("%s not found in state", watchResourceName)
+		}
+		got, ok := rs.Primary.Attributes["transform"]
+		if !ok || got == "" {
+			return nil
+		}
+		return fmt.Errorf("transform should be cleared in state for %s, got %q", watchResourceName, got)
+	}
+}
+
 func TestResourceWatch(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -142,7 +157,7 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
 					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataExample),
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
-					resource.TestCheckNoResourceAttr(watchResourceName, "transform"),
+					testCheckWatchTransformCleared(t),
 				),
 			},
 			{
