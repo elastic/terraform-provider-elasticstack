@@ -51,6 +51,21 @@ func TestSDKFleetEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	p := provider.New("dev")
 	expected := providerschema.GetKibanaEntityConnectionSchema()
 
+	entityCount := 0
+	for name := range p.ResourcesMap {
+		if strings.HasPrefix(name, fleetEntityPrefix) {
+			entityCount++
+		}
+	}
+	for name := range p.DataSourcesMap {
+		if strings.HasPrefix(name, fleetEntityPrefix) {
+			entityCount++
+		}
+	}
+	if entityCount == 0 {
+		t.Skip("no SDK fleet entities registered — kept as a future safety net")
+	}
+
 	runSDKFleetEntitySubtests(t, "resource", p.ResourcesMap, expected)
 	runSDKFleetEntitySubtests(t, "data_source", p.DataSourcesMap, expected)
 }
