@@ -186,11 +186,13 @@ When `active` is omitted from configuration, the resource SHALL behave as if `ac
 On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, and `metadata` back into normalized JSON strings and store them in state. For `actions`, the resource SHALL marshal the API response into a normalized JSON string, but when the API response contains a redacted string sentinel at a nested path and a prior known Terraform `actions` JSON value (state on refresh, or plan on read-after-write after create or update) has a concrete string at the same path, the resource SHALL preserve that prior concrete string at that path in the final stored JSON. When no prior concrete value exists for a redacted `actions` path, the resource SHALL store the API value as returned. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a normalized JSON string and store it in state. When the API response has a nil `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL normalize semantically equivalent JSON so formatting-only changes do not create perpetual diffs.
 
 #### Scenario: transform removed from the remote watch
+
 - **GIVEN** the watch previously had a `transform` stored in Terraform state
-- **WHEN** read runs and the API response has no `transform` field, a null `transform`, or an empty `transform` object
+- **WHEN** read runs and the API response has no `transform` field
 - **THEN** the `transform` attribute SHALL be cleared from state
 
 #### Scenario: active synced from watch status
+
 - **GIVEN** the watch is deactivated on the cluster
 - **WHEN** read runs
 - **THEN** `active` in state SHALL reflect `watch.status.state.active` from the API response
