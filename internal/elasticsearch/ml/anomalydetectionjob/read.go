@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -39,7 +38,7 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 	jobID := job.JobID.ValueString()
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
 
-	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, job.ElasticsearchConnection, r.client)
+	client, connDiags := r.client.GetElasticsearchClient(ctx, job.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return false, diags

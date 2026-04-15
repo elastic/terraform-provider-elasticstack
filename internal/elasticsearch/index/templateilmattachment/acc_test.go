@@ -305,7 +305,7 @@ func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *tes
 
 func createPreservesTestComponentTemplate(t *testing.T) {
 	t.Helper()
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create acceptance test client: %v", err)
 	}
@@ -328,7 +328,7 @@ func createPreservesTestComponentTemplate(t *testing.T) {
 // checkPreservesTemplateDestroy verifies the template still exists and has no ILM setting, then
 // deletes the template (cleanup of the fixture created in PreCheck).
 func checkPreservesTemplateDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}
@@ -388,7 +388,7 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 }
 
 func checkResourceDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}
@@ -423,7 +423,7 @@ func checkResourceDestroy(s *terraform.State) error {
 
 func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return err
 		}
@@ -479,7 +479,7 @@ func primaryESEndpoint() string {
 func createESAccessToken(t *testing.T) string {
 	t.Helper()
 
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}

@@ -20,7 +20,6 @@ package templateilmattachment
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -35,7 +34,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, state.ElasticsearchConnection, r.client)
+	client, fwDiags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return

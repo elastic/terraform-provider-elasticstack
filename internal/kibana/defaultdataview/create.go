@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -40,7 +39,7 @@ func (r *Resource) setDefaultDataView(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	apiClient, apiClientDiags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
 	diags.Append(apiClientDiags...)
 	if diags.HasError() {
 		return diags

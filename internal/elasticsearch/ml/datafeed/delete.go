@@ -43,14 +43,14 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, state.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Before deleting, we need to stop the datafeed if it's running
-	_, stopDiags := r.maybeStopDatafeed(ctx, state, r.client, datafeedID)
+	_, stopDiags := r.maybeStopDatafeed(ctx, client, datafeedID)
 	resp.Diagnostics.Append(stopDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -68,17 +68,13 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 
 func (r *datafeedResource) maybeStopDatafeed(
 	ctx context.Context,
-	model Datafeed,
-	defaultClient *clients.APIClient,
+	client *clients.ElasticsearchScopedClient,
 	datafeedID string,
 ) (bool, diag.Diagnostics) {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, defaultClient)
-	if diags.HasError() {
-		return false, diags
-	}
+	var diags diag.Diagnostics
 
 	// Check current state
-	currentState, diags := GetDatafeedState(ctx, model, defaultClient, datafeedID)
+	currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -100,7 +96,7 @@ func (r *datafeedResource) maybeStopDatafeed(
 	}
 
 	// Wait for the datafeed to reach stopped state
-	_, waitDiags := WaitForDatafeedState(ctx, model, defaultClient, datafeedID, StateStopped)
+	_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStopped)
 	diags.Append(waitDiags...)
 	if diags.HasError() {
 		return true, diags

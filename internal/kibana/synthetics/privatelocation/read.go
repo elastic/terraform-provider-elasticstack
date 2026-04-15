@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,13 +37,13 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromAPIClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

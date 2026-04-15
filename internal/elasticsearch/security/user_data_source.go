@@ -82,7 +82,11 @@ func DataSourceUser() *schema.Resource {
 }
 
 func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

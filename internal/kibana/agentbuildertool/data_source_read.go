@@ -39,7 +39,7 @@ func (d *ToolDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, config.KibanaConnection, d.client)
+	client, diags := d.client.GetKibanaClient(ctx, config.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

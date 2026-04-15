@@ -101,16 +101,10 @@ func extractILMSetting(template *models.Template) string {
 // It returns (true, nil) on success, (false, diags) on SDK error, and (false, nil) when the
 // template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
 // removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, model *tfModel, defaultClient *clients.APIClient) (bool, diag.Diagnostics) {
+func readILMAttachment(ctx context.Context, model *tfModel, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	componentTemplateName := model.getComponentTemplateName()
-
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, defaultClient)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
 
 	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
 	if sdkDiags.HasError() {

@@ -30,7 +30,7 @@ func NewMLJobStateResource() resource.Resource {
 }
 
 type mlJobStateResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *mlJobStateResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -38,7 +38,7 @@ func (r *mlJobStateResource) Metadata(_ context.Context, req resource.MetadataRe
 }
 
 func (r *mlJobStateResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

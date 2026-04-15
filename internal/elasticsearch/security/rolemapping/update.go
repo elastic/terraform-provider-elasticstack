@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -41,7 +40,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 
 	roleMappingName := data.Name.ValueString()
 
-	client, frameworkDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, frameworkDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(frameworkDiags...)
 	if diags.HasError() {
 		return diags
@@ -90,7 +89,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Read the updated role mapping to ensure consistent result
-	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, r.client)
+	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags

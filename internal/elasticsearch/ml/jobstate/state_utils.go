@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,7 +31,7 @@ var errJobNotFound = fmt.Errorf("ML job not found")
 
 // getJobState returns the current state of a job
 func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateData, jobID string) (*string, diag.Diagnostics) {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return nil, diags
 	}

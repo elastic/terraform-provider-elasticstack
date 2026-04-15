@@ -34,11 +34,11 @@ var (
 )
 
 type Resource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }

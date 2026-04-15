@@ -111,7 +111,11 @@ func ResourceSpace() *schema.Resource {
 }
 
 func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -187,7 +191,11 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 }
 
 func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -237,7 +245,11 @@ func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag
 }
 
 func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

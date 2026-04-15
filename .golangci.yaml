@@ -21,7 +21,6 @@ linters:
     - unparam
     - usetesting
     - revive
-    - esclienthelper
     - acctestconfigdirlint
   exclusions:
     generated: lax
@@ -42,9 +41,6 @@ linters:
     goheader:
       template-path: ./.LICENSE_HEADER.tmpl
     custom:
-      esclienthelper:
-        type: module
-        description: Enforce Elasticsearch entity client helper usage.
       acctestconfigdirlint:
         type: module
         description: Enforce directory-backed fixture usage in acceptance test steps.

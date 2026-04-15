@@ -37,7 +37,7 @@ func NewDataSource() datasource.DataSource {
 
 // dataSource is the data source implementation.
 type dataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 // Metadata returns the data source type name.
@@ -52,12 +52,11 @@ func (d *dataSource) Configure(_ context.Context, req datasource.ConfigureReques
 	if req.ProviderData == nil {
 		return
 	}
-
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	d.client = client
+	d.client = factory
 }

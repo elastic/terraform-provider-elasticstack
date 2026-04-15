@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -44,7 +43,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	apiClient, apiClientDiags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, planModel.KibanaConnection, r.client)
+	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
 	respDiags.Append(apiClientDiags...)
 	if respDiags.HasError() {
 		return

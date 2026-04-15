@@ -45,7 +45,7 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 	usernameID := compID.ResourceID
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

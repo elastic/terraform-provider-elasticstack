@@ -21,9 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -37,7 +36,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, d.client)
+	client, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

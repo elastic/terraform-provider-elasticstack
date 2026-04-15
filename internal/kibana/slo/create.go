@@ -36,11 +36,11 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

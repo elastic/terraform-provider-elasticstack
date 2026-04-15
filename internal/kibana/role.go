@@ -283,7 +283,11 @@ func ResourceRole() *schema.Resource {
 }
 
 func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -343,7 +347,11 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) d
 }
 
 func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -390,7 +398,11 @@ func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.
 }
 
 func resourceRoleDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewKibanaAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetKibanaClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

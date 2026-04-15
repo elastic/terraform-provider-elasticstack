@@ -236,7 +236,11 @@ func ResourceTemplate() *schema.Resource {
 }
 
 func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -397,7 +401,11 @@ func expandTemplate(config any) (models.Template, bool, diag.Diagnostics) {
 }
 
 func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -619,7 +627,11 @@ func hashAliasByName(v any) int {
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

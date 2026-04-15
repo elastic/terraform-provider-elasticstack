@@ -20,7 +20,6 @@ package slo
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,11 +34,11 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
 		return
 	}
 
-	apiClient, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

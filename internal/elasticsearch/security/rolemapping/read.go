@@ -35,13 +35,8 @@ import (
 )
 
 // readRoleMapping reads role mapping data from Elasticsearch and returns Data
-func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string, defaultClient *clients.APIClient) (*Data, diag.Diagnostics) {
+func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string, client *clients.ElasticsearchScopedClient) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateData.ElasticsearchConnection, defaultClient)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
 
 	roleMapping, apiDiags := elasticsearch.GetRoleMapping(ctx, client, roleMappingName)
 	diags.Append(apiDiags...)
@@ -117,7 +112,13 @@ func (r *roleMappingResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 	roleMappingName := compID.ResourceID
 
-	readData, diags := readRoleMapping(ctx, data, roleMappingName, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readData, diags := readRoleMapping(ctx, data, roleMappingName, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

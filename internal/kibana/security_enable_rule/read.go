@@ -20,7 +20,6 @@ package securityenablerule
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,7 +35,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

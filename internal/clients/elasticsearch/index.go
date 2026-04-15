@@ -33,7 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutIlm(ctx context.Context, apiClient *clients.APIClient, policy *models.Policy) fwdiags.Diagnostics {
+func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.Policy) fwdiags.Diagnostics {
 	policyBytes, err := json.Marshal(map[string]any{"policy": policy})
 	if err != nil {
 		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
@@ -51,7 +51,7 @@ func PutIlm(ctx context.Context, apiClient *clients.APIClient, policy *models.Po
 	return diagutil.CheckErrorFromFW(res, "Unable to create or update the ILM policy")
 }
 
-func GetIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) (*models.PolicyDefinition, fwdiags.Diagnostics) {
+func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.PolicyDefinition, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
@@ -85,7 +85,7 @@ func GetIlm(ctx context.Context, apiClient *clients.APIClient, policyName string
 	}
 }
 
-func DeleteIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) fwdiags.Diagnostics {
+func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
@@ -98,7 +98,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.APIClient, policyName str
 	return diagutil.CheckErrorFromFW(res, "Unable to delete ILM policy.")
 }
 
-func PutComponentTemplate(ctx context.Context, apiClient *clients.APIClient, template *models.ComponentTemplate) diag.Diagnostics {
+func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
@@ -123,7 +123,7 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.APIClient, tem
 
 // GetComponentTemplate returns a component template by name. flatSettings controls the
 // response format: true = flat keys (e.g. "index.number_of_shards"), false = nested (default).
-func GetComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string, flatSettings bool) (*models.ComponentTemplateResponse, diag.Diagnostics) {
+func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string, flatSettings bool) (*models.ComponentTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -163,7 +163,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.APIClient, tem
 	return &tpl, diags
 }
 
-func DeleteComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) diag.Diagnostics {
+func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -180,7 +180,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.APIClient, 
 	return diags
 }
 
-func PutIndexTemplate(ctx context.Context, apiClient *clients.APIClient, template *models.IndexTemplate) diag.Diagnostics {
+func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
@@ -203,7 +203,7 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templat
 	return diags
 }
 
-func GetIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
+func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -240,7 +240,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templat
 	return &tpl, diags
 }
 
-func DeleteIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) diag.Diagnostics {
+func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -257,7 +257,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.APIClient, temp
 	return diags
 }
 
-func PutIndex(ctx context.Context, apiClient *clients.APIClient, index *models.Index, params *models.PutIndexParams) fwdiags.Diagnostics {
+func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index *models.Index, params *models.PutIndexParams) fwdiags.Diagnostics {
 	indexBytes, err := json.Marshal(index)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -293,7 +293,7 @@ func PutIndex(ctx context.Context, apiClient *clients.APIClient, index *models.I
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func DeleteIndex(ctx context.Context, apiClient *clients.APIClient, name string) fwdiags.Diagnostics {
+func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -311,7 +311,7 @@ func DeleteIndex(ctx context.Context, apiClient *clients.APIClient, name string)
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func GetIndex(ctx context.Context, apiClient *clients.APIClient, name string) (*models.Index, fwdiags.Diagnostics) {
+func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.Index, fwdiags.Diagnostics) {
 	indices, diags := GetIndices(ctx, apiClient, name)
 	if diags.HasError() {
 		return nil, diags
@@ -324,7 +324,7 @@ func GetIndex(ctx context.Context, apiClient *clients.APIClient, name string) (*
 	return nil, nil
 }
 
-func GetIndices(ctx context.Context, apiClient *clients.APIClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {
+func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
@@ -358,7 +358,7 @@ func GetIndices(ctx context.Context, apiClient *clients.APIClient, name string) 
 	return indices, nil
 }
 
-func DeleteIndexAlias(ctx context.Context, apiClient *clients.APIClient, index string, aliases []string) fwdiags.Diagnostics {
+func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, aliases []string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -376,7 +376,7 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.APIClient, index s
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexAlias(ctx context.Context, apiClient *clients.APIClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
+func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -401,7 +401,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.APIClient, index s
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexSettings(ctx context.Context, apiClient *clients.APIClient, index string, settings map[string]any) fwdiags.Diagnostics {
+func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, settings map[string]any) fwdiags.Diagnostics {
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -426,7 +426,7 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.APIClient, inde
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexMappings(ctx context.Context, apiClient *clients.APIClient, index, mappings string) fwdiags.Diagnostics {
+func UpdateIndexMappings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index, mappings string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -444,7 +444,7 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.APIClient, inde
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func PutDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) diag.Diagnostics {
+func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -463,7 +463,7 @@ func PutDataStream(ctx context.Context, apiClient *clients.APIClient, dataStream
 	return diags
 }
 
-func GetDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
+func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -491,7 +491,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.APIClient, dataStream
 	return &ds, diags
 }
 
-func DeleteDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) diag.Diagnostics {
+func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -510,7 +510,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.APIClient, dataStr
 	return diags
 }
 
-func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
+func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -538,7 +538,7 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, d
 	return nil
 }
 
-func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
+func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -570,7 +570,7 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, d
 	return &ds, nil
 }
 
-func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
+func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -592,7 +592,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient
 	return nil
 }
 
-func GetAlias(ctx context.Context, apiClient *clients.APIClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
+func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
@@ -644,7 +644,7 @@ type AliasAction struct {
 }
 
 // UpdateAliasesAtomic performs atomic alias updates using multiple actions
-func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.APIClient, actions []AliasAction) fwdiags.Diagnostics {
+func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, actions []AliasAction) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -719,7 +719,7 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.APIClient, acti
 	return diagutil.CheckErrorFromFW(res, "Unable to update aliases atomically")
 }
 
-func PutIngestPipeline(ctx context.Context, apiClient *clients.APIClient, pipeline *models.IngestPipeline) diag.Diagnostics {
+func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)
 	if err != nil {
@@ -742,7 +742,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.APIClient, pipeli
 	return diags
 }
 
-func GetIngestPipeline(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
+func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -771,7 +771,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.APIClient, name *
 	return &pipeline, diags
 }
 
-func DeleteIngestPipeline(ctx context.Context, apiClient *clients.APIClient, name *string) diag.Diagnostics {
+func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()

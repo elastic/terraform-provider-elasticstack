@@ -38,12 +38,7 @@ const (
 )
 
 // GetDatafeedState returns the current state of a datafeed
-func GetDatafeedState(ctx context.Context, model Datafeed, defaultClient *clients.APIClient, datafeedID string) (*State, diag.Diagnostics) {
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, defaultClient)
-	if diags.HasError() {
-		return nil, diags
-	}
-
+func GetDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, datafeedID string) (*State, diag.Diagnostics) {
 	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	if diags.HasError() {
 		return nil, diags
@@ -65,9 +60,9 @@ var terminalDatafeedStates = map[State]struct{}{
 var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state")
 
 // WaitForDatafeedState waits for a datafeed to reach the desired state
-func WaitForDatafeedState(ctx context.Context, model Datafeed, defaultClient *clients.APIClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
+func WaitForDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
 	stateChecker := func(ctx context.Context) (bool, error) {
-		currentState, diags := GetDatafeedState(ctx, model, defaultClient, datafeedID)
+		currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 		if diags.HasError() {
 			return false, diagutil.FwDiagsAsError(diags)
 		}

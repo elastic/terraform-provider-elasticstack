@@ -20,7 +20,6 @@ package prebuiltrules
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
@@ -41,7 +40,7 @@ func (r *PrebuiltRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	apiClient, clientDiags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, model.KibanaConnection, r.client)
+	apiClient, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags

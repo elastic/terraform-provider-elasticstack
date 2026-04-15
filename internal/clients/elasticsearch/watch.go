@@ -29,12 +29,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watch *models.PutWatch) diag.Diagnostics {
+	watchBodyBytes, err := json.Marshal(watch.Body)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return putWatchBytes(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
+}
+
 // PutWatchBodyJSON sends a pre-encoded watch document (the JSON object under the watch id) to Put Watch.
-func PutWatchBodyJSON(ctx context.Context, apiClient *clients.APIClient, watchID string, active bool, watchBodyJSON []byte) diag.Diagnostics {
+func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) diag.Diagnostics {
 	return putWatchBytes(ctx, apiClient, watchID, active, watchBodyJSON)
 }
 
-func putWatchBytes(ctx context.Context, apiClient *clients.APIClient, watchID string, active bool, watchBodyBytes []byte) diag.Diagnostics {
+func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyBytes []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -54,7 +62,7 @@ func putWatchBytes(ctx context.Context, apiClient *clients.APIClient, watchID st
 	return diags
 }
 
-func GetWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) (*models.Watch, diag.Diagnostics) {
+func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -83,7 +91,7 @@ func GetWatch(ctx context.Context, apiClient *clients.APIClient, watchID string)
 	return &watch, diags
 }
 
-func DeleteWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) diag.Diagnostics {
+func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {

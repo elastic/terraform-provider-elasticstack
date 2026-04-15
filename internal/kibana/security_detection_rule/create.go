@@ -34,7 +34,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	client, diags := clients.MaybeNewKibanaAPIClientFromFrameworkResource(ctx, data.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, data.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -51,7 +51,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Build the create request
-	createProps, diags := data.toCreateProps(ctx, r.client)
+	createProps, diags := data.toCreateProps(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

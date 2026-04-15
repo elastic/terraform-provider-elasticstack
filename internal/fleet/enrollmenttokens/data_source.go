@@ -36,7 +36,7 @@ func NewDataSource() datasource.DataSource {
 }
 
 type enrollmentTokensDataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (d *enrollmentTokensDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -44,7 +44,10 @@ func (d *enrollmentTokensDataSource) Metadata(_ context.Context, req datasource.
 }
 
 func (d *enrollmentTokensDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	d.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	d.client = factory
 }

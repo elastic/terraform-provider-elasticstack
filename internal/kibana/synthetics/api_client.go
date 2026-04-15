@@ -26,16 +26,16 @@ import (
 
 // ESAPIClient interface provides access to the underlying API client
 type ESAPIClient interface {
-	GetClient() *clients.APIClient
+	GetClient() *clients.KibanaScopedClient
 }
 
 // GetKibanaClient returns a configured Kibana client for the given ESAPIClient
 func GetKibanaClient(c ESAPIClient, dg diag.Diagnostics) *kibana.Client {
-	return GetKibanaClientFromAPIClient(c.GetClient(), dg)
+	return GetKibanaClientFromScopedClient(c.GetClient(), dg)
 }
 
-// GetKibanaClientFromAPIClient returns a configured Kibana client for the given *clients.APIClient
-func GetKibanaClientFromAPIClient(client *clients.APIClient, dg diag.Diagnostics) *kibana.Client {
+// GetKibanaClientFromScopedClient returns a configured Kibana client for the given *clients.KibanaScopedClient
+func GetKibanaClientFromScopedClient(client *clients.KibanaScopedClient, dg diag.Diagnostics) *kibana.Client {
 	if client == nil {
 		dg.AddError(
 			"Unconfigured Client",
@@ -54,11 +54,11 @@ func GetKibanaClientFromAPIClient(client *clients.APIClient, dg diag.Diagnostics
 
 // GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient
 func GetKibanaOAPIClient(c ESAPIClient, dg diag.Diagnostics) *kibanaoapi.Client {
-	return GetKibanaOAPIClientFromAPIClient(c.GetClient(), dg)
+	return GetKibanaOAPIClientFromScopedClient(c.GetClient(), dg)
 }
 
-// GetKibanaOAPIClientFromAPIClient returns a configured Kibana OpenAPI client for the given *clients.APIClient
-func GetKibanaOAPIClientFromAPIClient(client *clients.APIClient, dg diag.Diagnostics) *kibanaoapi.Client {
+// GetKibanaOAPIClientFromScopedClient returns a configured Kibana OpenAPI client for the given *clients.KibanaScopedClient
+func GetKibanaOAPIClientFromScopedClient(client *clients.KibanaScopedClient, dg diag.Diagnostics) *kibanaoapi.Client {
 	if client == nil {
 		dg.AddError(
 			"Unconfigured Client",

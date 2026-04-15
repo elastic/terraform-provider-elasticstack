@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -41,7 +40,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	usernameID := data.Username.ValueString()
-	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, connDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags

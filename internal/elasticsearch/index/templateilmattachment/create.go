@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -37,7 +36,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	client, fwDiags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -128,7 +127,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Read back to ensure state consistency
-	found, diags := readILMAttachment(ctx, &plan, r.client)
+	found, diags := readILMAttachment(ctx, &plan, client)
 	resp.Diagnostics.Append(diags...)
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(

@@ -346,7 +346,11 @@ func ResourceTransform() *schema.Resource {
 
 func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -388,7 +392,11 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta a
 
 func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -433,7 +441,11 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any
 
 func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -479,7 +491,11 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta a
 
 func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
