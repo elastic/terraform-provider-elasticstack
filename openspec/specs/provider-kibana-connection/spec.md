@@ -13,33 +13,37 @@ Note: `internal/schema.GetKibanaConnectionSchema()` is the provider-level helper
 - **THEN** it SHALL come from the shared provider schema helpers rather than an entity-specific variant, and any path-based validation metadata SHALL target the entity-local block path
 
 ### Requirement: Framework scoped Kibana client resolution
-The provider SHALL expose a Plugin Framework helper named `clients.MaybeNewKibanaAPIClientFromFrameworkResource(...)` that accepts an entity-local `kibana_connection` block and a default `*clients.APIClient`. When the block is not configured, the helper SHALL return the default client. When the block is configured, the helper SHALL return a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
+The provider SHALL expose Plugin Framework `kibana_connection` resolution through `*clients.ProviderClientFactory` methods that accept an entity-local `kibana_connection` block and return a `*clients.KibanaScopedClient`. When the block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
-#### Scenario: Framework helper falls back to provider client
-- **WHEN** a Framework entity resolves its effective client and `kibana_connection` is absent
-- **THEN** the helper SHALL return the provider-configured default `*clients.APIClient`
+#### Scenario: Framework factory falls back to provider defaults
+- **WHEN** a Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is absent
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` derived from provider configuration
 
-#### Scenario: Framework helper builds a scoped Kibana-derived client
-- **WHEN** a Framework entity resolves its effective client and `kibana_connection` is configured
-- **THEN** the helper SHALL return a scoped `*clients.APIClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
+#### Scenario: Framework factory builds a scoped Kibana-derived client
+- **WHEN** a Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is configured
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
 
 ### Requirement: SDK scoped Kibana client resolution
-The provider SHALL expose an SDK helper named `clients.NewKibanaAPIClientFromSDKResource(...)` that accepts resource or data source state and provider meta and resolves an effective `*clients.APIClient` from entity-local `kibana_connection`. When the block is not configured, the helper SHALL use the provider client. When the block is configured, the helper SHALL build a scoped `*clients.APIClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
+The provider SHALL expose SDK `kibana_connection` resolution through `*clients.ProviderClientFactory` methods that accept resource or data source state and return a `*clients.KibanaScopedClient`. When the block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
-#### Scenario: SDK helper falls back to provider client
-- **WHEN** an SDK entity resolves its effective client and `kibana_connection` is absent
-- **THEN** the helper SHALL return the provider-configured default `*clients.APIClient`
+#### Scenario: SDK factory falls back to provider defaults
+- **WHEN** an SDK entity resolves its effective Kibana client through the factory and `kibana_connection` is absent
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` derived from provider configuration
 
-#### Scenario: SDK helper builds a scoped Kibana-derived client
-- **WHEN** an SDK entity resolves its effective client and `kibana_connection` is configured
-- **THEN** the helper SHALL return a scoped `*clients.APIClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
+#### Scenario: SDK factory builds a scoped Kibana-derived client
+- **WHEN** an SDK entity resolves its effective Kibana client through the factory and `kibana_connection` is configured
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
 
 ### Requirement: Scoped client version and identity behavior
-When an entity uses a scoped `kibana_connection`, version, flavor, and other Kibana-derived client checks SHALL resolve against the scoped connection rather than the provider-level Elasticsearch client. The scoped `*clients.APIClient` SHALL therefore avoid reusing provider-level Elasticsearch identity in a way that can make Kibana or Fleet operations target one cluster while version or identity checks target another.
+When an entity uses a scoped `*clients.KibanaScopedClient` resolved from `kibana_connection`, version, flavor, and other Kibana-derived client checks SHALL resolve against the scoped connection rather than provider-level Elasticsearch identity. The `*clients.KibanaScopedClient` SHALL therefore avoid exposing provider-level Elasticsearch identity in a way that can make Kibana or Fleet operations target one cluster while version or identity checks target another.
 
 #### Scenario: Scoped version checks follow the scoped Kibana connection
 - **WHEN** an entity uses `ServerVersion()`, `ServerFlavor()`, or equivalent behavior through a scoped `kibana_connection`
 - **THEN** the result SHALL be derived from the scoped Kibana connection instead of the provider's Elasticsearch connection
+
+#### Scenario: Scoped Kibana client does not expose provider Elasticsearch identity
+- **WHEN** a covered Kibana or Fleet entity uses the `*clients.KibanaScopedClient` returned for `kibana_connection`
+- **THEN** that `*clients.KibanaScopedClient` SHALL NOT require provider-level Elasticsearch identity to perform Kibana or Fleet operations
 
 ### Requirement: In-scope Kibana entity rollout
 The rollout's covered Kibana entities SHALL be exactly the Kibana resources and data sources registered in `provider/provider.go` and `provider/plugin_framework.go`: `elasticstack_kibana_action_connector`, `elasticstack_kibana_agentbuilder_export_workflow`, `elasticstack_kibana_agentbuilder_workflow`, `elasticstack_kibana_alerting_rule`, `elasticstack_kibana_dashboard`, `elasticstack_kibana_data_view`, `elasticstack_kibana_default_data_view`, `elasticstack_kibana_export_saved_objects`, `elasticstack_kibana_import_saved_objects`, `elasticstack_kibana_maintenance_window`, `elasticstack_kibana_security_detection_rule`, `elasticstack_kibana_security_enable_rule`, `elasticstack_kibana_security_exception_item`, `elasticstack_kibana_security_exception_list`, `elasticstack_kibana_security_list`, `elasticstack_kibana_security_list_data_streams`, `elasticstack_kibana_security_list_item`, `elasticstack_kibana_security_role`, `elasticstack_kibana_slo`, `elasticstack_kibana_space`, `elasticstack_kibana_spaces`, `elasticstack_kibana_stream`, `elasticstack_kibana_synthetics_monitor`, `elasticstack_kibana_synthetics_parameter`, and `elasticstack_kibana_synthetics_private_location`. Each covered Kibana entity SHALL expose `kibana_connection` using the shared provider schema helper for its implementation style and SHALL use the effective scoped client derived from that block when it is configured.
