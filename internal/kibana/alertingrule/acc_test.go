@@ -518,7 +518,7 @@ func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceAlertingRuleFromSDK/create/rule.tf
+//go:embed testdata/TestAccResourceAlertingRuleFromSDK/create/main.tf
 var testAccResourceAlertingRuleFromSDKCreateConfig string
 
 func TestAccResourceAlertingRuleFromSDK(t *testing.T) {

@@ -72,7 +72,7 @@ func (r *watchResource) read(ctx context.Context, data Data) (*Data, diag.Diagno
 		return nil, nil
 	}
 
-	diags.Append(data.fromAPIModel(ctx, watch)...)
+	diags.Append(data.fromAPIModel(ctx, watch, data.Actions)...)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -24,6 +24,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	_ "embed"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -44,6 +45,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceEnrichPolicyFromSDK/upgrade/main.tf
+var testAccResourceEnrichPolicyFromSDKConfig string
 
 func TestAccResourceEnrichPolicyFW(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -291,7 +295,8 @@ func TestAccResourceEnrichPolicyFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				Config: testAccEnrichPolicyFW(name),
+				Config:          testAccResourceEnrichPolicyFromSDKConfig,
+				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
@@ -1302,38 +1307,6 @@ func createEnrichPolicyTLSMaterial(t *testing.T) enrichPolicyTLSMaterial {
 		certFile: certFile,
 		keyFile:  keyFile,
 	}
-}
-
-func testAccEnrichPolicyFW(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "my_index" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      email      = { type = "text" }
-      first_name = { type = "text" }
-      last_name  = { type = "text" }
-    }
-  })
-  deletion_protection = false
-}
-
-resource "elasticstack_elasticsearch_enrich_policy" "policy" {
-  name          = "%s"
-  policy_type   = "match"
-  indices       = [elasticstack_elasticsearch_index.my_index.name]
-  match_field   = "email"
-  enrich_fields = ["first_name", "last_name"]
-	query = <<-EOD
-	{"match_all": {}}
-	EOD
-}
-	`, name, name)
 }
 
 func preCheckESBasicAuth(t *testing.T) {

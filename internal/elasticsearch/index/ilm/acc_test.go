@@ -357,7 +357,7 @@ func TestAccResourceILMForcemerge(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceILMFromSDK/create/resource.tf
+//go:embed testdata/TestAccResourceILMFromSDK/create/main.tf
 var sdkILMCreateConfig string
 
 func TestAccResourceILMFrozenPhase(t *testing.T) {

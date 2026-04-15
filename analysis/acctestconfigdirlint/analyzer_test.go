@@ -27,7 +27,10 @@ import (
 // Covered patterns:
 //   - ordinary step: step-level ProtoV6ProviderFactories + ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.Test
 //   - ordinary step: same inside resource.ParallelTest
-//   - compatibility step: ExternalProviders + Config: "..." inside resource.Test
+//   - compatibility step: ExternalProviders + Config from package-level
+//     //go:embed testdata/.../*.tf (single-line var or grouped var block;
+//     resource.Test and resource.ParallelTest; parenthesized Config; //
+//     comment between embed and var)
 //   - import-only step: step-level ProtoV6ProviderFactories, neither Config nor ConfigDirectory
 func TestAnalyzer_CompliantCases(t *testing.T) {
 	testdata := analysistest.TestData()
@@ -45,6 +48,7 @@ func TestAnalyzer_CompliantCases(t *testing.T) {
 //   - both ProtoV6ProviderFactories and ExternalProviders on the same step
 //   - inline Config without ExternalProviders does not also report missing provider wiring
 //   - inline Config without ExternalProviders is reported even if ConfigDirectory is also set
+//   - ExternalProviders + Config that is not an embedded testdata/.../*.tf package variable (raw, Sprintf, concat, helper, wrong embed)
 func TestAnalyzer_Violations(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")

@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -108,8 +109,10 @@ func marshalCompact(v any) (string, error) {
 	return buf.String(), nil
 }
 
-// fromAPIModel populates the Data model from an API watch response.
-func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnostics {
+// fromAPIModel populates the Data model from an API watch response. priorActions
+// is the actions JSON from Terraform plan or state; redacted string leaves from
+// the API are replaced with prior non-redacted values at the same paths when present.
+func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions jsontypes.Normalized) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	d.WatchID = types.StringValue(watch.WatchID)
@@ -151,7 +154,18 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch) diag.Diagnos
 	if watch.Body.Actions == nil {
 		d.Actions = jsontypes.NewNormalizedValue(`{}`)
 	} else {
-		actions, err := marshalCompact(watch.Body.Actions)
+		mergedActions := watch.Body.Actions
+		if typeutils.IsKnown(priorActions) {
+			var priorRoot any
+			if err := json.Unmarshal([]byte(priorActions.ValueString()), &priorRoot); err != nil {
+				diags.AddError("Invalid actions JSON in Terraform state or plan", fmt.Sprintf("Error parsing prior actions: %s", err))
+				return diags
+			}
+			if _, ok := priorRoot.(map[string]any); ok {
+				mergedActions = mergeActionsPreservingRedactedLeaves(watch.Body.Actions, priorRoot)
+			}
+		}
+		actions, err := marshalCompact(mergedActions)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
 			return diags

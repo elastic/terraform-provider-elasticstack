@@ -126,7 +126,7 @@ func TestAccResourceIndex(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceIndexFromSDK/index.tf
+//go:embed testdata/TestAccResourceIndexFromSDK/main.tf
 var sdkCreateTestConfig string
 
 func TestAccResourceIndexFromSDK(t *testing.T) {

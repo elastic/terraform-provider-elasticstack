@@ -286,7 +286,7 @@ func TestAccResourceSlo(t *testing.T) {
 	}
 }
 
-//go:embed testdata/TestAccResourceSloGroupBy/single_element/test.tf
+//go:embed testdata/TestAccResourceSloGroupBy/single_element/main.tf
 var singleElementConfig string
 
 func TestAccResourceSloGroupBy(t *testing.T) {

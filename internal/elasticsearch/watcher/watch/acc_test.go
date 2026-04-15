@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -233,6 +234,41 @@ func TestResourceWatch_defaultsOmitted(t *testing.T) {
 // TestAccResourceWatchFromSDK verifies that state created by the last SDK-based
 // provider release (v0.14.3) can be read and updated without recreation by the
 // current Plugin Framework implementation.
+func TestAccResourceWatch_redactedWebhookAuthPreserved(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`acc-redacted-webhook-secret-9f2c`)),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`127\.0\.0\.1`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "12000"),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`acc-redacted-webhook-secret-9f2c`)),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`127\.0\.0\.1`)),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceWatchFromSDK(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

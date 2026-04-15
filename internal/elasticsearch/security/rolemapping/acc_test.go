@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-//go:embed testdata/TestAccResourceSecurityRoleMapping/create/role_mapping.tf
+//go:embed testdata/TestAccResourceSecurityRoleMapping/create/main.tf
 var roleMappingCreateConfig string
 
 func TestAccResourceSecurityRoleMapping(t *testing.T) {
