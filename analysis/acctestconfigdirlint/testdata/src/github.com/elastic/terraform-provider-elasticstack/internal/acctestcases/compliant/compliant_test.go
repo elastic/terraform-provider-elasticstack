@@ -18,11 +18,15 @@
 package compliant_test
 
 import (
+	_ "embed"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+//go:embed testdata/sdk_compat/main.tf
+var sdkCompatEmbeddedTF string
 
 // TestOrdinaryStep verifies that a step using ConfigDirectory: acctest.NamedTestCaseDirectory(...)
 // inside resource.Test is compliant and produces no diagnostic.
@@ -50,8 +54,8 @@ func TestOrdinaryStepParallel(t *testing.T) {
 	})
 }
 
-// TestCompatibilityStep verifies that a step using ExternalProviders + Config: "..."
-// inside resource.Test is compliant and produces no diagnostic.
+// TestCompatibilityStep verifies that a step using ExternalProviders + Config referencing
+// a package-level //go:embed testdata/.../main.tf variable inside resource.Test is compliant.
 func TestCompatibilityStep(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
@@ -59,7 +63,7 @@ func TestCompatibilityStep(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"aws": {Source: "hashicorp/aws", VersionConstraint: "~> 4.0"},
 				},
-				Config: `resource "aws_instance" "example" {}`,
+				Config: sdkCompatEmbeddedTF,
 			},
 		},
 	})
@@ -99,7 +103,7 @@ func TestMixedCompliantSteps(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"aws": {Source: "hashicorp/aws"},
 				},
-				Config: `resource "aws_instance" "example" {}`,
+				Config: sdkCompatEmbeddedTF,
 			},
 		},
 	})
