@@ -59,7 +59,7 @@ func NewProviderClientFactoryFromFramework(ctx context.Context, cfg config.Provi
 	if diags.HasError() {
 		return nil, diags
 	}
-	return NewProviderClientFactory(client), nil
+	return NewProviderClientFactory(client), diags
 }
 
 // --- Typed Kibana / Fleet resolution methods ---

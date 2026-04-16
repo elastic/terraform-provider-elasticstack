@@ -484,8 +484,12 @@ func newAPIClientFromSDK(d *schema.ResourceData, version string) (*apiClient, di
 }
 
 func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, error) {
+	var kibanaConfig kibana.Config
+	if cfg.Kibana != nil {
+		kibanaConfig = *cfg.Kibana
+	}
 	client := &apiClient{
-		kibanaConfig: *cfg.Kibana,
+		kibanaConfig: kibanaConfig,
 		version:      version,
 	}
 
