@@ -893,7 +893,10 @@ func toAPIAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kibanaoapi.
 		return nil
 	}
 	tfAlert := tfAlertConfigV0{}
-	tfsdk.ValueAs(ctx, v, &tfAlert)
+	dg := tfsdk.ValueAs(ctx, v, &tfAlert)
+	if dg.HasError() {
+		return nil
+	}
 	return tfAlert.toAPIAlertConfig()
 }
 
