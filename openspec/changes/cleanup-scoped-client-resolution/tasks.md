@@ -1,7 +1,11 @@
 ## 1. Migrate the remaining production holdout
 
-- [ ] 1.1 Update `internal/apm/agent_configuration` to configure from `ConvertProviderDataToFactory` and store a typed Kibana scoped client instead of `*clients.APIClient`.
-- [ ] 1.2 Switch APM create/read/update/delete operations to obtain the Kibana OpenAPI client from the typed scoped client and remove the remaining `ConvertProviderData` production dependency.
+- [ ] 1.1 Add the shared Plugin Framework `kibana_connection` block to `internal/apm/agent_configuration` and configure the resource from `ConvertProviderDataToFactory` so it can resolve either provider-default or entity-local typed Kibana scoped clients.
+- [ ] 1.2 Switch APM create/read/update/delete operations to obtain the Kibana OpenAPI client from the typed scoped client selected by the effective `kibana_connection`, and remove the remaining `ConvertProviderData` production dependency.
+- [ ] 1.3 Update `provider/kibana_connection_schema_test.go` so it explicitly owns the registered `elasticstack_kibana_*`, `elasticstack_fleet_*`, and `elasticstack_apm_agent_configuration` entities rather than relying on partial prefix heuristics.
+- [ ] 1.4 Update `provider/elasticsearch_connection_schema_test.go` so it explicitly owns the registered `elasticstack_elasticsearch_*` entities in a form that can participate in a shared registry-completeness check.
+- [ ] 1.5 Add a shared provider-registry completeness assertion for the two connection-schema fixtures that enumerates entities from `provider.New(...)` and `provider.NewFrameworkProvider(...)` and fails on uncovered or doubly covered entities.
+- [ ] 1.6 Add or update acceptance coverage for `elasticstack_apm_agent_configuration` so both provider-default and entity-local `kibana_connection` paths are exercised.
 
 ## 2. Remove legacy broad-client bridges
 

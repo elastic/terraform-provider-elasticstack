@@ -2,18 +2,20 @@
 
 The provider already injects `*clients.ProviderClientFactory` into Framework `ProviderData` and SDK `meta`, and most entities now resolve either `*clients.KibanaScopedClient` or `*clients.ElasticsearchScopedClient` from that factory. The remaining gaps are concentrated in `internal/clients/api_client.go`, where a broad `APIClient` still owns duplicated helper behavior and legacy bridge helpers, and in `internal/apm/agent_configuration`, which still converts provider data back into a broad client.
 
-This cleanup spans production code, tests, exported compatibility surfaces, and synced OpenSpec specs. The main constraint is that the factory still needs an internal provider-default client representation to bootstrap typed scoped clients, even after the broad client stops being part of the supported contract.
+This cleanup spans production code, tests, exported compatibility surfaces, shared entity-local connection schema helpers, and synced OpenSpec specs. The main constraint is that the factory still needs an internal provider-default client representation to bootstrap typed scoped clients, even after the broad client stops being part of the supported contract.
 
 ## Goals / Non-Goals
 
 **Goals:**
+- Add `kibana_connection` to `elasticstack_apm_agent_configuration` without inventing a resource-specific connection schema.
+- Make the connection-schema fixtures follow the real provider registry instead of partial naming heuristics, so future entities cannot be omitted silently.
 - Remove remaining production reliance on broad `APIClient` resolution.
 - Make typed factory/scoped-client resolution the only supported provider client contract.
 - Shrink `internal/clients` so Kibana- and Elasticsearch-specific helper behavior lives on the corresponding scoped clients.
 - Capture the remaining requirement changes in OpenSpec so implementation and specs converge again.
 
 **Non-Goals:**
-- Rework provider configuration parsing or connection schema shape.
+- Rework provider-level configuration parsing or invent a new APM-specific connection schema shape.
 - Expand the rollout to new resources beyond the existing cleanup target.
 - Fully redesign `xpprovider`; this change only narrows or replaces the parts that expose the broad client.
 - Eliminate every internal bootstrap helper immediately if a small private helper remains useful during the refactor.
@@ -22,13 +24,26 @@ This cleanup spans production code, tests, exported compatibility surfaces, and 
 
 ### Decision: Migrate APM agent configuration directly to typed Kibana client resolution
 
-`internal/apm/agent_configuration` only needs Kibana OpenAPI access. It will stop storing `*clients.APIClient` and instead resolve a typed Kibana client from `ProviderClientFactory`, then call `GetKibanaOapiClient()` on that typed client.
+`internal/apm/agent_configuration` only needs Kibana OpenAPI access. It will add the shared Plugin Framework `kibana_connection` block so the resource can either inherit provider defaults or scope Kibana-derived operations per resource. The resource will stop storing `*clients.APIClient` and instead resolve a typed Kibana client from `ProviderClientFactory`, then call `GetKibanaOapiClient()` on that typed client.
 
-This keeps the resource aligned with the same typed contract already used elsewhere and removes the last known Framework production use of `ConvertProviderData`.
+This keeps the resource aligned with the same typed contract already used elsewhere, closes the requirements gap called out in review, and removes the last known Framework production use of `ConvertProviderData`.
 
 Alternatives considered:
+- Keep the resource on provider-default resolution only and just remove the misleading override wording from the spec. Rejected because the cleanup is already touching APM client resolution, and adding the shared block now keeps the resource aligned with the broader `kibana_connection` model instead of leaving APM as a special case.
 - Keep using `ConvertProviderData` and accept one broad-client exception. Rejected because it preserves the exact bridge this cleanup is meant to remove.
 - Introduce a new APM-specific provider data adapter. Rejected because it adds another special case instead of converging on the factory pattern.
+
+### Decision: Make the connection-schema fixtures an explicit partition of the registered entity inventory
+
+The two fixture files, `provider/kibana_connection_schema_test.go` and `provider/elasticsearch_connection_schema_test.go`, will stop acting like independent prefix scans and instead become an explicit partition over the entities registered by `provider.New(...)` and `provider.NewFrameworkProvider(...)`.
+
+The Kibana fixture will own all registered `elasticstack_kibana_*` entities, all registered `elasticstack_fleet_*` entities, and `elasticstack_apm_agent_configuration`. The Elasticsearch fixture will own all registered `elasticstack_elasticsearch_*` entities. A shared completeness check will compare the union of those ownership sets against the full registry returned by the provider constructors and fail if any entity is uncovered or claimed by both fixtures.
+
+This keeps fixture ownership aligned with the actual provider surface, documents the current entity split in one place, and turns future registry changes into immediate test failures instead of silent omissions.
+
+Alternatives considered:
+- Keep prefix-based selection and add APM as a one-off exception in the Kibana fixture. Rejected because it would still lack any guarantee that the combined fixtures cover the full provider registry.
+- Maintain separate hand-written inventories in each test without a completeness check. Rejected because drift between the fixture inventories and the provider registrations would remain easy to miss.
 
 ### Decision: Keep a private provider-default bootstrap client, but remove it from the supported API surface
 
@@ -62,12 +77,13 @@ Alternatives considered:
 
 - `xpprovider` consumers may rely on `APIClient` today -> Mitigation: call out the break in the proposal, replace it with typed factory/scoped surfaces where possible, and verify downstream compile failures early.
 - Acceptance test churn may be larger than production code churn -> Mitigation: centralize replacement helpers first, then migrate package tests mechanically.
+- Fixture ownership can drift from the real provider registry -> Mitigation: derive the full registered entity inventory from provider constructors, encode fixture ownership explicitly, and fail on omissions or overlaps.
 - Private bootstrap logic may still temporarily resemble the old broad client -> Mitigation: remove exported access paths in the same change, then trim remaining private-only methods once no callers require them.
 - Some synced specs still reference deleted helper names -> Mitigation: include delta specs in this change and update canonical specs when the change is applied and archived.
 
 ## Migration Plan
 
-1. Move `internal/apm/agent_configuration` onto factory-resolved typed Kibana client usage.
+1. Add the shared `kibana_connection` block to `internal/apm/agent_configuration` and move it onto factory-resolved typed Kibana client usage.
 2. Remove production bridge helpers and `GetDefaultClient()` from the supported factory surface.
 3. Privatize the broad client type and delete duplicated exported helper behavior that scoped clients now own.
 4. Update `xpprovider`, tests, and acceptance helpers to consume typed surfaces.
