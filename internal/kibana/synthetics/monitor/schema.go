@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -566,6 +567,63 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
+func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64, error) {
+	if v == nil {
+		return 0, nil
+	}
+
+	if s, err := v.AsSyntheticsMonitorTimeout0(); err == nil {
+		return stringToInt64(s)
+	}
+
+	if n, err := v.AsSyntheticsMonitorTimeout1(); err == nil {
+		if math.Trunc(float64(n)) != float64(n) {
+			return 0, fmt.Errorf("timeout must be a whole number, got %v", n)
+		}
+		return int64(n), nil
+	}
+
+	return 0, fmt.Errorf("timeout has unsupported type")
+}
+
+func syntheticsMonitorWaitToInt64(v *kbapi.SyntheticsMonitor_Wait) (int64, error) {
+	if v == nil {
+		return 0, nil
+	}
+
+	if s, err := v.AsSyntheticsMonitorWait0(); err == nil {
+		return stringToInt64(s)
+	}
+
+	if n, err := v.AsSyntheticsMonitorWait1(); err == nil {
+		if math.Trunc(float64(n)) != float64(n) {
+			return 0, fmt.Errorf("wait must be a whole number, got %v", n)
+		}
+		return int64(n), nil
+	}
+
+	return 0, fmt.Errorf("wait has unsupported type")
+}
+
+func syntheticsMonitorMaxRedirectsToInt64(v *kbapi.SyntheticsMonitor_MaxRedirects) (int64, error) {
+	if v == nil {
+		return 0, nil
+	}
+
+	if s, err := v.AsSyntheticsMonitorMaxRedirects0(); err == nil {
+		return stringToInt64(s)
+	}
+
+	if n, err := v.AsSyntheticsMonitorMaxRedirects1(); err == nil {
+		if math.Trunc(float64(n)) != float64(n) {
+			return 0, fmt.Errorf("max_redirects must be a whole number, got %v", n)
+		}
+		return int64(n), nil
+	}
+
+	return 0, fmt.Errorf("max_redirects has unsupported type")
+}
+
 func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
 	var (
 		schedule int64
@@ -594,7 +652,11 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 	}
 
 	if api.Timeout != nil {
-		timeout = int64(*api.Timeout)
+		timeout, err = syntheticsMonitorTimeoutToInt64(api.Timeout)
+		if err != nil {
+			dg.AddError("Failed to convert timeout to int64", err.Error())
+			return nil, dg
+		}
 	}
 
 	var httpFields *tfHTTPMonitorFieldsV0
@@ -624,7 +686,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		if v.ICMP != nil {
 			icmp = v.ICMP
 		}
-		icmp = icmp.toTfICMPMonitorFieldsV0(api)
+		icmp, err = icmp.toTfICMPMonitorFieldsV0(api)
 	case kbapi.SyntheticsMonitorTypeBrowser:
 		browser = &tfBrowserMonitorFieldsV0{}
 		if v.Browser != nil {
@@ -697,6 +759,13 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	if api.CheckReceive != nil {
 		checkReceive = types.StringPointerValue(api.CheckReceive)
 	}
+	proxyURL := types.StringValue("")
+	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {
+		proxyURL = v.ProxyURL
+	}
+	if api.ProxyUrl != nil {
+		proxyURL = types.StringPointerValue(api.ProxyUrl)
+	}
 	sslCfg, dg := toTFSSLConfig(ctx, dg, api, "tcp")
 
 	if dg.HasError() {
@@ -706,7 +775,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		Host:                  types.StringPointerValue(api.Host),
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
-		ProxyURL:              types.StringPointerValue(api.ProxyUrl),
+		ProxyURL:              proxyURL,
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
 		tfSSLConfig:           sslCfg,
 	}
@@ -714,15 +783,19 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 
 func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(
 	api *kbapi.SyntheticsMonitor,
-) *tfICMPMonitorFieldsV0 {
+) (*tfICMPMonitorFieldsV0, error) {
 	var wait int64
 	if api.Wait != nil {
-		wait = int64(*api.Wait)
+		var err error
+		wait, err = syntheticsMonitorWaitToInt64(api.Wait)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &tfICMPMonitorFieldsV0{
 		Host: types.StringPointerValue(api.Host),
 		Wait: types.Int64Value(wait),
-	}
+	}, nil
 }
 
 func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
@@ -773,10 +846,17 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 	if api.Password != nil {
 		password = types.StringPointerValue(api.Password)
 	}
+	proxyURL := types.StringValue("")
+	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {
+		proxyURL = v.ProxyURL
+	}
+	if api.ProxyUrl != nil {
+		proxyURL = types.StringPointerValue(api.ProxyUrl)
+	}
 
 	maxRedirects := int64(0)
 	if api.MaxRedirects != nil {
-		maxRedirects, err = stringToInt64(*api.MaxRedirects)
+		maxRedirects, err = syntheticsMonitorMaxRedirectsToInt64(api.MaxRedirects)
 		if err != nil {
 			dg.AddError("Failed to parse max_redirects", err.Error())
 			return nil
@@ -796,7 +876,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		Username:     username,
 		Password:     password,
 		ProxyHeader:  proxyHeaders,
-		ProxyURL:     types.StringPointerValue(api.ProxyUrl),
+		ProxyURL:     proxyURL,
 		Check:        v.Check,
 		Response:     v.Response,
 		tfSSLConfig:  sslCfg,
@@ -1114,7 +1194,7 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 		Tags:             slicePtr(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:          int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:             kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
-		Wait:             int64ToFloat32Ptr(v.ICMP.Wait),
+		Wait:             int64ToSyntheticsIcmpMonitorFieldsWait(v.ICMP.Wait),
 	}
 }
 
@@ -1209,6 +1289,18 @@ func int64ToFloat32Ptr(v types.Int64) *float32 {
 	}
 	value := float32(v.ValueInt64())
 	return &value
+}
+
+func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmpMonitorFields_Wait {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+
+	wait := &kbapi.SyntheticsIcmpMonitorFields_Wait{}
+	if err := wait.FromSyntheticsIcmpMonitorFieldsWait0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
+		return nil
+	}
+	return wait
 }
 
 func (v tfAlertConfigV0) toAPIAlertConfig() *kbapi.SyntheticsMonitorAlert {

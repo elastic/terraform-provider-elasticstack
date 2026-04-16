@@ -1444,7 +1444,7 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 				"items": Map{"$ref": "#/components/schemas/synthetics_location_config"},
 				"type":  "array",
 			},
-			"max_redirects": Map{"type": "string"},
+			"max_redirects": Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
 			"mode":          Map{"type": "string"},
 			"name":          Map{"type": "string"},
 			"namespace":     Map{"type": "string"},
@@ -1481,27 +1481,27 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 				"items": Map{"type": "string"},
 				"type":  "array",
 			},
-			"timeout": Map{"type": "number"},
+			"timeout": Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
 			"type": Map{
 				"enum": Slice{"http", "tcp", "icmp", "browser"},
 				"type": "string",
 			},
 			"url":      Map{"type": "string"},
 			"username": Map{"type": "string"},
-			"wait":     Map{"type": "number"},
+			"wait":     Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
 		},
 		"type": "object",
 	})
 
 	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.alert", Map{"$ref": "#/components/schemas/synthetics_monitor_alert"})
 	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.params", Map{"type": "object"})
+	schema.Components.Set("schemas.Synthetics_icmpMonitorFields.allOf.1.properties.wait", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
 	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
 	schema.Components.Set("schemas.Synthetics_tcpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
 
 	responseRef := Map{"$ref": "#/components/schemas/synthetics_monitor"}
 	monitorsPath.Post.Set("responses.200.content.application/json.schema", responseRef)
 	monitorPath.Get.Set("responses.200.content.application/json.schema", responseRef)
-	monitorPath.Put.Set("responses.200.content.application/json.schema", responseRef)
 }
 
 func fixSyntheticsMonitorParams(schema *Schema) {

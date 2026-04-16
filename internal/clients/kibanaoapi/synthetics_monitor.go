@@ -88,10 +88,7 @@ func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("empty monitor response body"))
-		}
-		return resp.JSON200, nil
+		return GetMonitor(ctx, client, spaceID, monitorID)
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}

@@ -165,24 +165,33 @@ func TestCreateMonitor200(t *testing.T) {
 func TestUpdateMonitor200(t *testing.T) {
 	req := httpMonitorRequest(t, "updated-monitor", "https://updated.example.com")
 	expectedResponse := kbapi.SyntheticsMonitor{
-		Id:   new("monitor-id"),
-		Name: new("updated-monitor"),
-		Type: new(kbapi.SyntheticsMonitorTypeHttp),
-		Url:  new("https://updated.example.com"),
+		Id:       new("monitor-id"),
+		Name:     new("updated-monitor"),
+		Type:     new(kbapi.SyntheticsMonitorTypeHttp),
+		Url:      new("https://updated.example.com"),
+		ProxyUrl: new("http://localhost"),
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Contains(t, r.URL.Path, "monitor-id")
-
-		var body map[string]any
-		err := json.NewDecoder(r.Body).Decode(&body)
-		assert.NoError(t, err)
-		assert.Equal(t, "updated-monitor", body["name"])
-
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(expectedResponse)
+
+		switch r.Method {
+		case http.MethodPut:
+			var body map[string]any
+			err := json.NewDecoder(r.Body).Decode(&body)
+			assert.NoError(t, err)
+			assert.Equal(t, "updated-monitor", body["name"])
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"warnings": []map[string]any{},
+			})
+		case http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(expectedResponse)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
 	}))
 	defer srv.Close()
 
@@ -192,6 +201,7 @@ func TestUpdateMonitor200(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, "monitor-id", *result.Id)
 	assert.Equal(t, "updated-monitor", *result.Name)
+	assert.Equal(t, "http://localhost", *result.ProxyUrl)
 }
 
 func TestDeleteMonitor200(t *testing.T) {

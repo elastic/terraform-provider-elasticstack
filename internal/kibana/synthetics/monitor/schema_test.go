@@ -32,11 +32,9 @@ import (
 )
 
 var (
-	fBool = ptr(false)
-	tBool = ptr(true)
+	fBool = new(false)
+	tBool = new(true)
 )
-
-func ptr[T any](v T) *T { return new(v) }
 
 func toAlertObject(t *testing.T, v tfAlertConfigV0) basetypes.ObjectValue {
 	t.Helper()
@@ -55,6 +53,48 @@ func mustJSON(t *testing.T, v any) string {
 	return string(b)
 }
 
+func mustTimeoutString(t *testing.T, v string) *kbapi.SyntheticsMonitor_Timeout {
+	t.Helper()
+	timeout := &kbapi.SyntheticsMonitor_Timeout{}
+	require.NoError(t, timeout.FromSyntheticsMonitorTimeout0(v))
+	return timeout
+}
+
+func mustTimeoutNumber(t *testing.T, v float32) *kbapi.SyntheticsMonitor_Timeout {
+	t.Helper()
+	timeout := &kbapi.SyntheticsMonitor_Timeout{}
+	require.NoError(t, timeout.FromSyntheticsMonitorTimeout1(kbapi.SyntheticsMonitorTimeout1(v)))
+	return timeout
+}
+
+func mustWaitString(t *testing.T, v string) *kbapi.SyntheticsMonitor_Wait {
+	t.Helper()
+	wait := &kbapi.SyntheticsMonitor_Wait{}
+	require.NoError(t, wait.FromSyntheticsMonitorWait0(v))
+	return wait
+}
+
+func mustWaitNumber(t *testing.T, v float32) *kbapi.SyntheticsMonitor_Wait {
+	t.Helper()
+	wait := &kbapi.SyntheticsMonitor_Wait{}
+	require.NoError(t, wait.FromSyntheticsMonitorWait1(kbapi.SyntheticsMonitorWait1(v)))
+	return wait
+}
+
+func mustMaxRedirectsString(t *testing.T, v string) *kbapi.SyntheticsMonitor_MaxRedirects {
+	t.Helper()
+	maxRedirects := &kbapi.SyntheticsMonitor_MaxRedirects{}
+	require.NoError(t, maxRedirects.FromSyntheticsMonitorMaxRedirects0(v))
+	return maxRedirects
+}
+
+func mustMaxRedirectsNumber(t *testing.T, v float32) *kbapi.SyntheticsMonitor_MaxRedirects {
+	t.Helper()
+	maxRedirects := &kbapi.SyntheticsMonitor_MaxRedirects{}
+	require.NoError(t, maxRedirects.FromSyntheticsMonitorMaxRedirects1(kbapi.SyntheticsMonitorMaxRedirects1(v)))
+	return maxRedirects
+}
+
 func TestLabelsFieldConversion(t *testing.T) {
 	testcases := []struct {
 		name     string
@@ -64,14 +104,14 @@ func TestLabelsFieldConversion(t *testing.T) {
 		{
 			name: "monitor with nil labels",
 			input: kbapi.SyntheticsMonitor{
-				Type: ptr(kbapi.SyntheticsMonitorTypeHttp),
+				Type: new(kbapi.SyntheticsMonitorTypeHttp),
 			},
 			expected: types.MapNull(types.StringType),
 		},
 		{
 			name: "monitor with empty labels",
 			input: kbapi.SyntheticsMonitor{
-				Type:   ptr(kbapi.SyntheticsMonitorTypeHttp),
+				Type:   new(kbapi.SyntheticsMonitorTypeHttp),
 				Labels: &map[string]string{},
 			},
 			expected: types.MapValueMust(types.StringType, map[string]attr.Value{}),
@@ -79,7 +119,7 @@ func TestLabelsFieldConversion(t *testing.T) {
 		{
 			name: "monitor with labels",
 			input: kbapi.SyntheticsMonitor{
-				Type: ptr(kbapi.SyntheticsMonitorTypeHttp),
+				Type: new(kbapi.SyntheticsMonitorTypeHttp),
 				Labels: &map[string]string{
 					"environment": "production",
 					"team":        "platform",
@@ -120,16 +160,16 @@ func TestToModelV0HTTP(t *testing.T) {
 		},
 		Tags:        &[]string{"tag1", "tag2"},
 		ServiceName: new("test-service-http"),
-		Timeout:     ptr(float32(30)),
+		Timeout:     mustTimeoutString(t, "30"),
 		Locations: &[]kbapi.SyntheticsLocationConfig{
 			{Id: new("us-east4-a"), Label: new("North America - US East"), IsServiceManaged: tBool},
 			{Label: new("test private location"), IsServiceManaged: fBool},
 		},
 		Params:                    &map[string]any{"param1": "value1"},
-		Type:                      ptr(kbapi.SyntheticsMonitorTypeHttp),
+		Type:                      new(kbapi.SyntheticsMonitorTypeHttp),
 		Url:                       new("https://example.com"),
 		Mode:                      new("all"),
-		MaxRedirects:              new("5"),
+		MaxRedirects:              mustMaxRedirectsString(t, "5"),
 		Ipv4:                      tBool,
 		Ipv6:                      fBool,
 		Username:                  new("user"),
@@ -268,6 +308,71 @@ func TestToKibanaAPIRequest(t *testing.T) {
 	}
 }
 
+func TestToModelV0TimeoutNumber(t *testing.T) {
+	api := kbapi.SyntheticsMonitor{
+		Type:    new(kbapi.SyntheticsMonitorTypeHttp),
+		Timeout: mustTimeoutNumber(t, 30),
+	}
+
+	model, diags := (&tfModelV0{}).toModelV0(context.Background(), &api, "default")
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, model)
+	assert.Equal(t, types.Int64Value(30), model.TimeoutSeconds)
+}
+
+func TestToModelV0ICMPWaitString(t *testing.T) {
+	api := kbapi.SyntheticsMonitor{
+		Type: new(kbapi.SyntheticsMonitorTypeIcmp),
+		Wait: mustWaitString(t, "2"),
+	}
+
+	model, diags := (&tfModelV0{}).toModelV0(context.Background(), &api, "default")
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, model)
+	require.NotNil(t, model.ICMP)
+	assert.Equal(t, types.Int64Value(2), model.ICMP.Wait)
+}
+
+func TestToModelV0ICMPWaitNumber(t *testing.T) {
+	api := kbapi.SyntheticsMonitor{
+		Type: new(kbapi.SyntheticsMonitorTypeIcmp),
+		Wait: mustWaitNumber(t, 2),
+	}
+
+	model, diags := (&tfModelV0{}).toModelV0(context.Background(), &api, "default")
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, model)
+	require.NotNil(t, model.ICMP)
+	assert.Equal(t, types.Int64Value(2), model.ICMP.Wait)
+}
+
+func TestToModelV0HTTPMaxRedirectsNumber(t *testing.T) {
+	api := kbapi.SyntheticsMonitor{
+		Type:         new(kbapi.SyntheticsMonitorTypeHttp),
+		MaxRedirects: mustMaxRedirectsNumber(t, 5),
+	}
+
+	model, diags := (&tfModelV0{}).toModelV0(context.Background(), &api, "default")
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, model)
+	require.NotNil(t, model.HTTP)
+	assert.Equal(t, types.Int64Value(5), model.HTTP.MaxRedirects)
+}
+
+func TestToKibanaAPIRequestICMPWait(t *testing.T) {
+	input := tfModelV0{
+		Name: types.StringValue("test-icmp-monitor"),
+		ICMP: &tfICMPMonitorFieldsV0{
+			Host: types.StringValue("example.com"),
+			Wait: types.Int64Value(10),
+		},
+	}
+
+	result, diags := input.toKibanaAPIRequest(context.Background())
+	assert.False(t, diags.HasError(), diags)
+	assert.JSONEq(t, `{"host":"example.com","labels":{},"name":"test-icmp-monitor","type":"icmp","wait":"10"}`, mustJSON(t, result))
+}
+
 func TestToModelV0MergeAttributes(t *testing.T) {
 	state := tfModelV0{
 		HTTP: &tfHTTPMonitorFieldsV0{
@@ -281,7 +386,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 		RetestOnFailure: types.BoolValue(true),
 	}
 	input := kbapi.SyntheticsMonitor{
-		Type: ptr(kbapi.SyntheticsMonitorTypeHttp),
+		Type: new(kbapi.SyntheticsMonitorTypeHttp),
 	}
 
 	actual, diags := state.toModelV0(context.Background(), &input, "")
