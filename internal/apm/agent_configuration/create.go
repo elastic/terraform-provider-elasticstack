@@ -36,7 +36,13 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	kibana, err := r.client.GetKibanaOapiClient()
+	scoped, fwDiags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(fwDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	kibana, err := scoped.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
 		return

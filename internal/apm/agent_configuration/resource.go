@@ -35,7 +35,7 @@ func NewAgentConfigurationResource() resource.Resource {
 }
 
 type resourceAgentConfiguration struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *resourceAgentConfiguration) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -43,9 +43,12 @@ func (r *resourceAgentConfiguration) Metadata(_ context.Context, req resource.Me
 }
 
 func (r *resourceAgentConfiguration) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *resourceAgentConfiguration) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

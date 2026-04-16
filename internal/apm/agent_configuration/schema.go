@@ -20,6 +20,7 @@ package agentconfiguration
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -56,6 +57,9 @@ func (r *resourceAgentConfiguration) Schema(_ context.Context, _ resource.Schema
 				Required:    true,
 				ElementType: types.StringType,
 			},
+		},
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

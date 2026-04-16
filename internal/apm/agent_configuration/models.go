@@ -25,6 +25,7 @@ import (
 
 // AgentConfiguration holds the agent configuration.
 type AgentConfiguration struct {
+	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
 	ID                 types.String `tfsdk:"id"`
 	ServiceName        types.String `tfsdk:"service_name"`
 	ServiceEnvironment types.String `tfsdk:"service_environment"`

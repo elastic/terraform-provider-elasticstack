@@ -39,11 +39,25 @@ resource "elasticstack_apm_agent_configuration" "test_config" {
 ### Optional
 
 - `agent_name` (String) The agent name is used by the UI to determine which settings to display.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `service_environment` (String) The environment of the service.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource.
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 ## Import
 
