@@ -650,11 +650,11 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kibanaoapi.SyntheticsMon
 	}
 
 	return &tfModelV0{
-		ID:               types.StringValue(resourceID.String()),
-		Name:             types.StringValue(api.Name),
-		SpaceID:          types.StringValue(space),
-		Namespace:        types.StringValue(api.Namespace),
-		Schedule:         types.Int64Value(schedule),
+		ID:        types.StringValue(resourceID.String()),
+		Name:      types.StringValue(api.Name),
+		SpaceID:   types.StringValue(space),
+		Namespace: types.StringValue(api.Namespace),
+		Schedule:  types.Int64Value(schedule),
 		// Locations (managed/service-managed) are preserved from prior state per REQ-015:
 		// the Kibana API returns location objects with both ID and Label, but the provider
 		// spec requires using the practitioner-configured identifiers (from state) rather
