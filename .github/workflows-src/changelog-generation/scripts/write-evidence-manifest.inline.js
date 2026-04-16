@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
-const memoryPath = '/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json';
+const memoryPath = '/tmp/gh-aw/agent/evidence.json';
 
 if (!evidenceJson) {
   core.setFailed('No evidence_json input provided');

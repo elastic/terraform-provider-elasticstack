@@ -40,7 +40,6 @@ const PROVIDER_PATH_PREFIXES = ['internal/', 'pkg/', 'libs/', 'provider/', 'go.m
 
 function classifyPR(pr, files) {
   const labels = (pr.labels ?? []).map((l) => l.name);
-  const labelSet = new Set(labels);
 
   // Explicit user-facing labels
   const hasUserFacingLabel = labels.some((l) => USER_FACING_LABELS.has(l));
@@ -157,7 +156,7 @@ for (const [prNumber, pr] of prMap) {
 }
 
 const targetSection =
-  mode === 'release'
+  mode === 'release' && targetVersion
     ? `## [${targetVersion}] - ${new Date().toISOString().split('T')[0]}`
     : '## [Unreleased]';
 
@@ -177,4 +176,6 @@ const manifest = {
 };
 
 core.setOutput('evidence_json', JSON.stringify(manifest));
+const hasEvidence = evidence.length > 0;
+core.setOutput('has_evidence', hasEvidence ? 'true' : 'false');
 core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);

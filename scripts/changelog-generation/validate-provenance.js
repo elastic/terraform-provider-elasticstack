@@ -23,7 +23,6 @@
  */
 
 const fs = require('node:fs');
-const path = require('node:path');
 
 // ---------------------------------------------------------------------------
 // Heuristics
@@ -158,13 +157,6 @@ function validateProvenance({ evidence, provenance, changelogSection, expectedHe
     }
   }
 
-  // --- Check 5: markdown format — bullets use "- " or "* " format ---
-  for (const line of bulletLines) {
-    if (!/^\s*[-*]\s/.test(line)) {
-      warnings.push(`Unexpected bullet format (expected "- " or "* "): "${line.trim()}"`);
-    }
-  }
-
   const valid = errors.length === 0;
   return { valid, errors, warnings };
 }
@@ -193,15 +185,18 @@ function extractSectionFromChangelog(changelogContent, header) {
   let inSection = false;
   const sectionLines = [];
 
+  const headerMatches = (line) =>
+    line === header || line.startsWith(header + ' ') || line.startsWith(header + '\t');
+
   for (const line of lines) {
     if (!inSection) {
-      if (line.startsWith(header)) {
+      if (headerMatches(line)) {
         inSection = true;
         sectionLines.push(line);
       }
     } else {
       // Stop at the next ## header (but not the same one)
-      if (line.startsWith('## ') && !line.startsWith(header)) {
+      if (line.startsWith('## ') && !headerMatches(line)) {
         break;
       }
       sectionLines.push(line);

@@ -33,9 +33,26 @@ jobs:
         with:
           script: |
             if (context.eventName === 'pull_request' && context.headRef === 'generated-changelog') {
-              core.info('generated-changelog PR detected; skipping full CI to allow auto-approve path.');
-              core.setOutput('should_run', 'false');
-              return;
+              const pr = context.payload.pull_request;
+              const isActionsBot = pr?.user?.login === 'github-actions[bot]';
+              let changedFiles = [];
+              if (pr) {
+                changedFiles = await github.paginate(github.rest.pulls.listFiles, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  per_page: 100,
+                });
+              }
+              const changesOnlyChangelog =
+                changedFiles.length > 0 &&
+                changedFiles.every((file) => file.filename === 'CHANGELOG.md');
+              if (isActionsBot && changesOnlyChangelog) {
+                core.info('generated-changelog bot PR changing only CHANGELOG.md detected; skipping full CI to allow auto-approve path.');
+                core.setOutput('should_run', 'false');
+                return;
+              }
+              core.info(`generated-changelog PR did not meet skip requirements (author=${pr?.user?.login ?? 'unknown'}, changelog_only=${changesOnlyChangelog}); running full CI.`);
             }
             if (context.eventName === 'pull_request' && context.payload.action === 'ready_for_review') {
               core.setOutput('should_run', 'false');
@@ -487,12 +504,13 @@ jobs:
           cache: true
 
       - name: Evaluate auto-approval gates
+        id: evaluate-gates
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./scripts/auto-approve
 
       - name: Enable auto-merge for generated-changelog PR
-        if: github.head_ref == 'generated-changelog'
+        if: github.head_ref == 'generated-changelog' && steps.evaluate-gates.outputs.approved == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"

@@ -24,27 +24,23 @@ const WORKFLOW_TMPL_PATH = path.resolve(
 );
 
 // ---------------------------------------------------------------------------
-// Read and parse the prompt
+// Read and parse the prompt at module scope
 // ---------------------------------------------------------------------------
 
-let promptBody;
+const rawPrompt = fs.readFileSync(WORKFLOW_TMPL_PATH, 'utf8');
+const frontmatterEnd = rawPrompt.indexOf('\n---\n', 3);
+const promptBody =
+  frontmatterEnd !== -1
+    ? rawPrompt.slice(frontmatterEnd + 5)
+    : rawPrompt;
 
 test('workflow.md.tmpl exists and is readable', () => {
   assert.ok(
     fs.existsSync(WORKFLOW_TMPL_PATH),
     `Expected workflow template at ${WORKFLOW_TMPL_PATH}`
   );
-  const raw = fs.readFileSync(WORKFLOW_TMPL_PATH, 'utf8');
-  assert.ok(raw.length > 0, 'workflow.md.tmpl must not be empty');
-
-  // Strip YAML frontmatter (between --- delimiters at the start)
-  const frontmatterEnd = raw.indexOf('\n---\n', 3);
-  if (frontmatterEnd !== -1) {
-    promptBody = raw.slice(frontmatterEnd + 5); // skip '\n---\n'
-  } else {
-    // No frontmatter found — treat entire file as prompt body
-    promptBody = raw;
-  }
+  assert.ok(rawPrompt.length > 0, 'workflow.md.tmpl must not be empty');
+  assert.ok(promptBody.length > 0, 'prompt body must not be empty');
 });
 
 // ---------------------------------------------------------------------------

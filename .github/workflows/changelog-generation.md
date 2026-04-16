@@ -151,7 +151,6 @@ on:
           
           function classifyPR(pr, files) {
             const labels = (pr.labels ?? []).map((l) => l.name);
-            const labelSet = new Set(labels);
           
             // Explicit user-facing labels
             const hasUserFacingLabel = labels.some((l) => USER_FACING_LABELS.has(l));
@@ -268,7 +267,7 @@ on:
           }
           
           const targetSection =
-            mode === 'release'
+            mode === 'release' && targetVersion
               ? `## [${targetVersion}] - ${new Date().toISOString().split('T')[0]}`
               : '## [Unreleased]';
           
@@ -288,54 +287,56 @@ on:
           };
           
           core.setOutput('evidence_json', JSON.stringify(manifest));
+          const hasEvidence = evidence.length > 0;
+          core.setOutput('has_evidence', hasEvidence ? 'true' : 'false');
           core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);
           
         previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
         compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
         mode: ${{ steps.resolve_release_context.outputs.mode }}
         target_version: ${{ steps.resolve_release_context.outputs.target_version }}
-    - name: Write evidence manifest to workflow memory
-      id: write_evidence_manifest
-      uses: actions/github-script@v8
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
-          const memoryPath = '/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json';
-          
-          if (!evidenceJson) {
-            core.setFailed('No evidence_json input provided');
-            process.exit(1);
-          }
-          
-          // Validate JSON
-          let parsed;
-          try {
-            parsed = JSON.parse(evidenceJson);
-          } catch (err) {
-            core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
-            process.exit(1);
-          }
-          
-          // Ensure the target directory exists
-          const dir = path.dirname(memoryPath);
-          fs.mkdirSync(dir, { recursive: true });
-          
-          // Write the evidence manifest to workflow memory
-          fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
-          
-          core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
-          core.setOutput('evidence_ready', 'true');
-          core.setOutput('evidence_path', memoryPath);
-          
-        evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
 if: >-
   (github.event_name != 'pull_request' || startsWith(github.head_ref, 'prep-release-')) &&
-  needs.pre_activation.outputs.evidence_ready == 'true'
+  needs.pre_activation.outputs.has_evidence == 'true'
 steps:
+  - name: Write evidence manifest for agent
+    id: write_evidence_manifest
+    uses: actions/github-script@v8
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      script: |
+        const fs = require('fs');
+        const path = require('path');
+        
+        const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
+        const memoryPath = '/tmp/gh-aw/agent/evidence.json';
+        
+        if (!evidenceJson) {
+          core.setFailed('No evidence_json input provided');
+          process.exit(1);
+        }
+        
+        // Validate JSON
+        let parsed;
+        try {
+          parsed = JSON.parse(evidenceJson);
+        } catch (err) {
+          core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
+          process.exit(1);
+        }
+        
+        // Ensure the target directory exists
+        const dir = path.dirname(memoryPath);
+        fs.mkdirSync(dir, { recursive: true });
+        
+        // Write the evidence manifest to workflow memory
+        fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
+        
+        core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
+        core.setOutput('evidence_ready', 'true');
+        core.setOutput('evidence_path', memoryPath);
+        
+      evidence_json: ${{ needs.pre_activation.outputs.evidence_json }}
   - name: Setup Go
     uses: actions/setup-go@v6
     with:
@@ -369,16 +370,11 @@ jobs:
       compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
       target_version: ${{ steps.resolve_release_context.outputs.target_version }}
       target_branch: ${{ steps.resolve_release_context.outputs.target_branch }}
-      evidence_ready: ${{ steps.write_evidence_manifest.outputs.evidence_ready }}
+      has_evidence: ${{ steps.gather_pr_evidence.outputs.has_evidence }}
+      evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
 tools:
   github:
     toolsets: [repos, pull_requests]
-  repo-memory:
-    - id: changelog-evidence
-      file-glob: ["memory/changelog-generation/evidence.json"]
-      create-orphan: true
-      max-file-size: 524288
-      max-patch-size: 102400
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 checkout:
@@ -389,8 +385,10 @@ safe-outputs:
     max: 1
   create-pull-request:
     max: 1
+    preserve-branch-name: true
   update-pull-request:
     max: 1
+    target: triggering
   noop:
     max: 1
     report-as-issue: false
@@ -414,7 +412,7 @@ Deterministic pre-activation steps have already resolved the release context and
 
 Read the evidence manifest from workflow memory at:
 ```
-/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json
+/tmp/gh-aw/agent/evidence.json
 ```
 
 The manifest contains:
@@ -453,7 +451,7 @@ The manifest contains:
    - If a section for this version already exists, replace it. If not, insert it immediately after the `## [Unreleased]` section.
    - Preserve all other sections exactly as-is (including the `## [Unreleased]` section — do **not** clear it).
 
-6. **Write provenance JSON** to `memory/changelog-generation/provenance.json` (relative to the repo root). This file is written to workflow memory only — it is ephemeral support data and MUST NOT be added to the git index or committed. The file must contain machine-readable provenance mapping each bullet to its backing PR:
+6. **Write provenance JSON** to `/tmp/gh-aw/agent/provenance.json`. This file is written to workflow memory only — it is ephemeral support data and MUST NOT be added to the git index or committed. The file must contain machine-readable provenance mapping each bullet to its backing PR:
 
    ```json
    {
@@ -477,8 +475,8 @@ The manifest contains:
 
    ```
    node scripts/changelog-generation/validate-provenance.js \
-     --evidence /tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json \
-     --provenance memory/changelog-generation/provenance.json
+     --evidence /tmp/gh-aw/agent/evidence.json \
+     --provenance /tmp/gh-aw/agent/provenance.json
    ```
 
    This script validates that every bullet in `provenance.json` references a PR present in the evidence manifest and that PR numbers are not fabricated. It exits 0 on success and non-zero on failure, outputting a JSON result.
@@ -486,13 +484,13 @@ The manifest contains:
    - If validation **fails**: emit `noop` with the validation failure reason. Do **not** write `CHANGELOG.md` or push.
    - If validation **passes**: proceed to write `CHANGELOG.md`.
 
-8. **Write `CHANGELOG.md`** using the rewriter script. First write the new section body (without the header line) to `memory/changelog-generation/section.md`, then call:
+8. **Write `CHANGELOG.md`** using the rewriter script. First write the new section body (without the header line) to `/tmp/gh-aw/agent/section.md`, then call:
 
    ```
    node scripts/changelog-generation/rewrite-changelog-section.js \
      --mode <unreleased|release> \
      [--target-version <version>] \
-     --section-file memory/changelog-generation/section.md
+     --section-file /tmp/gh-aw/agent/section.md
    ```
 
    This script handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
@@ -521,7 +519,7 @@ The manifest contains:
 
 - Generate changelog entries strictly at the **pull-request level**, not the commit level.
 - Every bullet MUST end with `([#NNN](url))` citation linking to the real PR — no bullets without a PR citation.
-- Write `memory/changelog-generation/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet before writing CHANGELOG.md.
+- Write `/tmp/gh-aw/agent/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet before writing CHANGELOG.md.
 - Provenance validation (step 7) MUST pass before CHANGELOG.md is written or any push occurs.
 - Do **not** modify any release sections other than the target section for this run.
 - Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.

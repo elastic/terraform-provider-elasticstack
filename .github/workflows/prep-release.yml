@@ -100,7 +100,7 @@ jobs:
           if [ "$EXISTS" = "true" ]; then
             git fetch origin "${BRANCH}"
             git checkout "${BRANCH}"
-            git merge --no-edit origin/main || true
+            git merge --no-edit origin/main || { git merge --abort; exit 1; }
           else
             git checkout main
             git pull origin main

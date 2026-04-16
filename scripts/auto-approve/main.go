@@ -110,6 +110,17 @@ func run(ctx context.Context) error {
 		PullRequestNumber: prNumber,
 	})
 
+	// Report approval outcome as a GitHub Actions output
+	if outputFile := os.Getenv("GITHUB_OUTPUT"); outputFile != "" {
+		approved := "false"
+		if result.ShouldApprove || result.AlreadyApproved {
+			approved = "true"
+		}
+		if err := appendToFile(outputFile, fmt.Sprintf("approved=%s\n", approved)); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to write GITHUB_OUTPUT: %v\n", err)
+		}
+	}
+
 	logJSON("evaluation", map[string]any{
 		"owner":        owner,
 		"repo":         name,
@@ -243,6 +254,16 @@ func listAllReviews(ctx context.Context, client *github.Client, owner, repo stri
 	}
 
 	return reviews, nil
+}
+
+func appendToFile(path, content string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
 }
 
 func logJSON(kind string, payload map[string]any) {
