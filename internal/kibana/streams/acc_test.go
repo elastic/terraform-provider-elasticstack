@@ -57,18 +57,18 @@ var minVersionStreamsAcc = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 func prepareStreamsEnvironment(t *testing.T) {
 	t.Helper()
 
-	kibanaApiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	kibanaAPIClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		t.Logf("prepareStreamsEnvironment: could not create Kibana client: %v", err)
 		return
 	}
-	kibanaClient, err := kibanaApiClient.GetKibanaOapiClient()
+	kibanaClient, err := kibanaAPIClient.GetKibanaOapiClient()
 	if err != nil {
 		t.Logf("prepareStreamsEnvironment: could not get Kibana client: %v", err)
 		return
 	}
 
-	esApiClient, esApiErr := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	esAPIClient, esAPIErr := clients.NewAcceptanceTestingElasticsearchScopedClient()
 
 	// Resync to repair any inconsistent Streams state.
 	resp, err := kibanaClient.API.PostStreamsResyncWithResponse(context.Background(), kbapi.PostStreamsResyncJSONRequestBody{})
@@ -156,9 +156,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// Kibana creates this automatically when OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS
 	// is enabled, but that creation is best-effort and silently swallowed on failure.
 	// Creating it here mirrors what Kibana's own integration tests do.
-	if esApiErr != nil {
-		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esApiErr)
-	} else if esClient, esErr := esApiClient.GetESClient(); esErr != nil {
+	if esAPIErr != nil {
+		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esAPIErr)
+	} else if esClient, esErr := esAPIClient.GetESClient(); esErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esErr)
 	} else {
 		viewBody, _ := json.Marshal(map[string]string{"query": "FROM " + logsRoot})

@@ -28,18 +28,20 @@ import (
 // Package xpprovider exports needed internal types and functions used by Crossplane for instantiating, interacting and
 // configuring the underlying Terraform Elasticstack providers.
 
+// ClientFactory exports the internal type clients.ProviderClientFactory
+// of the Terraform provider. Use its typed methods (GetKibanaClient,
+// GetElasticsearchClient, etc.) to obtain scoped clients.
+type ClientFactory = clients.ProviderClientFactory
+
 // XPAPIClient exports the provider client factory used by Crossplane to obtain
 // scoped Kibana and Elasticsearch clients. The underlying broad APIClient type
 // is intentionally unexported; all interaction goes through ProviderClientFactory.
 //
-// Deprecated: use [XPProviderClientFactory] directly; this name remains for
+// Deprecated: use [ClientFactory] directly; this name remains for
 // backward compatibility with existing consumers.
+//
+//nolint:revive // Intentional legacy name; stutter is acceptable for a deprecated compatibility alias.
 type XPAPIClient = clients.ProviderClientFactory
-
-// XPProviderClientFactory exports the internal type clients.ProviderClientFactory
-// of the Terraform provider. Use its typed methods (GetKibanaClient,
-// GetElasticsearchClient, etc.) to obtain scoped clients.
-type XPProviderClientFactory = clients.ProviderClientFactory
 
 // Configuration exports the internal type config.ProviderConfiguration of the Terraform provider.
 type Configuration = config.ProviderConfiguration
@@ -63,6 +65,6 @@ type XPFleetConnection = config.FleetConnection
 // NewAPIClientFromFramework builds a [ProviderClientFactory] from the supplied
 // framework configuration. The returned factory is the canonical entry point for
 // obtaining scoped Kibana and Elasticsearch clients.
-func NewAPIClientFromFramework(ctx context.Context, cfg Configuration, version string) (*XPProviderClientFactory, fwdiags.Diagnostics) {
+func NewAPIClientFromFramework(ctx context.Context, cfg Configuration, version string) (*ClientFactory, fwdiags.Diagnostics) {
 	return clients.NewProviderClientFactoryFromFramework(ctx, cfg, version)
 }
