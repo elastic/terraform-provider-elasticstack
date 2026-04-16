@@ -242,6 +242,15 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 .PHONY: setup
 setup: tools vendor setup-openspec ## Setup the dev environment
 
+.PHONY: prep-release
+prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|major, default: patch)
+	@ : $${BUMP:=patch}; \
+	  case "$$BUMP" in \
+	    patch|minor|major) ;; \
+	    *) echo "BUMP must be patch, minor, or major (got: $$BUMP)" >&2; exit 1 ;; \
+	  esac; \
+	  gh workflow run prep-release.yml --field bump=$$BUMP
+
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
 	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
