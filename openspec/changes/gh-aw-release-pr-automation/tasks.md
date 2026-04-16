@@ -18,9 +18,9 @@
 
 ## 4. Deterministic release preparation workflow
 
-- [ ] 4.1 Add the deterministic release-preparation workflow that computes the target version from `major|minor|patch`, creates or reuses `prep-release-x.y.z`, and applies the simple version bump changes.
-- [ ] 4.2 Add deterministic branch and pull-request orchestration for release-preparation PR creation or reuse.
-- [ ] 4.3 Add the thin `Makefile` target that validates `BUMP` and dispatches the release-preparation workflow via `gh workflow run`.
+- [x] 4.1 Add the deterministic release-preparation workflow that computes the target version from `major|minor|patch`, creates or reuses `prep-release-x.y.z`, and applies the simple version bump changes.
+- [x] 4.2 Add deterministic branch and pull-request orchestration for release-preparation PR creation or reuse.
+- [x] 4.3 Add the thin `Makefile` target that validates `BUMP` and dispatches the release-preparation workflow via `gh workflow run`.
 
 ## 5. CI and auto-approval integration
 
