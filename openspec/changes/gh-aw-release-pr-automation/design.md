@@ -74,17 +74,21 @@ Alternatives considered:
 - Agent writes only markdown: rejected because it loses machine-checkable provenance.
 - Commit-based summarization: rejected because it is noisier and diverges from the repository’s changelog conventions.
 
-### 4. Store release evidence in workflow memory, not the git worktree
+### 4. Store release evidence in the GH AW agent directory, not the git worktree
 
-Persist the evidence manifest in GH AW workflow memory or another ephemeral workflow-local path rather than in the checked-in worktree.
+Persist the evidence manifest in the GH AW agent directory (`/tmp/gh-aw/agent/`) rather than in the checked-in worktree or in GH AW `repo-memory`.
+
+The pre-activation job passes the serialized evidence JSON as a job output. A pre-agent-step (running in the agent's execution environment) deserializes it and writes it to `/tmp/gh-aw/agent/evidence.json`, where the agent and pre-agent helper scripts can access it.
 
 Why:
 - Generated context should not appear in changelog or release PR diffs.
 - Ephemeral evidence keeps reruns and local branch state clean.
 - The manifest is runtime support data, not a versioned source artifact.
+- `repo-memory` was rejected because content written in the pre-activation job may not survive into the agent execution context; the agent directory is shared between pre-agent-steps and the agent itself.
 
 Alternatives considered:
 - Checked-in JSON support file: rejected because it pollutes repository diffs with workflow context.
+- GH AW `repo-memory`: rejected because the write step runs in the pre-activation job and that content may not be available in the separate agent execution context. The agent directory (`/tmp/gh-aw/agent/`) is the right boundary.
 
 ### 5. Use a singleton changelog PR on branch `generated-changelog`
 
@@ -161,7 +165,7 @@ Alternatives considered:
 - [Generated changelog PRs could stall and leave `main` stale] -> Mitigation: keep the PR singleton, add narrow auto-approve rules, and enable auto-merge once the lightweight CI path is green.
 - [The CI workflow exception for `generated-changelog` could accidentally widen auto-approve coverage] -> Mitigation: tie the behavior to branch name, commit authorship, and `CHANGELOG.md`-only diffs in both CI gating and approval policy.
 - [PR classification remains partly semantic] -> Mitigation: constrain the agent to deterministic PR evidence, require PR-level output only, and validate provenance before mutating `CHANGELOG.md`.
-- [Workflow memory handling may differ from normal file IO] -> Mitigation: follow the repository’s existing GH AW memory pattern and test manifest persistence/loading explicitly.
+- [Agent directory content is ephemeral and not persisted across runs] -> Mitigation: the evidence manifest is regenerated fresh on every run by the pre-activation job and written to the agent directory by a pre-agent-step, so no cross-run persistence is needed.
 - [Release PR mode could drift from `Unreleased` mode] -> Mitigation: make both changelog modes share the same evidence schema, prompt contract, and validator.
 
 ## Migration Plan

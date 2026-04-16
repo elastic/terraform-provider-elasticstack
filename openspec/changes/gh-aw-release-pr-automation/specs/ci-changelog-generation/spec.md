@@ -38,18 +38,27 @@ The changelog generator SHALL regenerate the full target section on each run fro
 - **WHEN** the changelog generator runs for a `prep-release-*` pull request
 - **THEN** it SHALL regenerate the full `## [x.y.z] - <date>` section for that branch from the authoritative release range instead of incrementally appending entries
 
-### Requirement: Release evidence manifest is generated in workflow memory
-Before agent reasoning starts, deterministic repository-authored steps SHALL gather the merged pull requests associated with the authoritative range and materialize a machine-readable release evidence manifest in GH AW workflow memory or another ephemeral workflow-local path. The manifest SHALL NOT be added to the checked-in git worktree.
+### Requirement: Release evidence manifest is written to the agent directory before agent reasoning starts
+Before agent reasoning starts, deterministic steps SHALL gather the merged pull requests associated with the authoritative range and materialize a machine-readable release evidence manifest at `/tmp/gh-aw/agent/evidence.json`. The manifest SHALL NOT be added to the checked-in git worktree.
+
+The flow is:
+1. The **pre-activation job** gathers PR evidence (using `github-script`) and emits the serialized manifest as a job output (`evidence_json`) and an `has_evidence` flag (`true` when at least one PR was found). If `has_evidence` is `false`, the agent job is skipped entirely.
+2. A **pre-agent-step** (running in the agent's execution environment) deserializes `evidence_json` from the pre-activation job output and writes it to `/tmp/gh-aw/agent/evidence.json`, where the agent and repository-local helper scripts can access it.
 
 The manifest SHALL include the target section identity, the previous release tag, the compare range, and the set of merged pull requests considered for generation. For each pull request, it SHALL include at least the pull request number, title, URL, merge commit SHA, author, labels, touched files, a deterministic coarse classification, and a deterministic rationale for likely inclusion or exclusion.
 
 #### Scenario: Evidence stays out of the worktree
-- **WHEN** deterministic pre-activation persists changelog evidence
-- **THEN** that evidence SHALL be stored outside the normal checked-in repository worktree
+- **WHEN** the pre-agent-step persists changelog evidence
+- **THEN** that evidence SHALL be written to `/tmp/gh-aw/agent/evidence.json`, outside the normal checked-in repository worktree
 
 #### Scenario: Pull-request metadata is captured for generation
 - **WHEN** deterministic pre-activation resolves merged pull requests in the authoritative range
 - **THEN** each manifest entry SHALL include the pull request number, title, URL, merge commit SHA, author, labels, and touched files
+
+#### Scenario: No evidence skips the agent
+- **GIVEN** the pre-activation job finds zero merged pull requests in the authoritative range
+- **WHEN** the agent job evaluates its activation condition
+- **THEN** the agent job SHALL be skipped (`has_evidence == 'false'`) rather than running with an empty manifest
 
 ### Requirement: Agent changelog synthesis is PR-based and proof-carrying
 The agent phase SHALL use the release evidence manifest as its authoritative structured input for changelog generation. The agent SHALL produce changelog content only from PR-level summaries and SHALL NOT emit commit-by-commit release notes. The agent output SHALL include both the generated changelog markdown for the target section and structured provenance mapping each emitted changelog bullet to one or more pull requests from the release evidence manifest.
@@ -98,7 +107,7 @@ In release-pull-request mode, after validation succeeds, deterministic helper lo
 - **THEN** it SHALL regenerate the concrete release section needed for that branch without treating the branch as the singleton `Unreleased` maintenance branch
 
 ### Requirement: Workflow setup follows repository GH AW conventions
-The changelog generator SHALL provision the repository toolchains needed for repository-local helpers before agent reasoning begins, SHALL use the repository's supported GH AW engine configuration, and SHALL declare the workflow-memory or equivalent ephemeral storage path needed for the release evidence manifest.
+The changelog generator SHALL provision the repository toolchains needed for repository-local helpers before agent reasoning begins, and SHALL use the repository's supported GH AW engine configuration. Evidence and provenance files are stored in the GH AW agent directory (`/tmp/gh-aw/agent/`) rather than in `repo-memory`.
 
 #### Scenario: Repository-local helpers run after deterministic bootstrap
 - **WHEN** the agent or deterministic helper commands need repository-local Go or Node tooling
