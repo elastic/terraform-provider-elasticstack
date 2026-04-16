@@ -74,12 +74,13 @@ Before updating `CHANGELOG.md`, deterministic repository-authored validation SHA
 - **THEN** deterministic validation SHALL fail before `CHANGELOG.md` is updated
 
 ### Requirement: Scheduled/manual mode updates the singleton generated changelog PR
-In scheduled/manual mode, after validation succeeds, deterministic helper logic SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md`, SHALL push the change to a singleton branch named `generated-changelog`, and SHALL create or reuse a pull request from that branch to `main`.
+In scheduled/manual mode, after validation succeeds, the agent SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the change to a singleton branch named `generated-changelog`, creating or reusing a pull request from that branch to `main`. The branch creation, force-push, and PR reuse are handled by the GH AW `create-pull-request` safe-output — calling `create-pull-request` with the same target branch deterministically force-pushes to the existing branch and reuses any existing open pull request. This is the implementation of the "create or reuse" contract; no additional repository-authored shell logic is required for singleton PR management.
 
 #### Scenario: Generated changelog branch is reused
 - **GIVEN** the singleton branch `generated-changelog` already exists
 - **WHEN** the scheduled/manual changelog generator runs again
 - **THEN** it SHALL update that same branch and reuse the same pull request rather than opening a duplicate
+- **AND** this reuse is implemented by calling `create-pull-request` with `generated-changelog` as the target branch; the GH AW framework force-pushes to the branch and reuses the open PR
 
 #### Scenario: Scheduled/manual mode only updates Unreleased
 - **WHEN** the changelog generator runs in scheduled or manual mode
