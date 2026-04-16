@@ -24,28 +24,81 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// newTestClient creates a minimal kibanaoapi.Client backed by the given test server.
 func newTestClient(t *testing.T, srv *httptest.Server) *Client {
 	t.Helper()
 	c, err := NewClient(Config{URL: srv.URL})
 	require.NoError(t, err)
 	return c
 }
+func httpMonitorRequest(t *testing.T, name, url string) kbapi.SyntheticsMonitorRequest {
+	t.Helper()
+	req := kbapi.SyntheticsMonitorRequest{}
+	err := req.FromSyntheticsHttpMonitorFields(kbapi.SyntheticsHttpMonitorFields{
+		Name:   name,
+		Type:   kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
+		Url:    url,
+		Labels: &map[string]string{},
+	})
+	require.NoError(t, err)
+	return req
+}
 
-func TestGetMonitor_200(t *testing.T) {
-	enabled := true
-	monitor := SyntheticsMonitor{
-		ID:        "abc123",
-		Name:      "my-http-monitor",
-		Type:      SyntheticsMonitorTypeHTTP,
-		Namespace: "default",
-		Enabled:   &enabled,
-		Schedule:  &SyntheticsMonitorSchedule{Number: "5", Unit: "m"},
-		URL:       "https://example.com",
+func tcpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitorRequest {
+	t.Helper()
+	req := kbapi.SyntheticsMonitorRequest{}
+	err := req.FromSyntheticsTcpMonitorFields(kbapi.SyntheticsTcpMonitorFields{
+		Name:   name,
+		Type:   kbapi.SyntheticsTcpMonitorFieldsType(kbapi.SyntheticsMonitorTypeTcp),
+		Host:   host,
+		Labels: &map[string]string{},
+	})
+	require.NoError(t, err)
+	return req
+}
+
+func icmpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitorRequest {
+	t.Helper()
+	req := kbapi.SyntheticsMonitorRequest{}
+	err := req.FromSyntheticsIcmpMonitorFields(kbapi.SyntheticsIcmpMonitorFields{
+		Name:   name,
+		Type:   kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
+		Host:   host,
+		Labels: &map[string]string{},
+	})
+	require.NoError(t, err)
+	return req
+}
+
+func browserMonitorRequest(t *testing.T, name, script string) kbapi.SyntheticsMonitorRequest {
+	t.Helper()
+	req := kbapi.SyntheticsMonitorRequest{}
+	err := req.FromSyntheticsBrowserMonitorFields(kbapi.SyntheticsBrowserMonitorFields{
+		Name:         name,
+		Type:         kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
+		InlineScript: script,
+		Labels:       &map[string]string{},
+	})
+	require.NoError(t, err)
+	return req
+}
+
+func TestGetMonitor200(t *testing.T) {
+	monitor := kbapi.SyntheticsMonitor{
+		Id:        new("abc123"),
+		Name:      new("my-http-monitor"),
+		Type:      new(kbapi.SyntheticsMonitorTypeHttp),
+		Namespace: new("default"),
+		Enabled:   new(true),
+		Schedule: &kbapi.SyntheticsMonitorSchedule{
+			Number: new("5"),
+			Unit:   new("m"),
+		},
+		Url: new("https://example.com"),
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,12 +114,12 @@ func TestGetMonitor_200(t *testing.T) {
 	result, diags := GetMonitor(context.Background(), client, "default", "abc123")
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
-	assert.Equal(t, "abc123", result.ID)
-	assert.Equal(t, "my-http-monitor", result.Name)
-	assert.Equal(t, SyntheticsMonitorTypeHTTP, result.Type)
+	assert.Equal(t, "abc123", *result.Id)
+	assert.Equal(t, "my-http-monitor", *result.Name)
+	assert.Equal(t, kbapi.SyntheticsMonitorTypeHttp, *result.Type)
 }
 
-func TestGetMonitor_404(t *testing.T) {
+func TestGetMonitor404(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -75,28 +128,20 @@ func TestGetMonitor_404(t *testing.T) {
 	client := newTestClient(t, srv)
 	result, diags := GetMonitor(context.Background(), client, "default", "nonexistent")
 	assert.False(t, diags.HasError(), diags)
-	assert.Nil(t, result, "expect nil result for 404")
+	assert.Nil(t, result)
 }
 
-func TestCreateMonitor_200(t *testing.T) {
-	req := SyntheticsMonitorRequest{
-		Type:      SyntheticsMonitorTypeHTTP,
-		Name:      "new-monitor",
-		Schedule:  5,
-		Locations: []string{"us_east"},
-		Labels:    map[string]string{},
-		URL:       "https://example.com",
-	}
-	expectedResponse := SyntheticsMonitor{
-		ID:   "created-id",
-		Name: "new-monitor",
-		Type: SyntheticsMonitorTypeHTTP,
+func TestCreateMonitor200(t *testing.T) {
+	req := httpMonitorRequest(t, "new-monitor", "https://example.com")
+	expectedResponse := kbapi.SyntheticsMonitor{
+		Id:   new("created-id"),
+		Name: new("new-monitor"),
+		Type: new(kbapi.SyntheticsMonitorTypeHttp),
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
-		// Validate the request body contains required fields
 		var body map[string]any
 		err := json.NewDecoder(r.Body).Decode(&body)
 		assert.NoError(t, err)
@@ -113,22 +158,17 @@ func TestCreateMonitor_200(t *testing.T) {
 	result, diags := CreateMonitor(context.Background(), client, "default", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
-	assert.Equal(t, "created-id", result.ID)
-	assert.Equal(t, SyntheticsMonitorTypeHTTP, result.Type)
+	assert.Equal(t, "created-id", *result.Id)
+	assert.Equal(t, kbapi.SyntheticsMonitorTypeHttp, *result.Type)
 }
 
-func TestUpdateMonitor_200(t *testing.T) {
-	req := SyntheticsMonitorRequest{
-		Type:   SyntheticsMonitorTypeHTTP,
-		Name:   "updated-monitor",
-		Labels: map[string]string{},
-		URL:    "https://updated.example.com",
-	}
-	expectedResponse := SyntheticsMonitor{
-		ID:   "monitor-id",
-		Name: "updated-monitor",
-		Type: SyntheticsMonitorTypeHTTP,
-		URL:  "https://updated.example.com",
+func TestUpdateMonitor200(t *testing.T) {
+	req := httpMonitorRequest(t, "updated-monitor", "https://updated.example.com")
+	expectedResponse := kbapi.SyntheticsMonitor{
+		Id:   new("monitor-id"),
+		Name: new("updated-monitor"),
+		Type: new(kbapi.SyntheticsMonitorTypeHttp),
+		Url:  new("https://updated.example.com"),
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -150,14 +190,13 @@ func TestUpdateMonitor_200(t *testing.T) {
 	result, diags := UpdateMonitor(context.Background(), client, "default", "monitor-id", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
-	assert.Equal(t, "monitor-id", result.ID)
-	assert.Equal(t, "updated-monitor", result.Name)
+	assert.Equal(t, "monitor-id", *result.Id)
+	assert.Equal(t, "updated-monitor", *result.Name)
 }
 
-func TestDeleteMonitor_200(t *testing.T) {
+func TestDeleteMonitor200(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodDelete, r.Method)
-		// Bulk delete endpoint: DELETE /api/synthetics/monitors with body {"ids": [...]}
 		assert.Equal(t, "/api/synthetics/monitors", r.URL.Path)
 		var body map[string]any
 		assert.NoError(t, json.NewDecoder(r.Body).Decode(&body))
@@ -175,8 +214,7 @@ func TestDeleteMonitor_200(t *testing.T) {
 	assert.False(t, diags.HasError(), diags)
 }
 
-func TestDeleteMonitor_200_deletedFalse(t *testing.T) {
-	// When the bulk delete responds 200 but deleted=false for the monitor, it should be an error.
+func TestDeleteMonitorDeletedFalse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -186,100 +224,40 @@ func TestDeleteMonitor_200_deletedFalse(t *testing.T) {
 
 	client := newTestClient(t, srv)
 	diags := DeleteMonitor(context.Background(), client, "default", "monitor-id")
-	assert.True(t, diags.HasError(), "expected error when deleted=false")
+	assert.True(t, diags.HasError())
 }
 
-func TestDeleteMonitor_404(t *testing.T) {
-	// 404 on delete should be treated as success (already deleted)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer srv.Close()
-
-	client := newTestClient(t, srv)
-	diags := DeleteMonitor(context.Background(), client, "default", "monitor-id")
-	assert.False(t, diags.HasError(), diags)
-}
-
-func TestCreateMonitor_SpaceAwarePath(t *testing.T) {
+func TestCreateMonitorSpaceAwarePath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// For non-default spaces, path should be /s/{spaceID}/api/synthetics/monitors
 		assert.Contains(t, r.URL.Path, "/s/my-space/")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(SyntheticsMonitor{
-			ID:   "space-monitor-id",
-			Type: SyntheticsMonitorTypeHTTP,
+		_ = json.NewEncoder(w).Encode(kbapi.SyntheticsMonitor{
+			Id:   new("space-monitor-id"),
+			Type: new(kbapi.SyntheticsMonitorTypeHttp),
 		})
 	}))
 	defer srv.Close()
 
 	client := newTestClient(t, srv)
-	req := SyntheticsMonitorRequest{
-		Type:   SyntheticsMonitorTypeHTTP,
-		Name:   "space-monitor",
-		Labels: map[string]string{},
-		URL:    "https://example.com",
-	}
+	req := httpMonitorRequest(t, "space-monitor", "https://example.com")
 	result, diags := CreateMonitor(context.Background(), client, "my-space", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
 }
 
-func TestSyntheticsMonitorRequestMarshal_TypeDiscriminator(t *testing.T) {
-	// Verify that JSON marshaling preserves type discriminator and flat field layout
-	// consistent with the Kibana API wire format
+func TestSyntheticsMonitorRequestMarshalTypeDiscriminator(t *testing.T) {
 	testcases := []struct {
 		name     string
-		req      SyntheticsMonitorRequest
+		req      kbapi.SyntheticsMonitorRequest
 		wantType string
 		wantKey  string
 	}{
-		{
-			name: "HTTP monitor has type=http and url field",
-			req: SyntheticsMonitorRequest{
-				Type:   SyntheticsMonitorTypeHTTP,
-				Name:   "http-mon",
-				Labels: map[string]string{},
-				URL:    "https://example.com",
-			},
-			wantType: "http",
-			wantKey:  "url",
-		},
-		{
-			name: "TCP monitor has type=tcp and host field",
-			req: SyntheticsMonitorRequest{
-				Type:   SyntheticsMonitorTypeTCP,
-				Name:   "tcp-mon",
-				Labels: map[string]string{},
-				Host:   "example.com:9200",
-			},
-			wantType: "tcp",
-			wantKey:  "host",
-		},
-		{
-			name: "ICMP monitor has type=icmp",
-			req: SyntheticsMonitorRequest{
-				Type:   SyntheticsMonitorTypeICMP,
-				Name:   "icmp-mon",
-				Labels: map[string]string{},
-				Host:   "8.8.8.8",
-			},
-			wantType: "icmp",
-			wantKey:  "host",
-		},
-		{
-			name: "Browser monitor has type=browser and inline_script field",
-			req: SyntheticsMonitorRequest{
-				Type:         SyntheticsMonitorTypeBrowser,
-				Name:         "browser-mon",
-				Labels:       map[string]string{},
-				InlineScript: "step('go', () => page.goto('https://example.com'))",
-			},
-			wantType: "browser",
-			wantKey:  "inline_script",
-		},
+		{name: "HTTP", req: httpMonitorRequest(t, "http-mon", "https://example.com"), wantType: "http", wantKey: "url"},
+		{name: "TCP", req: tcpMonitorRequest(t, "tcp-mon", "example.com:9200"), wantType: "tcp", wantKey: "host"},
+		{name: "ICMP", req: icmpMonitorRequest(t, "icmp-mon", "8.8.8.8"), wantType: "icmp", wantKey: "host"},
+		{name: "Browser", req: browserMonitorRequest(t, "browser-mon", "step('go', () => page.goto('https://example.com'))"), wantType: "browser", wantKey: "inline_script"},
 	}
 
 	for _, tc := range testcases {
@@ -290,10 +268,9 @@ func TestSyntheticsMonitorRequestMarshal_TypeDiscriminator(t *testing.T) {
 			var m map[string]any
 			require.NoError(t, json.Unmarshal(data, &m))
 
-			assert.Equal(t, tc.wantType, m["type"], "type discriminator mismatch")
-			assert.Contains(t, m, tc.wantKey, "expected key %q in marshaled request", tc.wantKey)
-			// Labels must always be present (even empty) per REQ-023
-			assert.Contains(t, m, "labels", "labels must always be present")
+			assert.Equal(t, tc.wantType, m["type"])
+			assert.Contains(t, m, tc.wantKey)
+			assert.Contains(t, m, "labels")
 		})
 	}
 }

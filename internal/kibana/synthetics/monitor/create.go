@@ -67,7 +67,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	if result == nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", input.Name, spaceID), "empty response from API")
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", plan.Name.ValueString(), spaceID), "empty response from API")
 		return
 	}
 
