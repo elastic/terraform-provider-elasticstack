@@ -24,6 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const testAccDataSourceIngestProcessorScriptResourceName = "data.elasticstack_elasticsearch_ingest_processor_script.test"
+
 func TestAccDataSourceIngestProcessorScript(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -32,12 +34,83 @@ func TestAccDataSourceIngestProcessorScript(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_script.test", "json", expectedJSONScript),
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "description", "Extract 'tags' from 'env' field"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "lang", "painless"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source", expectedScriptSource),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "params", `{"delimiter":"-","position":1}`),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "script_id"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "if"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.#"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "tag"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScript),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "description", "Annotate tags when env is present"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "if", "ctx.env != null"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "ignore_failure", "true"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "tag", "script-tag"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "lang", "expression"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source", expectedScriptSourceAllAttributes),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "params", `{"count":2,"prefix":"prod"}`),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.#", "1"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.0", `{"set":{"field":"error.message","value":"script processor failed"}}`),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("stored_script"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "description", "Run stored script to derive tags"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "lang", "painless"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "script_id", "stored-script-derive-tags"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "params"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "if"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.#"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "tag"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptStoredScript),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source", "ctx.result = 'ok';"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "description"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "lang"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "script_id"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "params"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "if"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.#"),
+					resource.TestCheckNoResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "tag"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptMinimal),
 				),
 			},
 		},
 	})
 }
+
+const expectedScriptSource = `String[] envSplit = ctx['env'].splitOnToken(params['delimiter']);
+ArrayList tags = new ArrayList();
+tags.add(envSplit[params['position']].trim());
+ctx['tags'] = tags;
+`
+
+const expectedScriptSourceAllAttributes = `ctx['tag_count'] = params['count'];
+ctx['tag_prefix'] = params['prefix'];
+`
 
 const expectedJSONScript = `{
 	"script": {
@@ -49,5 +122,44 @@ const expectedJSONScript = `{
 			"position": 1
 		},
 		"source": "String[] envSplit = ctx['env'].splitOnToken(params['delimiter']);\nArrayList tags = new ArrayList();\ntags.add(envSplit[params['position']].trim());\nctx['tags'] = tags;\n"
+	}
+}`
+
+const expectedJSONScriptAllAttributes = `{
+	"script": {
+		"description": "Annotate tags when env is present",
+		"if": "ctx.env != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "script processor failed"
+				}
+			}
+		],
+		"tag": "script-tag",
+		"lang": "expression",
+		"params": {
+			"count": 2,
+			"prefix": "prod"
+		},
+		"source": "ctx['tag_count'] = params['count'];\nctx['tag_prefix'] = params['prefix'];\n"
+	}
+}`
+
+const expectedJSONScriptStoredScript = `{
+	"script": {
+		"description": "Run stored script to derive tags",
+		"ignore_failure": false,
+		"lang": "painless",
+		"id": "stored-script-derive-tags"
+	}
+}`
+
+const expectedJSONScriptMinimal = `{
+	"script": {
+		"ignore_failure": false,
+		"source": "ctx.result = 'ok';"
 	}
 }`
