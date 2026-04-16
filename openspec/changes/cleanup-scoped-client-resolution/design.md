@@ -8,7 +8,7 @@ This cleanup spans production code, tests, exported compatibility surfaces, shar
 
 **Goals:**
 - Add `kibana_connection` to `elasticstack_apm_agent_configuration` without inventing a resource-specific connection schema.
-- Make the connection-schema fixtures follow the real provider registry instead of partial naming heuristics, so future entities cannot be omitted silently.
+- Make provider connection-schema coverage follow the real provider registry instead of partial naming heuristics or hand-maintained ownership inventories, so future entities cannot be omitted silently.
 - Remove remaining production reliance on broad `APIClient` resolution.
 - Make typed factory/scoped-client resolution the only supported provider client contract.
 - Shrink `internal/clients` so Kibana- and Elasticsearch-specific helper behavior lives on the corresponding scoped clients.
@@ -33,17 +33,17 @@ Alternatives considered:
 - Keep using `ConvertProviderData` and accept one broad-client exception. Rejected because it preserves the exact bridge this cleanup is meant to remove.
 - Introduce a new APM-specific provider data adapter. Rejected because it adds another special case instead of converging on the factory pattern.
 
-### Decision: Make the connection-schema fixtures an explicit partition of the registered entity inventory
+### Decision: Use a single registry-driven connection-schema coverage test
 
-The two fixture files, `provider/kibana_connection_schema_test.go` and `provider/elasticsearch_connection_schema_test.go`, will stop acting like independent prefix scans and instead become an explicit partition over the entities registered by `provider.New(...)` and `provider.NewFrameworkProvider(...)`.
+The provider coverage tests will stop acting like independent prefix scans or hand-maintained ownership fixtures. Instead, a single test will enumerate every entity registered by `provider.New(...)` and `provider.NewFrameworkProvider(...)`, run one subtest per registered entity, validate the expected connection block contract for that entity, record that the entity was exercised, and finish with a completeness assertion that every registered entity was validated.
 
-The Kibana fixture will own all registered `elasticstack_kibana_*` entities, all registered `elasticstack_fleet_*` entities, and `elasticstack_apm_agent_configuration`. The Elasticsearch fixture will own all registered `elasticstack_elasticsearch_*` entities. A shared completeness check will compare the union of those ownership sets against the full registry returned by the provider constructors and fail if any entity is uncovered or claimed by both fixtures.
+For the current provider surface, registered `elasticstack_elasticsearch_*` entities are expected to expose `elasticsearch_connection`, while other registered entities are expected to expose `kibana_connection`. The test will keep the provider constructors as the source of truth for what exists, and the final completeness subtest will ensure no registered entity escapes validation. Where a registered entity intentionally lacks a connection block, that exception must be asserted explicitly in the same test so it remains visible and reviewable. The current documented exception is the SDK `elasticstack_elasticsearch_ingest_processor_*` data sources, which build ingest processor payloads only and therefore assert the absence of both connection blocks.
 
-This keeps fixture ownership aligned with the actual provider surface, documents the current entity split in one place, and turns future registry changes into immediate test failures instead of silent omissions.
+This keeps test coverage aligned with the actual provider surface, eliminates duplicated ownership inventories, and turns future registry changes into immediate test failures instead of silent omissions while keeping the current no-connection carve-out explicit.
 
 Alternatives considered:
-- Keep prefix-based selection and add APM as a one-off exception in the Kibana fixture. Rejected because it would still lack any guarantee that the combined fixtures cover the full provider registry.
-- Maintain separate hand-written inventories in each test without a completeness check. Rejected because drift between the fixture inventories and the provider registrations would remain easy to miss.
+- Keep prefix-based selection split across multiple tests. Rejected because it still separates the per-entity assertions from the completeness guarantee and makes it easier for the two to drift.
+- Maintain separate hand-written ownership inventories in test code. Rejected because drift between those inventories and the provider registrations is exactly the class of failure this change is trying to avoid.
 
 ### Decision: Keep a private provider-default bootstrap client, but remove it from the supported API surface
 
@@ -77,7 +77,7 @@ Alternatives considered:
 
 - `xpprovider` consumers may rely on `APIClient` today -> Mitigation: call out the break in the proposal, replace it with typed factory/scoped surfaces where possible, and verify downstream compile failures early.
 - Acceptance test churn may be larger than production code churn -> Mitigation: centralize replacement helpers first, then migrate package tests mechanically.
-- Fixture ownership can drift from the real provider registry -> Mitigation: derive the full registered entity inventory from provider constructors, encode fixture ownership explicitly, and fail on omissions or overlaps.
+- Connection-schema coverage can drift from the real provider registry -> Mitigation: derive the full registered entity inventory from provider constructors, validate each entity in a single test loop, and fail if the final completeness check finds anything unvalidated.
 - Private bootstrap logic may still temporarily resemble the old broad client -> Mitigation: remove exported access paths in the same change, then trim remaining private-only methods once no callers require them.
 - Some synced specs still reference deleted helper names -> Mitigation: include delta specs in this change and update canonical specs when the change is applied and archived.
 
