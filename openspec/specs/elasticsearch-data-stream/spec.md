@@ -103,7 +103,7 @@ Changing `name` SHALL require replacement of the resource (`ForceNew`). There is
 
 ### Requirement: Connection (REQ-010–REQ-011)
 
-By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured on the resource, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls (`clients.NewAPIClientFromSDKResource`).
+The resource SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection for all API calls (create, read, delete).
 
 #### Scenario: Resource-level client override
 

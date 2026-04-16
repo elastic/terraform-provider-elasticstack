@@ -98,7 +98,7 @@ Changing `job_id` SHALL require resource replacement. The resource SHALL apply `
 
 ### Requirement: Connection (REQ-007)
 
-By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client via `clients.MaybeNewAPIClientFromFrameworkResource` for all API calls (create, read, update, delete).
+The resource SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection for all API calls (create, read, update, delete).
 
 #### Scenario: Resource-level client override
 

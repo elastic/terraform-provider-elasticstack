@@ -215,7 +215,7 @@ The schema SHALL enforce `ExactlyOneOf` on the set `{fs, url, gcs, azure, s3, hd
 
 ### Requirement: Connection (REQ-009)
 
-By default, the resource SHALL use the provider-level Elasticsearch client. When an `elasticsearch_connection` block is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls, via `clients.NewAPIClientFromSDKResource`.
+The resource SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection for all API calls.
 
 #### Scenario: Resource-level connection
 
@@ -319,7 +319,7 @@ The data source SHALL set `id` in the format `<cluster_uuid>/<repository_name>` 
 
 ### Requirement: Data source connection (REQ-DS-004)
 
-By default, the data source SHALL use the provider-level Elasticsearch client. When an `elasticsearch_connection` block is configured, the data source SHALL construct and use a resource-scoped client via `clients.NewAPIClientFromSDKResource`.
+The data source SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection.
 
 ### Requirement: Data source type block population (REQ-DS-005)
 
