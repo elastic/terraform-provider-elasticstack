@@ -104,7 +104,7 @@ safe-outputs:
 
 # Changelog Generation
 
-You generate or update `CHANGELOG.md` strictly from the merged pull-request evidence in workflow memory. You do **not** narrate individual commits, invent entries without PR backing, or guess user impact.
+You generate or update `CHANGELOG.md` strictly from the merged pull-request evidence in workflow memory. You do **not** narrate individual commits, invent entries without PR backing, or guess user impact. Every changelog bullet MUST come from a PR in the evidence manifest. Never reference a PR number or URL that does not appear in the manifest.
 
 ## Pre-activation context
 
@@ -131,18 +131,19 @@ The manifest contains:
 
 1. **Read the evidence manifest** from workflow memory (path above).
 
-2. **Read `CHANGELOG.md`** to understand the current structure and target section.
+2. **Read `CHANGELOG.md`** to understand the current structure, sub-heading style, and target section.
 
 3. **Determine which PRs to include**:
-   - Always include PRs classified as `user-facing`.
-   - For PRs classified as `uncertain`: include them if they touch provider implementation paths (`internal/`, `pkg/`, `libs/`, `provider/`, `go.mod`) and have a meaningful, user-visible title. Exclude automated-sounding entries.
-   - Always exclude PRs classified as `internal` unless you have a specific reason the user impact is significant.
-   - Never include a PR entry without its `number` and `url` for provenance.
+   - PRs classified as `user-facing` SHOULD always be included unless you have a clear specific reason not to.
+   - PRs classified as `uncertain`: use your judgment based on PR title, description, and `touched_files`. Include if they touch provider implementation paths (`internal/`, `pkg/`, `libs/`, `provider/`, `go.mod`) and have a meaningful, user-visible title. Exclude automated-sounding entries (e.g., dependency bumps, CI changes, doc-only).
+   - PRs classified as `internal` MAY be omitted. Include only if you have a specific reason the user impact is significant.
+   - Never include a PR entry without its `number` and `url` from the manifest.
+   - Never invent PR numbers. Every bullet MUST end with `([#NNN](url))` or `([#NNN](url), [#MMM](url))` citation format using real PR numbers from the manifest.
 
-4. **Validate**:
-   - Every changelog bullet MUST be backed by exactly one PR from the evidence manifest.
-   - Reject commit-level narration (e.g., "Fix typo in xyz.go" without PR backing).
-   - Reject fabricated PR numbers not present in the evidence.
+4. **Pre-write validation rules** (enforce before generating):
+   - Every changelog bullet MUST be backed by exactly one or more PRs from the evidence manifest.
+   - No commit-level narration (e.g., bullets referencing commit SHAs or "Fix typo in xyz.go" without PR backing).
+   - No fabricated PR numbers not present in the evidence.
    - If there are no user-facing PRs in the evidence, emit `noop` with a clear reason.
 
 5. **Generate the changelog section**:
@@ -150,7 +151,7 @@ The manifest contains:
    For **`unreleased`** mode:
    - Rewrite **only** the `## [Unreleased]` section of `CHANGELOG.md`.
    - Preserve all other sections (previous release sections) exactly as-is.
-   - Use the existing sub-heading format in the file (e.g., `### Changes`, `### Breaking Changes`, `### Deprecations`).
+   - Match the existing sub-heading style used in the file (look at current sections — the file uses e.g. `### Changes`, `### Breaking changes`). Do **not** invent sub-headings not already used in the file.
    - Each bullet: `- <summary> ([#<number>](<url>))`
 
    For **`release`** mode:
@@ -204,19 +205,32 @@ The manifest contains:
    This script handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
 
 9. **Commit and push**:
-   - For `release` mode, commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`
-   - For `unreleased` mode, commit message: `chore(changelog): update unreleased changelog section`
-   - Include a note in the commit body if provenance validation was skipped.
-   - Commit both `CHANGELOG.md` and `memory/changelog-generation/provenance.json`.
-   - For **`release`** mode: use `push-to-pull-request-branch` targeting the triggering `prep-release-*` branch.
-   - For **`unreleased`** mode: use `create-pull-request` to push the branch `${{ needs.pre_activation.outputs.target_branch }}` (`generated-changelog`) and open a PR into `main`. If a PR already exists for that branch, use `update-pull-request` instead.
+
+   Commit both `CHANGELOG.md` and `memory/changelog-generation/provenance.json`.
+
+   For **`release`** mode:
+   - Commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`
+   - Use the `push-to-pull-request-branch` safe output to push to the triggering `prep-release-*` branch. Do **not** create a new PR — the release PR already exists.
+
+   For **`unreleased`** mode (singleton branch/PR orchestration):
+   - Commit message: `chore(changelog): update unreleased changelog section`
+   - Check whether a PR already exists for the `generated-changelog` branch (use the GitHub MCP tools to search open PRs, or check with `git ls-remote --heads origin generated-changelog`).
+   - **If no existing PR**: use `create-pull-request` to create a new PR from the `generated-changelog` branch targeting `main`:
+     - PR title: `chore: update CHANGELOG.md [Unreleased] section`
+     - PR body (include all three elements):
+       1. Date of generation (today's date in YYYY-MM-DD format)
+       2. The compare range used: `${{ needs.pre_activation.outputs.compare_range }}`
+       3. A note that this PR is auto-generated by the changelog-generation workflow and re-runs will overwrite the branch — do not make manual edits to the branch.
+   - **If a PR already exists** for the `generated-changelog` branch: use `create-pull-request` to update the branch with the new changes (the framework will force-push to the existing branch, automatically updating the open PR). Additionally use `update-pull-request` to refresh the PR description with the new date and compare range.
 
 10. **If no action is taken** (no user-facing PRs, or CHANGELOG.md is already up-to-date): emit `noop` with a clear reason. Do **not** push an empty commit.
 
 ## Constraints
 
 - Generate changelog entries strictly at the **pull-request level**, not the commit level.
-- Write `memory/changelog-generation/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet.
+- Every bullet MUST end with `([#NNN](url))` citation linking to the real PR — no bullets without a PR citation.
+- Write `memory/changelog-generation/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet before writing CHANGELOG.md.
+- Provenance validation (step 7) MUST pass before CHANGELOG.md is written or any push occurs.
 - Do **not** modify any release sections other than the target section for this run.
 - Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.
 - Do **not** invent categories or sub-headings not present in the existing file.

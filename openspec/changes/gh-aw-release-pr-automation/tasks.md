@@ -12,9 +12,9 @@
 
 ## 3. Agent prompt and changelog PR behavior
 
-- [ ] 3.1 Author the GH AW prompt so the agent generates changelog output strictly from PR-level summaries and returns structured provenance for every changelog bullet.
-- [ ] 3.2 Add singleton branch/PR orchestration for scheduled/manual changelog maintenance on branch `generated-changelog`.
-- [ ] 3.3 Add release-PR branch update logic so `prep-release-*` pull requests receive regenerated concrete `## [x.y.z] - <date>` sections on their own branch.
+- [x] 3.1 Author the GH AW prompt so the agent generates changelog output strictly from PR-level summaries and returns structured provenance for every changelog bullet.
+- [x] 3.2 Add singleton branch/PR orchestration for scheduled/manual changelog maintenance on branch `generated-changelog`.
+- [x] 3.3 Add release-PR branch update logic so `prep-release-*` pull requests receive regenerated concrete `## [x.y.z] - <date>` sections on their own branch.
 
 ## 4. Deterministic release preparation workflow
 
