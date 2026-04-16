@@ -30,7 +30,7 @@
 
 ## 6. Verification and documentation
 
-- [ ] 6.1 Add or update tests for version bumping, previous-tag selection, merged-PR evidence gathering, workflow-memory persistence/loading, provenance validation, changelog section rewriting, and the generated-changelog approval path.
-- [ ] 6.2 Add prompt/fixture validation that confirms changelog output remains PR-based and rejects commit-level narration.
-- [ ] 6.3 Update maintainer documentation in `dev-docs/high-level/contributing.md` to replace manual changelog maintenance and manual release-PR preparation with the new workflows.
-- [ ] 6.4 Regenerate and verify workflow artifacts and any related workflow-source tests or checks required by the repository, then run the relevant OpenSpec validation/check commands.
+- [x] 6.1 Add or update tests for version bumping, previous-tag selection, merged-PR evidence gathering, workflow-memory persistence/loading, provenance validation, changelog section rewriting, and the generated-changelog approval path.
+- [x] 6.2 Add prompt/fixture validation that confirms changelog output remains PR-based and rejects commit-level narration.
+- [x] 6.3 Update maintainer documentation in `dev-docs/high-level/contributing.md` to replace manual changelog maintenance and manual release-PR preparation with the new workflows.
+- [x] 6.4 Regenerate and verify workflow artifacts and any related workflow-source tests or checks required by the repository, then run the relevant OpenSpec validation/check commands.
