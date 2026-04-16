@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -68,11 +69,11 @@ func TestGitShowPathOrMissingAndDiffKbapiAtRefs(t *testing.T) {
 	runGit(t, dir, "commit", "-m", "remove kbapi")
 	newHead := gitHead(t, dir)
 
-	_, missingNew, err := gitShowPathOrMissing(dir, newHead, kbapiGenPath)
+	_, missingNew, err := gitShowPathOrMissing(dir, newHead)
 	if err != nil || !missingNew {
 		t.Fatalf("expect missing generated file at new head: missing=%v err=%v", missingNew, err)
 	}
-	content, missingOld, err := gitShowPathOrMissing(dir, oldHead, kbapiGenPath)
+	content, missingOld, err := gitShowPathOrMissing(dir, oldHead)
 	if err != nil || missingOld || !strings.Contains(content, "OldOnly") {
 		t.Fatalf("old head content: missing=%v err=%v", missingOld, err)
 	}

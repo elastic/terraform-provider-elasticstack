@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 // Command kibana-spec-impact provides deterministic helpers for the Kibana OpenAPI
 // spec-impact workflow: entity inventory, kbapi diffing, impact reporting, and memory.
@@ -79,10 +80,7 @@ func cmdInventory(args []string, stdout, stderr io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	entities, err := discoverKibanaEntities()
-	if err != nil {
-		return err
-	}
+	entities := discoverKibanaEntities()
 	data, err := json.MarshalIndent(entities, "", "  ")
 	if err != nil {
 		return err

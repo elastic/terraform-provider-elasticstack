@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -134,9 +135,9 @@ func diffKbapiSurfaces(oldSrc, newSrc string) ([]string, error) {
 
 // gitShowPathOrMissing returns file content at rev:path, or missing=true when the path does not
 // exist in that revision (add/remove/rename of generated/kbapi/kibana.gen.go).
-func gitShowPathOrMissing(repoRoot, rev, path string) (content string, missing bool, err error) {
+func gitShowPathOrMissing(repoRoot, rev string) (content string, missing bool, err error) {
 	repoRoot = filepath.Clean(repoRoot)
-	cmd := exec.Command("git", "-C", repoRoot, "show", rev+":"+path)
+	cmd := exec.Command("git", "-C", repoRoot, "show", rev+":"+kbapiGenPath)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -149,16 +150,16 @@ func gitShowPathOrMissing(repoRoot, rev, path string) (content string, missing b
 		strings.Contains(msg, "did not match any file") {
 		return "", true, nil
 	}
-	return "", false, fmt.Errorf("git show %s:%s: %w\n%s", rev, path, err, msg)
+	return "", false, fmt.Errorf("git show %s:%s: %w\n%s", rev, kbapiGenPath, err, msg)
 }
 
 func diffKbapiAtRefs(repoRoot, baselineRev, targetRev string) ([]string, error) {
 	repoRoot = filepath.Clean(repoRoot)
-	oldSrc, oldMiss, err := gitShowPathOrMissing(repoRoot, baselineRev, kbapiGenPath)
+	oldSrc, oldMiss, err := gitShowPathOrMissing(repoRoot, baselineRev)
 	if err != nil {
 		return nil, err
 	}
-	newSrc, newMiss, err := gitShowPathOrMissing(repoRoot, targetRev, kbapiGenPath)
+	newSrc, newMiss, err := gitShowPathOrMissing(repoRoot, targetRev)
 	if err != nil {
 		return nil, err
 	}

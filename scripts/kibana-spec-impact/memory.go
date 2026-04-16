@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -40,12 +41,12 @@ type Memory struct {
 
 // FingerprintRec records a previously emitted impact fingerprint.
 type FingerprintRec struct {
-	EntityName   string    `json:"entity_name"`
-	EntityType   string    `json:"entity_type"`
-	BaselineSHA  string    `json:"baseline_sha"`
-	TargetSHA    string    `json:"target_sha"`
-	RecordedAt   time.Time `json:"recorded_at"`
-	Fingerprint  string    `json:"fingerprint"`
+	EntityName  string    `json:"entity_name"`
+	EntityType  string    `json:"entity_type"`
+	BaselineSHA string    `json:"baseline_sha"`
+	TargetSHA   string    `json:"target_sha"`
+	RecordedAt  time.Time `json:"recorded_at"`
+	Fingerprint string    `json:"fingerprint"`
 }
 
 func loadMemory(path string) (*Memory, error) {

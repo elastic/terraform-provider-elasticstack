@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -27,13 +28,13 @@ import (
 
 // ImpactReport is the deterministic evidence contract consumed by the workflow agent.
 type ImpactReport struct {
-	Version              int                 `json:"version"`
-	BaselineSHA          string              `json:"baseline_sha"`
-	TargetSHA            string              `json:"target_sha"`
-	ChangedKbapiSymbols  []string            `json:"changed_kbapi_symbols"`
-	TransformSchemaHints []string            `json:"transform_schema_hints"`
-	HighConfidence       []ImpactedEntity    `json:"high_confidence_impacts"`
-	SuppressedDuplicates []SuppressedImpact  `json:"suppressed_duplicates"`
+	Version              int                `json:"version"`
+	BaselineSHA          string             `json:"baseline_sha"`
+	TargetSHA            string             `json:"target_sha"`
+	ChangedKbapiSymbols  []string           `json:"changed_kbapi_symbols"`
+	TransformSchemaHints []string           `json:"transform_schema_hints"`
+	HighConfidence       []ImpactedEntity   `json:"high_confidence_impacts"`
+	SuppressedDuplicates []SuppressedImpact `json:"suppressed_duplicates"`
 }
 
 // ImpactedEntity is a deterministic high-confidence match for a single Terraform entity.
@@ -73,10 +74,7 @@ func buildImpactReport(repoRoot string, mem *Memory, baselineSHA, targetSHA stri
 		return nil, fmt.Errorf("transform schema hints: %w", err)
 	}
 
-	entities, err := discoverKibanaEntities()
-	if err != nil {
-		return nil, fmt.Errorf("entity inventory: %w", err)
-	}
+	entities := discoverKibanaEntities()
 
 	oapi, err := buildKibanaOAPIIndex(repoRoot)
 	if err != nil {
@@ -149,7 +147,7 @@ func diffTransformSchemaPaths(repoRoot, baselineSHA, targetSHA string) ([]string
 		return nil, fmt.Errorf("git diff name-only: %w", err)
 	}
 	var paths []string
-	for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

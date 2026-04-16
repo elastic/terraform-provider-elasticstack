@@ -9,10 +9,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
-// software distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied.  See the
-// License for the specific language governing permissions and
-// limitations under the License.
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -38,7 +39,7 @@ type Entity struct {
 
 // discoverKibanaEntities lists resources and data sources registered on the provider whose
 // Terraform type name uses the elasticstack_kibana_ prefix (Plugin Framework + Plugin SDK).
-func discoverKibanaEntities() ([]Entity, error) {
+func discoverKibanaEntities() []Entity {
 	fwProv := provider.NewFrameworkProvider("kibana-spec-impact")
 	sdkProv := provider.New("kibana-spec-impact")
 	ctx := context.Background()
@@ -94,7 +95,7 @@ func discoverKibanaEntities() ([]Entity, error) {
 		seen[name] = struct{}{}
 	}
 
-	return out, nil
+	return out
 }
 
 // sdkKibanaPkgPath returns the Go import path for SDK-only Kibana entities in the root
