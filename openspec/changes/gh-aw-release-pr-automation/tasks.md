@@ -1,8 +1,8 @@
 ## 1. Changelog generator workflow
 
-- [ ] 1.1 Add the authored GH AW changelog-generator workflow source under `.github/workflows-src/` and the compiled workflow artifacts under `.github/workflows/`.
-- [ ] 1.2 Configure the changelog generator trigger modes for schedule, `workflow_dispatch`, and same-repository `prep-release-*` pull requests.
-- [ ] 1.3 Add deterministic pre-activation steps that resolve the previous release tag, authoritative compare range, merged pull-request set, and target section mode (`Unreleased` vs concrete release section).
+- [x] 1.1 Add the authored GH AW changelog-generator workflow source under `.github/workflows-src/` and the compiled workflow artifacts under `.github/workflows/`.
+- [x] 1.2 Configure the changelog generator trigger modes for schedule, `workflow_dispatch`, and same-repository `prep-release-*` pull requests.
+- [x] 1.3 Add deterministic pre-activation steps that resolve the previous release tag, authoritative compare range, merged pull-request set, and target section mode (`Unreleased` vs concrete release section).
 
 ## 2. Changelog evidence and validation helpers
 

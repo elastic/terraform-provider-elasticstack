@@ -11,6 +11,10 @@
     {
       "template": ".github/workflows-src/test/workflow.yml.tmpl",
       "output": ".github/workflows/test.yml"
+    },
+    {
+      "template": ".github/workflows-src/changelog-generation/workflow.md.tmpl",
+      "output": ".github/workflows/changelog-generation.md"
     }
   ]
 }

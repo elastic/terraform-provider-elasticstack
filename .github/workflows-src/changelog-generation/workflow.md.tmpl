@@ -1,0 +1,176 @@
+---
+name: Changelog Generation
+description: >-
+  Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch,
+  rewrites the Unreleased section. On prep-release-* pull requests, rewrites the concrete release
+  section. Uses a deterministic pre-activation phase to resolve the previous release tag, compare
+  range, merged PR set, and target section mode, then an agent phase to generate changelog content
+  strictly from PR-level summaries with full provenance.
+on:
+  schedule:
+    - cron: daily
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  steps:
+    - name: Resolve release context
+      id: resolve_release_context
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/resolve-release-context.inline.js
+    - name: Gather PR evidence
+      id: gather_pr_evidence
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/gather-pr-evidence.inline.js
+        previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+        compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+        mode: ${{ steps.resolve_release_context.outputs.mode }}
+        target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+    - name: Write evidence manifest to workflow memory
+      id: write_evidence_manifest
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/write-evidence-manifest.inline.js
+        evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
+if: needs.pre_activation.outputs.evidence_ready == 'true'
+steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup repository dependencies
+    run: make setup
+engine:
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pre-activation:
+    outputs:
+      mode: ${{ steps.resolve_release_context.outputs.mode }}
+      previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+      compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+      target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+      target_branch: ${{ steps.resolve_release_context.outputs.target_branch }}
+      evidence_ready: ${{ steps.write_evidence_manifest.outputs.evidence_ready }}
+tools:
+  github:
+    toolsets: [repos, pull_requests]
+  repo-memory:
+    - id: changelog-evidence
+      file-glob: ["memory/changelog-generation/evidence.json"]
+      create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
+network:
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  push-to-pull-request-branch:
+    target: triggering
+    max: 1
+  create-pull-request:
+    max: 1
+  update-pull-request:
+    max: 1
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Changelog Generation
+
+You generate or update `CHANGELOG.md` strictly from the merged pull-request evidence in workflow memory. You do **not** narrate individual commits, invent entries without PR backing, or guess user impact.
+
+## Pre-activation context
+
+Deterministic pre-activation steps have already resolved the release context and gathered PR evidence. Do **not** re-query git or GitHub for commit lists or PR metadata; use the values below and the evidence manifest in workflow memory.
+
+- **Mode**: `${{ needs.pre_activation.outputs.mode }}` — either `unreleased` (schedule/dispatch) or `release` (prep-release-* PR)
+- **Previous tag**: `${{ needs.pre_activation.outputs.previous_tag }}`
+- **Compare range**: `${{ needs.pre_activation.outputs.compare_range }}`
+- **Target version** (release mode only): `${{ needs.pre_activation.outputs.target_version }}`
+- **Target branch**: `${{ needs.pre_activation.outputs.target_branch }}`
+
+## Evidence manifest
+
+Read the evidence manifest from workflow memory at:
+```
+/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json
+```
+
+The manifest contains:
+- `mode`, `target_version`, `previous_tag`, `compare_range`
+- `pull_requests[]`: each entry has `number`, `title`, `url`, `merge_commit_sha`, `author`, `labels`, `touched_files`, `classification` (`user-facing` | `internal` | `uncertain`), `inclusion_rationale`, `exclusion_rationale`
+
+## Execution steps
+
+1. **Read the evidence manifest** from workflow memory (path above).
+
+2. **Read `CHANGELOG.md`** to understand the current structure and target section.
+
+3. **Determine which PRs to include**:
+   - Always include PRs classified as `user-facing`.
+   - For PRs classified as `uncertain`: include them if they touch provider implementation paths (`internal/`, `pkg/`, `libs/`, `provider/`, `go.mod`) and have a meaningful, user-visible title. Exclude automated-sounding entries.
+   - Always exclude PRs classified as `internal` unless you have a specific reason the user impact is significant.
+   - Never include a PR entry without its `number` and `url` for provenance.
+
+4. **Validate**:
+   - Every changelog bullet MUST be backed by exactly one PR from the evidence manifest.
+   - Reject commit-level narration (e.g., "Fix typo in xyz.go" without PR backing).
+   - Reject fabricated PR numbers not present in the evidence.
+   - If there are no user-facing PRs in the evidence, emit `noop` with a clear reason.
+
+5. **Generate the changelog section**:
+
+   For **`unreleased`** mode:
+   - Rewrite **only** the `## [Unreleased]` section of `CHANGELOG.md`.
+   - Preserve all other sections (previous release sections) exactly as-is.
+   - Use the existing sub-heading format in the file (e.g., `### Changes`, `### Breaking Changes`, `### Deprecations`).
+   - Each bullet: `- <summary> ([#<number>](<url>))`
+
+   For **`release`** mode:
+   - Rewrite **only** the `## [${{ needs.pre_activation.outputs.target_version }}] - <today's date>` section.
+   - If a section for this version already exists, replace it. If not, insert it immediately after the `## [Unreleased]` section.
+   - Clear the `## [Unreleased]` section (replace its body with a placeholder line `- No unreleased changes`).
+   - Preserve all other sections exactly as-is.
+
+6. **Write `CHANGELOG.md`** with the updated content.
+
+7. **Commit and push**:
+   - For `release` mode, commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`
+   - For `unreleased` mode, commit message: `chore(changelog): update unreleased changelog section`
+   - For **`release`** mode: use `push-to-pull-request-branch` targeting the triggering `prep-release-*` branch.
+   - For **`unreleased`** mode: use `create-pull-request` to push the branch `${{ needs.pre_activation.outputs.target_branch }}` (`generated-changelog`) and open a PR into `main`. If a PR already exists for that branch, use `update-pull-request` instead.
+
+8. **If no action is taken** (no user-facing PRs, or CHANGELOG.md is already up-to-date): emit `noop` with a clear reason. Do **not** push an empty commit.
+
+## Constraints
+
+- Generate changelog entries strictly at the **pull-request level**, not the commit level.
+- Include a provenance comment in the commit body listing the PR numbers included.
+- Do **not** modify any release sections other than the target section for this run.
+- Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.
+- Do **not** invent categories or sub-headings not present in the existing file.
