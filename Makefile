@@ -249,7 +249,7 @@ prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|maj
 	    patch|minor|major) ;; \
 	    *) echo "BUMP must be patch, minor, or major (got: $$BUMP)" >&2; exit 1 ;; \
 	  esac; \
-	  gh workflow run prep-release.yml --field bump=$$BUMP
+	  gh workflow run prep-release.yml --field bump="$$BUMP"
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command

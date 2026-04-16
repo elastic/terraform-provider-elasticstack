@@ -32,7 +32,7 @@ jobs:
           PREV_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
           if [ -z "$PREV_TAG" ]; then
             PREV_TAG="v0.0.0"
-            echo "No existing tags found; defaulting to ${PREV_TAG}"
+            echo "::warning::No existing tags matching 'v[0-9]*.[0-9]*.[0-9]*' found; defaulting to v0.0.0"
           else
             echo "Previous release tag: ${PREV_TAG}"
           fi
@@ -100,6 +100,7 @@ jobs:
           if [ "$EXISTS" = "true" ]; then
             git fetch origin "${BRANCH}"
             git checkout "${BRANCH}"
+            git merge --no-edit origin/main || true
           else
             git checkout main
             git pull origin main
@@ -138,7 +139,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH="${{ steps.meta.outputs.BRANCH }}"
-          PR_URL=$(gh pr list --head "${BRANCH}" --state open --json url --jq '.[0].url' 2>/dev/null || true)
+          PR_URL=$(gh pr list --head "${BRANCH}" --state open --json url --jq '.[0].url')
           if [ -n "$PR_URL" ]; then
             echo "PR already exists: ${PR_URL}"
             echo "EXISTS=true" >> "$GITHUB_OUTPUT"
