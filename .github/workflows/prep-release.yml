@@ -157,24 +157,24 @@ jobs:
           BRANCH="${{ steps.meta.outputs.BRANCH }}"
           PR_TITLE="${{ steps.meta.outputs.PR_TITLE }}"
           TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          printf '%s\n' \
+            "This pull request prepares the ${TARGET_VERSION} release." \
+            "" \
+            "## Changes" \
+            "" \
+            "- Bumps \`VERSION\` in \`Makefile\` to \`${TARGET_VERSION}\`" \
+            "- Changelog section for this release will be populated automatically by the changelog generator workflow" \
+            "" \
+            "## Checklist" \
+            "" \
+            "- [ ] Changelog section looks correct" \
+            "- [ ] Version bump is correct" \
+            > /tmp/pr-body.txt
           gh pr create \
             --head "${BRANCH}" \
             --base main \
             --title "${PR_TITLE}" \
-            --body "$(cat <<EOF
-This pull request prepares the ${TARGET_VERSION} release.
-
-## Changes
-
-- Bumps \`VERSION\` in \`Makefile\` to \`${TARGET_VERSION}\`
-- Changelog section for this release will be generated automatically by the changelog generator workflow
-
-## Checklist
-
-- [ ] Changelog section looks correct
-- [ ] Version bump is correct
-EOF
-)"
+            --body-file /tmp/pr-body.txt
 
       - name: Report outcome
         run: |
