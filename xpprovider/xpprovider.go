@@ -33,16 +33,6 @@ import (
 // GetElasticsearchClient, etc.) to obtain scoped clients.
 type ClientFactory = clients.ProviderClientFactory
 
-// XPAPIClient exports the provider client factory used by Crossplane to obtain
-// scoped Kibana and Elasticsearch clients. The underlying broad APIClient type
-// is intentionally unexported; all interaction goes through ProviderClientFactory.
-//
-// Deprecated: use [ClientFactory] directly; this name remains for
-// backward compatibility with existing consumers.
-//
-//nolint:revive // Intentional legacy name; stutter is acceptable for a deprecated compatibility alias.
-type XPAPIClient = clients.ProviderClientFactory
-
 // Configuration exports the internal type config.ProviderConfiguration of the Terraform provider.
 type Configuration = config.ProviderConfiguration
 
