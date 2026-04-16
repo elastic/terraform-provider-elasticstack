@@ -122,7 +122,7 @@ function serialiseChangelog({ preamble, sections, footer }) {
 
   for (const section of sections) {
     parts.push(section.header);
-    if (section.body) {
+    if (section.body !== undefined) {
       parts.push(section.body);
     }
   }

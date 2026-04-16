@@ -244,7 +244,7 @@ setup: tools vendor setup-openspec ## Setup the dev environment
 
 .PHONY: prep-release
 prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|major, default: patch)
-	@ : $${BUMP:=patch}; \
+	@ BUMP="$(or $(BUMP),patch)"; \
 	  case "$$BUMP" in \
 	    patch|minor|major) ;; \
 	    *) echo "BUMP must be patch, minor, or major (got: $$BUMP)" >&2; exit 1 ;; \
