@@ -59,19 +59,28 @@ on:
           const path = require('path');
           
           const ws = process.env.GITHUB_WORKSPACE;
-          const mem = path.join(process.env.RUNNER_TEMP, 'kibana-spec-impact-memory.json');
           const sha = process.env.GITHUB_SHA || 'HEAD';
+          
+          const defaultMem = '/tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json';
+          let mem = process.env.KIBANA_SPEC_IMPACT_MEMORY;
+          if (!mem && fs.existsSync(defaultMem)) {
+            mem = defaultMem;
+          } else if (!mem) {
+            mem = path.join(process.env.RUNNER_TEMP, 'kibana-spec-impact-memory.json');
+          }
           
           const goEnv = {
             ...process.env,
             TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: 'true',
           };
           
-          execFileSync('go', ['run', './scripts/kibana-spec-impact', 'memory-bootstrap', '--memory', mem], {
-            cwd: ws,
-            env: goEnv,
-            stdio: 'inherit',
-          });
+          if (!fs.existsSync(mem)) {
+            execFileSync('go', ['run', './scripts/kibana-spec-impact', 'memory-bootstrap', '--memory', mem], {
+              cwd: ws,
+              env: goEnv,
+              stdio: 'inherit',
+            });
+          }
           
           const reportJson = execFileSync(
             'go',
