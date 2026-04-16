@@ -36,7 +36,7 @@ func newTestKibanaOapiClient(t *testing.T, server *httptest.Server) *kibanaoapi.
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
