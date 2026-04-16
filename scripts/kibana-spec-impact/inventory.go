@@ -78,10 +78,7 @@ func discoverKibanaEntities() ([]Entity, error) {
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		pkg, err := sdkKibanaPkgPath(name)
-		if err != nil {
-			return nil, err
-		}
+		pkg := sdkKibanaPkgPath(name)
 		out = append(out, Entity{Type: "resource", Name: name, PkgPath: pkg})
 		seen[name] = struct{}{}
 	}
@@ -93,10 +90,7 @@ func discoverKibanaEntities() ([]Entity, error) {
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		pkg, err := sdkKibanaPkgPath(name)
-		if err != nil {
-			return nil, err
-		}
+		pkg := sdkKibanaPkgPath(name)
 		out = append(out, Entity{Type: "data source", Name: name, PkgPath: pkg})
 		seen[name] = struct{}{}
 	}
@@ -104,19 +98,10 @@ func discoverKibanaEntities() ([]Entity, error) {
 	return out, nil
 }
 
-// sdkKibanaPkgPath returns the Go import path for SDK-only Kibana entities that share
-// github.com/elastic/terraform-provider-elasticstack/internal/kibana.
-func sdkKibanaPkgPath(entityName string) (string, error) {
-	// All SDK Kibana entities in this repository live in the root internal/kibana package.
-	const rootKibana = "github.com/elastic/terraform-provider-elasticstack/internal/kibana"
-	switch entityName {
-	case "elasticstack_kibana_space",
-		"elasticstack_kibana_security_role",
-		"elasticstack_kibana_action_connector":
-		return rootKibana, nil
-	default:
-		return "", fmt.Errorf("unknown SDK Kibana entity %q for pkg path mapping", entityName)
-	}
+// sdkKibanaPkgPath returns the Go import path for SDK-only Kibana entities in the root
+// internal/kibana package. New SDK Kibana entities use the same default without failing inventory.
+func sdkKibanaPkgPath(_ string) string {
+	return "github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 }
 
 // entityScanPaths returns Go files or directories (under repoRoot) to scan for kbapi/kibanaoapi usage.
