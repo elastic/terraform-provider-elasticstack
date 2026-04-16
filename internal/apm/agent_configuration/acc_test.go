@@ -19,6 +19,8 @@ package agentconfiguration_test
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -134,6 +136,58 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
+	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
+	expectedID := serviceName + ":production"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables:          testAccAgentConfigurationKibanaConnectionVariables(serviceName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "go"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "2"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.capture_body", "all"),
+				),
+			},
+		},
+	})
+}
+
+func testAccAgentConfigurationKibanaConnectionVariables(serviceName string) config.Variables {
+	apiKey := os.Getenv("KIBANA_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	}
+	username := os.Getenv("KIBANA_USERNAME")
+	if username == "" {
+		username = os.Getenv("ELASTICSEARCH_USERNAME")
+	}
+	password := os.Getenv("KIBANA_PASSWORD")
+	if password == "" {
+		password = os.Getenv("ELASTICSEARCH_PASSWORD")
+	}
+
+	kibanaEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+
+	return config.Variables{
+		"service_name": config.StringVariable(serviceName),
+		"kibana_endpoints": config.ListVariable(
+			config.StringVariable(kibanaEndpoint),
+		),
+		"api_key":  config.StringVariable(apiKey),
+		"username": config.StringVariable(username),
+		"password": config.StringVariable(password),
+	}
 }
 
 func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
