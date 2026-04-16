@@ -6,9 +6,9 @@
 
 ## 2. Changelog evidence and validation helpers
 
-- [ ] 2.1 Implement the deterministic helper that builds the changelog evidence manifest in workflow memory, including PR metadata, coarse classification, and inclusion/exclusion rationale.
-- [ ] 2.2 Implement the deterministic helper that validates the agent's changelog markdown and provenance against the evidence manifest.
-- [ ] 2.3 Implement the deterministic helper that rewrites the full target section in `CHANGELOG.md` for both `Unreleased` mode and release-PR mode.
+- [x] 2.1 Implement the deterministic helper that builds the changelog evidence manifest in workflow memory, including PR metadata, coarse classification, and inclusion/exclusion rationale.
+- [x] 2.2 Implement the deterministic helper that validates the agent's changelog markdown and provenance against the evidence manifest.
+- [x] 2.3 Implement the deterministic helper that rewrites the full target section in `CHANGELOG.md` for both `Unreleased` mode and release-PR mode.
 
 ## 3. Agent prompt and changelog PR behavior
 
