@@ -5,7 +5,8 @@ The `elasticstack_kibana_security_role` resource and data source still depend on
 ## What Changes
 
 - Add `internal/clients/kibanaoapi` helpers that wrap Kibana Security Role endpoints exposed in `generated/kbapi` (`GetSecurityRoleName`, `PutSecurityRoleName`, `DeleteSecurityRoleName`), including consistent decoding of JSON bodies, HTTP status handling (including not-found on read), and diagnostics on failure.
-- Refactor `internal/kibana/role.go` (and the data source companion if separated) to build requests and interpret responses using `kbapi` types (for example `PutSecurityRoleNameJSONRequestBody`) instead of `kbapi.KibanaRole` from go-kibana-rest, while preserving all Terraform schema semantics.
+- Refactor `internal/kibana/role.go` to build requests and interpret responses using `kbapi` types (for example `PutSecurityRoleNameJSONRequestBody`) instead of `kbapi.KibanaRole` from go-kibana-rest, while preserving all Terraform schema semantics.
+- Update the data source in `internal/kibana/role_data_source.go`: `dataSourceSecurityRoleRead` delegates to `resourceRoleRead` in `role.go`, so the data source implicitly transitions to `kibanaoapi.GetSecurityRole` for HTTP-level reads. Not-found behavior on the data source (HTTP 404 from Kibana) is handled inside `resourceRoleRead`, which removes the resource from state; the data source caller receives an empty result or diagnostic per existing behavior. No data source schema changes are required.
 - Preserve existing expand/flatten behavior for `elasticsearch`, `kibana`, `metadata`, and JSON `query` diff suppression; preserve version gates for `remote_indices` (≥ 8.10.0) and `description` (≥ 8.15.0).
 - Add or extend verification so Elasticsearch and Kibana privilege mappings remain equivalent to today’s behavior (acceptance tests plus targeted parity checks where practical).
 - Drop the security-role code path’s dependency on `KibanaRoleManagement` for create/read/update/delete once migration is complete (no **BREAKING** Terraform schema or identity changes intended).
@@ -23,6 +24,7 @@ The `elasticstack_kibana_security_role` resource and data source still depend on
 ## Impact
 
 - `internal/kibana/role.go`, related tests under `internal/kibana/`, and any shared helpers used only by this entity.
+- `internal/kibana/role_data_source.go`: no direct code changes required (the data source delegates read to `resourceRoleRead` in `role.go`), but the data source's runtime behavior is affected — it transitions from go-kibana-rest to `kibanaoapi.GetSecurityRole` through that delegation.
 - New file(s) under `internal/clients/kibanaoapi/` for role operations.
 - `go.mod` / imports: reduced use of go-kibana-rest for this flow once callers are switched.
 - OpenSpec delta under `openspec/changes/migrate-kibana-security-role-to-kbapi/specs/kibana-security-role/spec.md` for archive-time merge into `openspec/specs/kibana-security-role/spec.md`.
