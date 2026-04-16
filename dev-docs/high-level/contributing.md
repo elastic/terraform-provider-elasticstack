@@ -24,7 +24,8 @@ OpenSpec requirements specs live under `openspec/specs/`; see [`openspec-require
   * Run `make lint` to check linting and formatting. For this check to succeed, all changes must have been committed.
   * All checks also run automatically on every PR.
 * Submit your PR for review.
-* Add a changelog entry in `CHANGELOG.md` under the `Unreleased` section. This will be included in the release notes of the next release. The changelog entry references the PR, so it has to be added after the PR has been opened.
+
+The `## [Unreleased]` section of `CHANGELOG.md` is maintained automatically. The `changelog-generation` GitHub Actions workflow runs on a schedule and regenerates the `## [Unreleased]` section from merged PR history. It opens a PR from the `generated-changelog` branch that is auto-merged once checks pass. You do not need to manually add changelog entries after your PR is merged.
 
 When creating new resources:
 * Use the [Plugin Framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) for new resources.
@@ -69,13 +70,30 @@ See [`repo-structure.md`](./repo-structure.md).
 
 ## Releasing (maintainers)
 
-Releasing is implemented in CI pipeline.
+Releasing is implemented in CI pipeline. Release preparation is now automated — do not manually edit `VERSION` or `CHANGELOG.md` release sections.
 
 To release a new provider version:
 
-* Create PR which
-- updates Makefile with the new provider VERSION (e.g. `VERSION ?= 0.11.13`);
-- updates CHANGELOG.md with the list of changes being released.
-[Example](https://github.com/elastic/terraform-provider-elasticstack/commit/be866ebc918184e843dc1dd2f6e2e1b963da386d).
+1. **Dispatch the release preparation workflow** using the `prep-release` Makefile target:
 
-* Once the PR is merged, the release CI pipeline can be started by pushing a new release tag to the `main` branch. (`git tag v0.11.13 && git push origin v0.11.13`)
+   ```
+   make prep-release           # defaults to patch bump (e.g. 0.14.3 → 0.14.4)
+   make prep-release BUMP=minor # minor bump (e.g. 0.14.3 → 0.15.0)
+   make prep-release BUMP=major # major bump (e.g. 0.14.3 → 1.0.0)
+   ```
+
+   This dispatches the `prep-release.yml` GitHub Actions workflow, which:
+   - Computes the target version from the current `VERSION` file and the requested bump type.
+   - Creates (or reuses) a `prep-release-x.y.z` branch and opens a pull request with the version bump applied to `VERSION` and `Makefile`.
+
+2. **Await the changelog update**. The `changelog-generation` workflow automatically detects the new `prep-release-*` PR and regenerates the concrete `## [x.y.z] - YYYY-MM-DD` section in `CHANGELOG.md`, pushing the result to the `prep-release-*` branch.
+
+3. **Review and merge the release PR**. Once the changelog section is populated and all checks pass, merge the `prep-release-x.y.z` PR.
+
+4. **Tag and release**. After the PR is merged, start the release by pushing the version tag to `main`:
+
+   ```
+   git tag v0.14.4 && git push origin v0.14.4
+   ```
+
+   The release CI pipeline will then build and publish the provider.
