@@ -847,6 +847,9 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaoapi.Synthet
 
 	locations := Map[types.String, string](v.Locations, func(s types.String) string { return s.ValueString() })
 
+	alert, alertDg := toAPIAlertConfig(ctx, v.Alert)
+	dg.Append(alertDg...)
+
 	req := &kibanaoapi.SyntheticsMonitorRequest{
 		Name:             v.Name.ValueString(),
 		Schedule:         v.Schedule.ValueInt64(),
@@ -855,7 +858,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaoapi.Synthet
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Tags:             synthetics.ValueStringSlice(v.Tags),
 		Labels:           labels,
-		Alert:            toAPIAlertConfig(ctx, v.Alert),
+		Alert:            alert,
 		APMServiceName:   v.APMServiceName.ValueString(),
 		TimeoutSeconds:   int(v.TimeoutSeconds.ValueInt64()),
 		Namespace:        v.Namespace.ValueString(),
@@ -888,16 +891,16 @@ func (v *tfModelV0) populateTypeFields(ctx context.Context, req *kibanaoapi.Synt
 	return dg
 }
 
-func toAPIAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kibanaoapi.SyntheticsMonitorAlert {
+func toAPIAlertConfig(ctx context.Context, v basetypes.ObjectValue) (*kibanaoapi.SyntheticsMonitorAlert, diag.Diagnostics) {
 	if v.IsNull() || v.IsUnknown() {
-		return nil
+		return nil, nil
 	}
 	tfAlert := tfAlertConfigV0{}
 	dg := tfsdk.ValueAs(ctx, v, &tfAlert)
 	if dg.HasError() {
-		return nil
+		return nil, dg
 	}
-	return tfAlert.toAPIAlertConfig()
+	return tfAlert.toAPIAlertConfig(), dg
 }
 
 func tfInt64ToString(v types.Int64) string {
