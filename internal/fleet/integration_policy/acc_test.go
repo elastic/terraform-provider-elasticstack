@@ -848,7 +848,7 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 }
 
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

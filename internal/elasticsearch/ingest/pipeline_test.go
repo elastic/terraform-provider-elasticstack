@@ -80,7 +80,7 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 }
 
 func checkResourceIngestPipelineDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

@@ -90,7 +90,7 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 
 func checkRepoDestroy(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return err
 		}

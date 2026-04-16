@@ -28,7 +28,7 @@ import (
 
 func CheckUserCanAuthenticate(username string, password string) func(*terraform.State) error {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return err
 		}

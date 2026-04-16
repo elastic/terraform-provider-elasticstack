@@ -167,7 +167,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				// Force uninstall the integration
 				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 					require.NoError(t, err)
 
 					fleetClient, err := client.GetFleetClient()
@@ -211,7 +211,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 						return
 					}
 
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 					require.NoError(t, err)
 
 					fleetClient, err := client.GetFleetClient()
@@ -240,7 +240,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 						return
 					}
 
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 					require.NoError(t, err)
 
 					fleetClient, err := client.GetFleetClient()

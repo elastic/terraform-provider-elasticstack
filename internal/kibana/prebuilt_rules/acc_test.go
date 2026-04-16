@@ -130,7 +130,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 		return
 	}
 
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := client.GetKibanaOapiClient()

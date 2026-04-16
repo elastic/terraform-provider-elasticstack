@@ -1189,7 +1189,7 @@ func checkEnrichPolicyTestDataSourceAttrAbsent(attr string) resource.TestCheckFu
 func createEnrichPolicyESAccessToken(t *testing.T) string {
 	t.Helper()
 
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
@@ -1348,7 +1348,7 @@ func enrichPolicyConnectionEndpoints() []string {
 
 func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return err
 		}
@@ -1387,7 +1387,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 
 func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			return err
 		}

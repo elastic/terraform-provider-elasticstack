@@ -63,7 +63,7 @@ func TestAccResourceScript(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				// Ensure the provider doesn't panic if the script has been deleted outside of the Terraform flow
 				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
 					esClient, err := client.GetESClient()
@@ -108,7 +108,7 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 }
 
 func checkScriptDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

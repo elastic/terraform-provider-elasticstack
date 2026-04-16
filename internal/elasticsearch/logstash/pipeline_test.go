@@ -122,7 +122,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 }
 
 func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

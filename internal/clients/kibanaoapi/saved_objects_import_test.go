@@ -61,7 +61,7 @@ func TestImportSavedObjects_MultipartFormat(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
@@ -116,7 +116,7 @@ func TestImportSavedObjects_SpaceAwarePath(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
@@ -143,7 +143,7 @@ func TestImportSavedObjects_400Response(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
@@ -166,7 +166,7 @@ func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
@@ -195,7 +195,7 @@ func TestImportSavedObjects_SuccessCountConvertedToInt64(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()
@@ -227,7 +227,7 @@ func TestImportSavedObjects_QueryParamWiring(t *testing.T) {
 	t.Setenv("ELASTICSEARCH_URL", server.URL)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
 	oapiClient, err := apiClient.GetKibanaOapiClient()

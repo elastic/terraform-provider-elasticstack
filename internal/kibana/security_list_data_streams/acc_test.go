@@ -108,7 +108,7 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 }
 
 func checkResourceListDataStreamsDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

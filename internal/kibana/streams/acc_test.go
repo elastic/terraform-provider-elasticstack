@@ -57,16 +57,18 @@ var minVersionStreamsAcc = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 func prepareStreamsEnvironment(t *testing.T) {
 	t.Helper()
 
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	kibanaApiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
-		t.Logf("prepareStreamsEnvironment: could not create client: %v", err)
+		t.Logf("prepareStreamsEnvironment: could not create Kibana client: %v", err)
 		return
 	}
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
+	kibanaClient, err := kibanaApiClient.GetKibanaOapiClient()
 	if err != nil {
 		t.Logf("prepareStreamsEnvironment: could not get Kibana client: %v", err)
 		return
 	}
+
+	esApiClient, esApiErr := clients.NewAcceptanceTestingElasticsearchScopedClient()
 
 	// Resync to repair any inconsistent Streams state.
 	resp, err := kibanaClient.API.PostStreamsResyncWithResponse(context.Background(), kbapi.PostStreamsResyncJSONRequestBody{})
@@ -154,8 +156,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// Kibana creates this automatically when OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS
 	// is enabled, but that creation is best-effort and silently swallowed on failure.
 	// Creating it here mirrors what Kibana's own integration tests do.
-	esClient, esErr := apiClient.GetESClient()
-	if esErr != nil {
+	if esApiErr != nil {
+		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esApiErr)
+	} else if esClient, esErr := esApiClient.GetESClient(); esErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esErr)
 	} else {
 		viewBody, _ := json.Marshal(map[string]string{"query": "FROM " + logsRoot})
@@ -295,7 +298,7 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 // streams are not enabled (HTTP 422 "Streams are not enabled for Query streams").
 func checkQueryStreamsEnabled() func() (bool, error) {
 	return func() (bool, error) {
-		apiClient, err := clients.NewAcceptanceTestingClient()
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		if err != nil {
 			return false, err
 		}

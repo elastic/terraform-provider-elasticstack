@@ -175,7 +175,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					if err != nil {
 						t.Fatalf("Failed to create testing client: %s", err)
 					}
@@ -282,7 +282,7 @@ resource "elasticstack_elasticsearch_data_stream_lifecycle" "test_ds_lifecycle" 
 }
 
 func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

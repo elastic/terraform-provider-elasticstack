@@ -315,7 +315,7 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 }
 
 func checkResourceWatchDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

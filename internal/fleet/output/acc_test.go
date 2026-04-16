@@ -360,7 +360,7 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 }
 
 func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 	kibanaOapiClient, err := client.GetKibanaOapiClient()
 	require.NoError(t, err)
@@ -484,7 +484,7 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 }
 
 func checkResourceOutputDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

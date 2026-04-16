@@ -513,7 +513,7 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

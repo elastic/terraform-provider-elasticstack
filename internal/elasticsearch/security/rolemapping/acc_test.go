@@ -143,7 +143,7 @@ func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
 }
 
 func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

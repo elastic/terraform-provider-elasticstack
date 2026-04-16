@@ -185,7 +185,7 @@ func elasticsearchScopedClientFromAPIClient(a *apiClient) *ElasticsearchScopedCl
 // ElasticsearchScopedClient for acceptance tests by reusing the acceptance
 // testing APIClient.
 func NewAcceptanceTestingElasticsearchScopedClient() (*ElasticsearchScopedClient, error) {
-	apiClient, err := NewAcceptanceTestingClient()
+	apiClient, err := newAcceptanceTestingClient()
 	if err != nil {
 		return nil, err
 	}

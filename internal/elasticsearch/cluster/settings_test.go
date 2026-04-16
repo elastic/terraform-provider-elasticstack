@@ -240,7 +240,7 @@ func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 }
 
 func checkResourceClusterSettingsDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

@@ -60,7 +60,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				t.Skip("Elasticsearch version does not support this test")
 			}
 			// Install system package via Fleet API so it is available (avoids conflict with tcp/sysmon_linux tests).
-			client, err := clients.NewAcceptanceTestingClient()
+			client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 			if err != nil {
 				t.Fatalf("acceptance test client: %v", err)
 			}

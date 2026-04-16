@@ -110,7 +110,7 @@ func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.Resou
 	}
 }
 
-func NewAcceptanceTestingClient() (*apiClient, error) {
+func newAcceptanceTestingClient() (*apiClient, error) {
 	version := "tf-acceptance-testing"
 	cfg := config.NewFromEnv(version)
 

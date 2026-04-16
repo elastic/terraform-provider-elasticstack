@@ -243,7 +243,7 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

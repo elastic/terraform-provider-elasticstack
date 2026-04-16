@@ -257,7 +257,7 @@ func TestAccResourceIndexTemplateWithExplicitConnection(t *testing.T) {
 }
 
 func checkResourceIndexTemplateDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

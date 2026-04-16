@@ -215,7 +215,7 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 		}
 		policyID := rs.Primary.Attributes["policy_id"]
 
-		apiClient, err := clients.NewAcceptanceTestingClient()
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		if err != nil {
 			return err
 		}
@@ -252,7 +252,7 @@ func testCheckSpaceIDsIfSupported(resourceAddress string) resource.TestCheckFunc
 }
 
 func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
-	apiClient, err := clients.NewAcceptanceTestingClient()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

@@ -195,7 +195,7 @@ func kibanaScopedClientFromAPIClient(a *apiClient) *KibanaScopedClient {
 // NewAcceptanceTestingKibanaScopedClient builds a KibanaScopedClient for
 // acceptance tests by reusing the acceptance testing APIClient.
 func NewAcceptanceTestingKibanaScopedClient() (*KibanaScopedClient, error) {
-	apiClient, err := NewAcceptanceTestingClient()
+	apiClient, err := newAcceptanceTestingClient()
 	if err != nil {
 		return nil, err
 	}

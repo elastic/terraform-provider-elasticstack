@@ -89,7 +89,7 @@ func PreCheckWithExplicitKibanaEndpoint(t *testing.T) {
 func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
 	PreCheck(t)
 
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		t.Fatalf("Failed to create API client: %v", err)
 	}

@@ -1140,7 +1140,7 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 }
 
 func checkResourceExceptionItemDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

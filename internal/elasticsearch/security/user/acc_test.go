@@ -83,7 +83,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					"username": config.StringVariable(username),
 				},
 				SkipFunc: func() (bool, error) {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					if err != nil {
 						return false, err
 					}
@@ -111,7 +111,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 				},
 				ResourceName: "elasticstack_elasticsearch_security_user.test",
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					if err != nil {
 						return "", err
 					}
@@ -166,7 +166,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 			},
 			{
 				SkipFunc: func() (bool, error) {
-					client, err := clients.NewAcceptanceTestingClient()
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					if err != nil {
 						return false, err
 					}
@@ -295,7 +295,7 @@ func TestAccResourceSecurityUserWithPasswordWo(t *testing.T) {
 }
 
 func checkResourceSecurityUserDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

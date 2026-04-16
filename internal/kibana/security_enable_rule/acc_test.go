@@ -241,7 +241,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 // checkRulesEnabled verifies that all rules matching the tag are in the expected enabled state
 func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
 		}
@@ -299,7 +299,7 @@ func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
 
 // disableOneRule manually disables one rule matching the tag (for testing drift detection)
 func disableOneRule(t *testing.T, spaceID, key, value string) {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
