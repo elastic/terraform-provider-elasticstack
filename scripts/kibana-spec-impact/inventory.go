@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -113,9 +112,11 @@ func entityScanPaths(repoRoot string, e Entity) ([]string, error) {
 	rel := strings.TrimPrefix(e.PkgPath, "github.com/elastic/terraform-provider-elasticstack/")
 	dir := filepath.Join(root, rel)
 	if strings.HasSuffix(e.PkgPath, "/internal/kibana") {
-		prefixes, err := rootKibanaFilePrefixes(e.Name)
-		if err != nil {
-			return nil, err
+		prefixes := rootKibanaFilePrefixes(e.Name)
+		if len(prefixes) == 0 {
+			// Unknown new entity under root internal/kibana: scan the full package directory
+			// rather than failing on prefix mapping.
+			return []string{dir}, nil
 		}
 		var paths []string
 		for _, p := range prefixes {
@@ -133,16 +134,18 @@ func entityScanPaths(repoRoot string, e Entity) ([]string, error) {
 	return []string{dir}, nil
 }
 
-func rootKibanaFilePrefixes(entityName string) ([]string, error) {
+// rootKibanaFilePrefixes returns filename prefixes for narrow scans within root internal/kibana.
+// An empty slice means the caller should scan the whole package directory.
+func rootKibanaFilePrefixes(entityName string) []string {
 	s := strings.TrimPrefix(entityName, kibanaEntityPrefix)
 	switch s {
 	case "space":
-		return []string{"space"}, nil
+		return []string{"space"}
 	case "security_role":
-		return []string{"role"}, nil
+		return []string{"role"}
 	case "action_connector":
-		return []string{"connector"}, nil
+		return []string{"connector"}
 	default:
-		return nil, fmt.Errorf("no root internal/kibana file prefix mapping for %q", entityName)
+		return nil
 	}
 }

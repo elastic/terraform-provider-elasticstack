@@ -69,7 +69,7 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "  report                       Emit JSON impact report for baseline..target")
 	fmt.Fprintln(w, "  resolve-baseline             Print resolved baseline SHA for the target revision")
 	fmt.Fprintln(w, "  memory-bootstrap             Copy seed memory to --memory if missing")
-	fmt.Fprintln(w, "  memory-record-from-report    Advance baseline; optionally record fingerprints for --issued entities only")
+	fmt.Fprintln(w, "  memory-record-from-report    Advance baseline; --issued required when report has high_confidence_impacts")
 	return errors.New("unknown or missing command")
 }
 
@@ -195,7 +195,7 @@ func cmdMemoryRecordFromReport(args []string, stderr io.Writer) error {
 	fs.SetOutput(stderr)
 	memPath := fs.String("memory", "", "path to live memory file (required)")
 	reportPath := fs.String("report", "", "path to report JSON (required)")
-	issuedPath := fs.String("issued", "", "optional JSON array of entity names that received a new issue this run (e.g. [\"elasticstack_kibana_foo\"])")
+	issuedPath := fs.String("issued", "", "JSON array of entity names that received an issue this run (use [] if none). Required when the report includes high_confidence_impacts.")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -208,6 +208,9 @@ func cmdMemoryRecordFromReport(args []string, stderr io.Writer) error {
 	}
 	var report ImpactReport
 	if err := json.Unmarshal(raw, &report); err != nil {
+		return err
+	}
+	if err := validateMemoryRecordCLI(&report, *issuedPath); err != nil {
 		return err
 	}
 	mem, err := loadMemory(*memPath)
@@ -236,5 +239,12 @@ func cmdMemoryRecordFromReport(args []string, stderr io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stderr, "recorded %d fingerprint(s); advanced last_analyzed_target_sha to %s\n", recorded, mem.LastAnalyzedTargetSHA)
+	return nil
+}
+
+func validateMemoryRecordCLI(report *ImpactReport, issuedPath string) error {
+	if len(report.HighConfidence) > 0 && issuedPath == "" {
+		return errors.New("report contains high_confidence_impacts: --issued path to a JSON array is required (use a file containing [] when no issues were created)")
+	}
 	return nil
 }

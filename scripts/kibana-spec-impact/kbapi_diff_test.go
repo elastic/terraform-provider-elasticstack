@@ -44,6 +44,20 @@ type NewType struct{}
 	}
 }
 
+func TestNormalizeKbapiSourceForDiffEmpty(t *testing.T) {
+	src := normalizeKbapiSourceForDiff("")
+	if src == "" {
+		t.Fatal("expected non-empty synthetic package")
+	}
+	ch, err := diffKbapiSurfaces("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ch) != 0 {
+		t.Fatalf("two empty revisions: expected no surface diff, got %v", ch)
+	}
+}
+
 func TestDiffKbapiSurfacesDetectsTypeRemove(t *testing.T) {
 	oldSrc := kbapiStubHeader + `type RemovedType struct{}
 type Kept struct{}

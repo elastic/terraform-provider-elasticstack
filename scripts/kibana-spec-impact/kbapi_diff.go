@@ -87,7 +87,18 @@ func kbapiSurface(src string) (types, methods []string, err error) {
 }
 
 // diffKbapiSurfaces returns symbol names that were added or removed between two versions of kibana.gen.go.
+// normalizeKbapiSourceForDiff maps missing or empty generated file content to a minimal parseable
+// package so surface extraction does not fail when kibana.gen.go is absent at one revision.
+func normalizeKbapiSourceForDiff(src string) string {
+	if strings.TrimSpace(src) == "" {
+		return "package kbapi\n"
+	}
+	return src
+}
+
 func diffKbapiSurfaces(oldSrc, newSrc string) ([]string, error) {
+	oldSrc = normalizeKbapiSourceForDiff(oldSrc)
+	newSrc = normalizeKbapiSourceForDiff(newSrc)
 	oldTypes, oldMethods, err := kbapiSurface(oldSrc)
 	if err != nil {
 		return nil, fmt.Errorf("old kbapi surface: %w", err)
@@ -121,26 +132,41 @@ func diffKbapiSurfaces(oldSrc, newSrc string) ([]string, error) {
 	return changed, nil
 }
 
-func gitShow(repoRoot, rev, path string) (string, error) {
+// gitShowPathOrMissing returns file content at rev:path, or missing=true when the path does not
+// exist in that revision (add/remove/rename of generated/kbapi/kibana.gen.go).
+func gitShowPathOrMissing(repoRoot, rev, path string) (content string, missing bool, err error) {
+	repoRoot = filepath.Clean(repoRoot)
 	cmd := exec.Command("git", "-C", repoRoot, "show", rev+":"+path)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git show %s:%s: %w\n%s", rev, path, err, stderr.String())
+	if err := cmd.Run(); err == nil {
+		return stdout.String(), false, nil
 	}
-	return stdout.String(), nil
+	msg := stderr.String()
+	if strings.Contains(msg, "does not exist") ||
+		strings.Contains(msg, "exists on disk, but not in") ||
+		strings.Contains(msg, "did not match any file") {
+		return "", true, nil
+	}
+	return "", false, fmt.Errorf("git show %s:%s: %w\n%s", rev, path, err, msg)
 }
 
 func diffKbapiAtRefs(repoRoot, baselineRev, targetRev string) ([]string, error) {
 	repoRoot = filepath.Clean(repoRoot)
-	oldSrc, err := gitShow(repoRoot, baselineRev, kbapiGenPath)
+	oldSrc, oldMiss, err := gitShowPathOrMissing(repoRoot, baselineRev, kbapiGenPath)
 	if err != nil {
 		return nil, err
 	}
-	newSrc, err := gitShow(repoRoot, targetRev, kbapiGenPath)
+	newSrc, newMiss, err := gitShowPathOrMissing(repoRoot, targetRev, kbapiGenPath)
 	if err != nil {
 		return nil, err
+	}
+	if oldMiss {
+		oldSrc = ""
+	}
+	if newMiss {
+		newSrc = ""
 	}
 	return diffKbapiSurfaces(oldSrc, newSrc)
 }
