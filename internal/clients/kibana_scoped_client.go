@@ -179,9 +179,9 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 }
 
 // kibanaScopedClientFromAPIClient constructs a KibanaScopedClient from the
-// Kibana-related fields of an *APIClient. This is the canonical adapter used by
+// Kibana-related fields of an *apiClient. This is the canonical adapter used by
 // the factory and by NewAcceptanceTestingKibanaScopedClient.
-func kibanaScopedClientFromAPIClient(a *APIClient) *KibanaScopedClient {
+func kibanaScopedClientFromAPIClient(a *apiClient) *KibanaScopedClient {
 	return &KibanaScopedClient{
 		kibana:       a.kibana,
 		kibanaOapi:   a.kibanaOapi,

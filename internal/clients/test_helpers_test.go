@@ -30,10 +30,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestAPIClient returns a minimal *APIClient suitable for unit tests.
+// newTestAPIClient returns a minimal *apiClient suitable for unit tests.
 // It sets up Kibana clients with a fake endpoint so that actual network
 // calls are never made.
-func newTestAPIClient(t *testing.T) *APIClient {
+func newTestAPIClient(t *testing.T) *apiClient {
 	t.Helper()
 	kib, err := kibana.NewClient(kibana.Config{
 		Address:  "http://localhost:5601",
@@ -49,7 +49,7 @@ func newTestAPIClient(t *testing.T) *APIClient {
 	})
 	require.NoError(t, err)
 
-	return &APIClient{
+	return &apiClient{
 		kibana:       kib,
 		kibanaOapi:   kibOapi,
 		kibanaConfig: kibana.Config{Address: "http://localhost:5601", Username: "elastic", Password: "changeme"},

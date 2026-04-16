@@ -172,9 +172,9 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 }
 
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient
-// from the Elasticsearch-related fields of an *APIClient. This is the canonical
+// from the Elasticsearch-related fields of an *apiClient. This is the canonical
 // adapter used by the factory and by NewAcceptanceTestingElasticsearchScopedClient.
-func elasticsearchScopedClientFromAPIClient(a *APIClient) *ElasticsearchScopedClient {
+func elasticsearchScopedClientFromAPIClient(a *apiClient) *ElasticsearchScopedClient {
 	return &ElasticsearchScopedClient{
 		elasticsearch:            a.elasticsearch,
 		elasticsearchClusterInfo: a.elasticsearchClusterInfo,

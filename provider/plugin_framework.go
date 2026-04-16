@@ -128,13 +128,12 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 		return
 	}
 
-	client, diags := clients.NewAPIClientFromFramework(ctx, cfg, p.version)
+	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, cfg, p.version)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	factory := clients.NewProviderClientFactory(client)
 	res.DataSourceData = factory
 	res.ResourceData = factory
 }
