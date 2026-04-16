@@ -14,8 +14,8 @@
 
 ## 3. Privatize the broad client and update compatibility surfaces
 
-- [ ] 3.1 Make the broad client type private within `internal/clients` and remove duplicated exported Elasticsearch- and Kibana-specific helper behavior now owned by scoped clients.
-- [ ] 3.2 Update `xpprovider`, acceptance helpers, and tests/mocks to stop exporting or depending on `clients.APIClient` and to construct typed scoped clients directly.
+- [x] 3.1 Make the broad client type private within `internal/clients` and remove duplicated exported Elasticsearch- and Kibana-specific helper behavior now owned by scoped clients.
+- [x] 3.2 Update `xpprovider`, acceptance helpers, and tests/mocks to stop exporting or depending on `clients.APIClient` and to construct typed scoped clients directly.
 
 ## 4. Sync specs and verify the cleanup
 
