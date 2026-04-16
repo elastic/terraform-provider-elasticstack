@@ -19,10 +19,7 @@ package provider_test
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"sort"
-	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -82,95 +79,11 @@ func collectFrameworkDataSourceEntities(ctx context.Context, p fwprovider.Provid
 	return entities
 }
 
-// runFrameworkConnectionResourceSubtests runs per-entity subtests asserting that each
-// resource exposes blockKey as a block matching expected with no deprecation message.
-func runFrameworkConnectionResourceSubtests(ctx context.Context, t *testing.T, entities []frameworkResourceEntity, blockKey string, expected any) {
-	t.Helper()
-
-	for _, e := range entities {
-		entity := e
-		t.Run(fmt.Sprintf("framework/resource/%s", entity.name), func(t *testing.T) {
-			resp := fwresource.SchemaResponse{}
-			entity.resource.Schema(ctx, fwresource.SchemaRequest{}, &resp)
-
-			actual, ok := resp.Schema.Blocks[blockKey]
-			if !ok {
-				t.Fatalf("resource %q is missing %q block", entity.name, blockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("resource %q %q block does not exactly match helper definition", entity.name, blockKey)
-			}
-
-			if msg := actual.GetDeprecationMessage(); msg != "" {
-				t.Fatalf("resource %q %q block has unexpected deprecation message: %q", entity.name, blockKey, msg)
-			}
-		})
+func sortedSDKEntityNames(entities map[string]*sdkschema.Resource) []string {
+	keys := make([]string, 0, len(entities))
+	for k := range entities {
+		keys = append(keys, k)
 	}
-}
-
-// runFrameworkConnectionDataSourceSubtests runs per-entity subtests asserting that each
-// data source exposes blockKey as a block matching expected with no deprecation message.
-func runFrameworkConnectionDataSourceSubtests(ctx context.Context, t *testing.T, entities []frameworkDataSourceEntity, blockKey string, expected any) {
-	t.Helper()
-
-	for _, e := range entities {
-		entity := e
-		t.Run(fmt.Sprintf("framework/data_source/%s", entity.name), func(t *testing.T) {
-			resp := datasource.SchemaResponse{}
-			entity.dataSource.Schema(ctx, datasource.SchemaRequest{}, &resp)
-
-			actual, ok := resp.Schema.Blocks[blockKey]
-			if !ok {
-				t.Fatalf("data source %q is missing %q block", entity.name, blockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("data source %q %q block does not exactly match helper definition", entity.name, blockKey)
-			}
-
-			if msg := actual.GetDeprecationMessage(); msg != "" {
-				t.Fatalf("data source %q %q block has unexpected deprecation message: %q", entity.name, blockKey, msg)
-			}
-		})
-	}
-}
-
-// runSDKConnectionEntitySubtests runs per-entity subtests asserting that each SDK
-// resource/data source for which include(entityKind, name) is true exposes blockKey
-// as a schema entry matching expected with no deprecation warning.
-func runSDKConnectionEntitySubtests(t *testing.T, entityKind string, entities map[string]*sdkschema.Resource, blockKey string, expected *sdkschema.Schema, include func(kind, name string) bool) {
-	t.Helper()
-
-	names := make([]string, 0, len(entities))
-	for name := range entities {
-		if include(entityKind, name) {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
-		entityName := name
-		entity := entities[entityName]
-
-		t.Run(fmt.Sprintf("sdk/%s/%s", entityKind, entityName), func(t *testing.T) {
-			if entity == nil {
-				t.Fatalf("entity %q is nil", entityName)
-			}
-
-			actual, ok := entity.Schema[blockKey]
-			if !ok {
-				t.Fatalf("entity %q is missing %q schema", entityName, blockKey)
-			}
-
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("entity %q %q schema does not exactly match helper definition", entityName, blockKey)
-			}
-
-			if actual.Deprecated != "" {
-				t.Fatalf("entity %q %q schema has unexpected deprecation warning: %q", entityName, blockKey, actual.Deprecated)
-			}
-		})
-	}
+	sort.Strings(keys)
+	return keys
 }
