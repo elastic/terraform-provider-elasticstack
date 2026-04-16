@@ -79,23 +79,24 @@ test('prompt requires PR citation format with #NNN', () => {
   );
 });
 
-test('prompt references validate-provenance.js being called before CHANGELOG is written', () => {
+test('prompt references validate-provenance being called before CHANGELOG is written', () => {
   assert.ok(promptBody, 'prompt body must be loaded');
-  // Step 7 of the prompt must instruct calling validate-provenance.js.
-  const hasProvenanceValidationCall = /validate-provenance\.js/i.test(promptBody);
+  // Step 7 of the prompt must instruct calling validate-provenance (Go subcommand).
+  const hasProvenanceValidationCall =
+    /validate-provenance/i.test(promptBody);
   assert.ok(
     hasProvenanceValidationCall,
-    'Prompt must reference validate-provenance.js for pre-write validation'
+    'Prompt must reference validate-provenance for pre-write validation'
   );
 });
 
-test('prompt references rewrite-changelog-section.js for the CHANGELOG write', () => {
+test('prompt references rewrite-changelog-section for the CHANGELOG write', () => {
   assert.ok(promptBody, 'prompt body must be loaded');
-  // Step 8 of the prompt must instruct calling rewrite-changelog-section.js.
-  const hasRewriterCall = /rewrite-changelog-section\.js/i.test(promptBody);
+  // Step 8 of the prompt must instruct calling rewrite-changelog-section (Go subcommand).
+  const hasRewriterCall = /rewrite-changelog-section/i.test(promptBody);
   assert.ok(
     hasRewriterCall,
-    'Prompt must reference rewrite-changelog-section.js for writing CHANGELOG.md'
+    'Prompt must reference rewrite-changelog-section for writing CHANGELOG.md'
   );
 });
 

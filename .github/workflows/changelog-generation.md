@@ -474,26 +474,26 @@ The manifest contains:
 7. **Run provenance validation** before writing `CHANGELOG.md`. Call:
 
    ```
-   node scripts/changelog-generation/validate-provenance.js \
+   go run ./scripts/changelog-generation validate-provenance \
      --evidence /tmp/gh-aw/agent/evidence.json \
      --provenance /tmp/gh-aw/agent/provenance.json
    ```
 
-   This script validates that every bullet in `provenance.json` references a PR present in the evidence manifest and that PR numbers are not fabricated. It exits 0 on success and non-zero on failure, outputting a JSON result.
+   This validates that every bullet in `provenance.json` references a PR present in the evidence manifest and that PR numbers are not fabricated. It exits 0 on success and non-zero on failure, outputting a JSON result.
 
    - If validation **fails**: emit `noop` with the validation failure reason. Do **not** write `CHANGELOG.md` or push.
    - If validation **passes**: proceed to write `CHANGELOG.md`.
 
-8. **Write `CHANGELOG.md`** using the rewriter script. First write the new section body (without the header line) to `/tmp/gh-aw/agent/section.md`, then call:
+8. **Write `CHANGELOG.md`** using the rewriter. First write the new section body (without the header line) to `/tmp/gh-aw/agent/section.md`, then call:
 
    ```
-   node scripts/changelog-generation/rewrite-changelog-section.js \
+   go run ./scripts/changelog-generation rewrite-changelog-section \
      --mode <unreleased|release> \
      [--target-version <version>] \
      --section-file /tmp/gh-aw/agent/section.md
    ```
 
-   This script handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
+   This handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
 
 9. **Commit and push**:
 
