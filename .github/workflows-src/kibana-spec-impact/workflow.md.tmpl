@@ -1,0 +1,132 @@
+---
+name: Kibana spec impact
+description: >-
+  Detects Kibana OpenAPI / generated kbapi changes, maps deterministic impacts to Terraform
+  entities, and opens focused follow-up issues using hybrid agent summarization.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+  push:
+    branches:
+      - main
+    paths:
+      - 'generated/kbapi/**'
+      - 'internal/clients/kibanaoapi/**'
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: false
+    - name: Compute kibana spec impact
+      id: compute_kibana_spec_impact
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/compute_kibana_spec_impact.inline.js
+engine:
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: read
+tools:
+  timeout: 300
+  repo-memory:
+    - id: kibana-spec-impact
+      file-glob: ["memory/kibana-spec-impact/kibana-spec-impact.json"]
+      create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
+safe-outputs:
+  create-issue:
+    title-prefix: "[kibana-spec-impact] "
+    labels: [kibana, generated-clients, terraform-provider]
+    max: 5
+  noop:
+    max: 1
+    report-as-issue: false
+network:
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+checkout:
+  fetch-depth: 0
+if: >-
+  needs.pre_activation.outputs.should_run == 'true'
+steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup repository dependencies
+    run: make setup
+jobs:
+  pre_activation:
+    outputs:
+      should_run: ${{ steps.compute_kibana_spec_impact.outputs.should_run }}
+      issue_cap: ${{ steps.compute_kibana_spec_impact.outputs.issue_cap }}
+      high_confidence_count: ${{ steps.compute_kibana_spec_impact.outputs.high_confidence_count }}
+      gate_reason: ${{ steps.compute_kibana_spec_impact.outputs.gate_reason }}
+---
+
+# Kibana spec-impact worker
+
+You summarize **deterministic** Kibana client change evidence into at most one GitHub issue per impacted Terraform entity. The repository already computed the impact report in pre-activation; treat that JSON as the source of truth.
+
+## Pre-activation context
+
+Do **not** re-derive entity lists or kbapi diffs from scratch unless reproducing a bug. Use only:
+
+- **Should run**: `${{ needs.pre_activation.outputs.should_run }}` (this job runs only when `true`).
+- **Issue cap**: `${{ needs.pre_activation.outputs.issue_cap }}` — maximum new issues with `create-issue` this run (high-confidence entities only).
+- **High-confidence entities (count)**: `${{ needs.pre_activation.outputs.high_confidence_count }}`
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+
+## Deterministic report
+
+Read `kibana-spec-impact-report.json` at the repository root (written by pre-activation). It contains:
+
+- `baseline_sha` / `target_sha`
+- `changed_kbapi_symbols`
+- `transform_schema_hints` (lower-confidence; do **not** open issues from hints alone)
+- `high_confidence_impacts` — only these are eligible for new issues in V1
+- `suppressed_duplicates` — already recorded; never recreate the same fingerprint
+
+## Execution
+
+1. Open and parse `kibana-spec-impact-report.json`.
+2. For each entry in `high_confidence_impacts` **up to the issue cap**, create **one** issue per entity using `create-issue`. Title should include the Terraform entity name. Body must include:
+   - Entity type and name, and implementation `pkg_path`.
+   - Matched symbols / evidence from `matched_symbols`.
+   - A concise note on likely provider follow-up (new schema fields, widened enums, new API capabilities) inferred from symbols and local code context.
+3. If `high_confidence_impacts` is empty but `transform_schema_hints` is non-empty, call `noop` explaining that only transform-layer hints were present (no high-confidence kbapi entity mapping).
+4. If there is nothing actionable, call `noop` with a short reason.
+5. After successfully creating issues for **all** high-confidence entities you processed this run, update repo memory by running:
+   ```
+   go run ./scripts/kibana-spec-impact memory-record-from-report \
+     --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
+     --report kibana-spec-impact-report.json
+   ```
+   Use the repo-memory path configured for this workflow if it differs in your environment.
+
+## Guardrails
+
+- Never invent impacted entities; only use `high_confidence_impacts` for issue creation.
+- Do not open issues for `transform_schema_hints` alone in V1 (mention them in the body only when a high-confidence issue exists for context).
+- Do not exceed the issue cap. If fewer slots than entities, prioritize alphabetically by `entity_name` unless a maintainer instruction overrides.
+- Weak or broad matches are already filtered out by the helper; do not reopen suppressed fingerprints.
