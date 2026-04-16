@@ -274,6 +274,14 @@ func TestEvaluate(t *testing.T) {
 			wantApprove: false,
 			wantReason:  "pull request contains files other than CHANGELOG.md",
 		},
+		{
+			name: "fails when no files are changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{}
+			},
+			wantApprove: false,
+			wantReason:  "pull request contains files other than CHANGELOG.md",
+		},
 	}
 
 	for _, tc := range generatedChangelogTests {

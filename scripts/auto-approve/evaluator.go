@@ -151,6 +151,9 @@ func evaluateGeneratedChangelogCategory(input EvaluationInput) []string {
 	if !allCommitsByGeneratedChangelog(input.Commits) {
 		reasons = append(reasons, fmt.Sprintf("not all commits are authored by %s", generatedChangelogAuthor))
 	}
+	if len(input.Files) == 0 {
+		reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
+	}
 	for _, file := range input.Files {
 		if file == nil || file.GetFilename() != "CHANGELOG.md" {
 			reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
