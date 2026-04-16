@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"66392088414d09d952a7e92428b3c86521d99114dff100af43e3dafa84e09fc1","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
-# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_AGENT_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"244c1016cb23e2dcc99d74c6b8b538ba935dfa623ba646db0cf48571d1e62a0e","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
+# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -22,11 +22,11 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
+# Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch, rewrites the Unreleased section. On prep-release-* pull requests, rewrites the concrete release section. Uses a deterministic pre-activation phase to resolve the previous release tag, compare range, merged PR set, and target section mode, then an agent phase to generate changelog content strictly from PR-level summaries with full provenance.
 #
 # Secrets used:
 #   - CLAUDE_LITELLM_PROXY_API_KEY
-#   - GH_AW_AGENT_TOKEN
+#   - GH_AW_CI_TRIGGER_TOKEN
 #   - GH_AW_GITHUB_MCP_SERVER_TOKEN
 #   - GH_AW_GITHUB_TOKEN
 #   - GITHUB_TOKEN
@@ -50,68 +50,314 @@
 #   - ghcr.io/github/github-mcp-server:v0.32.0
 #   - node:lts-alpine
 
-name: "Schema Coverage Rotation"
+name: "Changelog Generation"
 "on":
+  pull_request:
+    branches:
+    - main
+    types:
+    - opened
+    - synchronize
+    - reopened
   schedule:
-  - cron: "18 10 * * *"
+  - cron: "38 11 * * *"
     # Friendly format: daily (scattered)
   # steps: # Steps injected into pre-activation job
-  # - id: compute_issue_slots
-    # name: Compute issue slots
+  # - id: resolve_release_context
+    # name: Resolve release context
     # uses: actions/github-script@v8
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
       # script: |
-        # const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
-        # const ISSUE_CAP = 3;
+        # const { execSync } = require('child_process');
         # 
         # /**
-         # * Computes schema-coverage issue slot availability.
-         # * @param {number} openIssueCount - The number of currently open schema-coverage issues.
-         # * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+         # * Resolves the release context:
+         # *   - mode: 'unreleased' | 'release'
+         # *   - target_version: e.g. '0.14.4' (release mode only)
+         # *   - previous_tag: e.g. 'v0.14.3'
+         # *   - compare_range: e.g. 'v0.14.3..HEAD'
+         # *   - target_branch: branch to push the updated changelog to
          # */
-        # function computeIssueSlots(openIssueCount) {
-          # const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
         # 
-          # let gateReason;
-          # if (slotsAvailable === 0) {
-            # gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
-          # } else {
-            # gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+        # // Determine mode from event
+        # const eventName = context.eventName;
+        # const headBranch =
+          # context.payload.pull_request?.head?.ref ??
+          # context.payload.ref?.replace('refs/heads/', '') ??
+          # process.env.GITHUB_HEAD_REF ??
+          # process.env.GITHUB_REF_NAME ??
+          # '';
+        # 
+        # let mode = 'unreleased';
+        # let targetVersion = '';
+        # let targetBranch = 'generated-changelog';
+        # 
+        # if (eventName === 'pull_request' || eventName === 'pull_request_target') {
+          # const match = headBranch.match(/^prep-release-(.+)$/);
+          # if (match) {
+            # mode = 'release';
+            # targetVersion = match[1];
+            # targetBranch = headBranch;
+            # core.info(`Release mode: branch=${headBranch}, version=${targetVersion}`);
           # }
-        # 
-          # return {
-            # open_schema_coverage_issues: openIssueCount,
-            # issue_slots_available: slotsAvailable,
-            # gate_reason: gateReason,
-          # };
         # }
         # 
-        # if (typeof module !== 'undefined') {
-          # module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+        # // Resolve the previous semver release tag from git
+        # let previousTag = '';
+        # try {
+          # // List all tags matching vX.Y.Z semver pattern, sort by version, pick the latest
+          # const tagsRaw = execSync(
+            # 'git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname',
+            # { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+          # ).trim();
+        # 
+          # const tags = tagsRaw
+            # .split('\n')
+            # .map((t) => t.trim())
+            # .filter((t) => /^v\d+\.\d+\.\d+$/.test(t));
+        # 
+          # if (tags.length > 0) {
+            # previousTag = tags[0];
+            # core.info(`Resolved previous tag: ${previousTag}`);
+          # } else {
+            # core.warning('No semver release tags found; compare range will cover full history');
+          # }
+        # } catch (err) {
+          # core.warning(`Failed to list git tags: ${err.message}`);
         # }
+        # 
+        # const compareRange = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+        # 
+        # core.setOutput('mode', mode);
+        # core.setOutput('target_version', targetVersion);
+        # core.setOutput('previous_tag', previousTag);
+        # core.setOutput('compare_range', compareRange);
+        # core.setOutput('target_branch', targetBranch);
+        # 
+        # core.info(`Mode: ${mode}`);
+        # core.info(`Compare range: ${compareRange}`);
+        # core.info(`Target branch: ${targetBranch}`);
+  # - id: gather_pr_evidence
+    # name: Gather PR evidence
+    # uses: actions/github-script@v8
+    # with:
+      # compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # mode: ${{ steps.resolve_release_context.outputs.mode }}
+      # previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+      # script: |
+        # const { execSync } = require('child_process');
+        # 
+        # const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+        # const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+        # const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+        # const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
         # 
         # const { owner, repo } = context.repo;
         # 
-        # // Count open schema-coverage issues, excluding pull requests
-        # const issues = await github.paginate(github.rest.issues.listForRepo, {
-          # owner,
-          # repo,
-          # labels: SCHEMA_COVERAGE_LABEL,
-          # state: 'open',
-          # per_page: 100,
-        # });
+        # /**
+         # * Labels that indicate a PR is user-facing / CHANGELOG-worthy.
+         # */
+        # const USER_FACING_LABELS = new Set([
+          # 'enhancement',
+          # 'bug',
+          # 'feature',
+          # 'breaking-change',
+          # 'deprecation',
+          # 'new-resource',
+          # 'new-data-source',
+        # ]);
         # 
-        # // GitHub issues API may return pull requests — exclude them
-        # const openIssueCount = issues.filter(item => !item.pull_request).length;
+        # /**
+         # * Labels / patterns that indicate a PR is internal / maintenance (likely excluded).
+         # */
+        # const INTERNAL_LABELS = new Set([
+          # 'dependencies',
+          # 'chore',
+          # 'internal',
+          # 'documentation',
+          # 'ci',
+          # 'test',
+          # 'openspec',
+        # ]);
         # 
-        # const result = computeIssueSlots(openIssueCount);
+        # /**
+         # * File path prefixes that indicate provider-impacting changes.
+         # */
+        # const PROVIDER_PATH_PREFIXES = ['internal/', 'pkg/', 'libs/', 'provider/', 'go.mod', 'go.sum'];
         # 
-        # core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
-        # core.setOutput('issue_slots_available', String(result.issue_slots_available));
-        # core.setOutput('gate_reason', result.gate_reason);
+        # function classifyPR(pr, files) {
+          # const labels = (pr.labels ?? []).map((l) => l.name);
+          # const labelSet = new Set(labels);
         # 
-        # core.info(`Gate reason: ${result.gate_reason}`);
+          # // Explicit user-facing labels
+          # const hasUserFacingLabel = labels.some((l) => USER_FACING_LABELS.has(l));
+          # // Explicit internal labels
+          # const hasInternalLabel = labels.some((l) => INTERNAL_LABELS.has(l));
+        # 
+          # // Dependabot / automated PRs
+          # const isAutomated =
+            # pr.user?.login === 'dependabot[bot]' ||
+            # pr.user?.login === 'dependabot' ||
+            # pr.user?.login === 'github-actions[bot]';
+        # 
+          # // Check if PR touches provider code (not just openspec/, docs/, or tests)
+          # const touchesProviderCode = (files ?? []).some((f) =>
+            # PROVIDER_PATH_PREFIXES.some((prefix) => f.filename.startsWith(prefix))
+          # );
+        # 
+          # const openspecOnly =
+            # (files ?? []).length > 0 && (files ?? []).every((f) => f.filename.startsWith('openspec/'));
+        # 
+          # let classification;
+          # let inclusionRationale;
+          # let exclusionRationale;
+        # 
+          # if (isAutomated) {
+            # classification = 'internal';
+            # exclusionRationale = `Automated PR by ${pr.user?.login}`;
+          # } else if (openspecOnly) {
+            # classification = 'internal';
+            # exclusionRationale = 'Touches only openspec/ files — no provider code changes';
+          # } else if (hasUserFacingLabel) {
+            # classification = 'user-facing';
+            # inclusionRationale = `Has user-facing label(s): ${labels.filter((l) => USER_FACING_LABELS.has(l)).join(', ')}`;
+          # } else if (hasInternalLabel && !touchesProviderCode) {
+            # classification = 'internal';
+            # exclusionRationale = `Has internal label(s): ${labels.filter((l) => INTERNAL_LABELS.has(l)).join(', ')} and does not touch provider code`;
+          # } else if (touchesProviderCode) {
+            # classification = 'user-facing';
+            # inclusionRationale = 'Touches provider implementation paths — presumed user-facing';
+          # } else {
+            # classification = 'uncertain';
+            # inclusionRationale = 'Classification uncertain — agent to decide';
+          # }
+        # 
+          # return { classification, inclusionRationale: inclusionRationale ?? null, exclusionRationale: exclusionRationale ?? null };
+        # }
+        # 
+        # // Collect commits in range
+        # let commitSHAs = [];
+        # try {
+          # const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+          # const raw = execSync(`git log --format=%H ${range}`, {
+            # encoding: 'utf8',
+            # stdio: ['pipe', 'pipe', 'pipe'],
+          # }).trim();
+          # commitSHAs = raw ? raw.split('\n').map((s) => s.trim()).filter(Boolean) : [];
+          # core.info(`Found ${commitSHAs.length} commit(s) in range ${range}`);
+        # } catch (err) {
+          # core.warning(`Failed to list commits in range: ${err.message}`);
+        # }
+        # 
+        # // Find PRs associated with these commits
+        # const prMap = new Map();
+        # 
+        # for (const sha of commitSHAs) {
+          # try {
+            # const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              # owner,
+              # repo,
+              # commit_sha: sha,
+            # });
+            # for (const pr of prs) {
+              # if (pr.state === 'closed' && pr.merged_at && !prMap.has(pr.number)) {
+                # prMap.set(pr.number, pr);
+              # }
+            # }
+          # } catch (err) {
+            # core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
+          # }
+        # }
+        # 
+        # core.info(`Found ${prMap.size} unique merged PR(s) in compare range`);
+        # 
+        # // Enrich each PR with file information
+        # const evidence = [];
+        # 
+        # for (const [prNumber, pr] of prMap) {
+          # let files = [];
+          # try {
+            # files = await github.paginate(github.rest.pulls.listFiles, {
+              # owner,
+              # repo,
+              # pull_number: prNumber,
+              # per_page: 100,
+            # });
+          # } catch (err) {
+            # core.warning(`Failed to list files for PR #${prNumber}: ${err.message}`);
+          # }
+        # 
+          # const { classification, inclusionRationale, exclusionRationale } = classifyPR(pr, files);
+        # 
+          # evidence.push({
+            # number: pr.number,
+            # title: pr.title,
+            # url: pr.html_url,
+            # merge_commit_sha: pr.merge_commit_sha,
+            # author: pr.user?.login ?? 'unknown',
+            # labels: (pr.labels ?? []).map((l) => l.name),
+            # touched_files: files.map((f) => f.filename),
+            # classification,
+            # inclusion_rationale: inclusionRationale,
+            # exclusion_rationale: exclusionRationale,
+          # });
+        # }
+        # 
+        # const manifest = {
+          # generated_at: new Date().toISOString(),
+          # mode,
+          # target_version: targetVersion,
+          # previous_tag: previousTag,
+          # compare_range: compareRange,
+          # pr_count: evidence.length,
+          # user_facing_count: evidence.filter((e) => e.classification === 'user-facing').length,
+          # internal_count: evidence.filter((e) => e.classification === 'internal').length,
+          # uncertain_count: evidence.filter((e) => e.classification === 'uncertain').length,
+          # pull_requests: evidence,
+        # };
+        # 
+        # core.setOutput('evidence_json', JSON.stringify(manifest));
+        # core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);
+      # target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+  # - id: write_evidence_manifest
+    # name: Write evidence manifest to workflow memory
+    # uses: actions/github-script@v8
+    # with:
+      # evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const fs = require('fs');
+        # const path = require('path');
+        # 
+        # const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
+        # const memoryPath = '/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json';
+        # 
+        # if (!evidenceJson) {
+          # core.setFailed('No evidence_json input provided');
+          # process.exit(1);
+        # }
+        # 
+        # // Validate JSON
+        # let parsed;
+        # try {
+          # parsed = JSON.parse(evidenceJson);
+        # } catch (err) {
+          # core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
+          # process.exit(1);
+        # }
+        # 
+        # // Ensure the target directory exists
+        # const dir = path.dirname(memoryPath);
+        # fs.mkdirSync(dir, { recursive: true });
+        # 
+        # // Write the evidence manifest to workflow memory
+        # fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
+        # 
+        # core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
+        # core.setOutput('evidence_ready', 'true');
+        # core.setOutput('evidence_path', memoryPath);
   workflow_dispatch:
     inputs:
       aw_context:
@@ -123,20 +369,23 @@ name: "Schema Coverage Rotation"
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}"
   cancel-in-progress: true
 
-run-name: "Schema Coverage Rotation"
+run-name: "Changelog Generation"
 
 jobs:
   activation:
     needs: pre_activation
-    if: needs.pre_activation.outputs.activated == 'true' && (needs.pre_activation.outputs.issue_slots_available != '0')
+    if: >
+      needs.pre_activation.outputs.activated == 'true' && ((needs.pre_activation.outputs.evidence_ready == 'true') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id))
     runs-on: ubuntu-slim
     permissions:
       actions: read
       contents: read
     outputs:
+      body: ${{ steps.sanitized.outputs.body }}
       comment_id: ""
       comment_repo: ""
       lockdown_check_failed: ${{ steps.generate_aw_info.outputs.lockdown_check_failed == 'true' }}
@@ -144,6 +393,8 @@ jobs:
       secret_verification_result: ${{ steps.validate-secret.outputs.verification_result }}
       setup-trace-id: ${{ steps.setup.outputs.trace-id }}
       stale_lock_file_failed: ${{ steps.check-lock-file.outputs.stale_lock_file_failed == 'true' }}
+      text: ${{ steps.sanitized.outputs.text }}
+      title: ${{ steps.sanitized.outputs.title }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -161,7 +412,7 @@ jobs:
           GH_AW_INFO_VERSION: "2.1.98"
           GH_AW_INFO_AGENT_VERSION: "2.1.98"
           GH_AW_INFO_CLI_VERSION: "v0.68.3"
-          GH_AW_INFO_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_INFO_WORKFLOW_NAME: "Changelog Generation"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
           GH_AW_INFO_STAGED: "false"
@@ -196,7 +447,7 @@ jobs:
         id: check-lock-file
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
-          GH_AW_WORKFLOW_FILE: "schema-coverage-rotation.lock.yml"
+          GH_AW_WORKFLOW_FILE: "changelog-generation.lock.yml"
           GH_AW_CONTEXT_WORKFLOW_REF: "${{ github.workflow_ref }}"
         with:
           script: |
@@ -214,6 +465,15 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_version_updates.cjs');
             await main();
+      - name: Compute current body text
+        id: sanitized
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        with:
+          script: |
+            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io, getOctokit);
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/compute_text.cjs');
+            await main();
       - name: Create prompt with built-in context
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
@@ -226,24 +486,30 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_COMPARE_RANGE: ${{ needs.pre_activation.outputs.compare_range }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MODE: ${{ needs.pre_activation.outputs.mode }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_PREVIOUS_TAG: ${{ needs.pre_activation.outputs.previous_tag }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_BRANCH: ${{ needs.pre_activation.outputs.target_branch }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_VERSION: ${{ needs.pre_activation.outputs.target_version }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_a80fbcdcb2611823_EOF'
+          cat << 'GH_AW_PROMPT_19a1b2c763d82003_EOF'
           <system>
-          GH_AW_PROMPT_a80fbcdcb2611823_EOF
+          GH_AW_PROMPT_19a1b2c763d82003_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt_multi.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_a80fbcdcb2611823_EOF'
+          cat << 'GH_AW_PROMPT_19a1b2c763d82003_EOF'
           <safe-output-tools>
-          Tools: create_issue(max:3), assign_to_agent(max:3), missing_tool, missing_data, noop
+          Tools: create_pull_request, update_pull_request, push_to_pull_request_branch, missing_tool, missing_data, noop
+          GH_AW_PROMPT_19a1b2c763d82003_EOF
+          cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
+          cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
+          cat << 'GH_AW_PROMPT_19a1b2c763d82003_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -271,22 +537,27 @@ jobs:
           {{#if __GH_AW_GITHUB_RUN_ID__ }}
           - **workflow-run-id**: __GH_AW_GITHUB_RUN_ID__
           {{/if}}
+          - **checkouts**: The following repositories have been checked out and are available in the workspace:
+            - `$GITHUB_WORKSPACE` → `__GH_AW_GITHUB_REPOSITORY__` (cwd) [full history, all branches available as remote-tracking refs]
+            - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_a80fbcdcb2611823_EOF
+          GH_AW_PROMPT_19a1b2c763d82003_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_a80fbcdcb2611823_EOF'
+          cat << 'GH_AW_PROMPT_19a1b2c763d82003_EOF'
           </system>
-          {{#runtime-import .github/workflows/schema-coverage-rotation.md}}
-          GH_AW_PROMPT_a80fbcdcb2611823_EOF
+          {{#runtime-import .github/workflows/changelog-generation.md}}
+          GH_AW_PROMPT_19a1b2c763d82003_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_COMPARE_RANGE: ${{ needs.pre_activation.outputs.compare_range }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MODE: ${{ needs.pre_activation.outputs.mode }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_PREVIOUS_TAG: ${{ needs.pre_activation.outputs.previous_tag }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_BRANCH: ${{ needs.pre_activation.outputs.target_branch }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_VERSION: ${{ needs.pre_activation.outputs.target_version }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -306,11 +577,13 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_MEMORY_ALLOWED_EXTENSIONS: ''
-          GH_AW_MEMORY_LIST: "- **schema-coverage-rotation**: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/` (branch: `memory/schema-coverage-rotation`)\n"
+          GH_AW_MEMORY_LIST: "- **changelog-evidence**: `/tmp/gh-aw/repo-memory/changelog-evidence/` (branch: `memory/changelog-evidence`)\n"
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: ${{ needs.pre_activation.outputs.open_schema_coverage_issues }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_COMPARE_RANGE: ${{ needs.pre_activation.outputs.compare_range }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MODE: ${{ needs.pre_activation.outputs.mode }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_PREVIOUS_TAG: ${{ needs.pre_activation.outputs.previous_tag }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_BRANCH: ${{ needs.pre_activation.outputs.target_branch }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_VERSION: ${{ needs.pre_activation.outputs.target_version }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -333,9 +606,11 @@ jobs:
                 GH_AW_MEMORY_ALLOWED_EXTENSIONS: process.env.GH_AW_MEMORY_ALLOWED_EXTENSIONS,
                 GH_AW_MEMORY_LIST: process.env.GH_AW_MEMORY_LIST,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_SCHEMA_COVERAGE_ISSUES
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_COMPARE_RANGE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_COMPARE_RANGE,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MODE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MODE,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_PREVIOUS_TAG: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_PREVIOUS_TAG,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_BRANCH: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_BRANCH,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_VERSION: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_TARGET_VERSION
               }
             });
       - name: Validate prompt placeholders
@@ -364,9 +639,7 @@ jobs:
     needs: activation
     runs-on: ubuntu-latest
     permissions:
-      actions: read
       contents: read
-      issues: read
       pull-requests: read
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -374,7 +647,7 @@ jobs:
       GH_AW_ASSETS_BRANCH: ""
       GH_AW_ASSETS_MAX_SIZE_KB: 0
       GH_AW_MCP_LOG_DIR: /tmp/gh-aw/mcp-logs/safeoutputs
-      GH_AW_WORKFLOW_ID_SANITIZED: schemacoveragerotation
+      GH_AW_WORKFLOW_ID_SANITIZED: changeloggeneration
     outputs:
       checkout_pr_success: ${{ steps.checkout-pr.outputs.checkout_pr_success || 'true' }}
       effective_tokens: ${{ steps.parse-mcp-gateway.outputs.effective_tokens }}
@@ -403,6 +676,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Create gh-aw temp directory
         run: bash "${RUNNER_TEMP}/gh-aw/actions/create_gh_aw_tmp_dir.sh"
       - name: Configure gh CLI for GitHub Enterprise
@@ -427,13 +701,13 @@ jobs:
         run: make setup
 
       # Repo memory git-based storage configuration from frontmatter processed below
-      - name: Clone repo-memory branch (schema-coverage-rotation)
+      - name: Clone repo-memory branch (changelog-evidence)
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
-          BRANCH_NAME: memory/schema-coverage-rotation
+          BRANCH_NAME: memory/changelog-evidence
           TARGET_REPO: ${{ github.repository }}
-          MEMORY_DIR: /tmp/gh-aw/repo-memory/schema-coverage-rotation
+          MEMORY_DIR: /tmp/gh-aw/repo-memory/changelog-evidence
           CREATE_ORPHAN: true
         run: bash "${RUNNER_TEMP}/gh-aw/actions/clone_repo_memory_branch.sh"
       - name: Configure Git credentials
@@ -485,54 +759,28 @@ jobs:
       - name: Download container images
         run: bash "${RUNNER_TEMP}/gh-aw/actions/download_docker_images.sh" ghcr.io/github/gh-aw-firewall/agent:0.25.20 ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20 ghcr.io/github/gh-aw-firewall/squid:0.25.20 ghcr.io/github/gh-aw-mcpg:v0.2.19 ghcr.io/github/github-mcp-server:v0.32.0 node:lts-alpine
       - name: Write Safe Outputs Config
-        env:
-          GH_AW_AGENT_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
         run: |
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << GH_AW_SAFE_OUTPUTS_CONFIG_aa328f63c0f83ca9_EOF
-          {"assign_to_agent":{"allowed":["copilot"],"custom-agent":"acceptance-test-improver","github-token":"${GH_AW_AGENT_TOKEN}","max":3,"model":"gpt-5.4","name":"copilot","target":"*"},"create_issue":{"labels":["testing","acceptance-tests","schema-coverage"],"max":3,"title_prefix":"[schema-coverage] "},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/schema-coverage-rotation","id":"schema-coverage-rotation","max_file_count":100,"max_file_size":524288,"max_patch_size":102400}]},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_aa328f63c0f83ca9_EOF
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_0c41988f08618c5e_EOF'
+          {"create_pull_request":{"max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/changelog-evidence","id":"changelog-evidence","max_file_count":100,"max_file_size":524288,"max_patch_size":102400}]},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"report_incomplete":{},"update_pull_request":{"allow_body":true,"allow_title":true,"max":1}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_0c41988f08618c5e_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
             {
               "description_suffixes": {
-                "assign_to_agent": " CONSTRAINTS: Maximum 3 issue(s) can be assigned to agent.",
-                "create_issue": " CONSTRAINTS: Maximum 3 issue(s) can be created. Title will be prefixed with \"[schema-coverage] \". Labels [\"testing\" \"acceptance-tests\" \"schema-coverage\"] will be automatically added."
+                "create_pull_request": " CONSTRAINTS: Maximum 1 pull request(s) can be created.",
+                "push_to_pull_request_branch": " CONSTRAINTS: Maximum 1 push(es) can be made.",
+                "update_pull_request": " CONSTRAINTS: Maximum 1 pull request(s) can be updated."
               },
               "repo_params": {},
               "dynamic_tools": []
             }
           GH_AW_VALIDATION_JSON: |
             {
-              "assign_to_agent": {
-                "defaultMax": 1,
-                "fields": {
-                  "agent": {
-                    "type": "string",
-                    "sanitize": true,
-                    "maxLength": 128
-                  },
-                  "issue_number": {
-                    "issueNumberOrTemporaryId": true
-                  },
-                  "pull_number": {
-                    "optionalPositiveInteger": true
-                  },
-                  "pull_request_repo": {
-                    "type": "string",
-                    "maxLength": 256
-                  },
-                  "repo": {
-                    "type": "string",
-                    "maxLength": 256
-                  }
-                },
-                "customValidation": "requiresOneOf:issue_number,pull_number"
-              },
-              "create_issue": {
+              "create_pull_request": {
                 "defaultMax": 1,
                 "fields": {
                   "body": {
@@ -541,21 +789,24 @@ jobs:
                     "sanitize": true,
                     "maxLength": 65000
                   },
+                  "branch": {
+                    "required": true,
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 256
+                  },
+                  "draft": {
+                    "type": "boolean"
+                  },
                   "labels": {
                     "type": "array",
                     "itemType": "string",
                     "itemSanitize": true,
                     "itemMaxLength": 128
                   },
-                  "parent": {
-                    "issueOrPRNumber": true
-                  },
                   "repo": {
                     "type": "string",
                     "maxLength": 256
-                  },
-                  "temporary_id": {
-                    "type": "string"
                   },
                   "title": {
                     "required": true,
@@ -622,6 +873,26 @@ jobs:
                   }
                 }
               },
+              "push_to_pull_request_branch": {
+                "defaultMax": 1,
+                "fields": {
+                  "branch": {
+                    "required": true,
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 256
+                  },
+                  "message": {
+                    "required": true,
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 65000
+                  },
+                  "pull_request_number": {
+                    "issueOrPRNumber": true
+                  }
+                }
+              },
               "report_incomplete": {
                 "defaultMax": 5,
                 "fields": {
@@ -637,6 +908,40 @@ jobs:
                     "maxLength": 1024
                   }
                 }
+              },
+              "update_pull_request": {
+                "defaultMax": 1,
+                "fields": {
+                  "body": {
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 65000
+                  },
+                  "draft": {
+                    "type": "boolean"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "replace",
+                      "append",
+                      "prepend"
+                    ]
+                  },
+                  "pull_request_number": {
+                    "issueOrPRNumber": true
+                  },
+                  "repo": {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "title": {
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 256
+                  }
+                },
+                "customValidation": "requiresOneOf:title,body"
               }
             }
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
@@ -713,7 +1018,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_81e2ce7c60100c16_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_91e4a94b92ceb762_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -722,7 +1027,7 @@ jobs:
                   "GITHUB_HOST": "$GITHUB_SERVER_URL",
                   "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_MCP_SERVER_TOKEN",
                   "GITHUB_READ_ONLY": "1",
-                  "GITHUB_TOOLSETS": "context,repos,issues,pull_requests"
+                  "GITHUB_TOOLSETS": "repos,pull_requests"
                 },
                 "guard-policies": {
                   "allow-only": {
@@ -753,7 +1058,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_81e2ce7c60100c16_EOF
+          GH_AW_MCP_CONFIG_91e4a94b92ceb762_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -842,10 +1147,10 @@ jobs:
             -- /bin/bash -c 'export PATH="$(find /opt/hostedtoolcache -maxdepth 4 -type d -name bin 2>/dev/null | tr '\''\n'\'' '\'':'\'')$PATH"; [ -n "$GOROOT" ] && export PATH="$GOROOT/bin:$PATH" || true && claude --print --no-chrome --mcp-config /tmp/gh-aw/mcp-config/mcp-servers.json --allowed-tools Bash,BashOutput,Edit,ExitPlanMode,Glob,Grep,KillBash,LS,MultiEdit,NotebookEdit,NotebookRead,Read,Task,TodoWrite,Write,mcp__github__download_workflow_run_artifact,mcp__github__get_code_scanning_alert,mcp__github__get_commit,mcp__github__get_dependabot_alert,mcp__github__get_discussion,mcp__github__get_discussion_comments,mcp__github__get_file_contents,mcp__github__get_job_logs,mcp__github__get_label,mcp__github__get_latest_release,mcp__github__get_me,mcp__github__get_notification_details,mcp__github__get_pull_request,mcp__github__get_pull_request_comments,mcp__github__get_pull_request_diff,mcp__github__get_pull_request_files,mcp__github__get_pull_request_review_comments,mcp__github__get_pull_request_reviews,mcp__github__get_pull_request_status,mcp__github__get_release_by_tag,mcp__github__get_secret_scanning_alert,mcp__github__get_tag,mcp__github__get_workflow_run,mcp__github__get_workflow_run_logs,mcp__github__get_workflow_run_usage,mcp__github__issue_read,mcp__github__list_branches,mcp__github__list_code_scanning_alerts,mcp__github__list_commits,mcp__github__list_dependabot_alerts,mcp__github__list_discussion_categories,mcp__github__list_discussions,mcp__github__list_issue_types,mcp__github__list_issues,mcp__github__list_label,mcp__github__list_notifications,mcp__github__list_pull_requests,mcp__github__list_releases,mcp__github__list_secret_scanning_alerts,mcp__github__list_starred_repositories,mcp__github__list_tags,mcp__github__list_workflow_jobs,mcp__github__list_workflow_run_artifacts,mcp__github__list_workflow_runs,mcp__github__list_workflows,mcp__github__pull_request_read,mcp__github__search_code,mcp__github__search_issues,mcp__github__search_orgs,mcp__github__search_pull_requests,mcp__github__search_repositories,mcp__github__search_users --debug-file /tmp/gh-aw/agent-stdio.log --verbose --permission-mode bypassPermissions --output-format stream-json "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
         env:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-          ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
+          ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai
           ANTHROPIC_MODEL: llm-gateway/gpt-5.4
-          BASH_DEFAULT_TIMEOUT_MS: 300000
-          BASH_MAX_TIMEOUT_MS: 300000
+          BASH_DEFAULT_TIMEOUT_MS: 60000
+          BASH_MAX_TIMEOUT_MS: 60000
           DISABLE_BUG_COMMAND: 1
           DISABLE_ERROR_REPORTING: 1
           DISABLE_TELEMETRY: 1
@@ -853,7 +1158,6 @@ jobs:
           GH_AW_PHASE: agent
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_SAFE_OUTPUTS: ${{ steps.set-runtime-paths.outputs.GH_AW_SAFE_OUTPUTS }}
-          GH_AW_TOOL_TIMEOUT: 300
           GH_AW_VERSION: v0.68.3
           GITHUB_AW: true
           GITHUB_STEP_SUMMARY: /tmp/gh-aw/agent-step-summary.md
@@ -863,7 +1167,7 @@ jobs:
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           MCP_TIMEOUT: 120000
-          MCP_TOOL_TIMEOUT: 300000
+          MCP_TOOL_TIMEOUT: 60000
       - name: Configure Git credentials
         env:
           REPO_NAME: ${{ github.repository }}
@@ -896,9 +1200,8 @@ jobs:
             const { main } = require('${{ runner.temp }}/gh-aw/actions/redact_secrets.cjs');
             await main();
         env:
-          GH_AW_SECRET_NAMES: 'CLAUDE_LITELLM_PROXY_API_KEY,GH_AW_AGENT_TOKEN,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN'
+          GH_AW_SECRET_NAMES: 'CLAUDE_LITELLM_PROXY_API_KEY,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN'
           SECRET_CLAUDE_LITELLM_PROXY_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-          SECRET_GH_AW_AGENT_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
           SECRET_GH_AW_GITHUB_MCP_SERVER_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN }}
           SECRET_GH_AW_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
           SECRET_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -980,12 +1283,12 @@ jobs:
             echo '{"items":[]}' > /tmp/gh-aw/agent_output.json
           fi
       # Upload repo memory as artifacts for push job
-      - name: Upload repo-memory artifact (schema-coverage-rotation)
+      - name: Upload repo-memory artifact (changelog-evidence)
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: repo-memory-schemacoveragerotation
-          path: /tmp/gh-aw/repo-memory/schema-coverage-rotation
+          name: repo-memory-changelogevidence
+          path: /tmp/gh-aw/repo-memory/changelog-evidence
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload agent artifacts
@@ -1021,10 +1324,11 @@ jobs:
       needs.activation.outputs.stale_lock_file_failed == 'true')
     runs-on: ubuntu-slim
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
     concurrency:
-      group: "gh-aw-conclusion-schema-coverage-rotation"
+      group: "gh-aw-conclusion-changelog-generation"
       cancel-in-progress: false
     outputs:
       incomplete_count: ${{ steps.report_incomplete.outputs.incomplete_count }}
@@ -1059,10 +1363,10 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: "1"
-          GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_WORKFLOW_NAME: "Changelog Generation"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_NOOP_REPORT_AS_ISSUE: "true"
+          GH_AW_NOOP_REPORT_AS_ISSUE: "false"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -1075,7 +1379,7 @@ jobs:
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_WORKFLOW_NAME: "Changelog Generation"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_DETECTION_CONCLUSION: ${{ needs.detection.outputs.detection_conclusion }}
           GH_AW_DETECTION_REASON: ${{ needs.detection.outputs.detection_reason }}
@@ -1092,7 +1396,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_WORKFLOW_NAME: "Changelog Generation"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -1106,7 +1410,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_REPORT_INCOMPLETE_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_WORKFLOW_NAME: "Changelog Generation"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -1120,21 +1424,21 @@ jobs:
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+          GH_AW_WORKFLOW_NAME: "Changelog Generation"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_WORKFLOW_ID: "schema-coverage-rotation"
+          GH_AW_WORKFLOW_ID: "changelog-generation"
           GH_AW_ENGINE_ID: "claude"
           GH_AW_SECRET_VERIFICATION_RESULT: ${{ needs.activation.outputs.secret_verification_result }}
           GH_AW_CHECKOUT_PR_SUCCESS: ${{ needs.agent.outputs.checkout_pr_success }}
-          GH_AW_ASSIGNMENT_ERRORS: ${{ needs.safe_outputs.outputs.assign_to_agent_assignment_errors }}
-          GH_AW_ASSIGNMENT_ERROR_COUNT: ${{ needs.safe_outputs.outputs.assign_to_agent_assignment_error_count }}
+          GH_AW_CODE_PUSH_FAILURE_ERRORS: ${{ needs.safe_outputs.outputs.code_push_failure_errors }}
+          GH_AW_CODE_PUSH_FAILURE_COUNT: ${{ needs.safe_outputs.outputs.code_push_failure_count }}
           GH_AW_LOCKDOWN_CHECK_FAILED: ${{ needs.activation.outputs.lockdown_check_failed }}
           GH_AW_STALE_LOCK_FILE_FAILED: ${{ needs.activation.outputs.stale_lock_file_failed }}
           GH_AW_PUSH_REPO_MEMORY_RESULT: ${{ needs.push_repo_memory.result }}
-          GH_AW_REPO_MEMORY_VALIDATION_FAILED_schema-coverage-rotation: ${{ needs.push_repo_memory.outputs.validation_failed_schema-coverage-rotation }}
-          GH_AW_REPO_MEMORY_VALIDATION_ERROR_schema-coverage-rotation: ${{ needs.push_repo_memory.outputs.validation_error_schema-coverage-rotation }}
-          GH_AW_REPO_MEMORY_PATCH_SIZE_EXCEEDED_schema-coverage-rotation: ${{ needs.push_repo_memory.outputs.patch_size_exceeded_schema-coverage-rotation }}
+          GH_AW_REPO_MEMORY_VALIDATION_FAILED_changelog-evidence: ${{ needs.push_repo_memory.outputs.validation_failed_changelog-evidence }}
+          GH_AW_REPO_MEMORY_VALIDATION_ERROR_changelog-evidence: ${{ needs.push_repo_memory.outputs.validation_error_changelog-evidence }}
+          GH_AW_REPO_MEMORY_PATCH_SIZE_EXCEEDED_changelog-evidence: ${{ needs.push_repo_memory.outputs.patch_size_exceeded_changelog-evidence }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
           GH_AW_TIMEOUT_MINUTES: "20"
@@ -1231,8 +1535,8 @@ jobs:
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
-          WORKFLOW_NAME: "Schema Coverage Rotation"
-          WORKFLOW_DESCRIPTION: "Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues."
+          WORKFLOW_NAME: "Changelog Generation"
+          WORKFLOW_DESCRIPTION: "Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch, rewrites the Unreleased section. On prep-release-* pull requests, rewrites the concrete release section. Uses a deterministic pre-activation phase to resolve the previous release tag, compare range, merged PR set, and target section mode, then an agent phase to generate changelog content strictly from PR-level summaries with full provenance."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1279,7 +1583,7 @@ jobs:
             -- /bin/bash -c 'export PATH="$(find /opt/hostedtoolcache -maxdepth 4 -type d -name bin 2>/dev/null | tr '\''\n'\'' '\'':'\'')$PATH"; [ -n "$GOROOT" ] && export PATH="$GOROOT/bin:$PATH" || true && claude --print --no-chrome --allowed-tools Bash,BashOutput,ExitPlanMode,Glob,Grep,KillBash,LS,NotebookRead,Read,Task,TodoWrite --debug-file /tmp/gh-aw/threat-detection/detection.log --verbose --permission-mode bypassPermissions --output-format stream-json "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/threat-detection/detection.log
         env:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-          ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
+          ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai
           ANTHROPIC_MODEL: llm-gateway/gpt-5.4
           BASH_DEFAULT_TIMEOUT_MS: 60000
           BASH_MAX_TIMEOUT_MS: 60000
@@ -1323,12 +1627,17 @@ jobs:
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
-      compute_issue_slots_result: ${{ steps.compute_issue_slots.outcome }}
-      gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
-      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+      compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+      evidence_ready: ${{ steps.write_evidence_manifest.outputs.evidence_ready }}
+      gather_pr_evidence_result: ${{ steps.gather_pr_evidence.outcome }}
       matched_command: ''
-      open_schema_coverage_issues: ${{ steps.compute_issue_slots.outputs.open_schema_coverage_issues }}
+      mode: ${{ steps.resolve_release_context.outputs.mode }}
+      previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+      resolve_release_context_result: ${{ steps.resolve_release_context.outcome }}
       setup-trace-id: ${{ steps.setup.outputs.trace-id }}
+      target_branch: ${{ steps.resolve_release_context.outputs.target_branch }}
+      target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+      write_evidence_manifest_result: ${{ steps.write_evidence_manifest.outcome }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -1348,62 +1657,301 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
-      - name: Compute issue slots
-        id: compute_issue_slots
+      - name: Resolve release context
+        id: resolve_release_context
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
-            const ISSUE_CAP = 3;
+            const { execSync } = require('child_process');
 
             /**
-             * Computes schema-coverage issue slot availability.
-             * @param {number} openIssueCount - The number of currently open schema-coverage issues.
-             * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+             * Resolves the release context:
+             *   - mode: 'unreleased' | 'release'
+             *   - target_version: e.g. '0.14.4' (release mode only)
+             *   - previous_tag: e.g. 'v0.14.3'
+             *   - compare_range: e.g. 'v0.14.3..HEAD'
+             *   - target_branch: branch to push the updated changelog to
              */
-            function computeIssueSlots(openIssueCount) {
-              const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
 
-              let gateReason;
-              if (slotsAvailable === 0) {
-                gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
-              } else {
-                gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+            // Determine mode from event
+            const eventName = context.eventName;
+            const headBranch =
+              context.payload.pull_request?.head?.ref ??
+              context.payload.ref?.replace('refs/heads/', '') ??
+              process.env.GITHUB_HEAD_REF ??
+              process.env.GITHUB_REF_NAME ??
+              '';
+
+            let mode = 'unreleased';
+            let targetVersion = '';
+            let targetBranch = 'generated-changelog';
+
+            if (eventName === 'pull_request' || eventName === 'pull_request_target') {
+              const match = headBranch.match(/^prep-release-(.+)$/);
+              if (match) {
+                mode = 'release';
+                targetVersion = match[1];
+                targetBranch = headBranch;
+                core.info(`Release mode: branch=${headBranch}, version=${targetVersion}`);
               }
-
-              return {
-                open_schema_coverage_issues: openIssueCount,
-                issue_slots_available: slotsAvailable,
-                gate_reason: gateReason,
-              };
             }
 
-            if (typeof module !== 'undefined') {
-              module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+            // Resolve the previous semver release tag from git
+            let previousTag = '';
+            try {
+              // List all tags matching vX.Y.Z semver pattern, sort by version, pick the latest
+              const tagsRaw = execSync(
+                'git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname',
+                { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+              ).trim();
+
+              const tags = tagsRaw
+                .split('\n')
+                .map((t) => t.trim())
+                .filter((t) => /^v\d+\.\d+\.\d+$/.test(t));
+
+              if (tags.length > 0) {
+                previousTag = tags[0];
+                core.info(`Resolved previous tag: ${previousTag}`);
+              } else {
+                core.warning('No semver release tags found; compare range will cover full history');
+              }
+            } catch (err) {
+              core.warning(`Failed to list git tags: ${err.message}`);
             }
+
+            const compareRange = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+
+            core.setOutput('mode', mode);
+            core.setOutput('target_version', targetVersion);
+            core.setOutput('previous_tag', previousTag);
+            core.setOutput('compare_range', compareRange);
+            core.setOutput('target_branch', targetBranch);
+
+            core.info(`Mode: ${mode}`);
+            core.info(`Compare range: ${compareRange}`);
+            core.info(`Target branch: ${targetBranch}`);
+      - name: Gather PR evidence
+        id: gather_pr_evidence
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          mode: ${{ steps.resolve_release_context.outputs.mode }}
+          previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+          script: |
+            const { execSync } = require('child_process');
+
+            const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+            const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+            const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+            const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
 
             const { owner, repo } = context.repo;
 
-            // Count open schema-coverage issues, excluding pull requests
-            const issues = await github.paginate(github.rest.issues.listForRepo, {
-              owner,
-              repo,
-              labels: SCHEMA_COVERAGE_LABEL,
-              state: 'open',
-              per_page: 100,
-            });
+            /**
+             * Labels that indicate a PR is user-facing / CHANGELOG-worthy.
+             */
+            const USER_FACING_LABELS = new Set([
+              'enhancement',
+              'bug',
+              'feature',
+              'breaking-change',
+              'deprecation',
+              'new-resource',
+              'new-data-source',
+            ]);
 
-            // GitHub issues API may return pull requests — exclude them
-            const openIssueCount = issues.filter(item => !item.pull_request).length;
+            /**
+             * Labels / patterns that indicate a PR is internal / maintenance (likely excluded).
+             */
+            const INTERNAL_LABELS = new Set([
+              'dependencies',
+              'chore',
+              'internal',
+              'documentation',
+              'ci',
+              'test',
+              'openspec',
+            ]);
 
-            const result = computeIssueSlots(openIssueCount);
+            /**
+             * File path prefixes that indicate provider-impacting changes.
+             */
+            const PROVIDER_PATH_PREFIXES = ['internal/', 'pkg/', 'libs/', 'provider/', 'go.mod', 'go.sum'];
 
-            core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
-            core.setOutput('issue_slots_available', String(result.issue_slots_available));
-            core.setOutput('gate_reason', result.gate_reason);
+            function classifyPR(pr, files) {
+              const labels = (pr.labels ?? []).map((l) => l.name);
+              const labelSet = new Set(labels);
 
-            core.info(`Gate reason: ${result.gate_reason}`);
+              // Explicit user-facing labels
+              const hasUserFacingLabel = labels.some((l) => USER_FACING_LABELS.has(l));
+              // Explicit internal labels
+              const hasInternalLabel = labels.some((l) => INTERNAL_LABELS.has(l));
+
+              // Dependabot / automated PRs
+              const isAutomated =
+                pr.user?.login === 'dependabot[bot]' ||
+                pr.user?.login === 'dependabot' ||
+                pr.user?.login === 'github-actions[bot]';
+
+              // Check if PR touches provider code (not just openspec/, docs/, or tests)
+              const touchesProviderCode = (files ?? []).some((f) =>
+                PROVIDER_PATH_PREFIXES.some((prefix) => f.filename.startsWith(prefix))
+              );
+
+              const openspecOnly =
+                (files ?? []).length > 0 && (files ?? []).every((f) => f.filename.startsWith('openspec/'));
+
+              let classification;
+              let inclusionRationale;
+              let exclusionRationale;
+
+              if (isAutomated) {
+                classification = 'internal';
+                exclusionRationale = `Automated PR by ${pr.user?.login}`;
+              } else if (openspecOnly) {
+                classification = 'internal';
+                exclusionRationale = 'Touches only openspec/ files — no provider code changes';
+              } else if (hasUserFacingLabel) {
+                classification = 'user-facing';
+                inclusionRationale = `Has user-facing label(s): ${labels.filter((l) => USER_FACING_LABELS.has(l)).join(', ')}`;
+              } else if (hasInternalLabel && !touchesProviderCode) {
+                classification = 'internal';
+                exclusionRationale = `Has internal label(s): ${labels.filter((l) => INTERNAL_LABELS.has(l)).join(', ')} and does not touch provider code`;
+              } else if (touchesProviderCode) {
+                classification = 'user-facing';
+                inclusionRationale = 'Touches provider implementation paths — presumed user-facing';
+              } else {
+                classification = 'uncertain';
+                inclusionRationale = 'Classification uncertain — agent to decide';
+              }
+
+              return { classification, inclusionRationale: inclusionRationale ?? null, exclusionRationale: exclusionRationale ?? null };
+            }
+
+            // Collect commits in range
+            let commitSHAs = [];
+            try {
+              const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+              const raw = execSync(`git log --format=%H ${range}`, {
+                encoding: 'utf8',
+                stdio: ['pipe', 'pipe', 'pipe'],
+              }).trim();
+              commitSHAs = raw ? raw.split('\n').map((s) => s.trim()).filter(Boolean) : [];
+              core.info(`Found ${commitSHAs.length} commit(s) in range ${range}`);
+            } catch (err) {
+              core.warning(`Failed to list commits in range: ${err.message}`);
+            }
+
+            // Find PRs associated with these commits
+            const prMap = new Map();
+
+            for (const sha of commitSHAs) {
+              try {
+                const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner,
+                  repo,
+                  commit_sha: sha,
+                });
+                for (const pr of prs) {
+                  if (pr.state === 'closed' && pr.merged_at && !prMap.has(pr.number)) {
+                    prMap.set(pr.number, pr);
+                  }
+                }
+              } catch (err) {
+                core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
+              }
+            }
+
+            core.info(`Found ${prMap.size} unique merged PR(s) in compare range`);
+
+            // Enrich each PR with file information
+            const evidence = [];
+
+            for (const [prNumber, pr] of prMap) {
+              let files = [];
+              try {
+                files = await github.paginate(github.rest.pulls.listFiles, {
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  per_page: 100,
+                });
+              } catch (err) {
+                core.warning(`Failed to list files for PR #${prNumber}: ${err.message}`);
+              }
+
+              const { classification, inclusionRationale, exclusionRationale } = classifyPR(pr, files);
+
+              evidence.push({
+                number: pr.number,
+                title: pr.title,
+                url: pr.html_url,
+                merge_commit_sha: pr.merge_commit_sha,
+                author: pr.user?.login ?? 'unknown',
+                labels: (pr.labels ?? []).map((l) => l.name),
+                touched_files: files.map((f) => f.filename),
+                classification,
+                inclusion_rationale: inclusionRationale,
+                exclusion_rationale: exclusionRationale,
+              });
+            }
+
+            const manifest = {
+              generated_at: new Date().toISOString(),
+              mode,
+              target_version: targetVersion,
+              previous_tag: previousTag,
+              compare_range: compareRange,
+              pr_count: evidence.length,
+              user_facing_count: evidence.filter((e) => e.classification === 'user-facing').length,
+              internal_count: evidence.filter((e) => e.classification === 'internal').length,
+              uncertain_count: evidence.filter((e) => e.classification === 'uncertain').length,
+              pull_requests: evidence,
+            };
+
+            core.setOutput('evidence_json', JSON.stringify(manifest));
+            core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);
+          target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+      - name: Write evidence manifest to workflow memory
+        id: write_evidence_manifest
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
+            const memoryPath = '/tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json';
+
+            if (!evidenceJson) {
+              core.setFailed('No evidence_json input provided');
+              process.exit(1);
+            }
+
+            // Validate JSON
+            let parsed;
+            try {
+              parsed = JSON.parse(evidenceJson);
+            } catch (err) {
+              core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
+              process.exit(1);
+            }
+
+            // Ensure the target directory exists
+            const dir = path.dirname(memoryPath);
+            fs.mkdirSync(dir, { recursive: true });
+
+            // Write the evidence manifest to workflow memory
+            fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
+
+            core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
+            core.setOutput('evidence_ready', 'true');
+            core.setOutput('evidence_path', memoryPath);
 
   push_repo_memory:
     needs:
@@ -1417,12 +1965,12 @@ jobs:
     permissions:
       contents: write
     concurrency:
-      group: "push-repo-memory-${{ github.repository }}|memory/schema-coverage-rotation"
+      group: "push-repo-memory-${{ github.repository }}|memory/changelog-evidence"
       cancel-in-progress: false
     outputs:
-      patch_size_exceeded_schema-coverage-rotation: ${{ steps.push_repo_memory_schema-coverage-rotation.outputs.patch_size_exceeded }}
-      validation_error_schema-coverage-rotation: ${{ steps.push_repo_memory_schema-coverage-rotation.outputs.validation_error }}
-      validation_failed_schema-coverage-rotation: ${{ steps.push_repo_memory_schema-coverage-rotation.outputs.validation_failed }}
+      patch_size_exceeded_changelog-evidence: ${{ steps.push_repo_memory_changelog-evidence.outputs.patch_size_exceeded }}
+      validation_error_changelog-evidence: ${{ steps.push_repo_memory_changelog-evidence.outputs.validation_error }}
+      validation_failed_changelog-evidence: ${{ steps.push_repo_memory_changelog-evidence.outputs.validation_failed }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -1449,29 +1997,29 @@ jobs:
           SERVER_URL_STRIPPED="${SERVER_URL#https://}"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@${SERVER_URL_STRIPPED}/${REPO_NAME}.git"
           echo "Git configured with standard GitHub Actions identity"
-      - name: Download repo-memory artifact (schema-coverage-rotation)
+      - name: Download repo-memory artifact (changelog-evidence)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true
         with:
-          name: repo-memory-schemacoveragerotation
-          path: /tmp/gh-aw/repo-memory/schema-coverage-rotation
-      - name: Push repo-memory changes (schema-coverage-rotation)
-        id: push_repo_memory_schema-coverage-rotation
+          name: repo-memory-changelogevidence
+          path: /tmp/gh-aw/repo-memory/changelog-evidence
+      - name: Push repo-memory changes (changelog-evidence)
+        id: push_repo_memory_changelog-evidence
         if: always()
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
-          ARTIFACT_DIR: /tmp/gh-aw/repo-memory/schema-coverage-rotation
-          MEMORY_ID: schema-coverage-rotation
+          ARTIFACT_DIR: /tmp/gh-aw/repo-memory/changelog-evidence
+          MEMORY_ID: changelog-evidence
           TARGET_REPO: ${{ github.repository }}
-          BRANCH_NAME: memory/schema-coverage-rotation
+          BRANCH_NAME: memory/changelog-evidence
           MAX_FILE_SIZE: 524288
           MAX_FILE_COUNT: 100
           MAX_PATCH_SIZE: 102400
           ALLOWED_EXTENSIONS: '[]'
-          FILE_GLOB_FILTER: "memory/schema-coverage-rotation/schema-coverage.json"
+          FILE_GLOB_FILTER: "memory/changelog-generation/evidence.json"
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -1487,30 +2035,30 @@ jobs:
     if: (!cancelled()) && needs.agent.result != 'skipped' && needs.detection.result == 'success'
     runs-on: ubuntu-slim
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
     timeout-minutes: 15
     env:
-      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/schema-coverage-rotation"
+      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/changelog-generation"
       GH_AW_DETECTION_CONCLUSION: ${{ needs.detection.outputs.detection_conclusion }}
       GH_AW_DETECTION_REASON: ${{ needs.detection.outputs.detection_reason }}
       GH_AW_EFFECTIVE_TOKENS: ${{ needs.agent.outputs.effective_tokens }}
       GH_AW_ENGINE_ID: "claude"
       GH_AW_ENGINE_MODEL: "llm-gateway/gpt-5.4"
-      GH_AW_WORKFLOW_ID: "schema-coverage-rotation"
-      GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
+      GH_AW_WORKFLOW_ID: "changelog-generation"
+      GH_AW_WORKFLOW_NAME: "Changelog Generation"
     outputs:
-      assign_to_agent_assigned: ${{ steps.process_safe_outputs.outputs.assign_to_agent_assigned }}
-      assign_to_agent_assignment_error_count: ${{ steps.process_safe_outputs.outputs.assign_to_agent_assignment_error_count }}
-      assign_to_agent_assignment_errors: ${{ steps.process_safe_outputs.outputs.assign_to_agent_assignment_errors }}
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
       create_discussion_error_count: ${{ steps.process_safe_outputs.outputs.create_discussion_error_count }}
       create_discussion_errors: ${{ steps.process_safe_outputs.outputs.create_discussion_errors }}
-      created_issue_number: ${{ steps.process_safe_outputs.outputs.created_issue_number }}
-      created_issue_url: ${{ steps.process_safe_outputs.outputs.created_issue_url }}
+      created_pr_number: ${{ steps.process_safe_outputs.outputs.created_pr_number }}
+      created_pr_url: ${{ steps.process_safe_outputs.outputs.created_pr_url }}
       process_safe_outputs_processed_count: ${{ steps.process_safe_outputs.outputs.processed_count }}
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
+      push_commit_sha: ${{ steps.process_safe_outputs.outputs.push_commit_sha }}
+      push_commit_url: ${{ steps.process_safe_outputs.outputs.push_commit_url }}
     steps:
       - name: Setup Scripts
         id: setup
@@ -1533,6 +2081,34 @@ jobs:
           mkdir -p /tmp/gh-aw/
           find "/tmp/gh-aw/" -type f -print
           echo "GH_AW_AGENT_OUTPUT=/tmp/gh-aw/agent_output.json" >> "$GITHUB_OUTPUT"
+      - name: Download patch artifact
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: agent
+          path: /tmp/gh-aw/
+      - name: Checkout repository
+        if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') || (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'push_to_pull_request_branch')
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.base_ref || github.event.pull_request.base.ref || github.ref_name || github.event.repository.default_branch }}
+          token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Configure Git credentials
+        if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') || (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'push_to_pull_request_branch')
+        env:
+          REPO_NAME: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          GIT_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global am.keepcr true
+          # Re-authenticate git with GitHub token
+          SERVER_URL_STRIPPED="${SERVER_URL#https://}"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@${SERVER_URL_STRIPPED}/${REPO_NAME}.git"
+          echo "Git configured with standard GitHub Actions identity"
       - name: Configure GH_HOST for enterprise compatibility
         id: ghes-host-config
         shell: bash
@@ -1550,8 +2126,8 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "*.githubusercontent.com,anthropic.com,api.anthropic.com,api.github.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,cdn.playwright.dev,codeload.github.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,elastic.litellm-prod.ai,esm.sh,files.pythonhosted.org,get.pnpm.io,ghcr.io,github-cloud.githubusercontent.com,github-cloud.s3.amazonaws.com,github.com,go.dev,golang.org,googleapis.deno.dev,googlechromelabs.github.io,goproxy.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,lfs.github.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,objects.githubusercontent.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,pkg.go.dev,playwright.download.prss.microsoft.com,ppa.launchpad.net,proxy.golang.org,pypi.org,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,sentry.io,skimdb.npmjs.com,statsig.anthropic.com,storage.googleapis.com,sum.golang.org,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"assign_to_agent\":{\"allowed\":[\"copilot\"],\"custom-agent\":\"acceptance-test-improver\",\"github-token\":\"${{ secrets.GH_AW_AGENT_TOKEN }}\",\"max\":3,\"model\":\"gpt-5.4\",\"name\":\"copilot\",\"target\":\"*\"},\"create_issue\":{\"labels\":[\"testing\",\"acceptance-tests\",\"schema-coverage\"],\"max\":3,\"title_prefix\":\"[schema-coverage] \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{}}"
-          GH_AW_ASSIGN_TO_AGENT_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_pull_request\":{\"max\":1,\"max_patch_size\":1024,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"CLAUDE.md\"],\"protected_path_prefixes\":[\".github/\",\".agents/\",\".claude/\"]},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"push_to_pull_request_branch\":{\"if_no_changes\":\"warn\",\"max\":1,\"max_patch_size\":1024,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"CLAUDE.md\"],\"protected_path_prefixes\":[\".github/\",\".agents/\",\".claude/\"],\"target\":\"triggering\"},\"report_incomplete\":{},\"update_pull_request\":{\"allow_body\":true,\"allow_title\":true,\"max\":1}}"
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
