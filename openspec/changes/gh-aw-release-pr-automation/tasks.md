@@ -24,9 +24,9 @@
 
 ## 5. CI and auto-approval integration
 
-- [ ] 5.1 Extend `scripts/auto-approve/` and its tests with the narrowly scoped `generated-changelog` approval category.
-- [ ] 5.2 Update `.github/workflows/test.yml` so same-repository `generated-changelog` PRs touching only `CHANGELOG.md` can reach the auto-approve path without running the full provider CI suite.
-- [ ] 5.3 Enable auto-merge for the generated changelog PR once the lightweight validation path and approval policy succeed.
+- [x] 5.1 Extend `scripts/auto-approve/` and its tests with the narrowly scoped `generated-changelog` approval category.
+- [x] 5.2 Update `.github/workflows/test.yml` so same-repository `generated-changelog` PRs touching only `CHANGELOG.md` can reach the auto-approve path without running the full provider CI suite.
+- [x] 5.3 Enable auto-merge for the generated changelog PR once the lightweight validation path and approval policy succeed.
 
 ## 6. Verification and documentation
 
