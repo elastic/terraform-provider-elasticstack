@@ -32,16 +32,74 @@ func TestImpactFingerprintStable(t *testing.T) {
 	}
 }
 
-func TestMemoryRecordImpact(t *testing.T) {
+func TestMemoryAddFingerprintDoesNotAdvanceBaseline(t *testing.T) {
 	m := &Memory{Version: 1, ReportedFingerprints: map[string]FingerprintRec{}}
-	rec, err := memoryRecordImpact(m, "b", "t", "elasticstack_kibana_x", "resource", []string{"S"})
+	rec, err := memoryAddFingerprint(m, "b", "t", "elasticstack_kibana_x", "resource", []string{"S"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !memoryIsReported(m, rec.Fingerprint) {
 		t.Fatal("expected fingerprint recorded")
 	}
-	if m.LastAnalyzedTargetSHA != "t" {
-		t.Fatalf("last target: %q", m.LastAnalyzedTargetSHA)
+	if m.LastAnalyzedTargetSHA != "" {
+		t.Fatalf("baseline should not advance from fingerprint alone: %q", m.LastAnalyzedTargetSHA)
+	}
+}
+
+func TestAdvanceMemoryBaseline(t *testing.T) {
+	m := &Memory{Version: 1, ReportedFingerprints: map[string]FingerprintRec{}}
+	advanceMemoryBaseline(m, "abc123")
+	if m.LastAnalyzedTargetSHA != "abc123" {
+		t.Fatalf("got %q", m.LastAnalyzedTargetSHA)
+	}
+}
+
+func TestRecordIssuedFingerprintsPartial(t *testing.T) {
+	m := &Memory{Version: 1, ReportedFingerprints: map[string]FingerprintRec{}}
+	report := &ImpactReport{
+		BaselineSHA: "b",
+		TargetSHA:   "t",
+		HighConfidence: []ImpactedEntity{
+			{EntityName: "e1", EntityType: "resource", MatchedSymbols: []string{"A"}},
+			{EntityName: "e2", EntityType: "resource", MatchedSymbols: []string{"B"}},
+		},
+	}
+	n, err := recordIssuedFingerprints(m, report, []string{"e1"})
+	if err != nil || n != 1 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	fp1 := impactFingerprint("b", "t", "e1", "resource", []string{"A"})
+	if !memoryIsReported(m, fp1) {
+		t.Fatal("e1 not recorded")
+	}
+	fp2 := impactFingerprint("b", "t", "e2", "resource", []string{"B"})
+	if memoryIsReported(m, fp2) {
+		t.Fatal("e2 should not be recorded when not issued")
+	}
+}
+
+func TestRecordIssuedFingerprintsUnknownEntityErrors(t *testing.T) {
+	m := &Memory{Version: 1, ReportedFingerprints: map[string]FingerprintRec{}}
+	report := &ImpactReport{
+		BaselineSHA:    "b",
+		TargetSHA:      "t",
+		HighConfidence: []ImpactedEntity{{EntityName: "e1", EntityType: "resource", MatchedSymbols: []string{"A"}}},
+	}
+	_, err := recordIssuedFingerprints(m, report, []string{"missing"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestRecordIssuedFingerprintsDeduplicatesNames(t *testing.T) {
+	m := &Memory{Version: 1, ReportedFingerprints: map[string]FingerprintRec{}}
+	report := &ImpactReport{
+		BaselineSHA:    "b",
+		TargetSHA:      "t",
+		HighConfidence: []ImpactedEntity{{EntityName: "e1", EntityType: "resource", MatchedSymbols: []string{"A"}}},
+	}
+	n, err := recordIssuedFingerprints(m, report, []string{"e1", "e1"})
+	if err != nil || n != 1 {
+		t.Fatalf("n=%d err=%v", n, err)
 	}
 }

@@ -69,7 +69,7 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "  report                       Emit JSON impact report for baseline..target")
 	fmt.Fprintln(w, "  resolve-baseline             Print resolved baseline SHA for the target revision")
 	fmt.Fprintln(w, "  memory-bootstrap             Copy seed memory to --memory if missing")
-	fmt.Fprintln(w, "  memory-record-from-report    Persist fingerprints from a report JSON file")
+	fmt.Fprintln(w, "  memory-record-from-report    Advance baseline; optionally record fingerprints for --issued entities only")
 	return errors.New("unknown or missing command")
 }
 
@@ -195,6 +195,7 @@ func cmdMemoryRecordFromReport(args []string, stderr io.Writer) error {
 	fs.SetOutput(stderr)
 	memPath := fs.String("memory", "", "path to live memory file (required)")
 	reportPath := fs.String("report", "", "path to report JSON (required)")
+	issuedPath := fs.String("issued", "", "optional JSON array of entity names that received a new issue this run (e.g. [\"elasticstack_kibana_foo\"])")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -213,18 +214,27 @@ func cmdMemoryRecordFromReport(args []string, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, imp := range report.HighConfidence {
-		if imp.Confidence != "high" {
-			continue
-		}
-		_, err := memoryRecordImpact(mem, report.BaselineSHA, report.TargetSHA, imp.EntityName, imp.EntityType, imp.MatchedSymbols)
+
+	var issuedNames []string
+	if *issuedPath != "" {
+		issuedRaw, err := os.ReadFile(*issuedPath)
 		if err != nil {
 			return err
 		}
+		if err := json.Unmarshal(issuedRaw, &issuedNames); err != nil {
+			return fmt.Errorf("parse --issued: %w", err)
+		}
 	}
+
+	recorded, err := recordIssuedFingerprints(mem, &report, issuedNames)
+	if err != nil {
+		return err
+	}
+	advanceMemoryBaseline(mem, report.TargetSHA)
+
 	if err := saveMemory(*memPath, mem); err != nil {
 		return err
 	}
-	fmt.Fprintf(stderr, "recorded %d impact fingerprint(s); last_analyzed_target_sha=%s\n", len(report.HighConfidence), mem.LastAnalyzedTargetSHA)
+	fmt.Fprintf(stderr, "recorded %d fingerprint(s); advanced last_analyzed_target_sha to %s\n", recorded, mem.LastAnalyzedTargetSHA)
 	return nil
 }

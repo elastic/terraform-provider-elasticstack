@@ -136,7 +136,9 @@ func memoryIsReported(m *Memory, fp string) bool {
 	return ok
 }
 
-func memoryRecordImpact(m *Memory, baselineSHA, targetSHA, entityName, entityType string, symbols []string) (FingerprintRec, error) {
+// memoryAddFingerprint records a dedupe fingerprint for one entity impact. It does not advance
+// the analysis baseline; call advanceMemoryBaseline after a completed run.
+func memoryAddFingerprint(m *Memory, baselineSHA, targetSHA, entityName, entityType string, symbols []string) (FingerprintRec, error) {
 	if m == nil {
 		return FingerprintRec{}, errors.New("memory is nil")
 	}
@@ -150,6 +152,48 @@ func memoryRecordImpact(m *Memory, baselineSHA, targetSHA, entityName, entityTyp
 		Fingerprint: fp,
 	}
 	m.ReportedFingerprints[fp] = rec
-	m.LastAnalyzedTargetSHA = targetSHA
 	return rec, nil
+}
+
+// advanceMemoryBaseline marks that analysis completed successfully for targetSHA (advances the
+// persisted baseline used by resolve-baseline for the next run).
+func advanceMemoryBaseline(m *Memory, targetSHA string) {
+	if m == nil {
+		return
+	}
+	m.LastAnalyzedTargetSHA = targetSHA
+}
+
+// recordIssuedFingerprints adds dedupe fingerprints only for Terraform entity names that appear in
+// report.HighConfidence. Duplicate names in issuedEntityNames are ignored after the first.
+func recordIssuedFingerprints(m *Memory, report *ImpactReport, issuedEntityNames []string) (int, error) {
+	if m == nil {
+		return 0, errors.New("memory is nil")
+	}
+	if report == nil {
+		return 0, errors.New("report is nil")
+	}
+	var recorded int
+	seen := make(map[string]struct{})
+	for _, name := range issuedEntityNames {
+		if _, dup := seen[name]; dup {
+			continue
+		}
+		seen[name] = struct{}{}
+		var match *ImpactedEntity
+		for i := range report.HighConfidence {
+			if report.HighConfidence[i].EntityName == name {
+				match = &report.HighConfidence[i]
+				break
+			}
+		}
+		if match == nil {
+			return recorded, fmt.Errorf("issued entity %q not found in report high_confidence_impacts", name)
+		}
+		if _, err := memoryAddFingerprint(m, report.BaselineSHA, report.TargetSHA, match.EntityName, match.EntityType, match.MatchedSymbols); err != nil {
+			return recorded, err
+		}
+		recorded++
+	}
+	return recorded, nil
 }

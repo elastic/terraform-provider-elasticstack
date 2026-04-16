@@ -44,6 +44,21 @@ type NewType struct{}
 	}
 }
 
+func TestDiffKbapiSurfacesDetectsTypeRemove(t *testing.T) {
+	oldSrc := kbapiStubHeader + `type RemovedType struct{}
+type Kept struct{}
+`
+	newSrc := kbapiStubHeader + `type Kept struct{}
+`
+	changed, err := diffKbapiSurfaces(oldSrc, newSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(changed, "RemovedType") {
+		t.Fatalf("got %v", changed)
+	}
+}
+
 func TestDiffKbapiSurfacesDetectsClientMethod(t *testing.T) {
 	oldSrc := kbapiStubHeader + `
 type ClientWithResponses struct{}

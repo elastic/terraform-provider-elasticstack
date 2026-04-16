@@ -105,30 +105,40 @@ func buildImpactReport(repoRoot string, mem *Memory, baselineSHA, targetSHA stri
 		if err != nil {
 			return nil, err
 		}
-		if len(matched) == 0 {
+		high, suppressed := impactEntryForEntity(mem, baselineSHA, targetSHA, e, matched)
+		if suppressed != nil {
+			report.SuppressedDuplicates = append(report.SuppressedDuplicates, *suppressed)
 			continue
 		}
-		fp := impactFingerprint(baselineSHA, targetSHA, e.Name, e.Type, matched)
-		entry := ImpactedEntity{
-			EntityType:     e.Type,
-			EntityName:     e.Name,
-			PkgPath:        e.PkgPath,
-			MatchedSymbols: matched,
-			Confidence:     "high",
-			Fingerprint:    fp,
+		if high != nil {
+			report.HighConfidence = append(report.HighConfidence, *high)
 		}
-		if mem != nil && memoryIsReported(mem, fp) {
-			report.SuppressedDuplicates = append(report.SuppressedDuplicates, SuppressedImpact{
-				EntityName:  e.Name,
-				Fingerprint: fp,
-				Reason:      "duplicate_fingerprint",
-			})
-			continue
-		}
-		report.HighConfidence = append(report.HighConfidence, entry)
 	}
 
 	return report, nil
+}
+
+// impactEntryForEntity maps a matched entity to a high-confidence impact or a suppressed duplicate.
+func impactEntryForEntity(mem *Memory, baselineSHA, targetSHA string, e Entity, matched []string) (high *ImpactedEntity, suppressed *SuppressedImpact) {
+	if len(matched) == 0 {
+		return nil, nil
+	}
+	fp := impactFingerprint(baselineSHA, targetSHA, e.Name, e.Type, matched)
+	if mem != nil && memoryIsReported(mem, fp) {
+		return nil, &SuppressedImpact{
+			EntityName:  e.Name,
+			Fingerprint: fp,
+			Reason:      "duplicate_fingerprint",
+		}
+	}
+	return &ImpactedEntity{
+		EntityType:     e.Type,
+		EntityName:     e.Name,
+		PkgPath:        e.PkgPath,
+		MatchedSymbols: matched,
+		Confidence:     "high",
+		Fingerprint:    fp,
+	}, nil
 }
 
 func diffTransformSchemaPaths(repoRoot, baselineSHA, targetSHA string) ([]string, error) {
