@@ -211,3 +211,75 @@ test('rewriteUnreleased: handles CHANGELOG with only Unreleased section', () => 
   assert.ok(result.includes('New entry (#2)'));
   assert.ok(!result.includes('Old entry'));
 });
+
+// ---------------------------------------------------------------------------
+// Round-trip tests — parse → rewrite → serialise preserves overall structure
+// ---------------------------------------------------------------------------
+
+test('round-trip: rewriteUnreleased → parse preserves all sections and footer', () => {
+  const newBody = '### Changes\n\n- Round-trip entry (#300)';
+  const rewritten = rewriteUnreleased(SAMPLE, newBody);
+
+  // Re-parse the rewritten output
+  const reparsed = parseChangelog(rewritten);
+
+  // All three sections must still be present
+  assert.equal(reparsed.sections.length, 3);
+  assert.equal(reparsed.sections[0].header, '## [Unreleased]');
+  assert.equal(reparsed.sections[1].header, '## [0.14.3] - 2026-03-02');
+  assert.equal(reparsed.sections[2].header, '## [0.14.2] - 2026-02-19');
+
+  // Unreleased section body contains new entry
+  assert.ok(reparsed.sections[0].body.includes('Round-trip entry (#300)'));
+
+  // Other section bodies are unchanged
+  assert.ok(reparsed.sections[1].body.includes('Stable release entry (#99)'));
+  assert.ok(reparsed.sections[2].body.includes('Older entry (#98)'));
+
+  // Footer must survive the round-trip
+  assert.ok(reparsed.footer.includes('[Unreleased]:'));
+  assert.ok(reparsed.footer.includes('[0.14.3]:'));
+});
+
+test('round-trip: rewriteRelease (insert) → parse preserves all sections and footer', () => {
+  const newBody = '### Changes\n\n- Round-trip release (#400)';
+  const rewritten = rewriteRelease(SAMPLE, '0.14.4', '2026-04-16', newBody);
+
+  const reparsed = parseChangelog(rewritten);
+
+  // Four sections: Unreleased + new 0.14.4 + 0.14.3 + 0.14.2
+  assert.equal(reparsed.sections.length, 4);
+  assert.equal(reparsed.sections[0].header, '## [Unreleased]');
+  assert.equal(reparsed.sections[1].header, '## [0.14.4] - 2026-04-16');
+  assert.equal(reparsed.sections[2].header, '## [0.14.3] - 2026-03-02');
+  assert.equal(reparsed.sections[3].header, '## [0.14.2] - 2026-02-19');
+
+  // New release body is present
+  assert.ok(reparsed.sections[1].body.includes('Round-trip release (#400)'));
+
+  // Existing bodies unchanged
+  assert.ok(reparsed.sections[0].body.includes('Existing unreleased entry'));
+  assert.ok(reparsed.sections[2].body.includes('Stable release entry (#99)'));
+
+  // Footer must survive
+  assert.ok(reparsed.footer.includes('[Unreleased]:'));
+});
+
+test('round-trip: rewriteRelease (replace) → parse shows updated section once', () => {
+  const newBody = '### Changes\n\n- Updated via round-trip (#500)';
+  const rewritten = rewriteRelease(SAMPLE_WITH_EXISTING_RELEASE, '0.14.4', '2026-05-01', newBody);
+
+  const reparsed = parseChangelog(rewritten);
+
+  // Still three sections: Unreleased + updated 0.14.4 + 0.14.3
+  assert.equal(reparsed.sections.length, 3);
+  assert.equal(reparsed.sections[1].header, '## [0.14.4] - 2026-05-01');
+
+  // New body replaces old
+  assert.ok(reparsed.sections[1].body.includes('Updated via round-trip (#500)'));
+  assert.ok(!reparsed.sections[1].body.includes('Old release content'));
+
+  // Exactly one occurrence of 0.14.4
+  const count = (rewritten.match(/## \[0\.14\.4\]/g) ?? []).length;
+  assert.equal(count, 1);
+});
