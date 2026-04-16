@@ -9,8 +9,8 @@
 
 ## 2. Remove legacy broad-client bridges
 
-- [ ] 2.1 Delete legacy provider-data and resource-scoped broad-client helpers from `internal/clients/api_client.go`, including `ConvertProviderData`, `MaybeNewAPIClientFromFrameworkResource`, `MaybeNewKibanaAPIClientFromFrameworkResource`, `NewAPIClientFromSDKResource`, `NewKibanaAPIClientFromSDKResource`, and `extractDefaultClientFromMeta`.
-- [ ] 2.2 Remove the supported factory bridge back to the broad client from `internal/clients/provider_client_factory.go` while preserving private bootstrap logic needed to construct typed scoped clients.
+- [x] 2.1 Delete legacy provider-data and resource-scoped broad-client helpers from `internal/clients/api_client.go`, including `ConvertProviderData`, `MaybeNewAPIClientFromFrameworkResource`, `MaybeNewKibanaAPIClientFromFrameworkResource`, `NewAPIClientFromSDKResource`, `NewKibanaAPIClientFromSDKResource`, and `extractDefaultClientFromMeta`.
+- [x] 2.2 Remove the supported factory bridge back to the broad client from `internal/clients/provider_client_factory.go` while preserving private bootstrap logic needed to construct typed scoped clients.
 
 ## 3. Privatize the broad client and update compatibility surfaces
 

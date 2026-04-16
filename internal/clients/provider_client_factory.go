@@ -223,16 +223,6 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 	}, nil
 }
 
-// GetDefaultClient returns the provider-level default *APIClient.
-// This is an internal bridge shim retained for cross-cutting legacy adapter
-// code (ConvertProviderData, MaybeNewAPIClientFromFrameworkResource, etc.) that
-// has not yet been migrated to a typed resolution method. It is not an
-// Elasticsearch entity resolution method and must not be used as a substitute
-// for GetElasticsearchClient or GetElasticsearchClientFromSDK.
-func (f *ProviderClientFactory) GetDefaultClient() *APIClient {
-	return f.defaultClient
-}
-
 // --- Helper constructors ---
 
 // buildKibanaScopedClientFromConfig builds a *KibanaScopedClient from a
