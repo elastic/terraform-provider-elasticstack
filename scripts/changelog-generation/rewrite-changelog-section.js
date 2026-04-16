@@ -10,7 +10,7 @@
  *
  * In 'release' mode:
  *   - Replaces (or inserts after ## [Unreleased]) the ## [x.y.z] - YYYY-MM-DD section.
- *   - Clears the ## [Unreleased] section body (replaces with "- No unreleased changes").
+ *   - Preserves the ## [Unreleased] section exactly (does not modify it).
  *   - Preserves all other sections exactly.
  *   - Preserves the link footer exactly.
  *
@@ -175,7 +175,7 @@ function rewriteUnreleased(changelogContent, newBody) {
 /**
  * Rewrites the ## [x.y.z] - YYYY-MM-DD section for the given version,
  * inserting it after ## [Unreleased] if it doesn't exist yet.
- * Also clears the ## [Unreleased] section body.
+ * The ## [Unreleased] section is left unchanged.
  *
  * @param {string} changelogContent — current CHANGELOG.md content
  * @param {string} targetVersion — e.g. '0.14.4'

@@ -83,8 +83,8 @@ To release a new provider version:
    ```
 
    This dispatches the `prep-release.yml` GitHub Actions workflow, which:
-   - Computes the target version from the current `VERSION` file and the requested bump type.
-   - Creates (or reuses) a `prep-release-x.y.z` branch and opens a pull request with the version bump applied to `VERSION` and `Makefile`.
+   - Computes the target version by finding the latest semver release tag (`v*.*.*`) on `main` and applying the requested bump.
+   - Creates (or reuses) a `prep-release-x.y.z` branch and opens a pull request with the `VERSION` variable in `Makefile` updated to the target version.
 
 2. **Await the changelog update**. The `changelog-generation` workflow automatically detects the new `prep-release-*` PR and regenerates the concrete `## [x.y.z] - YYYY-MM-DD` section in `CHANGELOG.md`, pushing the result to the `prep-release-*` branch.
 
