@@ -19,5 +19,5 @@
 
 ## 4. Sync specs and verify the cleanup
 
-- [ ] 4.1 Update canonical OpenSpec specs under `openspec/specs/` to remove references to deleted broad-client helper paths and to reflect the typed scoped-client contract.
-- [ ] 4.2 Run targeted tests, `make build`, and OpenSpec validation/checks needed to confirm the cleanup compiles and the synced requirements stay consistent.
+- [x] 4.1 Update canonical OpenSpec specs under `openspec/specs/` to remove references to deleted broad-client helper paths and to reflect the typed scoped-client contract.
+- [x] 4.2 Run targeted tests, `make build`, and OpenSpec validation/checks needed to confirm the cleanup compiles and the synced requirements stay consistent.

@@ -143,7 +143,7 @@ func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
 	expectedID := serviceName + ":production"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheckWithExplicitKibanaEndpoint(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
