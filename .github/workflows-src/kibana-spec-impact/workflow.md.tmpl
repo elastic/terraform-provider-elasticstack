@@ -116,8 +116,10 @@ Read `kibana-spec-impact-report.json` at the repository root (written by pre-act
    - A concise note on likely provider follow-up (new schema fields, widened enums, new API capabilities) inferred from symbols and local code context.
 3. If `high_confidence_impacts` is empty but `transform_schema_hints` is non-empty, call `noop` explaining that only transform-layer hints were present (no high-confidence kbapi entity mapping).
 4. If there is nothing actionable, call `noop` with a short reason.
-5. Write `kibana-spec-impact-issued.json` as a JSON array of Terraform `entity_name` strings for which you **actually created** an issue this run (≤ issue cap). If you created zero issues, write `[]`. **Do not** list entities skipped due to the cap unless you opened an issue for them.
-6. Persist repo memory by running (this **always** advances the analyzed baseline to `target_sha`; dedupe fingerprints are recorded **only** for entities listed in `--issued`, so capped entities stay eligible next run):
+5. Always write `kibana-spec-impact-issued.json` before persisting memory:
+   - If `high_confidence_impacts` is **non-empty**: write a JSON array of Terraform `entity_name` values for which you **actually created** an issue this run (≤ issue cap). If you created **zero** issues despite impacts (for example a deliberate policy skip), write `[]` — the helper **requires** this file in that case so baseline advancement is never accidental.
+   - If `high_confidence_impacts` is **empty**: write `[]` (the `--issued` flag is then optional on the helper, but writing the file keeps the flow uniform).
+6. Persist repo memory by running (this **always** advances the analyzed baseline to `target_sha`; dedupe fingerprints are recorded **only** for entity names listed in `--issued`, so capped entities stay eligible next run):
    ```
    go run ./scripts/kibana-spec-impact memory-record-from-report \
      --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
@@ -132,4 +134,4 @@ Read `kibana-spec-impact-report.json` at the repository root (written by pre-act
 - Do not open issues for `transform_schema_hints` alone in V1 (mention them in the body only when a high-confidence issue exists for context).
 - Do not exceed the issue cap. If fewer slots than entities, prioritize alphabetically by `entity_name` unless a maintainer instruction overrides.
 - Weak or broad matches are already filtered out by the helper; do not reopen suppressed fingerprints.
-- Only list entities in `kibana-spec-impact-issued.json` when you created their issue; otherwise dedupe state must not record them (avoids suppressing never-filed entities).
+- Only list entities in `kibana-spec-impact-issued.json` when you created their issue; the helper rejects `--issued` names that are not present in `high_confidence_impacts`. Capped eligible entities must be omitted so dedupe state never records them (avoids suppressing never-filed entities).

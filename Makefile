@@ -143,6 +143,7 @@ workflow-generate: ## Generate workflow markdown sources
 .PHONY: workflow-test
 workflow-test: ## Run unit tests for workflow source generation
 	@ go test ./scripts/compile-workflow-sources -run 'TestCompileWorkflow'
+	@ go test ./scripts/kibana-spec-impact/... -count=1
 	@ node --test .github/workflows-src/lib/*.test.mjs
 
 .PHONY: check-workflows
