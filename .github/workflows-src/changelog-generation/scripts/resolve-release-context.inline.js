@@ -47,8 +47,19 @@ try {
     .filter((t) => /^v\d+\.\d+\.\d+$/.test(t));
 
   if (tags.length > 0) {
-    previousTag = tags[0];
-    core.info(`Resolved previous tag: ${previousTag}`);
+    // In release mode, exclude the current target version tag to avoid picking up the release being prepared
+    let candidates = tags;
+    if (mode === 'release' && targetVersion) {
+      const versionToExclude = `v${targetVersion}`;
+      candidates = tags.filter((t) => t !== versionToExclude);
+      if (candidates.length < tags.length) {
+        core.info(`Excluded current release tag ${versionToExclude} from previous tag candidates`);
+      }
+    }
+    previousTag = candidates[0] ?? '';
+    if (previousTag) {
+      core.info(`Resolved previous tag: ${previousTag}`);
+    }
   } else {
     core.warning('No semver release tags found; compare range will cover full history');
   }

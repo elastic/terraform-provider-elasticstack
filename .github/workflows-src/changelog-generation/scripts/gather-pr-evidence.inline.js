@@ -91,7 +91,7 @@ function classifyPR(pr, files) {
 // Collect commits in range
 let commitSHAs = [];
 try {
-  const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+  const range = compareRange || 'HEAD';
   const raw = execSync(`git log --format=%H ${range}`, {
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -156,9 +156,16 @@ for (const [prNumber, pr] of prMap) {
   });
 }
 
+const targetSection =
+  mode === 'release'
+    ? `## [${targetVersion}] - ${new Date().toISOString().split('T')[0]}`
+    : '## [Unreleased]';
+
 const manifest = {
   generated_at: new Date().toISOString(),
   mode,
+  target_section: targetSection,
+  target_section_mode: mode,
   target_version: targetVersion,
   previous_tag: previousTag,
   compare_range: compareRange,

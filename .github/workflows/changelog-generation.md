@@ -71,8 +71,19 @@ on:
               .filter((t) => /^v\d+\.\d+\.\d+$/.test(t));
           
             if (tags.length > 0) {
-              previousTag = tags[0];
-              core.info(`Resolved previous tag: ${previousTag}`);
+              // In release mode, exclude the current target version tag to avoid picking up the release being prepared
+              let candidates = tags;
+              if (mode === 'release' && targetVersion) {
+                const versionToExclude = `v${targetVersion}`;
+                candidates = tags.filter((t) => t !== versionToExclude);
+                if (candidates.length < tags.length) {
+                  core.info(`Excluded current release tag ${versionToExclude} from previous tag candidates`);
+                }
+              }
+              previousTag = candidates[0] ?? '';
+              if (previousTag) {
+                core.info(`Resolved previous tag: ${previousTag}`);
+              }
             } else {
               core.warning('No semver release tags found; compare range will cover full history');
             }
@@ -191,7 +202,7 @@ on:
           // Collect commits in range
           let commitSHAs = [];
           try {
-            const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+            const range = compareRange || 'HEAD';
             const raw = execSync(`git log --format=%H ${range}`, {
               encoding: 'utf8',
               stdio: ['pipe', 'pipe', 'pipe'],
@@ -256,9 +267,16 @@ on:
             });
           }
           
+          const targetSection =
+            mode === 'release'
+              ? `## [${targetVersion}] - ${new Date().toISOString().split('T')[0]}`
+              : '## [Unreleased]';
+          
           const manifest = {
             generated_at: new Date().toISOString(),
             mode,
+            target_section: targetSection,
+            target_section_mode: mode,
             target_version: targetVersion,
             previous_tag: previousTag,
             compare_range: compareRange,
@@ -314,7 +332,9 @@ on:
           core.setOutput('evidence_path', memoryPath);
           
         evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
-if: needs.pre_activation.outputs.evidence_ready == 'true'
+if: >-
+  (github.event_name != 'pull_request' || startsWith(github.head_ref, 'prep-release-')) &&
+  needs.pre_activation.outputs.evidence_ready == 'true'
 steps:
   - name: Setup Go
     uses: actions/setup-go@v6
@@ -398,7 +418,7 @@ Read the evidence manifest from workflow memory at:
 ```
 
 The manifest contains:
-- `mode`, `target_version`, `previous_tag`, `compare_range`
+- `mode`, `target_version`, `previous_tag`, `compare_range`, `target_section`, `target_section_mode`
 - `pull_requests[]`: each entry has `number`, `title`, `url`, `merge_commit_sha`, `author`, `labels`, `touched_files`, `classification` (`user-facing` | `internal` | `uncertain`), `inclusion_rationale`, `exclusion_rationale`
 
 ## Execution steps
@@ -435,18 +455,51 @@ The manifest contains:
 
 6. **Write `CHANGELOG.md`** with the updated content.
 
-7. **Commit and push**:
+7. **Write structured provenance JSON** to `memory/changelog-generation/provenance.json` (relative to the repo root, committed alongside the changelog). The file must contain machine-readable provenance mapping each bullet to its backing PR:
+
+   ```json
+   {
+     "generated_at": "<ISO timestamp>",
+     "mode": "<unreleased|release>",
+     "target_version": "<version or empty>",
+     "compare_range": "<range>",
+     "bullets": [
+       {
+         "text": "Add resource X (#123)",
+         "pr_numbers": [123],
+         "pr_urls": ["https://github.com/.../pull/123"]
+       }
+     ]
+   }
+   ```
+
+   Every bullet in the changelog section MUST have a corresponding entry in `bullets[]`. Do **not** include bullets for PRs you excluded.
+
+8. **Run provenance validation** before pushing. Call:
+
+   ```
+   node scripts/validate-provenance.js
+   ```
+
+   This script (added in task 2.2) validates that every bullet in `provenance.json` references a PR present in the evidence manifest, and that PR numbers are not fabricated. If the script does not exist yet (task 2.2 not complete), skip this step and note the skip in the commit message.
+
+   - If validation **passes**: proceed to push.
+   - If validation **fails**: emit `noop` with the validation failure reason. Do **not** push.
+
+9. **Commit and push**:
    - For `release` mode, commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`
    - For `unreleased` mode, commit message: `chore(changelog): update unreleased changelog section`
+   - Include a note in the commit body if provenance validation was skipped.
+   - Commit both `CHANGELOG.md` and `memory/changelog-generation/provenance.json`.
    - For **`release`** mode: use `push-to-pull-request-branch` targeting the triggering `prep-release-*` branch.
    - For **`unreleased`** mode: use `create-pull-request` to push the branch `${{ needs.pre_activation.outputs.target_branch }}` (`generated-changelog`) and open a PR into `main`. If a PR already exists for that branch, use `update-pull-request` instead.
 
-8. **If no action is taken** (no user-facing PRs, or CHANGELOG.md is already up-to-date): emit `noop` with a clear reason. Do **not** push an empty commit.
+10. **If no action is taken** (no user-facing PRs, or CHANGELOG.md is already up-to-date): emit `noop` with a clear reason. Do **not** push an empty commit.
 
 ## Constraints
 
 - Generate changelog entries strictly at the **pull-request level**, not the commit level.
-- Include a provenance comment in the commit body listing the PR numbers included.
+- Write `memory/changelog-generation/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet.
 - Do **not** modify any release sections other than the target section for this run.
 - Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.
 - Do **not** invent categories or sub-headings not present in the existing file.
