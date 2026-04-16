@@ -161,7 +161,8 @@ test('validateProvenance: valid provenance and changelog → passes', () => {
 test('validateProvenance: empty bullets and no changelog entries → passes', () => {
   const evidence = makeEvidence([]);
   const provenance = makeProvenance([]);
-  const changelogSection = '## [Unreleased]\n\n- No unreleased changes\n';
+  // No bullet lines in section (no placeholder bullet that would fail the no-PR-ref check)
+  const changelogSection = '## [Unreleased]\n\nNo unreleased changes.\n';
 
   const result = validateProvenance({ evidence, provenance, changelogSection });
   assert.equal(result.valid, true);
@@ -239,13 +240,13 @@ test('validateProvenance: commit SHA in bullet → fails', () => {
   assert.ok(result.errors.some((e) => e.includes('commit-level narration')));
 });
 
-test('validateProvenance: bullet without PR ref → warning (not error)', () => {
+test('validateProvenance: bullet without PR ref → error', () => {
   const evidence = makeEvidence([]);
   const provenance = makeProvenance([]);
   const changelogSection = '## [Unreleased]\n\n- Some generic improvement\n';
 
   const result = validateProvenance({ evidence, provenance, changelogSection });
-  // No PR refs in changelog to check, so no error from check 2.
-  // But bullet has no PR ref → warning
-  assert.ok(result.warnings.some((w) => w.includes('no PR reference')));
+  // Bullet has no PR ref → error (not just a warning)
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes('no PR reference')));
 });

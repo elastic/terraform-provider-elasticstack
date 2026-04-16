@@ -143,9 +143,9 @@ function serialiseChangelog({ preamble, sections, footer }) {
  * @returns {string}
  */
 function normaliseSectionBody(content) {
-  // Ensure the body starts with a blank line
+  // Ensure the body starts with a single newline (header will be joined with '\n' by serialiseChangelog)
   const trimmed = content.replace(/^\n+/, '').trimEnd();
-  return '\n\n' + trimmed + '\n';
+  return '\n' + trimmed + '\n';
 }
 
 // ---------------------------------------------------------------------------
@@ -205,12 +205,6 @@ function rewriteRelease(changelogContent, targetVersion, releaseDate, newBody) {
   } else {
     parsed.sections[releaseIdx].header = releaseHeader;
     parsed.sections[releaseIdx].body = normaliseSectionBody(newBody);
-  }
-
-  // Clear the ## [Unreleased] section
-  const unreleasedIdx = parsed.sections.findIndex((s) => s.header === '## [Unreleased]');
-  if (unreleasedIdx !== -1) {
-    parsed.sections[unreleasedIdx].body = '\n\n- No unreleased changes\n';
   }
 
   return serialiseChangelog(parsed);

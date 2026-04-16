@@ -450,12 +450,9 @@ The manifest contains:
    For **`release`** mode:
    - Rewrite **only** the `## [${{ needs.pre_activation.outputs.target_version }}] - <today's date>` section.
    - If a section for this version already exists, replace it. If not, insert it immediately after the `## [Unreleased]` section.
-   - Clear the `## [Unreleased]` section (replace its body with a placeholder line `- No unreleased changes`).
-   - Preserve all other sections exactly as-is.
+   - Preserve all other sections exactly as-is (including the `## [Unreleased]` section — do **not** clear it).
 
-6. **Write `CHANGELOG.md`** with the updated content.
-
-7. **Write structured provenance JSON** to `memory/changelog-generation/provenance.json` (relative to the repo root, committed alongside the changelog). The file must contain machine-readable provenance mapping each bullet to its backing PR:
+6. **Write provenance JSON** to `memory/changelog-generation/provenance.json` (relative to the repo root). The file must contain machine-readable provenance mapping each bullet to its backing PR:
 
    ```json
    {
@@ -475,16 +472,30 @@ The manifest contains:
 
    Every bullet in the changelog section MUST have a corresponding entry in `bullets[]`. Do **not** include bullets for PRs you excluded.
 
-8. **Run provenance validation** before pushing. Call:
+7. **Run provenance validation** before writing `CHANGELOG.md`. Call:
 
    ```
-   node scripts/validate-provenance.js
+   node scripts/changelog-generation/validate-provenance.js \
+     --evidence /tmp/gh-aw/repo-memory/changelog-evidence/memory/changelog-generation/evidence.json \
+     --provenance memory/changelog-generation/provenance.json \
+     --changelog CHANGELOG.md
    ```
 
-   This script (added in task 2.2) validates that every bullet in `provenance.json` references a PR present in the evidence manifest, and that PR numbers are not fabricated. If the script does not exist yet (task 2.2 not complete), skip this step and note the skip in the commit message.
+   This script validates that every bullet in `provenance.json` references a PR present in the evidence manifest, that PR numbers are not fabricated, and that the changelog section matches the expected header. It exits 0 on success and non-zero on failure, outputting a JSON result.
 
-   - If validation **passes**: proceed to push.
-   - If validation **fails**: emit `noop` with the validation failure reason. Do **not** push.
+   - If validation **fails**: emit `noop` with the validation failure reason. Do **not** write `CHANGELOG.md` or push.
+   - If validation **passes**: proceed to write `CHANGELOG.md`.
+
+8. **Write `CHANGELOG.md`** using the rewriter script. First write the new section body (without the header line) to `memory/changelog-generation/section.md`, then call:
+
+   ```
+   node scripts/changelog-generation/rewrite-changelog-section.js \
+     --mode <unreleased|release> \
+     [--target-version <version>] \
+     --section-file memory/changelog-generation/section.md
+   ```
+
+   This script handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
 
 9. **Commit and push**:
    - For `release` mode, commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`

@@ -133,13 +133,13 @@ test('rewriteRelease: new section appears before existing versioned sections', (
   assert.ok(pos0144 < pos0143, 'New section should appear before 0.14.3');
 });
 
-test('rewriteRelease: clears Unreleased section body', () => {
+test('rewriteRelease: preserves Unreleased section body unchanged', () => {
   const newBody = '### Changes\n\n- Release feature (#201)';
   const result = rewriteRelease(SAMPLE, '0.14.4', '2026-04-16', newBody);
 
   assert.ok(result.includes('## [Unreleased]'));
-  assert.ok(result.includes('No unreleased changes'));
-  assert.ok(!result.includes('Existing unreleased entry'));
+  // Unreleased section is preserved, not cleared
+  assert.ok(result.includes('Existing unreleased entry'));
 });
 
 test('rewriteRelease: preserves other release sections', () => {

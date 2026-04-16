@@ -138,9 +138,9 @@ function validateProvenance({ evidence, provenance, changelogSection, expectedHe
         `Changelog bullet appears to contain commit-level narration (SHA found): "${line.trim()}"`
       );
     }
-    // Warn about bullets without any PR reference
+    // Reject bullets without any PR reference
     if (!/#\d+/.test(line)) {
-      warnings.push(
+      errors.push(
         `Changelog bullet has no PR reference (#NNN): "${line.trim()}"`
       );
     }
@@ -151,7 +151,7 @@ function validateProvenance({ evidence, provenance, changelogSection, expectedHe
   if (resolvedExpectedHeader) {
     const lines = changelogSection.split('\n');
     const firstNonEmpty = lines.find((l) => l.trim() !== '');
-    if (firstNonEmpty && !firstNonEmpty.startsWith(resolvedExpectedHeader)) {
+    if (firstNonEmpty && firstNonEmpty.trim() !== resolvedExpectedHeader) {
       errors.push(
         `Changelog section header "${firstNonEmpty.trim()}" does not match expected "${resolvedExpectedHeader}"`
       );
