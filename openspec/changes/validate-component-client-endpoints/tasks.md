@@ -13,6 +13,6 @@
 
 ## 3. Add focused regression coverage
 
-- [ ] 3.1 Add unit coverage for typed scoped-client accessor behavior when Elasticsearch, Kibana, and Fleet endpoints are missing.
-- [ ] 3.2 Add focused coverage that proves Kibana endpoint validation blocks the legacy localhost fallback, entity-local connection blocks produce the same diagnostics, and Fleet access still succeeds when its endpoint is inherited from Kibana.
+- [x] 3.1 Add unit coverage for typed scoped-client accessor behavior when Elasticsearch, Kibana, and Fleet endpoints are missing.
+- [x] 3.2 Add focused coverage that proves Kibana endpoint validation blocks the legacy localhost fallback, entity-local connection blocks produce the same diagnostics, and Fleet access still succeeds when its endpoint is inherited from Kibana.
 

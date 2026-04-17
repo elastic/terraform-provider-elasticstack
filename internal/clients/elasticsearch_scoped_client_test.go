@@ -142,6 +142,55 @@ func TestElasticsearchScopedClient_GetESClient_Nil(t *testing.T) {
 	assert.Error(t, err, "GetESClient must return an error when elasticsearch is nil")
 }
 
+// --- Scenario 1: Missing ES endpoint returns actionable error ---
+
+func TestElasticsearchScopedClient_GetESClient_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	// esEndpoints is empty: models a scoped client built with no endpoint configuration.
+	sc := &ElasticsearchScopedClient{esEndpoints: []string{}}
+	client, err := sc.GetESClient()
+	assert.Nil(t, client, "GetESClient must return nil client when esEndpoints is empty")
+	require.Error(t, err)
+	assert.Equal(t,
+		"elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS",
+		err.Error(),
+	)
+}
+
+func TestElasticsearchScopedClient_GetESClient_OnlyEmptyEndpoints(t *testing.T) {
+	t.Parallel()
+	// esEndpoints contains only empty strings: must be treated as unconfigured.
+	sc := &ElasticsearchScopedClient{esEndpoints: []string{"", ""}}
+	client, err := sc.GetESClient()
+	assert.Nil(t, client, "GetESClient must return nil client when all esEndpoints are empty strings")
+	require.Error(t, err)
+	assert.Equal(t,
+		"elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS",
+		err.Error(),
+	)
+}
+
+// --- Scenario 7 (ES): Endpoint present, auth empty → accessor succeeds ---
+
+func TestElasticsearchScopedClient_GetESClient_EndpointPresentNoAuth(t *testing.T) {
+	t.Parallel()
+	// Build a real ES client pointing at a dummy address but with no credentials.
+	// The accessor validates endpoint presence only, so it must not reject this.
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{"http://elasticsearch.example.com:9200"},
+	})
+	require.NoError(t, err)
+
+	sc := &ElasticsearchScopedClient{
+		elasticsearch: esClient,
+		esEndpoints:   []string{"http://elasticsearch.example.com:9200"},
+	}
+	client, err := sc.GetESClient()
+	require.NoError(t, err,
+		"GetESClient must not fail when endpoint is present but auth fields are empty")
+	assert.NotNil(t, client)
+}
+
 func TestElasticsearchScopedClient_GetESClient_Present(t *testing.T) {
 	t.Parallel()
 	factory := newTestFactory(t)
