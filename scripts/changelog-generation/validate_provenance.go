@@ -267,8 +267,8 @@ func runValidateProvenance(args []string) {
 	// Parse --key value pairs
 	argMap := parseArgMap(args)
 
-	evidencePath := argMapGet(argMap, "evidence", os.Getenv("EVIDENCE_PATH"), "memory/changelog-generation/evidence.json")
-	provenancePath := argMapGet(argMap, "provenance", os.Getenv("PROVENANCE_PATH"), "memory/changelog-generation/provenance.json")
+	evidencePath := argMapGet(argMap, "evidence", os.Getenv("EVIDENCE_PATH"), "/tmp/gh-aw/agent/evidence.json")
+	provenancePath := argMapGet(argMap, "provenance", os.Getenv("PROVENANCE_PATH"), "/tmp/gh-aw/agent/provenance.json")
 	changelogPath := argMapGet(argMap, "changelog", os.Getenv("CHANGELOG_PATH"), "CHANGELOG.md")
 	sectionHeaderArg := argMapGet(argMap, "section-header", os.Getenv("SECTION_HEADER"), "")
 
