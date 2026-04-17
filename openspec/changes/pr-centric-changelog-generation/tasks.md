@@ -5,9 +5,9 @@
 
 ## 2. PR-time agentic workflow
 
-- [ ] 2.1 Add the new PR changelog authoring workflow source and compiled artifacts, triggered from `workflow_run` on `Build/Lint/Test` completion for pull-request events.
-- [ ] 2.2 Implement deterministic pull-request resolution, `no-changelog` skip logic, and format validation so the agent only runs when a required changelog section is missing.
-- [ ] 2.3 Implement the metadata-only agent prompt and PR body update path so missing `## Changelog` sections are drafted from the PR title and description without checking out or executing PR code.
+- [x] 2.1 Add the new PR changelog authoring workflow source and compiled artifacts, triggered from `workflow_run` on `Build/Lint/Test` completion for pull-request events.
+- [x] 2.2 Implement deterministic pull-request resolution, `no-changelog` skip logic, and format validation so the agent only runs when a required changelog section is missing.
+- [x] 2.3 Implement the metadata-only agent prompt and PR body update path so missing `## Changelog` sections are drafted from the PR title and description without checking out or executing PR code.
 
 ## 3. Deterministic changelog assembly workflow
 

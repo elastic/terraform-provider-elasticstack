@@ -19,6 +19,10 @@
     {
       "template": ".github/workflows-src/kibana-spec-impact/workflow.md.tmpl",
       "output": ".github/workflows/kibana-spec-impact.md"
+    },
+    {
+      "template": ".github/workflows-src/pr-changelog-authoring/workflow.md.tmpl",
+      "output": ".github/workflows/pr-changelog-authoring.md"
     }
   ]
 }
