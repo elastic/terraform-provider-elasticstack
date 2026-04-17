@@ -1,7 +1,17 @@
 //include: ../../lib/pr-changelog-parser.js
 
-const prBody = process.env.PR_BODY || '';
+const fs = require('fs');
+
 const prNumber = process.env.PR_NUMBER || '';
+const prBodyPath = '/tmp/pr-body.txt';
+let prBody;
+if (fs.existsSync(prBodyPath)) {
+  prBody = fs.readFileSync(prBodyPath, 'utf8');
+  core.info(`PR body read from ${prBodyPath} (${prBody.length} bytes)`);
+} else {
+  prBody = process.env.PR_BODY || '';
+  core.info(`PR body read from PR_BODY env var (${prBody.length} bytes)`);
+}
 
 core.info(`Validating changelog section for PR #${prNumber}`);
 
@@ -22,6 +32,7 @@ if (parsed === null) {
     core.setOutput('changelog_valid', 'true');
   } else {
     const errorList = validation.errors.map((e) => `  - ${e}`).join('\n');
+    core.setOutput('changelog_valid', 'false');
     core.setFailed(
       `## Changelog section is malformed in PR #${prNumber}:\n${errorList}\n\nFix the ## Changelog section in the PR body and re-push to re-run this check.`
     );

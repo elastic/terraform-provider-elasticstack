@@ -32,6 +32,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
+          const fs = require('fs');
           const { owner, repo } = context.repo;
           const workflowRun = context.payload.workflow_run;
           const headSha = workflowRun?.head_sha;
@@ -78,9 +79,16 @@ on:
           core.info(`PR labels: ${labelNames.join(', ') || '(none)'}`);
           core.info(`no-changelog label present: ${hasNoChangelog}`);
           
+          const prBody = pr.body ?? '';
+          const prBodyPath = '/tmp/pr-body.txt';
+          fs.mkdirSync('/tmp', { recursive: true });
+          fs.writeFileSync(prBodyPath, prBody, 'utf8');
+          core.info(`PR body written to ${prBodyPath} (${prBody.length} bytes)`);
+          
           core.setOutput('pr_number', String(pr.number));
           core.setOutput('pr_title', pr.title);
-          core.setOutput('pr_body', pr.body ?? '');
+          core.setOutput('pr_body', prBody);
+          core.setOutput('pr_body_path', prBodyPath);
           core.setOutput('pr_url', pr.html_url);
           core.setOutput('has_no_changelog_label', hasNoChangelog ? 'true' : 'false');
           
@@ -317,8 +325,18 @@ on:
             };
           }
           
-          const prBody = process.env.PR_BODY || '';
+          const fs = require('fs');
+          
           const prNumber = process.env.PR_NUMBER || '';
+          const prBodyPath = '/tmp/pr-body.txt';
+          let prBody;
+          if (fs.existsSync(prBodyPath)) {
+            prBody = fs.readFileSync(prBodyPath, 'utf8');
+            core.info(`PR body read from ${prBodyPath} (${prBody.length} bytes)`);
+          } else {
+            prBody = process.env.PR_BODY || '';
+            core.info(`PR body read from PR_BODY env var (${prBody.length} bytes)`);
+          }
           
           core.info(`Validating changelog section for PR #${prNumber}`);
           
@@ -339,16 +357,13 @@ on:
               core.setOutput('changelog_valid', 'true');
             } else {
               const errorList = validation.errors.map((e) => `  - ${e}`).join('\n');
+              core.setOutput('changelog_valid', 'false');
               core.setFailed(
                 `## Changelog section is malformed in PR #${prNumber}:\n${errorList}\n\nFix the ## Changelog section in the PR body and re-push to re-run this check.`
               );
             }
           }
           
-if: >-
-  needs.pre_activation.outputs.is_pr_event == 'true' &&
-  needs.pre_activation.outputs.has_no_changelog_label != 'true' &&
-  needs.pre_activation.outputs.changelog_present == 'false'
 steps:
   - name: Setup Node.js
     uses: actions/setup-node@v6
@@ -431,7 +446,7 @@ ${{ needs.pre_activation.outputs.pr_body }}
 
 4. **Append the drafted section** to the existing PR body. Place `## Changelog` at the end of the body, separated from the preceding content by a blank line. Do **not** replace or remove any existing PR body content — only append.
 
-5. **Update the PR body** using the `update-pull-request` safe output with the updated body text.
+5. **Update the PR body** using the `update_pull_request` safe output with the updated body text.
 
 ## Constraints
 

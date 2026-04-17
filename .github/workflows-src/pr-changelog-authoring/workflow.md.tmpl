@@ -43,10 +43,6 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/validate-pr-changelog.inline.js
-if: >-
-  needs.pre_activation.outputs.is_pr_event == 'true' &&
-  needs.pre_activation.outputs.has_no_changelog_label != 'true' &&
-  needs.pre_activation.outputs.changelog_present == 'false'
 steps:
   - name: Setup Node.js
     uses: actions/setup-node@v6
@@ -129,7 +125,7 @@ ${{ needs.pre_activation.outputs.pr_body }}
 
 4. **Append the drafted section** to the existing PR body. Place `## Changelog` at the end of the body, separated from the preceding content by a blank line. Do **not** replace or remove any existing PR body content — only append.
 
-5. **Update the PR body** using the `update-pull-request` safe output with the updated body text.
+5. **Update the PR body** using the `update_pull_request` safe output with the updated body text.
 
 ## Constraints
 

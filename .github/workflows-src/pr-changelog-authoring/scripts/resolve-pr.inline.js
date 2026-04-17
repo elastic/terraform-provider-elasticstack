@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { owner, repo } = context.repo;
 const workflowRun = context.payload.workflow_run;
 const headSha = workflowRun?.head_sha;
@@ -44,8 +45,15 @@ const hasNoChangelog = labelNames.includes('no-changelog');
 core.info(`PR labels: ${labelNames.join(', ') || '(none)'}`);
 core.info(`no-changelog label present: ${hasNoChangelog}`);
 
+const prBody = pr.body ?? '';
+const prBodyPath = '/tmp/pr-body.txt';
+fs.mkdirSync('/tmp', { recursive: true });
+fs.writeFileSync(prBodyPath, prBody, 'utf8');
+core.info(`PR body written to ${prBodyPath} (${prBody.length} bytes)`);
+
 core.setOutput('pr_number', String(pr.number));
 core.setOutput('pr_title', pr.title);
-core.setOutput('pr_body', pr.body ?? '');
+core.setOutput('pr_body', prBody);
+core.setOutput('pr_body_path', prBodyPath);
 core.setOutput('pr_url', pr.html_url);
 core.setOutput('has_no_changelog_label', hasNoChangelog ? 'true' : 'false');
