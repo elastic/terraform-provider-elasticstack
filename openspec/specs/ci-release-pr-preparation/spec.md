@@ -1,7 +1,11 @@
-# ci-release-pr-preparation Specification
+# `ci-release-pr-preparation` — Deterministic release PR preparation workflow
+
+Workflow implementation: repository-authored GitHub Actions workflow under `.github/workflows/`.
+
+"Repository-authored" means the workflow uses standard GitHub Actions tooling - shell scripts, `git`, and the `gh` CLI - rather than agentic (LLM-driven) execution. Using `gh pr create`/`gh pr list` for PR management and configuring a bot git identity (`github-actions[bot]`) for commits are the expected implementation patterns in this context.
 
 ## Purpose
-TBD - created by archiving change gh-aw-release-pr-automation. Update Purpose after archive.
+Define a deterministic workflow that prepares provider release pull requests by computing the target version, creating or updating a release branch, applying the simple version bump changes, and creating or reusing the release PR. Changelog generation is handled separately by `ci-changelog-generation`.
 ## Requirements
 ### Requirement: Workflow trigger and inputs
 The release preparation workflow SHALL run only from `workflow_dispatch` and SHALL accept a bump-mode input that supports `patch`, `minor`, and `major`, defaulting to `patch`.
