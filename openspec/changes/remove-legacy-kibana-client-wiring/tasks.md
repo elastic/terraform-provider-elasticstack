@@ -1,6 +1,6 @@
 ## 1. Preconditions (blocking)
 
-- [x] 1.1 Confirm every Kibana/Fleet resource and data source that still imports `github.com/disaster37/go-kibana-rest` or calls `(*clients.KibanaScopedClient).GetKibanaClient()` / `synthetics.GetKibanaClientFromScopedClient` for CRUD has merged its kbapi migration (tracked OpenSpec changes such as `migrate-kibana-*-to-kbapi`, `finish-kibana-synthetics-parameter-kbapi`, and related items on the migration plan).
+- [x] 1.1 Confirm every Kibana/Fleet resource and data source that still imports `github.com/disaster37/go-kibana-rest` or calls `(*clients.KibanaScopedClient).GetKibanaClient()` / `synthetics.GetKibanaClientFromScopedClient` for CRUD has merged its kbapi migration (tracked OpenSpec changes such as `migrate-kibana-*-to-kbapi`, `finish-kibana-synthetics-parameter-kbapi`, and related items on the migration plan). **Note:** Resources that call `ProviderClientFactory.GetKibanaClient(ctx, ...)` (the factory method that returns a `*KibanaScopedClient`) are using the correct non-legacy API — this is a different method from the now-removed `(*KibanaScopedClient).GetKibanaClient()` which returned a `*kibana.Client`. Investigation confirmed no production resource calls `(*KibanaScopedClient).GetKibanaClient()` for CRUD.
 - [x] 1.2 Run `go list` / `rg 'disaster37/go-kibana-rest'` on `internal/` and fix any remaining stragglers before deleting wiring; this change MUST NOT merge while production packages still require the legacy client.
 
 ## 2. Status and version wiring
