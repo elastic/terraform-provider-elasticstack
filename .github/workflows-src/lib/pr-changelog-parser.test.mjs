@@ -456,8 +456,6 @@ test('extractBreakingChanges: handles tilde-fenced block and does not break on #
   assert.ok(result !== null, 'should parse the changelog section');
   assert.equal(result.customerImpact, 'fix');
   // The ## line inside the tilde block must not terminate section extraction
-  const { extractBreakingChanges: extract } = require('./pr-changelog-parser.js');
-  const section = result;
   // We verify via parseChangelogSectionFull that breakingChanges is extracted properly
   const full = parseChangelogSectionFull(BODY_TILDE_FENCE);
   assert.ok(full !== null);

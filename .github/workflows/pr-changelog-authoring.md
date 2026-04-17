@@ -48,6 +48,14 @@ on:
             return;
           }
           
+          const headRepoFullName = workflowRun.head_repository?.full_name;
+          const baseRepoFullName = `${context.repo.owner}/${context.repo.repo}`;
+          if (headRepoFullName !== baseRepoFullName) {
+            core.info(`Skipping: workflow_run is for a fork PR (${headRepoFullName})`);
+            core.setOutput('is_pr_event', 'false');
+            return;
+          }
+          
           core.info(`Resolving PR for head_sha=${headSha} head_branch=${headBranch}`);
           
           // List open PRs from the triggering head branch
