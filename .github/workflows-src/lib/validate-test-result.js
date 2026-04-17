@@ -2,8 +2,10 @@
  * Evaluate whether the acceptance gate passed or failed.
  *
  * Only called when the preflight gate has allowed downstream CI to run
- * (i.e. `preflightShouldRun === 'true'`). The workflow skips this job
- * entirely when preflight outputs `should_run=false`.
+ * (i.e. `needs.preflight.outputs.should_run == 'true'`). The workflow
+ * skips the `test-validation` job entirely when preflight outputs
+ * `should_run=false`, so this function only models reachable
+ * post-preflight validation states.
  *
  * @param {{ providerChanges: string, testResult: string }} params
  * @returns {{ passed: boolean, reason: string }}

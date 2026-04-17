@@ -92,7 +92,7 @@ The workflow SHALL emit Docker Compose logs when the job fails or acceptance tes
 
 ### Requirement: Auto-approve job (REQ-018–REQ-021)
 
-The `auto-approve` job SHALL depend on the `Test Validation` job and SHALL only run on `pull_request` events. For non-`ready_for_review` events, `auto-approve` SHALL require `Test Validation` to succeed before it runs. For `ready_for_review` events, `auto-approve` SHALL be eligible to run regardless of `Test Validation`'s result, because the preflight gate intentionally skips the downstream CI path on that event. The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: read` and `pull-requests: write` permissions.
+The `auto-approve` job SHALL depend on the `Test Validation` job and SHALL only run on `pull_request` events. When the preflight gate outputs `should_run=false` (covering events such as `ready_for_review` and the generated-changelog bot bypass), `auto-approve` SHALL be eligible to run regardless of `Test Validation`'s result, because the preflight gate intentionally skips the downstream CI path in those cases. When the preflight gate outputs `should_run=true`, `auto-approve` SHALL require `Test Validation` to succeed before it runs. The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: write` and `pull-requests: write` permissions (`contents: write` is required for the auto-merge step).
 
 #### Scenario: Auto-approve after satisfied validation
 
@@ -198,8 +198,7 @@ The workflow SHALL publish a `Test Validation` job that evaluates the change-cla
 
 When the preflight gate allows downstream execution, the `Test Validation` job SHALL succeed when any of the following is true:
 
-* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job is intentionally skipped
-* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job completes successfully
+* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job is intentionally skipped (the expected OpenSpec-only path)
 * The change-classification job reports `provider_changes=true` and the matrix acceptance `test` job completes successfully
 
 When the preflight gate allows downstream execution, the `Test Validation` job SHALL fail if either of the following is true:

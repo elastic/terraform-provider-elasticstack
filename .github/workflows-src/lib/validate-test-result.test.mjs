@@ -10,9 +10,9 @@ const require = createRequire(import.meta.url);
 
 const { validateTestResult } = require(path.resolve(__dirname, 'validate-test-result.js'));
 
-// Note: the preflight-skip path (preflightShouldRun=false) is not tested here
-// because the workflow skips the test-validation job entirely when preflight
-// outputs should_run=false. Only post-preflight states are reachable.
+// Note: the preflight-skip path (needs.preflight.outputs.should_run=false) is not
+// tested here because the workflow skips the test-validation job entirely in that
+// case. Only post-preflight states are reachable by this function.
 
 test('providerChanges === "" → passed false, reason mentions "did not produce a valid output"', () => {
   const result = validateTestResult({ providerChanges: '', testResult: 'success' });
@@ -52,5 +52,10 @@ test('providerChanges === true, testResult === failure → passed false', () => 
 
 test('providerChanges === true, testResult === skipped → passed false', () => {
   const result = validateTestResult({ providerChanges: 'true', testResult: 'skipped' });
+  assert.equal(result.passed, false);
+});
+
+test('providerChanges === true, testResult === cancelled → passed false', () => {
+  const result = validateTestResult({ providerChanges: 'true', testResult: 'cancelled' });
   assert.equal(result.passed, false);
 });
