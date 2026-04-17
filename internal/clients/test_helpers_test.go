@@ -50,10 +50,12 @@ func newTestAPIClient(t *testing.T) *apiClient {
 	require.NoError(t, err)
 
 	return &apiClient{
-		kibana:       kib,
-		kibanaOapi:   kibOapi,
-		kibanaConfig: kibana.Config{Address: "http://localhost:5601", Username: "elastic", Password: "changeme"},
-		version:      "unit-testing",
+		kibana:         kib,
+		kibanaOapi:     kibOapi,
+		kibanaConfig:   kibana.Config{Address: "http://localhost:5601", Username: "elastic", Password: "changeme"},
+		version:        "unit-testing",
+		kibanaEndpoint: "http://localhost:5601",
+		fleetEndpoint:  "http://localhost:5601",
 	}
 }
 

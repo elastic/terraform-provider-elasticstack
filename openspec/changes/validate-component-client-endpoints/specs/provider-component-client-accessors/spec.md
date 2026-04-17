@@ -7,7 +7,7 @@
 - **GIVEN** an Elasticsearch-scoped client whose effective Elasticsearch endpoint configuration contains no non-empty endpoint values
 - **WHEN** `GetESClient()` is called
 - **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `Elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS`
+- **AND** it SHALL return the error `elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS`
 
 ### Requirement: Kibana scoped accessors require an effective Kibana endpoint
 `(*clients.KibanaScopedClient).GetKibanaClient()` and `GetKibanaOapiClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If provider configuration, `kibana_connection`, and environment overrides together produce no non-empty Kibana endpoint values for the scoped client instance, each accessor SHALL return an error instead of returning a usable client.
@@ -16,13 +16,13 @@
 - **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
 - **WHEN** `GetKibanaClient()` is called
 - **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `Kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
+- **AND** it SHALL return the error `kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
 
 #### Scenario: Missing Kibana endpoint returns actionable error for the Kibana OpenAPI client
 - **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
 - **WHEN** `GetKibanaOapiClient()` is called
 - **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `Kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
+- **AND** it SHALL return the error `kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
 
 #### Scenario: Legacy Kibana accessor does not fall back to localhost when unconfigured
 - **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
@@ -42,7 +42,7 @@
 - **GIVEN** a Kibana-scoped client whose effective Fleet endpoint configuration contains no non-empty endpoint values after explicit Fleet and Kibana-derived resolution are evaluated
 - **WHEN** `GetFleetClient()` is called
 - **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `Fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT for inherited Fleet endpoint resolution`
+- **AND** it SHALL return the error `fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT for inherited Fleet endpoint resolution`
 
 ### Requirement: Endpoint validation is limited to endpoint presence
 Component accessor validation introduced by this capability SHALL enforce endpoint presence only. Accessors SHALL NOT reject a client solely because username/password, API key, or bearer token values are absent.

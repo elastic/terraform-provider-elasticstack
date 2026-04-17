@@ -62,7 +62,7 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 		}
 	}
 	if !hasEndpoint {
-		return nil, errors.New("Elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
+		return nil, errors.New("elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
 	}
 	if e.elasticsearch == nil {
 		return nil, errors.New("elasticsearch client not found")

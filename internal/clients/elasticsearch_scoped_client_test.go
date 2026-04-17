@@ -130,7 +130,7 @@ func newMockScopedClient(t *testing.T, srv *httptest.Server) *ElasticsearchScope
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, //nolint:gosec
 	})
 	require.NoError(t, err)
-	return &ElasticsearchScopedClient{elasticsearch: esClient}
+	return &ElasticsearchScopedClient{elasticsearch: esClient, esEndpoints: []string{srv.URL}}
 }
 
 // --- GetESClient ---
