@@ -94,15 +94,6 @@ func (b baseConfig) withEnvironmentOverrides() baseConfig {
 	return b
 }
 
-func (b baseConfig) toKibanaConfig() kibanaConfig {
-	return kibanaConfig{
-		Username:    b.Username,
-		Password:    b.Password,
-		ApiKey:      b.APIKey,
-		BearerToken: b.BearerToken,
-	}
-}
-
 func (b baseConfig) toKibanaOapiConfig() kibanaOapiConfig {
 	return kibanaOapiConfig{
 		Username:    b.Username,

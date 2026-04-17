@@ -20,7 +20,6 @@ package config
 import (
 	"net/http"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -64,13 +63,6 @@ func NewFromSDKKibanaResource(d *schema.ResourceData, version string) (*Client, 
 		UserAgent: base.UserAgent,
 	}
 
-	kibanaCfg, diags := newKibanaConfigFromSDKResource(d, base)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	client.Kibana = (*kibana.Config)(&kibanaCfg)
-
 	kibanaOapiCfg, diags := newKibanaOapiConfigFromSDKResource(d, base)
 	if diags.HasError() {
 		return nil, diags
@@ -98,13 +90,6 @@ func newFromSDK(d *schema.ResourceData, version, esConfigKey string) (Client, di
 	if esCfg != nil {
 		client.Elasticsearch = new(esCfg.toElasticsearchConfiguration())
 	}
-
-	kibanaCfg, diags := newKibanaConfigFromSDK(d, base)
-	if diags.HasError() {
-		return Client{}, diags
-	}
-
-	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
 	kibanaOapiCfg, diags := newKibanaOapiConfigFromSDK(d, base)
 	if diags.HasError() {

@@ -20,7 +20,6 @@ package config
 import (
 	"net/http"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
@@ -41,9 +40,6 @@ func NewFromEnv(version string) Client {
 		withEnvironmentOverrides().
 		toElasticsearchConfiguration(),
 	)
-
-	kibanaCfg := base.toKibanaConfig().withEnvironmentOverrides()
-	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
 	kibanaOapiCfg := base.toKibanaOapiConfig().withEnvironmentOverrides()
 	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
