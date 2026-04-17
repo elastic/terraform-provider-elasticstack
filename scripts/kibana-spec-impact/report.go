@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -160,6 +161,7 @@ func diffTransformSchemaPaths(repoRoot, baselineSHA, targetSHA string) ([]string
 		}
 		paths = append(paths, filepath.ToSlash(line))
 	}
+	sort.Strings(paths)
 	return paths, nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"context"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/provider"
@@ -95,6 +96,12 @@ func discoverKibanaEntities() []Entity {
 		seen[name] = struct{}{}
 	}
 
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Type != out[j].Type {
+			return out[i].Type < out[j].Type
+		}
+		return out[i].Name < out[j].Name
+	})
 	return out
 }
 
