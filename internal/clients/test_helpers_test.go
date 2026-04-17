@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,12 +34,6 @@ import (
 // calls are never made.
 func newTestAPIClient(t *testing.T) *apiClient {
 	t.Helper()
-	kib, err := kibana.NewClient(kibana.Config{
-		Address:  "http://localhost:5601",
-		Username: "elastic",
-		Password: "changeme",
-	})
-	require.NoError(t, err)
 
 	kibOapi, err := kibanaoapi.NewClient(kibanaoapi.Config{
 		URL:      "http://localhost:5601",
@@ -50,10 +43,8 @@ func newTestAPIClient(t *testing.T) *apiClient {
 	require.NoError(t, err)
 
 	return &apiClient{
-		kibana:       kib,
-		kibanaOapi:   kibOapi,
-		kibanaConfig: kibana.Config{Address: "http://localhost:5601", Username: "elastic", Password: "changeme"},
-		version:      "unit-testing",
+		kibanaOapi: kibOapi,
+		version:    "unit-testing",
 	}
 }
 

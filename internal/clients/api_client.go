@@ -22,18 +22,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -87,9 +84,7 @@ func (c *CompositeID) String() string {
 type apiClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
-	kibana                   *kibana.Client
 	kibanaOapi               *kibanaoapi.Client
-	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
 }
@@ -113,11 +108,6 @@ func newAcceptanceTestingClient() (*apiClient, error) {
 		return nil, err
 	}
 
-	kib, err := kibana.NewClient(*cfg.Kibana)
-	if err != nil {
-		return nil, err
-	}
-
 	kibOapi, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
@@ -130,9 +120,7 @@ func newAcceptanceTestingClient() (*apiClient, error) {
 
 	return &apiClient{
 			elasticsearch: es,
-			kibana:        kib,
 			kibanaOapi:    kibOapi,
-			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
 			version:       version,
 		},
@@ -172,32 +160,6 @@ func buildEsClient(cfg config.Client) (*elasticsearch.Client, error) {
 	return es, nil
 }
 
-func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
-	if cfg.Kibana == nil {
-		return nil, nil
-	}
-
-	kib, err := kibana.NewClient(*cfg.Kibana)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if logging.IsDebugOrHigher() {
-		// It is required to set debug mode even if we re-use the http client within the OpenAPI generated clients
-		// some of the clients are not relying on the OpenAPI generated clients and are using the http client directly
-		kib.Client.SetDebug(true)
-		transport, err := kib.Client.Transport()
-		if err != nil {
-			return nil, err
-		}
-		roundTripper := debugutils.NewDebugTransport("Kibana", transport)
-		kib.Client.SetTransport(roundTripper)
-	}
-
-	return kib, nil
-}
-
 func buildKibanaOapiClient(cfg config.Client) (*kibanaoapi.Client, error) {
 	client, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
@@ -231,13 +193,8 @@ func newAPIClientFromSDK(d *schema.ResourceData, version string) (*apiClient, di
 }
 
 func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, error) {
-	var kibanaConfig kibana.Config
-	if cfg.Kibana != nil {
-		kibanaConfig = *cfg.Kibana
-	}
 	client := &apiClient{
-		kibanaConfig: kibanaConfig,
-		version:      version,
+		version: version,
 	}
 
 	if cfg.Elasticsearch != nil {
@@ -248,13 +205,7 @@ func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, erro
 		client.elasticsearch = esClient
 	}
 
-	if cfg.Kibana != nil {
-		kibanaClient, err := buildKibanaClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-		client.kibana = kibanaClient
-
+	if cfg.KibanaOapi != nil {
 		kibanaOapiClient, err := buildKibanaOapiClient(cfg)
 		if err != nil {
 			return nil, err
