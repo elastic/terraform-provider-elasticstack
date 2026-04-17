@@ -88,6 +88,6 @@ Rollback is straightforward: disable or revert the workflow source and generated
 ## Resolved decisions (implementation)
 
 - **Initial baseline when repo memory is empty**: resolve to `git rev-parse <target>~1` so the first run compares the parent commit to the current target; after each successful workflow completion, `last_analyzed_target_sha` advances to the analyzed `target_sha`.
-- **Schedule frequency**: weekly (`cron: "0 6 * * 1"`) with push-based triggers on `main` for kbapi/kibanaoapi paths; maintainers can use `workflow_dispatch`.
+- **Schedule frequency**: weekly on Monday (`cron: weekly on monday`) with push-based triggers on `main` for kbapi/kibanaoapi paths; maintainers can use `workflow_dispatch`.
 - **Transform-only changes (V1)**: surface paths under `transform_schema_hints` in the report and keep the gate active for agent review, but **do not** open issues from transform hints alone; issues are only for `high_confidence_impacts` from kbapi/kibanaoapi matching.
 - **Issue cap vs dedupe**: the workflow caps new issues per run; repo memory records dedupe fingerprints **only** for entities that actually received an issue (`--issued` list). The analysis baseline always advances after a successful run so stale baselines do not block future diffs.
