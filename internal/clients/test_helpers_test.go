@@ -46,7 +46,7 @@ func newTestAPIClient(t *testing.T) *apiClient {
 		kibanaOapi:     kibOapi,
 		version:        "unit-testing",
 		kibanaEndpoint: "http://localhost:5601",
-		fleetEndpoint:  "http://localhost:5601",
+		fleetEndpoint:  "", // fleet client is nil; empty endpoint represents unconfigured Fleet
 	}
 }
 

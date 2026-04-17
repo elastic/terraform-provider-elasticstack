@@ -87,19 +87,21 @@ type apiClient struct {
 	kibanaOapi               *kibanaoapi.Client
 	fleet                    *fleet.Client
 	version                  string
-	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
-	// after all configuration layers (provider input, entity-local overrides,
-	// environment overrides) have been applied. Carried through to
-	// ElasticsearchScopedClient for accessor validation.
+	// esEndpoints holds the resolved Elasticsearch endpoint addresses from
+	// provider configuration plus environment overrides. Entity-local overrides
+	// are applied later in ProviderClientFactory and stored on scoped clients.
+	// Carried through to ElasticsearchScopedClient for accessor validation.
 	esEndpoints []string
-	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after all
-	// configuration layers have been applied. Carried through to
-	// KibanaScopedClient for accessor validation.
+	// kibanaEndpoint holds the resolved Kibana endpoint URL from provider
+	// configuration plus environment overrides. Entity-local overrides are
+	// applied later in ProviderClientFactory and stored on scoped clients.
+	// Carried through to KibanaScopedClient for accessor validation.
 	kibanaEndpoint string
-	// fleetEndpoint holds the resolved Fleet endpoint URL captured after all
-	// configuration layers have been applied, including any inheritance from the
-	// Kibana-derived config path. Carried through to KibanaScopedClient for
-	// accessor validation.
+	// fleetEndpoint holds the resolved Fleet endpoint URL from provider
+	// configuration plus environment overrides, including any inheritance from
+	// the Kibana-derived config path. Entity-local overrides are applied later
+	// in ProviderClientFactory and stored on scoped clients. Carried through to
+	// KibanaScopedClient for accessor validation.
 	fleetEndpoint string
 }
 
