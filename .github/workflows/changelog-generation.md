@@ -28,15 +28,74 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const { execSync } = require('child_process');
+          const RELEASE_BRANCH_PATTERN = /^prep-release-(.+)$/;
+          const SEMVER_TAG_PATTERN = /^v\d+\.\d+\.\d+$/;
           
-          /**
-           * Resolves the release context:
-           *   - mode: 'unreleased' | 'release'
-           *   - target_version: e.g. '0.14.4' (release mode only)
-           *   - previous_tag: e.g. 'v0.14.3'
-           *   - compare_range: e.g. 'v0.14.3..HEAD'
-           *   - target_branch: branch to push the updated changelog to
-           */
+          function resolveReleaseMode({ eventName, headBranch = '' }) {
+            let mode = 'unreleased';
+            let targetVersion = '';
+            let targetBranch = 'generated-changelog';
+          
+            if (eventName === 'pull_request' || eventName === 'pull_request_target') {
+              const match = headBranch.match(RELEASE_BRANCH_PATTERN);
+              if (match) {
+                mode = 'release';
+                targetVersion = match[1];
+                targetBranch = headBranch;
+              }
+            }
+          
+            return { mode, targetVersion, targetBranch };
+          }
+          
+          function parseSemverTags(tagsRaw = '') {
+            return tagsRaw
+              .split('\n')
+              .map((tag) => tag.trim())
+              .filter((tag) => SEMVER_TAG_PATTERN.test(tag));
+          }
+          
+          function selectPreviousTag({ tags = [], mode = 'unreleased', targetVersion = '' }) {
+            const excludedTag = mode === 'release' && targetVersion ? `v${targetVersion}` : '';
+            const candidates = excludedTag ? tags.filter((tag) => tag !== excludedTag) : tags;
+          
+            return {
+              previousTag: candidates[0] ?? '',
+              excludedTag,
+              excludedCurrentTag: Boolean(excludedTag) && candidates.length < tags.length,
+            };
+          }
+          
+          function buildCompareRange(previousTag) {
+            return previousTag ? `${previousTag}..HEAD` : 'HEAD';
+          }
+          
+          function buildReleaseContext({ eventName, headBranch = '', tags = [] }) {
+            const modeResult = resolveReleaseMode({ eventName, headBranch });
+            const previousTagResult = selectPreviousTag({
+              tags,
+              mode: modeResult.mode,
+              targetVersion: modeResult.targetVersion,
+            });
+          
+            return {
+              ...modeResult,
+              ...previousTagResult,
+              compareRange: buildCompareRange(previousTagResult.previousTag),
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              RELEASE_BRANCH_PATTERN,
+              SEMVER_TAG_PATTERN,
+              buildCompareRange,
+              buildReleaseContext,
+              parseSemverTags,
+              resolveReleaseMode,
+              selectPreviousTag,
+            };
+          }
           
           // Determine mode from event
           const eventName = context.eventName;
@@ -47,22 +106,7 @@ on:
             process.env.GITHUB_REF_NAME ??
             '';
           
-          let mode = 'unreleased';
-          let targetVersion = '';
-          let targetBranch = 'generated-changelog';
-          
-          if (eventName === 'pull_request' || eventName === 'pull_request_target') {
-            const match = headBranch.match(/^prep-release-(.+)$/);
-            if (match) {
-              mode = 'release';
-              targetVersion = match[1];
-              targetBranch = headBranch;
-              core.info(`Release mode: branch=${headBranch}, version=${targetVersion}`);
-            }
-          }
-          
-          // Resolve the previous semver release tag from git
-          let previousTag = '';
+          let tags = [];
           try {
             // List all tags matching vX.Y.Z semver pattern, sort by version, pick the latest
             const tagsRaw = execSync(
@@ -70,43 +114,36 @@ on:
               { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
             ).trim();
           
-            const tags = tagsRaw
-              .split('\n')
-              .map((t) => t.trim())
-              .filter((t) => /^v\d+\.\d+\.\d+$/.test(t));
-          
-            if (tags.length > 0) {
-              // In release mode, exclude the current target version tag to avoid picking up the release being prepared
-              let candidates = tags;
-              if (mode === 'release' && targetVersion) {
-                const versionToExclude = `v${targetVersion}`;
-                candidates = tags.filter((t) => t !== versionToExclude);
-                if (candidates.length < tags.length) {
-                  core.info(`Excluded current release tag ${versionToExclude} from previous tag candidates`);
-                }
-              }
-              previousTag = candidates[0] ?? '';
-              if (previousTag) {
-                core.info(`Resolved previous tag: ${previousTag}`);
-              }
-            } else {
-              core.warning('No semver release tags found; compare range will cover full history');
-            }
+            tags = parseSemverTags(tagsRaw);
           } catch (err) {
             core.warning(`Failed to list git tags: ${err.message}`);
           }
           
-          const compareRange = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+          const releaseContext = buildReleaseContext({ eventName, headBranch, tags });
           
-          core.setOutput('mode', mode);
-          core.setOutput('target_version', targetVersion);
-          core.setOutput('previous_tag', previousTag);
-          core.setOutput('compare_range', compareRange);
-          core.setOutput('target_branch', targetBranch);
+          if (releaseContext.mode === 'release') {
+            core.info(`Release mode: branch=${headBranch}, version=${releaseContext.targetVersion}`);
+          }
+          if (releaseContext.excludedCurrentTag) {
+            core.info(
+              `Excluded current release tag ${releaseContext.excludedTag} from previous tag candidates`
+            );
+          }
+          if (releaseContext.previousTag) {
+            core.info(`Resolved previous tag: ${releaseContext.previousTag}`);
+          } else if (tags.length === 0) {
+            core.warning('No semver release tags found; compare range will cover full history');
+          }
           
-          core.info(`Mode: ${mode}`);
-          core.info(`Compare range: ${compareRange}`);
-          core.info(`Target branch: ${targetBranch}`);
+          core.setOutput('mode', releaseContext.mode);
+          core.setOutput('target_version', releaseContext.targetVersion);
+          core.setOutput('previous_tag', releaseContext.previousTag);
+          core.setOutput('compare_range', releaseContext.compareRange);
+          core.setOutput('target_branch', releaseContext.targetBranch);
+          
+          core.info(`Mode: ${releaseContext.mode}`);
+          core.info(`Compare range: ${releaseContext.compareRange}`);
+          core.info(`Target branch: ${releaseContext.targetBranch}`);
           
     - name: Gather PR evidence
       id: gather_pr_evidence
@@ -115,17 +152,6 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const { execSync } = require('child_process');
-          
-          const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
-          const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
-          const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
-          const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
-          
-          const { owner, repo } = context.repo;
-          
-          /**
-           * Labels that indicate a PR is user-facing / CHANGELOG-worthy.
-           */
           const USER_FACING_LABELS = new Set([
             'enhancement',
             'bug',
@@ -136,9 +162,6 @@ on:
             'new-data-source',
           ]);
           
-          /**
-           * Labels / patterns that indicate a PR is internal / maintenance (likely excluded).
-           */
           const INTERNAL_LABELS = new Set([
             'dependencies',
             'chore',
@@ -149,32 +172,25 @@ on:
             'openspec',
           ]);
           
-          /**
-           * File path prefixes that indicate provider-impacting changes.
-           */
           const PROVIDER_PATH_PREFIXES = ['internal/', 'pkg/', 'libs/', 'provider/', 'go.mod', 'go.sum'];
           
-          function classifyPR(pr, files) {
-            const labels = (pr.labels ?? []).map((l) => l.name);
+          function getLabelNames(pr) {
+            return (pr.labels ?? []).map((label) => label.name);
+          }
           
-            // Explicit user-facing labels
-            const hasUserFacingLabel = labels.some((l) => USER_FACING_LABELS.has(l));
-            // Explicit internal labels
-            const hasInternalLabel = labels.some((l) => INTERNAL_LABELS.has(l));
-          
-            // Dependabot / automated PRs
+          function classifyPullRequestForChangelog(pr, files = []) {
+            const labels = getLabelNames(pr);
+            const hasUserFacingLabel = labels.some((label) => USER_FACING_LABELS.has(label));
+            const hasInternalLabel = labels.some((label) => INTERNAL_LABELS.has(label));
             const isAutomated =
               pr.user?.login === 'dependabot[bot]' ||
               pr.user?.login === 'dependabot' ||
               pr.user?.login === 'github-actions[bot]';
           
-            // Check if PR touches provider code (not just openspec/, docs/, or tests)
-            const touchesProviderCode = (files ?? []).some((f) =>
-              PROVIDER_PATH_PREFIXES.some((prefix) => f.filename.startsWith(prefix))
+            const touchesProviderCode = files.some((file) =>
+              PROVIDER_PATH_PREFIXES.some((prefix) => file.filename.startsWith(prefix))
             );
-          
-            const openspecOnly =
-              (files ?? []).length > 0 && (files ?? []).every((f) => f.filename.startsWith('openspec/'));
+            const openspecOnly = files.length > 0 && files.every((file) => file.filename.startsWith('openspec/'));
           
             let classification;
             let inclusionRationale;
@@ -188,10 +204,14 @@ on:
               exclusionRationale = 'Touches only openspec/ files — no provider code changes';
             } else if (hasUserFacingLabel) {
               classification = 'user-facing';
-              inclusionRationale = `Has user-facing label(s): ${labels.filter((l) => USER_FACING_LABELS.has(l)).join(', ')}`;
+              inclusionRationale = `Has user-facing label(s): ${labels
+                .filter((label) => USER_FACING_LABELS.has(label))
+                .join(', ')}`;
             } else if (hasInternalLabel && !touchesProviderCode) {
               classification = 'internal';
-              exclusionRationale = `Has internal label(s): ${labels.filter((l) => INTERNAL_LABELS.has(l)).join(', ')} and does not touch provider code`;
+              exclusionRationale = `Has internal label(s): ${labels
+                .filter((label) => INTERNAL_LABELS.has(label))
+                .join(', ')} and does not touch provider code`;
             } else if (touchesProviderCode) {
               classification = 'user-facing';
               inclusionRationale = 'Touches provider implementation paths — presumed user-facing';
@@ -200,8 +220,113 @@ on:
               inclusionRationale = 'Classification uncertain — agent to decide';
             }
           
-            return { classification, inclusionRationale: inclusionRationale ?? null, exclusionRationale: exclusionRationale ?? null };
+            return {
+              classification,
+              inclusionRationale: inclusionRationale ?? null,
+              exclusionRationale: exclusionRationale ?? null,
+            };
           }
+          
+          function parseCommitShas(raw = '') {
+            return raw
+              .split('\n')
+              .map((sha) => sha.trim())
+              .filter(Boolean);
+          }
+          
+          function selectMergedPullRequests(prs = []) {
+            const seen = new Set();
+            const merged = [];
+          
+            for (const pr of prs) {
+              if (pr.state === 'closed' && pr.merged_at && !seen.has(pr.number)) {
+                seen.add(pr.number);
+                merged.push(pr);
+              }
+            }
+          
+            return merged;
+          }
+          
+          function buildPullRequestEvidence(pr, files = []) {
+            const { classification, inclusionRationale, exclusionRationale } =
+              classifyPullRequestForChangelog(pr, files);
+          
+            return {
+              number: pr.number,
+              title: pr.title,
+              url: pr.html_url,
+              merge_commit_sha: pr.merge_commit_sha,
+              author: pr.user?.login ?? 'unknown',
+              labels: getLabelNames(pr),
+              touched_files: files.map((file) => file.filename),
+              classification,
+              inclusion_rationale: inclusionRationale,
+              exclusion_rationale: exclusionRationale,
+            };
+          }
+          
+          function buildTargetSection({ mode = 'unreleased', targetVersion = '', date = new Date().toISOString() }) {
+            if (mode === 'release' && targetVersion) {
+              return `## [${targetVersion}] - ${String(date).split('T')[0]}`;
+            }
+          
+            return '## [Unreleased]';
+          }
+          
+          function countByClassification(evidence = []) {
+            return {
+              user_facing_count: evidence.filter((item) => item.classification === 'user-facing').length,
+              internal_count: evidence.filter((item) => item.classification === 'internal').length,
+              uncertain_count: evidence.filter((item) => item.classification === 'uncertain').length,
+            };
+          }
+          
+          function buildEvidenceManifest({
+            mode = 'unreleased',
+            targetVersion = '',
+            previousTag = '',
+            compareRange = 'HEAD',
+            evidence = [],
+            generatedAt = new Date().toISOString(),
+          }) {
+            const counts = countByClassification(evidence);
+          
+            return {
+              generated_at: generatedAt,
+              mode,
+              target_section: buildTargetSection({ mode, targetVersion, date: generatedAt }),
+              target_section_mode: mode,
+              target_version: targetVersion,
+              previous_tag: previousTag,
+              compare_range: compareRange,
+              pr_count: evidence.length,
+              ...counts,
+              pull_requests: evidence,
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              INTERNAL_LABELS,
+              PROVIDER_PATH_PREFIXES,
+              USER_FACING_LABELS,
+              buildEvidenceManifest,
+              buildPullRequestEvidence,
+              buildTargetSection,
+              classifyPullRequestForChangelog,
+              countByClassification,
+              parseCommitShas,
+              selectMergedPullRequests,
+            };
+          }
+          
+          const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+          const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+          const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+          const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
+          
+          const { owner, repo } = context.repo;
           
           // Collect commits in range
           let commitSHAs = [];
@@ -211,14 +336,14 @@ on:
               encoding: 'utf8',
               stdio: ['pipe', 'pipe', 'pipe'],
             }).trim();
-            commitSHAs = raw ? raw.split('\n').map((s) => s.trim()).filter(Boolean) : [];
+            commitSHAs = parseCommitShas(raw);
             core.info(`Found ${commitSHAs.length} commit(s) in range ${range}`);
           } catch (err) {
             core.warning(`Failed to list commits in range: ${err.message}`);
           }
           
           // Find PRs associated with these commits
-          const prMap = new Map();
+          const associatedPullRequests = [];
           
           for (const sha of commitSHAs) {
             try {
@@ -227,22 +352,20 @@ on:
                 repo,
                 commit_sha: sha,
               });
-              for (const pr of prs) {
-                if (pr.state === 'closed' && pr.merged_at && !prMap.has(pr.number)) {
-                  prMap.set(pr.number, pr);
-                }
-              }
+              associatedPullRequests.push(...prs);
             } catch (err) {
               core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
             }
           }
           
-          core.info(`Found ${prMap.size} unique merged PR(s) in compare range`);
+          const mergedPullRequests = selectMergedPullRequests(associatedPullRequests);
+          core.info(`Found ${mergedPullRequests.length} unique merged PR(s) in compare range`);
           
           // Enrich each PR with file information
           const evidence = [];
           
-          for (const [prNumber, pr] of prMap) {
+          for (const pr of mergedPullRequests) {
+            const prNumber = pr.number;
             let files = [];
             try {
               files = await github.paginate(github.rest.pulls.listFiles, {
@@ -255,41 +378,17 @@ on:
               core.warning(`Failed to list files for PR #${prNumber}: ${err.message}`);
             }
           
-            const { classification, inclusionRationale, exclusionRationale } = classifyPR(pr, files);
-          
-            evidence.push({
-              number: pr.number,
-              title: pr.title,
-              url: pr.html_url,
-              merge_commit_sha: pr.merge_commit_sha,
-              author: pr.user?.login ?? 'unknown',
-              labels: (pr.labels ?? []).map((l) => l.name),
-              touched_files: files.map((f) => f.filename),
-              classification,
-              inclusion_rationale: inclusionRationale,
-              exclusion_rationale: exclusionRationale,
-            });
+            evidence.push(buildPullRequestEvidence(pr, files));
           }
           
-          const targetSection =
-            mode === 'release' && targetVersion
-              ? `## [${targetVersion}] - ${new Date().toISOString().split('T')[0]}`
-              : '## [Unreleased]';
-          
-          const manifest = {
-            generated_at: new Date().toISOString(),
+          const manifest = buildEvidenceManifest({
             mode,
-            target_section: targetSection,
-            target_section_mode: mode,
-            target_version: targetVersion,
-            previous_tag: previousTag,
-            compare_range: compareRange,
-            pr_count: evidence.length,
-            user_facing_count: evidence.filter((e) => e.classification === 'user-facing').length,
-            internal_count: evidence.filter((e) => e.classification === 'internal').length,
-            uncertain_count: evidence.filter((e) => e.classification === 'uncertain').length,
-            pull_requests: evidence,
-          };
+            targetVersion,
+            previousTag,
+            compareRange,
+            evidence,
+            generatedAt: new Date().toISOString(),
+          });
           
           core.setOutput('evidence_json', JSON.stringify(manifest));
           const hasEvidence = evidence.length > 0;
@@ -315,33 +414,69 @@ steps:
         const fs = require('fs');
         const path = require('path');
         
-        const evidenceJson = process.env.EVIDENCE_JSON || '';
-        const memoryPath = '/tmp/gh-aw/agent/evidence.json';
+        const DEFAULT_EVIDENCE_MEMORY_PATH = '/tmp/gh-aw/agent/evidence.json';
         
-        if (!evidenceJson) {
-          core.setFailed('No evidence_json input provided');
-          process.exit(1);
+        function resolveEvidenceJsonInput({
+          envEvidenceJson = '',
+          coreInputEvidenceJson = '',
+          envInputEvidenceJson = '',
+        }) {
+          return envEvidenceJson || coreInputEvidenceJson || envInputEvidenceJson || '';
         }
         
-        // Validate JSON
-        let parsed;
+        function buildEvidenceManifestWrite({
+          evidenceJson,
+          memoryPath = DEFAULT_EVIDENCE_MEMORY_PATH,
+        }) {
+          if (!evidenceJson) {
+            throw new Error('No evidence_json input provided');
+          }
+        
+          let parsed;
+          try {
+            parsed = JSON.parse(evidenceJson);
+          } catch (err) {
+            throw new Error(`Invalid JSON in evidence_json: ${err.message}`);
+          }
+        
+          return {
+            parsed,
+            formattedJson: JSON.stringify(parsed, null, 2),
+            memoryPath,
+            directory: path.dirname(memoryPath),
+            prCount: parsed.pr_count ?? '?',
+          };
+        }
+        
+        if (typeof module !== 'undefined') {
+          module.exports = {
+            DEFAULT_EVIDENCE_MEMORY_PATH,
+            buildEvidenceManifestWrite,
+            resolveEvidenceJsonInput,
+          };
+        }
+        
+        const evidenceJson = resolveEvidenceJsonInput({
+          envEvidenceJson: process.env.EVIDENCE_JSON,
+        });
+        
+        let writePlan;
         try {
-          parsed = JSON.parse(evidenceJson);
+          writePlan = buildEvidenceManifestWrite({ evidenceJson });
         } catch (err) {
-          core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
+          core.setFailed(err.message);
           process.exit(1);
         }
         
         // Ensure the target directory exists
-        const dir = path.dirname(memoryPath);
-        fs.mkdirSync(dir, { recursive: true });
+        fs.mkdirSync(writePlan.directory, { recursive: true });
         
         // Write the evidence manifest to workflow memory
-        fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
+        fs.writeFileSync(writePlan.memoryPath, writePlan.formattedJson, 'utf8');
         
-        core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
+        core.info(`Evidence manifest written to ${writePlan.memoryPath} (${writePlan.prCount} PRs)`);
         core.setOutput('evidence_ready', 'true');
-        core.setOutput('evidence_path', memoryPath);
+        core.setOutput('evidence_path', writePlan.memoryPath);
         
   - name: Setup Go
     uses: actions/setup-go@v6

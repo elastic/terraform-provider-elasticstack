@@ -1,30 +1,24 @@
 const fs = require('fs');
-const path = require('path');
+//include: ../../lib/changelog-evidence-manifest.js
 
-const evidenceJson = process.env.EVIDENCE_JSON || '';
-const memoryPath = '/tmp/gh-aw/agent/evidence.json';
+const evidenceJson = resolveEvidenceJsonInput({
+  envEvidenceJson: process.env.EVIDENCE_JSON,
+});
 
-if (!evidenceJson) {
-  core.setFailed('No evidence_json input provided');
-  process.exit(1);
-}
-
-// Validate JSON
-let parsed;
+let writePlan;
 try {
-  parsed = JSON.parse(evidenceJson);
+  writePlan = buildEvidenceManifestWrite({ evidenceJson });
 } catch (err) {
-  core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);
+  core.setFailed(err.message);
   process.exit(1);
 }
 
 // Ensure the target directory exists
-const dir = path.dirname(memoryPath);
-fs.mkdirSync(dir, { recursive: true });
+fs.mkdirSync(writePlan.directory, { recursive: true });
 
 // Write the evidence manifest to workflow memory
-fs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');
+fs.writeFileSync(writePlan.memoryPath, writePlan.formattedJson, 'utf8');
 
-core.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);
+core.info(`Evidence manifest written to ${writePlan.memoryPath} (${writePlan.prCount} PRs)`);
 core.setOutput('evidence_ready', 'true');
-core.setOutput('evidence_path', memoryPath);
+core.setOutput('evidence_path', writePlan.memoryPath);
