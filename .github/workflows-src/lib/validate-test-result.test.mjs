@@ -10,53 +10,47 @@ const require = createRequire(import.meta.url);
 
 const { validateTestResult } = require(path.resolve(__dirname, 'validate-test-result.js'));
 
-test('preflightShouldRun === false → passed true (regardless of other inputs)', () => {
-  const result = validateTestResult({ preflightShouldRun: 'false', providerChanges: '', testResult: '' });
-  assert.equal(result.passed, true);
-});
+// Note: the preflight-skip path (preflightShouldRun=false) is not tested here
+// because the workflow skips the test-validation job entirely when preflight
+// outputs should_run=false. Only post-preflight states are reachable.
 
-test('preflightShouldRun === false → passed true even with providerChanges and testResult set', () => {
-  const result = validateTestResult({ preflightShouldRun: 'false', providerChanges: 'true', testResult: 'failure' });
-  assert.equal(result.passed, true);
-});
-
-test('preflightShouldRun === true, providerChanges === "" → passed false, reason mentions "did not produce a valid output"', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: '', testResult: 'success' });
+test('providerChanges === "" → passed false, reason mentions "did not produce a valid output"', () => {
+  const result = validateTestResult({ providerChanges: '', testResult: 'success' });
   assert.equal(result.passed, false);
   assert.match(result.reason, /did not produce a valid output/);
 });
 
-test('preflightShouldRun === true, providerChanges === false, testResult === skipped → passed true', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'false', testResult: 'skipped' });
+test('providerChanges === false, testResult === skipped → passed true', () => {
+  const result = validateTestResult({ providerChanges: 'false', testResult: 'skipped' });
   assert.equal(result.passed, true);
 });
 
-test('preflightShouldRun === true, providerChanges === false, testResult === success → passed true', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'false', testResult: 'success' });
+test('providerChanges === false, testResult === success → passed true', () => {
+  const result = validateTestResult({ providerChanges: 'false', testResult: 'success' });
   assert.equal(result.passed, true);
 });
 
-test('preflightShouldRun === true, providerChanges === false, testResult === failure → passed false', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'false', testResult: 'failure' });
+test('providerChanges === false, testResult === failure → passed false', () => {
+  const result = validateTestResult({ providerChanges: 'false', testResult: 'failure' });
   assert.equal(result.passed, false);
 });
 
-test('preflightShouldRun === true, providerChanges === false, testResult === cancelled → passed false', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'false', testResult: 'cancelled' });
+test('providerChanges === false, testResult === cancelled → passed false', () => {
+  const result = validateTestResult({ providerChanges: 'false', testResult: 'cancelled' });
   assert.equal(result.passed, false);
 });
 
-test('preflightShouldRun === true, providerChanges === true, testResult === success → passed true', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'true', testResult: 'success' });
+test('providerChanges === true, testResult === success → passed true', () => {
+  const result = validateTestResult({ providerChanges: 'true', testResult: 'success' });
   assert.equal(result.passed, true);
 });
 
-test('preflightShouldRun === true, providerChanges === true, testResult === failure → passed false', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'true', testResult: 'failure' });
+test('providerChanges === true, testResult === failure → passed false', () => {
+  const result = validateTestResult({ providerChanges: 'true', testResult: 'failure' });
   assert.equal(result.passed, false);
 });
 
-test('preflightShouldRun === true, providerChanges === true, testResult === skipped → passed false', () => {
-  const result = validateTestResult({ preflightShouldRun: 'true', providerChanges: 'true', testResult: 'skipped' });
+test('providerChanges === true, testResult === skipped → passed false', () => {
+  const result = validateTestResult({ providerChanges: 'true', testResult: 'skipped' });
   assert.equal(result.passed, false);
 });

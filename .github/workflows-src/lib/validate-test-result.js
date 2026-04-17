@@ -1,17 +1,14 @@
 /**
  * Evaluate whether the acceptance gate passed or failed.
  *
- * @param {{ preflightShouldRun: string, providerChanges: string, testResult: string }} params
+ * Only called when the preflight gate has allowed downstream CI to run
+ * (i.e. `preflightShouldRun === 'true'`). The workflow skips this job
+ * entirely when preflight outputs `should_run=false`.
+ *
+ * @param {{ providerChanges: string, testResult: string }} params
  * @returns {{ passed: boolean, reason: string }}
  */
-function validateTestResult({ preflightShouldRun, providerChanges, testResult }) {
-  if (preflightShouldRun !== 'true') {
-    return {
-      passed: true,
-      reason: 'Preflight gate intentionally disabled downstream CI; succeeding.',
-    };
-  }
-
+function validateTestResult({ providerChanges, testResult }) {
   if (providerChanges !== 'true' && providerChanges !== 'false') {
     return {
       passed: false,

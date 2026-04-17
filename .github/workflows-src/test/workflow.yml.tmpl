@@ -365,7 +365,7 @@ jobs:
   test-validation:
     name: Test Validation
     needs: [preflight, changes, test]
-    if: always()
+    if: always() && needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
