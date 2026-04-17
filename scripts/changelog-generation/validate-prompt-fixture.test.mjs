@@ -43,6 +43,19 @@ test('workflow.md.tmpl exists and is readable', () => {
   assert.ok(promptBody.length > 0, 'prompt body must not be empty');
 });
 
+test('workflow passes pre-activation evidence via env', () => {
+  assert.match(
+    rawPrompt,
+    /env:\n\s+EVIDENCE_JSON: \$\{\{ needs\.pre_activation\.outputs\.evidence_json \}\}/,
+    'workflow should pass evidence_json via EVIDENCE_JSON env'
+  );
+  assert.doesNotMatch(
+    rawPrompt,
+    /with:\n(?:.*\n)*?\s+evidence_json: \$\{\{ needs\.pre_activation\.outputs\.evidence_json \}\}/,
+    'workflow should not rely on a custom github-script input for evidence_json'
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Structural checks on the prompt body
 // ---------------------------------------------------------------------------

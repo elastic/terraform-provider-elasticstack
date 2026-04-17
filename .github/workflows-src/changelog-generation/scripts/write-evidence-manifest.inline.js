@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
+const evidenceJson = process.env.EVIDENCE_JSON || '';
 const memoryPath = '/tmp/gh-aw/agent/evidence.json';
 
 if (!evidenceJson) {

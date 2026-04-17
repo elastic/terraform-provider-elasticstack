@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"2bf85d9e6e2458532c2d67c74779a47aa3a4e1cf552b866a05df885af654cce7","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"fa6d97b260e45e04637f25fd1425ff4cdbab444b54c38405138572a94ae4589b","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"34e114876b0b11c390a56381ad16ebd13914f8d5","version":"v4"},{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -483,20 +483,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_8e51876eb2191ba3_EOF'
+          cat << 'GH_AW_PROMPT_e77ef88dd6b5639c_EOF'
           <system>
-          GH_AW_PROMPT_8e51876eb2191ba3_EOF
+          GH_AW_PROMPT_e77ef88dd6b5639c_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_8e51876eb2191ba3_EOF'
+          cat << 'GH_AW_PROMPT_e77ef88dd6b5639c_EOF'
           <safe-output-tools>
           Tools: create_pull_request, update_pull_request, push_to_pull_request_branch, missing_tool, missing_data, noop
-          GH_AW_PROMPT_8e51876eb2191ba3_EOF
+          GH_AW_PROMPT_e77ef88dd6b5639c_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
-          cat << 'GH_AW_PROMPT_8e51876eb2191ba3_EOF'
+          cat << 'GH_AW_PROMPT_e77ef88dd6b5639c_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -529,12 +529,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_8e51876eb2191ba3_EOF
+          GH_AW_PROMPT_e77ef88dd6b5639c_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_8e51876eb2191ba3_EOF'
+          cat << 'GH_AW_PROMPT_e77ef88dd6b5639c_EOF'
           </system>
           {{#runtime-import .github/workflows/changelog-generation.md}}
-          GH_AW_PROMPT_8e51876eb2191ba3_EOF
+          GH_AW_PROMPT_e77ef88dd6b5639c_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
@@ -666,13 +666,14 @@ jobs:
         run: bash "${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh"
         env:
           GH_TOKEN: ${{ github.token }}
-      - id: write_evidence_manifest
+      - env:
+          EVIDENCE_JSON: ${{ needs.pre_activation.outputs.evidence_json }}
+        id: write_evidence_manifest
         name: Write evidence manifest for agent
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          evidence_json: ${{ needs.pre_activation.outputs.evidence_json }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: "const fs = require('fs');\nconst path = require('path');\n\nconst evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';\nconst memoryPath = '/tmp/gh-aw/agent/evidence.json';\n\nif (!evidenceJson) {\n  core.setFailed('No evidence_json input provided');\n  process.exit(1);\n}\n\n// Validate JSON\nlet parsed;\ntry {\n  parsed = JSON.parse(evidenceJson);\n} catch (err) {\n  core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);\n  process.exit(1);\n}\n\n// Ensure the target directory exists\nconst dir = path.dirname(memoryPath);\nfs.mkdirSync(dir, { recursive: true });\n\n// Write the evidence manifest to workflow memory\nfs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');\n\ncore.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);\ncore.setOutput('evidence_ready', 'true');\ncore.setOutput('evidence_path', memoryPath);\n"
+          script: "const fs = require('fs');\nconst path = require('path');\n\nconst evidenceJson = process.env.EVIDENCE_JSON || '';\nconst memoryPath = '/tmp/gh-aw/agent/evidence.json';\n\nif (!evidenceJson) {\n  core.setFailed('No evidence_json input provided');\n  process.exit(1);\n}\n\n// Validate JSON\nlet parsed;\ntry {\n  parsed = JSON.parse(evidenceJson);\n} catch (err) {\n  core.setFailed(`Invalid JSON in evidence_json: ${err.message}`);\n  process.exit(1);\n}\n\n// Ensure the target directory exists\nconst dir = path.dirname(memoryPath);\nfs.mkdirSync(dir, { recursive: true });\n\n// Write the evidence manifest to workflow memory\nfs.writeFileSync(memoryPath, JSON.stringify(parsed, null, 2), 'utf8');\n\ncore.info(`Evidence manifest written to ${memoryPath} (${parsed.pr_count ?? '?'} PRs)`);\ncore.setOutput('evidence_ready', 'true');\ncore.setOutput('evidence_path', memoryPath);\n"
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
@@ -743,9 +744,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_0bb053a9e0dbb28e_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_f7db0989d95c495b_EOF'
           {"create_pull_request":{"max":1,"max_patch_size":1024,"preserve_branch_name":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"report_incomplete":{},"update_pull_request":{"allow_body":true,"allow_title":true,"max":1}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_0bb053a9e0dbb28e_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_f7db0989d95c495b_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -998,7 +999,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_ebb1404f37d2de37_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_f9c501f208e93f04_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -1038,7 +1039,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_ebb1404f37d2de37_EOF
+          GH_AW_MCP_CONFIG_f9c501f208e93f04_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

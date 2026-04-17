@@ -43,10 +43,11 @@ steps:
   - name: Write evidence manifest for agent
     id: write_evidence_manifest
     uses: actions/github-script@v8
+    env:
+      EVIDENCE_JSON: ${{ needs.pre_activation.outputs.evidence_json }}
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       x-script-include: scripts/write-evidence-manifest.inline.js
-      evidence_json: ${{ needs.pre_activation.outputs.evidence_json }}
   - name: Setup Go
     uses: actions/setup-go@v6
     with:

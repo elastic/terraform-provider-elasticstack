@@ -307,13 +307,15 @@ steps:
   - name: Write evidence manifest for agent
     id: write_evidence_manifest
     uses: actions/github-script@v8
+    env:
+      EVIDENCE_JSON: ${{ needs.pre_activation.outputs.evidence_json }}
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       script: |
         const fs = require('fs');
         const path = require('path');
         
-        const evidenceJson = core.getInput('evidence_json') || process.env.INPUT_EVIDENCE_JSON || '';
+        const evidenceJson = process.env.EVIDENCE_JSON || '';
         const memoryPath = '/tmp/gh-aw/agent/evidence.json';
         
         if (!evidenceJson) {
@@ -341,7 +343,6 @@ steps:
         core.setOutput('evidence_ready', 'true');
         core.setOutput('evidence_path', memoryPath);
         
-      evidence_json: ${{ needs.pre_activation.outputs.evidence_json }}
   - name: Setup Go
     uses: actions/setup-go@v6
     with:
