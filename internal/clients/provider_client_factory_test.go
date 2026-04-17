@@ -325,4 +325,3 @@ func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	_, err := result.GetKibanaClient()
 	require.NoError(t, err)
 }
-

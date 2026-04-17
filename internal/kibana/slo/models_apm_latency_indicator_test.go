@@ -84,13 +84,13 @@ func TestApmLatencyIndicator_PopulateFromAPI(t *testing.T) {
 		filter := testTimesliceSumFilter
 		api := kbapi.SLOsIndicatorPropertiesApmLatency{
 			Params: struct {
-				Environment     string   `json:"environment"`
-				Filter          *string  `json:"filter,omitempty"`
-				Index           string   `json:"index"`
-				Service         string   `json:"service"`
-				Threshold       float32  `json:"threshold"`
-				TransactionName string   `json:"transactionName"`
-				TransactionType string   `json:"transactionType"`
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				Threshold       float32 `json:"threshold"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
 			}{
 				Service:         "svc",
 				Environment:     "prod",
@@ -117,13 +117,13 @@ func TestApmLatencyIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("sets filter to null when not present", func(t *testing.T) {
 		api := kbapi.SLOsIndicatorPropertiesApmLatency{
 			Params: struct {
-				Environment     string   `json:"environment"`
-				Filter          *string  `json:"filter,omitempty"`
-				Index           string   `json:"index"`
-				Service         string   `json:"service"`
-				Threshold       float32  `json:"threshold"`
-				TransactionName string   `json:"transactionName"`
-				TransactionType string   `json:"transactionType"`
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				Threshold       float32 `json:"threshold"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
 			}{
 				Service:         "svc",
 				Environment:     "prod",

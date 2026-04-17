@@ -139,16 +139,16 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 
 		api := kbapi.SLOsIndicatorPropertiesCustomMetric{
 			Params: struct {
-				DataViewId     *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
-				Filter         *string `json:"filter,omitempty"`
-				Good           struct {
-					Equation string                                                                  `json:"equation"`
+				DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Equation string                                                               `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
 				} `json:"good"`
 				Index          string `json:"index"`
 				TimestampField string `json:"timestampField"`
 				Total          struct {
-					Equation string                                                                   `json:"equation"`
+					Equation string                                                                `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
 				} `json:"total"`
 			}{
@@ -157,7 +157,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 				Filter:         &overallFilter,
 				TimestampField: "@timestamp",
 				Good: struct {
-					Equation string                                                                  `json:"equation"`
+					Equation string                                                               `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
 				}{
 					Equation: "a / b",
@@ -166,7 +166,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 					},
 				},
 				Total: struct {
-					Equation string                                                                   `json:"equation"`
+					Equation string                                                                `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
 				}{
 					Equation: "c",
@@ -202,16 +202,16 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
 		api := kbapi.SLOsIndicatorPropertiesCustomMetric{
 			Params: struct {
-				DataViewId     *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
-				Filter         *string `json:"filter,omitempty"`
-				Good           struct {
-					Equation string                                                                  `json:"equation"`
+				DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Equation string                                                               `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
 				} `json:"good"`
 				Index          string `json:"index"`
 				TimestampField string `json:"timestampField"`
 				Total          struct {
-					Equation string                                                                   `json:"equation"`
+					Equation string                                                                `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
 				} `json:"total"`
 			}{
@@ -220,14 +220,14 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 				Filter:         nil,
 				TimestampField: "@timestamp",
 				Good: struct {
-					Equation string                                                                  `json:"equation"`
+					Equation string                                                               `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item `json:"metrics"`
 				}{
 					Equation: "a",
 					Metrics:  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{},
 				},
 				Total: struct {
-					Equation string                                                                   `json:"equation"`
+					Equation string                                                                `json:"equation"`
 					Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
 				}{
 					Equation: "b",

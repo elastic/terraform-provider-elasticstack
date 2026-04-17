@@ -123,14 +123,14 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 	tsIndicator := kbapi.SLOsIndicatorPropertiesTimesliceMetric{
 		Type: indicatorAddressToType["timeslice_metric_indicator"],
 		Params: struct {
-			DataViewId     *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
-			Filter         *string `json:"filter,omitempty"`
-			Index          string  `json:"index"`
-			Metric         struct {
-				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator `json:"comparator"`
-				Equation   string                                                              `json:"equation"`
+			DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+			Filter     *string `json:"filter,omitempty"`
+			Index      string  `json:"index"`
+			Metric     struct {
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
 				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
-				Threshold  float32                                                             `json:"threshold"`
+				Threshold  float32                                                                   `json:"threshold"`
 			} `json:"metric"`
 			TimestampField string `json:"timestampField"`
 		}{
@@ -139,10 +139,10 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			TimestampField: ind.TimestampField.ValueString(),
 			Filter:         stringPtr(ind.Filter),
 			Metric: struct {
-				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator `json:"comparator"`
-				Equation   string                                                              `json:"equation"`
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
 				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
-				Threshold  float32                                                             `json:"threshold"`
+				Threshold  float32                                                                   `json:"threshold"`
 			}{
 				Metrics:    metrics,
 				Equation:   metricDef.Equation.ValueString(),

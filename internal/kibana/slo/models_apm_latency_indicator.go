@@ -46,13 +46,13 @@ func (m tfModel) apmLatencyIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRespo
 	apmLatency := kbapi.SLOsIndicatorPropertiesApmLatency{
 		Type: indicatorAddressToType["apm_latency_indicator"],
 		Params: struct {
-			Environment     string   `json:"environment"`
-			Filter          *string  `json:"filter,omitempty"`
-			Index           string   `json:"index"`
-			Service         string   `json:"service"`
-			Threshold       float32  `json:"threshold"`
-			TransactionName string   `json:"transactionName"`
-			TransactionType string   `json:"transactionType"`
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			Threshold       float32 `json:"threshold"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
 		}{
 			Service:         ind.Service.ValueString(),
 			Environment:     ind.Environment.ValueString(),
