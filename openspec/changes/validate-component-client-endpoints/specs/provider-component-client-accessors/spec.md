@@ -10,24 +10,13 @@
 - **AND** it SHALL return the error `elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS`
 
 ### Requirement: Kibana scoped accessors require an effective Kibana endpoint
-`(*clients.KibanaScopedClient).GetKibanaClient()` and `GetKibanaOapiClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If provider configuration, `kibana_connection`, and environment overrides together produce no non-empty Kibana endpoint values for the scoped client instance, each accessor SHALL return an error instead of returning a usable client.
-
-#### Scenario: Missing Kibana endpoint returns actionable error for the legacy Kibana client
-- **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
-- **WHEN** `GetKibanaClient()` is called
-- **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
+`(*clients.KibanaScopedClient).GetKibanaOapiClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If provider configuration, `kibana_connection`, and environment overrides together produce no non-empty Kibana endpoint values for the scoped client instance, the accessor SHALL return an error instead of returning a usable client.
 
 #### Scenario: Missing Kibana endpoint returns actionable error for the Kibana OpenAPI client
 - **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
 - **WHEN** `GetKibanaOapiClient()` is called
 - **THEN** the accessor SHALL return no client
 - **AND** it SHALL return the error `kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
-
-#### Scenario: Legacy Kibana accessor does not fall back to localhost when unconfigured
-- **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
-- **WHEN** `GetKibanaClient()` is called
-- **THEN** the accessor SHALL fail before a request can target a default localhost endpoint
 
 ### Requirement: Fleet scoped accessor requires an effective Fleet endpoint
 `(*clients.KibanaScopedClient).GetFleetClient()` SHALL validate that an effective Fleet endpoint is configured before returning a client. The effective Fleet endpoint MAY come from explicit provider-level Fleet configuration, from the existing Fleet-from-Kibana provider resolution path, or from the `kibana_connection`-derived Fleet config used for scoped Kibana clients. If none of those resolution paths produces any non-empty Fleet endpoint value, the accessor SHALL return an error instead of returning a usable client.
