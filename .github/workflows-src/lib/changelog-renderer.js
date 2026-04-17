@@ -54,6 +54,7 @@ const NO_CHANGELOG_LABEL = 'no-changelog';
  * @property {number} prNumber
  * @property {string} prUrl
  * @property {string} reason
+ * @property {string|null} [breakingChanges] - Present when a `Customer impact: none` PR also had a ### Breaking changes block.
  */
 
 /**
@@ -63,7 +64,7 @@ const NO_CHANGELOG_LABEL = 'no-changelog';
  * @returns {string}
  */
 function normalizeBulletPrefix(line) {
-  return '- ' + line.replace(/^[-*+]\s+/, '').replace(/^\s+/, '');
+  return '- ' + line.replace(/^[-*+]\s*/, '').replace(/^\s+/, '');
 }
 
 /**
@@ -165,7 +166,11 @@ function renderChangelogSection(mergedPRs) {
 
     // customerImpact === null case is already caught by validateChangelogSectionFull above
     if (customerImpact.trim().toLowerCase() === 'none') {
-      excluded.push({ prNumber, prUrl, reason: 'Customer impact: none' });
+      const excludedEntry = { prNumber, prUrl, reason: 'Customer impact: none' };
+      if (breakingChanges !== null) {
+        excludedEntry.breakingChanges = breakingChanges;
+      }
+      excluded.push(excludedEntry);
       continue;
     }
 

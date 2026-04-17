@@ -67,6 +67,9 @@ jobs:
           steps.resolve_release_context.outputs.mode == 'release' &&
           steps.gather_merged_prs.outputs.has_prs == 'true' &&
           steps.render_changelog.outputs.has_user_facing_changes == 'true'
+        env:
+          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.resolve_release_context.outputs.target_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -77,8 +80,8 @@ jobs:
             echo "ran=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          git commit -m "chore(changelog): update changelog for v${{ steps.resolve_release_context.outputs.target_version }}"
-          git push origin HEAD:${{ steps.resolve_release_context.outputs.target_branch }}
+          git commit -m "chore(changelog): update changelog for v${TARGET_VERSION}"
+          git push origin HEAD:${TARGET_BRANCH}
           echo "pushed=true" >> $GITHUB_OUTPUT
           echo "ran=true" >> $GITHUB_OUTPUT
 

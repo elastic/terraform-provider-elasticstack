@@ -68,6 +68,8 @@ jobs:
       has_no_changelog_label: ${{ steps.resolve_pr.outputs.has_no_changelog_label }}
       changelog_present: ${{ steps.validate_changelog.outputs.changelog_present }}
       changelog_valid: ${{ steps.validate_changelog.outputs.changelog_valid }}
+if: >-
+  needs.pre_activation.outputs.changelog_present == 'false'
 tools:
   github:
     toolsets: [pull_requests]

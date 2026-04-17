@@ -317,7 +317,8 @@ jobs:
             
               const lines = body.split('\n');
               let inChangelog = false;
-              let inFencedBlock = false;
+              /** @type {null | '`' | '~'} */
+              let fenceType = null;
               const content = [];
             
               for (const line of lines) {
@@ -326,10 +327,16 @@ jobs:
                   continue;
                 }
                 if (inChangelog) {
-                  if (/^```/.test(line)) {
-                    inFencedBlock = !inFencedBlock;
+                  if (fenceType === null && /^```/.test(line)) {
+                    fenceType = '`';
+                  } else if (fenceType === null && /^~~~/.test(line)) {
+                    fenceType = '~';
+                  } else if (fenceType === '`' && /^```/.test(line)) {
+                    fenceType = null;
+                  } else if (fenceType === '~' && /^~~~/.test(line)) {
+                    fenceType = null;
                   }
-                  if (!inFencedBlock && /^##\s/.test(line)) {
+                  if (fenceType === null && /^##\s/.test(line)) {
                     break;
                   }
                   content.push(line);
@@ -354,7 +361,8 @@ jobs:
             
               const lines = changelogSection.split('\n');
               let inBreaking = false;
-              let inFencedBlock = false;
+              /** @type {null | '`' | '~'} */
+              let fenceType = null;
               const content = [];
             
               for (const line of lines) {
@@ -363,10 +371,16 @@ jobs:
                   continue;
                 }
                 if (inBreaking) {
-                  if (/^```/.test(line)) {
-                    inFencedBlock = !inFencedBlock;
+                  if (fenceType === null && /^```/.test(line)) {
+                    fenceType = '`';
+                  } else if (fenceType === null && /^~~~/.test(line)) {
+                    fenceType = '~';
+                  } else if (fenceType === '`' && /^```/.test(line)) {
+                    fenceType = null;
+                  } else if (fenceType === '~' && /^~~~/.test(line)) {
+                    fenceType = null;
                   }
-                  if (!inFencedBlock && /^#{2,3}\s/.test(line)) {
+                  if (fenceType === null && /^#{2,3}\s/.test(line)) {
                     break;
                   }
                   content.push(line);
@@ -546,6 +560,7 @@ jobs:
              * @property {number} prNumber
              * @property {string} prUrl
              * @property {string} reason
+             * @property {string|null} [breakingChanges] - Present when a `Customer impact: none` PR also had a ### Breaking changes block.
              */
             
             /**
@@ -555,7 +570,7 @@ jobs:
              * @returns {string}
              */
             function normalizeBulletPrefix(line) {
-              return '- ' + line.replace(/^[-*+]\s+/, '').replace(/^\s+/, '');
+              return '- ' + line.replace(/^[-*+]\s*/, '').replace(/^\s+/, '');
             }
             
             /**
@@ -657,7 +672,11 @@ jobs:
             
                 // customerImpact === null case is already caught by validateChangelogSectionFull above
                 if (customerImpact.trim().toLowerCase() === 'none') {
-                  excluded.push({ prNumber, prUrl, reason: 'Customer impact: none' });
+                  const excludedEntry = { prNumber, prUrl, reason: 'Customer impact: none' };
+                  if (breakingChanges !== null) {
+                    excludedEntry.breakingChanges = breakingChanges;
+                  }
+                  excluded.push(excludedEntry);
                   continue;
                 }
             
@@ -831,6 +850,11 @@ jobs:
               process.exit(1);
             }
             
+            if (mode === 'release' && !targetVersion) {
+              core.setFailed('Release mode requires target_version from resolve_release_context');
+              process.exit(1);
+            }
+            
             // Read the merged PR manifest
             let manifest;
             try {
@@ -909,6 +933,9 @@ jobs:
           steps.resolve_release_context.outputs.mode == 'release' &&
           steps.gather_merged_prs.outputs.has_prs == 'true' &&
           steps.render_changelog.outputs.has_user_facing_changes == 'true'
+        env:
+          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.resolve_release_context.outputs.target_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -919,8 +946,8 @@ jobs:
             echo "ran=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          git commit -m "chore(changelog): update changelog for v${{ steps.resolve_release_context.outputs.target_version }}"
-          git push origin HEAD:${{ steps.resolve_release_context.outputs.target_branch }}
+          git commit -m "chore(changelog): update changelog for v${TARGET_VERSION}"
+          git push origin HEAD:${TARGET_BRANCH}
           echo "pushed=true" >> $GITHUB_OUTPUT
           echo "ran=true" >> $GITHUB_OUTPUT
 

@@ -9,6 +9,11 @@ if (!headSha) {
   return;
 }
 
+if (!headBranch) {
+  core.setFailed('PR_CHANGELOG_GATING: Could not determine head branch from workflow_run event');
+  return;
+}
+
 core.info(`Resolving PR for head_sha=${headSha} head_branch=${headBranch}`);
 
 // List open PRs from the triggering head branch

@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const parser = require('./pr-changelog-parser.js');
 Object.assign(global, parser);
 
-const { renderChangelogSection } = require('./changelog-renderer.js');
+const { renderChangelogSection, normalizeBulletPrefix } = require('./changelog-renderer.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -243,4 +243,78 @@ test('mixed batch renders correct combined output for fix, no-changelog, none, a
   // PRs excluded from bullets must not appear as change bullets
   assert.ok(!result.sectionBody.includes('#102'), 'no-changelog PR #102 must not appear in sectionBody');
   assert.ok(!result.sectionBody.includes('#103'), 'none PR #103 must not appear in sectionBody');
+});
+
+// ---------------------------------------------------------------------------
+// Customer impact: none with ### Breaking changes — excluded entry includes breakingChanges
+// ---------------------------------------------------------------------------
+
+test('Customer impact: none PR with Breaking changes block is excluded but carries breakingChanges', () => {
+  const body = [
+    '## Changelog',
+    'Customer impact: none',
+    '',
+    '### Breaking changes',
+    'This internal refactor technically removes an undocumented field.',
+    '',
+  ].join('\n');
+
+  const pr = makePR({
+    number: 55,
+    url: 'https://github.com/org/repo/pull/55',
+    body,
+  });
+
+  const result = renderChangelogSection([pr]);
+
+  assert.equal(result.success, true);
+  assert.equal(result.included.length, 0, 'PR should not be in included');
+  assert.equal(result.excluded.length, 1, 'PR should be in excluded');
+  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.ok(
+    result.excluded[0].breakingChanges !== undefined && result.excluded[0].breakingChanges !== null,
+    'excluded entry must carry breakingChanges when present',
+  );
+  assert.ok(
+    result.excluded[0].breakingChanges.includes('undocumented field'),
+    'breakingChanges must contain the prose from the PR',
+  );
+  // Breaking changes from this PR are still rendered in the section body
+  assert.ok(result.sectionBody.includes('### Breaking changes'), 'sectionBody must still have ### Breaking changes');
+  assert.ok(result.sectionBody.includes('undocumented field'), 'sectionBody must include the breaking change prose');
+});
+
+test('Customer impact: none PR without Breaking changes block has no breakingChanges in excluded entry', () => {
+  const pr = makePR({
+    number: 7,
+    url: 'https://github.com/org/repo/pull/7',
+    body: '## Changelog\nCustomer impact: none\n',
+  });
+
+  const result = renderChangelogSection([pr]);
+
+  assert.equal(result.success, true);
+  assert.equal(result.excluded.length, 1);
+  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.equal(result.excluded[0].breakingChanges, undefined, 'breakingChanges should not be set when absent');
+});
+
+// ---------------------------------------------------------------------------
+// normalizeBulletPrefix — no-space edge case
+// ---------------------------------------------------------------------------
+
+test('normalizeBulletPrefix: normalizes bullet with no space after dash', () => {
+  assert.equal(normalizeBulletPrefix('-fix bug'), '- fix bug');
+});
+
+test('normalizeBulletPrefix: normalizes standard bullet with space', () => {
+  assert.equal(normalizeBulletPrefix('- fix bug'), '- fix bug');
+});
+
+test('normalizeBulletPrefix: normalizes asterisk bullet', () => {
+  assert.equal(normalizeBulletPrefix('* fix bug'), '- fix bug');
+});
+
+test('normalizeBulletPrefix: normalizes plus bullet with no space', () => {
+  assert.equal(normalizeBulletPrefix('+fix bug'), '- fix bug');
 });

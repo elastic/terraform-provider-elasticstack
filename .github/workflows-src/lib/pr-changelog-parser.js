@@ -25,7 +25,8 @@ function extractChangelogSection(body) {
 
   const lines = body.split('\n');
   let inChangelog = false;
-  let inFencedBlock = false;
+  /** @type {null | '`' | '~'} */
+  let fenceType = null;
   const content = [];
 
   for (const line of lines) {
@@ -34,10 +35,16 @@ function extractChangelogSection(body) {
       continue;
     }
     if (inChangelog) {
-      if (/^```/.test(line)) {
-        inFencedBlock = !inFencedBlock;
+      if (fenceType === null && /^```/.test(line)) {
+        fenceType = '`';
+      } else if (fenceType === null && /^~~~/.test(line)) {
+        fenceType = '~';
+      } else if (fenceType === '`' && /^```/.test(line)) {
+        fenceType = null;
+      } else if (fenceType === '~' && /^~~~/.test(line)) {
+        fenceType = null;
       }
-      if (!inFencedBlock && /^##\s/.test(line)) {
+      if (fenceType === null && /^##\s/.test(line)) {
         break;
       }
       content.push(line);
@@ -62,7 +69,8 @@ function extractBreakingChanges(changelogSection) {
 
   const lines = changelogSection.split('\n');
   let inBreaking = false;
-  let inFencedBlock = false;
+  /** @type {null | '`' | '~'} */
+  let fenceType = null;
   const content = [];
 
   for (const line of lines) {
@@ -71,10 +79,16 @@ function extractBreakingChanges(changelogSection) {
       continue;
     }
     if (inBreaking) {
-      if (/^```/.test(line)) {
-        inFencedBlock = !inFencedBlock;
+      if (fenceType === null && /^```/.test(line)) {
+        fenceType = '`';
+      } else if (fenceType === null && /^~~~/.test(line)) {
+        fenceType = '~';
+      } else if (fenceType === '`' && /^```/.test(line)) {
+        fenceType = null;
+      } else if (fenceType === '~' && /^~~~/.test(line)) {
+        fenceType = null;
       }
-      if (!inFencedBlock && /^#{2,3}\s/.test(line)) {
+      if (fenceType === null && /^#{2,3}\s/.test(line)) {
         break;
       }
       content.push(line);

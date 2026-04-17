@@ -108,6 +108,11 @@ if (!mergedPRsPath) {
   process.exit(1);
 }
 
+if (mode === 'release' && !targetVersion) {
+  core.setFailed('Release mode requires target_version from resolve_release_context');
+  process.exit(1);
+}
+
 // Read the merged PR manifest
 let manifest;
 try {

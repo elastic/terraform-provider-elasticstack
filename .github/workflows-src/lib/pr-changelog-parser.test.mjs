@@ -431,3 +431,55 @@ test('parseChangelogSection: does not include content from sections after ## Cha
   // The summary must be the one in Changelog, not text from later sections
   assert.equal(section.summary, 'Add support for cross-cluster replication');
 });
+
+// ---------------------------------------------------------------------------
+// Tilde-fence handling
+// ---------------------------------------------------------------------------
+
+const BODY_TILDE_FENCE = `
+## Changelog
+
+Customer impact: fix
+Summary: Fix a thing
+
+### Breaking changes
+
+~~~
+some tilde-fenced block with ## fake-heading inside
+~~~
+
+## Not a section inside the tilde block
+`.trimStart();
+
+test('extractBreakingChanges: handles tilde-fenced block and does not break on ## inside it', () => {
+  const result = parseChangelogSection(BODY_TILDE_FENCE);
+  assert.ok(result !== null, 'should parse the changelog section');
+  assert.equal(result.customerImpact, 'fix');
+  // The ## line inside the tilde block must not terminate section extraction
+  const { extractBreakingChanges: extract } = require('./pr-changelog-parser.js');
+  const section = result;
+  // We verify via parseChangelogSectionFull that breakingChanges is extracted properly
+  const full = parseChangelogSectionFull(BODY_TILDE_FENCE);
+  assert.ok(full !== null);
+  assert.ok(full.breakingChanges !== null, 'tilde-fenced content must be extracted as breakingChanges');
+  assert.ok(full.breakingChanges.includes('tilde-fenced block'), 'breaking changes must include fenced content');
+});
+
+test('extractChangelogSection: tilde fence inside Changelog does not cause ## inside it to terminate section', () => {
+  const body = [
+    '## Changelog',
+    'Customer impact: fix',
+    'Summary: Fix tilde fence edge case',
+    '',
+    '~~~',
+    '## fake heading inside tilde block',
+    '~~~',
+    '',
+    '## Real next section',
+  ].join('\n');
+
+  const result = parseChangelogSection(body);
+  assert.ok(result !== null);
+  assert.equal(result.customerImpact, 'fix');
+  assert.equal(result.summary, 'Fix tilde fence edge case');
+});

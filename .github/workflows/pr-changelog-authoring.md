@@ -43,6 +43,11 @@ on:
             return;
           }
           
+          if (!headBranch) {
+            core.setFailed('PR_CHANGELOG_GATING: Could not determine head branch from workflow_run event');
+            return;
+          }
+          
           core.info(`Resolving PR for head_sha=${headSha} head_branch=${headBranch}`);
           
           // List open PRs from the triggering head branch
@@ -131,7 +136,8 @@ on:
           
             const lines = body.split('\n');
             let inChangelog = false;
-            let inFencedBlock = false;
+            /** @type {null | '`' | '~'} */
+            let fenceType = null;
             const content = [];
           
             for (const line of lines) {
@@ -140,10 +146,16 @@ on:
                 continue;
               }
               if (inChangelog) {
-                if (/^```/.test(line)) {
-                  inFencedBlock = !inFencedBlock;
+                if (fenceType === null && /^```/.test(line)) {
+                  fenceType = '`';
+                } else if (fenceType === null && /^~~~/.test(line)) {
+                  fenceType = '~';
+                } else if (fenceType === '`' && /^```/.test(line)) {
+                  fenceType = null;
+                } else if (fenceType === '~' && /^~~~/.test(line)) {
+                  fenceType = null;
                 }
-                if (!inFencedBlock && /^##\s/.test(line)) {
+                if (fenceType === null && /^##\s/.test(line)) {
                   break;
                 }
                 content.push(line);
@@ -168,7 +180,8 @@ on:
           
             const lines = changelogSection.split('\n');
             let inBreaking = false;
-            let inFencedBlock = false;
+            /** @type {null | '`' | '~'} */
+            let fenceType = null;
             const content = [];
           
             for (const line of lines) {
@@ -177,10 +190,16 @@ on:
                 continue;
               }
               if (inBreaking) {
-                if (/^```/.test(line)) {
-                  inFencedBlock = !inFencedBlock;
+                if (fenceType === null && /^```/.test(line)) {
+                  fenceType = '`';
+                } else if (fenceType === null && /^~~~/.test(line)) {
+                  fenceType = '~';
+                } else if (fenceType === '`' && /^```/.test(line)) {
+                  fenceType = null;
+                } else if (fenceType === '~' && /^~~~/.test(line)) {
+                  fenceType = null;
                 }
-                if (!inFencedBlock && /^#{2,3}\s/.test(line)) {
+                if (fenceType === null && /^#{2,3}\s/.test(line)) {
                   break;
                 }
                 content.push(line);
@@ -389,6 +408,8 @@ jobs:
       has_no_changelog_label: ${{ steps.resolve_pr.outputs.has_no_changelog_label }}
       changelog_present: ${{ steps.validate_changelog.outputs.changelog_present }}
       changelog_valid: ${{ steps.validate_changelog.outputs.changelog_valid }}
+if: >-
+  needs.pre_activation.outputs.changelog_present == 'false'
 tools:
   github:
     toolsets: [pull_requests]
