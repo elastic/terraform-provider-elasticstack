@@ -14,7 +14,6 @@ When adding new Kibana endpoints, prefer using the `generated/kbapi` client (see
 
 These exist but *must* be avoided for new work:
 
-- `libs/go-kibana-rest`
 - `generated/slo`
 
 See “Working with Generated API Clients” in [`contributing.md`](./contributing.md).

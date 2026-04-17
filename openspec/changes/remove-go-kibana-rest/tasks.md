@@ -15,8 +15,8 @@
 
 ## 4. Clean up module and repository artifacts
 
-- [ ] 4.1 Remove the `go-kibana-rest` `require` and `replace` directives from `go.mod`, delete `libs/go-kibana-rest`, and run `go mod tidy`.
-- [ ] 4.2 Update contributor docs and OpenSpec text that still describe `go-kibana-rest` removal as pending follow-up work.
+- [x] 4.1 Remove the `go-kibana-rest` `require` and `replace` directives from `go.mod`, delete `libs/go-kibana-rest`, and run `go mod tidy`.
+- [x] 4.2 Update contributor docs and OpenSpec text that still describe `go-kibana-rest` removal as pending follow-up work.
 
 ## 5. Verify and finalize
 
