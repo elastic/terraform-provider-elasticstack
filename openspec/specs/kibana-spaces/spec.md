@@ -85,7 +85,7 @@ When the Kibana API returns successfully, the data source SHALL map each returne
 
 ### Requirement: Kibana OpenAPI client for listing spaces (REQ-006)
 
-The `elasticstack_kibana_spaces` implementation SHALL retrieve spaces using the generated OpenAPI Kibana client (`generated/kbapi`) and `internal/clients/kibanaoapi` list-spaces helpers. The implementation SHALL NOT call the legacy `go-kibana-rest` `KibanaSpaces.List` method after this migration.
+The `elasticstack_kibana_spaces` implementation SHALL retrieve spaces using the generated OpenAPI Kibana client (`generated/kbapi`) and `internal/clients/kibanaoapi` list-spaces helpers. The implementation SHALL NOT use `github.com/disaster37/go-kibana-rest`.
 
 #### Scenario: Read uses kbapi list transport
 
@@ -93,9 +93,9 @@ The `elasticstack_kibana_spaces` implementation SHALL retrieve spaces using the 
 - **WHEN** the provider fetches all spaces from Kibana
 - **THEN** the HTTP call SHALL be executed through the kbapi client configured for the effective Kibana connection
 
-### Requirement: Typed list items aligned with legacy KibanaSpace (REQ-007)
+### Requirement: Typed list items for space mapping (REQ-007)
 
-The kbapi types used for each entry in the Get All Spaces response SHALL decode the same logical fields as `github.com/disaster37/go-kibana-rest/v8/kbapi.KibanaSpace` for provider mapping (`id`, `name`, `description`, `disabledFeatures`, `initials`, `color`, `imageUrl`, `solution`, and `_reserved` when returned by Kibana), produced after `generated/kbapi/transform_schema.go` updates and regeneration.
+The kbapi types used for each entry in the Get All Spaces response SHALL decode the following logical fields for provider mapping: `id`, `name`, `description`, `disabledFeatures`, `initials`, `color`, `imageUrl`, `solution`, and `_reserved` (when returned by Kibana).
 
 #### Scenario: Nested spaces attributes unchanged for a fixed API payload
 

@@ -28,7 +28,7 @@ The workflow SHALL use deterministic repository-local helper tooling to derive t
 - **THEN** it SHALL emit structured evidence that includes the impacted entity name, entity type, matched implementation path, and the changed methods or types that produced the match
 
 #### Scenario: Unsupported client surfaces remain out of high-confidence scope
-- **WHEN** a changed Kibana-facing entity depends only on unsupported V1 client surfaces such as legacy `go-kibana-rest` or `generated/slo`
+- **WHEN** a changed Kibana-facing entity depends only on unsupported V1 client surfaces such as `generated/slo`
 - **THEN** the helper SHALL NOT classify that entity as a high-confidence impacted entity in V1
 
 ### Requirement: Agent creates one issue per impacted entity from deterministic evidence

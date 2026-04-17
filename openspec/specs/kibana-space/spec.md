@@ -132,7 +132,7 @@ The resource SHALL NOT attempt to set `image_url` in state during read, as this 
 
 ### Requirement: Kibana OpenAPI client for Spaces (REQ-018)
 
-The `elasticstack_kibana_space` implementation SHALL perform Create Space, Get Space, Update Space, and Delete Space HTTP calls using the generated OpenAPI Kibana client package (`generated/kbapi`) and helper functions colocated under `internal/clients/kibanaoapi` for Spaces. The implementation SHALL NOT use the legacy `go-kibana-rest` `KibanaSpaces` API methods for those operations after this migration.
+The `elasticstack_kibana_space` implementation SHALL perform Create Space, Get Space, Update Space, and Delete Space HTTP calls using the generated OpenAPI Kibana client package (`generated/kbapi`) and helper functions colocated under `internal/clients/kibanaoapi` for Spaces. The implementation SHALL NOT use `github.com/disaster37/go-kibana-rest`.
 
 #### Scenario: Mutations use kbapi transport
 
@@ -140,9 +140,9 @@ The `elasticstack_kibana_space` implementation SHALL perform Create Space, Get S
 - **WHEN** the provider issues the corresponding Kibana Spaces HTTP request
 - **THEN** the request SHALL be executed through the kbapi client configured for the effective Kibana connection (provider default or `kibana_connection` scoped client)
 
-### Requirement: Typed space models aligned with legacy KibanaSpace (REQ-019)
+### Requirement: Typed space models for provider mapping (REQ-019)
 
-The kbapi types used to decode and encode space request and response JSON SHALL include the same logical fields as `github.com/disaster37/go-kibana-rest/v8/kbapi.KibanaSpace` for provider purposes: `id`, `name`, `description`, `disabledFeatures`, `initials`, `color`, `imageUrl`, `solution`, and `_reserved` when returned by Kibana. Schema adjustments needed to achieve this SHALL be implemented in `generated/kbapi/transform_schema.go` followed by regeneration of `generated/kbapi`.
+The kbapi types used to decode and encode space request and response JSON SHALL include the following logical fields for provider purposes: `id`, `name`, `description`, `disabledFeatures`, `initials`, `color`, `imageUrl`, `solution`, and `_reserved` (when returned by Kibana).
 
 #### Scenario: Read maps equivalent Terraform attributes
 

@@ -147,7 +147,7 @@ For create, update, and read, when the request fails at the transport layer or t
 
 On create, read, update, and delete, if the provider did not supply a usable API client, the resource SHALL return an "Unconfigured Client" error diagnostic and SHALL NOT proceed to the Kibana API. The resource SHALL use the provider-configured Kibana client by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana client for all operations.
 
-For synthetics monitor HTTP operations (create, read, update, delete against Kibana’s `/api/synthetics/monitors` endpoints), the resource SHALL use the OpenAPI-generated Kibana client in `generated/kbapi`, invoked through monitor-specific helper functions in `internal/clients/kibanaoapi`, rather than the legacy `go-kibana-rest` synthetics monitor client. Ancillary operations that are not synthetics monitor HTTP calls (for example, server version checks required for `labels` compatibility) MAY continue to use `*clients.KibanaScopedClient` as they do today.
+For synthetics monitor HTTP operations (create, read, update, delete against Kibana’s `/api/synthetics/monitors` endpoints), the resource SHALL use the OpenAPI-generated Kibana client in `generated/kbapi`, invoked through monitor-specific helper functions in `internal/clients/kibanaoapi`. Ancillary operations that are not synthetics monitor HTTP calls (for example, server version checks required for `labels` compatibility) MAY continue to use `*clients.KibanaScopedClient` as they do today.
 
 #### Scenario: Unconfigured provider
 
@@ -399,7 +399,7 @@ On create and update, the provider SHALL send common monitor configuration field
 
 ### Requirement: OpenAPI-backed implementation placement (REQ-024)
 
-The implementation SHALL define synthetics monitor HTTP client operations in `internal/clients/kibanaoapi` (for example `synthetics_monitor.go`), using types and clients from `github.com/elastic/terraform-provider-elasticstack/generated/kbapi`. The package `internal/kibana/synthetics/monitor` SHALL call those helpers for CRUD and SHALL NOT import `github.com/disaster37/go-kibana-rest/v8/kbapi` for monitor request or response modeling after this migration is complete.
+The implementation SHALL define synthetics monitor HTTP client operations in `internal/clients/kibanaoapi` (for example `synthetics_monitor.go`), using types and clients from `github.com/elastic/terraform-provider-elasticstack/generated/kbapi`. The package `internal/kibana/synthetics/monitor` SHALL call those helpers for CRUD and SHALL NOT import `github.com/disaster37/go-kibana-rest/v8/kbapi` for monitor request or response modeling.
 
 #### Scenario: Code ownership
 
