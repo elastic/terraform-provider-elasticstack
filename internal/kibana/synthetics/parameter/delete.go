@@ -20,6 +20,7 @@ package parameter
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -39,7 +40,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}
@@ -56,9 +57,17 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		resourceID = compositeID.ResourceID
 	}
 
-	_, err := kibanaClient.KibanaSynthetics.Parameter.Delete(ctx, resourceID)
+	deleteResult, err := kibanaClient.API.DeleteParameterWithResponse(ctx, resourceID)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
+		return
+	}
+
+	if deleteResult.StatusCode() != http.StatusOK {
+		response.Diagnostics.AddError(
+			fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
+			fmt.Sprintf("API returned status %s", deleteResult.Status()),
+		)
 		return
 	}
 }

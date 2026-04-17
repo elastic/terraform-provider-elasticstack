@@ -21,7 +21,8 @@ resource "elasticstack_kibana_synthetics_parameter" "example" {
 
 Notes:
 
-- The resource uses the provider-level Kibana OpenAPI client for create, read, and update; and the provider-level Kibana legacy client for delete.
+- The resource uses the provider-level Kibana OpenAPI (`kbapi`) client for all CRUD operations (create, read, update, and delete).
+- For create and update, the provider serializes the request DTO with `encoding/json` and sends it with the `WithBody` request methods due to oapi-codegen oneOf limitations (see [oapi-codegen#1620](https://github.com/oapi-codegen/oapi-codegen/issues/1620)).
 - `share_across_spaces` is not sent to the API on update calls; it is only sent on create.
 - The `id` field has both `UseStateForUnknown` and `RequiresReplace` plan modifiers. Because `id` is computed and set by Kibana, any change that causes a new parameter to be created will also generate a new `id`.
 - There is no schema version or state upgrade defined for this resource.
@@ -30,7 +31,7 @@ Notes:
 
 ### Requirement: Synthetics Parameters API (REQ-001)
 
-The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API: create via `POST /api/synthetics/params`, read via `GET /api/synthetics/params/{id}`, update via `PUT /api/synthetics/params/{id}`, and delete via the Kibana legacy synthetics client.
+The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API: create via `POST /api/synthetics/params`, read via `GET /api/synthetics/params/{id}`, update via `PUT /api/synthetics/params/{id}`, and delete via `DELETE /api/synthetics/params/{id}` using the same generated Kibana OpenAPI (`kbapi`) client used for the other operations.
 
 #### Scenario: CRUD uses Synthetics Parameters APIs
 
@@ -40,7 +41,7 @@ The resource SHALL manage Synthetics parameters through Kibana's Synthetics Para
 
 ### Requirement: API and client error surfacing (REQ-002)
 
-The resource SHALL fail with an error diagnostic when it cannot obtain a Kibana client (OpenAPI or legacy). Transport errors and unexpected API responses for create, read, update, and delete SHALL be surfaced as error diagnostics. On read, a 404 response SHALL cause the resource to be removed from state rather than returning an error.
+The resource SHALL fail with an error diagnostic when it cannot obtain the Kibana OpenAPI client. Transport errors and unexpected API responses for create, read, update, and delete SHALL be surfaced as error diagnostics. On read, a 404 response SHALL cause the resource to be removed from state rather than returning an error.
 
 #### Scenario: Missing Kibana client
 
@@ -94,17 +95,17 @@ The resource SHALL support Terraform import using the Kibana parameter id as the
 
 ### Requirement: Provider-level Kibana client by default (REQ-005)
 
-The resource SHALL use the provider's configured Kibana clients by default (OpenAPI client for create, read, and update; legacy client for delete). When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI and legacy clients for the corresponding operations.
+The resource SHALL use the provider's configured Kibana OpenAPI (`kbapi`) client by default for all parameter API operations (create, read, update, and delete). When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the scoped Kibana OpenAPI client for all of those operations.
 
 #### Scenario: Standard provider connection
 
 - **WHEN** `kibana_connection` is not configured on the resource
-- **THEN** all parameter API operations SHALL use the provider-level Kibana clients
+- **THEN** all parameter API operations SHALL use the provider-level Kibana OpenAPI client
 
 #### Scenario: Scoped Kibana connection
 
 - **WHEN** `kibana_connection` is configured on the resource
-- **THEN** all parameter API operations SHALL use the scoped Kibana clients derived from that block
+- **THEN** all parameter API operations SHALL use the scoped Kibana OpenAPI client derived from that block
 
 ### Requirement: Read-after-write on create and update (REQ-006)
 
@@ -179,6 +180,22 @@ Because `id` carries `RequiresReplace`, any configuration or plan change that re
 - GIVEN an existing managed parameter
 - WHEN the planned `id` differs from the state `id`
 - THEN Terraform SHALL plan replacement for the resource
+
+### Requirement: Create and update request bodies encoded with manual JSON (REQ-011)
+
+For create and update, the resource SHALL serialize the parameter request DTO with `encoding/json` and send it with `Content-Type: application/json` through the generated client's `WithBody` request methods, rather than relying on the generated union request types alone, until oapi-codegen correctly encodes the oneOf request body for this API.
+
+#### Scenario: Create uses marshalled JSON body
+
+- GIVEN a parameter create
+- WHEN the provider issues the POST request
+- THEN the request body SHALL be produced by JSON-marshalling the request DTO and the call SHALL use the OpenAPI client's body-based POST method for parameters
+
+#### Scenario: Update uses marshalled JSON body
+
+- GIVEN a parameter update
+- WHEN the provider issues the PUT request
+- THEN the request body SHALL be produced by JSON-marshalling the request DTO and the call SHALL use the OpenAPI client's body-based PUT method for parameters
 
 ## Traceability
 
