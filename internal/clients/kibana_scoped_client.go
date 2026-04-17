@@ -100,7 +100,13 @@ func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, diag.Dia
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
 func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
-	flavor, diags := k.ServerFlavor(ctx)
+	oapiClient, err := k.GetKibanaOapiClient()
+	if err != nil {
+		return false, diag.Errorf("failed to get version from Kibana API: %s, "+
+			"please ensure a working 'kibana' endpoint is configured", err.Error())
+	}
+
+	rawVersion, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -109,9 +115,9 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 		return true, nil
 	}
 
-	serverVersion, diags := k.ServerVersion(ctx)
-	if diags.HasError() {
-		return false, diags
+	serverVersion, err := version.NewVersion(rawVersion)
+	if err != nil {
+		return false, diag.FromErr(err)
 	}
 
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
