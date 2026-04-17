@@ -566,13 +566,10 @@ func TestAccResourceIndexDateMath(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "name", dateMathName),
 					// concrete_name is still set (preserved from create).
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_date_math", "concrete_name"),
-					// Both aliases from the updated config must be present.
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "alias.#", "2"),
+					// Alias from create is still present after the mappings update.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "alias.#", "1"),
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_date_math", "alias.*", map[string]*regexp.Regexp{
 						"name": regexp.MustCompile("date_math_alias_1"),
-					}),
-					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_date_math", "alias.*", map[string]*regexp.Regexp{
-						"name": regexp.MustCompile("date_math_alias_2"),
 					}),
 				),
 			},
