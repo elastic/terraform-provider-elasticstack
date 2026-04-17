@@ -57,6 +57,9 @@ type KibanaScopedClient struct {
 
 // GetKibanaClient returns the Kibana legacy client.
 func (k *KibanaScopedClient) GetKibanaClient() (*kibana.Client, error) {
+	if k.kibanaEndpoint == "" {
+		return nil, errors.New("Kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT")
+	}
 	if k.kibana == nil {
 		return nil, errors.New("kibana client not found")
 	}
@@ -65,6 +68,9 @@ func (k *KibanaScopedClient) GetKibanaClient() (*kibana.Client, error) {
 
 // GetKibanaOapiClient returns the Kibana OpenAPI client.
 func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
+	if k.kibanaEndpoint == "" {
+		return nil, errors.New("Kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT")
+	}
 	if k.kibanaOapi == nil {
 		return nil, errors.New("kibanaoapi client not found")
 	}
@@ -73,6 +79,9 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
 
 // GetFleetClient returns the Fleet client.
 func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
+	if k.fleetEndpoint == "" {
+		return nil, errors.New("Fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT for inherited Fleet endpoint resolution")
+	}
 	if k.fleet == nil {
 		return nil, errors.New("fleet client not found")
 	}

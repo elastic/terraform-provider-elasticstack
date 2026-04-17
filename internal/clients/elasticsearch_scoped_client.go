@@ -54,6 +54,16 @@ type ElasticsearchScopedClient struct {
 // GetESClient returns the underlying go-elasticsearch client. It satisfies the
 // ESClient sink interface used by internal/clients/elasticsearch/ helpers.
 func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error) {
+	hasEndpoint := false
+	for _, ep := range e.esEndpoints {
+		if ep != "" {
+			hasEndpoint = true
+			break
+		}
+	}
+	if !hasEndpoint {
+		return nil, errors.New("Elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
+	}
 	if e.elasticsearch == nil {
 		return nil, errors.New("elasticsearch client not found")
 	}
