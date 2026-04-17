@@ -1,7 +1,7 @@
 ## 1. Preconditions (blocking)
 
-- [ ] 1.1 Confirm every Kibana/Fleet resource and data source that still imports `github.com/disaster37/go-kibana-rest` or calls `(*clients.KibanaScopedClient).GetKibanaClient()` / `synthetics.GetKibanaClientFromScopedClient` for CRUD has merged its kbapi migration (tracked OpenSpec changes such as `migrate-kibana-*-to-kbapi`, `finish-kibana-synthetics-parameter-kbapi`, and related items on the migration plan).
-- [ ] 1.2 Run `go list` / `rg 'disaster37/go-kibana-rest'` on `internal/` and fix any remaining stragglers before deleting wiring; this change MUST NOT merge while production packages still require the legacy client.
+- [x] 1.1 Confirm every Kibana/Fleet resource and data source that still imports `github.com/disaster37/go-kibana-rest` or calls `(*clients.KibanaScopedClient).GetKibanaClient()` / `synthetics.GetKibanaClientFromScopedClient` for CRUD has merged its kbapi migration (tracked OpenSpec changes such as `migrate-kibana-*-to-kbapi`, `finish-kibana-synthetics-parameter-kbapi`, and related items on the migration plan).
+- [x] 1.2 Run `go list` / `rg 'disaster37/go-kibana-rest'` on `internal/` and fix any remaining stragglers before deleting wiring; this change MUST NOT merge while production packages still require the legacy client.
 
 ## 2. Status and version wiring
 
@@ -17,8 +17,8 @@
 
 ## 4. Delete legacy-only helper surfaces
 
-- [ ] 4.1 Remove `GetKibanaClient` and `GetKibanaClientFromScopedClient` from `internal/kibana/synthetics/api_client.go` when zero references remain; if the file only contains OpenAPI helpers afterward, consider inlining `GetKibanaOAPIClient*` next to call sites or keeping a slim `api_client.go` without `go-kibana-rest` imports.
-- [ ] 4.2 Search for other packages whose sole purpose is re-exporting the legacy client from scoped wiring; delete or fold into `kibanaoapi` helpers.
+- [x] 4.1 Remove `GetKibanaClient` and `GetKibanaClientFromScopedClient` from `internal/kibana/synthetics/api_client.go` when zero references remain; if the file only contains OpenAPI helpers afterward, consider inlining `GetKibanaOAPIClient*` next to call sites or keeping a slim `api_client.go` without `go-kibana-rest` imports.
+- [x] 4.2 Search for other packages whose sole purpose is re-exporting the legacy client from scoped wiring; delete or fold into `kibanaoapi` helpers.
 
 ## 5. Verification and cleanup
 
