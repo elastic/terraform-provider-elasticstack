@@ -141,7 +141,7 @@ func gitShowPathOrMissing(repoRoot, rev string) (content string, missing bool, e
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err == nil {
+	if err = cmd.Run(); err == nil {
 		return stdout.String(), false, nil
 	}
 	msg := stderr.String()

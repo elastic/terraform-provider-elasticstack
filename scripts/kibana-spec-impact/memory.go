@@ -143,6 +143,9 @@ func memoryAddFingerprint(m *Memory, baselineSHA, targetSHA, entityName, entityT
 	if m == nil {
 		return FingerprintRec{}, errors.New("memory is nil")
 	}
+	if m.ReportedFingerprints == nil {
+		m.ReportedFingerprints = make(map[string]FingerprintRec)
+	}
 	fp := impactFingerprint(baselineSHA, targetSHA, entityName, entityType, symbols)
 	rec := FingerprintRec{
 		EntityName:  entityName,
