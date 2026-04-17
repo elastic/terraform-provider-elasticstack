@@ -188,8 +188,14 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		return nil, diags
 	}
 
+	var esEndpoints []string
+	if cfg.Elasticsearch != nil {
+		esEndpoints = cfg.Elasticsearch.Addresses
+	}
+
 	return &ElasticsearchScopedClient{
 		elasticsearch: esClient,
+		esEndpoints:   esEndpoints,
 	}, nil
 }
 
@@ -229,8 +235,14 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 		}}
 	}
 
+	var esEndpoints []string
+	if resourceConfig.Elasticsearch != nil {
+		esEndpoints = resourceConfig.Elasticsearch.Addresses
+	}
+
 	return &ElasticsearchScopedClient{
 		elasticsearch: esClient,
+		esEndpoints:   esEndpoints,
 	}, nil
 }
 
@@ -261,12 +273,24 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Fleet client", err.Error())}
 	}
 
+	var kibanaEndpoint string
+	if cfg.KibanaOapi != nil {
+		kibanaEndpoint = cfg.KibanaOapi.URL
+	}
+
+	var fleetEndpoint string
+	if cfg.Fleet != nil {
+		fleetEndpoint = cfg.Fleet.URL
+	}
+
 	return &KibanaScopedClient{
-		kibana:       kibanaClient,
-		kibanaOapi:   kibanaOapiClient,
-		kibanaConfig: *cfg.Kibana,
-		fleet:        fleetClient,
-		version:      version,
+		kibana:         kibanaClient,
+		kibanaOapi:     kibanaOapiClient,
+		kibanaConfig:   *cfg.Kibana,
+		fleet:          fleetClient,
+		version:        version,
+		kibanaEndpoint: kibanaEndpoint,
+		fleetEndpoint:  fleetEndpoint,
 	}, nil
 }
 

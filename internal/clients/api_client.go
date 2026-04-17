@@ -92,6 +92,20 @@ type apiClient struct {
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
+	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
+	// after all configuration layers (provider input, entity-local overrides,
+	// environment overrides) have been applied. Carried through to
+	// ElasticsearchScopedClient for accessor validation.
+	esEndpoints []string
+	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after all
+	// configuration layers have been applied. Carried through to
+	// KibanaScopedClient for accessor validation.
+	kibanaEndpoint string
+	// fleetEndpoint holds the resolved Fleet endpoint URL captured after all
+	// configuration layers have been applied, including any inheritance from the
+	// Kibana-derived config path. Carried through to KibanaScopedClient for
+	// accessor validation.
+	fleetEndpoint string
 }
 
 func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
@@ -107,36 +121,7 @@ func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.Resou
 func newAcceptanceTestingClient() (*apiClient, error) {
 	version := "tf-acceptance-testing"
 	cfg := config.NewFromEnv(version)
-
-	es, err := elasticsearch.NewClient(*cfg.Elasticsearch)
-	if err != nil {
-		return nil, err
-	}
-
-	kib, err := kibana.NewClient(*cfg.Kibana)
-	if err != nil {
-		return nil, err
-	}
-
-	kibOapi, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
-	if err != nil {
-		return nil, err
-	}
-
-	fleetClient, err := fleet.NewClient(*cfg.Fleet)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apiClient{
-			elasticsearch: es,
-			kibana:        kib,
-			kibanaOapi:    kibOapi,
-			kibanaConfig:  *cfg.Kibana,
-			fleet:         fleetClient,
-			version:       version,
-		},
-		nil
+	return newAPIClientFromConfig(cfg, version)
 }
 
 func newAPIClientFromFramework(ctx context.Context, cfg config.ProviderConfiguration, version string) (*apiClient, fwdiags.Diagnostics) {
@@ -246,6 +231,7 @@ func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, erro
 			return nil, err
 		}
 		client.elasticsearch = esClient
+		client.esEndpoints = cfg.Elasticsearch.Addresses
 	}
 
 	if cfg.Kibana != nil {
@@ -260,6 +246,10 @@ func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, erro
 			return nil, err
 		}
 		client.kibanaOapi = kibanaOapiClient
+
+		if cfg.KibanaOapi != nil {
+			client.kibanaEndpoint = cfg.KibanaOapi.URL
+		}
 	}
 
 	if cfg.Fleet != nil {
@@ -269,6 +259,7 @@ func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, erro
 		}
 
 		client.fleet = fleetClient
+		client.fleetEndpoint = cfg.Fleet.URL
 	}
 
 	return client, nil

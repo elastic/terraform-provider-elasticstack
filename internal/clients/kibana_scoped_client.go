@@ -42,6 +42,17 @@ type KibanaScopedClient struct {
 	fleet        *fleetclient.Client
 	// version is the provider version string used to tag API user-agent headers.
 	version string
+	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after
+	// provider configuration, entity-local overrides, and environment overrides
+	// have been applied. It is used by accessor validation to distinguish missing
+	// endpoint configuration from unexpected nil states.
+	kibanaEndpoint string
+	// fleetEndpoint holds the resolved Fleet endpoint URL captured after
+	// provider configuration, entity-local overrides, and environment overrides
+	// have been applied. For Fleet, the value reflects the already-resolved
+	// cfg.Fleet endpoint which may have been inherited from the Kibana-derived
+	// config path.
+	fleetEndpoint string
 }
 
 // GetKibanaClient returns the Kibana legacy client.
@@ -156,11 +167,13 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 // the factory and by NewAcceptanceTestingKibanaScopedClient.
 func kibanaScopedClientFromAPIClient(a *apiClient) *KibanaScopedClient {
 	return &KibanaScopedClient{
-		kibana:       a.kibana,
-		kibanaOapi:   a.kibanaOapi,
-		kibanaConfig: a.kibanaConfig,
-		fleet:        a.fleet,
-		version:      a.version,
+		kibana:         a.kibana,
+		kibanaOapi:     a.kibanaOapi,
+		kibanaConfig:   a.kibanaConfig,
+		fleet:          a.fleet,
+		version:        a.version,
+		kibanaEndpoint: a.kibanaEndpoint,
+		fleetEndpoint:  a.fleetEndpoint,
 	}
 }
 
