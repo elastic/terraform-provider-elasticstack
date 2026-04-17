@@ -130,7 +130,6 @@ func scanFileForKibanaOAPICalls(path string, calls map[string]struct{}) error {
 	return nil
 }
 
-
 func containsGoSymbol(src, symbol string) bool {
 	if symbol == "" {
 		return false
