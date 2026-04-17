@@ -1,7 +1,7 @@
 ## 1. PR changelog contract helpers
 
-- [ ] 1.1 Add repository-authored helpers to parse and validate the PR-body `## Changelog` contract, including `Customer impact`, `Summary`, and boundary-based extraction of an optional free-form `### Breaking changes` subsection.
-- [ ] 1.2 Add fixtures and unit tests for valid sections, malformed structured fields, `Customer impact: none`, and free-form breaking-changes markdown with lists and fenced code blocks.
+- [x] 1.1 Add repository-authored helpers to parse and validate the PR-body `## Changelog` contract, including `Customer impact`, `Summary`, and boundary-based extraction of an optional free-form `### Breaking changes` subsection.
+- [x] 1.2 Add fixtures and unit tests for valid sections, malformed structured fields, `Customer impact: none`, and free-form breaking-changes markdown with lists and fenced code blocks.
 
 ## 2. PR-time agentic workflow
 
