@@ -106,6 +106,7 @@ type tfModel struct {
 	ID                                 types.String         `tfsdk:"id"`
 	ElasticsearchConnection            types.List           `tfsdk:"elasticsearch_connection"`
 	Name                               types.String         `tfsdk:"name"`
+	ConcreteName                       types.String         `tfsdk:"concrete_name"`
 	NumberOfShards                     types.Int64          `tfsdk:"number_of_shards"`
 	NumberOfRoutingShards              types.Int64          `tfsdk:"number_of_routing_shards"`
 	Codec                              types.String         `tfsdk:"codec"`
@@ -194,7 +195,16 @@ type settingTfModel struct {
 }
 
 func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, apiModel models.Index) diag.Diagnostics {
-	model.Name = types.StringValue(indexName)
+	// Always set the concrete name to the actual index name from Elasticsearch.
+	model.ConcreteName = types.StringValue(indexName)
+
+	// Preserve the configured name if it is already in state.
+	// Only backfill name from the concrete index name when state has no name
+	// (e.g. after an import where no date math expression is known).
+	if model.Name.IsNull() || model.Name.IsUnknown() || model.Name.ValueString() == "" {
+		model.Name = types.StringValue(indexName)
+	}
+
 	modelAliases, diags := aliasesFromAPI(ctx, apiModel)
 	if diags.HasError() {
 		return diags

@@ -134,6 +134,7 @@ If specified, this mapping can include: field names, [field data types](https://
 
 ### Read-Only
 
+- `concrete_name` (String) The concrete Elasticsearch index name managed by this resource. For static index names this equals `name`. For date math index names this is the resolved concrete index name returned by Elasticsearch after creation.
 - `id` (String) Internal identifier of the resource
 - `settings_raw` (String) All raw settings fetched from the cluster.
 

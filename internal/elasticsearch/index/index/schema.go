@@ -45,6 +45,8 @@ import (
 const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
 	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
 
+const dateMathIndexNameMessage = "must be a valid plain date math index name expression enclosed in angle brackets with at least one {…} section, e.g. <logs-{now/d}>"
+
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
@@ -92,6 +94,15 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"concrete_name": schema.StringAttribute{
+				Description: "The concrete Elasticsearch index name managed by this resource. " +
+					"For static index names this equals `name`. " +
+					"For date math index names this is the resolved concrete index name returned by Elasticsearch after creation.",
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{
 				Description: "Name of the index you wish to create.",
 				Required:    true,
@@ -101,10 +112,18 @@ func getSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 					stringvalidator.NoneOf(".", ".."),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-						indexNameAllowedCharsMessage,
+					stringvalidator.Any(
+						stringvalidator.All(
+							stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
+							stringvalidator.RegexMatches(
+								regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+								indexNameAllowedCharsMessage,
+							),
+						),
+						stringvalidator.RegexMatches(
+							regexp.MustCompile(`^<[^<>]*\{[^<>]+\}[^<>]*>$`),
+							dateMathIndexNameMessage,
+						),
 					),
 				},
 			},
