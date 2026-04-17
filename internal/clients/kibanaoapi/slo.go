@@ -34,7 +34,6 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		spaceID,
 		sloID,
 		&kbapi.GetSloOpParams{},
-		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
@@ -62,7 +61,6 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		ctx,
 		spaceID,
 		req,
-		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to create SLO", err.Error())}
@@ -89,7 +87,6 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		spaceID,
 		sloID,
 		req,
-		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update SLO", err.Error())}
@@ -115,7 +112,6 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		ctx,
 		spaceID,
 		sloID,
-		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete SLO", err.Error())}
@@ -138,7 +134,6 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 		ctx,
 		spaceID,
 		params,
-		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to find SLOs", err.Error())}

@@ -114,16 +114,24 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator kbapi.SLOsIndicato
 	}
 
 	if p.Filter != nil {
-		if s, err := p.Filter.AsSLOsKqlWithFilters0(); err == nil {
+		// Try string variant first; fall back to object variant's KqlQuery field.
+		if s, err := p.Filter.AsSLOsKqlWithFilters0(); err == nil && s != "" {
 			ind.Filter = types.StringValue(s)
+		} else if f1, err := p.Filter.AsSLOsKqlWithFilters1(); err == nil && f1.KqlQuery != nil {
+			ind.Filter = types.StringValue(*f1.KqlQuery)
 		}
 	}
 
-	if s, err := p.Good.AsSLOsKqlWithFiltersGood0(); err == nil {
+	// Try string variant first; fall back to object variant's KqlQuery field.
+	if s, err := p.Good.AsSLOsKqlWithFiltersGood0(); err == nil && s != "" {
 		ind.Good = types.StringValue(s)
+	} else if g1, err := p.Good.AsSLOsKqlWithFiltersGood1(); err == nil && g1.KqlQuery != nil {
+		ind.Good = types.StringValue(*g1.KqlQuery)
 	}
-	if s, err := p.Total.AsSLOsKqlWithFiltersTotal0(); err == nil {
+	if s, err := p.Total.AsSLOsKqlWithFiltersTotal0(); err == nil && s != "" {
 		ind.Total = types.StringValue(s)
+	} else if t1, err := p.Total.AsSLOsKqlWithFiltersTotal1(); err == nil && t1.KqlQuery != nil {
+		ind.Total = types.StringValue(*t1.KqlQuery)
 	}
 
 	if p.DataViewId != nil {

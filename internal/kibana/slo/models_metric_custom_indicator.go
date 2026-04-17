@@ -166,41 +166,56 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 	}
 
 	goodMetrics := make([]tfMetricCustomMetric, 0, len(p.Good.Metrics))
-	for _, mtr := range p.Good.Metrics {
-		metric := tfMetricCustomMetric{
-			Field:  types.StringNull(),
-			Filter: types.StringNull(),
+	for i, mtr := range p.Good.Metrics {
+		// Dispatch on aggregation value: doc_count → Metrics1, otherwise → Metrics0.
+		// As* calls always unmarshal; we check the aggregation field to pick the right variant.
+		m1, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1()
+		if string(m1.Aggregation) == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1AggregationDocCount) {
+			goodMetrics = append(goodMetrics, tfMetricCustomMetric{
+				Name:        types.StringValue(m1.Name),
+				Aggregation: types.StringValue(string(m1.Aggregation)),
+				Field:       types.StringNull(),
+				Filter:      stringOrNull(m1.Filter),
+			})
+		} else {
+			m0, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0()
+			if m0.Name == "" {
+				diags.AddError("Unexpected API response", fmt.Sprintf("good.metrics[%d]: unrecognised metric variant", i))
+				return diags
+			}
+			goodMetrics = append(goodMetrics, tfMetricCustomMetric{
+				Name:        types.StringValue(m0.Name),
+				Aggregation: types.StringValue(string(m0.Aggregation)),
+				Field:       types.StringValue(m0.Field),
+				Filter:      stringOrNull(m0.Filter),
+			})
 		}
-		if m0, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(); err == nil {
-			metric.Name = types.StringValue(m0.Name)
-			metric.Aggregation = types.StringValue(string(m0.Aggregation))
-			metric.Field = types.StringValue(m0.Field)
-			metric.Filter = stringOrNull(m0.Filter)
-		} else if m1, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(); err == nil {
-			metric.Name = types.StringValue(m1.Name)
-			metric.Aggregation = types.StringValue(string(m1.Aggregation))
-			metric.Filter = stringOrNull(m1.Filter)
-		}
-		goodMetrics = append(goodMetrics, metric)
 	}
 
 	totalMetrics := make([]tfMetricCustomMetric, 0, len(p.Total.Metrics))
-	for _, mtr := range p.Total.Metrics {
-		metric := tfMetricCustomMetric{
-			Field:  types.StringNull(),
-			Filter: types.StringNull(),
+	for i, mtr := range p.Total.Metrics {
+		// Dispatch on aggregation value: doc_count → Metrics1, otherwise → Metrics0.
+		m1, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1()
+		if string(m1.Aggregation) == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1AggregationDocCount) {
+			totalMetrics = append(totalMetrics, tfMetricCustomMetric{
+				Name:        types.StringValue(m1.Name),
+				Aggregation: types.StringValue(string(m1.Aggregation)),
+				Field:       types.StringNull(),
+				Filter:      stringOrNull(m1.Filter),
+			})
+		} else {
+			m0, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0()
+			if m0.Name == "" {
+				diags.AddError("Unexpected API response", fmt.Sprintf("total.metrics[%d]: unrecognised metric variant", i))
+				return diags
+			}
+			totalMetrics = append(totalMetrics, tfMetricCustomMetric{
+				Name:        types.StringValue(m0.Name),
+				Aggregation: types.StringValue(string(m0.Aggregation)),
+				Field:       types.StringValue(m0.Field),
+				Filter:      stringOrNull(m0.Filter),
+			})
 		}
-		if m0, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(); err == nil {
-			metric.Name = types.StringValue(m0.Name)
-			metric.Aggregation = types.StringValue(string(m0.Aggregation))
-			metric.Field = types.StringValue(m0.Field)
-			metric.Filter = stringOrNull(m0.Filter)
-		} else if m1, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(); err == nil {
-			metric.Name = types.StringValue(m1.Name)
-			metric.Aggregation = types.StringValue(string(m1.Aggregation))
-			metric.Filter = stringOrNull(m1.Filter)
-		}
-		totalMetrics = append(totalMetrics, metric)
 	}
 
 	ind.Good = []tfMetricCustomEquation{{

@@ -153,6 +153,10 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 			}
 		}
 	}
+	// Preserve an explicitly empty tags list so that clearing tags is sent to the API.
+	if m.Tags != nil {
+		apiModel.Tags = []string{}
+	}
 	for _, t := range m.Tags {
 		if typeutils.IsKnown(t) {
 			apiModel.Tags = append(apiModel.Tags, t.ValueString())
