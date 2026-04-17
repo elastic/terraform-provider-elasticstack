@@ -825,6 +825,56 @@ func transformKibanaPaths(schema *Schema) {
 	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
 	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
 
+	// Add DELETE /api/synthetics/params which accepts {"ids":[...]} in the request body.
+	// This endpoint is supported from Kibana 8.12.0 onwards and is distinct from the
+	// documented POST /api/synthetics/params/_bulk_delete which is only available
+	// on Kibana >= 8.17.0. The operation id "delete-synthetics-params" is chosen to
+	// avoid collision with the existing "delete-parameters" (bulk_delete) operation.
+	sytheticsParamsPath.Delete = Map{
+		"operationId": "delete-synthetics-params",
+		"description": "Delete Synthetics parameters by id. Supported on Kibana >= 8.12.0.",
+		"requestBody": Map{
+			"required": true,
+			"content": Map{
+				"application/json": Map{
+					"schema": Map{
+						"type": "object",
+						"properties": Map{
+							"ids": Map{
+								"type":        "array",
+								"description": "An array of parameter IDs to delete.",
+								"items":       Map{"type": "string"},
+							},
+						},
+					},
+				},
+			},
+		},
+		"responses": Map{
+			"200": Map{
+				"description": "OK",
+				"content": Map{
+					"application/json": Map{
+						"schema": Map{
+							"$ref": "#/components/schemas/SyntheticsDeleteParameterResult",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema.Components.Set("schemas.SyntheticsDeleteParameterResult", Map{
+		"type": "array",
+		"items": Map{
+			"type": "object",
+			"properties": Map{
+				"id":      Map{"type": "string"},
+				"deleted": Map{"type": "boolean"},
+			},
+		},
+	})
+
 	// The POST /api/synthetics/private_locations endpoint returns the same schema as
 	// Synthetics_getPrivateLocation (already a named component used by the GET endpoints).
 	// Point the POST 200 response at that component so the generated client uses the

@@ -67,8 +67,8 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	// Choose delete endpoint based on Kibana version.
 	// DELETE /api/synthetics/params/{id} (DeleteParameterWithResponse) is only
 	// supported on Kibana >= 8.17.0; it returns 404 on 8.12.x–8.16.x.
-	// DELETE /api/synthetics/params with {"ids":[...]} body works on all
-	// supported versions (>= 8.12.0), so that is the default.
+	// DELETE /api/synthetics/params with {"ids":[...]} body (DeleteSyntheticsParamsWithResponse)
+	// works on all supported versions (>= 8.12.0), so that is used for older versions.
 	kibanaVersion, sdkDiags := apiClient.ServerVersion(ctx)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if response.Diagnostics.HasError() {
@@ -91,10 +91,10 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	// Use the bulk-style delete endpoint for Kibana < 8.17.0.
-	// This is DELETE /api/synthetics/params with {"ids":[...]} body.
-	deleteResult, err := kibanaClient.API.BulkDeleteSyntheticsParametersWithResponse(ctx, kbapi.BulkDeleteSyntheticsParametersBody{
-		Ids: []string{resourceID},
+	// Use DELETE /api/synthetics/params with {"ids":[...]} body for Kibana < 8.17.0.
+	ids := []string{resourceID}
+	deleteResult, err := kibanaClient.API.DeleteSyntheticsParamsWithResponse(ctx, kbapi.DeleteSyntheticsParamsJSONRequestBody{
+		Ids: &ids,
 	})
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
@@ -112,8 +112,8 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	// Validate that the requested id was actually deleted.
 	if deleteResult.JSON200 != nil {
 		for _, r := range *deleteResult.JSON200 {
-			if r.ID == resourceID {
-				if !r.Deleted {
+			if r.Id != nil && *r.Id == resourceID {
+				if r.Deleted == nil || !*r.Deleted {
 					response.Diagnostics.AddError(
 						fmt.Sprintf("Parameter `%s` was not deleted", resourceID),
 						"Kibana returned deleted=false for the requested parameter id",
