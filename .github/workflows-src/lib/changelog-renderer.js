@@ -19,6 +19,7 @@
  */
 
 //include: ./pr-changelog-parser.js
+/* global parseChangelogSectionFull, validateChangelogSectionFull */
 
 const NO_CHANGELOG_LABEL = 'no-changelog';
 
@@ -121,8 +122,8 @@ function renderChangelogSection(mergedPRs) {
       continue;
     }
 
-    // Parse the changelog section from the PR body
-    const parsed = parseChangelogSection(body || '');
+    // Parse and validate the changelog section from the PR body
+    const parsed = parseChangelogSectionFull(body || '');
 
     if (parsed === null) {
       // No parseable ## Changelog section and no no-changelog label — hard fail
@@ -136,6 +137,25 @@ function renderChangelogSection(mergedPRs) {
       continue;
     }
 
+    // Validate structural correctness (invalid customerImpact, empty breaking-changes heading, etc.)
+    const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed);
+    if (!valid) {
+      if (parsed.customerImpact === null) {
+        errors.push({
+          prNumber,
+          prUrl,
+          reason: `PR #${prNumber}: ## Changelog section is missing the required Customer impact field`,
+        });
+      } else {
+        errors.push({
+          prNumber,
+          prUrl,
+          reason: `PR #${prNumber}: ## Changelog section failed validation: ${validationErrors.join('; ')}`,
+        });
+      }
+      continue;
+    }
+
     const { customerImpact, summary, breakingChanges } = parsed;
 
     // Collect breaking-change block regardless of customerImpact
@@ -143,8 +163,8 @@ function renderChangelogSection(mergedPRs) {
       breakingChangeBlocks.push({ prNumber, prUrl, breakingChanges });
     }
 
-    // Exclude from change bullets when Customer impact is none
-    if (!customerImpact || customerImpact.trim().toLowerCase() === 'none') {
+    // customerImpact === null case is already caught by validateChangelogSectionFull above
+    if (customerImpact.trim().toLowerCase() === 'none') {
       excluded.push({ prNumber, prUrl, reason: 'Customer impact: none' });
       continue;
     }
