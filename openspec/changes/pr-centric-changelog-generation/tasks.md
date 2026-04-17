@@ -11,9 +11,9 @@
 
 ## 3. Deterministic changelog assembly workflow
 
-- [ ] 3.1 Refactor the changelog-generation workflow source and compiled outputs to remove merged-history agent synthesis and instead gather merged PR bodies and labels for the authoritative release range.
-- [ ] 3.2 Implement deterministic rendering from parsed PR-body changelog sections, excluding `no-changelog` PRs and `Customer impact: none`, while preserving optional `### Breaking changes` blocks under the top-level breaking-changes section.
-- [ ] 3.3 Keep output normalization minimal by standardizing only bullet/citation/whitespace shape and breaking-change placement, without semantically rewriting author-provided content.
+- [x] 3.1 Refactor the changelog-generation workflow source and compiled outputs to remove merged-history agent synthesis and instead gather merged PR bodies and labels for the authoritative release range.
+- [x] 3.2 Implement deterministic rendering from parsed PR-body changelog sections, excluding `no-changelog` PRs and `Customer impact: none`, while preserving optional `### Breaking changes` blocks under the top-level breaking-changes section.
+- [x] 3.3 Keep output normalization minimal by standardizing only bullet/citation/whitespace shape and breaking-change placement, without semantically rewriting author-provided content.
 
 ## 4. Branch and PR management
 

@@ -13,8 +13,8 @@
       "output": ".github/workflows/test.yml"
     },
     {
-      "template": ".github/workflows-src/changelog-generation/workflow.md.tmpl",
-      "output": ".github/workflows/changelog-generation.md"
+      "template": ".github/workflows-src/changelog-generation/workflow.yml.tmpl",
+      "output": ".github/workflows/changelog-generation.yml"
     },
     {
       "template": ".github/workflows-src/kibana-spec-impact/workflow.md.tmpl",
