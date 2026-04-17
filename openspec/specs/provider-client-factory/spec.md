@@ -40,3 +40,7 @@ The typed Kibana-scoped client returned by the factory SHALL expose the Kibana O
 - **WHEN** a covered Kibana or Fleet entity performs version or flavor checks through the typed Kibana-scoped client
 - **THEN** the client SHALL provide `ServerVersion()`, `ServerFlavor()`, or equivalent typed behavior needed for those checks
 
+#### Scenario: Factory does not require a legacy Kibana config surface
+- **WHEN** the provider client factory resolves a Kibana-scoped client from provider configuration or `kibana_connection`
+- **THEN** it SHALL validate and build that client from the Kibana OpenAPI config surface without relying on a parallel legacy Kibana REST config object
+
