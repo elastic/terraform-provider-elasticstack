@@ -17,8 +17,8 @@
 
 ## 4. Branch and PR management
 
-- [ ] 4.1 Replace GH AW safe-output PR management in scheduled/manual mode with normal GitHub Actions logic that updates the `generated-changelog` branch, reuses an existing PR when present, and creates the PR when absent.
-- [ ] 4.2 Implement release-mode PR metadata refresh using the triggering release PR number from event metadata while updating only the target `prep-release-*` branch.
+- [x] 4.1 Replace GH AW safe-output PR management in scheduled/manual mode with normal GitHub Actions logic that updates the `generated-changelog` branch, reuses an existing PR when present, and creates the PR when absent.
+- [x] 4.2 Implement release-mode PR metadata refresh using the triggering release PR number from event metadata while updating only the target `prep-release-*` branch.
 
 ## 5. Verification and rollout
 

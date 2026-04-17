@@ -61,6 +61,7 @@ jobs:
           x-script-include: scripts/render-changelog.inline.js
 
       - name: Commit changelog (release mode)
+        id: commit_release
         if: >-
           steps.resolve_release_context.outputs.mode == 'release' &&
           steps.gather_merged_prs.outputs.has_prs == 'true' &&
@@ -69,9 +70,52 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "pushed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           git commit -m "chore(changelog): update changelog for v${{ steps.resolve_release_context.outputs.target_version }}"
           git push origin HEAD:${{ steps.resolve_release_context.outputs.target_branch }}
+          echo "pushed=true" >> $GITHUB_OUTPUT
+
+      - name: Refresh release PR metadata (release mode)
+        if: >-
+          steps.resolve_release_context.outputs.mode == 'release' &&
+          steps.commit_release.outputs.pushed == 'true'
+        uses: actions/github-script@v8
+        env:
+          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+              return;
+            }
+            const compareRange = process.env.COMPARE_RANGE;
+            const targetVersion = process.env.TARGET_VERSION;
+            const today = new Date().toISOString().split('T')[0];
+
+            const prBody = [
+              `**Generated:** ${today}`,
+              `**Version:** \`${targetVersion}\``,
+              `**Compare range:** \`${compareRange}\``,
+              '',
+              '> This PR body was last refreshed by the changelog-generation workflow.',
+            ].join('\n');
+
+            core.info(`Refreshing release PR #${prNumber} metadata`);
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: prNumber,
+              body: prBody,
+            });
+            core.info(`Release PR #${prNumber} metadata refreshed`);
 
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
