@@ -604,6 +604,7 @@ var transformers = []TransformFunc{
 	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
 	fixAlertingRuleParams,
+	fixSyntheticsMonitorModels,
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
 	transformRemoveExamples,
@@ -1405,6 +1406,161 @@ func fixAlertingRuleBody(schema *Schema) {
 func fixAlertingRuleParams(schema *Schema) {
 	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
 	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.anyOf.1.properties.params")
+}
+
+func fixSyntheticsMonitorModels(schema *Schema) {
+	monitorsPath := schema.MustGetPath("/api/synthetics/monitors")
+	monitorPath := schema.MustGetPath("/api/synthetics/monitors/{id}")
+	requestDescription := "The request body should contain monitor attributes. The required and default fields differ depending on the monitor type."
+
+	monitorsPath.Post.Set("requestBody.content.application/json.schema.description", requestDescription)
+	monitorPath.Put.Set("requestBody.content.application/json.schema.description", requestDescription)
+	monitorsPath.Post.Set("requestBody.content.application/json.schema.type", "object")
+	monitorPath.Put.Set("requestBody.content.application/json.schema.type", "object")
+	monitorsPath.Post.CreateRef(schema, "synthetics_monitor_request", "requestBody.content.application/json.schema")
+	monitorPath.Put.CreateRef(schema, "synthetics_monitor_request", "requestBody.content.application/json.schema")
+
+	schema.Components.Set("schemas.synthetics_monitor_alert_status", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"enabled": Map{"type": "boolean"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.synthetics_monitor_alert", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"status": Map{"$ref": "#/components/schemas/synthetics_monitor_alert_status"},
+			"tls":    Map{"$ref": "#/components/schemas/synthetics_monitor_alert_status"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.synthetics_ssl_config", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"certificate": Map{"type": "string"},
+			"certificate_authorities": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"key":            Map{"type": "string"},
+			"key_passphrase": Map{"type": "string"},
+			"supported_protocols": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"verification_mode": Map{"type": "string"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.synthetics_monitor_schedule", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"number": Map{"type": "string"},
+			"unit":   Map{"type": "string"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.geo_pos", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"lat": Map{"type": "number"},
+			"lon": Map{"type": "number"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.synthetics_location_config", Map{
+		"additionalProperties": false,
+		"properties": Map{
+			"geo":              Map{"$ref": "#/components/schemas/geo_pos"},
+			"id":               Map{"type": "string"},
+			"isServiceManaged": Map{"type": "boolean"},
+			"label":            Map{"type": "string"},
+		},
+		"type": "object",
+	})
+	schema.Components.Set("schemas.synthetics_monitor", Map{
+		"additionalProperties": true,
+		"properties": Map{
+			"alert":               Map{"$ref": "#/components/schemas/synthetics_monitor_alert"},
+			"check":               Map{"type": "object"},
+			"check.receive":       Map{"type": "string"},
+			"check.send":          Map{"type": "string"},
+			"config_id":           Map{"type": "string"},
+			"enabled":             Map{"type": "boolean"},
+			"host":                Map{"type": "string"},
+			"id":                  Map{"type": "string"},
+			"ignore_https_errors": Map{"type": "boolean"},
+			"inline_script":       Map{"type": "string"},
+			"ipv4":                Map{"type": "boolean"},
+			"ipv6":                Map{"type": "boolean"},
+			"labels": Map{
+				"additionalProperties": Map{"type": "string"},
+				"type":                 "object",
+			},
+			"locations": Map{
+				"items": Map{"$ref": "#/components/schemas/synthetics_location_config"},
+				"type":  "array",
+			},
+			"max_redirects": Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
+			"mode":          Map{"type": "string"},
+			"name":          Map{"type": "string"},
+			"namespace":     Map{"type": "string"},
+			"params":        Map{"type": "object"},
+			"password":      Map{"type": "string"},
+			"playwright_options": Map{
+				"type": "object",
+			},
+			"proxy_headers":            Map{"type": "object"},
+			"proxy_url":                Map{"type": "string"},
+			"proxy_use_local_resolver": Map{"type": "boolean"},
+			"response":                 Map{"type": "object"},
+			"retest_on_failure":        Map{"type": "boolean"},
+			"schedule":                 Map{"$ref": "#/components/schemas/synthetics_monitor_schedule"},
+			"screenshots":              Map{"type": "string"},
+			"service.name":             Map{"type": "string"},
+			"ssl.certificate":          Map{"type": "string"},
+			"ssl.certificate_authorities": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"ssl.key":            Map{"type": "string"},
+			"ssl.key_passphrase": Map{"type": "string"},
+			"ssl.supported_protocols": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"ssl.verification_mode": Map{"type": "string"},
+			"synthetics_args": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"tags": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"timeout": Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
+			"type": Map{
+				"enum": Slice{"http", "tcp", "icmp", "browser"},
+				"type": "string",
+			},
+			"url":      Map{"type": "string"},
+			"username": Map{"type": "string"},
+			"wait":     Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}},
+		},
+		"type": "object",
+	})
+
+	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.alert", Map{"$ref": "#/components/schemas/synthetics_monitor_alert"})
+	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.params", Map{"type": "object"})
+	schema.Components.Set("schemas.Synthetics_icmpMonitorFields.allOf.1.properties.wait", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
+	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.max_redirects", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
+	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
+	schema.Components.Set("schemas.Synthetics_tcpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
+
+	responseRef := Map{"$ref": "#/components/schemas/synthetics_monitor"}
+	monitorsPath.Post.Set("responses.200.content.application/json.schema", responseRef)
+	monitorPath.Get.Set("responses.200.content.application/json.schema", responseRef)
 }
 
 func fixSyntheticsMonitorParams(schema *Schema) {

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,8 +43,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaClientFromScopedClient(apiClient, response.Diagnostics)
-	if kibanaClient == nil {
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if oapiClient == nil {
 		return
 	}
 
@@ -59,9 +60,14 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	spaceID := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, spaceID)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", input.config.Name, spaceID), err.Error())
+	result, diags := kibanaoapi.CreateMonitor(ctx, oapiClient, spaceID, *input)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if result == nil {
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", plan.Name.ValueString(), spaceID), "empty response from API")
 		return
 	}
 
