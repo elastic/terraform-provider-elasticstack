@@ -1106,7 +1106,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Ipv6:                 h.IPv6.ValueBoolPointer(),
 		Labels:               mapPtr(labels),
 		Locations:            slicePtr(locations),
-		MaxRedirects:         int64ToSyntheticsHttpMonitorFieldsMaxRedirects(h.MaxRedirects),
+		MaxRedirects:         int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(h.MaxRedirects),
 		Mode:                 stringEnumPtr[kbapi.SyntheticsHttpMonitorFieldsMode](h.Mode),
 		Name:                 v.Name.ValueString(),
 		Namespace:            stringPtr(v.Namespace),
@@ -1303,7 +1303,7 @@ func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmp
 	return wait
 }
 
-func int64ToSyntheticsHttpMonitorFieldsMaxRedirects(v types.Int64) *kbapi.SyntheticsHttpMonitorFields_MaxRedirects {
+func int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(v types.Int64) *kbapi.SyntheticsHttpMonitorFields_MaxRedirects {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
