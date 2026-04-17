@@ -43,16 +43,34 @@ test('workflow.md.tmpl exists and is readable', () => {
   assert.ok(promptBody.length > 0, 'prompt body must not be empty');
 });
 
-test('workflow passes pre-activation evidence via env', () => {
+test('workflow passes release context into gather-pr-evidence via supported env vars', () => {
   assert.match(
     rawPrompt,
-    /env:\n\s+EVIDENCE_JSON: \$\{\{ needs\.pre_activation\.outputs\.evidence_json \}\}/,
-    'workflow should pass evidence_json via EVIDENCE_JSON env'
+    /- name: Gather PR evidence\n\s+id: gather_pr_evidence\n\s+uses: actions\/github-script@v8\n\s+env:\n\s+PREVIOUS_TAG: \$\{\{ steps\.resolve_release_context\.outputs\.previous_tag \}\}\n\s+COMPARE_RANGE: \$\{\{ steps\.resolve_release_context\.outputs\.compare_range \}\}\n\s+MODE: \$\{\{ steps\.resolve_release_context\.outputs\.mode \}\}\n\s+TARGET_VERSION: \$\{\{ steps\.resolve_release_context\.outputs\.target_version \}\}/,
+    'workflow should pass release context through env vars before gather-pr-evidence runs'
   );
   assert.doesNotMatch(
     rawPrompt,
-    /with:\n(?:.*\n)*?\s+evidence_json: \$\{\{ needs\.pre_activation\.outputs\.evidence_json \}\}/,
-    'workflow should not rely on a custom github-script input for evidence_json'
+    /with:\n(?:.*\n)*?\s+(previous_tag|compare_range|mode|target_version): \$\{\{ steps\.resolve_release_context\.outputs\.(previous_tag|compare_range|mode|target_version) \}\}/,
+    'workflow should not rely on custom github-script inputs for gather-pr-evidence release context'
+  );
+});
+
+test('workflow uploads and downloads evidence as an artifact instead of cross-job JSON', () => {
+  assert.match(
+    rawPrompt,
+    /- name: Upload release evidence artifact\n\s+if: steps\.gather_pr_evidence\.outputs\.has_evidence == 'true'\n\s+uses: actions\/upload-artifact@v4\n\s+with:\n\s+name: changelog-release-evidence\n\s+path: \$\{\{ steps\.gather_pr_evidence\.outputs\.evidence_file_path \}\}\n\s+if-no-files-found: error/,
+    'workflow should upload the gathered evidence file as an artifact'
+  );
+  assert.match(
+    rawPrompt,
+    /- name: Download release evidence artifact\n\s+uses: actions\/download-artifact@v4\n\s+with:\n\s+name: changelog-release-evidence\n\s+path: \/tmp\/gh-aw\/agent\n\s+- name: Verify evidence manifest path\n\s+run: test -f \/tmp\/gh-aw\/agent\/evidence\.json/,
+    'workflow should download the artifact into the agent memory path and verify evidence.json exists'
+  );
+  assert.doesNotMatch(
+    rawPrompt,
+    /needs\.pre_activation\.outputs\.evidence_json|EVIDENCE_JSON|Write evidence manifest for agent/,
+    'workflow should not transport the full manifest through evidence_json or a bridge step'
   );
 });
 

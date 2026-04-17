@@ -29,26 +29,33 @@ on:
     - name: Gather PR evidence
       id: gather_pr_evidence
       uses: actions/github-script@v8
+      env:
+        PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
+        COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+        MODE: ${{ steps.resolve_release_context.outputs.mode }}
+        TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/gather-pr-evidence.inline.js
-        previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
-        compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
-        mode: ${{ steps.resolve_release_context.outputs.mode }}
-        target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+    - name: Upload release evidence artifact
+      if: steps.gather_pr_evidence.outputs.has_evidence == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: changelog-release-evidence
+        path: ${{ steps.gather_pr_evidence.outputs.evidence_file_path }}
+        if-no-files-found: error
 if: >-
   (github.event_name != 'pull_request_target' ||
   startsWith(github.head_ref, 'prep-release-')) &&
   needs.pre_activation.outputs.has_evidence == 'true'
 steps:
-  - name: Write evidence manifest for agent
-    id: write_evidence_manifest
-    uses: actions/github-script@v8
-    env:
-      EVIDENCE_JSON: ${{ needs.pre_activation.outputs.evidence_json }}
+  - name: Download release evidence artifact
+    uses: actions/download-artifact@v4
     with:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-      x-script-include: scripts/write-evidence-manifest.inline.js
+      name: changelog-release-evidence
+      path: /tmp/gh-aw/agent
+  - name: Verify evidence manifest path
+    run: test -f /tmp/gh-aw/agent/evidence.json
   - name: Setup Go
     uses: actions/setup-go@v6
     with:
@@ -83,7 +90,6 @@ jobs:
       target_version: ${{ steps.resolve_release_context.outputs.target_version }}
       target_branch: ${{ steps.resolve_release_context.outputs.target_branch }}
       has_evidence: ${{ steps.gather_pr_evidence.outputs.has_evidence }}
-      evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
 tools:
   github:
     toolsets: [repos, pull_requests]

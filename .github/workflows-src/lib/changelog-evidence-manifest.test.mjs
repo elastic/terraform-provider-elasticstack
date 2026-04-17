@@ -4,60 +4,49 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
-  DEFAULT_EVIDENCE_MEMORY_PATH,
-  buildEvidenceManifestWrite,
-  resolveEvidenceJsonInput,
+  DEFAULT_EVIDENCE_ARTIFACT_NAME,
+  DEFAULT_EVIDENCE_ARTIFACT_PATH,
+  buildEvidenceArtifactPlan,
 } = require('./changelog-evidence-manifest.js');
 
-test('resolveEvidenceJsonInput prefers EVIDENCE_JSON over other sources', () => {
-  assert.equal(
-    resolveEvidenceJsonInput({
-      envEvidenceJson: '{"source":"env"}',
-      coreInputEvidenceJson: '{"source":"core"}',
-      envInputEvidenceJson: '{"source":"legacy"}',
-    }),
-    '{"source":"env"}'
+test('buildEvidenceArtifactPlan throws when manifest is missing', () => {
+  assert.throws(
+    () => buildEvidenceArtifactPlan({ manifest: null }),
+    /manifest must be a non-null object/
   );
 });
 
-test('buildEvidenceManifestWrite throws when evidence JSON is missing', () => {
+test('buildEvidenceArtifactPlan throws when manifest is not an object', () => {
   assert.throws(
-    () => buildEvidenceManifestWrite({ evidenceJson: '' }),
-    /No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON/
+    () => buildEvidenceArtifactPlan({ manifest: [] }),
+    /manifest must be a non-null object/
   );
 });
 
-test('buildEvidenceManifestWrite throws when evidence_json is invalid JSON', () => {
+test('buildEvidenceArtifactPlan requires artifact metadata', () => {
   assert.throws(
-    () => buildEvidenceManifestWrite({ evidenceJson: '{not-json}' }),
-    /Invalid JSON in evidence_json/
+    () => buildEvidenceArtifactPlan({ manifest: {}, artifactName: '' }),
+    /artifactName must be provided/
+  );
+  assert.throws(
+    () => buildEvidenceArtifactPlan({ manifest: {}, artifactPath: '' }),
+    /artifactPath must be provided/
   );
 });
 
-test('buildEvidenceManifestWrite throws when evidence_json parses to a non-object', () => {
-  assert.throws(
-    () => buildEvidenceManifestWrite({ evidenceJson: 'null' }),
-    /evidence_json must parse to an object/
-  );
-  assert.throws(
-    () => buildEvidenceManifestWrite({ evidenceJson: '[]' }),
-    /evidence_json must parse to an object/
-  );
-});
-
-test('buildEvidenceManifestWrite formats pretty JSON and exposes write metadata', () => {
-  const result = buildEvidenceManifestWrite({
-    evidenceJson: '{"pr_count":2,"pull_requests":[]}',
-  });
-
-  assert.deepEqual(result, {
-    parsed: {
+test('buildEvidenceArtifactPlan formats pretty JSON and exposes artifact metadata', () => {
+  const result = buildEvidenceArtifactPlan({
+    manifest: {
       pr_count: 2,
       pull_requests: [],
     },
+  });
+
+  assert.deepEqual(result, {
+    artifactName: DEFAULT_EVIDENCE_ARTIFACT_NAME,
+    artifactPath: DEFAULT_EVIDENCE_ARTIFACT_PATH,
+    directory: '/tmp/gh-aw/pre-activation',
     formattedJson: '{\n  "pr_count": 2,\n  "pull_requests": []\n}',
-    memoryPath: DEFAULT_EVIDENCE_MEMORY_PATH,
-    directory: '/tmp/gh-aw/agent',
     prCount: 2,
   });
 });

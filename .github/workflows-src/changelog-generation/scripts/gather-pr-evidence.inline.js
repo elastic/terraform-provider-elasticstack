@@ -1,10 +1,12 @@
+const fs = require('fs');
 const { execSync } = require('child_process');
 //include: ../../lib/changelog-pr-evidence.js
+//include: ../../lib/changelog-evidence-manifest.js
 
-const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
-const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
-const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
-const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
+const previousTag = process.env.PREVIOUS_TAG || core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+const compareRange = process.env.COMPARE_RANGE || core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+const mode = process.env.MODE || core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+const targetVersion = process.env.TARGET_VERSION || core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
 
 const { owner, repo } = context.repo;
 
@@ -74,7 +76,12 @@ const manifest = buildEvidenceManifest({
   generatedAt: new Date().toISOString(),
 });
 
-core.setOutput('evidence_json', JSON.stringify(manifest));
+const artifactPlan = buildEvidenceArtifactPlan({ manifest });
+fs.mkdirSync(artifactPlan.directory, { recursive: true });
+fs.writeFileSync(artifactPlan.artifactPath, artifactPlan.formattedJson, 'utf8');
+
+core.setOutput('evidence_file_path', artifactPlan.artifactPath);
 const hasEvidence = evidence.length > 0;
 core.setOutput('has_evidence', hasEvidence ? 'true' : 'false');
+core.info(`Evidence manifest written to ${artifactPlan.artifactPath} (${artifactPlan.prCount} PRs)`);
 core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);

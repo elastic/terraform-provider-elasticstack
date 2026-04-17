@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"2196085b3ec32f31d81ac1d58c01ba562a05959af29f38e92d86d3e2a7a84d95","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
-# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"34e114876b0b11c390a56381ad16ebd13914f8d5","version":"v4"},{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"dcbe745a0f1fb1f58e44d05283a620c240a66faab65934ca1150f8dc26c3d66f","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
+# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"34e114876b0b11c390a56381ad16ebd13914f8d5","version":"v4"},{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/github-script","sha":"ed597411d8f924073f98dfc5c65a23a2325f34cd","version":"v8"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -35,12 +35,14 @@
 #   - actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 #   - actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 #   - actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+#   - actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
 #   - actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
 #   - actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
 #   - actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
 #   - actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
 #   - actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
 #   - actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#   - actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
 #   - github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
 #
 # Container images used:
@@ -192,15 +194,18 @@ name: "Changelog Generation"
         # core.info(`Mode: ${releaseContext.mode}`);
         # core.info(`Compare range: ${releaseContext.compareRange}`);
         # core.info(`Target branch: ${releaseContext.targetBranch}`);
-  # - id: gather_pr_evidence
+  # - env:
+      # COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+      # MODE: ${{ steps.resolve_release_context.outputs.mode }}
+      # PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
+      # TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+    # id: gather_pr_evidence
     # name: Gather PR evidence
     # uses: actions/github-script@v8
     # with:
-      # compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # mode: ${{ steps.resolve_release_context.outputs.mode }}
-      # previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
       # script: |
+        # const fs = require('fs');
         # const { execSync } = require('child_process');
         # const USER_FACING_LABELS = new Set([
           # 'enhancement',
@@ -371,10 +376,49 @@ name: "Changelog Generation"
           # };
         # }
         # 
-        # const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
-        # const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
-        # const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
-        # const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
+        # const path = require('path');
+        # 
+        # const DEFAULT_EVIDENCE_ARTIFACT_NAME = 'changelog-release-evidence';
+        # const DEFAULT_EVIDENCE_ARTIFACT_PATH = '/tmp/gh-aw/pre-activation/evidence.json';
+        # 
+        # function buildEvidenceArtifactPlan({
+          # manifest,
+          # artifactName = DEFAULT_EVIDENCE_ARTIFACT_NAME,
+          # artifactPath = DEFAULT_EVIDENCE_ARTIFACT_PATH,
+        # }) {
+          # if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+            # throw new Error('manifest must be a non-null object');
+          # }
+        # 
+          # if (!artifactName) {
+            # throw new Error('artifactName must be provided');
+          # }
+        # 
+          # if (!artifactPath) {
+            # throw new Error('artifactPath must be provided');
+          # }
+        # 
+          # return {
+            # artifactName,
+            # artifactPath,
+            # directory: path.dirname(artifactPath),
+            # formattedJson: JSON.stringify(manifest, null, 2),
+            # prCount: manifest.pr_count ?? '?',
+          # };
+        # }
+        # 
+        # if (typeof module !== 'undefined') {
+          # module.exports = {
+            # DEFAULT_EVIDENCE_ARTIFACT_NAME,
+            # DEFAULT_EVIDENCE_ARTIFACT_PATH,
+            # buildEvidenceArtifactPlan,
+          # };
+        # }
+        # 
+        # const previousTag = process.env.PREVIOUS_TAG || core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+        # const compareRange = process.env.COMPARE_RANGE || core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+        # const mode = process.env.MODE || core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+        # const targetVersion = process.env.TARGET_VERSION || core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
         # 
         # const { owner, repo } = context.repo;
         # 
@@ -444,11 +488,22 @@ name: "Changelog Generation"
           # generatedAt: new Date().toISOString(),
         # });
         # 
-        # core.setOutput('evidence_json', JSON.stringify(manifest));
+        # const artifactPlan = buildEvidenceArtifactPlan({ manifest });
+        # fs.mkdirSync(artifactPlan.directory, { recursive: true });
+        # fs.writeFileSync(artifactPlan.artifactPath, artifactPlan.formattedJson, 'utf8');
+        # 
+        # core.setOutput('evidence_file_path', artifactPlan.artifactPath);
         # const hasEvidence = evidence.length > 0;
         # core.setOutput('has_evidence', hasEvidence ? 'true' : 'false');
+        # core.info(`Evidence manifest written to ${artifactPlan.artifactPath} (${artifactPlan.prCount} PRs)`);
         # core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);
-      # target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+  # - if: steps.gather_pr_evidence.outputs.has_evidence == 'true'
+    # name: Upload release evidence artifact
+    # uses: actions/upload-artifact@v4
+    # with:
+      # if-no-files-found: error
+      # name: changelog-release-evidence
+      # path: ${{ steps.gather_pr_evidence.outputs.evidence_file_path }}
   workflow_dispatch:
     inputs:
       aw_context:
@@ -586,20 +641,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_6520c6d5b50ef243_EOF'
+          cat << 'GH_AW_PROMPT_aaa0475425831deb_EOF'
           <system>
-          GH_AW_PROMPT_6520c6d5b50ef243_EOF
+          GH_AW_PROMPT_aaa0475425831deb_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_6520c6d5b50ef243_EOF'
+          cat << 'GH_AW_PROMPT_aaa0475425831deb_EOF'
           <safe-output-tools>
           Tools: create_pull_request, update_pull_request, push_to_pull_request_branch, missing_tool, missing_data, noop
-          GH_AW_PROMPT_6520c6d5b50ef243_EOF
+          GH_AW_PROMPT_aaa0475425831deb_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
-          cat << 'GH_AW_PROMPT_6520c6d5b50ef243_EOF'
+          cat << 'GH_AW_PROMPT_aaa0475425831deb_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -632,12 +687,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_6520c6d5b50ef243_EOF
+          GH_AW_PROMPT_aaa0475425831deb_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_6520c6d5b50ef243_EOF'
+          cat << 'GH_AW_PROMPT_aaa0475425831deb_EOF'
           </system>
           {{#runtime-import .github/workflows/changelog-generation.md}}
-          GH_AW_PROMPT_6520c6d5b50ef243_EOF
+          GH_AW_PROMPT_aaa0475425831deb_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
@@ -769,14 +824,13 @@ jobs:
         run: bash "${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh"
         env:
           GH_TOKEN: ${{ github.token }}
-      - env:
-          EVIDENCE_JSON: ${{ needs.pre_activation.outputs.evidence_json }}
-        id: write_evidence_manifest
-        name: Write evidence manifest for agent
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      - name: Download release evidence artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: "const fs = require('fs');\nconst path = require('path');\n\nconst DEFAULT_EVIDENCE_MEMORY_PATH = '/tmp/gh-aw/agent/evidence.json';\n\nfunction resolveEvidenceJsonInput({\n  envEvidenceJson = '',\n  coreInputEvidenceJson = '',\n  envInputEvidenceJson = '',\n}) {\n  return envEvidenceJson || coreInputEvidenceJson || envInputEvidenceJson || '';\n}\n\nfunction buildEvidenceManifestWrite({\n  evidenceJson,\n  memoryPath = DEFAULT_EVIDENCE_MEMORY_PATH,\n}) {\n  if (!evidenceJson) {\n    throw new Error(\n      'No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON'\n    );\n  }\n\n  let parsed;\n  try {\n    parsed = JSON.parse(evidenceJson);\n  } catch (err) {\n    throw new Error(`Invalid JSON in evidence_json: ${err.message}`);\n  }\n\n  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {\n    throw new Error('evidence_json must parse to an object');\n  }\n\n  return {\n    parsed,\n    formattedJson: JSON.stringify(parsed, null, 2),\n    memoryPath,\n    directory: path.dirname(memoryPath),\n    prCount: parsed.pr_count ?? '?',\n  };\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    DEFAULT_EVIDENCE_MEMORY_PATH,\n    buildEvidenceManifestWrite,\n    resolveEvidenceJsonInput,\n  };\n}\n\nconst evidenceJson = resolveEvidenceJsonInput({\n  envEvidenceJson: process.env.EVIDENCE_JSON,\n});\n\nlet writePlan;\ntry {\n  writePlan = buildEvidenceManifestWrite({ evidenceJson });\n} catch (err) {\n  core.setFailed(err.message);\n  process.exit(1);\n}\n\n// Ensure the target directory exists\nfs.mkdirSync(writePlan.directory, { recursive: true });\n\n// Write the evidence manifest to workflow memory\nfs.writeFileSync(writePlan.memoryPath, writePlan.formattedJson, 'utf8');\n\ncore.info(`Evidence manifest written to ${writePlan.memoryPath} (${writePlan.prCount} PRs)`);\ncore.setOutput('evidence_ready', 'true');\ncore.setOutput('evidence_path', writePlan.memoryPath);\n"
+          name: changelog-release-evidence
+          path: /tmp/gh-aw/agent
+      - name: Verify evidence manifest path
+        run: test -f /tmp/gh-aw/agent/evidence.json
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
@@ -847,9 +901,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_edf512d739c5c61e_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_6d82fb84ffe9483e_EOF'
           {"create_pull_request":{"max":1,"max_patch_size":1024,"preserve_branch_name":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"report_incomplete":{},"update_pull_request":{"allow_body":true,"allow_title":true,"max":1}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_edf512d739c5c61e_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_6d82fb84ffe9483e_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -1102,7 +1156,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_981458d6c8d701a2_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_9889713efb92ce6f_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -1142,7 +1196,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_981458d6c8d701a2_EOF
+          GH_AW_MCP_CONFIG_9889713efb92ce6f_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1698,7 +1752,6 @@ jobs:
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
       compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
-      evidence_json: ${{ steps.gather_pr_evidence.outputs.evidence_json }}
       gather_pr_evidence_result: ${{ steps.gather_pr_evidence.outcome }}
       has_evidence: ${{ steps.gather_pr_evidence.outputs.has_evidence }}
       matched_command: ''
@@ -1858,12 +1911,15 @@ jobs:
       - name: Gather PR evidence
         id: gather_pr_evidence
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+          MODE: ${{ steps.resolve_release_context.outputs.mode }}
+          PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
+          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
         with:
-          compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          mode: ${{ steps.resolve_release_context.outputs.mode }}
-          previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
           script: |
+            const fs = require('fs');
             const { execSync } = require('child_process');
             const USER_FACING_LABELS = new Set([
               'enhancement',
@@ -2034,10 +2090,49 @@ jobs:
               };
             }
 
-            const previousTag = core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
-            const compareRange = core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
-            const mode = core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
-            const targetVersion = core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
+            const path = require('path');
+
+            const DEFAULT_EVIDENCE_ARTIFACT_NAME = 'changelog-release-evidence';
+            const DEFAULT_EVIDENCE_ARTIFACT_PATH = '/tmp/gh-aw/pre-activation/evidence.json';
+
+            function buildEvidenceArtifactPlan({
+              manifest,
+              artifactName = DEFAULT_EVIDENCE_ARTIFACT_NAME,
+              artifactPath = DEFAULT_EVIDENCE_ARTIFACT_PATH,
+            }) {
+              if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+                throw new Error('manifest must be a non-null object');
+              }
+
+              if (!artifactName) {
+                throw new Error('artifactName must be provided');
+              }
+
+              if (!artifactPath) {
+                throw new Error('artifactPath must be provided');
+              }
+
+              return {
+                artifactName,
+                artifactPath,
+                directory: path.dirname(artifactPath),
+                formattedJson: JSON.stringify(manifest, null, 2),
+                prCount: manifest.pr_count ?? '?',
+              };
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                DEFAULT_EVIDENCE_ARTIFACT_NAME,
+                DEFAULT_EVIDENCE_ARTIFACT_PATH,
+                buildEvidenceArtifactPlan,
+              };
+            }
+
+            const previousTag = process.env.PREVIOUS_TAG || core.getInput('previous_tag') || process.env.INPUT_PREVIOUS_TAG || '';
+            const compareRange = process.env.COMPARE_RANGE || core.getInput('compare_range') || process.env.INPUT_COMPARE_RANGE || 'HEAD';
+            const mode = process.env.MODE || core.getInput('mode') || process.env.INPUT_MODE || 'unreleased';
+            const targetVersion = process.env.TARGET_VERSION || core.getInput('target_version') || process.env.INPUT_TARGET_VERSION || '';
 
             const { owner, repo } = context.repo;
 
@@ -2107,11 +2202,22 @@ jobs:
               generatedAt: new Date().toISOString(),
             });
 
-            core.setOutput('evidence_json', JSON.stringify(manifest));
+            const artifactPlan = buildEvidenceArtifactPlan({ manifest });
+            fs.mkdirSync(artifactPlan.directory, { recursive: true });
+            fs.writeFileSync(artifactPlan.artifactPath, artifactPlan.formattedJson, 'utf8');
+
+            core.setOutput('evidence_file_path', artifactPlan.artifactPath);
             const hasEvidence = evidence.length > 0;
             core.setOutput('has_evidence', hasEvidence ? 'true' : 'false');
+            core.info(`Evidence manifest written to ${artifactPlan.artifactPath} (${artifactPlan.prCount} PRs)`);
             core.info(`Evidence manifest built: ${evidence.length} PRs (${manifest.user_facing_count} user-facing, ${manifest.internal_count} internal, ${manifest.uncertain_count} uncertain)`);
-          target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+      - name: Upload release evidence artifact
+        if: steps.gather_pr_evidence.outputs.has_evidence == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          if-no-files-found: error
+          name: changelog-release-evidence
+          path: ${{ steps.gather_pr_evidence.outputs.evidence_file_path }}
 
   safe_outputs:
     needs:

@@ -1,49 +1,38 @@
 const path = require('path');
 
-const DEFAULT_EVIDENCE_MEMORY_PATH = '/tmp/gh-aw/agent/evidence.json';
+const DEFAULT_EVIDENCE_ARTIFACT_NAME = 'changelog-release-evidence';
+const DEFAULT_EVIDENCE_ARTIFACT_PATH = '/tmp/gh-aw/pre-activation/evidence.json';
 
-function resolveEvidenceJsonInput({
-  envEvidenceJson = '',
-  coreInputEvidenceJson = '',
-  envInputEvidenceJson = '',
+function buildEvidenceArtifactPlan({
+  manifest,
+  artifactName = DEFAULT_EVIDENCE_ARTIFACT_NAME,
+  artifactPath = DEFAULT_EVIDENCE_ARTIFACT_PATH,
 }) {
-  return envEvidenceJson || coreInputEvidenceJson || envInputEvidenceJson || '';
-}
-
-function buildEvidenceManifestWrite({
-  evidenceJson,
-  memoryPath = DEFAULT_EVIDENCE_MEMORY_PATH,
-}) {
-  if (!evidenceJson) {
-    throw new Error(
-      'No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON'
-    );
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    throw new Error('manifest must be a non-null object');
   }
 
-  let parsed;
-  try {
-    parsed = JSON.parse(evidenceJson);
-  } catch (err) {
-    throw new Error(`Invalid JSON in evidence_json: ${err.message}`);
+  if (!artifactName) {
+    throw new Error('artifactName must be provided');
   }
 
-  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('evidence_json must parse to an object');
+  if (!artifactPath) {
+    throw new Error('artifactPath must be provided');
   }
 
   return {
-    parsed,
-    formattedJson: JSON.stringify(parsed, null, 2),
-    memoryPath,
-    directory: path.dirname(memoryPath),
-    prCount: parsed.pr_count ?? '?',
+    artifactName,
+    artifactPath,
+    directory: path.dirname(artifactPath),
+    formattedJson: JSON.stringify(manifest, null, 2),
+    prCount: manifest.pr_count ?? '?',
   };
 }
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    DEFAULT_EVIDENCE_MEMORY_PATH,
-    buildEvidenceManifestWrite,
-    resolveEvidenceJsonInput,
+    DEFAULT_EVIDENCE_ARTIFACT_NAME,
+    DEFAULT_EVIDENCE_ARTIFACT_PATH,
+    buildEvidenceArtifactPlan,
   };
 }
