@@ -32,8 +32,29 @@ func TestAccDataSourceIngestProcessorSetSecurityUser(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "field", "user"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "json", expectedJSONSetSecurityUser),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "field", "actor"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "description", "set security user metadata"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "if", "ctx.user != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "tag", "set-security-user"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "properties.#", "3"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "properties.*", "username"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "properties.*", "roles"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "properties.*", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "on_failure.0", `{"set":{"field":"error.message","value":"fallback"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "json", expectedJSONSetSecurityUserAllAttributes),
 				),
 			},
 		},
@@ -44,5 +65,28 @@ const expectedJSONSetSecurityUser = `{
 	"set_security_user": {
 		"field": "user",
 		"ignore_failure": false
+	}
+}`
+
+const expectedJSONSetSecurityUserAllAttributes = `{
+	"set_security_user": {
+		"description": "set security user metadata",
+		"field": "actor",
+		"if": "ctx.user != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "fallback"
+				}
+			}
+		],
+		"properties": [
+			"roles",
+			"username",
+			"email"
+		],
+		"tag": "set-security-user"
 	}
 }`
