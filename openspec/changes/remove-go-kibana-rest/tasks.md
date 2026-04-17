@@ -10,8 +10,8 @@
 
 ## 3. Remove the final legacy import path
 
-- [ ] 3.1 Refactor `internal/kibana/synthetics/parameter/read.go` to replace the legacy `kbapi.APIError` assertion with response-based 404 handling using the generated Kibana client response object.
-- [ ] 3.2 Confirm repository-wide that no first-party Go source still imports `github.com/disaster37/go-kibana-rest/v8` or its `kbapi` subpackage.
+- [x] 3.1 Refactor `internal/kibana/synthetics/parameter/read.go` to replace the legacy `kbapi.APIError` assertion with response-based 404 handling using the generated Kibana client response object.
+- [x] 3.2 Confirm repository-wide that no first-party Go source still imports `github.com/disaster37/go-kibana-rest/v8` or its `kbapi` subpackage.
 
 ## 4. Clean up module and repository artifacts
 

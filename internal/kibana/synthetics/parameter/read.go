@@ -19,10 +19,9 @@ package parameter
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net/http"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,13 +33,12 @@ import (
 func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Client, resourceID string, kibanaConnection types.List, state *tfsdk.State, diagnostics *diag.Diagnostics) {
 	getResult, err := kibanaClient.API.GetParameterWithResponse(ctx, resourceID)
 	if err != nil {
-		var apiError *kbapi.APIError
-		if errors.As(err, &apiError) && apiError.Code == 404 {
-			state.RemoveResource(ctx)
-			return
-		}
-
 		diagnostics.AddError(fmt.Sprintf("Failed to get parameter `%s`", resourceID), err.Error())
+		return
+	}
+
+	if getResult.StatusCode() == http.StatusNotFound {
+		state.RemoveResource(ctx)
 		return
 	}
 
