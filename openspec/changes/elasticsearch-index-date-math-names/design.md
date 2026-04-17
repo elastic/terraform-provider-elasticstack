@@ -38,13 +38,13 @@ stringvalidator.Any(
     indexNameAllowedCharsMessage,
   ),
   stringvalidator.RegexMatches(
-    regexp.MustCompile(`^<[^<>]*\{[^<>]+\}[^<>]*>$`),
+    regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`),
     dateMathIndexNameMessage,
   ),
 )
 ```
 
-The first regex preserves the current static-name character rules. The second regex intentionally stays shape-based rather than trying to fully parse date math syntax: it requires angle brackets around the whole value and at least one `{...}` section inside, which is enough to distinguish date math expressions from normal static names before provider-side URI encoding.
+The first regex preserves the current static-name character rules. The second regex applies ES index-name constraints to the date math expression: the name cannot start with `-`, `_`, or `+`; the static prefix must consist only of valid index-name characters; and the date math section `{...}` must appear at the end immediately before the closing `>`. This is tighter than a purely shape-based regex but ensures accepted expressions will be valid Elasticsearch index names when resolved.
 
 Alternative considered: broaden the current static-name regex to also match date math expressions.
 
