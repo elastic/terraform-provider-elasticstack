@@ -67,8 +67,8 @@ func NewProviderClientFactoryFromFramework(ctx context.Context, cfg config.Provi
 // Framework Kibana or Fleet entity. When kibanaConnList is empty or null the
 // factory returns a typed client built from provider-level defaults. When the
 // list contains a connection block, the factory returns a new typed scoped
-// client whose Kibana legacy client, Kibana OpenAPI client, SLO client, and
-// Fleet client are rebuilt from that scoped connection.
+// client whose Kibana OpenAPI client and Fleet client are rebuilt from that
+// scoped connection.
 func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnList types.List) (*KibanaScopedClient, fwdiags.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
@@ -258,11 +258,6 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 		)}
 	}
 
-	kibanaClient, err := buildKibanaClient(cfg)
-	if err != nil {
-		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana client", err.Error())}
-	}
-
 	kibanaOapiClient, err := buildKibanaOapiClient(cfg)
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana OpenAPI client", err.Error())}
@@ -284,9 +279,7 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 	}
 
 	return &KibanaScopedClient{
-		kibana:         kibanaClient,
 		kibanaOapi:     kibanaOapiClient,
-		kibanaConfig:   *cfg.Kibana,
 		fleet:          fleetClient,
 		version:        version,
 		kibanaEndpoint: kibanaEndpoint,

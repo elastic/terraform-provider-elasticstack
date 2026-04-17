@@ -19,26 +19,22 @@ The provider SHALL inject a `*clients.ProviderClientFactory` into Plugin Framewo
 - **THEN** the configured `meta` value SHALL be a `*clients.ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
 
 ### Requirement: Factory supports phased migration
-In this phase, the `ProviderClientFactory` SHALL provide typed Kibana/Fleet scoped-client resolution and typed Elasticsearch scoped-client resolution, and SHALL NOT expose a supported bridge back to the broad `*clients.APIClient`.
+During the Kibana/Fleet typed-client phase, the `*clients.ProviderClientFactory` SHALL provide typed Kibana/Fleet scoped-client resolution and SHALL also preserve explicit legacy Elasticsearch resolution methods so unconverted Elasticsearch entities continue to behave as they did before the factory migration.
 
 #### Scenario: Kibana entity resolves typed client
-- **WHEN** a Kibana, Fleet, or other covered Kibana-derived entity resolves its effective client through the factory
-- **THEN** the factory SHALL return a typed Kibana-scoped client for Kibana, Kibana OpenAPI, SLO, and Fleet operations
+- **WHEN** a Kibana or Fleet entity resolves its effective client through the factory
+- **THEN** the factory SHALL return a typed Kibana-scoped client whose surfaces include the Kibana OpenAPI client, SLO client, and Fleet client for their respective operations
 
-#### Scenario: Elasticsearch entity resolves typed client
-- **WHEN** a covered Elasticsearch entity resolves its effective client through the factory
-- **THEN** the factory SHALL return a typed Elasticsearch-scoped client rather than a broad `*clients.APIClient`
-
-#### Scenario: Broad-client bridge is not part of the factory contract
-- **WHEN** implementation code attempts to rely on the factory for a supported broad-client escape hatch
-- **THEN** the provider factory contract SHALL not define that path
+#### Scenario: Elasticsearch entity uses transitional legacy resolution
+- **WHEN** an unconverted Elasticsearch entity resolves its effective client during this phase
+- **THEN** the factory SHALL expose a transitional resolution path that preserves the existing broad-client and lint-enforced Elasticsearch behavior
 
 ### Requirement: Kibana scoped client contract
-The typed Kibana-scoped client returned by the factory SHALL expose the Kibana legacy client, Kibana OpenAPI client, SLO client, Fleet client, Kibana auth-context helpers, and Kibana-derived version and flavor checks required by covered Kibana and Fleet entities.
+The typed Kibana-scoped client returned by the factory SHALL expose the Kibana OpenAPI client, SLO client, Fleet client, Kibana auth-context helpers, and Kibana-derived version and flavor checks required by covered Kibana and Fleet entities. The typed Kibana-scoped client SHALL NOT expose `github.com/disaster37/go-kibana-rest` as part of the provider wiring contract once all dependent Kibana and Fleet resources have completed their per-entity migrations off the legacy client.
 
 #### Scenario: Scoped client supports Kibana and Fleet operations
 - **WHEN** a covered Kibana or Fleet entity uses a typed Kibana-scoped client
-- **THEN** the client SHALL provide the typed client surfaces needed for Kibana, Kibana OpenAPI, SLO, and Fleet API operations
+- **THEN** the client SHALL provide the typed client surfaces needed for Kibana HTTP workloads through the OpenAPI client, plus SLO and Fleet API operations as applicable
 
 #### Scenario: Scoped client supports version gating
 - **WHEN** a covered Kibana or Fleet entity performs version or flavor checks through the typed Kibana-scoped client

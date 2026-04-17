@@ -83,9 +83,9 @@ func TestGetKibanaClient_EmptyList(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	// The scoped client must expose a Kibana legacy client.
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err, "Kibana legacy client must be present on provider-default scoped client")
+	// The scoped client must expose a Kibana OpenAPI client.
+	_, err := scoped.GetKibanaOapiClient()
+	require.NoError(t, err, "Kibana OpenAPI client must be present on provider-default scoped client")
 }
 
 // TestGetKibanaClient_NullList verifies that a null kibana_connection is treated
@@ -132,10 +132,7 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.NotNil(t, scoped)
 
 	// The scoped client must expose Kibana-derived surfaces.
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetKibanaOapiClient()
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 
 	_, err = scoped.GetFleetClient()
@@ -158,8 +155,8 @@ func TestGetKibanaClientFromSDK_AbsentBlock(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	// Must expose a Kibana legacy client.
-	_, err := scoped.GetKibanaClient()
+	// Must expose a Kibana OpenAPI client.
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 }
 
@@ -189,10 +186,7 @@ func TestGetKibanaClientFromSDK_WithBlock(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetKibanaOapiClient()
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 
 	_, err = scoped.GetFleetClient()
@@ -322,7 +316,7 @@ func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	f := newTestFactory(t)
 	result := NewKibanaScopedClientFromFactory(f)
 	require.NotNil(t, result)
-	_, err := result.GetKibanaClient()
+	_, err := result.GetKibanaOapiClient()
 	require.NoError(t, err)
 }
 
@@ -378,7 +372,7 @@ func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 }
 
 // --- Scenario 9: Entity-local kibana_connection with missing endpoint ---
-// GetKibanaClient on a scoped client built via the factory from a
+// GetKibanaOapiClient on a scoped client built via the factory from a
 // kibana_connection block that has no endpoints must return the same actionable
 // error as the provider-default path.
 
@@ -410,13 +404,13 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 	require.False(t, diags.HasError(), "factory must not fail for empty-endpoint Kibana connection block")
 	require.NotNil(t, scoped)
 
-	// Calling GetKibanaClient on the scoped client must produce the actionable
+	// Calling GetKibanaOapiClient on the scoped client must produce the actionable
 	// endpoint-missing error.
-	client, err := scoped.GetKibanaClient()
+	client, err := scoped.GetKibanaOapiClient()
 	assert.Nil(t, client)
 	require.Error(t, err)
 	assert.Equal(t,
-		"kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
+		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
 		err.Error(),
 	)
 }

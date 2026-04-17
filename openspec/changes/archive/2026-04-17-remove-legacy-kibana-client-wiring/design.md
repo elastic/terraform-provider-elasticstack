@@ -46,3 +46,34 @@
 
 - Whether `GetStatusParams` (for example `getStatusSummary`) needs to be set for serverless or large payloads; default to generator defaults unless product requires a flag.
 - Whether any SDK-only code paths still need a bare `*kibana.Client` for non-status operations after migrations; if yes, those resources block step 3.
+
+## Residual `go-kibana-rest` Owners (post-task-5 state)
+
+After completing tasks 1–5, `go-kibana-rest` cannot be removed from `go.mod` because
+six production files still import it:
+
+**`internal/clients/config/` (5 files: `client.go`, `env.go`, `sdk.go`, `framework.go`, `kibana.go`)**
+These files carry `kibana.Config` (from `github.com/disaster37/go-kibana-rest/v8`) as:
+- The type alias `type kibanaConfig kibana.Config` used throughout the config builders.
+- The `Client.Kibana *kibana.Config` field, which is populated by every config builder
+  (`NewFromEnv`, `NewFromSDK`, `NewFromSDKKibanaResource`, `NewFromFramework`, `NewFromFrameworkKibanaResource`).
+- The field is used in `provider_client_factory.go` as a nil-check sentinel:
+  `if cfg.Kibana == nil { return error }` — this is the only remaining runtime use
+  of the legacy config type after `apiClient` no longer stores a `*kibana.Client`.
+
+**`internal/kibana/synthetics/parameter/read.go`**
+Imports `github.com/disaster37/go-kibana-rest/v8/kbapi` for `*kbapi.APIError` in an
+`errors.As` check after `GetParameterWithResponse`. This is the OAPI-generated client,
+not the legacy REST client, but `kbapi.APIError` is defined in the legacy library's
+`kbapi` sub-package (not in `generated/kbapi`).
+
+**Follow-up needed:**
+1. Replace `kibana.Config` in `internal/clients/config/` with either:
+   - A local struct containing the same fields (address, username, password, apiKey,
+     bearerToken, insecure, caCerts), and update the nil-sentinel in
+     `buildKibanaScopedClientFromConfig` to check `cfg.KibanaOapi` instead of `cfg.Kibana`.
+2. Replace the `kbapi.APIError` check in `parameter/read.go` with a plain HTTP-status
+   check on `getResult.StatusCode()` — the OAPI client does not wrap network errors in
+   `kbapi.APIError`, so the `errors.As` is likely a no-op for that error type already.
+3. After both changes, run `go mod tidy` — `go-kibana-rest` should drop from `go.mod`
+   and the `replace` directive can be removed along with the `libs/go-kibana-rest` vendored tree.

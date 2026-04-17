@@ -18,7 +18,6 @@
 package synthetics
 
 import (
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -27,29 +26,6 @@ import (
 // ESAPIClient interface provides access to the underlying API client
 type ESAPIClient interface {
 	GetClient() *clients.KibanaScopedClient
-}
-
-// GetKibanaClient returns a configured Kibana client for the given ESAPIClient
-func GetKibanaClient(c ESAPIClient, dg diag.Diagnostics) *kibana.Client {
-	return GetKibanaClientFromScopedClient(c.GetClient(), dg)
-}
-
-// GetKibanaClientFromScopedClient returns a configured Kibana client for the given *clients.KibanaScopedClient
-func GetKibanaClientFromScopedClient(client *clients.KibanaScopedClient, dg diag.Diagnostics) *kibana.Client {
-	if client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-		return nil
-	}
-
-	kibanaClient, err := client.GetKibanaClient()
-	if err != nil {
-		dg.AddError("unable to get kibana client", err.Error())
-		return nil
-	}
-	return kibanaClient
 }
 
 // GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient

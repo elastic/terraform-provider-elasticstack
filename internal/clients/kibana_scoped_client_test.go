@@ -20,7 +20,6 @@ package clients
 import (
 	"testing"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/stretchr/testify/assert"
@@ -42,12 +41,6 @@ func newKibanaScopedClientNoEndpoint(t *testing.T) *KibanaScopedClient {
 func newKibanaScopedClientWithEndpointNoAuth(t *testing.T, endpoint string) *KibanaScopedClient {
 	t.Helper()
 
-	kib, err := kibana.NewClient(kibana.Config{
-		Address: endpoint,
-		// No username/password — intentionally empty for scenario 7.
-	})
-	require.NoError(t, err)
-
 	kibOapi, err := kibanaoapi.NewClient(kibanaoapi.Config{
 		URL: endpoint,
 		// No username/password — intentionally empty.
@@ -61,9 +54,7 @@ func newKibanaScopedClientWithEndpointNoAuth(t *testing.T, endpoint string) *Kib
 	require.NoError(t, err)
 
 	return &KibanaScopedClient{
-		kibana:         kib,
 		kibanaOapi:     kibOapi,
-		kibanaConfig:   kibana.Config{Address: endpoint},
 		fleet:          fleet,
 		kibanaEndpoint: endpoint,
 		fleetEndpoint:  endpoint,
@@ -76,13 +67,6 @@ func newKibanaScopedClientWithEndpointNoAuth(t *testing.T, endpoint string) *Kib
 // standalone Fleet endpoint. The fleet client is populated.
 func newKibanaScopedClientFleetFromKibana(t *testing.T, kibanaURL string) *KibanaScopedClient {
 	t.Helper()
-
-	kib, err := kibana.NewClient(kibana.Config{
-		Address:  kibanaURL,
-		Username: "elastic",
-		Password: "changeme",
-	})
-	require.NoError(t, err)
 
 	kibOapi, err := kibanaoapi.NewClient(kibanaoapi.Config{
 		URL:      kibanaURL,
@@ -101,28 +85,12 @@ func newKibanaScopedClientFleetFromKibana(t *testing.T, kibanaURL string) *Kiban
 	require.NoError(t, err)
 
 	return &KibanaScopedClient{
-		kibana:         kib,
 		kibanaOapi:     kibOapi,
-		kibanaConfig:   kibana.Config{Address: kibanaURL},
 		fleet:          fleet,
 		kibanaEndpoint: kibanaURL,
 		// fleetEndpoint derived from Kibana.
 		fleetEndpoint: kibanaURL,
 	}
-}
-
-// --- Scenario 2: Missing Kibana endpoint → GetKibanaClient error ---
-
-func TestKibanaScopedClient_GetKibanaClient_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	client, err := sc.GetKibanaClient()
-	assert.Nil(t, client, "GetKibanaClient must return nil client when kibana endpoint is missing")
-	require.Error(t, err)
-	assert.Equal(t,
-		"kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		err.Error(),
-	)
 }
 
 // --- Scenario 3: Missing Kibana endpoint → GetKibanaOapiClient error ---
@@ -140,25 +108,25 @@ func TestKibanaScopedClient_GetKibanaOapiClient_MissingEndpoint(t *testing.T) {
 }
 
 // --- Scenario 4: Localhost fallback blocked ---
-// The accessor must fail even when the underlying kibana.Client would normally
+// The accessor must fail even when the underlying kibanaOapi.Client would normally
 // fall back to localhost:5601. We prove this by constructing a KibanaScopedClient
-// whose kibana field is nil (no legacy client initialised) but kibanaEndpoint is
+// whose kibanaOapi field is nil (no client initialised) but kibanaEndpoint is
 // empty — the validation check fires before any client is returned.
 
-func TestKibanaScopedClient_GetKibanaClient_NilClientNoEndpoint_BlocksLocalhost(t *testing.T) {
+func TestKibanaScopedClient_GetKibanaOapiClient_NilClientNoEndpoint_BlocksLocalhost(t *testing.T) {
 	t.Parallel()
-	// kibana field nil, kibanaEndpoint empty: models the case where the provider
+	// kibanaOapi field nil, kibanaEndpoint empty: models the case where the provider
 	// block is completely absent (no kibana config at all).
 	sc := &KibanaScopedClient{
-		kibana:         nil,
+		kibanaOapi:     nil,
 		kibanaEndpoint: "",
 	}
-	client, err := sc.GetKibanaClient()
+	client, err := sc.GetKibanaOapiClient()
 	assert.Nil(t, client)
 	require.Error(t, err,
-		"GetKibanaClient must return an error (not silently fall back to localhost) when endpoint is empty")
+		"GetKibanaOapiClient must return an error (not silently fall back to localhost) when endpoint is empty")
 	assert.Equal(t,
-		"kibana client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
+		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
 		err.Error(),
 	)
 }
@@ -193,15 +161,6 @@ func TestKibanaScopedClient_GetFleetClient_InheritedFromKibana(t *testing.T) {
 }
 
 // --- Scenario 7: Endpoint present, auth empty → accessor succeeds ---
-
-func TestKibanaScopedClient_GetKibanaClient_EndpointPresentNoAuth(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
-	client, err := sc.GetKibanaClient()
-	require.NoError(t, err,
-		"GetKibanaClient must not fail when endpoint is present but auth fields are empty")
-	assert.NotNil(t, client)
-}
 
 func TestKibanaScopedClient_GetKibanaOapiClient_EndpointPresentNoAuth(t *testing.T) {
 	t.Parallel()
