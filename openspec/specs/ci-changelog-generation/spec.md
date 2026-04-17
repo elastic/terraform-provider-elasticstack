@@ -10,7 +10,7 @@ The changelog generator SHALL be authored as a GitHub Agentic Workflow markdown 
 
 - a scheduled mode
 - a manual `workflow_dispatch` mode
-- a `pull_request` mode for same-repository release-preparation branches matching the repository's `prep-release-*` naming contract
+- a `pull_request_target` mode for same-repository release-preparation branches matching the repository's `prep-release-*` naming contract
 
 #### Scenario: Source and lock stay paired
 - **WHEN** maintainers change changelog generator behavior
@@ -18,7 +18,7 @@ The changelog generator SHALL be authored as a GitHub Agentic Workflow markdown 
 
 #### Scenario: Release-preparation pull request activates PR mode
 - **GIVEN** a same-repository pull request whose head branch matches the configured `prep-release-*` pattern
-- **WHEN** the changelog generator runs for that pull request
+- **WHEN** the changelog generator runs for that pull request through `pull_request_target`
 - **THEN** it SHALL enter release-section generation mode for the triggering pull request branch
 
 ### Requirement: Full-section regeneration uses authoritative ranges
@@ -39,13 +39,13 @@ The changelog generator SHALL regenerate the full target section on each run fro
 Before agent reasoning starts, deterministic steps SHALL gather the merged pull requests associated with the authoritative range and materialize a machine-readable release evidence manifest at `/tmp/gh-aw/agent/evidence.json`. The manifest SHALL NOT be added to the checked-in git worktree.
 
 The flow is:
-1. The **pre-activation job** gathers PR evidence (using `github-script`) and emits the serialized manifest as a job output (`evidence_json`) and an `has_evidence` flag (`true` when at least one PR was found). If `has_evidence` is `false`, the agent job is skipped entirely.
-2. A **pre-agent-step** (running in the agent's execution environment) deserializes `evidence_json` from the pre-activation job output and writes it to `/tmp/gh-aw/agent/evidence.json`, where the agent and repository-local helper scripts can access it.
+1. The **pre-activation job** gathers PR evidence (using `github-script`), writes the serialized manifest to an `evidence.json` file outside the checked-in worktree, uploads that file as a workflow artifact, and emits an `has_evidence` flag (`true` when at least one PR was found). If `has_evidence` is `false`, the agent job is skipped entirely.
+2. The **agent job** downloads the evidence artifact and places it at `/tmp/gh-aw/agent/evidence.json` before agent reasoning starts, where the agent and repository-local helper scripts can access it.
 
 The manifest SHALL include the target section identity, the previous release tag, the compare range, and the set of merged pull requests considered for generation. For each pull request, it SHALL include at least the pull request number, title, URL, merge commit SHA, author, labels, touched files, a deterministic coarse classification, and a deterministic rationale for likely inclusion or exclusion.
 
 #### Scenario: Evidence stays out of the worktree
-- **WHEN** the pre-agent-step persists changelog evidence
+- **WHEN** the workflow persists changelog evidence between jobs
 - **THEN** that evidence SHALL be written to `/tmp/gh-aw/agent/evidence.json`, outside the normal checked-in repository worktree
 
 #### Scenario: Pull-request metadata is captured for generation
@@ -56,6 +56,11 @@ The manifest SHALL include the target section identity, the previous release tag
 - **GIVEN** the pre-activation job finds zero merged pull requests in the authoritative range
 - **WHEN** the agent job evaluates its activation condition
 - **THEN** the agent job SHALL be skipped (`has_evidence == 'false'`) rather than running with an empty manifest
+
+#### Scenario: Evidence artifact survives the job boundary
+- **GIVEN** the pre-activation job built a non-empty release evidence manifest
+- **WHEN** the agent job starts
+- **THEN** it SHALL consume the manifest from the uploaded artifact rather than from a cross-job serialized manifest output
 
 ### Requirement: Agent changelog synthesis is PR-based and proof-carrying
 The agent phase SHALL use the release evidence manifest as its authoritative structured input for changelog generation. The agent SHALL produce changelog content only from PR-level summaries and SHALL NOT emit commit-by-commit release notes. The agent output SHALL include both the generated changelog markdown for the target section and structured provenance mapping each emitted changelog bullet to one or more pull requests from the release evidence manifest.
