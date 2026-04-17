@@ -199,6 +199,12 @@ func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator kbapi.SLOsIn
 			metric.Aggregation = types.StringValue(string(bm.Aggregation))
 			metric.Field = types.StringValue(bm.Field)
 			metric.Filter = types.StringPointerValue(bm.Filter)
+		} else {
+			diags.AddError(
+				"Unrecognized timeslice metric aggregation type",
+				"Could not determine the aggregation type for a timeslice metric entry. The API returned an unrecognized metric variant.",
+			)
+			return diags
 		}
 		tm = append(tm, metric)
 	}
