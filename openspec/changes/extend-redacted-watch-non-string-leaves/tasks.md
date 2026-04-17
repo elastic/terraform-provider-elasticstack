@@ -18,5 +18,5 @@
 
 ## 3. Sync the `elasticsearch-watch` delta into canonical specs
 
-- [ ] 3.1 Update `openspec/specs/elasticsearch-watch/spec.md` so the **Read (REQ-014–REQ-016)** and **JSON field mapping — read/state (REQ-023–REQ-027)** requirements match the broadened wording from `openspec/changes/extend-redacted-watch-non-string-leaves/specs/elasticsearch-watch/spec.md`, including the new non-string scenarios.
-- [ ] 3.2 Run `OPENSPEC_TELEMETRY=0 npx openspec validate --all` (or `make check-openspec`) and confirm no validation errors.
+- [x] 3.1 Update `openspec/specs/elasticsearch-watch/spec.md` so the **Read (REQ-014–REQ-016)** and **JSON field mapping — read/state (REQ-023–REQ-027)** requirements match the broadened wording from `openspec/changes/extend-redacted-watch-non-string-leaves/specs/elasticsearch-watch/spec.md`, including the new non-string scenarios.
+- [x] 3.2 Run `OPENSPEC_TELEMETRY=0 npx openspec validate --all` (or `make check-openspec`) and confirm no validation errors.
