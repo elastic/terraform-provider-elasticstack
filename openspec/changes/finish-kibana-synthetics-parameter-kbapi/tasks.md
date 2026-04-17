@@ -11,4 +11,4 @@
 ## 3. Verification
 
 - [x] 3.1 Run `make build` to ensure the provider compiles after the client swap.
-- [ ] 3.2 Run targeted acceptance tests for the synthetics parameter resource (e.g. `TestSyntheticParameterResource`) against a Kibana that exposes the Synthetics Parameters API, confirming create/read/update/delete, import id handling, read-after-write, and `share_across_spaces` behavior are unchanged.
+- [x] 3.2 Run targeted acceptance tests for the synthetics parameter resource (e.g. `TestSyntheticParameterResource`) against a Kibana that exposes the Synthetics Parameters API, confirming create/read/update/delete, import id handling, read-after-write, and `share_across_spaces` behavior are unchanged.
