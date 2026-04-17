@@ -1106,6 +1106,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Ipv6:                 h.IPv6.ValueBoolPointer(),
 		Labels:               mapPtr(labels),
 		Locations:            slicePtr(locations),
+		MaxRedirects:         int64ToSyntheticsHttpMonitorFieldsMaxRedirects(h.MaxRedirects),
 		Mode:                 stringEnumPtr[kbapi.SyntheticsHttpMonitorFieldsMode](h.Mode),
 		Name:                 v.Name.ValueString(),
 		Namespace:            stringPtr(v.Namespace),
@@ -1128,11 +1129,6 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 
 	if check != nil {
 		req.AdditionalProperties["check"] = check
-	}
-	if !h.MaxRedirects.IsNull() && !h.MaxRedirects.IsUnknown() {
-		// Kibana 8.14 expects max_redirects as a string, while newer schemas allow numbers.
-		// Use the legacy string encoding so the request remains compatible across versions.
-		req.AdditionalProperties["max_redirects"] = strconv.FormatInt(h.MaxRedirects.ValueInt64(), 10)
 	}
 
 	return req, dg
@@ -1305,6 +1301,18 @@ func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmp
 		return nil
 	}
 	return wait
+}
+
+func int64ToSyntheticsHttpMonitorFieldsMaxRedirects(v types.Int64) *kbapi.SyntheticsHttpMonitorFields_MaxRedirects {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+
+	maxRedirects := &kbapi.SyntheticsHttpMonitorFields_MaxRedirects{}
+	if err := maxRedirects.FromSyntheticsHttpMonitorFieldsMaxRedirects0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
+		return nil
+	}
+	return maxRedirects
 }
 
 func (v tfAlertConfigV0) toAPIAlertConfig() *kbapi.SyntheticsMonitorAlert {
