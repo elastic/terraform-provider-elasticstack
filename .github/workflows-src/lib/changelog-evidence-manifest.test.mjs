@@ -34,6 +34,17 @@ test('buildEvidenceManifestWrite throws when evidence_json is invalid JSON', () 
   );
 });
 
+test('buildEvidenceManifestWrite throws when evidence_json parses to a non-object', () => {
+  assert.throws(
+    () => buildEvidenceManifestWrite({ evidenceJson: 'null' }),
+    /evidence_json must parse to an object/
+  );
+  assert.throws(
+    () => buildEvidenceManifestWrite({ evidenceJson: '[]' }),
+    /evidence_json must parse to an object/
+  );
+});
+
 test('buildEvidenceManifestWrite formats pretty JSON and exposes write metadata', () => {
   const result = buildEvidenceManifestWrite({
     evidenceJson: '{"pr_count":2,"pull_requests":[]}',

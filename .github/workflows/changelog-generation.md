@@ -446,6 +446,10 @@ steps:
             throw new Error(`Invalid JSON in evidence_json: ${err.message}`);
           }
         
+          if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error('evidence_json must parse to an object');
+          }
+        
           return {
             parsed,
             formattedJson: JSON.stringify(parsed, null, 2),
