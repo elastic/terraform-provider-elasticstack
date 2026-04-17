@@ -18,16 +18,20 @@
 package parameter
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// minKibanaPerIDDeleteVersion is the minimum Kibana version that supports
+// DELETE /api/synthetics/params/{id}. Earlier versions return 404 for that
+// endpoint; use DELETE /api/synthetics/params with {"ids":[...]} instead.
+var minKibanaPerIDDeleteVersion = version.Must(version.NewVersion("8.17.0"))
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
 	var plan tfModelV0
@@ -60,66 +64,68 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		resourceID = compositeID.ResourceID
 	}
 
-	// DELETE /api/synthetics/params/{id} only works on Kibana >= 8.17.0.
-	// DELETE /api/synthetics/params with {"ids": [...]} works on >= 8.12.0.
-	// We use the latter so all supported Kibana versions are covered, sending
-	// the request through the kbapi transport (which handles auth and headers).
-	body, err := json.Marshal(map[string][]string{"ids": {resourceID}})
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to marshal delete request for parameter `%s`", resourceID), err.Error())
+	// Choose delete endpoint based on Kibana version.
+	// DELETE /api/synthetics/params/{id} (DeleteParameterWithResponse) is only
+	// supported on Kibana >= 8.17.0; it returns 404 on 8.12.x–8.16.x.
+	// DELETE /api/synthetics/params with {"ids":[...]} body works on all
+	// supported versions (>= 8.12.0), so that is the default.
+	kibanaVersion, sdkDiags := apiClient.ServerVersion(ctx)
+	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
-	endpoint := strings.TrimRight(kibanaClient.URL, "/") + "/api/synthetics/params"
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint, bytes.NewReader(body))
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to build delete request for parameter `%s`", resourceID), err.Error())
+	if kibanaVersion != nil && !kibanaVersion.LessThan(minKibanaPerIDDeleteVersion) {
+		// Use the per-ID delete endpoint on Kibana >= 8.17.0.
+		deleteResult, err := kibanaClient.API.DeleteParameterWithResponse(ctx, resourceID)
+		if err != nil {
+			response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
+			return
+		}
+		if deleteResult.StatusCode() != 200 {
+			response.Diagnostics.AddError(
+				fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
+				fmt.Sprintf("API returned status %s", deleteResult.Status()),
+			)
+		}
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := kibanaClient.HTTP.Do(req)
+	// Use the bulk-style delete endpoint for Kibana < 8.17.0.
+	// This is DELETE /api/synthetics/params with {"ids":[...]} body.
+	deleteResult, err := kibanaClient.API.BulkDeleteSyntheticsParametersWithResponse(ctx, kbapi.BulkDeleteSyntheticsParametersBody{
+		Ids: []string{resourceID},
+	})
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
 		return
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if deleteResult.StatusCode() != 200 {
 		response.Diagnostics.AddError(
 			fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
-			fmt.Sprintf("API returned status %s", resp.Status),
+			fmt.Sprintf("API returned status %s", deleteResult.Status()),
 		)
 		return
 	}
 
-	// The API returns a JSON array of {id, deleted} objects. Validate that the
-	// requested id was actually deleted so transient errors don't silently leave
-	// the resource in place.
-	var results []struct {
-		ID      string `json:"id"`
-		Deleted bool   `json:"deleted"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to parse delete response for parameter `%s`", resourceID), err.Error())
-		return
-	}
-
-	for _, r := range results {
-		if r.ID == resourceID {
-			if !r.Deleted {
-				response.Diagnostics.AddError(
-					fmt.Sprintf("Parameter `%s` was not deleted", resourceID),
-					"Kibana returned deleted=false for the requested parameter id",
-				)
+	// Validate that the requested id was actually deleted.
+	if deleteResult.JSON200 != nil {
+		for _, r := range *deleteResult.JSON200 {
+			if r.ID == resourceID {
+				if !r.Deleted {
+					response.Diagnostics.AddError(
+						fmt.Sprintf("Parameter `%s` was not deleted", resourceID),
+						"Kibana returned deleted=false for the requested parameter id",
+					)
+				}
+				return
 			}
-			return
 		}
+		// The response did not include our id — treat as an unexpected error.
+		response.Diagnostics.AddError(
+			fmt.Sprintf("Parameter `%s` not found in delete response", resourceID),
+			"Kibana delete response did not include the requested parameter id",
+		)
 	}
-
-	// The response did not include our id — treat as an unexpected error.
-	response.Diagnostics.AddError(
-		fmt.Sprintf("Parameter `%s` not found in delete response", resourceID),
-		"Kibana delete response did not include the requested parameter id",
-	)
 }
