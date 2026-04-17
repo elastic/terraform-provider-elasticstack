@@ -303,7 +303,7 @@ on:
 if: >-
   (github.event_name != 'pull_request' || startsWith(github.head_ref, 'prep-release-')) &&
   needs.pre_activation.outputs.has_evidence == 'true'
-pre-agent-steps:
+steps:
   - name: Write evidence manifest for agent
     id: write_evidence_manifest
     uses: actions/github-script@v8
@@ -342,7 +342,6 @@ pre-agent-steps:
         core.setOutput('evidence_path', memoryPath);
         
       evidence_json: ${{ needs.pre_activation.outputs.evidence_json }}
-steps:
   - name: Setup Go
     uses: actions/setup-go@v6
     with:
