@@ -31,6 +31,8 @@ import (
 type kibanaoapiIndex struct {
 	// funcName -> base file name (e.g. alerting_rule.go)
 	funcFile map[string]string
+	// fileName -> file content (pre-loaded for O(1) symbol lookups)
+	fileContent map[string]string
 }
 
 func buildKibanaOAPIIndex(repoRoot string) (*kibanaoapiIndex, error) {
@@ -39,14 +41,22 @@ func buildKibanaOAPIIndex(repoRoot string) (*kibanaoapiIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	idx := &kibanaoapiIndex{funcFile: make(map[string]string)}
+	idx := &kibanaoapiIndex{
+		funcFile:    make(map[string]string),
+		fileContent: make(map[string]string),
+	}
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") || strings.HasSuffix(e.Name(), "_test.go") {
 			continue
 		}
 		path := filepath.Join(dir, e.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		idx.fileContent[e.Name()] = string(data)
 		fset := token.NewFileSet()
-		f, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+		f, err := parser.ParseFile(fset, path, data, parser.ParseComments)
 		if err != nil {
 			return nil, err
 		}
@@ -120,33 +130,6 @@ func scanFileForKibanaOAPICalls(path string, calls map[string]struct{}) error {
 	return nil
 }
 
-func filesContainingSymbolInDir(dir, symbol string) ([]string, error) {
-	var out []string
-	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".go") {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if containsGoSymbol(string(data), symbol) {
-			out = append(out, filepath.Base(path))
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(out)
-	return out, nil
-}
 
 func containsGoSymbol(src, symbol string) bool {
 	if symbol == "" {
@@ -160,7 +143,7 @@ func containsGoSymbol(src, symbol string) bool {
 // matchHighConfidence returns symbols from changed that are referenced by this entity through
 // its implementation paths and/or kibanaoapi files whose sources reference those symbols when
 // the entity calls exported helpers from those files.
-func matchHighConfidence(repoRoot string, scanPaths []string, oapi *kibanaoapiIndex, changed []string) (matched []string, err error) {
+func matchHighConfidence(scanPaths []string, oapi *kibanaoapiIndex, changed []string) (matched []string, err error) {
 	if len(changed) == 0 || len(scanPaths) == 0 {
 		return nil, nil
 	}
@@ -211,23 +194,19 @@ func matchHighConfidence(repoRoot string, scanPaths []string, oapi *kibanaoapiIn
 			matched = append(matched, sym)
 			continue
 		}
-		files, err := filesContainingSymbolInDir(filepath.Join(repoRoot, "internal/clients/kibanaoapi"), sym)
-		if err != nil {
-			return nil, err
-		}
-		for _, fname := range files {
-			matchedHere := false
+		// Use pre-loaded index to avoid O(symbols × files) disk reads.
+		for fname, content := range oapi.fileContent {
+			if !containsGoSymbol(content, sym) {
+				continue
+			}
 			for fn := range calls {
 				if oapi.funcFile[fn] == fname {
-					matchedHere = true
-					break
+					matched = append(matched, sym)
+					goto nextSym
 				}
 			}
-			if matchedHere {
-				matched = append(matched, sym)
-				break
-			}
 		}
+	nextSym:
 	}
 
 	return sortStrings(matched), nil

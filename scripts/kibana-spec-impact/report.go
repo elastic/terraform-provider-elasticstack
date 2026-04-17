@@ -100,7 +100,7 @@ func buildImpactReport(repoRoot string, mem *Memory, baselineSHA, targetSHA stri
 		if len(paths) == 0 {
 			continue
 		}
-		matched, err := matchHighConfidence(repoRoot, paths, oapi, changed)
+		matched, err := matchHighConfidence(paths, oapi, changed)
 		if err != nil {
 			return nil, err
 		}

@@ -56,7 +56,7 @@ func Example() {
 	if err != nil {
 		t.Fatal(err)
 	}
-	matched, err := matchHighConfidence(root, []string{entDir}, oapi, []string{"WidgetType"})
+	matched, err := matchHighConfidence([]string{entDir}, oapi, []string{"WidgetType"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func Run() {
 	if err != nil {
 		t.Fatal(err)
 	}
-	matched, err := matchHighConfidence(root, []string{entDir}, oapi, []string{"PanelKind"})
+	matched, err := matchHighConfidence([]string{entDir}, oapi, []string{"PanelKind"})
 	if err != nil {
 		t.Fatal(err)
 	}
