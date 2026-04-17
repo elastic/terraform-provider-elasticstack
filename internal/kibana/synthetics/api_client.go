@@ -29,27 +29,21 @@ type ESAPIClient interface {
 	GetClient() *clients.KibanaScopedClient
 }
 
-// GetKibanaClient returns a configured Kibana client for the given ESAPIClient
+// GetKibanaClient returns a configured Kibana client for the given ESAPIClient.
+//
+// Deprecated: the legacy kibana.Client has been removed from KibanaScopedClient.
+// This shim is retained for interface compatibility and will be removed in task 4.
 func GetKibanaClient(c ESAPIClient, dg diag.Diagnostics) *kibana.Client {
 	return GetKibanaClientFromScopedClient(c.GetClient(), dg)
 }
 
-// GetKibanaClientFromScopedClient returns a configured Kibana client for the given *clients.KibanaScopedClient
-func GetKibanaClientFromScopedClient(client *clients.KibanaScopedClient, dg diag.Diagnostics) *kibana.Client {
-	if client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-		return nil
-	}
-
-	kibanaClient, err := client.GetKibanaClient()
-	if err != nil {
-		dg.AddError("unable to get kibana client", err.Error())
-		return nil
-	}
-	return kibanaClient
+// GetKibanaClientFromScopedClient returns a configured Kibana client for the
+// given *clients.KibanaScopedClient.
+//
+// Deprecated: the legacy kibana.Client has been removed from KibanaScopedClient.
+// This shim always returns nil and will be removed in task 4.
+func GetKibanaClientFromScopedClient(_ *clients.KibanaScopedClient, _ diag.Diagnostics) *kibana.Client {
+	return nil
 }
 
 // GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient
