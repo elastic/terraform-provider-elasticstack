@@ -13,26 +13,18 @@ Note: `internal/schema.GetKibanaConnectionSchema()` is the provider-level helper
 - **THEN** it SHALL come from the shared provider schema helpers rather than an entity-specific variant, and any path-based validation metadata SHALL target the entity-local block path
 
 ### Requirement: Framework scoped Kibana client resolution
-The provider SHALL expose Plugin Framework Kibana-derived client resolution through `*clients.ProviderClientFactory` methods that return a `*clients.KibanaScopedClient`. When an entity-local `kibana_connection` block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`. Covered Framework resources that need Kibana-derived operations, including `elasticstack_apm_agent_configuration`, SHALL consume that typed scoped client rather than a broad `*clients.APIClient` adapter.
+The provider SHALL expose Plugin Framework `kibana_connection` resolution through `*clients.ProviderClientFactory` methods that accept an entity-local `kibana_connection` block and return a `*clients.KibanaScopedClient`. When the block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
 #### Scenario: Framework factory falls back to provider defaults
-- **WHEN** a covered Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is absent
+- **WHEN** a Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is absent
 - **THEN** the factory SHALL return a `*clients.KibanaScopedClient` derived from provider configuration
 
 #### Scenario: Framework factory builds a scoped Kibana-derived client
-- **WHEN** a covered Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is configured
-- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
-
-#### Scenario: Framework entity does not downcast to a broad client
-- **WHEN** a covered Framework entity performs Kibana-derived operations
-- **THEN** it SHALL use the typed `*clients.KibanaScopedClient` contract rather than converting provider data into a broad `*clients.APIClient`
-
-#### Scenario: APM agent configuration exposes the shared Kibana connection block
-- **WHEN** `elasticstack_apm_agent_configuration` defines `kibana_connection`
-- **THEN** it SHALL use the shared Plugin Framework Kibana connection block and resolve its effective typed Kibana client through the factory from either provider defaults or that entity-local override
+- **WHEN** a Framework entity resolves its effective Kibana client through the factory and `kibana_connection` is configured
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana HTTP operations via the OpenAPI client, SLO, and Fleet operations
 
 ### Requirement: SDK scoped Kibana client resolution
-The provider SHALL expose SDK `kibana_connection` resolution through `*clients.ProviderClientFactory` methods that accept resource or data source state and return a `*clients.KibanaScopedClient`. When the block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana legacy client, Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
+The provider SHALL expose SDK `kibana_connection` resolution through `*clients.ProviderClientFactory` methods that accept resource or data source state and return a `*clients.KibanaScopedClient`. When the block is not configured, the factory SHALL return a `*clients.KibanaScopedClient` built from provider-level defaults. When the block is configured, the factory SHALL return a `*clients.KibanaScopedClient` whose Kibana OpenAPI client, SLO client, and Fleet client are rebuilt from the scoped `kibana_connection`.
 
 #### Scenario: SDK factory falls back to provider defaults
 - **WHEN** an SDK entity resolves its effective Kibana client through the factory and `kibana_connection` is absent
@@ -40,7 +32,7 @@ The provider SHALL expose SDK `kibana_connection` resolution through `*clients.P
 
 #### Scenario: SDK factory builds a scoped Kibana-derived client
 - **WHEN** an SDK entity resolves its effective Kibana client through the factory and `kibana_connection` is configured
-- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana, SLO, and Fleet operations
+- **THEN** the factory SHALL return a `*clients.KibanaScopedClient` rebuilt from that connection for Kibana HTTP operations via the OpenAPI client, SLO, and Fleet operations
 
 ### Requirement: Scoped client version and identity behavior
 When an entity uses a scoped `*clients.KibanaScopedClient` resolved from `kibana_connection`, version, flavor, and other Kibana-derived client checks SHALL resolve against the scoped connection rather than provider-level Elasticsearch identity. The `*clients.KibanaScopedClient` SHALL therefore avoid exposing provider-level Elasticsearch identity in a way that can make Kibana or Fleet operations target one cluster while version or identity checks target another.
@@ -80,4 +72,15 @@ Covered Kibana and Fleet entities SHALL use the shared SDK or Plugin Framework `
 #### Scenario: Covered entity uses the shared block definition
 - **WHEN** a covered Kibana or Fleet entity defines `kibana_connection`
 - **THEN** that definition SHALL come from the shared provider schema helper for the entity's implementation style
+
+### Requirement: Scoped Kibana status reads use OpenAPI client
+For `*clients.KibanaScopedClient`, implementations that need the Kibana server version number or build flavor SHALL obtain them from the Kibana `/api/status` response using the generated OpenAPI Kibana client (`generated/kbapi`) for the same effective scoped Kibana connection (via `internal/clients/kibanaoapi` or equivalent provider-internal wiring). The provider SHALL NOT depend on `github.com/disaster37/go-kibana-rest` for this status read after this change is complete. Residual imports of `go-kibana-rest` that are limited to configuration struct types (`internal/clients/config/`) or error-type assertions (`internal/kibana/synthetics/parameter/read.go`) are out of scope for this change and are tracked as follow-up cleanup in `design.md`. When `version.build_flavor` is absent (older Kibana releases), the flavor result SHALL be an empty string, matching prior behavior for traditional deployments.
+
+#### Scenario: Scoped version uses OpenAPI status
+- **WHEN** a covered entity uses `ServerVersion()` on a `*clients.KibanaScopedClient` resolved from `kibana_connection` or provider defaults
+- **THEN** the version SHALL be derived from `version.number` in the `/api/status` payload retrieved through the OpenAPI client for that scoped connection
+
+#### Scenario: Scoped flavor uses OpenAPI status
+- **WHEN** a covered entity uses `ServerFlavor()` on a `*clients.KibanaScopedClient` resolved from `kibana_connection` or provider defaults
+- **THEN** the flavor SHALL be derived from `version.build_flavor` when present in that same `/api/status` payload and SHALL otherwise be an empty string
 
