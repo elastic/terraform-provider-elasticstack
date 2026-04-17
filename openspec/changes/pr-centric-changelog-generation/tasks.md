@@ -22,6 +22,6 @@
 
 ## 5. Verification and rollout
 
-- [ ] 5.1 Add or update tests for workflow gating, parser/renderer behavior, singleton generated-changelog PR reuse, and release-PR update logic.
-- [ ] 5.2 Regenerate compiled workflow artifacts and run the relevant workflow/unit test suite plus `make check-openspec`, fixing any resulting issues.
+- [x] 5.1 Add or update tests for workflow gating, parser/renderer behavior, singleton generated-changelog PR reuse, and release-PR update logic.
+- [x] 5.2 Regenerate compiled workflow artifacts and run the relevant workflow/unit test suite plus `make check-openspec`, fixing any resulting issues.
 - [ ] 5.3 After maintainer review of the workflow ergonomics, make the PR-time changelog authoring workflow a required pull-request check.

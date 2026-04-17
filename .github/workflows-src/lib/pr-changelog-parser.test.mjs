@@ -359,3 +359,75 @@ test('validateChangelogSection: invalid when Summary has no value', () => {
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((e) => e.includes('Summary')), 'error should mention Summary');
 });
+
+// ---------------------------------------------------------------------------
+// Edge case: ## Changelog is the last section (no trailing ## heading)
+// ---------------------------------------------------------------------------
+
+const BODY_CHANGELOG_LAST_SECTION = `
+## Description
+
+Fixes a bug.
+
+## Changelog
+
+Customer impact: fix
+Summary: Fix handling of nil pointer in cluster client
+`.trimStart();
+
+test('parseChangelogSection: parses correctly when ## Changelog is the last section with no trailing heading', () => {
+  const result = parseChangelogSection(BODY_CHANGELOG_LAST_SECTION);
+  assert.deepEqual(result, {
+    customerImpact: 'fix',
+    summary: 'Fix handling of nil pointer in cluster client',
+    breakingChanges: null,
+  });
+});
+
+test('validateChangelogSection: valid when ## Changelog is the last section', () => {
+  const parsed = parseChangelogSection(BODY_CHANGELOG_LAST_SECTION);
+  const result = validateChangelogSection(parsed);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+});
+
+// ---------------------------------------------------------------------------
+// Edge case: multiple ## sections after ## Changelog — only changelog section parsed
+// ---------------------------------------------------------------------------
+
+const BODY_CHANGELOG_WITH_MULTIPLE_FOLLOWING_SECTIONS = `
+## Summary
+
+This PR adds a new feature.
+
+## Changelog
+
+Customer impact: enhancement
+Summary: Add support for cross-cluster replication
+
+## Review notes
+
+Needs extra attention to the retry logic.
+
+## Test plan
+
+- Run acceptance tests for elasticsearch_index
+- Verify cross-cluster replication config
+`.trimStart();
+
+test('parseChangelogSection: only parses changelog section content when multiple ## sections follow', () => {
+  const result = parseChangelogSection(BODY_CHANGELOG_WITH_MULTIPLE_FOLLOWING_SECTIONS);
+  assert.ok(result !== null, 'should parse the Changelog section');
+  assert.equal(result.customerImpact, 'enhancement');
+  assert.equal(result.summary, 'Add support for cross-cluster replication');
+  assert.equal(result.breakingChanges, null);
+});
+
+test('parseChangelogSection: does not include content from sections after ## Changelog', () => {
+  // Confirm that "Review notes" and "Test plan" content is not present in the
+  // parsed section (would only matter if the boundary detection failed)
+  const section = parseChangelogSection(BODY_CHANGELOG_WITH_MULTIPLE_FOLLOWING_SECTIONS);
+  assert.ok(section !== null);
+  // The summary must be the one in Changelog, not text from later sections
+  assert.equal(section.summary, 'Add support for cross-cluster replication');
+});

@@ -157,3 +157,90 @@ test('PR entirely missing ## Changelog and without no-changelog label fails asse
     `Expected missing changelog section error, got: ${result.errors[0].reason}`,
   );
 });
+
+// ---------------------------------------------------------------------------
+// Mixed batch: valid fix, no-changelog label, Customer impact: none,
+//              breaking change — combined output is correct
+// ---------------------------------------------------------------------------
+
+test('mixed batch renders correct combined output for fix, no-changelog, none, and breaking PRs', () => {
+  const fixPR = makePR({
+    number: 101,
+    url: 'https://github.com/org/repo/pull/101',
+    body: '## Changelog\nCustomer impact: fix\nSummary: Fix the widget factory\n',
+  });
+
+  const noChangelogPR = makePR({
+    number: 102,
+    url: 'https://github.com/org/repo/pull/102',
+    labels: ['no-changelog'],
+    body: null,
+  });
+
+  const nonePR = makePR({
+    number: 103,
+    url: 'https://github.com/org/repo/pull/103',
+    body: '## Changelog\nCustomer impact: none\n',
+  });
+
+  const breakingBody = [
+    '## Changelog',
+    'Customer impact: breaking',
+    'Summary: Remove the old authentication endpoint',
+    '',
+    '### Breaking changes',
+    '',
+    'The `/v1/auth` endpoint has been removed. Use `/v2/auth` instead.',
+    '',
+  ].join('\n');
+
+  const breakingPR = makePR({
+    number: 104,
+    url: 'https://github.com/org/repo/pull/104',
+    body: breakingBody,
+  });
+
+  const result = renderChangelogSection([fixPR, noChangelogPR, nonePR, breakingPR]);
+
+  // Overall result must succeed
+  assert.equal(result.success, true, `Expected success but got errors: ${JSON.stringify(result.errors)}`);
+  assert.deepEqual(result.errors, []);
+
+  // Included: only fix (#101) and breaking (#104)
+  assert.equal(result.included.length, 2, 'only fix and breaking PRs should be included');
+  const includedNumbers = result.included.map((p) => p.prNumber);
+  assert.ok(includedNumbers.includes(101), 'fix PR must be included');
+  assert.ok(includedNumbers.includes(104), 'breaking PR must be included');
+
+  // Excluded: no-changelog (#102) and none (#103)
+  assert.equal(result.excluded.length, 2, 'no-changelog and none PRs should be excluded');
+  const excludedMap = Object.fromEntries(result.excluded.map((p) => [p.prNumber, p.reason]));
+  assert.equal(excludedMap[102], 'no-changelog label');
+  assert.equal(excludedMap[103], 'Customer impact: none');
+
+  // Section body contains both ### Breaking changes and ### Changes subsections
+  assert.ok(result.sectionBody.includes('### Breaking changes'), 'sectionBody must have ### Breaking changes');
+  assert.ok(result.sectionBody.includes('### Changes'), 'sectionBody must have ### Changes');
+
+  // Breaking change prose from #104 is present
+  assert.ok(
+    result.sectionBody.includes('/v1/auth'),
+    'sectionBody must contain the breaking-change prose from #104',
+  );
+
+  // Change bullet for fix PR (#101) is present
+  assert.ok(
+    result.sectionBody.includes('- Fix the widget factory ([#101](https://github.com/org/repo/pull/101))'),
+    'sectionBody must contain the fix bullet for #101',
+  );
+
+  // Change bullet for breaking PR (#104) is present
+  assert.ok(
+    result.sectionBody.includes('- Remove the old authentication endpoint ([#104](https://github.com/org/repo/pull/104))'),
+    'sectionBody must contain the breaking change bullet for #104',
+  );
+
+  // PRs excluded from bullets must not appear as change bullets
+  assert.ok(!result.sectionBody.includes('#102'), 'no-changelog PR #102 must not appear in sectionBody');
+  assert.ok(!result.sectionBody.includes('#103'), 'none PR #103 must not appear in sectionBody');
+});
