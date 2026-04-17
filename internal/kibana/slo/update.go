@@ -20,7 +20,8 @@ package slo
 import (
 	"context"
 
-	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -97,8 +98,33 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	_, sdkDiags = clientkibana.UpdateSlo(ctx, apiClient, apiModel, supportsMultipleGroupBy)
-	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	oapi, err := apiClient.GetKibanaOapiClient()
+	if err != nil {
+		response.Diagnostics.AddError("Failed to get Kibana API client", err.Error())
+		return
+	}
+
+	indicator, convErr := kibanaoapi.ResponseIndicatorToUpdateIndicator(apiModel.Indicator)
+	if convErr != nil {
+		response.Diagnostics.AddError("Failed to convert indicator", convErr.Error())
+		return
+	}
+
+	groupBy := kibanaoapi.TransformGroupBy(apiModel.GroupBy, supportsMultipleGroupBy)
+	reqModel := kbapi.SLOsUpdateSloRequest{
+		Name:            &apiModel.Name,
+		Description:     &apiModel.Description,
+		Indicator:       &indicator,
+		TimeWindow:      &apiModel.TimeWindow,
+		BudgetingMethod: &apiModel.BudgetingMethod,
+		Objective:       &apiModel.Objective,
+		Settings:        apiModel.Settings,
+		GroupBy:         groupBy,
+		Tags:            kibanaoapi.TagsToPtr(apiModel.Tags),
+	}
+
+	fwDiags := kibanaoapi.UpdateSlo(ctx, oapi, apiModel.SpaceID, apiModel.SloID, reqModel)
+	response.Diagnostics.Append(fwDiags...)
 	if response.Diagnostics.HasError() {
 		return
 	}

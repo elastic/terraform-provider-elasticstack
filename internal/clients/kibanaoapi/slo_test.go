@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package kibana
+package kibanaoapi
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse
 	return result
 }
 
-func Test_sloResponseToModel(t *testing.T) {
+func Test_SloResponseToModel(t *testing.T) {
 	syncDelay := "2m"
 
 	tests := []struct {
@@ -122,7 +122,7 @@ func Test_sloResponseToModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := sloResponseToModel(tt.spaceID, tt.sloResponse)
+			model := SloResponseToModel(tt.spaceID, tt.sloResponse)
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}

@@ -26,7 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -756,20 +756,24 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		return err
 	}
 
+	oapi, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_slo" {
 			continue
 		}
+		// CompositeID stores spaceID as ClusterID and sloID as ResourceID.
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		slo, diags := kibana.GetSlo(context.Background(), client, compID.ResourceID, compID.ClusterID)
+		res, diags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {
-			if len(diags) > 1 || diags[0].Summary != "404 Not Found" {
-				return fmt.Errorf("Failed to check if SLO was destroyed: %v", diags)
-			}
+			return fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
 		}
 
-		if slo != nil {
+		if res != nil {
 			return fmt.Errorf("SLO (%s) still exists", compID.ResourceID)
 		}
 	}

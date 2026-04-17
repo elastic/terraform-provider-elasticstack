@@ -21,8 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -70,15 +69,23 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.Kibana
 		return false, diags
 	}
 
-	apiModel, sdkDiags := clientkibana.GetSlo(ctx, apiClient, compID.ResourceID, compID.ClusterID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return false, diags
-	}
-	if apiModel == nil {
+	oapi, err := apiClient.GetKibanaOapiClient()
+	if err != nil {
+		diags.AddError("Failed to get Kibana API client", err.Error())
 		return false, diags
 	}
 
+	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
+	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return false, diags
+	}
+	if res == nil {
+		return false, diags
+	}
+
+	apiModel := kibanaoapi.SloResponseToModel(compID.ClusterID, res)
 	state.ID = types.StringValue((&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: apiModel.SloID}).String())
 	diags.Append(state.populateFromAPI(apiModel)...)
 	if diags.HasError() {

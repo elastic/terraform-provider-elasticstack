@@ -21,8 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -51,8 +50,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
+	oapi, err := apiClient.GetKibanaOapiClient()
+	if err != nil {
+		response.Diagnostics.AddError("Failed to get Kibana API client", err.Error())
+		return
+	}
+
 	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
-	// DeleteSlo signature: (ctx, apiClient, sloID, spaceID).
-	sdkDiags := clientkibana.DeleteSlo(ctx, apiClient, compID.ResourceID, compID.ClusterID)
-	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	// DeleteSlo signature: (ctx, client, spaceID, sloID).
+	response.Diagnostics.Append(kibanaoapi.DeleteSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)...)
 }

@@ -275,63 +275,27 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.KqlCustomIndicator = nil
 	m.TimesliceMetricIndicator = nil
 
-	discriminator, err := apiModel.Indicator.Discriminator()
+	indicatorValue, err := apiModel.Indicator.ValueByDiscriminator()
 	if err != nil {
 		diags.AddError("Unexpected API response", "failed to determine indicator type: "+err.Error())
 		return diags
 	}
 
-	switch discriminator {
-	case "sli.apm.transactionErrorRate":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesApmAvailability()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse APM availability indicator: "+err.Error())
-			return diags
-		}
+	switch ind := indicatorValue.(type) {
+	case kbapi.SLOsIndicatorPropertiesApmAvailability:
 		diags.Append(m.populateFromApmAvailabilityIndicator(ind)...)
-
-	case "sli.apm.transactionDuration":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesApmLatency()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse APM latency indicator: "+err.Error())
-			return diags
-		}
+	case kbapi.SLOsIndicatorPropertiesApmLatency:
 		diags.Append(m.populateFromApmLatencyIndicator(ind)...)
-
-	case "sli.kql.custom":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesCustomKql()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse KQL custom indicator: "+err.Error())
-			return diags
-		}
+	case kbapi.SLOsIndicatorPropertiesCustomKql:
 		diags.Append(m.populateFromKqlCustomIndicator(ind)...)
-
-	case "sli.histogram.custom":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesHistogram()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse histogram indicator: "+err.Error())
-			return diags
-		}
+	case kbapi.SLOsIndicatorPropertiesHistogram:
 		diags.Append(m.populateFromHistogramCustomIndicator(ind)...)
-
-	case "sli.metric.custom":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesCustomMetric()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse custom metric indicator: "+err.Error())
-			return diags
-		}
+	case kbapi.SLOsIndicatorPropertiesCustomMetric:
 		diags.Append(m.populateFromMetricCustomIndicator(ind)...)
-
-	case "sli.metric.timeslice":
-		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesTimesliceMetric()
-		if err != nil {
-			diags.AddError("Unexpected API response", "failed to parse timeslice metric indicator: "+err.Error())
-			return diags
-		}
+	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
 		diags.Append(m.populateFromTimesliceMetricIndicator(ind)...)
-
 	default:
-		diags.AddError("Unexpected API response", "unknown indicator type: "+discriminator)
+		diags.AddError("Unexpected API response", fmt.Sprintf("unknown indicator type: %T", indicatorValue))
 		return diags
 	}
 
