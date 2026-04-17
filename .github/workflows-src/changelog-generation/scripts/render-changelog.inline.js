@@ -1,6 +1,103 @@
 const fs = require('fs');
 //include: ../../lib/changelog-renderer.js
 
+/**
+ * Find the index of the next `##`-level section header after startIndex,
+ * returning it as the exclusive end of the current section.
+ * If no next section is found, returns the index of the last non-blank line + 1.
+ *
+ * @param {string[]} lines
+ * @param {number} startIndex - Index of the current section header.
+ * @returns {number}
+ */
+function findSectionEnd(lines, startIndex) {
+  for (let i = startIndex + 1; i < lines.length; i++) {
+    if (/^## /.test(lines[i])) {
+      return i;
+    }
+  }
+  // No next section — return end of file
+  return lines.length;
+}
+
+/**
+ * Rewrite only the target section of CHANGELOG.md.
+ * Preserves all other sections and the link footer exactly.
+ *
+ * @param {string} content - Current CHANGELOG.md content.
+ * @param {string} sectionHeader - The target section header line.
+ * @param {string} newSectionContent - The full replacement (header + body).
+ * @param {string} mode - 'unreleased' | 'release'
+ * @param {string} targetVersion - Version string (release mode only).
+ * @returns {string}
+ */
+function rewriteChangelogSection(content, sectionHeader, newSectionContent, mode, targetVersion) {
+  const lines = content.split('\n');
+
+  // Find the start of the target section
+  let targetStart = -1;
+
+  if (mode === 'unreleased') {
+    targetStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+  } else {
+    // For release mode, look for the exact version header or the Unreleased section
+    // (we insert after Unreleased when no existing release section is found)
+    targetStart = lines.findIndex((line) =>
+      line.startsWith(`## [${targetVersion}]`)
+    );
+  }
+
+  if (targetStart === -1) {
+    // Section not found — insert appropriately
+    if (mode === 'release') {
+      // Insert after ## [Unreleased] section if present, otherwise at the top
+      const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+      if (unreleasedStart !== -1) {
+        // Find the end of the Unreleased section
+        const insertAfter = findSectionEnd(lines, unreleasedStart);
+        const before = lines.slice(0, insertAfter);
+        const after = lines.slice(insertAfter);
+        return [...before, '', newSectionContent, ...after].join('\n');
+      } else {
+        // No Unreleased section — prepend after any top-level heading
+        return newSectionContent + '\n\n' + content;
+      }
+    } else {
+      // unreleased: prepend after any top-level heading
+      return newSectionContent + '\n\n' + content;
+    }
+  }
+
+  // Find the end of the target section (start of the next ## section)
+  const sectionEnd = findSectionEnd(lines, targetStart);
+
+  const before = lines.slice(0, targetStart);
+  const after = lines.slice(sectionEnd);
+
+  // Remove trailing blank lines from 'before' that were padding before the old section
+  while (before.length > 0 && before[before.length - 1] === '') {
+    before.pop();
+  }
+
+  // Rebuild: before content, blank separator, new section, blank separator, after content
+  const parts = [...before];
+  if (parts.length > 0) parts.push('');
+  parts.push(newSectionContent);
+
+  // Normalize leading blank lines in 'after'
+  let afterStart = 0;
+  while (afterStart < after.length && after[afterStart] === '') {
+    afterStart++;
+  }
+
+  if (afterStart < after.length) {
+    parts.push('');
+    parts.push(...after.slice(afterStart));
+  }
+
+  return parts.join('\n');
+}
+
 const mergedPRsPath = process.env.MERGED_PRS_PATH || '';
 const mode = process.env.MODE || 'unreleased';
 const targetVersion = process.env.TARGET_VERSION || '';
@@ -82,100 +179,3 @@ core.setOutput('section_header', sectionHeader);
 core.setOutput('has_changes', result.included.length > 0 || result.excluded.length > 0 ? 'true' : 'false');
 core.setOutput('has_user_facing_changes', result.included.length > 0 ? 'true' : 'false');
 core.info(`Changelog section rendered: ${sectionHeader}`);
-
-/**
- * Rewrite only the target section of CHANGELOG.md.
- * Preserves all other sections and the link footer exactly.
- *
- * @param {string} content - Current CHANGELOG.md content.
- * @param {string} sectionHeader - The target section header line.
- * @param {string} newSectionContent - The full replacement (header + body).
- * @param {string} mode - 'unreleased' | 'release'
- * @param {string} targetVersion - Version string (release mode only).
- * @returns {string}
- */
-function rewriteChangelogSection(content, sectionHeader, newSectionContent, mode, targetVersion) {
-  const lines = content.split('\n');
-
-  // Find the start of the target section
-  let targetStart = -1;
-
-  if (mode === 'unreleased') {
-    targetStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-  } else {
-    // For release mode, look for the exact version header or the Unreleased section
-    // (we insert after Unreleased when no existing release section is found)
-    targetStart = lines.findIndex((line) =>
-      line.startsWith(`## [${targetVersion}]`)
-    );
-  }
-
-  if (targetStart === -1) {
-    // Section not found — insert appropriately
-    if (mode === 'release') {
-      // Insert after ## [Unreleased] section if present, otherwise at the top
-      const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-      if (unreleasedStart !== -1) {
-        // Find the end of the Unreleased section
-        const insertAfter = findSectionEnd(lines, unreleasedStart);
-        const before = lines.slice(0, insertAfter);
-        const after = lines.slice(insertAfter);
-        return [...before, '', newSectionContent, ...after].join('\n');
-      } else {
-        // No Unreleased section — prepend after any top-level heading
-        return newSectionContent + '\n\n' + content;
-      }
-    } else {
-      // unreleased: prepend after any top-level heading
-      return newSectionContent + '\n\n' + content;
-    }
-  }
-
-  // Find the end of the target section (start of the next ## section)
-  const sectionEnd = findSectionEnd(lines, targetStart);
-
-  const before = lines.slice(0, targetStart);
-  const after = lines.slice(sectionEnd);
-
-  // Remove trailing blank lines from 'before' that were padding before the old section
-  while (before.length > 0 && before[before.length - 1] === '') {
-    before.pop();
-  }
-
-  // Rebuild: before content, blank separator, new section, blank separator, after content
-  const parts = [...before];
-  if (parts.length > 0) parts.push('');
-  parts.push(newSectionContent);
-
-  // Normalize leading blank lines in 'after'
-  let afterStart = 0;
-  while (afterStart < after.length && after[afterStart] === '') {
-    afterStart++;
-  }
-
-  if (afterStart < after.length) {
-    parts.push('');
-    parts.push(...after.slice(afterStart));
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Find the index of the next `##`-level section header after startIndex,
- * returning it as the exclusive end of the current section.
- * If no next section is found, returns the index of the last non-blank line + 1.
- *
- * @param {string[]} lines
- * @param {number} startIndex - Index of the current section header.
- * @returns {number}
- */
-function findSectionEnd(lines, startIndex) {
-  for (let i = startIndex + 1; i < lines.length; i++) {
-    if (/^## /.test(lines[i])) {
-      return i;
-    }
-  }
-  // No next section — return end of file
-  return lines.length;
-}
