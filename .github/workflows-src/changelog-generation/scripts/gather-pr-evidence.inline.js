@@ -22,8 +22,8 @@ try {
   core.warning(`Failed to list commits in range: ${err.message}`);
 }
 
-// Find PRs associated with these commits
-const associatedPullRequests = [];
+// Find PRs associated with these commits and dedupe merged PRs as we go.
+const mergedPullRequestsByNumber = new Map();
 
 for (const sha of commitSHAs) {
   try {
@@ -32,13 +32,17 @@ for (const sha of commitSHAs) {
       repo,
       commit_sha: sha,
     });
-    associatedPullRequests.push(...prs);
+    for (const pr of prs) {
+      if (pr.state === 'closed' && pr.merged_at && !mergedPullRequestsByNumber.has(pr.number)) {
+        mergedPullRequestsByNumber.set(pr.number, pr);
+      }
+    }
   } catch (err) {
     core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
   }
 }
 
-const mergedPullRequests = selectMergedPullRequests(associatedPullRequests);
+const mergedPullRequests = Array.from(mergedPullRequestsByNumber.values());
 core.info(`Found ${mergedPullRequests.length} unique merged PR(s) in compare range`);
 
 // Enrich each PR with file information

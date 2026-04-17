@@ -20,10 +20,10 @@ test('resolveEvidenceJsonInput prefers EVIDENCE_JSON over other sources', () => 
   );
 });
 
-test('buildEvidenceManifestWrite throws when evidence_json is missing', () => {
+test('buildEvidenceManifestWrite throws when evidence JSON is missing', () => {
   assert.throws(
     () => buildEvidenceManifestWrite({ evidenceJson: '' }),
-    /No evidence_json input provided/
+    /No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON/
   );
 });
 

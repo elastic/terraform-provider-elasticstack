@@ -10,7 +10,7 @@ on:
   schedule:
     - cron: daily
   workflow_dispatch:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     types: [opened, synchronize, reopened]
@@ -37,7 +37,8 @@ on:
         mode: ${{ steps.resolve_release_context.outputs.mode }}
         target_version: ${{ steps.resolve_release_context.outputs.target_version }}
 if: >-
-  (github.event_name != 'pull_request' || startsWith(github.head_ref, 'prep-release-')) &&
+  (github.event_name != 'pull_request_target' ||
+  startsWith(github.head_ref, 'prep-release-')) &&
   needs.pre_activation.outputs.has_evidence == 'true'
 steps:
   - name: Write evidence manifest for agent

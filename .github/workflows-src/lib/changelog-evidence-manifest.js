@@ -15,7 +15,9 @@ function buildEvidenceManifestWrite({
   memoryPath = DEFAULT_EVIDENCE_MEMORY_PATH,
 }) {
   if (!evidenceJson) {
-    throw new Error('No evidence_json input provided');
+    throw new Error(
+      'No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON'
+    );
   }
 
   let parsed;

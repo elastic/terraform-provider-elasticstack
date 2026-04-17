@@ -11,7 +11,7 @@ on:
   schedule:
     - cron: daily
   workflow_dispatch:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     types: [opened, synchronize, reopened]
@@ -342,8 +342,8 @@ on:
             core.warning(`Failed to list commits in range: ${err.message}`);
           }
           
-          // Find PRs associated with these commits
-          const associatedPullRequests = [];
+          // Find PRs associated with these commits and dedupe merged PRs as we go.
+          const mergedPullRequestsByNumber = new Map();
           
           for (const sha of commitSHAs) {
             try {
@@ -352,13 +352,17 @@ on:
                 repo,
                 commit_sha: sha,
               });
-              associatedPullRequests.push(...prs);
+              for (const pr of prs) {
+                if (pr.state === 'closed' && pr.merged_at && !mergedPullRequestsByNumber.has(pr.number)) {
+                  mergedPullRequestsByNumber.set(pr.number, pr);
+                }
+              }
             } catch (err) {
               core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
             }
           }
           
-          const mergedPullRequests = selectMergedPullRequests(associatedPullRequests);
+          const mergedPullRequests = Array.from(mergedPullRequestsByNumber.values());
           core.info(`Found ${mergedPullRequests.length} unique merged PR(s) in compare range`);
           
           // Enrich each PR with file information
@@ -400,7 +404,8 @@ on:
         mode: ${{ steps.resolve_release_context.outputs.mode }}
         target_version: ${{ steps.resolve_release_context.outputs.target_version }}
 if: >-
-  (github.event_name != 'pull_request' || startsWith(github.head_ref, 'prep-release-')) &&
+  (github.event_name != 'pull_request_target' ||
+  startsWith(github.head_ref, 'prep-release-')) &&
   needs.pre_activation.outputs.has_evidence == 'true'
 steps:
   - name: Write evidence manifest for agent
@@ -429,7 +434,9 @@ steps:
           memoryPath = DEFAULT_EVIDENCE_MEMORY_PATH,
         }) {
           if (!evidenceJson) {
-            throw new Error('No evidence_json input provided');
+            throw new Error(
+              'No evidence JSON provided via EVIDENCE_JSON, the evidence_json input, or INPUT_EVIDENCE_JSON'
+            );
           }
         
           let parsed;

@@ -56,6 +56,27 @@ test('workflow passes pre-activation evidence via env', () => {
   );
 });
 
+test('workflow listens to pull_request_target for main', () => {
+  assert.match(
+    rawPrompt,
+    /pull_request_target:\n\s+branches:\n\s+- main\n\s+types: \[opened, synchronize, reopened\]/,
+    'workflow should listen to pull_request_target events targeting main'
+  );
+  assert.doesNotMatch(
+    rawPrompt,
+    /pull_request:\n\s+branches:\n\s+- main\n\s+types: \[opened, synchronize, reopened\]/,
+    'workflow should not listen to pull_request events targeting main'
+  );
+});
+
+test('workflow restricts pull_request_target to prep-release branches before agent activation', () => {
+  assert.match(
+    rawPrompt,
+    /\(github\.event_name != 'pull_request_target' \|\|\n\s+startsWith\(github\.head_ref, 'prep-release-'\)\) &&/,
+    'workflow should require prep-release-* for pull_request_target before agent activation'
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Structural checks on the prompt body
 // ---------------------------------------------------------------------------
