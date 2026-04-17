@@ -31,12 +31,11 @@ func TestDateMathIndexNameRe(t *testing.T) {
 		`<logs-{now/d}>`,
 		`<logs-{now/M}>`,
 		`<logs-{now/d{yyyy.MM.dd}}>`,
-		`<prefix-{now/d}-suffix>`,
 		`<a-{now}>`,
 	}
 	for _, name := range validCases {
 		t.Run("valid: "+name, func(t *testing.T) {
-			assert.True(t, dateMathIndexNameRe.MatchString(name), "expected %q to match date math regex", name)
+			assert.True(t, DateMathIndexNameRe.MatchString(name), "expected %q to match date math regex", name)
 		})
 	}
 
@@ -50,10 +49,14 @@ func TestDateMathIndexNameRe(t *testing.T) {
 		{"no angle brackets", "logs-{now/d}"},
 		{"nested angle brackets", "<outer<inner>>"},
 		{"empty", ""},
+		{"suffix after date math section", `<prefix-{now/d}-suffix>`},
+		{"starts with dash", `<-logs-{now/d}>`},
+		{"starts with underscore", `<_logs-{now/d}>`},
+		{"starts with plus", `<+logs-{now/d}>`},
 	}
 	for _, tc := range invalidCases {
 		t.Run("invalid: "+tc.name, func(t *testing.T) {
-			assert.False(t, dateMathIndexNameRe.MatchString(tc.input), "expected %q not to match date math regex", tc.input)
+			assert.False(t, DateMathIndexNameRe.MatchString(tc.input), "expected %q not to match date math regex", tc.input)
 		})
 	}
 }
@@ -74,8 +77,8 @@ func TestEncodeDateMathIndexName(t *testing.T) {
 			expected: "%3Clogs-%7Bnow%2Fd%7Byyyy.MM.dd%7D%7D%3E",
 		},
 		{
-			input:    `<prefix-{now/M{yyyy.MM}}-suffix>`,
-			expected: "%3Cprefix-%7Bnow%2FM%7Byyyy.MM%7D%7D-suffix%3E",
+			input:    `<logs-{now/M{yyyy.MM}}>`,
+			expected: "%3Clogs-%7Bnow%2FM%7Byyyy.MM%7D%7D%3E",
 		},
 	}
 
@@ -99,7 +102,7 @@ func TestDateMathIndexNameReDoesNotMatchStaticNames(t *testing.T) {
 	}
 	for _, name := range staticNames {
 		t.Run(name, func(t *testing.T) {
-			assert.False(t, dateMathIndexNameRe.MatchString(name))
+			assert.False(t, DateMathIndexNameRe.MatchString(name))
 		})
 	}
 }

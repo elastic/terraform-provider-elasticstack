@@ -81,7 +81,6 @@ func TestIndexNameValidation_DateMathNames(t *testing.T) {
 		`<logs-{now/d}>`,
 		`<logs-{now/M}>`,
 		`<logs-{now/d{yyyy.MM.dd}}>`,
-		`<prefix-{now/d}-suffix>`,
 	}
 	for _, name := range validDateMath {
 		t.Run("valid date math: "+name, func(t *testing.T) {
@@ -105,6 +104,7 @@ func TestIndexNameValidation_InvalidInputs(t *testing.T) {
 		{"double dot", ".."},
 		{"angle brackets no braces", "<logs>"},
 		{"braces but no angle brackets", "logs-{now/d}"},
+		{"suffix after date math section", `<prefix-{now/d}-suffix>`},
 	}
 	for _, tc := range invalid {
 		t.Run("invalid: "+tc.label, func(t *testing.T) {

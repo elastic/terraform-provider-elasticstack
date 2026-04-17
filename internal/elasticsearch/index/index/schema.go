@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -121,7 +122,7 @@ func getSchema() schema.Schema {
 							),
 						),
 						stringvalidator.RegexMatches(
-							regexp.MustCompile(`^<[^<>]*\{[^<>]+\}[^<>]*>$`),
+							esclient.DateMathIndexNameRe,
 							dateMathIndexNameMessage,
 						),
 					),

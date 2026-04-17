@@ -35,10 +35,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-// dateMathIndexNameRe matches plain Elasticsearch date math index name expressions.
-// It intentionally stays shape-based: angle brackets around the whole value with at
-// least one {…} section inside.
-var dateMathIndexNameRe = regexp.MustCompile(`^<[^<>]*\{[^<>]+\}[^<>]*>$`)
+// DateMathIndexNameRe matches plain Elasticsearch date math index name expressions.
+// The pattern enforces:
+//   - opening `<`
+//   - a static prefix that starts with a valid non-start character (not -, _, +) and
+//     uses only the same character set allowed in ordinary static index names
+//   - at least one `{…}` section (the date math expression itself)
+//   - a closing `>` immediately after the last `}`
+//
+// This keeps the two validation paths (static vs date-math) consistent and avoids
+// accepting expressions that would be rejected as static names.
+var DateMathIndexNameRe = regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`)
 
 // encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
 // request path.  Characters inside the expression that have special meaning in a URL
@@ -299,7 +306,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	// URI-encode the name when it is a validated date math expression so the angle
 	// brackets and braces are not mangled by the HTTP transport layer.
 	indexAPIName := index.Name
-	if dateMathIndexNameRe.MatchString(index.Name) {
+	if DateMathIndexNameRe.MatchString(index.Name) {
 		indexAPIName = encodeDateMathIndexName(index.Name)
 	}
 
