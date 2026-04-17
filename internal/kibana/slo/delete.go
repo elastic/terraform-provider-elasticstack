@@ -51,7 +51,8 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	// Note: internal/clients/kibana.DeleteSlo expects (spaceId, sloId).
-	sdkDiags := clientkibana.DeleteSlo(ctx, apiClient, compID.ClusterID, compID.ResourceID)
+	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
+	// DeleteSlo signature: (ctx, apiClient, sloID, spaceID).
+	sdkDiags := clientkibana.DeleteSlo(ctx, apiClient, compID.ResourceID, compID.ClusterID)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 }
