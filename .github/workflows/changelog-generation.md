@@ -523,4 +523,3 @@ The manifest contains:
 - Do **not** modify any release sections other than the target section for this run.
 - Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.
 - Do **not** invent categories or sub-headings not present in the existing file.
- in the existing file.
