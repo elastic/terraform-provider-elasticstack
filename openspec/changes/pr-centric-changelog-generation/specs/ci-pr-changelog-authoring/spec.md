@@ -1,6 +1,6 @@
 # `ci-pr-changelog-authoring` — PR-time changelog contract enforcement
 
-Workflow implementation: authored source under `.github/workflows-src/`, compiled to `.github/workflows/`.
+Workflow implementation: authored source template under `.github/workflows-src/`, generated GH AW markdown under `.github/workflows/`, and compiled `.lock.yml` via `gh aw compile`.
 
 ## Purpose
 
@@ -9,11 +9,11 @@ Define a GitHub Agentic Workflow that runs after pull-request CI completes and e
 ## ADDED Requirements
 
 ### Requirement: Workflow artifacts and compilation
-The PR changelog authoring workflow SHALL be authored as a GitHub Agentic Workflow source and SHALL include the compiled workflow artifacts committed in the repository. Contributors SHALL NOT hand-edit the compiled lock artifact.
+The PR changelog authoring workflow SHALL be authored from a repository template under `.github/workflows-src/` that generates a GitHub Agentic Workflow markdown file under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The repository SHALL commit the generated `.md` workflow and the compiled `.lock.yml` produced by `gh aw compile`. Contributors SHALL NOT hand-edit the generated `.md` or `.lock.yml` artifacts.
 
 #### Scenario: Source and compiled artifacts stay paired
 - **WHEN** maintainers change the PR changelog authoring workflow behavior
-- **THEN** the authored source and compiled workflow artifacts SHALL match the committed compiler output
+- **THEN** the `.github/workflows-src/` template, generated `.md` workflow, and compiled `.lock.yml` SHALL match the committed compiler output
 
 ### Requirement: Trigger on `Build/Lint/Test` workflow completion
 The workflow SHALL run from a `workflow_run` trigger for the repository workflow named `Build/Lint/Test` and SHALL continue only when the source workflow run completed for a pull-request event.
@@ -35,10 +35,10 @@ Before agent reasoning starts, deterministic repository-authored steps SHALL res
 
 #### Scenario: Missing pull request fails gating
 - **WHEN** deterministic resolution cannot identify exactly one pull request for the triggering workflow run
-- **THEN** the workflow SHALL fail or skip with a clear repository-authored reason instead of invoking the agent against ambiguous metadata
+- **THEN** the workflow SHALL fail gating without invoking the agent, with the deterministic resolution step exiting non-zero and emitting an error message prefixed with `PR_CHANGELOG_GATING:`
 
 ### Requirement: Existing changelog section is validated deterministically
-When the pull request body already contains a `## Changelog` section, deterministic repository-authored validation SHALL verify the contract shape before the workflow reports success. The validator SHALL require a supported `Customer impact` value, a `Summary` line whenever `Customer impact` is not `none`, and a non-empty optional `### Breaking changes` subsection when that subsection is present.
+When the pull request body already contains a `## Changelog` section, deterministic repository-authored validation SHALL verify the contract shape before the workflow reports success. The validator SHALL require `Customer impact` to be exactly one of `none`, `fix`, `enhancement`, or `breaking`; these values are case-sensitive and SHALL be matched literally. The validator SHALL require a `Summary` line whenever `Customer impact` is not `none`, and a non-empty optional `### Breaking changes` subsection when that subsection is present.
 
 #### Scenario: Valid changelog section suppresses the agent
 - **WHEN** the pull request body already contains a valid `## Changelog` section
@@ -61,6 +61,13 @@ When the resolved pull request lacks a `## Changelog` section and is not exempt 
 #### Scenario: Missing changelog section is added
 - **WHEN** deterministic gating concludes the pull request requires a changelog section and none is present
 - **THEN** the workflow SHALL invoke the agent to draft the `## Changelog` section and update the pull request body with the result
+
+### Requirement: Minimal permissions are available to deterministic gating and PR updates
+The workflow SHALL request only the minimal permissions needed to resolve the triggering pull request, validate its body, and update that body when necessary. At minimum the workflow SHALL grant `contents: read` and `pull-requests: write`, and those scopes SHALL be available to the deterministic pre-agent steps rather than only to the agent phase.
+
+#### Scenario: Deterministic pre-agent steps can update PR body
+- **WHEN** deterministic resolution, validation, or PR-body update steps execute
+- **THEN** the workflow permissions SHALL allow those steps to read repository-authored context and update the pull request body without requiring broader repository write scopes
 
 ### Requirement: `workflow_run` execution remains metadata-only
 Because the workflow runs from `workflow_run`, it SHALL NOT checkout or execute code from the pull-request head branch. Deterministic gating, validation, and agent authoring SHALL operate only on pull-request metadata and repository-authored prompt context.

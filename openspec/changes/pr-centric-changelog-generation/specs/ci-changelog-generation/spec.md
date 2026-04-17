@@ -1,11 +1,11 @@
 # `ci-changelog-generation` — Deterministic changelog assembly
 
-Workflow implementation: authored source under `.github/workflows-src/`, compiled to `.github/workflows/`.
+Workflow implementation: authored source template under `.github/workflows-src/changelog-generation/workflow.yml.tmpl`, generated workflow YAML under `.github/workflows/changelog-generation.yml` via `scripts/compile-workflow-sources/main.go`, with no GH AW `.lock.yml`.
 
 ## MODIFIED Requirements
 
 ### Requirement: Workflow artifacts and operating modes
-The changelog generator SHALL be authored as a deterministic repository workflow source under `.github/workflows-src/` and SHALL compile to the checked-in workflow artifacts under `.github/workflows/`. The workflow SHALL support:
+The changelog generator SHALL be authored as a deterministic workflow template under `.github/workflows-src/` and SHALL generate a checked-in workflow YAML artifact under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The workflow SHALL NOT require a GH AW markdown source or a compiled `.lock.yml`. The workflow SHALL support:
 
 - a scheduled mode
 - a manual `workflow_dispatch` mode
@@ -13,7 +13,7 @@ The changelog generator SHALL be authored as a deterministic repository workflow
 
 #### Scenario: Source and compiled workflow stay paired
 - **WHEN** maintainers change changelog generator behavior
-- **THEN** the authored source and committed compiled workflow SHALL match the current repository compiler output
+- **THEN** the `.github/workflows-src/` template and generated `.github/workflows/changelog-generation.yml` SHALL match the current repository compiler output
 
 #### Scenario: Release-preparation pull request activates release mode
 - **GIVEN** a same-repository pull request whose head branch matches the configured `prep-release-*` pattern
@@ -100,7 +100,7 @@ Before changelog rendering starts, deterministic repository-authored steps SHALL
 - **THEN** each merged PR considered for changelog assembly SHALL include its body and labels in the renderer input
 
 ### Requirement: Parsed PR-body changelog sections drive release-note assembly
-The changelog generator SHALL parse the `## Changelog` section from each merged PR body and SHALL treat that contract as the authoritative source for release-note content. PRs labeled `no-changelog` and PR changelog entries with `Customer impact: none` SHALL be excluded from rendered changelog bullets. The optional `### Breaking changes` subsection, when present, SHALL be preserved as markdown content and rendered under the target version's top-level `### Breaking changes` section.
+The changelog generator SHALL parse the `## Changelog` section from each merged PR body and SHALL treat that contract as the authoritative source for release-note content. PRs labeled `no-changelog` and PR changelog entries with `Customer impact: none` SHALL be excluded from rendered changelog bullets. The optional `### Breaking changes` subsection, when present, SHALL be preserved as markdown content and rendered under the target version's top-level `### Breaking changes` section. A merged PR in the authoritative range that lacks both the `no-changelog` label and a parseable `## Changelog` section SHALL cause deterministic assembly to fail rather than being silently omitted or summarized from fallback text.
 
 #### Scenario: User-facing summary becomes a changelog bullet
 - **WHEN** a merged PR body contains a valid `## Changelog` section with `Customer impact` other than `none`
@@ -109,6 +109,10 @@ The changelog generator SHALL parse the `## Changelog` section from each merged 
 #### Scenario: `Customer impact: none` is excluded
 - **WHEN** a merged PR body contains `Customer impact: none`
 - **THEN** the rendered target section SHALL omit a normal changelog bullet for that PR
+
+#### Scenario: Missing changelog contract fails assembly
+- **WHEN** a merged PR in the authoritative range lacks both a parseable `## Changelog` section and the `no-changelog` label
+- **THEN** deterministic assembly SHALL fail before mutating `CHANGELOG.md`, with a repository-authored validation error that identifies the offending pull request
 
 #### Scenario: Breaking changes block is preserved
 - **WHEN** a merged PR body contains a non-empty `### Breaking changes` subsection
