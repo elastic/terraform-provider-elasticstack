@@ -1,8 +1,8 @@
 ## 1. Capture effective endpoint state for accessor validation
 
-- [ ] 1.1 Update the internal client construction and adapter paths so provider-default `*clients.ElasticsearchScopedClient` and `*clients.KibanaScopedClient` values retain the resolved endpoint values needed to validate Elasticsearch, Kibana, and Fleet accessors after provider configuration and environment overrides are applied.
-- [ ] 1.2 Update entity-local scoped-client builder paths in `internal/clients/provider_client_factory.go` so `elasticsearch_connection` and `kibana_connection` produce the same endpoint-validation metadata as provider-default clients.
-- [ ] 1.3 Keep Fleet endpoint validation aligned with the existing Fleet-from-Kibana endpoint resolution path so provider-level and `kibana_connection`-derived Fleet endpoints continue to work.
+- [x] 1.1 Update the internal client construction and adapter paths so provider-default `*clients.ElasticsearchScopedClient` and `*clients.KibanaScopedClient` values retain the resolved endpoint values needed to validate Elasticsearch, Kibana, and Fleet accessors after provider configuration and environment overrides are applied.
+- [x] 1.2 Update entity-local scoped-client builder paths in `internal/clients/provider_client_factory.go` so `elasticsearch_connection` and `kibana_connection` produce the same endpoint-validation metadata as provider-default clients.
+- [x] 1.3 Keep Fleet endpoint validation aligned with the existing Fleet-from-Kibana endpoint resolution path so provider-level and `kibana_connection`-derived Fleet endpoints continue to work.
 
 ## 2. Enforce accessor-level endpoint checks
 
