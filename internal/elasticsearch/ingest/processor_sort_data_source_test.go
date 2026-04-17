@@ -32,18 +32,63 @@ func TestAccDataSourceIngestProcessorSort(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_sort.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "field", "array_field_to_sort"),
-					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_sort.test", "json", expectedJSONSort),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "order", "asc"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_sort.test", "json", expectedJSONSortDefaults),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_sort.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "field", "items"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "order", "desc"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "target_field", "sorted_items"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "description", "sort array"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "if", "ctx.items != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_sort.test", "on_failure.0", `{"append":{"field":"errors","value":"sort_failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "tag", "sort-items"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_sort.test", "json", expectedJSONSortAllAttributes),
 				),
 			},
 		},
 	})
 }
 
-const expectedJSONSort = `{
+const expectedJSONSortDefaults = `{
 	"sort": {
 		"field": "array_field_to_sort",
 		"ignore_failure": false,
-		"order": "desc"
+		"order": "asc"
+	}
+}`
+
+const expectedJSONSortAllAttributes = `{
+	"sort": {
+		"description": "sort array",
+		"if": "ctx.items != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"append": {
+					"field": "errors",
+					"value": "sort_failed"
+				}
+			}
+		],
+		"tag": "sort-items",
+		"field": "items",
+		"order": "desc",
+		"target_field": "sorted_items"
 	}
 }`
