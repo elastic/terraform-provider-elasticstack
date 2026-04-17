@@ -139,7 +139,7 @@ func TestKibanaConfiguration(t *testing.T) {
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
 					SkipFunc: func() (bool, error) {
-						return envConfig.Kibana.Username == "", nil
+						return envConfig.KibanaOapi.Username == "", nil
 					},
 					ConfigDirectory: acctest.NamedTestCaseDirectory("username_password"),
 					ConfigVariables: kibanaUsernamePasswordConfigVariables(envConfig),
@@ -203,16 +203,16 @@ func TestKibanaConfiguration(t *testing.T) {
 
 func kibanaUsernamePasswordConfigVariables(cfg config.Client) tfconfig.Variables {
 	return tfconfig.Variables{
-		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
-		"kibana_username": tfconfig.StringVariable(cfg.Kibana.Username),
-		"kibana_password": tfconfig.StringVariable(cfg.Kibana.Password),
+		"kibana_endpoint": tfconfig.StringVariable(cfg.KibanaOapi.URL),
+		"kibana_username": tfconfig.StringVariable(cfg.KibanaOapi.Username),
+		"kibana_password": tfconfig.StringVariable(cfg.KibanaOapi.Password),
 	}
 }
 
 func kibanaAPIKeyConfigVariables(cfg config.Client) tfconfig.Variables {
 	return tfconfig.Variables{
-		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
-		"kibana_api_key":  tfconfig.StringVariable(cfg.Kibana.ApiKey),
+		"kibana_endpoint": tfconfig.StringVariable(cfg.KibanaOapi.URL),
+		"kibana_api_key":  tfconfig.StringVariable(cfg.KibanaOapi.APIKey),
 	}
 }
 
@@ -245,7 +245,7 @@ func fleetBearerTokenConfigVariables(cfg config.Client, bearerToken string) tfco
 
 func kibanaBearerTokenConfigVariables(cfg config.Client) tfconfig.Variables {
 	return tfconfig.Variables{
-		"kibana_endpoint":     tfconfig.StringVariable(cfg.Kibana.Address),
-		"kibana_bearer_token": tfconfig.StringVariable(cfg.Kibana.BearerToken),
+		"kibana_endpoint":     tfconfig.StringVariable(cfg.KibanaOapi.URL),
+		"kibana_bearer_token": tfconfig.StringVariable(cfg.KibanaOapi.BearerToken),
 	}
 }

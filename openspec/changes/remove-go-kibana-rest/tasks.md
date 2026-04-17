@@ -1,12 +1,12 @@
 ## 1. Remove legacy Kibana config wiring
 
-- [ ] 1.1 Delete `Client.Kibana` and the legacy `kibanaConfig` type from `internal/clients/config`, leaving `KibanaOapi` as the only Kibana connection surface built by env, SDK, and Framework config paths.
-- [ ] 1.2 Update any config-related tests or helper assertions to use `kibanaoapi.Config` field names and semantics instead of legacy `kibana.Config` names.
+- [x] 1.1 Delete `Client.Kibana` and the legacy `kibanaConfig` type from `internal/clients/config`, leaving `KibanaOapi` as the only Kibana connection surface built by env, SDK, and Framework config paths.
+- [x] 1.2 Update any config-related tests or helper assertions to use `kibanaoapi.Config` field names and semantics instead of legacy `kibana.Config` names.
 
 ## 2. Re-anchor factory and consumers on OpenAPI config
 
-- [ ] 2.1 Update `internal/clients/provider_client_factory.go` so Kibana scoped client validation and construction rely on `cfg.KibanaOapi` rather than `cfg.Kibana`.
-- [ ] 2.2 Update remaining first-party consumers such as `provider/provider_test.go` to read Kibana connection details from the OpenAPI config surface only.
+- [x] 2.1 Update `internal/clients/provider_client_factory.go` so Kibana scoped client validation and construction rely on `cfg.KibanaOapi` rather than `cfg.Kibana`.
+- [x] 2.2 Update remaining first-party consumers such as `provider/provider_test.go` to read Kibana connection details from the OpenAPI config surface only.
 
 ## 3. Remove the final legacy import path
 

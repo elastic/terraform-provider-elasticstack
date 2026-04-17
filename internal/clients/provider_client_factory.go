@@ -239,7 +239,7 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 // buildKibanaScopedClientFromConfig builds a *KibanaScopedClient from a
 // config.Client that has already been populated from a scoped kibana_connection.
 func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*KibanaScopedClient, fwdiags.Diagnostics) {
-	if cfg.Kibana == nil {
+	if cfg.KibanaOapi == nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
 			"Missing Kibana config",
 			"kibana_connection is required but the Kibana configuration was not set",
