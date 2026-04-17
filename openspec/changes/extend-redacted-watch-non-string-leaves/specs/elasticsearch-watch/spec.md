@@ -2,7 +2,7 @@
 
 ### Requirement: Read (REQ-014–REQ-016)
 
-On read, the resource SHALL parse `id` using the framework resource's composite ID format to extract the watch identifier. The resource SHALL call the Get Watch API with the extracted watch identifier. When the Get Watch API returns 404, the resource SHALL remove itself from state (set id to `""`). When the API returns a successful response, the resource SHALL decode the JSON response and update state from the response, except that for `actions` the resource SHALL preserve prior known Terraform values of any JSON type at nested paths where the API returns the redacted string sentinel. The prior `actions` JSON SHALL be the last-applied value from Terraform state when read is a refresh, and the configured value from the Terraform plan when read runs as read-after-write after create or update.
+On read, the resource SHALL parse `id` using the framework resource's composite ID format to extract the watch identifier. The resource SHALL call the Get Watch API with the extracted watch identifier. When the Get Watch API returns 404, the resource SHALL remove itself from state. When the API returns a successful response, the resource SHALL decode the JSON response and update state from the response, except that for `actions` the resource SHALL preserve prior known Terraform values of any JSON type at nested paths where the API returns the redacted string sentinel. The prior `actions` JSON SHALL be the last-applied value from Terraform state when read is a refresh, and the configured value from the Terraform plan when read runs as read-after-write after create or update.
 
 #### Scenario: Watch not found on refresh
 
