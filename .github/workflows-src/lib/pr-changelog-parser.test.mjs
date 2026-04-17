@@ -114,6 +114,41 @@ Summary: Breaking change with only code block
 \`\`\`
 `.trimStart();
 
+// ### Breaking changes heading appears BEFORE ## Changelog — must be ignored
+const BODY_BREAKING_BEFORE_CHANGELOG = `
+## Summary
+
+### Breaking changes
+
+This section is outside Changelog and must be ignored.
+
+## Changelog
+
+Customer impact: fix
+Summary: Fix handling of stale connections
+`.trimStart();
+
+const BODY_ENHANCEMENT_WITH_SUMMARY = `
+## Changelog
+
+Customer impact: enhancement
+Summary: Add support for index lifecycle management
+`.trimStart();
+
+const BODY_BREAKING_NO_BREAKING_SECTION = `
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+`.trimStart();
+
+const BODY_SUMMARY_EMPTY_VALUE = `
+## Changelog
+
+Customer impact: fix
+Summary:
+`.trimStart();
+
 // ---------------------------------------------------------------------------
 // parseChangelogSection
 // ---------------------------------------------------------------------------
@@ -249,4 +284,78 @@ test('extractBreakingChanges: handles fenced code block as the only content', ()
   assert.ok(content !== null, 'should extract fenced code block content');
   assert.ok(content.includes('```json'), 'should include fenced code block');
   assert.ok(content.includes('"removed": true'), 'should include code content');
+});
+
+// ---------------------------------------------------------------------------
+// Test gap #4: ### Breaking changes heading outside ## Changelog is ignored
+// ---------------------------------------------------------------------------
+
+test('parseChangelogSection: ### Breaking changes before ## Changelog is not extracted', () => {
+  const result = parseChangelogSection(BODY_BREAKING_BEFORE_CHANGELOG);
+  assert.ok(result !== null, 'should parse the Changelog section');
+  assert.equal(result.customerImpact, 'fix');
+  assert.equal(result.breakingChanges, null, '### Breaking changes outside ## Changelog must not be extracted');
+});
+
+test('parseChangelogSectionFull: breakingChangesHeadingPresent is false when heading is outside ## Changelog', () => {
+  const result = parseChangelogSectionFull(BODY_BREAKING_BEFORE_CHANGELOG);
+  assert.ok(result !== null, 'should parse the Changelog section');
+  assert.equal(result.breakingChangesHeadingPresent, false);
+  assert.equal(result.breakingChanges, null);
+});
+
+// ---------------------------------------------------------------------------
+// Test gap #5: Customer impact: enhancement
+// ---------------------------------------------------------------------------
+
+test('parseChangelogSection: parses Customer impact: enhancement with summary', () => {
+  const result = parseChangelogSection(BODY_ENHANCEMENT_WITH_SUMMARY);
+  assert.deepEqual(result, {
+    customerImpact: 'enhancement',
+    summary: 'Add support for index lifecycle management',
+    breakingChanges: null,
+  });
+});
+
+test('validateChangelogSection: valid section with enhancement and summary', () => {
+  const parsed = parseChangelogSection(BODY_ENHANCEMENT_WITH_SUMMARY);
+  const result = validateChangelogSection(parsed);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+});
+
+// ---------------------------------------------------------------------------
+// Test gap #6: validateChangelogSectionFull positive path for breaking
+// ---------------------------------------------------------------------------
+
+test('validateChangelogSectionFull: valid for a complete breaking change entry', () => {
+  const parsed = parseChangelogSectionFull(BODY_BREAKING_FULL);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+});
+
+// ---------------------------------------------------------------------------
+// Test gap #3 (medium): Customer impact: breaking without ### Breaking changes fails
+// ---------------------------------------------------------------------------
+
+test('validateChangelogSectionFull: invalid when Customer impact is breaking but ### Breaking changes is absent', () => {
+  const parsed = parseChangelogSectionFull(BODY_BREAKING_NO_BREAKING_SECTION);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.includes('breaking') && e.includes('Breaking changes')),
+    'error should mention breaking and Breaking changes'
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Test gap #7: Summary: with no trailing text
+// ---------------------------------------------------------------------------
+
+test('validateChangelogSection: invalid when Summary has no value', () => {
+  const parsed = parseChangelogSection(BODY_SUMMARY_EMPTY_VALUE);
+  const result = validateChangelogSection(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes('Summary')), 'error should mention Summary');
 });

@@ -25,6 +25,7 @@ function extractChangelogSection(body) {
 
   const lines = body.split('\n');
   let inChangelog = false;
+  let inFencedBlock = false;
   const content = [];
 
   for (const line of lines) {
@@ -32,10 +33,13 @@ function extractChangelogSection(body) {
       inChangelog = true;
       continue;
     }
-    if (inChangelog && /^##\s/.test(line)) {
-      break;
-    }
     if (inChangelog) {
+      if (/^```/.test(line)) {
+        inFencedBlock = !inFencedBlock;
+      }
+      if (!inFencedBlock && /^##\s/.test(line)) {
+        break;
+      }
       content.push(line);
     }
   }
@@ -53,11 +57,12 @@ function extractChangelogSection(body) {
  * @param {string} body
  * @returns {string|null} Trimmed markdown content, or null if not present or empty.
  */
-function extractBreakingChanges(body) {
-  if (!body) return null;
+function extractBreakingChanges(changelogSection) {
+  if (!changelogSection) return null;
 
-  const lines = body.split('\n');
+  const lines = changelogSection.split('\n');
   let inBreaking = false;
+  let inFencedBlock = false;
   const content = [];
 
   for (const line of lines) {
@@ -65,10 +70,13 @@ function extractBreakingChanges(body) {
       inBreaking = true;
       continue;
     }
-    if (inBreaking && /^#{2,3}\s/.test(line)) {
-      break;
-    }
     if (inBreaking) {
+      if (/^```/.test(line)) {
+        inFencedBlock = !inFencedBlock;
+      }
+      if (!inFencedBlock && /^#{2,3}\s/.test(line)) {
+        break;
+      }
       content.push(line);
     }
   }
@@ -98,8 +106,8 @@ function parseChangelogSection(body) {
   const summaryMatch = section.match(/^Summary:\s*(.+)$/m);
   const summary = summaryMatch ? summaryMatch[1].trim() : null;
 
-  // Extract breaking changes from the full body (the ### subsection lives under ## Changelog)
-  const breakingChanges = extractBreakingChanges(body);
+  // Extract breaking changes from the changelog section only
+  const breakingChanges = extractBreakingChanges(section);
 
   return {
     customerImpact,
@@ -163,10 +171,10 @@ function parseChangelogSectionFull(body) {
   const summaryMatch = section.match(/^Summary:\s*(.+)$/m);
   const summary = summaryMatch ? summaryMatch[1].trim() : null;
 
-  // Detect whether the heading exists even if content is empty
-  const lines = (body || '').split('\n');
+  // Detect whether the heading exists within the changelog section (not the full body)
+  const lines = section.split('\n');
   const breakingChangesHeadingPresent = lines.some((line) => /^###\s+Breaking changes/.test(line));
-  const breakingChanges = extractBreakingChanges(body);
+  const breakingChanges = extractBreakingChanges(section);
 
   return {
     customerImpact,
@@ -190,6 +198,10 @@ function validateChangelogSectionFull(parsed) {
 
   if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
     errors.push('### Breaking changes section is present but contains no content');
+  }
+
+  if (parsed.customerImpact === 'breaking' && !parsed.breakingChangesHeadingPresent) {
+    errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
   }
 
   return { valid: errors.length === 0, errors };
