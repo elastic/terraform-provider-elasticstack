@@ -42,6 +42,14 @@ func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Clien
 		return
 	}
 
+	if getResult.JSON200 == nil {
+		diagnostics.AddError(
+			fmt.Sprintf("Failed to get parameter `%s`", resourceID),
+			fmt.Sprintf("API returned unexpected status %d: %s", getResult.StatusCode(), string(getResult.Body)),
+		)
+		return
+	}
+
 	model := modelV0FromOAPI(*getResult.JSON200)
 	model.KibanaConnection = kibanaConnection
 
