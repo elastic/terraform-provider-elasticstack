@@ -2,7 +2,7 @@
 
 ### Requirement: Synthetics Parameters API (REQ-001)
 
-The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API: create via `POST /api/synthetics/params`, read via `GET /api/synthetics/params/{id}`, update via `PUT /api/synthetics/params/{id}`, and delete via `DELETE /api/synthetics/params/{id}` using the same generated Kibana OpenAPI (`kbapi`) client used for the other operations.
+The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API: create via `POST /api/synthetics/params`, read via `GET /api/synthetics/params/{id}`, update via `PUT /api/synthetics/params/{id}`, and delete via `DELETE /api/synthetics/params` with `{"ids": [...]}` JSON body. All operations SHALL use the same Kibana OpenAPI (`kbapi`) HTTP transport for authentication and headers.
 
 #### Scenario: CRUD uses Synthetics Parameters APIs
 
