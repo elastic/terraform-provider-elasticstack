@@ -359,10 +359,10 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-// GetIndex retrieves a single index by its concrete name.  For static names the response
-// map key equals the requested name.  For indices originally created from a date math
-// expression the concrete name (stored in state as `id.ResourceID`) is passed in
-// directly, so the lookup is always by concrete key.
+// GetIndex retrieves a single index by its concrete name.  The caller is responsible
+// for supplying the concrete index name (e.g. from id.ResourceID or the create
+// response), not a date math expression.  The response map key for a concrete name
+// always equals the requested name, so a direct key lookup is sufficient.
 func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.Index, fwdiags.Diagnostics) {
 	indices, diags := GetIndices(ctx, apiClient, name)
 	if diags.HasError() {
@@ -371,16 +371,6 @@ func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 
 	if index, ok := indices[name]; ok {
 		return &index, nil
-	}
-
-	// The response map may contain the concrete index under a different key when the
-	// Elasticsearch server normalises the name.  If only one index was returned and
-	// the direct key lookup missed, return that sole entry rather than treating the
-	// result as not-found.
-	if len(indices) == 1 {
-		for _, index := range indices {
-			return &index, nil
-		}
 	}
 
 	return nil, nil
