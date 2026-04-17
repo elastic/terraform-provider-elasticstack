@@ -20,5 +20,5 @@
 
 ## 5. Verify and finalize
 
-- [ ] 5.1 Run `make build` and targeted tests for the touched areas, or `go test ./...` if targeted coverage is insufficient, and fix any regressions caused by the cleanup.
-- [ ] 5.2 Run repository search for `disaster37/go-kibana-rest` and OpenSpec validation for this change so the tree and change artifacts reflect the final removed state.
+- [x] 5.1 Run `make build` and targeted tests for the touched areas, or `go test ./...` if targeted coverage is insufficient, and fix any regressions caused by the cleanup.
+- [x] 5.2 Run repository search for `disaster37/go-kibana-rest` and OpenSpec validation for this change so the tree and change artifacts reflect the final removed state.
