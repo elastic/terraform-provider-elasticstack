@@ -88,7 +88,7 @@ func getSchema() schema.Schema {
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Internal identifier of the resource",
+				Description: "Internal identifier of the resource in the format <cluster_uuid>/<concrete_index_name>.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
