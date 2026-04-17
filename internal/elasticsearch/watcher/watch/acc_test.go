@@ -269,6 +269,49 @@ func TestAccResourceWatch_redactedWebhookAuthPreserved(t *testing.T) {
 	})
 }
 
+// TestAccResourceWatch_redactedScriptHeaderPreserved verifies the same
+// drift-free behavior as TestAccResourceWatch_redactedWebhookAuthPreserved,
+// but for the case where the prior known value at the redacted path is a
+// non-string (an inline-script object Authorization header). Elasticsearch
+// returns the redacted string sentinel at that path on Get Watch, and the
+// provider must substitute the prior script object back so unrelated updates
+// (here, throttle_period_in_millis) do not perpetually re-apply the actions.
+func TestAccResourceWatch_redactedScriptHeaderPreserved(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`acc-script-header-3a91`)),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`"lang":"painless"`)),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`"Content-Type":"application/json"`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "12000"),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`acc-script-header-3a91`)),
+					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`"lang":"painless"`)),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceWatchFromSDK(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

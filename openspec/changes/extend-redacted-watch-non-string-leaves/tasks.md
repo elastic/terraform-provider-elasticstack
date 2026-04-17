@@ -11,10 +11,10 @@
 
 ## 2. Add Plugin Framework acceptance coverage
 
-- [ ] 2.1 Add testdata at `internal/elasticsearch/watcher/watch/testdata/TestAccResourceWatch_redactedScriptHeaderPreserved/create/main.tf` defining a webhook action whose `headers.Authorization` is an inline-script object (`{ source = "return 'Bearer x'", lang = "painless" }`).
-- [ ] 2.2 Add testdata at `internal/elasticsearch/watcher/watch/testdata/TestAccResourceWatch_redactedScriptHeaderPreserved/update_throttle/main.tf` that keeps the same actions and only changes `throttle_period_in_millis`.
-- [ ] 2.3 Add `TestAccResourceWatch_redactedScriptHeaderPreserved` in `internal/elasticsearch/watcher/watch/acc_test.go` modeled on `TestAccResourceWatch_redactedWebhookAuthPreserved`: step 1 creates and asserts the script attributes survive in `actions`; step 2 expects a non-empty plan for the throttle update only and reasserts the script attributes are preserved (no `::es_redacted::` in state).
-- [ ] 2.4 Run the targeted acceptance test with `TF_ACC=1 go test -v -run 'TestAccResourceWatch_redactedScriptHeaderPreserved' ./internal/elasticsearch/watcher/watch/` against the running stack and confirm both steps pass.
+- [x] 2.1 Add testdata at `internal/elasticsearch/watcher/watch/testdata/TestAccResourceWatch_redactedScriptHeaderPreserved/create/main.tf` defining a webhook action whose `headers.Authorization` is an inline-script object (`{ source = "return 'Bearer x'", lang = "painless" }`).
+- [x] 2.2 Add testdata at `internal/elasticsearch/watcher/watch/testdata/TestAccResourceWatch_redactedScriptHeaderPreserved/update_throttle/main.tf` that keeps the same actions and only changes `throttle_period_in_millis`.
+- [x] 2.3 Add `TestAccResourceWatch_redactedScriptHeaderPreserved` in `internal/elasticsearch/watcher/watch/acc_test.go` modeled on `TestAccResourceWatch_redactedWebhookAuthPreserved`: step 1 creates and asserts the script attributes survive in `actions`; step 2 expects a non-empty plan for the throttle update only and reasserts the script attributes are preserved (no `::es_redacted::` in state).
+- [x] 2.4 Run the targeted acceptance test with `TF_ACC=1 go test -v -run 'TestAccResourceWatch_redactedScriptHeaderPreserved' ./internal/elasticsearch/watcher/watch/` against the running stack and confirm both steps pass.
 
 ## 3. Sync the `elasticsearch-watch` delta into canonical specs
 
