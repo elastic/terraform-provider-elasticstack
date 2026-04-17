@@ -83,9 +83,9 @@ func TestGetKibanaClient_EmptyList(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	// The scoped client must expose a Kibana legacy client.
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err, "Kibana legacy client must be present on provider-default scoped client")
+	// The scoped client must expose a Kibana OpenAPI client.
+	_, err := scoped.GetKibanaOapiClient()
+	require.NoError(t, err, "Kibana OpenAPI client must be present on provider-default scoped client")
 }
 
 // TestGetKibanaClient_NullList verifies that a null kibana_connection is treated
@@ -132,10 +132,7 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.NotNil(t, scoped)
 
 	// The scoped client must expose Kibana-derived surfaces.
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetKibanaOapiClient()
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 
 	_, err = scoped.GetFleetClient()
@@ -158,8 +155,8 @@ func TestGetKibanaClientFromSDK_AbsentBlock(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	// Must expose a Kibana legacy client.
-	_, err := scoped.GetKibanaClient()
+	// Must expose a Kibana OpenAPI client.
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 }
 
@@ -189,10 +186,7 @@ func TestGetKibanaClientFromSDK_WithBlock(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	_, err := scoped.GetKibanaClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetKibanaOapiClient()
+	_, err := scoped.GetKibanaOapiClient()
 	require.NoError(t, err)
 
 	_, err = scoped.GetFleetClient()
@@ -322,6 +316,6 @@ func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	f := newTestFactory(t)
 	result := NewKibanaScopedClientFromFactory(f)
 	require.NotNil(t, result)
-	_, err := result.GetKibanaClient()
+	_, err := result.GetKibanaOapiClient()
 	require.NoError(t, err)
 }

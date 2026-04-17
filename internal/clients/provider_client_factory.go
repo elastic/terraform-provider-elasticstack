@@ -246,11 +246,6 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 		)}
 	}
 
-	kibanaClient, err := buildKibanaClient(cfg)
-	if err != nil {
-		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana client", err.Error())}
-	}
-
 	kibanaOapiClient, err := buildKibanaOapiClient(cfg)
 	if err != nil {
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Kibana OpenAPI client", err.Error())}
@@ -262,11 +257,9 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 	}
 
 	return &KibanaScopedClient{
-		kibana:       kibanaClient,
-		kibanaOapi:   kibanaOapiClient,
-		kibanaConfig: *cfg.Kibana,
-		fleet:        fleetClient,
-		version:      version,
+		kibanaOapi: kibanaOapiClient,
+		fleet:      fleetClient,
+		version:    version,
 	}, nil
 }
 
