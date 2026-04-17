@@ -15,6 +15,11 @@ on:
       - main
     types: [opened, synchronize, reopened]
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
     - name: Resolve release context
       id: resolve_release_context
       uses: actions/github-script@v8
