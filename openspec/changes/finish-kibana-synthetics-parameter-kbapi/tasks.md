@@ -1,6 +1,6 @@
 ## 1. Delete path migration
 
-- [x] 1.1 Update `internal/kibana/synthetics/parameter/delete.go` to obtain the client via `GetKibanaOAPIClientFromScopedClient` (same as create/read/update) and call `DeleteParameterWithResponse` with the resolved parameter id (including composite-id parsing already used in delete).
+- [x] 1.1 Update `internal/kibana/synthetics/parameter/delete.go` to obtain the client via `GetKibanaOAPIClientFromScopedClient` (same as create/read/update) and delete via `DELETE /api/synthetics/params` with `{"ids": [...]}` body through the kbapi HTTP transport (including composite-id parsing already used in delete). Note: `DeleteParameterWithResponse` (`DELETE /api/synthetics/params/{id}`) was not used because it only works on Kibana >= 8.17.0 and returns 404 on 8.12.x–8.16.x; the bulk-style endpoint works on all supported versions from 8.12.0.
 - [x] 1.2 Handle delete responses consistently with other `WithResponse` usages in this package (success on expected 2xx; clear diagnostics on failure; no reliance on the legacy `go-kibana-rest` synthetics client for this resource).
 
 ## 2. Documentation and spec sync

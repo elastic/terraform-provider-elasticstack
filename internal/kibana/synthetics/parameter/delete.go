@@ -92,4 +92,34 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		)
 		return
 	}
+
+	// The API returns a JSON array of {id, deleted} objects. Validate that the
+	// requested id was actually deleted so transient errors don't silently leave
+	// the resource in place.
+	var results []struct {
+		ID      string `json:"id"`
+		Deleted bool   `json:"deleted"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to parse delete response for parameter `%s`", resourceID), err.Error())
+		return
+	}
+
+	for _, r := range results {
+		if r.ID == resourceID {
+			if !r.Deleted {
+				response.Diagnostics.AddError(
+					fmt.Sprintf("Parameter `%s` was not deleted", resourceID),
+					"Kibana returned deleted=false for the requested parameter id",
+				)
+			}
+			return
+		}
+	}
+
+	// The response did not include our id — treat as an unexpected error.
+	response.Diagnostics.AddError(
+		fmt.Sprintf("Parameter `%s` not found in delete response", resourceID),
+		"Kibana delete response did not include the requested parameter id",
+	)
 }
