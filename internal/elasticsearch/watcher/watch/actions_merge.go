@@ -23,8 +23,13 @@ const elasticsearchWatcherRedactedSecret = "::es_redacted::"
 
 // mergeActionsPreservingRedactedLeaves returns a deep copy of apiActions where
 // each string leaf equal to elasticsearchWatcherRedactedSecret is replaced by
-// the string value at the same JSON path in priorActions when that prior value
-// is a non-redacted string. All other values come from the API document.
+// the value at the same JSON path in priorActions when that prior value is
+// non-nil and is not itself the redacted sentinel. The substituted prior value
+// may be of any JSON type (string, object, array, number, bool); this matters
+// because Elasticsearch returns the sentinel as a string even when the
+// pre-redaction value was, for example, a stored-script reference object such
+// as `{"id": "<script-id>"}` or an inline-script object. All non-redacted
+// values come from the API document.
 func mergeActionsPreservingRedactedLeaves(apiActions map[string]any, priorActions any) map[string]any {
 	priorRoot, _ := priorActions.(map[string]any)
 	out := make(map[string]any, len(apiActions))
@@ -38,15 +43,23 @@ func mergeActionsPreservingRedactedLeaves(apiActions map[string]any, priorAction
 	return out
 }
 
+// isRedactedOrAbsent reports whether priorVal carries no usable replacement
+// for a redacted leaf: nil, or the same redacted sentinel string.
+func isRedactedOrAbsent(priorVal any) bool {
+	if priorVal == nil {
+		return true
+	}
+	s, ok := priorVal.(string)
+	return ok && s == elasticsearchWatcherRedactedSecret
+}
+
 func mergePreserveRedactedLeaves(apiVal, priorVal any) any {
 	if apiVal == nil {
 		return nil
 	}
 	if s, ok := apiVal.(string); ok {
-		if s == elasticsearchWatcherRedactedSecret {
-			if ps, ok := priorVal.(string); ok && ps != elasticsearchWatcherRedactedSecret {
-				return ps
-			}
+		if s == elasticsearchWatcherRedactedSecret && !isRedactedOrAbsent(priorVal) {
+			return priorVal
 		}
 		return apiVal
 	}
