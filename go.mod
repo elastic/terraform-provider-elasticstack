@@ -3,7 +3,6 @@ module github.com/elastic/terraform-provider-elasticstack
 go 1.26.1
 
 require (
-	github.com/disaster37/go-kibana-rest/v8 v8.5.0
 	github.com/elastic/elastic-transport-go/v8 v8.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.4
 	github.com/google/go-github/v84 v84.0.0
@@ -206,7 +205,6 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
 	github.com/go-openapi/validate v0.25.1 // indirect
 	github.com/go-restruct/restruct v1.2.0-alpha // indirect
-	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -422,8 +420,6 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.6.0 // indirect
 )
-
-replace github.com/disaster37/go-kibana-rest/v8 => ./libs/go-kibana-rest
 
 tool (
 	github.com/goreleaser/goreleaser/v2
