@@ -269,7 +269,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				"ipv6":false,
 				"labels":{},
 				"locations":["us_east"],
-				"max_redirects":5,
+				"max_redirects":"5",
 				"mode":"all",
 				"name":"test-name-http",
 				"namespace":"default-3",

@@ -1106,7 +1106,6 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Ipv6:                 h.IPv6.ValueBoolPointer(),
 		Labels:               mapPtr(labels),
 		Locations:            slicePtr(locations),
-		MaxRedirects:         int64ToFloat32Ptr(h.MaxRedirects),
 		Mode:                 stringEnumPtr[kbapi.SyntheticsHttpMonitorFieldsMode](h.Mode),
 		Name:                 v.Name.ValueString(),
 		Namespace:            stringPtr(v.Namespace),
@@ -1129,6 +1128,11 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 
 	if check != nil {
 		req.AdditionalProperties["check"] = check
+	}
+	if !h.MaxRedirects.IsNull() && !h.MaxRedirects.IsUnknown() {
+		// Kibana 8.14 expects max_redirects as a string, while newer schemas allow numbers.
+		// Use the legacy string encoding so the request remains compatible across versions.
+		req.AdditionalProperties["max_redirects"] = strconv.FormatInt(h.MaxRedirects.ValueInt64(), 10)
 	}
 
 	return req, dg
