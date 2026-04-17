@@ -5,15 +5,15 @@
 
 ## 2. Status and version wiring
 
-- [ ] 2.1 Add `internal/clients/kibanaoapi` helper(s) that call `generated/kbapi` `GetStatusWithResponse` (or equivalent) with the same HTTP client and request editors as other helpers, returning parsed `version.number` and optional `version.build_flavor` plus consistent error diagnostics on non-2xx or decode failures.
-- [ ] 2.2 Refactor `(*KibanaScopedClient).ServerVersion` and `ServerFlavor` in `internal/clients/kibana_scoped_client.go` to use the helper from 2.1 with `GetKibanaOapiClient()`, remove `GetKibanaClient()` and the legacy `kibana` field from the struct, and adjust `kibanaScopedClientFromAPIClient` accordingly.
-- [ ] 2.3 Refactor `(*APIClient).versionFromKibana` and `flavorFromKibana` in `internal/clients/api_client.go` to use the same helper path (via `kibanaoapi` on the API client’s OpenAPI client) instead of `GetKibanaClient().KibanaStatus.Get()`.
+- [x] 2.1 Add `internal/clients/kibanaoapi` helper(s) that call `generated/kbapi` `GetStatusWithResponse` (or equivalent) with the same HTTP client and request editors as other helpers, returning parsed `version.number` and optional `version.build_flavor` plus consistent error diagnostics on non-2xx or decode failures.
+- [x] 2.2 Refactor `(*KibanaScopedClient).ServerVersion` and `ServerFlavor` in `internal/clients/kibana_scoped_client.go` to use the helper from 2.1 with `GetKibanaOapiClient()`, remove `GetKibanaClient()` and the legacy `kibana` field from the struct, and adjust `kibanaScopedClientFromAPIClient` accordingly.
+- [x] 2.3 Refactor `(*APIClient).versionFromKibana` and `flavorFromKibana` in `internal/clients/api_client.go` to use the same helper path (via `kibanaoapi` on the API client’s OpenAPI client) instead of `GetKibanaClient().KibanaStatus.Get()`. Note: `versionFromKibana`/`flavorFromKibana` did not exist as standalone functions; the equivalent Kibana-only status path was in `kibana_scoped_client.go` which was fully migrated in 2.2. The `apiClient` legacy kibana fields and `buildKibanaClient` were removed in task 3.1.
 
 ## 3. Remove legacy client from shared types
 
-- [ ] 3.1 Remove `kibana` / legacy-related fields, `GetKibanaClient()`, and `buildKibanaClient` usage from `APIClient` construction paths (`NewAPIClientFromFramework`, SDK constructor, `NewAcceptanceTestingClient`, etc.) once no callers need them; retain debug transport behavior on the HTTP client shared with `kibanaoapi` where applicable.
-- [ ] 3.2 Update `internal/clients/provider_client_factory.go` (and any scoped rebuild helpers) so scoped clients are built without instantiating `kibana.NewClient`.
-- [ ] 3.3 Fix all compile breaks: replace remaining `GetKibanaClient()` usages in tests and resources with `GetKibanaOapiClient()` + `kibanaoapi` helpers or entity-specific kbapi paths.
+- [x] 3.1 Remove `kibana` / legacy-related fields, `GetKibanaClient()`, and `buildKibanaClient` usage from `APIClient` construction paths (`NewAPIClientFromFramework`, SDK constructor, `NewAcceptanceTestingClient`, etc.) once no callers need them; retain debug transport behavior on the HTTP client shared with `kibanaoapi` where applicable.
+- [x] 3.2 Update `internal/clients/provider_client_factory.go` (and any scoped rebuild helpers) so scoped clients are built without instantiating `kibana.NewClient`.
+- [x] 3.3 Fix all compile breaks: replace remaining `GetKibanaClient()` usages in tests and resources with `GetKibanaOapiClient()` + `kibanaoapi` helpers or entity-specific kbapi paths.
 
 ## 4. Delete legacy-only helper surfaces
 
@@ -22,7 +22,7 @@
 
 ## 5. Verification and cleanup
 
-- [ ] 5.1 Update or add unit tests for status parsing and for `ServerVersion` / `ServerFlavor` on `KibanaScopedClient` (including missing `build_flavor` and serverless flavor behavior).
-- [ ] 5.2 Run `make build` and targeted acceptance tests for version-gated Kibana resources per `dev-docs/high-level/testing.md`.
-- [ ] 5.3 Run `make check-openspec` (or `openspec validate` for this change) and address any spec or schema issues.
-- [ ] 5.4 If the module has no remaining `go-kibana-rest` imports, remove the dependency from `go.mod` / tidy; otherwise document the residual owners in `design.md` open questions and leave a follow-up task.
+- [x] 5.1 Update or add unit tests for status parsing and for `ServerVersion` / `ServerFlavor` on `KibanaScopedClient` (including missing `build_flavor` and serverless flavor behavior).
+- [x] 5.2 Run `make build` and targeted acceptance tests for version-gated Kibana resources per `dev-docs/high-level/testing.md`.
+- [x] 5.3 Run `make check-openspec` (or `openspec validate` for this change) and address any spec or schema issues.
+- [x] 5.4 If the module has no remaining `go-kibana-rest` imports, remove the dependency from `go.mod` / tidy; otherwise document the residual owners in `design.md` open questions and leave a follow-up task.
