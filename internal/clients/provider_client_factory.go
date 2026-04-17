@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -262,16 +261,9 @@ func buildKibanaScopedClientFromConfig(cfg config.Client, version string) (*Kiba
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Failed to build Fleet client", err.Error())}
 	}
 
-	var sloAPI slo.SloAPI
-	if kibanaClient != nil {
-		kibanaHTTPClient := kibanaClient.Client.GetClient()
-		sloAPI = buildSloClient(cfg, kibanaHTTPClient).SloAPI
-	}
-
 	return &KibanaScopedClient{
 		kibana:       kibanaClient,
 		kibanaOapi:   kibanaOapiClient,
-		sloAPI:       sloAPI,
 		kibanaConfig: *cfg.Kibana,
 		fleet:        fleetClient,
 		version:      version,

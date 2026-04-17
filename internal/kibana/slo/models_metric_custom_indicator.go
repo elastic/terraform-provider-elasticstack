@@ -18,7 +18,9 @@
 package slo
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -44,63 +46,113 @@ type tfMetricCustomMetric struct {
 	Filter      types.String `tfsdk:"filter"`
 }
 
-func (m tfModel) metricCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item, error) {
+	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item
+	m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0{
+		Name:        metric.Name.ValueString(),
+		Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0Aggregation(metric.Aggregation.ValueString()),
+		Field:       metric.Field.ValueString(),
+		Filter:      stringPtr(metric.Filter),
+	}
+	if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(m0); err != nil {
+		return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
+	}
+	return item, nil
+}
+
+func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item, error) {
+	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item
+	m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0{
+		Name:        metric.Name.ValueString(),
+		Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0Aggregation(metric.Aggregation.ValueString()),
+		Field:       metric.Field.ValueString(),
+		Filter:      stringPtr(metric.Filter),
+	}
+	if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(m0); err != nil {
+		return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
+	}
+	return item, nil
+}
+
+func (m tfModel) metricCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(m.MetricCustomIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}, diags
+		return false, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
 	ind := m.MetricCustomIndicator[0]
 	if len(ind.Good) != 1 || len(ind.Total) != 1 {
 		diags.AddError("Invalid configuration", "metric_custom_indicator.good and .total must each have exactly 1 item")
-		return true, slo.SloWithSummaryResponseIndicator{}, diags
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
-	goodMetrics := make([]slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner, 0, len(ind.Good[0].Metrics))
-	for _, metric := range ind.Good[0].Metrics {
-		goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
-			Name:        metric.Name.ValueString(),
-			Aggregation: metric.Aggregation.ValueString(),
-			Field:       metric.Field.ValueString(),
-			Filter:      stringPtr(metric.Filter),
-		})
-	}
-	totalMetrics := make([]slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner, 0, len(ind.Total[0].Metrics))
-	for _, metric := range ind.Total[0].Metrics {
-		totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
-			Name:        metric.Name.ValueString(),
-			Aggregation: metric.Aggregation.ValueString(),
-			Field:       metric.Field.ValueString(),
-			Filter:      stringPtr(metric.Filter),
-		})
+	goodMetrics := make([]kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item, 0, len(ind.Good[0].Metrics))
+	for i, metric := range ind.Good[0].Metrics {
+		item, err := buildGoodMetricItem(metric)
+		if err != nil {
+			diags.AddError("Invalid configuration", fmt.Sprintf("good.metrics[%d]: %s", i, err.Error()))
+			return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+		}
+		goodMetrics = append(goodMetrics, item)
 	}
 
-	return true, slo.SloWithSummaryResponseIndicator{
-		IndicatorPropertiesCustomMetric: &slo.IndicatorPropertiesCustomMetric{
-			Type: indicatorAddressToType["metric_custom_indicator"],
-			Params: slo.IndicatorPropertiesCustomMetricParams{
-				Index:          ind.Index.ValueString(),
-				DataViewId:     stringPtr(ind.DataViewID),
-				Filter:         stringPtr(ind.Filter),
-				TimestampField: ind.TimestampField.ValueString(),
-				Good: slo.IndicatorPropertiesCustomMetricParamsGood{
-					Metrics:  goodMetrics,
-					Equation: ind.Good[0].Equation.ValueString(),
-				},
-				Total: slo.IndicatorPropertiesCustomMetricParamsTotal{
-					Metrics:  totalMetrics,
-					Equation: ind.Total[0].Equation.ValueString(),
-				},
+	totalMetrics := make([]kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item, 0, len(ind.Total[0].Metrics))
+	for i, metric := range ind.Total[0].Metrics {
+		item, err := buildTotalMetricItem(metric)
+		if err != nil {
+			diags.AddError("Invalid configuration", fmt.Sprintf("total.metrics[%d]: %s", i, err.Error()))
+			return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+		}
+		totalMetrics = append(totalMetrics, item)
+	}
+
+	metricIndicator := kbapi.SLOsIndicatorPropertiesCustomMetric{
+		Type: indicatorAddressToType["metric_custom_indicator"],
+		Params: struct {
+			DataViewId     *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+			Filter         *string `json:"filter,omitempty"`
+			Good           struct {
+				Equation string                                                                   `json:"equation"`
+				Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item  `json:"metrics"`
+			} `json:"good"`
+			Index          string `json:"index"`
+			TimestampField string `json:"timestampField"`
+			Total          struct {
+				Equation string                                                                    `json:"equation"`
+				Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
+			} `json:"total"`
+		}{
+			Index:      ind.Index.ValueString(),
+			DataViewId: stringPtr(ind.DataViewID),
+			Filter:     stringPtr(ind.Filter),
+			TimestampField: ind.TimestampField.ValueString(),
+			Good: struct {
+				Equation string                                                                   `json:"equation"`
+				Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item  `json:"metrics"`
+			}{
+				Metrics:  goodMetrics,
+				Equation: ind.Good[0].Equation.ValueString(),
+			},
+			Total: struct {
+				Equation string                                                                    `json:"equation"`
+				Metrics  []kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item `json:"metrics"`
+			}{
+				Metrics:  totalMetrics,
+				Equation: ind.Total[0].Equation.ValueString(),
 			},
 		},
-	}, diags
+	}
+
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	if err := result.FromSLOsIndicatorPropertiesCustomMetric(metricIndicator); err != nil {
+		diags.AddError("Failed to build Custom Metric indicator", err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
+	return true, result, diags
 }
 
-func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomMetric) diag.Diagnostics {
+func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndicatorPropertiesCustomMetric) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	if apiIndicator == nil {
-		return diags
-	}
 
 	p := apiIndicator.Params
 	ind := tfMetricCustomIndicator{
@@ -115,22 +167,40 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator *slo.IndicatorP
 
 	goodMetrics := make([]tfMetricCustomMetric, 0, len(p.Good.Metrics))
 	for _, mtr := range p.Good.Metrics {
-		goodMetrics = append(goodMetrics, tfMetricCustomMetric{
-			Name:        types.StringValue(mtr.Name),
-			Aggregation: types.StringValue(mtr.Aggregation),
-			Field:       types.StringValue(mtr.Field),
-			Filter:      stringOrNull(mtr.Filter),
-		})
+		metric := tfMetricCustomMetric{
+			Field:  types.StringNull(),
+			Filter: types.StringNull(),
+		}
+		if m0, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(); err == nil {
+			metric.Name = types.StringValue(m0.Name)
+			metric.Aggregation = types.StringValue(string(m0.Aggregation))
+			metric.Field = types.StringValue(m0.Field)
+			metric.Filter = stringOrNull(m0.Filter)
+		} else if m1, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(); err == nil {
+			metric.Name = types.StringValue(m1.Name)
+			metric.Aggregation = types.StringValue(string(m1.Aggregation))
+			metric.Filter = stringOrNull(m1.Filter)
+		}
+		goodMetrics = append(goodMetrics, metric)
 	}
 
 	totalMetrics := make([]tfMetricCustomMetric, 0, len(p.Total.Metrics))
 	for _, mtr := range p.Total.Metrics {
-		totalMetrics = append(totalMetrics, tfMetricCustomMetric{
-			Name:        types.StringValue(mtr.Name),
-			Aggregation: types.StringValue(mtr.Aggregation),
-			Field:       types.StringValue(mtr.Field),
-			Filter:      stringOrNull(mtr.Filter),
-		})
+		metric := tfMetricCustomMetric{
+			Field:  types.StringNull(),
+			Filter: types.StringNull(),
+		}
+		if m0, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(); err == nil {
+			metric.Name = types.StringValue(m0.Name)
+			metric.Aggregation = types.StringValue(string(m0.Aggregation))
+			metric.Field = types.StringValue(m0.Field)
+			metric.Filter = stringOrNull(m0.Filter)
+		} else if m1, err := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(); err == nil {
+			metric.Name = types.StringValue(m1.Name)
+			metric.Aggregation = types.StringValue(string(m1.Aggregation))
+			metric.Filter = stringOrNull(m1.Filter)
+		}
+		totalMetrics = append(totalMetrics, metric)
 	}
 
 	ind.Good = []tfMetricCustomEquation{{

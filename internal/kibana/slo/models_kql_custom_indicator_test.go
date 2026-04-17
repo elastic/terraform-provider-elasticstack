@@ -20,7 +20,7 @@ package slo
 import (
 	"testing"
 
-	generatedslo "github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,19 +47,24 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.kqlCustomIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
 
-		params := ind.IndicatorPropertiesCustomKql.Params
+		apiInd, err := ind.AsSLOsIndicatorPropertiesCustomKql()
+		require.NoError(t, err)
+
+		params := apiInd.Params
 		assert.Equal(t, "logs-*", params.Index)
 		require.NotNil(t, params.DataViewId)
 		assert.Equal(t, "dv-123", *params.DataViewId)
 		require.NotNil(t, params.Filter)
-		require.NotNil(t, params.Filter.String)
-		assert.Equal(t, "service.name:foo", *params.Filter.String)
-		require.NotNil(t, params.Good.String)
-		assert.Equal(t, "status:200", *params.Good.String)
-		require.NotNil(t, params.Total.String)
-		assert.Equal(t, "*", *params.Total.String)
+		filterStr, ferr := params.Filter.AsSLOsKqlWithFilters0()
+		require.NoError(t, ferr)
+		assert.Equal(t, "service.name:foo", filterStr)
+		goodStr, gerr := params.Good.AsSLOsKqlWithFiltersGood0()
+		require.NoError(t, gerr)
+		assert.Equal(t, "status:200", goodStr)
+		totalStr, terr := params.Total.AsSLOsKqlWithFiltersTotal0()
+		require.NoError(t, terr)
+		assert.Equal(t, "*", totalStr)
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 
@@ -76,17 +81,21 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.kqlCustomIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
 
-		params := ind.IndicatorPropertiesCustomKql.Params
+		apiInd, err := ind.AsSLOsIndicatorPropertiesCustomKql()
+		require.NoError(t, err)
+
+		params := apiInd.Params
 		assert.Equal(t, "logs-*", params.Index)
 		assert.Nil(t, params.DataViewId)
 		assert.Nil(t, params.Filter)
 		// Good and Total are required fields, so they default to empty strings
-		require.NotNil(t, params.Good.String)
-		assert.Empty(t, *params.Good.String)
-		require.NotNil(t, params.Total.String)
-		assert.Empty(t, *params.Total.String)
+		goodStr, gerr := params.Good.AsSLOsKqlWithFiltersGood0()
+		require.NoError(t, gerr)
+		assert.Empty(t, goodStr)
+		totalStr, terr := params.Total.AsSLOsKqlWithFiltersTotal0()
+		require.NoError(t, terr)
+		assert.Empty(t, totalStr)
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 
@@ -101,25 +110,43 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.kqlCustomIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
 
-		params := ind.IndicatorPropertiesCustomKql.Params
-		require.NotNil(t, params.Good.String)
-		assert.Empty(t, *params.Good.String)
-		require.NotNil(t, params.Total.String)
-		assert.Empty(t, *params.Total.String)
+		apiInd, err := ind.AsSLOsIndicatorPropertiesCustomKql()
+		require.NoError(t, err)
+
+		goodStr, gerr := apiInd.Params.Good.AsSLOsKqlWithFiltersGood0()
+		require.NoError(t, gerr)
+		assert.Empty(t, goodStr)
+		totalStr, terr := apiInd.Params.Total.AsSLOsKqlWithFiltersTotal0()
+		require.NoError(t, terr)
+		assert.Empty(t, totalStr)
 	})
 }
 
 func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("maps all optional fields", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesCustomKql{
-			Params: generatedslo.IndicatorPropertiesCustomKqlParams{
+		dvID := "dv-123"
+		var filter kbapi.SLOsKqlWithFilters
+		require.NoError(t, filter.FromSLOsKqlWithFilters0("service.name:foo"))
+		var good kbapi.SLOsKqlWithFiltersGood
+		require.NoError(t, good.FromSLOsKqlWithFiltersGood0("status:200"))
+		var total kbapi.SLOsKqlWithFiltersTotal
+		require.NoError(t, total.FromSLOsKqlWithFiltersTotal0("*"))
+
+		api := kbapi.SLOsIndicatorPropertiesCustomKql{
+			Params: struct {
+				DataViewId     *string                       `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+				Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+				Index          string                        `json:"index"`
+				TimestampField string                        `json:"timestampField"`
+				Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+			}{
 				Index:          "logs-*",
-				DataViewId:     new("dv-123"),
-				Filter:         &generatedslo.KqlWithFilters{String: new("service.name:foo")},
-				Good:           generatedslo.KqlWithFiltersGood{String: new("status:200")},
-				Total:          generatedslo.KqlWithFiltersTotal{String: new("*")},
+				DataViewId:     &dvID,
+				Filter:         &filter,
+				Good:           good,
+				Total:          total,
 				TimestampField: "@timestamp",
 			},
 		}
@@ -139,13 +166,23 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesCustomKql{
-			Params: generatedslo.IndicatorPropertiesCustomKqlParams{
+		var emptyGood kbapi.SLOsKqlWithFiltersGood
+		var emptyTotal kbapi.SLOsKqlWithFiltersTotal
+
+		api := kbapi.SLOsIndicatorPropertiesCustomKql{
+			Params: struct {
+				DataViewId     *string                       `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+				Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+				Index          string                        `json:"index"`
+				TimestampField string                        `json:"timestampField"`
+				Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+			}{
 				Index:          "logs-*",
 				DataViewId:     nil,
 				Filter:         nil,
-				Good:           generatedslo.KqlWithFiltersGood{String: nil},
-				Total:          generatedslo.KqlWithFiltersTotal{String: nil},
+				Good:           emptyGood,
+				Total:          emptyTotal,
 				TimestampField: "@timestamp",
 			},
 		}
@@ -158,14 +195,8 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		ind := m.KqlCustomIndicator[0]
 		assert.True(t, ind.DataViewID.IsNull())
 		assert.True(t, ind.Filter.IsNull())
+		// Empty unions will fail As* — so Good and Total will be null
 		assert.True(t, ind.Good.IsNull())
 		assert.True(t, ind.Total.IsNull())
-	})
-
-	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {
-		var m tfModel
-		diags := m.populateFromKqlCustomIndicator(nil)
-		require.False(t, diags.HasError())
-		assert.Nil(t, m.KqlCustomIndicator)
 	})
 }

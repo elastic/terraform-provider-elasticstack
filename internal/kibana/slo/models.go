@@ -20,7 +20,7 @@ package slo
 import (
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -93,16 +93,16 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		return models.Slo{}, diags
 	}
 
-	tw := slo.TimeWindow{
-		Type:     m.TimeWindow[0].Type.ValueString(),
+	tw := kbapi.SLOsTimeWindow{
+		Type:     kbapi.SLOsTimeWindowType(m.TimeWindow[0].Type.ValueString()),
 		Duration: m.TimeWindow[0].Duration.ValueString(),
 	}
 
-	obj := slo.Objective{
-		Target: m.Objective[0].Target.ValueFloat64(),
+	obj := kbapi.SLOsObjective{
+		Target: float32(m.Objective[0].Target.ValueFloat64()),
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceTarget) {
-		v := m.Objective[0].TimesliceTarget.ValueFloat64()
+		v := float32(m.Objective[0].TimesliceTarget.ValueFloat64())
 		obj.TimesliceTarget = &v
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceWindow) {
@@ -110,7 +110,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		obj.TimesliceWindow = &v
 	}
 
-	var settings *slo.Settings
+	var settings *kbapi.SLOsSettings
 	if typeutils.IsKnown(m.Settings) {
 		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
 		diags.Append(settingsDiags...)
@@ -125,7 +125,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		Description:     m.Description.ValueString(),
 		Indicator:       indicator,
 		TimeWindow:      tw,
-		BudgetingMethod: slo.BudgetingMethod(m.BudgetMethod.ValueString()),
+		BudgetingMethod: kbapi.SLOsBudgetingMethod(m.BudgetMethod.ValueString()),
 		Objective:       obj,
 		Settings:        settings,
 		SpaceID:         m.SpaceID.ValueString(),
@@ -162,7 +162,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	return apiModel, diags
 }
 
-func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func (m tfModel) indicatorToAPI() (kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if ok, ind, indDiags := m.kqlCustomIndicatorToAPI(); ok {
@@ -175,7 +175,8 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		return ind, diags
 	}
 
-	if ok, ind := m.apmLatencyIndicatorToAPI(); ok {
+	if ok, ind, indDiags := m.apmLatencyIndicatorToAPI(); ok {
+		diags.Append(indDiags...)
 		return ind, diags
 	}
 
@@ -198,7 +199,7 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		"Invalid configuration",
 		"exactly one indicator block must be set",
 	)
-	return slo.SloWithSummaryResponseIndicator{}, diags
+	return kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 }
 
 func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
@@ -215,14 +216,14 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 
 	m.TimeWindow = []tfTimeWindow{{
 		Duration: types.StringValue(apiModel.TimeWindow.Duration),
-		Type:     types.StringValue(apiModel.TimeWindow.Type),
+		Type:     types.StringValue(string(apiModel.TimeWindow.Type)),
 	}}
 
 	obj := tfObjective{
-		Target: types.Float64Value(apiModel.Objective.Target),
+		Target: types.Float64Value(float64(apiModel.Objective.Target)),
 	}
 	if apiModel.Objective.TimesliceTarget != nil {
-		obj.TimesliceTarget = types.Float64Value(*apiModel.Objective.TimesliceTarget)
+		obj.TimesliceTarget = types.Float64Value(float64(*apiModel.Objective.TimesliceTarget))
 	} else {
 		obj.TimesliceTarget = types.Float64Null()
 	}
@@ -269,27 +270,63 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.KqlCustomIndicator = nil
 	m.TimesliceMetricIndicator = nil
 
-	switch {
-	case apiModel.Indicator.IndicatorPropertiesApmAvailability != nil:
-		diags.Append(m.populateFromApmAvailabilityIndicator(apiModel.Indicator.IndicatorPropertiesApmAvailability)...)
+	discriminator, err := apiModel.Indicator.Discriminator()
+	if err != nil {
+		diags.AddError("Unexpected API response", "failed to determine indicator type: "+err.Error())
+		return diags
+	}
 
-	case apiModel.Indicator.IndicatorPropertiesApmLatency != nil:
-		diags.Append(m.populateFromApmLatencyIndicator(apiModel.Indicator.IndicatorPropertiesApmLatency)...)
+	switch discriminator {
+	case "sli.apm.transactionErrorRate":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesApmAvailability()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse APM availability indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromApmAvailabilityIndicator(ind)...)
 
-	case apiModel.Indicator.IndicatorPropertiesCustomKql != nil:
-		diags.Append(m.populateFromKqlCustomIndicator(apiModel.Indicator.IndicatorPropertiesCustomKql)...)
+	case "sli.apm.transactionDuration":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesApmLatency()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse APM latency indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromApmLatencyIndicator(ind)...)
 
-	case apiModel.Indicator.IndicatorPropertiesHistogram != nil:
-		diags.Append(m.populateFromHistogramCustomIndicator(apiModel.Indicator.IndicatorPropertiesHistogram)...)
+	case "sli.kql.custom":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesCustomKql()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse KQL custom indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromKqlCustomIndicator(ind)...)
 
-	case apiModel.Indicator.IndicatorPropertiesCustomMetric != nil:
-		diags.Append(m.populateFromMetricCustomIndicator(apiModel.Indicator.IndicatorPropertiesCustomMetric)...)
+	case "sli.histogram.custom":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesHistogram()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse histogram indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromHistogramCustomIndicator(ind)...)
 
-	case apiModel.Indicator.IndicatorPropertiesTimesliceMetric != nil:
-		diags.Append(m.populateFromTimesliceMetricIndicator(apiModel.Indicator.IndicatorPropertiesTimesliceMetric)...)
+	case "sli.metric.custom":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesCustomMetric()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse custom metric indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromMetricCustomIndicator(ind)...)
+
+	case "sli.metric.timeslice":
+		ind, err := apiModel.Indicator.AsSLOsIndicatorPropertiesTimesliceMetric()
+		if err != nil {
+			diags.AddError("Unexpected API response", "failed to parse timeslice metric indicator: "+err.Error())
+			return diags
+		}
+		diags.Append(m.populateFromTimesliceMetricIndicator(ind)...)
 
 	default:
-		diags.AddError("Unexpected API response", "indicator not set")
+		diags.AddError("Unexpected API response", "unknown indicator type: "+discriminator)
 		return diags
 	}
 
@@ -326,8 +363,8 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 	}, diags
 }
 
-func (s tfSettings) toAPIModel() *slo.Settings {
-	settings := slo.Settings{}
+func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
+	settings := kbapi.SLOsSettings{}
 	hasAny := false
 
 	if typeutils.IsKnown(s.SyncDelay) {

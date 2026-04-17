@@ -20,12 +20,10 @@ package clients
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -91,7 +89,6 @@ type apiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	kibanaOapi               *kibanaoapi.Client
-	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
@@ -121,8 +118,6 @@ func newAcceptanceTestingClient() (*apiClient, error) {
 		return nil, err
 	}
 
-	kibanaHTTPClient := kib.Client.GetClient()
-
 	kibOapi, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
@@ -137,7 +132,6 @@ func newAcceptanceTestingClient() (*apiClient, error) {
 			elasticsearch: es,
 			kibana:        kib,
 			kibanaOapi:    kibOapi,
-			slo:           buildSloClient(cfg, kibanaHTTPClient).SloAPI,
 			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
 			version:       version,
@@ -213,20 +207,6 @@ func buildKibanaOapiClient(cfg config.Client) (*kibanaoapi.Client, error) {
 	return client, nil
 }
 
-func buildSloClient(cfg config.Client, httpClient *http.Client) *slo.APIClient {
-	sloConfig := slo.Configuration{
-		Debug:     logging.IsDebugOrHigher(),
-		UserAgent: cfg.UserAgent,
-		Servers: slo.ServerConfigurations{
-			{
-				URL: cfg.Kibana.Address,
-			},
-		},
-		HTTPClient: httpClient,
-	}
-	return slo.NewAPIClient(&sloConfig)
-}
-
 func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	client, err := fleet.NewClient(*cfg.Fleet)
 	if err != nil {
@@ -280,10 +260,6 @@ func newAPIClientFromConfig(cfg config.Client, version string) (*apiClient, erro
 			return nil, err
 		}
 		client.kibanaOapi = kibanaOapiClient
-
-		kibanaHTTPClient := kibanaClient.Client.GetClient()
-
-		client.slo = buildSloClient(cfg, kibanaHTTPClient).SloAPI
 	}
 
 	if cfg.Fleet != nil {

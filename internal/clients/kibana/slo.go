@@ -20,75 +20,71 @@ package kibana
 import (
 	"context"
 	"fmt"
-	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 func GetSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, id, spaceID string) (*models.Slo, diag.Diagnostics) {
-	client, err := apiClient.GetSloClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
-	req := client.GetSloOp(ctxWithAuth, spaceID, id).KbnXsrf("true")
-	sloRes, res, err := req.Execute()
-	if res == nil {
-		return nil, diag.FromErr(err)
-	}
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if err != nil {
-		diags := diag.FromErr(err)
-		diags = append(diags, diagutil.CheckHTTPError(res, "unable to create slo with id "+id)...)
+	res, fwDiags := kibanaoapi.GetSlo(ctx, client, spaceID, id)
+	if fwDiags.HasError() {
+		var diags diag.Diagnostics
+		for _, d := range fwDiags {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  d.Summary(),
+				Detail:   d.Detail(),
+			})
+		}
 		return nil, diags
 	}
 
-	defer res.Body.Close()
-
-	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHTTPError(res, "Unable to get slo with ID "+id)
+	return sloResponseToModel(spaceID, res), nil
 }
 
 func DeleteSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, sloID string, spaceID string) diag.Diagnostics {
-	client, err := apiClient.GetSloClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
-	req := client.DeleteSloOp(ctxWithAuth, sloID, spaceID).KbnXsrf("true")
-	res, err := req.Execute()
-
-	if err != nil {
-		diags := diag.FromErr(err)
-		if res != nil {
-			diags = append(diags, diagutil.CheckHTTPError(res, "unable to delete slo with id "+sloID)...)
+	fwDiags := kibanaoapi.DeleteSlo(ctx, client, spaceID, sloID)
+	if fwDiags.HasError() {
+		var diags diag.Diagnostics
+		for _, d := range fwDiags {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  d.Summary(),
+				Detail:   d.Detail(),
+			})
 		}
 		return diags
 	}
 
-	defer res.Body.Close()
-	return diagutil.CheckHTTPError(res, "Unable to delete slo with ID "+sloID)
+	return nil
 }
 
 func UpdateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
-	client, err := apiClient.GetSloClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
-	indicator, err := responseIndicatorToCreateSloRequestIndicator(s.Indicator)
-	if err != nil {
-		return nil, diag.FromErr(err)
+	indicator, convErr := responseIndicatorToUpdateIndicator(s.Indicator)
+	if convErr != nil {
+		return nil, diag.FromErr(convErr)
 	}
-	reqModel := slo.UpdateSloRequest{
+
+	groupBy := transformGroupBy(s.GroupBy, supportsGroupByList)
+	reqModel := kbapi.SLOsUpdateSloRequest{
 		Name:            &s.Name,
 		Description:     &s.Description,
 		Indicator:       &indicator,
@@ -96,24 +92,20 @@ func UpdateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s mod
 		BudgetingMethod: &s.BudgetingMethod,
 		Objective:       &s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),
-		Tags:            s.Tags,
+		GroupBy:         groupBy,
+		Tags:            tagsToPtr(s.Tags),
 	}
 
-	req := client.UpdateSloOp(ctxWithAuth, s.SpaceID, s.SloID).KbnXsrf("true").UpdateSloRequest(reqModel)
-	_, res, err := req.Execute()
-
-	if err != nil {
-		diags := diag.FromErr(err)
-		if res != nil {
-			diags = append(diags, diagutil.CheckHTTPError(res, "unable to update slo with id "+s.SloID)...)
+	fwDiags := kibanaoapi.UpdateSlo(ctx, client, s.SpaceID, s.SloID, reqModel)
+	if fwDiags.HasError() {
+		var diags diag.Diagnostics
+		for _, d := range fwDiags {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  d.Summary(),
+				Detail:   d.Detail(),
+			})
 		}
-
-		return nil, diags
-	}
-
-	defer res.Body.Close()
-	if diags := diagutil.CheckHTTPError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 
@@ -121,17 +113,18 @@ func UpdateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s mod
 }
 
 func CreateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
-	client, err := apiClient.GetSloClient()
+	client, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
-	indicator, err := responseIndicatorToCreateSloRequestIndicator(s.Indicator)
-	if err != nil {
-		return nil, diag.FromErr(err)
+	indicator, convErr := responseIndicatorToCreateIndicator(s.Indicator)
+	if convErr != nil {
+		return nil, diag.FromErr(convErr)
 	}
-	reqModel := slo.CreateSloRequest{
+
+	groupBy := transformGroupBy(s.GroupBy, supportsGroupByList)
+	reqModel := kbapi.SLOsCreateSloRequest{
 		Name:            s.Name,
 		Description:     s.Description,
 		Indicator:       indicator,
@@ -139,67 +132,147 @@ func CreateSlo(ctx context.Context, apiClient *clients.KibanaScopedClient, s mod
 		BudgetingMethod: s.BudgetingMethod,
 		Objective:       s.Objective,
 		Settings:        s.Settings,
-		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),
-		Tags:            s.Tags,
+		GroupBy:         groupBy,
+		Tags:            tagsToPtr(s.Tags),
 	}
 
-	// Explicitly set SLO object id if provided, otherwise we'll use the autogenerated ID from the Kibana API response
+	// Explicitly set SLO object id if provided, otherwise use the autogenerated ID from the Kibana API response.
 	if s.SloID != "" {
 		reqModel.Id = &s.SloID
 	}
 
-	req := client.CreateSloOp(ctxWithAuth, s.SpaceID).KbnXsrf("true").CreateSloRequest(reqModel)
-	sloRes, res, err := req.Execute()
-	if err != nil {
-		diags := diag.FromErr(err)
-		if res != nil {
-			diags = append(diags, diagutil.CheckHTTPError(res, "unable to create slo with id "+s.SloID)...)
+	res, fwDiags := kibanaoapi.CreateSlo(ctx, client, s.SpaceID, reqModel)
+	if fwDiags.HasError() {
+		var diags diag.Diagnostics
+		for _, d := range fwDiags {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  d.Summary(),
+				Detail:   d.Detail(),
+			})
 		}
 		return nil, diags
 	}
-	defer res.Body.Close()
 
-	if diags := diagutil.CheckHTTPError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
-		return nil, diags
-	}
-
-	s.SloID = sloRes.Id
-
+	s.SloID = res.Id
 	return &s, diag.Diagnostics{}
 }
 
-func responseIndicatorToCreateSloRequestIndicator(s slo.SloWithSummaryResponseIndicator) (slo.CreateSloRequestIndicator, error) {
-	var ret slo.CreateSloRequestIndicator
-
-	ind := s.GetActualInstance()
-	switch ind := ind.(type) {
-
-	case *slo.IndicatorPropertiesApmAvailability:
-		ret.IndicatorPropertiesApmAvailability = ind
-
-	case *slo.IndicatorPropertiesApmLatency:
-		ret.IndicatorPropertiesApmLatency = ind
-
-	case *slo.IndicatorPropertiesCustomKql:
-		ret.IndicatorPropertiesCustomKql = ind
-
-	case *slo.IndicatorPropertiesCustomMetric:
-		ret.IndicatorPropertiesCustomMetric = ind
-
-	case *slo.IndicatorPropertiesHistogram:
-		ret.IndicatorPropertiesHistogram = ind
-
-	case *slo.IndicatorPropertiesTimesliceMetric:
-		ret.IndicatorPropertiesTimesliceMetric = ind
-
-	default:
-		return ret, fmt.Errorf("unknown indicator type: %T", ind)
+// responseIndicatorToCreateIndicator converts the response indicator union type to the create request
+// indicator union type. Both are discriminated JSON unions sharing the same underlying indicator structs.
+func responseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
+	discriminator, err := s.Discriminator()
+	if err != nil {
+		return kbapi.SLOsCreateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
 	}
 
-	return ret, nil
+	var ret kbapi.SLOsCreateSloRequest_Indicator
+	switch discriminator {
+	case "sli.apm.transactionErrorRate":
+		ind, err := s.AsSLOsIndicatorPropertiesApmAvailability()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesApmAvailability(ind)
+		return ret, err
+	case "sli.apm.transactionDuration":
+		ind, err := s.AsSLOsIndicatorPropertiesApmLatency()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesApmLatency(ind)
+		return ret, err
+	case "sli.kql.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesCustomKql()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesCustomKql(ind)
+		return ret, err
+	case "sli.metric.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesCustomMetric()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesCustomMetric(ind)
+		return ret, err
+	case "sli.histogram.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesHistogram()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
+		return ret, err
+	case "sli.metric.timeslice":
+		ind, err := s.AsSLOsIndicatorPropertiesTimesliceMetric()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
+		return ret, err
+	default:
+		return ret, fmt.Errorf("unknown indicator discriminator: %s", discriminator)
+	}
 }
 
-func sloResponseToModel(spaceID string, res *slo.SloWithSummaryResponse) *models.Slo {
+// responseIndicatorToUpdateIndicator converts the response indicator union type to the update request
+// indicator union type.
+func responseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsUpdateSloRequest_Indicator, error) {
+	discriminator, err := s.Discriminator()
+	if err != nil {
+		return kbapi.SLOsUpdateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
+	}
+
+	var ret kbapi.SLOsUpdateSloRequest_Indicator
+	switch discriminator {
+	case "sli.apm.transactionErrorRate":
+		ind, err := s.AsSLOsIndicatorPropertiesApmAvailability()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesApmAvailability(ind)
+		return ret, err
+	case "sli.apm.transactionDuration":
+		ind, err := s.AsSLOsIndicatorPropertiesApmLatency()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesApmLatency(ind)
+		return ret, err
+	case "sli.kql.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesCustomKql()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesCustomKql(ind)
+		return ret, err
+	case "sli.metric.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesCustomMetric()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesCustomMetric(ind)
+		return ret, err
+	case "sli.histogram.custom":
+		ind, err := s.AsSLOsIndicatorPropertiesHistogram()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
+		return ret, err
+	case "sli.metric.timeslice":
+		ind, err := s.AsSLOsIndicatorPropertiesTimesliceMetric()
+		if err != nil {
+			return ret, err
+		}
+		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
+		return ret, err
+	default:
+		return ret, fmt.Errorf("unknown indicator discriminator: %s", discriminator)
+	}
+}
+
+func sloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *models.Slo {
 	if res == nil {
 		return nil
 	}
@@ -219,30 +292,46 @@ func sloResponseToModel(spaceID string, res *slo.SloWithSummaryResponse) *models
 	}
 }
 
-func transformGroupBy(groupBy []string, supportsGroupByList bool) *slo.GroupBy {
+func transformGroupBy(groupBy []string, supportsGroupByList bool) *kbapi.SLOsGroupBy {
 	if groupBy == nil {
 		return nil
 	}
 
+	var gb kbapi.SLOsGroupBy
 	if supportsGroupByList {
-		return &slo.GroupBy{ArrayOfString: &groupBy}
+		if err := gb.FromSLOsGroupBy1(groupBy); err != nil {
+			return nil
+		}
+		return &gb
 	}
 
 	if len(groupBy) == 0 {
 		return nil
 	}
 
-	return &slo.GroupBy{String: &groupBy[0]}
-}
-
-func transformGroupByFromResponse(groupBy slo.GroupBy) []string {
-	if groupBy.String != nil {
-		return []string{*groupBy.String}
-	}
-
-	if groupBy.ArrayOfString == nil {
+	if err := gb.FromSLOsGroupBy0(groupBy[0]); err != nil {
 		return nil
 	}
+	return &gb
+}
 
-	return *groupBy.ArrayOfString
+func transformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
+	// Try string first
+	if s, err := groupBy.AsSLOsGroupBy0(); err == nil {
+		return []string{s}
+	}
+
+	// Try array
+	if arr, err := groupBy.AsSLOsGroupBy1(); err == nil {
+		return arr
+	}
+
+	return nil
+}
+
+func tagsToPtr(tags []string) *[]string {
+	if tags == nil {
+		return nil
+	}
+	return &tags
 }

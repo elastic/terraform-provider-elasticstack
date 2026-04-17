@@ -20,10 +20,34 @@ package kibana
 import (
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/stretchr/testify/require"
 )
+
+func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesApmAvailability{
+		Type: "sli.apm.transactionErrorRate",
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{
+			Service:         "slo-service",
+			Environment:     "slo-environment",
+			TransactionType: "slo-transaction-type",
+			TransactionName: "slo-transaction-name",
+			Index:           "slo-index",
+		},
+	}
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesApmAvailability(ind))
+	return result
+}
 
 func Test_sloResponseToModel(t *testing.T) {
 	syncDelay := "2m"
@@ -31,129 +55,61 @@ func Test_sloResponseToModel(t *testing.T) {
 	tests := []struct {
 		name          string
 		spaceID       string
-		sloResponse   *slo.SloWithSummaryResponse
+		sloResponse   *kbapi.SLOsSloWithSummaryResponse
 		expectedModel *models.Slo
 	}{
 		{
 			name:    "should return a model with the correct values",
 			spaceID: "space-id",
-			sloResponse: &slo.SloWithSummaryResponse{
-				Id:          "slo-id",
-				Name:        "slo-name",
-				Description: "slo-description",
-				Indicator: slo.SloWithSummaryResponseIndicator{
-					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-						Type: "sli.apm.transactionErrorRate",
-						Params: slo.IndicatorPropertiesApmAvailabilityParams{
-							Service:         "slo-service",
-							Environment:     "slo-environment",
-							TransactionType: "slo-transaction-type",
-							TransactionName: "slo-transaction-name",
-							Index:           "slo-index",
-						},
-					},
-				},
-				TimeWindow: slo.TimeWindow{
-					Duration: "7d",
-					Type:     "rolling",
-				},
+			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
+				Id:              "slo-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
-				Settings: slo.Settings{
+				Settings: kbapi.SLOsSettings{
 					SyncDelay: &syncDelay,
 				},
-				Revision:  5.0,
-				Enabled:   true,
-				CreatedAt: "2023-08-11T00:05:36.567Z",
-				UpdatedAt: "2023-08-11T00:05:36.567Z",
 			},
 			expectedModel: &models.Slo{
-				SloID:       "slo-id",
-				SpaceID:     "space-id",
-				Name:        "slo-name",
-				Description: "slo-description",
-				Indicator: slo.SloWithSummaryResponseIndicator{
-					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-						Type: "sli.apm.transactionErrorRate",
-						Params: slo.IndicatorPropertiesApmAvailabilityParams{
-							Service:         "slo-service",
-							Environment:     "slo-environment",
-							TransactionType: "slo-transaction-type",
-							TransactionName: "slo-transaction-name",
-							Index:           "slo-index",
-						},
-					},
-				},
-				TimeWindow: slo.TimeWindow{
-					Duration: "7d",
-					Type:     "rolling",
-				},
+				SloID:           "slo-id",
+				SpaceID:         "space-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
-				Settings: &slo.Settings{
-					SyncDelay: &syncDelay,
-				},
-				GroupBy: nil,
+				Settings:        &kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				GroupBy:         nil,
 			},
 		},
 		{
 			name:    "should return tags if available",
 			spaceID: "space-id",
-			sloResponse: &slo.SloWithSummaryResponse{
-				Id:          "slo-id",
-				Name:        "slo-name",
-				Description: "slo-description",
-				Indicator: slo.SloWithSummaryResponseIndicator{
-					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-						Type: "sli.apm.transactionErrorRate",
-						Params: slo.IndicatorPropertiesApmAvailabilityParams{
-							Service:         "slo-service",
-							Environment:     "slo-environment",
-							TransactionType: "slo-transaction-type",
-							TransactionName: "slo-transaction-name",
-							Index:           "slo-index",
-						},
-					},
-				},
-				TimeWindow: slo.TimeWindow{
-					Duration: "7d",
-					Type:     "rolling",
-				},
+			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
+				Id:              "slo-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
-				Settings: slo.Settings{
+				Settings: kbapi.SLOsSettings{
 					SyncDelay: &syncDelay,
 				},
-				Tags:      []string{"tag-1", "another_tag"},
-				Revision:  5.0,
-				Enabled:   true,
-				CreatedAt: "2023-08-11T00:05:36.567Z",
-				UpdatedAt: "2023-08-11T00:05:36.567Z",
+				Tags: []string{"tag-1", "another_tag"},
 			},
 			expectedModel: &models.Slo{
-				SloID:       "slo-id",
-				SpaceID:     "space-id",
-				Name:        "slo-name",
-				Description: "slo-description",
-				Indicator: slo.SloWithSummaryResponseIndicator{
-					IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-						Type: "sli.apm.transactionErrorRate",
-						Params: slo.IndicatorPropertiesApmAvailabilityParams{
-							Service:         "slo-service",
-							Environment:     "slo-environment",
-							TransactionType: "slo-transaction-type",
-							TransactionName: "slo-transaction-name",
-							Index:           "slo-index",
-						},
-					},
-				},
-				TimeWindow: slo.TimeWindow{
-					Duration: "7d",
-					Type:     "rolling",
-				},
+				SloID:           "slo-id",
+				SpaceID:         "space-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
-				Settings: &slo.Settings{
-					SyncDelay: &syncDelay,
-				},
-				Tags:    []string{"tag-1", "another_tag"},
-				GroupBy: nil,
+				Settings:        &kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				Tags:            []string{"tag-1", "another_tag"},
+				GroupBy:         nil,
 			},
 		},
 		{

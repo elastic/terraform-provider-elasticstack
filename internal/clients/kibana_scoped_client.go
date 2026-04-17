@@ -22,7 +22,6 @@ import (
 	"errors"
 
 	"github.com/disaster37/go-kibana-rest/v8"
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/go-version"
@@ -30,8 +29,8 @@ import (
 )
 
 // KibanaScopedClient is a typed client surface for Kibana and Fleet operations.
-// It exposes: Kibana legacy client, Kibana OpenAPI client, SLO client, Fleet
-// client, Kibana auth-context helpers, and Kibana-derived version/flavor checks.
+// It exposes: Kibana legacy client, Kibana OpenAPI client, Fleet client, and
+// Kibana-derived version/flavor checks.
 //
 // It deliberately does NOT expose provider-level Elasticsearch identity so that
 // version and identity checks always resolve against the scoped Kibana
@@ -39,7 +38,6 @@ import (
 type KibanaScopedClient struct {
 	kibana       *kibana.Client
 	kibanaOapi   *kibanaoapi.Client
-	sloAPI       slo.SloAPI
 	kibanaConfig kibana.Config
 	fleet        *fleetclient.Client
 	// version is the provider version string used to tag API user-agent headers.
@@ -62,37 +60,12 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
 	return k.kibanaOapi, nil
 }
 
-// GetSloClient returns the SLO client.
-func (k *KibanaScopedClient) GetSloClient() (slo.SloAPI, error) {
-	if k.sloAPI == nil {
-		return nil, errors.New("slo client not found")
-	}
-	return k.sloAPI, nil
-}
-
 // GetFleetClient returns the Fleet client.
 func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 	if k.fleet == nil {
 		return nil, errors.New("fleet client not found")
 	}
 	return k.fleet, nil
-}
-
-// SetSloAuthContext injects authentication credentials into the context for SLO
-// API calls. Credentials are derived from the scoped Kibana connection.
-func (k *KibanaScopedClient) SetSloAuthContext(ctx context.Context) context.Context {
-	if k.kibanaConfig.ApiKey != "" {
-		return context.WithValue(ctx, slo.ContextAPIKeys, map[string]slo.APIKey{
-			"apiKeyAuth": {
-				Prefix: "ApiKey",
-				Key:    k.kibanaConfig.ApiKey,
-			}})
-	}
-
-	return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
-		UserName: k.kibanaConfig.Username,
-		Password: k.kibanaConfig.Password,
-	})
 }
 
 // ServerVersion returns the version of the Kibana server. Version is always
@@ -185,7 +158,6 @@ func kibanaScopedClientFromAPIClient(a *apiClient) *KibanaScopedClient {
 	return &KibanaScopedClient{
 		kibana:       a.kibana,
 		kibanaOapi:   a.kibanaOapi,
-		sloAPI:       a.slo,
 		kibanaConfig: a.kibanaConfig,
 		fleet:        a.fleet,
 		version:      a.version,
