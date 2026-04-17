@@ -485,7 +485,7 @@ jobs:
             
   auto-approve:
     name: Evaluate and auto-approve PR
-    if: always() && github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || needs['test-validation'].result == 'success')
+    if: always() && github.event_name == 'pull_request' && (needs.preflight.outputs.should_run == 'false' || needs['test-validation'].result == 'success')
     needs: [preflight, test-validation]
     runs-on: ubuntu-latest
     timeout-minutes: 5
