@@ -290,22 +290,5 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-slo-client
-generate-slo-client: tools ## generate Kibana slo client
-	@ rm -rf generated/slo
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/slo-spec.yml \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=slo \
-		-p generateInterfaces=true \
-		-p useOneOfDiscriminatorLookup=true \
-		-g go \
-		-o /local/generated/slo \
-		 --type-mappings=float32=float64
-	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
-	@ go fmt ./generated/slo/...
-
 .PHONY: generate-clients
-generate-clients: generate-slo-client gen ## generate all clients
+generate-clients: gen ## generate all clients
