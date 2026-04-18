@@ -8,37 +8,6 @@ third-party software developed by the licenses listed below.
 Third party libraries used by the Elastic terraform-provider-elasticstack project:
 ================================================================================
 
-Dependency : github.com/disaster37/go-kibana-rest/v8
-Version: v8.5.0
-Licence type (autodetected): MIT
-
-Contents of probable licence file LICENSE:
-
-MIT License
-
-Copyright (c) 2019 disaster37
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
---------------------------------------------------------------------------------
-
 Dependency : github.com/elastic/elastic-transport-go/v8
 Version: v8.11.0
 Licence type (autodetected): Apache-2.0

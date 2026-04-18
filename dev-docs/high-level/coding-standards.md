@@ -86,4 +86,3 @@ This document outlines the coding standards and conventions used in the terrafor
 ## API Client Usage
 
 - Use generated API clients from [`generated/kbapi/`](../../generated/kbapi/) for new Kibana API interactions
-- Avoid the deprecated `generated/slo` client
