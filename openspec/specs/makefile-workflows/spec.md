@@ -40,7 +40,7 @@ Environment variables consumed by underlying tools (for example Terraform loggin
 - **Docker & HTTP helpers:** `docker-elasticsearch`, `docker-kibana`, `docker-fleet`, `docker-clean`, `copy-kibana-ca`, `set-kibana-password`, `setup-synthetics`, `create-es-api-key`, `create-es-bearer-token`, `setup-kibana-fleet`
 - **Lint, format, docs, OpenSpec:** `tools`, `golangci-lint`, `lint`, `check-lint`, `fmt`, `check-fmt`, `docs-generate`, `workflow-generate`, `workflow-test`, `check-workflows`, `check-docs`, `setup-openspec`, `check-openspec`, `setup`
 - **Release & maintenance:** `release-snapshot`, `release-no-publish`, `release`, `check-sign-release`, `check-publish-release`, `release-notes`, `renovate-post-upgrade`, `notice`
-- **Codegen:** `gen`, `generate-slo-client`, `generate-clients`
+- **Codegen:** `gen`, `generate-clients`
 ## Requirements
 ### Requirement: Default goal and help (REQ-001–REQ-002)
 
@@ -359,15 +359,19 @@ The `release-notes` target SHALL print the body of the `## [Unreleased]` section
 - WHEN `make release-notes` runs
 - THEN standard output SHALL contain only the Unreleased section body
 
-### Requirement: SLO client generation (REQ-064–REQ-065)
+### Requirement: Consolidated Kibana client codegen (`generate-clients`)
 
-The `generate-slo-client` target SHALL regenerate the Go client under `generated/slo` from the repository’s SLO OpenAPI specification using the code generation toolchain wired in the Makefile, then format the generated Go code. The `generate-clients` target SHALL regenerate the SLO client and run the general codegen path (`gen`).
+The `generate-clients` target SHALL run the repository’s general Kibana/OpenAPI codegen path (`gen`) and SHALL NOT invoke a separate OpenAPI generation step that writes under `generated/slo`. The Makefile SHALL NOT define a `generate-slo-client` target.
 
-#### Scenario: Regenerate SLO client
+#### Scenario: generate-clients does not produce generated/slo
 
-- GIVEN Docker is available and `make generate-slo-client` runs successfully
-- WHEN generation finishes
-- THEN `generated/slo` SHALL contain formatted Go sources suitable for commit
+- **WHEN** `make generate-clients` completes successfully on a clean checkout after this change
+- **THEN** the recipe SHALL NOT run OpenAPI generation dedicated to a `generated/slo` package path
+
+#### Scenario: Deprecated SLO generator target absent
+
+- **WHEN** a contributor inspects the root Makefile for SLO-specific client generation
+- **THEN** there SHALL be no `generate-slo-client` phony target or equivalent recipe that populated `generated/slo`
 
 ### Requirement: Custom lint performance measurement target
 

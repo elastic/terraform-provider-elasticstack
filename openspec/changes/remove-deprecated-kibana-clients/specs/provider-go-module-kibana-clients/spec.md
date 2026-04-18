@@ -35,3 +35,12 @@ No first-party Go source under the provider module (for example `internal/`, `ge
 
 - **WHEN** a maintainer searches the repository for `disaster37/go-kibana-rest` and `terraform-provider-elasticstack/generated/slo`
 - **THEN** no matches SHALL appear in first-party Go sources, the root `Makefile`, or GitHub Actions workflow definitions under `.github/workflows/`
+
+### Requirement: NOTICE file excludes go-kibana-rest attribution
+
+The `NOTICE` file SHALL NOT contain the `github.com/disaster37/go-kibana-rest/v8` attribution entry after the dependency is removed.
+
+#### Scenario: NOTICE attribution removed
+
+- **WHEN** `github.com/disaster37/go-kibana-rest/v8` is no longer a dependency
+- **THEN** its attribution block SHALL be absent from the `NOTICE` file
