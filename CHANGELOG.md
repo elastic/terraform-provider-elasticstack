@@ -8,7 +8,7 @@
 
 - Add `elasticstack_kibana_agentbuilder_agent` resource and data source ([#2295](https://github.com/elastic/terraform-provider-elasticstack/pull/2295))
 - Add `create_new_copies` and `compatibility_mode` attributes to `elasticstack_kibana_import_saved_objects` ([#2289](https://github.com/elastic/terraform-provider-elasticstack/pull/2289))
-- Fix `elasticstack_elasticsearch_watch` updates when Watcher redacts nested action secrets on refresh. ([#2296](https://github.com/elastic/terraform-provider-elasticstack/pull/2296))
+- Fix `elasticstack_elasticsearch_watch` updates when Watcher redacts nested action secrets on refresh. ([#2338](https://github.com/elastic/terraform-provider-elasticstack/pull/2338))
 - Migrated `elasticstack_elasticsearch_watch` to the Terraform Plugin Framework ([#2287](https://github.com/elastic/terraform-provider-elasticstack/pull/2287))
 - Add `elasticstack_kibana_agentbuilder_tool` resource and data source ([#2111](https://github.com/elastic/terraform-provider-elasticstack/pull/2111))
 - Fix state consistency with semantic text types in `elasticstack_elasticsearch_index` ([#2112](https://github.com/elastic/terraform-provider-elasticstack/pull/2112))
@@ -30,7 +30,6 @@
 - Use space-scoped endpoints for Fleet resources to allow space-restricted roles to properly manage Fleet resources. ([#2084](https://github.com/elastic/terraform-provider-elasticstack/pull/2084))
 - Fix perpetual `id` "known after apply" diff in `elasticstack_elasticsearch_security_role` by adding `UseStateForUnknown` plan modifier to the computed `id` attribute. ([#2160](https://github.com/elastic/terraform-provider-elasticstack/pull/2160))
 - Add `elasticstack_fleet_elastic_defend_integration_policy` resource ([#2147](https://github.com/elastic/terraform-provider-elasticstack/pull/2147))
-
 
 ## [0.14.3] - 2026-03-02
 
