@@ -4,8 +4,6 @@
 
 ## [0.14.4] - 2026-04-20
 
-### Changes
-
 - Update generated Kibana API client from newer OpenAPI specs ([#2348](https://github.com/elastic/terraform-provider-elasticstack/pull/2348))
 - Remove the `go-kibana-rest` dependency from provider client configuration ([#2341](https://github.com/elastic/terraform-provider-elasticstack/pull/2341))
 - Preserve non-string redacted watch action values on refresh in `elasticstack_elasticsearch_watch` ([#2338](https://github.com/elastic/terraform-provider-elasticstack/pull/2338))
@@ -23,24 +21,15 @@
 - Migrate `elasticstack_kibana_import_saved_objects` to the generated `kbapi` client and add `create_new_copies` and `compatibility_mode` support ([#2289](https://github.com/elastic/terraform-provider-elasticstack/pull/2289))
 - Preserve redacted watch action values on refresh in `elasticstack_elasticsearch_watch` ([#2296](https://github.com/elastic/terraform-provider-elasticstack/pull/2296))
 - Migrate `elasticstack_elasticsearch_watch` to the Terraform Plugin Framework ([#2287](https://github.com/elastic/terraform-provider-elasticstack/pull/2287))
-- Update generated Kibana API client from newer OpenAPI specs ([#2285](https://github.com/elastic/terraform-provider-elasticstack/pull/2285))
 - Use typed Elasticsearch client resolution via `ProviderClientFactory` ([#2284](https://github.com/elastic/terraform-provider-elasticstack/pull/2284))
 - Use typed Kibana and Fleet client resolution via `ProviderClientFactory` ([#2279](https://github.com/elastic/terraform-provider-elasticstack/pull/2279))
 - Add `kibana_connection` support to all registered Kibana and Fleet resources and data sources ([#2262](https://github.com/elastic/terraform-provider-elasticstack/pull/2262))
-- Update generated Kibana API client from newer OpenAPI specs ([#2248](https://github.com/elastic/terraform-provider-elasticstack/pull/2248))
 - Add scoped `kibana_connection` client resolution helpers ([#2244](https://github.com/elastic/terraform-provider-elasticstack/pull/2244))
 - Add `synthetics_stats_overview` panel support to `elasticstack_kibana_dashboard` ([#2165](https://github.com/elastic/terraform-provider-elasticstack/pull/2165))
 - Add `elasticstack_kibana_agentbuilder_tool` resource and data source ([#2111](https://github.com/elastic/terraform-provider-elasticstack/pull/2111))
-- Update generated Kibana API client from newer OpenAPI specs ([#2212](https://github.com/elastic/terraform-provider-elasticstack/pull/2212))
-- Update generated Kibana API client from newer OpenAPI specs ([#2200](https://github.com/elastic/terraform-provider-elasticstack/pull/2200))
 - Add `remote_elasticsearch` output support to `elasticstack_fleet_output` ([#2131](https://github.com/elastic/terraform-provider-elasticstack/pull/2131))
 - Add structured pie chart legend support to `elasticstack_kibana_dashboard` ([#2178](https://github.com/elastic/terraform-provider-elasticstack/pull/2178))
 - Fix perpetual `id` diff in `elasticstack_elasticsearch_security_role` by preserving the planned ID ([#2160](https://github.com/elastic/terraform-provider-elasticstack/pull/2160))
-- Update generated Kibana API client from newer OpenAPI specs ([#2041](https://github.com/elastic/terraform-provider-elasticstack/pull/2041))
-- Update generated Kibana API client from newer OpenAPI specs ([#2031](https://github.com/elastic/terraform-provider-elasticstack/pull/2031))
-- Update generated Kibana API client from newer OpenAPI specs ([#1984](https://github.com/elastic/terraform-provider-elasticstack/pull/1984))
-- Update generated Kibana API client from newer OpenAPI specs ([#1851](https://github.com/elastic/terraform-provider-elasticstack/pull/1851))
-- Update generated Kibana API client from newer OpenAPI specs ([#1785](https://github.com/elastic/terraform-provider-elasticstack/pull/1785))
 
 ## [0.14.3] - 2026-03-02
 
