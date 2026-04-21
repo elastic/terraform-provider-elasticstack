@@ -774,15 +774,12 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 	}
 
-	// If the version was in the response, return it directly — this is the most
-	// accurate source because it reflects exactly what was just installed.
-	// Fall back to querying the package list only when the response omits the version.
-	if packageVersion != "" {
-		return &UploadPackageResult{
-			PackageName:    packageName,
-			PackageVersion: packageVersion,
-		}, nil
-	}
+	// Always resolve the authoritative installed version via the package list so
+	// that the stored version matches what subsequent Read calls will observe.
+	// The version from the upload response body (_meta.version / items[0].version /
+	// response[0].version) is captured above but intentionally not used as the
+	// final source of truth because the package list is the canonical read path.
+	_ = packageVersion // captured for reference; GetPackages is authoritative
 
 	// Resolve the installed version by querying the package list and filtering by name.
 	packages, diags := GetPackages(ctx, client, true, opts.SpaceID)

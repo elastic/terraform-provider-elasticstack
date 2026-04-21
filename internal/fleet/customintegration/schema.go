@@ -90,7 +90,6 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 		},
