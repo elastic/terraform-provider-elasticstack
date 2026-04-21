@@ -706,7 +706,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 
 	switch resp.StatusCode() {
-	case http.StatusOK:
+	case http.StatusOK, http.StatusCreated:
 		// intentional fall-through
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)

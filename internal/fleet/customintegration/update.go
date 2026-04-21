@@ -60,18 +60,6 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 	queryParamsChanged := plan.IgnoreMappingUpdateErrors.ValueBool() != state.IgnoreMappingUpdateErrors.ValueBool() ||
 		plan.SkipDataStreamRollover.ValueBool() != state.SkipDataStreamRollover.ValueBool()
 
-	// If the package name will change (checksum changed and prior package
-	// name differs), uninstall the old package first.
-	if checksumChanged && !plan.PackageName.IsUnknown() &&
-		plan.PackageName.ValueString() != state.PackageName.ValueString() &&
-		state.PackageName.ValueString() != "" {
-		diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
 	if checksumChanged || queryParamsChanged {
 		filePath := plan.PackagePath.ValueString()
 		contentType := detectContentType(filePath)
@@ -86,6 +74,16 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
+		}
+
+		// If the uploaded package has a different name than the old one,
+		// uninstall the old package now that the new one is installed.
+		if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
+			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		checksum, err := computeSHA256(filePath)

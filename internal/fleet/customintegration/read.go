@@ -51,7 +51,7 @@ func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	if pkg == nil || (pkg.Status != nil && *pkg.Status != "installed") {
+	if pkg == nil || pkg.Status == nil || *pkg.Status != "installed" {
 		resp.State.RemoveResource(ctx)
 		return
 	}

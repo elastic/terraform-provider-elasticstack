@@ -19,14 +19,20 @@ package customintegration_test
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // buildMinimalIntegrationZip creates a minimal valid Elastic custom integration
@@ -87,24 +93,61 @@ owner:
 	return zipPath
 }
 
+// checkCustomIntegrationDestroy verifies that the custom integration package
+// is no longer installed after the resource is destroyed.
+func checkCustomIntegrationDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_fleet_custom_integration" {
+			continue
+		}
+
+		fleetClient, err := client.GetFleetClient()
+		if err != nil {
+			return err
+		}
+
+		pkgName := rs.Primary.Attributes["package_name"]
+		pkgVersion := rs.Primary.Attributes["package_version"]
+		spaceID := rs.Primary.Attributes["space_id"]
+
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+
+		if pkg != nil && pkg.Status != nil && *pkg.Status == "installed" {
+			return fmt.Errorf("custom integration package %s/%s still exists and is installed, but it should have been removed", pkgName, pkgVersion)
+		}
+	}
+
+	return nil
+}
+
 func TestAccFleetCustomIntegration(t *testing.T) {
 	pkgName := "testcustompkg"
-	pkgVersion := "1.0.0"
-	zipPath := buildMinimalIntegrationZip(t, pkgName, pkgVersion)
+
+	zipPathV100 := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
+	zipPathV101 := buildMinimalIntegrationZip(t, pkgName, "1.0.1")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create — verify all computed attributes are set.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"package_path": config.StringVariable(zipPath),
+					"package_path": config.StringVariable(zipPathV100),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", pkgVersion),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
 				),
@@ -114,9 +157,28 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"package_path": config.StringVariable(zipPath),
+					"package_path": config.StringVariable(zipPathV100),
 				},
 				PlanOnly: true,
+			},
+			// Step 3: Update — point package_path at a new zip with version 1.0.1.
+			// ModifyPlan detects the checksum change and marks computed fields Unknown,
+			// triggering Update to re-upload and set new values.
+			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPathV101),
+				},
+				PreConfig: func() {
+					time.Sleep(15 * time.Second)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.1"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
 			},
 		},
 	})
