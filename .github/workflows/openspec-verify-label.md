@@ -18,7 +18,7 @@ on:
   steps:
     - name: Verify trigger label
       id: verify_label
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -61,7 +61,7 @@ on:
     - name: Remove trigger label
       id: remove_trigger_label
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -126,7 +126,7 @@ on:
     - name: Classify pull request and select active change
       id: classify_and_select
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -280,7 +280,7 @@ if: >-
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
   - name: Setup Go
-    uses: actions/setup-go@v6
+    uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
     with:
       go-version-file: go.mod
       cache: false
@@ -290,11 +290,11 @@ steps:
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    uses: actions/setup-node@v6
+    uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
     with:
       node-version-file: package.json
   - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
+    uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
     with:
       terraform_wrapper: false
   - name: Setup repository dependencies

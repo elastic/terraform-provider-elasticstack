@@ -16,13 +16,13 @@ on:
       - 'internal/clients/kibanaoapi/**'
   steps:
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
       with:
         go-version-file: go.mod
         cache: false
     - name: Compute kibana spec impact
       id: compute_kibana_spec_impact
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -134,7 +134,7 @@ if: >-
   needs.pre_activation.outputs.should_run == 'true'
 steps:
   - name: Setup Go
-    uses: actions/setup-go@v6
+    uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
     with:
       go-version-file: go.mod
       cache: false
@@ -144,7 +144,7 @@ steps:
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    uses: actions/setup-node@v6
+    uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
     with:
       node-version-file: package.json
   - name: Setup repository dependencies
