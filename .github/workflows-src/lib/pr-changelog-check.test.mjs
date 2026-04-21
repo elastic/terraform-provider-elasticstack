@@ -59,6 +59,13 @@ test('findExistingComment returns the first matching comment when multiple match
   assert.equal(findExistingComment(comments, MARKER), first);
 });
 
+test('findExistingComment returns null for a comment with user: null (ghost/deleted account)', () => {
+  const comments = [
+    { user: null, body: `${MARKER}\nsome content` },
+  ];
+  assert.equal(findExistingComment(comments, MARKER), null);
+});
+
 // ---------------------------------------------------------------------------
 // buildPassCommentBody
 // ---------------------------------------------------------------------------

@@ -3,11 +3,15 @@ name: "PR Changelog Check"
 
 on:
   pull_request_target:
-    types: [opened, synchronize, labeled]
+    types: [opened, synchronize, edited, labeled, unlabeled]
 
 permissions:
   pull-requests: write
   issues: write
+
+concurrency:
+  group: pr-changelog-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   check-changelog:
@@ -266,7 +270,7 @@ jobs:
             function findExistingComment(comments, marker) {
               return (
                 comments.find(
-                  (c) => c.user.login === 'github-actions[bot]' && c.body.includes(marker)
+                  (c) => c.user?.login === 'github-actions[bot]' && c.body.includes(marker)
                 ) ?? null
               );
             }

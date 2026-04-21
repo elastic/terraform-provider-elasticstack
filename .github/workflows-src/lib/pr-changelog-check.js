@@ -11,7 +11,7 @@
 function findExistingComment(comments, marker) {
   return (
     comments.find(
-      (c) => c.user.login === 'github-actions[bot]' && c.body.includes(marker)
+      (c) => c.user?.login === 'github-actions[bot]' && c.body.includes(marker)
     ) ?? null
   );
 }
