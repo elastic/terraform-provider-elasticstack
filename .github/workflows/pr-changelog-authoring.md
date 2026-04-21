@@ -417,6 +417,7 @@ jobs:
       changelog_present: ${{ steps.validate_changelog.outputs.changelog_present }}
       changelog_valid: ${{ steps.validate_changelog.outputs.changelog_valid }}
 if: >-
+  needs.pre_activation.outputs.is_pr_event == 'true' &&
   needs.pre_activation.outputs.changelog_present == 'false'
 tools:
   github:
