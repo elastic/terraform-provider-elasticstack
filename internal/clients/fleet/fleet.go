@@ -684,6 +684,10 @@ type UploadPackageResult struct {
 	PackageName string
 	// PackageVersion is the installed version resolved from the package list.
 	PackageVersion string
+	// AlreadyInstalled is true when Fleet rejected the upload because a package
+	// with the same name is already installed. The caller should uninstall the
+	// existing package and retry.
+	AlreadyInstalled bool
 }
 
 // UploadPackage uploads a custom integration package to Fleet and returns the
@@ -712,25 +716,34 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	case http.StatusOK, http.StatusCreated:
 		// intentional fall-through
 	default:
+		// Older Kibana (8.0.x) rejects re-uploading a same-name package that is
+		// already installed. Signal this condition so the caller can uninstall and
+		// retry rather than treating it as a hard failure.
+		if strings.Contains(string(resp.Body), "already installed") {
+			return &UploadPackageResult{AlreadyInstalled: true}, nil
+		}
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 
 	// The response body does not have a typed JSON200 field; unmarshal manually.
-	// The field that carries the package name changed across Kibana versions:
-	//   - newer Kibana (8.8+): _meta.name
-	//   - older Kibana (8.0–8.7): items[0].name
-	//   - oldest Kibana (7.x): response[0].name
+	// The field that carries the package name and version changed across Kibana versions:
+	//   - newer Kibana (8.8+): _meta.name / _meta.version
+	//   - older Kibana (8.0–8.7): items[0].name / items[0].version
+	//   - oldest Kibana (7.x): response[0].name / response[0].version
 	// Try all three paths; if none yields a name, fall back to parsing the
 	// zip manifest directly (version-independent but zip-only).
 	var uploadResp struct {
 		Meta struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Version string `json:"version"`
 		} `json:"_meta"`
 		Items []struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Version string `json:"version"`
 		} `json:"items"`
 		Response []struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Version string `json:"version"`
 		} `json:"response"`
 	}
 	// Best-effort unmarshal; an error here is non-fatal — we fall through to
@@ -738,11 +751,14 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	_ = json.Unmarshal(resp.Body, &uploadResp)
 
 	packageName := uploadResp.Meta.Name
+	packageVersion := uploadResp.Meta.Version
 	if packageName == "" && len(uploadResp.Items) > 0 {
 		packageName = uploadResp.Items[0].Name
+		packageVersion = uploadResp.Items[0].Version
 	}
 	if packageName == "" && len(uploadResp.Response) > 0 {
 		packageName = uploadResp.Response[0].Name
+		packageVersion = uploadResp.Response[0].Version
 	}
 	if packageName == "" {
 		// Last resort: parse the name from the zip manifest. This is reliable
@@ -756,6 +772,16 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 				),
 			}
 		}
+	}
+
+	// If the version was in the response, return it directly — this is the most
+	// accurate source because it reflects exactly what was just installed.
+	// Fall back to querying the package list only when the response omits the version.
+	if packageVersion != "" {
+		return &UploadPackageResult{
+			PackageName:    packageName,
+			PackageVersion: packageVersion,
+		}, nil
 	}
 
 	// Resolve the installed version by querying the package list and filtering by name.

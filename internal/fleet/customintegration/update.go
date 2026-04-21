@@ -61,28 +61,48 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		plan.SkipDataStreamRollover.ValueBool() != state.SkipDataStreamRollover.ValueBool()
 
 	if checksumChanged || queryParamsChanged {
-		// Uninstall the existing package first. Kibana 8.0.x does not support
-		// overwriting a package via upload — it requires an explicit uninstall
-		// before a re-upload of the same package name.
-		diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
 		filePath := plan.PackagePath.ValueString()
 		contentType := detectContentType(filePath)
 
-		result, diags := fleet.UploadPackage(ctx, fleetClient, fleet.UploadPackageOptions{
+		uploadOpts := fleet.UploadPackageOptions{
 			PackagePath:               filePath,
 			ContentType:               contentType,
 			IgnoreMappingUpdateErrors: plan.IgnoreMappingUpdateErrors.ValueBool(),
 			SkipDataStreamRollover:    plan.SkipDataStreamRollover.ValueBool(),
 			SpaceID:                   plan.SpaceID.ValueString(),
-		})
+		}
+
+		// Attempt upload first (spec-mandated ordering). If Fleet rejects the
+		// upload because the same-name package is already installed (Kibana 8.0.x
+		// behaviour), uninstall the existing package and retry once.
+		result, diags := fleet.UploadPackage(ctx, fleetClient, uploadOpts)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
+		}
+
+		if result.AlreadyInstalled {
+			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			result, diags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
+
+		// If the package name changed, uninstall the old package now that the new
+		// one is successfully installed.
+		if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
+			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		checksum, err := computeSHA256(filePath)

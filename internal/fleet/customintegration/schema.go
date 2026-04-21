@@ -81,6 +81,8 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 			"skip_destroy": schema.BoolAttribute{
 				Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"space_id": schema.StringAttribute{
 				Description: "The Kibana space ID where this integration package should be installed.",
