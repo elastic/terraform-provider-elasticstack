@@ -23,7 +23,7 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -32,7 +32,7 @@ jobs:
 
       - name: Resolve release context
         id: resolve_release_context
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -156,7 +156,7 @@ jobs:
             
       - name: Gather merged PRs
         id: gather_merged_prs
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
@@ -260,7 +260,7 @@ jobs:
       - name: Render changelog section
         id: render_changelog
         if: steps.gather_merged_prs.outputs.has_prs == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           MERGED_PRS_PATH: ${{ steps.gather_merged_prs.outputs.merged_prs_path }}
           MODE: ${{ steps.resolve_release_context.outputs.mode }}
@@ -955,7 +955,7 @@ jobs:
         if: >-
           steps.resolve_release_context.outputs.mode == 'release' &&
           steps.commit_release.outputs.ran == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
           TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
@@ -1124,7 +1124,7 @@ jobs:
         id: lookup_pr
         if: >-
           steps.push_unreleased.outputs.pushed == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
         with:
