@@ -78,9 +78,11 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		var result *fleet.UploadPackageResult
 
 		if spaceIDChanged {
-			// The target space changed. Upload to the new space first (the new space
-			// does not have this package so there is no "already installed" conflict),
-			// then uninstall from the old space once the upload succeeds.
+			// The target space changed. Upload to the new space first, then uninstall
+			// from the old space once the new space is confirmed to have the package.
+			// If Fleet reports the package is already installed in the target space
+			// (e.g. a previous partial update left it there), uninstall from the old
+			// space and retry the upload so the result carries name/version.
 			var uploadDiags diag.Diagnostics
 			result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
 			resp.Diagnostics.Append(uploadDiags...)
@@ -88,10 +90,27 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 				return
 			}
 
-			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
-				return
+			if result.AlreadyInstalled {
+				// Package already present in target space; remove from old space first,
+				// then retry so that result.PackageName/PackageVersion are populated.
+				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
+				resp.Diagnostics.Append(uploadDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+			} else {
+				// Upload to new space succeeded; now remove from old space.
+				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 			}
 		} else {
 			// Same space: attempt upload first (spec-mandated ordering). If Fleet rejects
