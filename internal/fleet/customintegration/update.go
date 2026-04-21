@@ -61,6 +61,15 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		plan.SkipDataStreamRollover.ValueBool() != state.SkipDataStreamRollover.ValueBool()
 
 	if checksumChanged || queryParamsChanged {
+		// Uninstall the existing package first. Kibana 8.0.x does not support
+		// overwriting a package via upload — it requires an explicit uninstall
+		// before a re-upload of the same package name.
+		diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
 		filePath := plan.PackagePath.ValueString()
 		contentType := detectContentType(filePath)
 
@@ -74,16 +83,6 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
-		}
-
-		// If the uploaded package has a different name than the old one,
-		// uninstall the old package now that the new one is installed.
-		if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
-			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
 		}
 
 		checksum, err := computeSHA256(filePath)
