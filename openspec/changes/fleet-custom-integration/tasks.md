@@ -15,10 +15,10 @@
 
 ## 4. CRUD Operations
 
-- [ ] 4.1 Create `create.go`: read file, detect content-type from extension, call `fleet.UploadPackage`, compute SHA256, populate all computed fields in state
-- [ ] 4.2 Create `read.go`: use `package_name` + `package_version` from state to call `fleet.GetPackage`; remove from state if nil or not installed
-- [ ] 4.3 Create `update.go`: re-upload file if checksum changed; if new `package_name` ≠ state value, uninstall old package first; update all computed fields in state
-- [ ] 4.4 Create `delete.go`: uninstall package via `fleet.Uninstall` unless `skip_destroy = true`
+- [x] 4.1 Create `create.go`: read file, detect content-type from extension, call `fleet.UploadPackage`, compute SHA256, populate all computed fields in state
+- [x] 4.2 Create `read.go`: use `package_name` + `package_version` from state to call `fleet.GetPackage`; remove from state if nil or not installed
+- [x] 4.3 Create `update.go`: re-upload file if checksum changed; if new `package_name` ≠ state value, uninstall old package first; update all computed fields in state
+- [x] 4.4 Create `delete.go`: uninstall package via `fleet.Uninstall` unless `skip_destroy = true`
 
 ## 5. Provider Registration
 
