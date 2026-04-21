@@ -10,8 +10,8 @@
 
 ## 3. Schema and Plan Modifier
 
-- [ ] 3.1 Create `schema.go`: define all attributes (`package_path`, `package_name`, `package_version`, `checksum`, `id`, `ignore_mapping_update_errors`, `skip_data_stream_rollover`, `skip_destroy`, `space_id`, `kibana_connection`)
-- [ ] 3.2 Implement plan modifier for `package_path`: at plan time, read the file, compute SHA256; if different from state `checksum`, mark `package_name`, `package_version`, and `checksum` as Unknown; return error diagnostic if file is unreadable
+- [x] 3.1 Create `schema.go`: define all attributes (`package_path`, `package_name`, `package_version`, `checksum`, `id`, `ignore_mapping_update_errors`, `skip_data_stream_rollover`, `skip_destroy`, `space_id`, `kibana_connection`)
+- [x] 3.2 Implement plan modifier for `package_path`: at plan time, read the file, compute SHA256; if different from state `checksum`, mark `package_name`, `package_version`, and `checksum` as Unknown; return error diagnostic if file is unreadable
 
 ## 4. CRUD Operations
 
