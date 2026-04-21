@@ -17,8 +17,8 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Confirm `make check-workflows` passes with the manifest entry removed and no orphaned source template; confirm `make workflow-test` passes (covers `lib/*.test.mjs`)
-- [ ] 3.2 Confirm existing unit tests in `.github/workflows-src/lib/*.test.mjs` still pass (parser/validator logic is unchanged)
+- [x] 3.1 Confirm `make check-workflows` passes with the manifest entry removed and no orphaned source template; confirm `make workflow-test` passes (covers `lib/*.test.mjs`)
+- [x] 3.2 Confirm existing unit tests in `.github/workflows-src/lib/*.test.mjs` still pass (parser/validator logic is unchanged)
 - [ ] 3.3 Open a test PR against the repo and confirm the `PR Changelog Check` status appears immediately (not after CI) and fails with a comment when no `## Changelog` section is present
 - [ ] 3.4 Add a valid `## Changelog` section and confirm the check passes and the failure comment is updated
 - [ ] 3.5 Apply the `no-changelog` label and confirm the check passes immediately
