@@ -1,5 +1,23 @@
 #!/usr/bin/env node
 
+function createPiExtension(pi) {
+  pi.on("tool_call", async (event) => {
+    if (event?.toolName !== "bash") {
+      return;
+    }
+
+    const command = typeof event.input?.command === "string" ? event.input.command : "";
+    if (!command) {
+      return;
+    }
+
+    const rewrittenCommand = rewriteOpenSpecCommand(command);
+    if (rewrittenCommand !== command) {
+      event.input.command = rewrittenCommand;
+    }
+  });
+}
+
 async function readStdin(stream = process.stdin) {
   const chunks = [];
 
@@ -61,6 +79,7 @@ async function main({ input = process.stdin, output = process.stdout } = {}) {
 module.exports = {
   allow,
   buildHookResponse,
+  createPiExtension,
   main,
   readStdin,
   rewriteOpenSpecCommand,
