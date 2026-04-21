@@ -589,6 +589,69 @@ func TestCreateRefPanicsWhenExistingComponentDiffers(t *testing.T) {
 	input.CreateRef(schema, "Choice", "oneOf")
 }
 
+func TestFixSecurityEntityStoreEntityTypeParams(t *testing.T) {
+	schema := &Schema{
+		Paths: map[string]*Path{
+			"/api/security/entity_store/entities/{entityType}": {
+				Post: Map{
+					"parameters": Slice{},
+				},
+				Put: Map{
+					"parameters": Slice{
+						Map{
+							"in":   "query",
+							"name": "force",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	fixSecurityEntityStoreEntityTypeParams(schema)
+
+	postParams := schema.MustGetPath("/api/security/entity_store/entities/{entityType}").Post.MustGetSlice("parameters")
+	if !reflect.DeepEqual(postParams, Slice{
+		Map{
+			"example":  "user",
+			"in":       "path",
+			"name":     "entityType",
+			"required": true,
+			"schema": Map{
+				"$ref": "#/components/schemas/Security_Entity_Analytics_API_EntityType",
+			},
+		},
+	}) {
+		t.Fatalf("post parameters = %#v", postParams)
+	}
+
+	putParams := schema.MustGetPath("/api/security/entity_store/entities/{entityType}").Put.MustGetSlice("parameters")
+	if !reflect.DeepEqual(putParams, Slice{
+		Map{
+			"example":  "user",
+			"in":       "path",
+			"name":     "entityType",
+			"required": true,
+			"schema": Map{
+				"$ref": "#/components/schemas/Security_Entity_Analytics_API_EntityType",
+			},
+		},
+		Map{
+			"in":   "query",
+			"name": "force",
+		},
+	}) {
+		t.Fatalf("put parameters = %#v", putParams)
+	}
+
+	fixSecurityEntityStoreEntityTypeParams(schema)
+
+	putParams = schema.MustGetPath("/api/security/entity_store/entities/{entityType}").Put.MustGetSlice("parameters")
+	if len(putParams) != 2 {
+		t.Fatalf("expected transform to be idempotent, got %d parameters", len(putParams))
+	}
+}
+
 // deepCopyMap creates a deep copy of a Map for testing purposes
 func deepCopyMap(m Map) Map {
 	result := make(Map)

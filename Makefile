@@ -200,7 +200,7 @@ lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint check-workflows check-fmt check-docs
+check-lint: setup check-openspec golangci-lint check-workflows check-fmt gen check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
@@ -290,5 +290,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-clients
-generate-clients: gen ## generate all clients

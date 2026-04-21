@@ -600,6 +600,7 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixSpaceResponseSchemas,
 	fixSecurityExceptionListItems,
+	fixSecurityEntityStoreEntityTypeParams,
 	removeDuplicateOneOfRefs,
 	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
@@ -1133,6 +1134,50 @@ func fixSecurityExceptionListItems(schema *Schema) {
 
 	postExceptionListItem := exceptionListItems.MustGetEndpoint("post")
 	postExceptionListItem.CreateRef(schema, "Security_Exceptions_API_CreateExceptionListItem", "requestBody.content.application/json.schema")
+}
+
+func fixSecurityEntityStoreEntityTypeParams(schema *Schema) {
+	entityTypePathParam := func() Map {
+		return Map{
+			"example":  "user",
+			"in":       "path",
+			"name":     "entityType",
+			"required": true,
+			"schema": Map{
+				"$ref": "#/components/schemas/Security_Entity_Analytics_API_EntityType",
+			},
+		}
+	}
+
+	addEntityTypePathParam := func(endpoint Map) {
+		params, ok := endpoint.GetSlice("parameters")
+		if !ok {
+			endpoint.Set("parameters", Slice{entityTypePathParam()})
+			return
+		}
+
+		for _, param := range params {
+			paramMap, ok := param.(Map)
+			if !ok {
+				if rawMap, ok := param.(map[string]any); ok {
+					paramMap = Map(rawMap)
+				} else {
+					continue
+				}
+			}
+			name, _ := paramMap["name"].(string)
+			in, _ := paramMap["in"].(string)
+			if name == "entityType" && in == "path" {
+				return
+			}
+		}
+
+		endpoint.Set("parameters", append(Slice{entityTypePathParam()}, params...))
+	}
+
+	securityEntityStorePath := schema.MustGetPath("/api/security/entity_store/entities/{entityType}")
+	addEntityTypePathParam(securityEntityStorePath.MustGetEndpoint("post"))
+	addEntityTypePathParam(securityEntityStorePath.MustGetEndpoint("put"))
 }
 
 func removeDuplicateOneOfRefs(schema *Schema) {
