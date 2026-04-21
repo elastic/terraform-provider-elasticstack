@@ -735,7 +735,21 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		// Older Kibana (8.0.x) rejects re-uploading a same-name package that is
 		// already installed. Signal this condition so the caller can uninstall and
 		// retry rather than treating it as a hard failure.
+		//
+		// Populate PackageName/PackageVersion from the zip manifest so callers can
+		// adopt or uninstall the existing installation without returning empty fields.
 		if strings.Contains(string(resp.Body), "already installed") {
+			pkgName, pkgVersion, zipErr := parsePackageInfoFromZip(opts.PackagePath)
+			if zipErr == nil && pkgName != "" && pkgVersion != "" {
+				pkg, pkgDiags := GetPackage(ctx, client, pkgName, pkgVersion, opts.SpaceID)
+				if !pkgDiags.HasError() && pkg != nil {
+					return &UploadPackageResult{
+						AlreadyInstalled: true,
+						PackageName:      pkgName,
+						PackageVersion:   pkgVersion,
+					}, nil
+				}
+			}
 			return &UploadPackageResult{AlreadyInstalled: true}, nil
 		}
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
@@ -777,27 +791,27 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		packageVersion = uploadResp.Response[0].Version
 	}
 	if packageName == "" {
-		// Last resort: parse the name from the zip manifest. This is reliable
-		// across all Kibana versions but only works for zip archives.
-		packageName, err = parsePackageNameFromZip(opts.PackagePath)
-		if err != nil {
+		// Last resort: parse the name (and version) from the zip manifest. This is
+		// reliable across all Kibana versions but only works for zip archives.
+		var zipErr error
+		packageName, packageVersion, zipErr = parsePackageInfoFromZip(opts.PackagePath)
+		if zipErr != nil {
 			return nil, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Invalid upload response",
-					"Fleet did not return a package name and the zip manifest could not be parsed: "+err.Error(),
+					"Fleet did not return a package name and the zip manifest could not be parsed: "+zipErr.Error(),
 				),
 			}
 		}
+	} else if packageVersion == "" {
+		// Have name from response but no version; fill in from zip manifest.
+		_, packageVersion, _ = parsePackageInfoFromZip(opts.PackagePath)
 	}
 
-	// Always resolve the authoritative installed version via the package list so
-	// that the stored version matches what subsequent Read calls will observe.
-	// The version from the upload response body (_meta.version / items[0].version /
-	// response[0].version) is captured above but intentionally not used as the
-	// final source of truth because the package list is the canonical read path.
-	_ = packageVersion // captured for reference; GetPackages is authoritative
-
 	// Resolve the installed version by querying the package list and filtering by name.
+	// GetFleetEpmPackages is the canonical source on newer Kibana (8.7+). On older
+	// Kibana it may not include custom (user-uploaded) packages; the fallback below
+	// handles that case.
 	packages, diags := GetPackages(ctx, client, true, opts.SpaceID)
 	if diags.HasError() {
 		return nil, diags
@@ -812,6 +826,20 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 	}
 
+	// GetFleetEpmPackages did not include the package (older Kibana < 8.7 does not
+	// list custom-uploaded packages in the global registry view). Fall back to a
+	// direct GetPackage lookup using the version we already have from the upload
+	// response body or the zip manifest.
+	if packageVersion != "" {
+		pkg, pkgDiags := GetPackage(ctx, client, packageName, packageVersion, opts.SpaceID)
+		if !pkgDiags.HasError() && pkg != nil {
+			return &UploadPackageResult{
+				PackageName:    packageName,
+				PackageVersion: packageVersion,
+			}, nil
+		}
+	}
+
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic(
 			"Package not found after upload",
@@ -820,34 +848,43 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 }
 
-// parsePackageNameFromZip opens a zip archive at path, finds the top-level
-// manifest.yml, and extracts the package name field. It is used as a fallback
-// when the Fleet upload API response does not include _meta.name (older Kibana).
-func parsePackageNameFromZip(path string) (string, error) {
+// parsePackageInfoFromZip opens a zip archive at path, finds the top-level
+// manifest.yml, and extracts the package name and version fields. It is used as
+// a fallback when the Fleet upload API response does not include the package
+// name or version (older Kibana versions).
+func parsePackageInfoFromZip(path string) (name, version string, err error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
-		return "", fmt.Errorf("opening zip %q: %w", path, err)
+		return "", "", fmt.Errorf("opening zip %q: %w", path, err)
 	}
 	defer r.Close()
 
 	nameRe := regexp.MustCompile(`(?m)^name:\s*(\S+)`)
+	versionRe := regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
 	for _, f := range r.File {
 		if !strings.HasSuffix(f.Name, "/manifest.yml") && f.Name != "manifest.yml" {
 			continue
 		}
 		rc, err := f.Open()
 		if err != nil {
-			return "", fmt.Errorf("opening manifest.yml in zip: %w", err)
+			return "", "", fmt.Errorf("opening manifest.yml in zip: %w", err)
 		}
 		content, readErr := io.ReadAll(rc)
 		rc.Close()
 		if readErr != nil {
-			return "", fmt.Errorf("reading manifest.yml: %w", readErr)
+			return "", "", fmt.Errorf("reading manifest.yml: %w", readErr)
 		}
-		matches := nameRe.FindSubmatch(content)
-		if len(matches) >= 2 {
-			return string(matches[1]), nil
+		nameMatches := nameRe.FindSubmatch(content)
+		if len(nameMatches) >= 2 {
+			name = string(nameMatches[1])
+		}
+		versionMatches := versionRe.FindSubmatch(content)
+		if len(versionMatches) >= 2 {
+			version = string(versionMatches[1])
+		}
+		if name != "" {
+			return name, version, nil
 		}
 	}
-	return "", fmt.Errorf("manifest.yml with name field not found in zip")
+	return "", "", fmt.Errorf("manifest.yml with name field not found in zip")
 }
