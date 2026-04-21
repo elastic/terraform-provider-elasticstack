@@ -5,8 +5,8 @@
 
 ## 2. Resource Package Skeleton
 
-- [ ] 2.1 Create `internal/fleet/customintegration/` directory with `resource.go`: define `customIntegrationResource` struct, `NewResource()` constructor, `Metadata` (type name `elasticstack_fleet_custom_integration`), `Configure`
-- [ ] 2.2 Create `models.go`: define `customIntegrationModel` struct with all schema fields (`tfsdk` tags), and `getPackageID(name, version string) string` helper
+- [x] 2.1 Create `internal/fleet/customintegration/` directory with `resource.go`: define `customIntegrationResource` struct, `NewResource()` constructor, `Metadata` (type name `elasticstack_fleet_custom_integration`), `Configure`
+- [x] 2.2 Create `models.go`: define `customIntegrationModel` struct with all schema fields (`tfsdk` tags), and `getPackageID(name, version string) string` helper
 
 ## 3. Schema and Plan Modifier
 
