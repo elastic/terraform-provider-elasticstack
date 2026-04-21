@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = &customIntegrationResource{}
-	_ resource.ResourceWithConfigure = &customIntegrationResource{}
+	_ resource.Resource               = &customIntegrationResource{}
+	_ resource.ResourceWithConfigure  = &customIntegrationResource{}
+	_ resource.ResourceWithModifyPlan = &customIntegrationResource{}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
