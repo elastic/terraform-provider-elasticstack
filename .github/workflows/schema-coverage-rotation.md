@@ -9,7 +9,7 @@ on:
   steps:
     - name: Compute issue slots
       id: compute_issue_slots
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |

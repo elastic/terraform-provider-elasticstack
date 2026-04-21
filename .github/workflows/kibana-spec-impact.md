@@ -22,7 +22,7 @@ on:
         cache: false
     - name: Compute kibana spec impact
       id: compute_kibana_spec_impact
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
