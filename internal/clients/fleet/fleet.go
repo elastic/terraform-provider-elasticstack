@@ -18,12 +18,15 @@
 package fleet
 
 import (
+	"archive/zip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -712,21 +715,46 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 
-	// The response body does not have a typed JSON200 field; unmarshal manually
-	// to extract _meta.name.
+	// The response body does not have a typed JSON200 field; unmarshal manually.
+	// The field that carries the package name changed across Kibana versions:
+	//   - newer Kibana (8.8+): _meta.name
+	//   - older Kibana (8.0–8.7): items[0].name
+	//   - oldest Kibana (7.x): response[0].name
+	// Try all three paths; if none yields a name, fall back to parsing the
+	// zip manifest directly (version-independent but zip-only).
 	var uploadResp struct {
 		Meta struct {
 			Name string `json:"name"`
 		} `json:"_meta"`
+		Items []struct {
+			Name string `json:"name"`
+		} `json:"items"`
+		Response []struct {
+			Name string `json:"name"`
+		} `json:"response"`
 	}
-	if err := json.Unmarshal(resp.Body, &uploadResp); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("parsing upload response: %w", err))
-	}
+	// Best-effort unmarshal; an error here is non-fatal — we fall through to
+	// the zip-manifest fallback below.
+	_ = json.Unmarshal(resp.Body, &uploadResp)
 
 	packageName := uploadResp.Meta.Name
+	if packageName == "" && len(uploadResp.Items) > 0 {
+		packageName = uploadResp.Items[0].Name
+	}
+	if packageName == "" && len(uploadResp.Response) > 0 {
+		packageName = uploadResp.Response[0].Name
+	}
 	if packageName == "" {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Invalid upload response", "Fleet did not return a package name in _meta.name"),
+		// Last resort: parse the name from the zip manifest. This is reliable
+		// across all Kibana versions but only works for zip archives.
+		packageName, err = parsePackageNameFromZip(opts.PackagePath)
+		if err != nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid upload response",
+					"Fleet did not return a package name and the zip manifest could not be parsed: "+err.Error(),
+				),
+			}
 		}
 	}
 
@@ -751,4 +779,36 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 			fmt.Sprintf("Package %q was uploaded but could not be found in the package list", packageName),
 		),
 	}
+}
+
+// parsePackageNameFromZip opens a zip archive at path, finds the top-level
+// manifest.yml, and extracts the package name field. It is used as a fallback
+// when the Fleet upload API response does not include _meta.name (older Kibana).
+func parsePackageNameFromZip(path string) (string, error) {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return "", fmt.Errorf("opening zip %q: %w", path, err)
+	}
+	defer r.Close()
+
+	nameRe := regexp.MustCompile(`(?m)^name:\s*(\S+)`)
+	for _, f := range r.File {
+		if !strings.HasSuffix(f.Name, "/manifest.yml") && f.Name != "manifest.yml" {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return "", fmt.Errorf("opening manifest.yml in zip: %w", err)
+		}
+		content, readErr := io.ReadAll(rc)
+		rc.Close()
+		if readErr != nil {
+			return "", fmt.Errorf("reading manifest.yml: %w", readErr)
+		}
+		matches := nameRe.FindSubmatch(content)
+		if len(matches) >= 2 {
+			return string(matches[1]), nil
+		}
+	}
+	return "", fmt.Errorf("manifest.yml with name field not found in zip")
 }
