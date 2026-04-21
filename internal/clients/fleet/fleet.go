@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -657,5 +658,97 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 		return resp.JSON200.Items, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UploadPackageOptions holds the options for uploading a custom integration package.
+type UploadPackageOptions struct {
+	// PackagePath is the path to the .zip file to upload.
+	PackagePath string
+	// ContentType is the MIME type of the package file (e.g. "application/zip").
+	ContentType string
+	// IgnoreMappingUpdateErrors suppresses mapping update errors during install.
+	IgnoreMappingUpdateErrors bool
+	// SkipDataStreamRollover skips data stream rollover during install.
+	SkipDataStreamRollover bool
+	// SpaceID scopes the request to a specific Kibana space.
+	SpaceID string
+}
+
+// UploadPackageResult holds the result of uploading a custom integration package.
+type UploadPackageResult struct {
+	// PackageName is the name of the uploaded package as returned by Fleet.
+	PackageName string
+	// PackageVersion is the installed version resolved from the package list.
+	PackageVersion string
+}
+
+// UploadPackage uploads a custom integration package to Fleet and returns the
+// resolved package name and installed version. It opens the file at
+// opts.PackagePath, posts it to the Fleet EPM packages endpoint, extracts the
+// package name from the response, and then queries the package list to resolve
+// the installed version.
+func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOptions) (*UploadPackageResult, diag.Diagnostics) {
+	f, err := os.Open(opts.PackagePath)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("opening package file %q: %w", opts.PackagePath, err))
+	}
+	defer f.Close()
+
+	params := kbapi.PostFleetEpmPackagesParams{
+		IgnoreMappingUpdateErrors: &opts.IgnoreMappingUpdateErrors,
+		SkipDataStreamRollover:    &opts.SkipDataStreamRollover,
+	}
+
+	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, f, spaceAwarePathRequestEditor(opts.SpaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		// intentional fall-through
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+
+	// The response body does not have a typed JSON200 field; unmarshal manually
+	// to extract _meta.name.
+	var uploadResp struct {
+		Meta struct {
+			Name string `json:"name"`
+		} `json:"_meta"`
+	}
+	if err := json.Unmarshal(resp.Body, &uploadResp); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("parsing upload response: %w", err))
+	}
+
+	packageName := uploadResp.Meta.Name
+	if packageName == "" {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic("Invalid upload response", "Fleet did not return a package name in _meta.name"),
+		}
+	}
+
+	// Resolve the installed version by querying the package list and filtering by name.
+	packages, diags := GetPackages(ctx, client, true, opts.SpaceID)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	for _, pkg := range packages {
+		if pkg.Name == packageName {
+			return &UploadPackageResult{
+				PackageName:    packageName,
+				PackageVersion: pkg.Version,
+			}, nil
+		}
+	}
+
+	return nil, diag.Diagnostics{
+		diag.NewErrorDiagnostic(
+			"Package not found after upload",
+			fmt.Sprintf("Package %q was uploaded but could not be found in the package list", packageName),
+		),
 	}
 }
