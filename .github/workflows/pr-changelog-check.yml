@@ -29,12 +29,13 @@ jobs:
               core.info('PR has no-changelog label — skipping changelog check');
 
               // If there's an existing failure comment, update it to pass
-              const comments = await github.rest.issues.listComments({
+              const comments = await github.paginate(github.rest.issues.listComments, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: prNumber,
+                per_page: 100,
               });
-              const existing = comments.data.find(
+              const existing = comments.find(
                 c => c.user.login === 'github-actions[bot]' && c.body.includes(COMMENT_MARKER)
               );
               if (existing) {
@@ -141,12 +142,13 @@ jobs:
             const { valid, errors } = validateChangelogSectionFull(parsed);
 
             // 2.5: Find existing bot comment
-            const comments = await github.rest.issues.listComments({
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
+              per_page: 100,
             });
-            const existing = comments.data.find(
+            const existing = comments.find(
               c => c.user.login === 'github-actions[bot]' && c.body.includes(COMMENT_MARKER)
             );
 
