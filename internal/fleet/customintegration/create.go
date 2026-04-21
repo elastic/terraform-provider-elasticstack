@@ -19,10 +19,94 @@ package customintegration
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+	"os"
+	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *customIntegrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// TODO: implement
+	var plan customIntegrationModel
+
+	diags := req.Config.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := apiClient.GetFleetClient()
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), "")
+		return
+	}
+
+	filePath := plan.PackagePath.ValueString()
+	contentType := detectContentType(filePath)
+
+	result, diags := fleet.UploadPackage(ctx, fleetClient, fleet.UploadPackageOptions{
+		PackagePath:               filePath,
+		ContentType:               contentType,
+		IgnoreMappingUpdateErrors: plan.IgnoreMappingUpdateErrors.ValueBool(),
+		SkipDataStreamRollover:    plan.SkipDataStreamRollover.ValueBool(),
+		SpaceID:                   plan.SpaceID.ValueString(),
+	})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	checksum, err := computeSHA256(filePath)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to compute checksum", err.Error())
+		return
+	}
+
+	plan.PackageName = types.StringValue(result.PackageName)
+	plan.PackageVersion = types.StringValue(result.PackageVersion)
+	plan.Checksum = types.StringValue(checksum)
+	plan.ID = types.StringValue(getPackageID(result.PackageName, result.PackageVersion))
+
+	if plan.SpaceID.IsUnknown() {
+		plan.SpaceID = types.StringNull()
+	}
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+}
+
+// detectContentType returns the MIME content type for the given file path
+// based on its extension.
+func detectContentType(filePath string) string {
+	lower := strings.ToLower(filePath)
+	if strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".gz") {
+		return "application/gzip"
+	}
+	// Default to zip (covers .zip and unknown extensions).
+	return "application/zip"
+}
+
+// computeSHA256 returns the hex-encoded SHA256 digest of the file at filePath.
+func computeSHA256(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
