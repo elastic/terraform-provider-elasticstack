@@ -44,17 +44,20 @@ func buildMinimalIntegrationZip(t *testing.T, pkgName, pkgVersion string) string
 	dir := t.TempDir()
 	zipPath := filepath.Join(dir, fmt.Sprintf("%s-%s.zip", pkgName, pkgVersion))
 
-	manifest := fmt.Sprintf(`format_version: "3.0.0"
+	// format_version 1.0.0 is supported across all tested Kibana versions
+	// (7.17.x through 9.x). It requires the `release` field and uses flat
+	// condition syntax (kibana.version rather than kibana: version:).
+	manifest := fmt.Sprintf(`format_version: "1.0.0"
 name: %s
 version: %s
 title: "Test Integration %s"
 description: "Minimal custom integration for acceptance testing"
 type: integration
+release: ga
 categories:
   - custom
 conditions:
-  kibana:
-    version: "^8.0.0"
+  kibana.version: "^7.17.0 || ^8.0.0 || ^9.0.0"
 owner:
   github: elastic
 `, pkgName, pkgVersion, pkgName)
