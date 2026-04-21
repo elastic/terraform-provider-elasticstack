@@ -1,9 +1,9 @@
 ## 1. Remove gh-aw workflow artifacts
 
-- [ ] 1.1 Delete `.github/workflows/pr-changelog-authoring.md`
-- [ ] 1.2 Delete `.github/workflows/pr-changelog-authoring.lock.yml`
-- [ ] 1.3 Delete `.github/workflows-src/pr-changelog-authoring/` (entire directory: `workflow.md.tmpl`, `scripts/resolve-pr.inline.js`, `scripts/validate-pr-changelog.inline.js`)
-- [ ] 1.4 Remove the `pr-changelog-authoring` entry from `.github/workflows-src/manifest.json`
+- [x] 1.1 Delete `.github/workflows/pr-changelog-authoring.md`
+- [x] 1.2 Delete `.github/workflows/pr-changelog-authoring.lock.yml`
+- [x] 1.3 Delete `.github/workflows-src/pr-changelog-authoring/` (entire directory: `workflow.md.tmpl`, `scripts/resolve-pr.inline.js`, `scripts/validate-pr-changelog.inline.js`)
+- [x] 1.4 Remove the `pr-changelog-authoring` entry from `.github/workflows-src/manifest.json`
 
 ## 2. Create the plain workflow
 
