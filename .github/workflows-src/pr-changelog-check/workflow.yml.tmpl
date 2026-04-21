@@ -1,0 +1,19 @@
+name: "PR Changelog Check"
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, labeled]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-changelog:
+    name: "Check PR changelog"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Validate changelog section"
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          x-script-include: scripts/pr-changelog-check.inline.js
