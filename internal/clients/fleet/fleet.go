@@ -659,6 +659,22 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Items, nil
+	case http.StatusBadRequest:
+		// Older Kibana versions (pre-8.7) do not recognise the prerelease query
+		// parameter and return 400 with "definition for this key is missing".
+		// Retry without the parameter so we remain compatible.
+		if strings.Contains(string(resp.Body), "prerelease") {
+			retryParams := kbapi.GetFleetEpmPackagesParams{}
+			retryResp, retryErr := client.API.GetFleetEpmPackagesWithResponse(ctx, &retryParams, spaceAwarePathRequestEditor(spaceID))
+			if retryErr != nil {
+				return nil, diagutil.FrameworkDiagFromError(retryErr)
+			}
+			if retryResp.StatusCode() == http.StatusOK {
+				return retryResp.JSON200.Items, nil
+			}
+			return nil, reportUnknownError(retryResp.StatusCode(), retryResp.Body)
+		}
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
