@@ -3,6 +3,9 @@
   "extends": [
     "local>elastic/renovate-config"
   ],
+  "labels": [
+    "no-changelog"
+  ],
   "customManagers": [
     {
       "customType": "regex",
