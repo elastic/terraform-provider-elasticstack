@@ -7,13 +7,13 @@
 
 ## 2. Create the plain workflow
 
-- [ ] 2.1 Create `.github/workflows/pr-changelog-check.yml` with trigger `pull_request_target` (types: `opened`, `synchronize`, `labeled`) and permissions `pull-requests: write` and `issues: write`
-- [ ] 2.2 Add a single `actions/github-script` step that reads `context.payload.pull_request` (labels, body, number) directly from the event payload
-- [ ] 2.3 Implement the `no-changelog` label early-exit path (pass without inspecting body)
-- [ ] 2.4 Inline the `parseChangelogSectionFull` and `validateChangelogSectionFull` functions verbatim from `.github/workflows-src/lib/pr-changelog-parser.js` (the actual source; `validate-pr-changelog.inline.js` only included it)
-- [ ] 2.5 Implement the comment upsert: search for an existing `github-actions[bot]` comment containing `<!-- pr-changelog-check -->`, update it if found, create it if not
-- [ ] 2.6 On pass with existing failure comment: update the comment to a "check passed" message
-- [ ] 2.7 On fail: upsert failure comment listing each validation error, then call `core.setFailed`
+- [x] 2.1 Create `.github/workflows/pr-changelog-check.yml` with trigger `pull_request_target` (types: `opened`, `synchronize`, `labeled`) and permissions `pull-requests: write` and `issues: write`
+- [x] 2.2 Add a single `actions/github-script` step that reads `context.payload.pull_request` (labels, body, number) directly from the event payload
+- [x] 2.3 Implement the `no-changelog` label early-exit path (pass without inspecting body)
+- [x] 2.4 Inline the `parseChangelogSectionFull` and `validateChangelogSectionFull` functions verbatim from `.github/workflows-src/lib/pr-changelog-parser.js` (the actual source; `validate-pr-changelog.inline.js` only included it)
+- [x] 2.5 Implement the comment upsert: search for an existing `github-actions[bot]` comment containing `<!-- pr-changelog-check -->`, update it if found, create it if not
+- [x] 2.6 On pass with existing failure comment: update the comment to a "check passed" message
+- [x] 2.7 On fail: upsert failure comment listing each validation error, then call `core.setFailed`
 
 ## 3. Verify
 

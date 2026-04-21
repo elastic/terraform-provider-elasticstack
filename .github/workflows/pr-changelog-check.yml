@@ -1,0 +1,210 @@
+name: "PR Changelog Check"
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, labeled]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-changelog:
+    name: "Check PR changelog"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Validate changelog section"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prBody = pr.body || '';
+            const labels = (pr.labels || []).map(l => l.name);
+
+            const COMMENT_MARKER = '<!-- pr-changelog-check -->';
+
+            // 2.3: Early-exit if no-changelog label is present
+            if (labels.includes('no-changelog')) {
+              core.info('PR has no-changelog label — skipping changelog check');
+
+              // If there's an existing failure comment, update it to pass
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+              });
+              const existing = comments.data.find(
+                c => c.user.login === 'github-actions[bot]' && c.body.includes(COMMENT_MARKER)
+              );
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body: `${COMMENT_MARKER}\n:white_check_mark: **PR Changelog Check passed** — \`no-changelog\` label is set.`,
+                });
+              }
+              return;
+            }
+
+            // 2.4: Parser functions inlined verbatim from
+            // .github/workflows-src/lib/pr-changelog-parser.js
+
+            const VALID_CUSTOMER_IMPACTS = new Set(['none', 'fix', 'enhancement', 'breaking']);
+
+            function extractChangelogSection(body) {
+              if (!body) return null;
+              const lines = body.split('\n');
+              let inChangelog = false;
+              let fenceType = null;
+              const content = [];
+              for (const line of lines) {
+                if (/^##\s+Changelog/.test(line)) { inChangelog = true; continue; }
+                if (inChangelog) {
+                  if (fenceType === null && /^```/.test(line)) { fenceType = '`'; }
+                  else if (fenceType === null && /^~~~/.test(line)) { fenceType = '~'; }
+                  else if (fenceType === '`' && /^```/.test(line)) { fenceType = null; }
+                  else if (fenceType === '~' && /^~~~/.test(line)) { fenceType = null; }
+                  if (fenceType === null && /^##\s/.test(line)) { break; }
+                  content.push(line);
+                }
+              }
+              if (!inChangelog) return null;
+              return content.join('\n');
+            }
+
+            function extractBreakingChanges(changelogSection) {
+              if (!changelogSection) return null;
+              const lines = changelogSection.split('\n');
+              let inBreaking = false;
+              let fenceType = null;
+              const content = [];
+              for (const line of lines) {
+                if (/^###\s+Breaking changes/.test(line)) { inBreaking = true; continue; }
+                if (inBreaking) {
+                  if (fenceType === null && /^```/.test(line)) { fenceType = '`'; }
+                  else if (fenceType === null && /^~~~/.test(line)) { fenceType = '~'; }
+                  else if (fenceType === '`' && /^```/.test(line)) { fenceType = null; }
+                  else if (fenceType === '~' && /^~~~/.test(line)) { fenceType = null; }
+                  if (fenceType === null && /^#{2,3}\s/.test(line)) { break; }
+                  content.push(line);
+                }
+              }
+              if (!inBreaking) return null;
+              const trimmed = content.join('\n').trimEnd();
+              return trimmed.length > 0 ? trimmed : null;
+            }
+
+            function parseChangelogSectionFull(body) {
+              const section = extractChangelogSection(body);
+              if (section === null) return null;
+              const customerImpactMatch = section.match(/^Customer impact:\s*(.+)$/m);
+              const customerImpact = customerImpactMatch ? customerImpactMatch[1].trim() : null;
+              const summaryMatch = section.match(/^Summary:\s*(.+)$/m);
+              const summary = summaryMatch ? summaryMatch[1].trim() : null;
+              const lines = section.split('\n');
+              const breakingChangesHeadingPresent = lines.some((line) => /^###\s+Breaking changes/.test(line));
+              const breakingChanges = extractBreakingChanges(section);
+              return { customerImpact, summary: summary || null, breakingChanges, breakingChangesHeadingPresent };
+            }
+
+            function validateChangelogSection(parsed) {
+              const errors = [];
+              if (parsed === null) { errors.push('No ## Changelog section found in PR body'); return { valid: false, errors }; }
+              const { customerImpact, summary } = parsed;
+              if (!customerImpact) { errors.push('Missing required field: Customer impact'); }
+              else if (!VALID_CUSTOMER_IMPACTS.has(customerImpact)) {
+                errors.push(`Invalid Customer impact value: "${customerImpact}". Must be one of: ${[...VALID_CUSTOMER_IMPACTS].join(', ')}`);
+              }
+              if (customerImpact && customerImpact !== 'none' && VALID_CUSTOMER_IMPACTS.has(customerImpact)) {
+                if (!summary) { errors.push('Missing required field: Summary (required when Customer impact is not "none")'); }
+              }
+              return { valid: errors.length === 0, errors };
+            }
+
+            function validateChangelogSectionFull(parsed) {
+              const base = validateChangelogSection(parsed);
+              if (!parsed) return base;
+              const errors = [...base.errors];
+              if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
+                errors.push('### Breaking changes section is present but contains no content');
+              }
+              if (parsed.customerImpact === 'breaking' && !parsed.breakingChangesHeadingPresent) {
+                errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
+              }
+              return { valid: errors.length === 0, errors };
+            }
+
+            // Parse and validate
+            const parsed = parseChangelogSectionFull(prBody);
+            const { valid, errors } = validateChangelogSectionFull(parsed);
+
+            // 2.5: Find existing bot comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.data.find(
+              c => c.user.login === 'github-actions[bot]' && c.body.includes(COMMENT_MARKER)
+            );
+
+            if (valid) {
+              // 2.6: Pass path
+              if (existing) {
+                // Update the existing failure comment to a pass message
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body: `${COMMENT_MARKER}\n:white_check_mark: **PR Changelog Check passed** — the \`## Changelog\` section looks good.`,
+                });
+              }
+              // No existing comment on first-valid push: do nothing (no noise)
+              core.info('PR changelog check passed');
+            } else {
+              // 2.7: Fail path — upsert failure comment then fail the workflow
+              const errorList = errors.map(e => `- ${e}`).join('\n');
+              const failureBody = [
+                COMMENT_MARKER,
+                ':x: **PR Changelog Check failed**',
+                '',
+                'The following issues were found with the `## Changelog` section:',
+                '',
+                errorList,
+                '',
+                '<details>',
+                '<summary>Expected format</summary>',
+                '',
+                '```',
+                '## Changelog',
+                'Customer impact: <none|fix|enhancement|breaking>',
+                'Summary: <one-line description>  (required when Customer impact is not "none")',
+                '',
+                '### Breaking changes',
+                '<free-form markdown>  (required when Customer impact is "breaking")',
+                '```',
+                '',
+                'Or add the `no-changelog` label to bypass this check.',
+                '</details>',
+              ].join('\n');
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body: failureBody,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: failureBody,
+                });
+              }
+
+              core.setFailed(`PR changelog check failed:\n${errors.join('\n')}`);
+            }
