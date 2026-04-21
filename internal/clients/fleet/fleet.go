@@ -739,16 +739,18 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		// Populate PackageName/PackageVersion from the zip manifest so callers can
 		// adopt or uninstall the existing installation without returning empty fields.
 		if strings.Contains(string(resp.Body), "already installed") {
+			// Package is already installed. Parse name+version from the zip manifest
+			// and return them directly so callers can adopt the existing installation.
+			// We do not attempt a confirmatory GetPackage here because on older Kibana
+			// (e.g. 7.17.x) the individual package endpoint also returns 404 for
+			// custom-uploaded packages; we trust the zip manifest instead.
 			pkgName, pkgVersion, zipErr := parsePackageInfoFromZip(opts.PackagePath)
 			if zipErr == nil && pkgName != "" && pkgVersion != "" {
-				pkg, pkgDiags := GetPackage(ctx, client, pkgName, pkgVersion, opts.SpaceID)
-				if !pkgDiags.HasError() && pkg != nil {
-					return &UploadPackageResult{
-						AlreadyInstalled: true,
-						PackageName:      pkgName,
-						PackageVersion:   pkgVersion,
-					}, nil
-				}
+				return &UploadPackageResult{
+					AlreadyInstalled: true,
+					PackageName:      pkgName,
+					PackageVersion:   pkgVersion,
+				}, nil
 			}
 			return &UploadPackageResult{AlreadyInstalled: true}, nil
 		}
@@ -826,10 +828,13 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 	}
 
-	// GetFleetEpmPackages did not include the package (older Kibana < 8.7 does not
-	// list custom-uploaded packages in the global registry view). Fall back to a
-	// direct GetPackage lookup using the version we already have from the upload
-	// response body or the zip manifest.
+	// GetFleetEpmPackages did not include the package. On older Kibana (< 8.7),
+	// custom-uploaded packages are not listed in the global registry view. Try
+	// the individual GetPackage endpoint as a secondary check; if that also fails
+	// (e.g. 7.17.x returns 404 for custom packages on this endpoint too), fall
+	// back to the version already extracted from the upload response or zip manifest.
+	// The upload returned 200/201, so the package is installed — we trust the
+	// version we have rather than failing the operation.
 	if packageVersion != "" {
 		pkg, pkgDiags := GetPackage(ctx, client, packageName, packageVersion, opts.SpaceID)
 		if !pkgDiags.HasError() && pkg != nil {
@@ -838,12 +843,18 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 				PackageVersion: packageVersion,
 			}, nil
 		}
+		// GetPackage also did not find the package, but the upload succeeded.
+		// Trust the version from the upload response or zip manifest.
+		return &UploadPackageResult{
+			PackageName:    packageName,
+			PackageVersion: packageVersion,
+		}, nil
 	}
 
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic(
 			"Package not found after upload",
-			fmt.Sprintf("Package %q was uploaded but could not be found in the package list", packageName),
+			"Fleet did not return a package name or version in the upload response and the zip manifest could not be parsed",
 		),
 	}
 }
