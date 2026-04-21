@@ -33,6 +33,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_security_role_mapping.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "name", "data_source_test"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
 					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
@@ -42,6 +43,43 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{"version":1}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_security_role_mapping.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "name", "data_source_test"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
+					checks.TestCheckResourceListAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin", "user"}),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_elasticsearch_security_role_mapping.test",
+						"rules",
+						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("role_templates"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_security_role_mapping.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "name", "data_source_test"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "roles.#", "0"),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_elasticsearch_security_role_mapping.test",
+						"role_templates",
+						`[{"format":"json","template":"{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"}]`,
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_elasticsearch_security_role_mapping.test",
+						"rules",
+						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 				),
 			},
 		},
