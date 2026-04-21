@@ -404,7 +404,7 @@ engine:
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 jobs:
   pre_activation:
     outputs:
