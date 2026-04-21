@@ -64,6 +64,7 @@ fs.mkdirSync('/tmp', { recursive: true });
 fs.writeFileSync(prBodyPath, prBody, 'utf8');
 core.info(`PR body written to ${prBodyPath} (${prBody.length} bytes)`);
 
+core.setOutput('is_pr_event', 'true');
 core.setOutput('pr_number', String(pr.number));
 core.setOutput('pr_title', pr.title);
 core.setOutput('pr_body', prBody);

@@ -98,6 +98,7 @@ on:
           fs.writeFileSync(prBodyPath, prBody, 'utf8');
           core.info(`PR body written to ${prBodyPath} (${prBody.length} bytes)`);
           
+          core.setOutput('is_pr_event', 'true');
           core.setOutput('pr_number', String(pr.number));
           core.setOutput('pr_title', pr.title);
           core.setOutput('pr_body', prBody);
@@ -108,7 +109,7 @@ on:
     - name: Validate or skip changelog section
       id: validate_changelog
       if: >-
-        steps.check_pr_event.outputs.is_pr_event == 'true' &&
+        steps.resolve_pr.outputs.is_pr_event == 'true' &&
         steps.resolve_pr.outputs.has_no_changelog_label != 'true'
       uses: actions/github-script@v8
       env:
@@ -408,7 +409,7 @@ permissions:
 jobs:
   pre_activation:
     outputs:
-      is_pr_event: ${{ steps.check_pr_event.outputs.is_pr_event }}
+      is_pr_event: ${{ steps.resolve_pr.outputs.is_pr_event }}
       pr_number: ${{ steps.resolve_pr.outputs.pr_number }}
       pr_title: ${{ steps.resolve_pr.outputs.pr_title }}
       pr_body: ${{ steps.resolve_pr.outputs.pr_body }}
