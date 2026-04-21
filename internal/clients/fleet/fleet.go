@@ -663,7 +663,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 
 // UploadPackageOptions holds the options for uploading a custom integration package.
 type UploadPackageOptions struct {
-	// PackagePath is the path to the .zip file to upload.
+	// PackagePath is the path to the package archive to upload (.zip or .tar.gz/.tgz).
 	PackagePath string
 	// ContentType is the MIME type of the package file (e.g. "application/zip").
 	ContentType string

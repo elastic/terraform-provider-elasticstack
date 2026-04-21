@@ -43,7 +43,7 @@ When the resource is created, the provider SHALL read the file at `package_path`
 - **THEN** `package_name` is set from `_meta.name` in the upload response
 - **THEN** `package_version` is set from the installed package version retrieved via the packages list API
 - **THEN** `checksum` is set to the SHA256 hex digest of the uploaded file
-- **THEN** `id` is set to `schemautil.StringToHash(package_name + package_version)`
+- **THEN** `id` is set to a stable composite identifier derived from `package_name` and `package_version` (format: `<name>/<version>`)
 
 #### Scenario: Successful upload of a gzip archive
 - **WHEN** `package_path` points to a valid custom integration `.tar.gz` or `.gz` file
@@ -87,7 +87,7 @@ The provider SHALL compute the SHA256 hash of the file at `package_path` during 
 - **THEN** the provider returns an error diagnostic during plan
 
 ### Requirement: Update re-uploads on content change
-When an apply is triggered because the file content has changed, the provider SHALL re-upload the new file. If the new package has a different `package_name` from the one stored in state, the provider SHALL uninstall the old package before uploading the new one.
+When an apply is triggered because the file content has changed, the provider SHALL re-upload the new file. If the resulting `package_name` from the upload differs from the one stored in state, the provider SHALL uninstall the old package after the upload succeeds (upload-first ordering is used because the new name is not known until after the upload completes).
 
 #### Scenario: File content changed, same package name
 - **WHEN** the uploaded file has a different SHA256 but the resulting `package_name` matches the state value
@@ -95,8 +95,8 @@ When an apply is triggered because the file content has changed, the provider SH
 
 #### Scenario: File content changed, package name changed
 - **WHEN** the uploaded file results in a `package_name` that differs from state
-- **THEN** the provider uninstalls the old package (using the name and version from state)
 - **THEN** the provider uploads the new file
+- **THEN** the provider uninstalls the old package (using the name and version from state)
 - **THEN** `package_name`, `package_version`, `checksum`, and `id` are updated in state
 
 #### Scenario: Query parameters changed only

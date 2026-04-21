@@ -1,7 +1,7 @@
 ## 1. Fleet Client Wrapper
 
-- [ ] 1.1 Define `UploadPackageOptions` and `UploadPackageResult` types in `internal/clients/fleet/fleet.go`
-- [ ] 1.2 Implement `UploadPackage` wrapper: call `PostFleetEpmPackagesWithBodyWithResponse`, unmarshal response body to extract `_meta.name`, call `GetPackages` to resolve version, return `UploadPackageResult`
+- [x] 1.1 Define `UploadPackageOptions` and `UploadPackageResult` types in `internal/clients/fleet/fleet.go`
+- [x] 1.2 Implement `UploadPackage` wrapper: call `PostFleetEpmPackagesWithBodyWithResponse`, unmarshal response body to extract `_meta.name`, call `GetPackages` to resolve version, return `UploadPackageResult`
 
 ## 2. Resource Package Skeleton
 
@@ -22,11 +22,11 @@
 
 ## 5. Provider Registration
 
-- [ ] 5.1 Add import of `customintegration` package to `provider/plugin_framework.go`
-- [ ] 5.2 Add `customintegration.NewResource` to the resources slice in `provider/plugin_framework.go`
+- [x] 5.1 Add import of `customintegration` package to `provider/plugin_framework.go`
+- [x] 5.2 Add `customintegration.NewResource` to the resources slice in `provider/plugin_framework.go`
 
 ## 6. Tests and Verification
 
-- [ ] 6.1 Write acceptance test in `acc_test.go`: upload a minimal valid custom integration zip, verify computed attributes are populated, verify clean plan on second apply, verify destroy removes the package
-- [ ] 6.2 Run `make build` to verify compilation
-- [ ] 6.3 Run the acceptance test against a live Kibana instance to verify end-to-end behaviour
+- [x] 6.1 Write acceptance test in `acc_test.go`: upload a minimal valid custom integration zip, verify computed attributes are populated, verify clean plan on second apply, verify destroy removes the package
+- [x] 6.2 Run `make build` to verify compilation
+- [x] 6.3 Run the acceptance test against a live Kibana instance to verify end-to-end behaviour
