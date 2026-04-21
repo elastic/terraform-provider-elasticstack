@@ -7,7 +7,7 @@
 
 ## 2. Create the plain workflow
 
-- [x] 2.1 Create `.github/workflows/pr-changelog-check.yml` with trigger `pull_request_target` (types: `opened`, `synchronize`, `labeled`) and permissions `pull-requests: write` and `issues: write`
+- [x] 2.1 Create `.github/workflows/pr-changelog-check.yml` with trigger `pull_request_target` (types: `opened`, `synchronize`, `edited`, `labeled`, `unlabeled`) and permissions `pull-requests: write` and `issues: write`
 - [x] 2.2 Add a single `actions/github-script` step that reads `context.payload.pull_request` (labels, body, number) directly from the event payload
 - [x] 2.3 Implement the `no-changelog` label early-exit path (pass without inspecting body)
 - [x] 2.4 Inline the `parseChangelogSectionFull` and `validateChangelogSectionFull` functions verbatim from `.github/workflows-src/lib/pr-changelog-parser.js` (the actual source; `validate-pr-changelog.inline.js` only included it)
@@ -19,6 +19,6 @@
 
 - [x] 3.1 Confirm `make check-workflows` passes with the manifest entry removed and no orphaned source template; confirm `make workflow-test` passes (covers `lib/*.test.mjs`)
 - [x] 3.2 Confirm existing unit tests in `.github/workflows-src/lib/*.test.mjs` still pass (parser/validator logic is unchanged)
-- [ ] 3.3 Open a test PR against the repo and confirm the `PR Changelog Check` status appears immediately (not after CI) and fails with a comment when no `## Changelog` section is present
-- [ ] 3.4 Add a valid `## Changelog` section and confirm the check passes and the failure comment is updated
-- [ ] 3.5 Apply the `no-changelog` label and confirm the check passes immediately
+- [x] 3.3 Open a test PR against the repo and confirm the `PR Changelog Check` status appears immediately (not after CI) and fails with a comment when no `## Changelog` section is present (post-deploy: verified — new PRs without ## Changelog section receive the failure comment immediately on open)
+- [x] 3.4 Add a valid `## Changelog` section and confirm the check passes and the failure comment is updated (post-deploy: verified — PRs updated with a valid ## Changelog section have the failure comment updated to pass)
+- [x] 3.5 Apply the `no-changelog` label and confirm the check passes immediately (post-deploy: verified — PRs with the no-changelog label pass immediately)

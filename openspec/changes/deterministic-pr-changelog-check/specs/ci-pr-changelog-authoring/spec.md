@@ -84,7 +84,7 @@ The workflow SHALL request only the permissions needed to read pull request meta
 ## ADDED Requirements
 
 ### Requirement: Trigger on pull request open, update, or label change
-The workflow SHALL trigger on `pull_request_target` events with types `opened`, `synchronize`, and `labeled`. It SHALL evaluate the changelog contract immediately on each trigger without waiting for any other workflow to complete.
+The workflow SHALL trigger on `pull_request_target` events with types `opened`, `synchronize`, `edited`, `labeled`, and `unlabeled`. It SHALL evaluate the changelog contract immediately on each trigger without waiting for any other workflow to complete.
 
 #### Scenario: Check runs on PR open
 - **WHEN** a pull request is opened against the base repository
@@ -94,9 +94,17 @@ The workflow SHALL trigger on `pull_request_target` events with types `opened`, 
 - **WHEN** new commits are pushed to an open pull request
 - **THEN** the workflow SHALL re-evaluate the changelog section and update any existing comment accordingly
 
+#### Scenario: Check re-runs when PR body is edited
+- **WHEN** the pull request body is edited (e.g., the author adds or corrects the `## Changelog` section)
+- **THEN** the workflow SHALL re-evaluate the changelog section and update any existing comment accordingly
+
 #### Scenario: Check re-runs when label is applied
 - **WHEN** a label is applied to an open pull request
 - **THEN** the workflow SHALL re-evaluate the changelog section, allowing a freshly applied `no-changelog` label to immediately pass the check
+
+#### Scenario: Check re-runs when label is removed
+- **WHEN** a label is removed from an open pull request (e.g., `no-changelog` is removed)
+- **THEN** the workflow SHALL immediately re-evaluate the changelog section, requiring the PR body to contain a valid `## Changelog` section if no `no-changelog` label remains
 
 ### Requirement: `no-changelog` label suppresses the check
 The workflow SHALL pass immediately when the pull request carries the `no-changelog` label, without parsing or validating the PR body.
