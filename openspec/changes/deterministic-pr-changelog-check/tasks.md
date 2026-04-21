@@ -1,0 +1,24 @@
+## 1. Remove gh-aw workflow artifacts
+
+- [ ] 1.1 Delete `.github/workflows/pr-changelog-authoring.md`
+- [ ] 1.2 Delete `.github/workflows/pr-changelog-authoring.lock.yml`
+- [ ] 1.3 Delete `.github/workflows-src/pr-changelog-authoring/` (entire directory: `workflow.md.tmpl`, `scripts/resolve-pr.inline.js`, `scripts/validate-pr-changelog.inline.js`)
+- [ ] 1.4 Remove the `pr-changelog-authoring` entry from `.github/workflows-src/manifest.json`
+
+## 2. Create the plain workflow
+
+- [ ] 2.1 Create `.github/workflows/pr-changelog-check.yml` with trigger `pull_request_target` (types: `opened`, `synchronize`, `labeled`) and `permissions: pull-requests: write`
+- [ ] 2.2 Add a single `actions/github-script` step that reads `context.payload.pull_request` (labels, body, number) directly from the event payload
+- [ ] 2.3 Implement the `no-changelog` label early-exit path (pass without inspecting body)
+- [ ] 2.4 Inline the `parseChangelogSectionFull` and `validateChangelogSectionFull` functions verbatim from the deleted `validate-pr-changelog.inline.js`
+- [ ] 2.5 Implement the comment upsert: search for an existing `github-actions[bot]` comment containing `<!-- pr-changelog-check -->`, update it if found, create it if not
+- [ ] 2.6 On pass with existing failure comment: update the comment to a "check passed" message
+- [ ] 2.7 On fail: upsert failure comment listing each validation error, then call `core.setFailed`
+
+## 3. Verify
+
+- [ ] 3.1 Confirm `make check-compile-workflows` (or equivalent) passes with the manifest entry removed and no orphaned source template
+- [ ] 3.2 Confirm existing unit tests in `.github/workflows-src/lib/*.test.mjs` still pass (parser/validator logic is unchanged)
+- [ ] 3.3 Open a test PR against the repo and confirm the `PR Changelog Check` status appears immediately (not after CI) and fails with a comment when no `## Changelog` section is present
+- [ ] 3.4 Add a valid `## Changelog` section and confirm the check passes and the failure comment is updated
+- [ ] 3.5 Apply the `no-changelog` label and confirm the check passes immediately
