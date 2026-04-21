@@ -1,18 +1,50 @@
 ## REMOVED Requirements
 
 ### Requirement: Workflow artifacts and compilation
+The PR changelog authoring workflow SHALL be authored from a repository template under `.github/workflows-src/` that generates a GitHub Agentic Workflow markdown file under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The repository SHALL commit the generated `.md` workflow and the compiled `.lock.yml` produced by `gh aw compile`. Contributors SHALL NOT hand-edit the generated `.md` or `.lock.yml` artifacts.
+
+#### Scenario: Source and compiled artifacts stay paired
+- **WHEN** maintainers change the PR changelog authoring workflow behavior
+- **THEN** the `.github/workflows-src/` template, generated `.md` workflow, and compiled `.lock.yml` SHALL match the committed compiler output
+
 **Reason**: The workflow is replaced by a plain GitHub Actions `.yml` file. There is no longer a source template, compiled `.md`, or `.lock.yml` to maintain.
 **Migration**: Delete `.github/workflows/pr-changelog-authoring.md`, `.github/workflows/pr-changelog-authoring.lock.yml`, `.github/workflows-src/pr-changelog-authoring/`, and remove the `pr-changelog-authoring` entry from `.github/workflows-src/manifest.json`. Create `.github/workflows/pr-changelog-check.yml` as a plain workflow.
 
 ### Requirement: Trigger on `Build/Lint/Test` workflow completion
+The workflow SHALL run from a `workflow_run` trigger for the repository workflow named `Build/Lint/Test` and SHALL continue only when the source workflow run completed for a pull-request event.
+
+#### Scenario: Pull-request CI completion is eligible for gating
+- **WHEN** the `Build/Lint/Test` workflow completes for a `pull_request` event
+- **THEN** the PR changelog authoring workflow SHALL continue to deterministic pull-request resolution and gating
+
+#### Scenario: Non-pull-request workflow run is skipped
+- **WHEN** the `Build/Lint/Test` workflow completes for a non-`pull_request` event such as `push` or `workflow_dispatch`
+- **THEN** the PR changelog authoring workflow SHALL NOT invoke changelog validation or authoring for that run
+
 **Reason**: The `workflow_run` trigger introduced latency (feedback only after CI completes), could not comment on fork PRs, and required a complex PR resolution step. Direct `pull_request_target` triggering provides immediate feedback and full write access for all PRs.
 **Migration**: The new workflow triggers on `pull_request_target` with types `[opened, synchronize, labeled]`. No changes to `test.yml` are required.
 
 ### Requirement: Deterministic pull-request resolution and opt-out gate
+Before agent reasoning starts, deterministic repository-authored steps SHALL resolve the pull request associated with the triggering `workflow_run`. The workflow SHALL skip agent authoring when the resolved pull request carries the `no-changelog` label.
+
+#### Scenario: `no-changelog` label suppresses authoring
+- **WHEN** deterministic resolution finds the triggering pull request and that pull request carries the `no-changelog` label
+- **THEN** the workflow SHALL treat the pull request as explicitly exempt from changelog authoring
+
+#### Scenario: Missing pull request fails gating
+- **WHEN** deterministic resolution cannot identify exactly one pull request for the triggering workflow run
+- **THEN** the workflow SHALL fail gating without invoking the agent, with the deterministic resolution step exiting non-zero and emitting an error message prefixed with `PR_CHANGELOG_GATING:`
+
 **Reason**: Under `pull_request_target`, `context.payload.pull_request` is populated directly in the event payload. API-based PR resolution (head_sha + branch search) is no longer needed.
 **Migration**: The `no-changelog` opt-out remains. The workflow reads `context.payload.pull_request.labels` directly without an API call.
 
 ### Requirement: Missing changelog sections are drafted from PR metadata
+When the resolved pull request lacks a `## Changelog` section and is not exempt via `no-changelog`, the agent SHALL draft the missing section from the pull request title and description and SHALL update the pull request body with that drafted section.
+
+#### Scenario: Missing changelog section is added
+- **WHEN** deterministic gating concludes the pull request requires a changelog section and none is present
+- **THEN** the workflow SHALL invoke the agent to draft the `## Changelog` section and update the pull request body with the result
+
 **Reason**: LLM-based drafting introduces non-determinism and cost. Authors are expected to supply their own `## Changelog` section; the workflow fails with actionable feedback when it is absent.
 **Migration**: Authors must add a `## Changelog` section to their PR body manually. The failure comment explains the required format.
 
@@ -43,7 +75,7 @@ Within the `## Changelog` contract, the optional `### Breaking changes` subsecti
 - **THEN** the workflow SHALL accept that subsection as valid when the block is non-empty
 
 ### Requirement: Minimal permissions for validation and PR comments
-The workflow SHALL request only the permissions needed to read pull request metadata and post or update PR comments. At minimum the workflow SHALL declare `pull-requests: write`.
+The workflow SHALL request only the permissions needed to read pull request metadata and post or update PR comments. At minimum the workflow SHALL declare `pull-requests: write` and `issues: write`. The `issues: write` scope is required because PR comments are created and updated via the `issues` REST API endpoints (`github.rest.issues.listComments`, `github.rest.issues.createComment`, `github.rest.issues.updateComment`).
 
 #### Scenario: Workflow can comment on fork PRs
 - **WHEN** the triggering pull request originates from a fork repository

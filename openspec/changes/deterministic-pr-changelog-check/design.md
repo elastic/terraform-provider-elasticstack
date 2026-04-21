@@ -40,7 +40,7 @@ PR data is read directly from `context.payload.pull_request` — no API call req
 
 ### Parser/validator: inline verbatim from deleted source files
 
-`parseChangelogSectionFull` and `validateChangelogSectionFull` are copied inline unchanged from the deleted `.github/workflows-src/pr-changelog-authoring/scripts/validate-pr-changelog.inline.js`. The existing unit tests in `.github/workflows-src/lib/*.test.mjs` continue to cover this logic and are not affected by the workflow change.
+`parseChangelogSectionFull` and `validateChangelogSectionFull` are copied inline unchanged from `.github/workflows-src/lib/pr-changelog-parser.js` — the canonical source of these functions. `validate-pr-changelog.inline.js` only included that file; it does not define the functions itself. The existing unit tests in `.github/workflows-src/lib/*.test.mjs` continue to cover this logic and are not affected by the workflow change.
 
 ### Comment upsert with hidden HTML marker
 
