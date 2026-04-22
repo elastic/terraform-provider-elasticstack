@@ -21,6 +21,8 @@ resource "elasticstack_fleet_custom_integration" "example" {
   skip_destroy                 = <optional, bool>
   space_id                     = <optional, string>
 
+  timeouts = <optional, block>           # operation timeouts; default 20m for create and update
+
   kibana_connection = <optional, block>  # overrides provider-level Kibana connection
 }
 ```
@@ -156,3 +158,18 @@ The resource SHALL use the provider-level Fleet client obtained from provider co
 #### Scenario: Scoped Fleet client used when overridden
 - **WHEN** `kibana_connection` is configured on the resource
 - **THEN** the resource SHALL obtain its effective Fleet client from the scoped connection for all lifecycle operations
+
+### Requirement: Operation timeouts
+The resource SHALL expose a `timeouts` block allowing practitioners to override the default operation deadline for create and update. The default timeout for both create and update SHALL be 20 minutes. The configured timeout SHALL be applied as a context deadline that covers the full upload operation, including any retry delay incurred by a Kibana rate-limit (HTTP 429) response.
+
+#### Scenario: Default timeout applies when timeouts block is absent
+- **WHEN** no `timeouts` block is configured
+- **THEN** create and update operations use a 20-minute deadline
+
+#### Scenario: Custom create timeout is respected
+- **WHEN** `timeouts { create = "5m" }` is configured
+- **THEN** the create operation returns a timeout error if it does not complete within 5 minutes
+
+#### Scenario: Custom update timeout is respected
+- **WHEN** `timeouts { update = "5m" }` is configured
+- **THEN** the update operation returns a timeout error if it does not complete within 5 minutes

@@ -7,6 +7,8 @@ Users need to manage custom Fleet integration packages (built with `elastic-pack
 - **New resource** `elasticstack_fleet_custom_integration`: accepts a path to a local `.zip` or `.tar.gz` custom integration package, uploads it to Fleet via the EPM upload API, and manages its lifecycle (re-upload on content change, uninstall on destroy).
 - The resource exposes computed `package_name` and `package_version` attributes populated from the upload response so downstream resources (e.g. `elasticstack_fleet_integration_policy`) can reference them without hard-coding values.
 - File-content-based change detection: the resource tracks a SHA256 checksum of the uploaded file and re-uploads automatically when the content changes.
+- A `timeouts` block lets practitioners override the default 20-minute deadline for create and update operations. The deadline covers the full upload, including any retry delay from Kibana's per-connection rate-limit (HTTP 429).
+- The Fleet upload client retries once on HTTP 429 ("Too Many Requests"), sleeping the duration requested by Kibana before re-attempting, so sequential acceptance tests that upload multiple packages do not fail due to back-to-back uploads.
 
 ## Capabilities
 

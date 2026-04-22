@@ -20,20 +20,22 @@ package customintegration
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type customIntegrationModel struct {
-	ID                        types.String `tfsdk:"id"`
-	KibanaConnection          types.List   `tfsdk:"kibana_connection"`
-	PackagePath               types.String `tfsdk:"package_path"`
-	PackageName               types.String `tfsdk:"package_name"`
-	PackageVersion            types.String `tfsdk:"package_version"`
-	Checksum                  types.String `tfsdk:"checksum"`
-	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
-	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
-	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
-	SpaceID                   types.String `tfsdk:"space_id"`
+	ID                        types.String   `tfsdk:"id"`
+	KibanaConnection          types.List     `tfsdk:"kibana_connection"`
+	PackagePath               types.String   `tfsdk:"package_path"`
+	PackageName               types.String   `tfsdk:"package_name"`
+	PackageVersion            types.String   `tfsdk:"package_version"`
+	Checksum                  types.String   `tfsdk:"checksum"`
+	IgnoreMappingUpdateErrors types.Bool     `tfsdk:"ignore_mapping_update_errors"`
+	SkipDataStreamRollover    types.Bool     `tfsdk:"skip_data_stream_rollover"`
+	SkipDestroy               types.Bool     `tfsdk:"skip_destroy"`
+	SpaceID                   types.String   `tfsdk:"space_id"`
+	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
 }
 
 func getPackageID(name string, version string) string {
