@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -82,4 +84,38 @@ func marshalToJSONWithDefaults[T any](bytes []byte, err error, fieldName string,
 		return customtypes.JSONWithDefaultsValue[T]{}, false
 	}
 	return customtypes.NewJSONWithDefaultsValue(string(bytes), defaults), true
+}
+
+func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current customtypes.JSONWithDefaultsValue[T], diags *diag.Diagnostics) customtypes.JSONWithDefaultsValue[T] {
+	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
+		return current
+	}
+
+	eq, d := prior.StringSemanticEquals(ctx, current)
+	diags.Append(d...)
+	if d.HasError() {
+		return current
+	}
+	if eq {
+		return prior
+	}
+	return current
+}
+
+func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
+	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
+		return current
+	}
+
+	priorWithDefaults := customtypes.NewJSONWithDefaultsValue(prior.ValueString(), defaults)
+	currentWithDefaults := customtypes.NewJSONWithDefaultsValue(current.ValueString(), defaults)
+	eq, d := priorWithDefaults.StringSemanticEquals(ctx, currentWithDefaults)
+	diags.Append(d...)
+	if d.HasError() {
+		return current
+	}
+	if eq {
+		return prior
+	}
+	return current
 }

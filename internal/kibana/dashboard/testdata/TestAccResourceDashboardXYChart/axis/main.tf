@@ -44,7 +44,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             max  = 100
           })
         }
-        secondary_y = {
+        y2 = {
           scale = "sqrt"
           title = {
             value   = "Rate"

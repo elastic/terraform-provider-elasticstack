@@ -156,9 +156,9 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Values)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -224,9 +224,9 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Values)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -352,10 +352,10 @@ func (m *mosaicConfigModel) toAPIMosaicESQL() (kbapi.MosaicESQL, diag.Diagnostic
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	} else {
 		defaultMode := kbapi.ValueDisplayModePercentage
-		api.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
 	return api, diags
@@ -453,7 +453,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	api.Legend = m.Legend.toMosaicLegend()
 
 	if m.ValueDisplay != nil {
-		api.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

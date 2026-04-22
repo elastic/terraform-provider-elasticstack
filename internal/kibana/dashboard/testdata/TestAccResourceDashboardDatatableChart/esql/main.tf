@@ -32,8 +32,10 @@ resource "elasticstack_kibana_dashboard" "test" {
           type  = "esql"
           query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
         })
-        density = {
-          mode = "default"
+        styling = {
+          density = {
+            mode = "default"
+          }
         }
         metrics = [
           {

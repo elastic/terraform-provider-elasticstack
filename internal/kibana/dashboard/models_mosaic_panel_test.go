@@ -146,9 +146,11 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &v
 			}(),
 		},
-		Values: kbapi.ValueDisplay{
-			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
-			PercentDecimals: new(float32(2)),
+		Styling: kbapi.MosaicStyling{
+			Values: kbapi.ValueDisplay{
+				Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
+				PercentDecimals: new(float32(2)),
+			},
 		},
 	}
 
@@ -270,9 +272,11 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		},
 		GroupBy:          &groupBy,
 		GroupBreakdownBy: &groupBreakdownBy,
-		Values: kbapi.ValueDisplay{
-			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
-			PercentDecimals: new(float32(1)),
+		Styling: kbapi.MosaicStyling{
+			Values: kbapi.ValueDisplay{
+				Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
+				PercentDecimals: new(float32(1)),
+			},
 		},
 	}
 

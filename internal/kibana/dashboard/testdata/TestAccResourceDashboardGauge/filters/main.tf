@@ -42,9 +42,11 @@ resource "elasticstack_kibana_dashboard" "test" {
         operation     = "count"
         empty_as_null = false
       })
-      shape_json = jsonencode({
-        type = "circle"
-      })
+      styling = {
+        shape_json = jsonencode({
+          type = "circle"
+        })
+      }
       ignore_global_filters = false
       sampling              = 1
       filters = [

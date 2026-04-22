@@ -31,7 +31,20 @@ func populatePanelConfigJSONDefaults(config map[string]any) map[string]any {
 		config["attributes"] = populateLensAttributesDefaults(attrs)
 	}
 
-	// Markdown panels have title, content - no additional defaults needed
+	// Markdown panels have inline top-level fields.
+	if content, hasContent := config["content"]; hasContent {
+		if _, ok := content.(string); ok {
+			settings, _ := config["settings"].(map[string]any)
+			if settings == nil {
+				settings = map[string]any{}
+			}
+			if _, exists := settings["open_links_in_new_tab"]; !exists {
+				settings["open_links_in_new_tab"] = true
+			}
+			config["settings"] = settings
+		}
+	}
+
 	return config
 }
 
@@ -115,7 +128,7 @@ func populateMetricChartAttributes(attrs map[string]any) {
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = populateLensMetricDefaults(metricMap)
+				metrics[i] = populateMetricChartMetricDefaults(metricMap)
 			}
 		}
 	}

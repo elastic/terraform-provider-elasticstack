@@ -141,9 +141,9 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Values)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -196,9 +196,9 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Values)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -300,10 +300,10 @@ func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnos
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	} else {
 		defaultMode := kbapi.ValueDisplayModePercentage
-		api.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
 	return api, diags
@@ -393,7 +393,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api.Legend = m.Legend.toTreemapLegend()
 
 	if m.ValueDisplay != nil {
-		api.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

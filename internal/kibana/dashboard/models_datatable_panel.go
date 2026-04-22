@@ -105,7 +105,7 @@ type datatableNoESQLConfigModel struct {
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
-	Density             *datatableDensityModel  `tfsdk:"density"`
+	Styling             *datatableStylingModel  `tfsdk:"styling"`
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
 	Query               *filterSimpleModel      `tfsdk:"query"`
@@ -113,23 +113,25 @@ type datatableNoESQLConfigModel struct {
 	Metrics             []datatableMetricModel  `tfsdk:"metrics"`
 	Rows                []datatableRowModel     `tfsdk:"rows"`
 	SplitMetricsBy      []datatableSplitByModel `tfsdk:"split_metrics_by"`
-	SortByJSON          jsontypes.Normalized    `tfsdk:"sort_by_json"`
-	Paging              types.Int64             `tfsdk:"paging"`
 }
 
 type datatableESQLConfigModel struct {
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
-	Density             *datatableDensityModel  `tfsdk:"density"`
+	Styling             *datatableStylingModel  `tfsdk:"styling"`
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
 	Filters             []chartFilterJSONModel  `tfsdk:"filters"`
 	Metrics             []datatableMetricModel  `tfsdk:"metrics"`
 	Rows                []datatableRowModel     `tfsdk:"rows"`
 	SplitMetricsBy      []datatableSplitByModel `tfsdk:"split_metrics_by"`
-	SortByJSON          jsontypes.Normalized    `tfsdk:"sort_by_json"`
-	Paging              types.Int64             `tfsdk:"paging"`
+}
+
+type datatableStylingModel struct {
+	Density    *datatableDensityModel `tfsdk:"density"`
+	SortByJSON jsontypes.Normalized   `tfsdk:"sort_by_json"`
+	Paging     types.Int64            `tfsdk:"paging"`
 }
 
 type datatableMetricModel struct {
@@ -201,9 +203,9 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 		m.Sampling = types.Float64Null()
 	}
 
-	m.Density = &datatableDensityModel{}
-	if densityDiags := m.Density.fromAPI(api.Density); densityDiags.HasError() {
-		return densityDiags
+	m.Styling = &datatableStylingModel{}
+	if stylingDiags := m.Styling.fromAPI(api.Styling); stylingDiags.HasError() {
+		return stylingDiags
 	}
 
 	m.Query = &filterSimpleModel{}
@@ -247,23 +249,6 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 		}
 	}
 
-	if api.SortBy != nil {
-		sortBytes, err := json.Marshal(api.SortBy)
-		sortV, ok := marshalToNormalized(sortBytes, err, "sort_by", &diags)
-		if !ok {
-			return diags
-		}
-		m.SortByJSON = sortV
-	} else {
-		m.SortByJSON = jsontypes.NewNormalizedNull()
-	}
-
-	if api.Paging != nil {
-		m.Paging = types.Int64Value(int64(*api.Paging))
-	} else {
-		m.Paging = types.Int64Null()
-	}
-
 	return diags
 }
 
@@ -287,13 +272,13 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		}
 	}
 
-	if m.Density != nil {
-		density, densityDiags := m.Density.toAPI()
-		diags.Append(densityDiags...)
+	if m.Styling != nil {
+		styling, stylingDiags := m.Styling.toAPI()
+		diags.Append(stylingDiags...)
 		if diags.HasError() {
 			return api, diags
 		}
-		api.Density = density
+		api.Styling = styling
 	}
 
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
@@ -350,20 +335,6 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.SplitMetricsBy = &splits
 	}
 
-	if typeutils.IsKnown(m.SortByJSON) {
-		var sortBy kbapi.DatatableNoESQL_SortBy
-		if err := json.Unmarshal([]byte(m.SortByJSON.ValueString()), &sortBy); err != nil {
-			diags.AddError("Failed to unmarshal sort_by", err.Error())
-			return api, diags
-		}
-		api.SortBy = &sortBy
-	}
-
-	if typeutils.IsKnown(m.Paging) {
-		paging := kbapi.DatatableNoESQLPaging(m.Paging.ValueInt64())
-		api.Paging = &paging
-	}
-
 	return api, diags
 }
 
@@ -388,9 +359,9 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		m.Sampling = types.Float64Null()
 	}
 
-	m.Density = &datatableDensityModel{}
-	if densityDiags := m.Density.fromAPI(api.Density); densityDiags.HasError() {
-		return densityDiags
+	m.Styling = &datatableStylingModel{}
+	if stylingDiags := m.Styling.fromAPI(api.Styling); stylingDiags.HasError() {
+		return stylingDiags
 	}
 
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
@@ -431,23 +402,6 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		}
 	}
 
-	if api.SortBy != nil {
-		sortBytes, err := json.Marshal(api.SortBy)
-		sortV, ok := marshalToNormalized(sortBytes, err, "sort_by", &diags)
-		if !ok {
-			return diags
-		}
-		m.SortByJSON = sortV
-	} else {
-		m.SortByJSON = jsontypes.NewNormalizedNull()
-	}
-
-	if api.Paging != nil {
-		m.Paging = types.Int64Value(int64(*api.Paging))
-	} else {
-		m.Paging = types.Int64Null()
-	}
-
 	return diags
 }
 
@@ -471,13 +425,13 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		}
 	}
 
-	if m.Density != nil {
-		density, densityDiags := m.Density.toAPI()
-		diags.Append(densityDiags...)
+	if m.Styling != nil {
+		styling, stylingDiags := m.Styling.toAPI()
+		diags.Append(stylingDiags...)
 		if diags.HasError() {
 			return api, diags
 		}
-		api.Density = density
+		api.Styling = styling
 	}
 
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
@@ -545,21 +499,69 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.SplitMetricsBy = &splits
 	}
 
+	return api, diags
+}
+
+func (m *datatableStylingModel) fromAPI(api kbapi.DatatableStyling) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.Density = &datatableDensityModel{}
+	if densityDiags := m.Density.fromAPI(api.Density); densityDiags.HasError() {
+		return densityDiags
+	}
+
+	if api.SortBy != nil {
+		sortBytes, err := json.Marshal(api.SortBy)
+		sortV, ok := marshalToNormalized(sortBytes, err, "sort_by", &diags)
+		if !ok {
+			return diags
+		}
+		m.SortByJSON = sortV
+	} else {
+		m.SortByJSON = jsontypes.NewNormalizedNull()
+	}
+
+	if api.Paging != nil {
+		m.Paging = types.Int64Value(int64(*api.Paging))
+	} else {
+		m.Paging = types.Int64Null()
+	}
+
+	return diags
+}
+
+func (m *datatableStylingModel) toAPI() (kbapi.DatatableStyling, diag.Diagnostics) {
+	if m == nil {
+		return kbapi.DatatableStyling{}, nil
+	}
+
+	var diags diag.Diagnostics
+	var styling kbapi.DatatableStyling
+
+	if m.Density != nil {
+		density, densityDiags := m.Density.toAPI()
+		diags.Append(densityDiags...)
+		if diags.HasError() {
+			return styling, diags
+		}
+		styling.Density = density
+	}
+
 	if typeutils.IsKnown(m.SortByJSON) {
-		var sortBy kbapi.DatatableESQL_SortBy
+		var sortBy kbapi.DatatableStyling_SortBy
 		if err := json.Unmarshal([]byte(m.SortByJSON.ValueString()), &sortBy); err != nil {
 			diags.AddError("Failed to unmarshal sort_by", err.Error())
-			return api, diags
+			return styling, diags
 		}
-		api.SortBy = &sortBy
+		styling.SortBy = &sortBy
 	}
 
 	if typeutils.IsKnown(m.Paging) {
-		paging := kbapi.DatatableESQLPaging(m.Paging.ValueInt64())
-		api.Paging = &paging
+		paging := kbapi.DatatableStylingPaging(m.Paging.ValueInt64())
+		styling.Paging = &paging
 	}
 
-	return api, diags
+	return styling, diags
 }
 
 func (m *datatableDensityModel) fromAPI(api kbapi.DatatableDensity) diag.Diagnostics {

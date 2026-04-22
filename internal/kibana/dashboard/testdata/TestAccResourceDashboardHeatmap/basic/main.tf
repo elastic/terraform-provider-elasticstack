@@ -86,9 +86,11 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
         }
       }
-      cells = {
-        labels = {
-          visible = true
+      styling = {
+        cells = {
+          labels = {
+            visible = true
+          }
         }
       }
       legend = {

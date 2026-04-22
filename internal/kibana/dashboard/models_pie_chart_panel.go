@@ -159,13 +159,13 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.DonutHole != nil {
-		s := string(*apiChart.DonutHole)
+	if apiChart.Styling.DonutHole != nil {
+		s := string(*apiChart.Styling.DonutHole)
 		donutHole = &s
 	}
 	var labelPosition *string
-	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
-		s := string(*apiChart.Labels.Position)
+	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+		s := string(*apiChart.Styling.Labels.Position)
 		labelPosition = &s
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
@@ -221,13 +221,13 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.DonutHole != nil {
-		s := string(*apiChart.DonutHole)
+	if apiChart.Styling.DonutHole != nil {
+		s := string(*apiChart.Styling.DonutHole)
 		donutHole = &s
 	}
 	var labelPosition *string
-	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
-		s := string(*apiChart.Labels.Position)
+	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+		s := string(*apiChart.Styling.Labels.Position)
 		labelPosition = &s
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
@@ -291,7 +291,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
 		defaultMode := kbapi.ValueDisplayModePercentage
-		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 		chart.TimeRange = lensPanelTimeRange()
 
 		chart.Title = m.Title.ValueStringPointer()
@@ -304,15 +304,15 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		}
 
 		if !m.DonutHole.IsNull() {
-			val := kbapi.PieNoESQLDonutHole(m.DonutHole.ValueString())
-			chart.DonutHole = &val
+			val := kbapi.PieStylingDonutHole(m.DonutHole.ValueString())
+			chart.Styling.DonutHole = &val
 		}
 
 		if !m.LabelPosition.IsNull() {
-			pos := kbapi.PieNoESQLLabelsPosition(m.LabelPosition.ValueString())
-			chart.Labels = &struct {
-				Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
-				Visible  *bool                          `json:"visible,omitempty"`
+			pos := kbapi.PieStylingLabelsPosition(m.LabelPosition.ValueString())
+			chart.Styling.Labels = &struct {
+				Position *kbapi.PieStylingLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                           `json:"visible,omitempty"`
 			}{Position: &pos}
 		}
 
@@ -369,7 +369,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		var chart kbapi.PieESQL
 
 		defaultMode := kbapi.ValueDisplayModePercentage
-		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 		chart.TimeRange = lensPanelTimeRange()
 
 		// Set basic properties
@@ -383,15 +383,15 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		}
 
 		if !m.DonutHole.IsNull() {
-			val := kbapi.PieESQLDonutHole(m.DonutHole.ValueString())
-			chart.DonutHole = &val
+			val := kbapi.PieStylingDonutHole(m.DonutHole.ValueString())
+			chart.Styling.DonutHole = &val
 		}
 
 		if !m.LabelPosition.IsNull() {
-			pos := kbapi.PieESQLLabelsPosition(m.LabelPosition.ValueString())
-			chart.Labels = &struct {
-				Position *kbapi.PieESQLLabelsPosition `json:"position,omitempty"`
-				Visible  *bool                        `json:"visible,omitempty"`
+			pos := kbapi.PieStylingLabelsPosition(m.LabelPosition.ValueString())
+			chart.Styling.Labels = &struct {
+				Position *kbapi.PieStylingLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                           `json:"visible,omitempty"`
 			}{Position: &pos}
 		}
 
@@ -416,10 +416,10 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Metrics
 		if len(m.Metrics) > 0 {
 			metrics := make([]struct {
-				Color  kbapi.StaticColor `json:"color"`
-				Column string            `json:"column"`
-				Format kbapi.FormatType  `json:"format"`
-				Label  *string           `json:"label,omitempty"`
+				Color  *kbapi.PieESQL_Metrics_Color `json:"color,omitempty"`
+				Column string                       `json:"column"`
+				Format kbapi.FormatType             `json:"format"`
+				Label  *string                      `json:"label,omitempty"`
 			}, len(m.Metrics))
 			for i, metric := range m.Metrics {
 				if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {

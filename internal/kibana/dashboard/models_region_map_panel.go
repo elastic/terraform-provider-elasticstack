@@ -135,7 +135,7 @@ func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Regi
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = mv
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := api.Region.MarshalJSON()
 	rv, ok := marshalToNormalized(regionBytes, err, "region", &diags)
@@ -163,7 +163,7 @@ func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Region
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = mv
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := json.Marshal(api.Region)
 	rv, ok := marshalToNormalized(regionBytes, err, "region", &diags)

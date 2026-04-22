@@ -82,13 +82,15 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 					Description:         new("A test tagcloud description"),
 					IgnoreGlobalFilters: new(true),
 					Sampling:            new(float32(0.5)),
-					Orientation:         kbapi.VisApiOrientation("horizontal"),
-					FontSize: &struct {
-						Max *float32 `json:"max,omitempty"`
-						Min *float32 `json:"min,omitempty"`
-					}{
-						Min: new(float32(18)),
-						Max: new(float32(72)),
+					Styling: kbapi.TagcloudStyling{
+						Orientation: kbapi.VisApiOrientation("horizontal"),
+						FontSize: &struct {
+							Max *float32 `json:"max,omitempty"`
+							Min *float32 `json:"min,omitempty"`
+						}{
+							Min: new(float32(18)),
+							Max: new(float32(72)),
+						},
 					},
 				}
 
@@ -217,8 +219,8 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.InDelta(t, *tt.api.Sampling, *apiResult.Sampling, 0.001, "Round-trip Sampling should match")
 			}
 
-			if tt.api.Orientation != "" {
-				assert.Equal(t, tt.api.Orientation, apiResult.Orientation, "Round-trip Orientation should match")
+			if tt.api.Styling.Orientation != "" {
+				assert.Equal(t, tt.api.Styling.Orientation, apiResult.Styling.Orientation, "Round-trip Orientation should match")
 			}
 		})
 	}
@@ -273,8 +275,10 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a full tagcloud schema with the font size
 			api := kbapi.TagcloudNoESQL{
-				Type:     "tagcloud",
-				FontSize: tt.apiFont,
+				Type: "tagcloud",
+				Styling: kbapi.TagcloudStyling{
+					FontSize: tt.apiFont,
+				},
 			}
 
 			// Set dataset as JSON
@@ -297,15 +301,15 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 
 			// Verify font size round-trip
 			if tt.apiFont.Min != nil {
-				require.NotNil(t, apiResult.FontSize)
-				require.NotNil(t, apiResult.FontSize.Min)
-				assert.InDelta(t, *tt.apiFont.Min, *apiResult.FontSize.Min, 0.001)
+				require.NotNil(t, apiResult.Styling.FontSize)
+				require.NotNil(t, apiResult.Styling.FontSize.Min)
+				assert.InDelta(t, *tt.apiFont.Min, *apiResult.Styling.FontSize.Min, 0.001)
 			}
 
 			if tt.apiFont.Max != nil {
-				require.NotNil(t, apiResult.FontSize)
-				require.NotNil(t, apiResult.FontSize.Max)
-				assert.InDelta(t, *tt.apiFont.Max, *apiResult.FontSize.Max, 0.001)
+				require.NotNil(t, apiResult.Styling.FontSize)
+				require.NotNil(t, apiResult.Styling.FontSize.Max)
+				assert.InDelta(t, *tt.apiFont.Max, *apiResult.Styling.FontSize.Max, 0.001)
 			}
 		})
 	}

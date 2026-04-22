@@ -80,11 +80,13 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				},
 			},
 		},
-		Cells: kbapi.HeatmapCells{
-			Labels: &struct {
-				Visible *bool `json:"visible,omitempty"`
-			}{
-				Visible: new(true),
+		Styling: kbapi.HeatmapStyling{
+			Cells: kbapi.HeatmapCells{
+				Labels: &struct {
+					Visible *bool `json:"visible,omitempty"`
+				}{
+					Visible: new(true),
+				},
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
@@ -125,7 +127,8 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.False(t, model.XAxisJSON.IsNull())
 	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axes)
-	require.NotNil(t, model.Cells)
+	require.NotNil(t, model.Styling)
+	require.NotNil(t, model.Styling.Cells)
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, types.StringValue("visible"), model.Legend.Visibility)
 
@@ -166,12 +169,12 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		"description": "ESQL heatmap description",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axis": {
+		"axes": {
 			"x": { "labels": { "orientation": "angled", "visible": true } },
 			"y": { "labels": { "visible": true } }
 		},
-		"cells": { "labels": { "visible": false } },
-		"legend": { "size": "small", "visible": false },
+		"styling": { "cells": { "labels": { "visible": false } } },
+		"legend": { "size": "s", "visibility": "hidden" },
 		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"metric": {
 			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
@@ -214,6 +217,16 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			Expression: "status:200",
 			Language:   new(kbapi.FilterSimpleLanguage("kql")),
 		},
+		Axes: kbapi.HeatmapAxes{
+			X: kbapi.HeatmapXAxis{},
+			Y: kbapi.HeatmapYAxis{},
+		},
+		Styling: kbapi.HeatmapStyling{
+			Cells: kbapi.HeatmapCells{},
+		},
+		Legend: kbapi.HeatmapLegend{
+			Size: kbapi.LegendSizeM,
+		},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
@@ -247,8 +260,8 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"ignore_global_filters": false,
 		"sampling": 1,
 		"axes": { "x": {}, "y": {} },
-		"cells": {},
-		"legend": { "size": "medium" },
+		"styling": { "cells": {} },
+		"legend": { "size": "m" },
 		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"metric": {
 			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},

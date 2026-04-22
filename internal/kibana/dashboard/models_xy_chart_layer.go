@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -76,7 +77,7 @@ func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoE
 }
 
 // fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
-func (m *xyLayerModel) fromAPILayersNoESQL(apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
+func (m *xyLayerModel) fromAPILayersNoESQL(ctx context.Context, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	layerJSON, err := apiLayer.MarshalJSON()
@@ -116,14 +117,14 @@ func (m *xyLayerModel) fromAPILayersNoESQL(apiLayer kbapi.XyLayersNoESQL) diag.D
 		return diags
 	}
 	m.DataLayer = &dataLayerModel{}
-	return m.DataLayer.fromAPINoESQL(dl)
+	return m.DataLayer.fromAPINoESQL(ctx, dl)
 }
 
 // fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
-func (m *xyLayerModel) fromAPILayerESQL(apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func (m *xyLayerModel) fromAPILayerESQL(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	m.Type = types.StringValue(string(apiLayer.Type))
 	m.DataLayer = &dataLayerModel{}
-	return m.DataLayer.fromAPIESql(apiLayer)
+	return m.DataLayer.fromAPIESql(ctx, apiLayer)
 }
 
 // toAPILayersNoESQL converts the layer model to the DSL layer union type.
@@ -171,7 +172,7 @@ func (m *xyLayerModel) toAPILayerESQL() (kbapi.XyLayerESQL, diag.Diagnostics) {
 }
 
 // fromAPINoESQL populates data layer from NoESQL API response
-func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -199,18 +200,24 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, populateLensGroupByDefaults, &diags)
 		}
 	}
 
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
+		priorY := m.Y
 		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
-		for _, y := range apiLayer.Y {
+		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
+				cfg := jsontypes.NewNormalizedValue(string(yJSON))
+				if i < len(priorY) {
+					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
+				}
 				m.Y = append(m.Y, yMetricModel{
-					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: cfg,
 				})
 			}
 		}
@@ -220,7 +227,7 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 }
 
 // fromAPIESql populates data layer from ESQL API response
-func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -248,18 +255,24 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, populateLensGroupByDefaults, &diags)
 		}
 	}
 
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
+		priorY := m.Y
 		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
-		for _, y := range apiLayer.Y {
+		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
+				cfg := jsontypes.NewNormalizedValue(string(yJSON))
+				if i < len(priorY) {
+					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
+				}
 				m.Y = append(m.Y, yMetricModel{
-					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: cfg,
 				})
 			}
 		}

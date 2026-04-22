@@ -58,10 +58,10 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
 
-				var shape kbapi.GaugeNoESQL_Shape
+				var shape kbapi.GaugeStyling_Shape
 				err = json.Unmarshal([]byte(`{"type":"circle"}`), &shape)
 				require.NoError(t, err)
-				api.Shape = &shape
+				api.Styling.Shape = &shape
 
 				var fItem kbapi.LensPanelFilters_Item
 				err = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"host.name","operator":"is","value":"foo"}}`), &fItem)
@@ -132,7 +132,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 			assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
 
 			if tt.name == "full gauge config" {
-				assert.False(t, model.ShapeJSON.IsNull(), "Shape should not be null")
+				require.NotNil(t, model.Styling)
+				assert.False(t, model.Styling.ShapeJSON.IsNull(), "Shape should not be null")
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 

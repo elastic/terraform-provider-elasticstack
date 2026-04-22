@@ -114,24 +114,27 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var colorMap kbapi.ColorMapping
 	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}`), &colorMap))
 
+	staticColorUnion := kbapi.WaffleESQL_Metrics_Color{}
+	require.NoError(t, staticColorUnion.FromStaticColor(kbapi.StaticColor{
+		Type:  kbapi.Static,
+		Color: "#006BB4",
+	}))
+
 	waffle := kbapi.WaffleESQL{
 		Type:        kbapi.WaffleESQLTypeWaffle,
 		Title:       new("Waffle ESQL Round-Trip"),
 		Description: new("esql test"),
 		Legend:      kbapi.WaffleLegend{Size: kbapi.LegendSizeS},
 		Metrics: []struct {
-			Color  kbapi.StaticColor `json:"color"`
-			Column string            `json:"column"`
-			Format kbapi.FormatType  `json:"format"`
-			Label  *string           `json:"label,omitempty"`
+			Color  *kbapi.WaffleESQL_Metrics_Color `json:"color,omitempty"`
+			Column string                          `json:"column"`
+			Format kbapi.FormatType                `json:"format"`
+			Label  *string                         `json:"label,omitempty"`
 		}{
 			{
 				Column: "cnt",
 				Format: format,
-				Color: kbapi.StaticColor{
-					Type:  kbapi.Static,
-					Color: "#006BB4",
-				},
+				Color:  &staticColorUnion,
 			},
 		},
 		GroupBy: &[]struct {

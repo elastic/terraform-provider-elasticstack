@@ -249,29 +249,31 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
 		pm.ID = types.StringPointerValue(markdownPanel.Id)
-		if markdownPanel.Config != nil {
-			if !panelUsesConfigJSONOnly(tfPanel) {
-				config0, err := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
-				if err != nil {
-					// Kibana may return inline markdown fields without the union discriminator
-					// expected by AsKbnDashboardPanelTypeMarkdownConfig0; fall back to unmarshalling
-					// the raw config JSON into the inline schema.
-					if b, mErr := markdownPanel.Config.MarshalJSON(); mErr == nil {
-						var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
-						if json.Unmarshal(b, &inline) == nil {
-							config0 = inline
-							err = nil
-						}
+		if !panelUsesConfigJSONOnly(tfPanel) {
+			config0, err := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
+			if err != nil {
+				// Kibana may return inline markdown fields without the union discriminator
+				// expected by AsKbnDashboardPanelTypeMarkdownConfig0; fall back to unmarshalling
+				// the raw config JSON into the inline schema.
+				if b, mErr := markdownPanel.Config.MarshalJSON(); mErr == nil {
+					var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
+					if json.Unmarshal(b, &inline) == nil {
+						config0 = inline
+						err = nil
 					}
 				}
-				if err == nil {
-					populateMarkdownFromAPI(&pm, config0)
-				}
 			}
-			configBytes, err := markdownPanel.Config.MarshalJSON()
 			if err == nil {
-				pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+				populateMarkdownFromAPI(&pm, config0)
 			}
+		}
+		configBytes, err := markdownPanel.Config.MarshalJSON()
+		if err == nil {
+			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+			if tfPanel != nil {
+				configJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &diags)
+			}
+			pm.ConfigJSON = configJSON
 		}
 	case panelTypeSloOverview:
 		sloPanel, err := panelItem.AsKbnDashboardPanelTypeSloOverview()
@@ -403,7 +405,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 	}
 
-	alignPanelStateFromPlan(tfPanel, &pm)
+	alignPanelStateFromPlan(ctx, tfPanel, &pm)
 
 	return pm, diags
 }
@@ -518,7 +520,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
 		}
 		markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-			Config: &config,
+			Config: config,
 			Grid:   grid,
 			Id:     panelID,
 		}
@@ -696,7 +698,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				return kbapi.DashboardPanelItem{}, diags
 			}
 			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-				Config: &config,
+				Config: config,
 				Grid:   grid,
 				Id:     panelID,
 			}

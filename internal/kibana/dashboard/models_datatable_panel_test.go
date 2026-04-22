@@ -105,7 +105,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Description:         new("NoESQL description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Density:             density,
+		Styling:             kbapi.DatatableStyling{Density: density},
 		Query:               kbapi.FilterSimple{},
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
@@ -127,12 +127,12 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	splits := []kbapi.DatatableNoESQL_SplitMetricsBy_Item{split}
 	api.SplitMetricsBy = &splits
 
-	sortBy := kbapi.DatatableNoESQL_SortBy{}
+	sortBy := kbapi.DatatableStyling_SortBy{}
 	require.NoError(t, json.Unmarshal([]byte(`{"column_type":"metric","direction":"asc","index":0}`), &sortBy))
-	api.SortBy = &sortBy
+	api.Styling.SortBy = &sortBy
 
-	paging := kbapi.DatatableNoESQLPaging(10)
-	api.Paging = &paging
+	paging := kbapi.DatatableStylingPaging(10)
+	api.Styling.Paging = &paging
 
 	model := &datatableNoESQLConfigModel{}
 	diags := model.fromAPI(context.Background(), api)
@@ -148,12 +148,13 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.Rows, 1)
 	assert.Len(t, model.SplitMetricsBy, 1)
-	assert.Equal(t, types.Int64Value(10), model.Paging)
+	require.NotNil(t, model.Styling)
+	assert.Equal(t, types.Int64Value(10), model.Styling.Paging)
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, apiRoundTrip.Type)
-	assert.NotNil(t, apiRoundTrip.Paging)
+	assert.NotNil(t, apiRoundTrip.Styling.Paging)
 }
 
 func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
@@ -203,7 +204,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Description:         new("ESQL description"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
-		Density:             density,
+		Styling:             kbapi.DatatableStyling{Density: density},
 		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {
 			Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
@@ -226,12 +227,12 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`), &api.DataSource))
 
-	sortBy := kbapi.DatatableESQL_SortBy{}
+	sortBy := kbapi.DatatableStyling_SortBy{}
 	require.NoError(t, json.Unmarshal([]byte(`{"column_type":"metric","direction":"desc","index":0}`), &sortBy))
-	api.SortBy = &sortBy
+	api.Styling.SortBy = &sortBy
 
-	paging := kbapi.DatatableESQLPaging(20)
-	api.Paging = &paging
+	paging := kbapi.DatatableStylingPaging(20)
+	api.Styling.Paging = &paging
 
 	model := &datatableESQLConfigModel{}
 	diags := model.fromAPI(context.Background(), api)
@@ -245,12 +246,13 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.Rows, 1)
 	assert.Len(t, model.SplitMetricsBy, 1)
-	assert.Equal(t, types.Int64Value(20), model.Paging)
+	require.NotNil(t, model.Styling)
+	assert.Equal(t, types.Int64Value(20), model.Styling.Paging)
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, apiRoundTrip.Type)
-	assert.NotNil(t, apiRoundTrip.Paging)
+	assert.NotNil(t, apiRoundTrip.Styling.Paging)
 	assert.NotNil(t, apiRoundTrip.Rows)
 }
 
@@ -268,12 +270,14 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Density: kbapi.DatatableDensity{
-			Mode: new(kbapi.DatatableDensityModeDefault),
-			Height: &struct {
-				Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
-				Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
-			}{Header: &header, Value: &value},
+		Styling: kbapi.DatatableStyling{
+			Density: kbapi.DatatableDensity{
+				Mode: new(kbapi.DatatableDensityModeDefault),
+				Height: &struct {
+					Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
+					Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
+				}{Header: &header, Value: &value},
+			},
 		},
 		Query:   kbapi.FilterSimple{},
 		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
@@ -311,7 +315,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
-		Density:             kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)},
+		Styling:             kbapi.DatatableStyling{Density: kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)}},
 		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))

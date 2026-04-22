@@ -137,11 +137,12 @@ func Test_populatePanelConfigJSONDefaults_tagcloud(t *testing.T) {
 				"attributes": {
 					"type": "tagcloud",
 					"filters": [],
-					"metric": {"field": "bytes", "operation": "sum", "empty_as_null": false, "show_metric_label": true},
+					"metric": {"field": "bytes", "operation": "sum", "empty_as_null": false, "show_metric_label": true, "color": {"type": "auto"}},
 					"tag_by": {
 						"operation": "terms",
 						"field": "host.name",
-						"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+						"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+						"color": {"mode": "categorical", "palette": "default", "mapping": []}
 					}
 				}
 			}`,
@@ -173,7 +174,8 @@ func Test_populatePanelConfigJSONDefaults_gauge(t *testing.T) {
 				"field": "latency",
 				"empty_as_null": false,
 				"title": {"visible": true},
-				"ticks": {"visible": true, "mode": "auto"}
+				"ticks": {"visible": true, "mode": "bands"},
+				"color": {"type": "auto"}
 			}
 		}
 	}`
@@ -195,8 +197,8 @@ func Test_populatePanelConfigJSONDefaults_metric(t *testing.T) {
 			"type": "metric",
 			"filters": [],
 			"metrics": [
-				{"operation": "count", "empty_as_null": false, "fit": false},
-				{"operation": "sum", "field": "bytes", "empty_as_null": false, "fit": false}
+				{"operation": "count", "empty_as_null": false, "fit": false, "color": {"type": "auto"}},
+				{"operation": "sum", "field": "bytes", "empty_as_null": false, "fit": false, "color": {"type": "auto"}}
 			]
 		}
 	}`
@@ -218,7 +220,7 @@ func Test_populatePanelConfigJSONDefaults_pie(t *testing.T) {
 		"attributes": {
 			"type": "pie",
 			"filters": [],
-			"metrics": [{"operation": "count", "empty_as_null": false}],
+			"metrics": [{"operation": "count", "empty_as_null": false, "color": {"type": "auto"}}],
 			"group_by": [
 				{
 					"operation": "terms",
@@ -247,7 +249,7 @@ func Test_populatePanelConfigJSONDefaults_waffle(t *testing.T) {
 		"attributes": {
 			"type": "waffle",
 			"filters": [],
-			"metrics": [{"operation": "count", "empty_as_null": false}],
+			"metrics": [{"operation": "count", "empty_as_null": false, "color": {"type": "auto"}}],
 			"group_by": [
 				{
 					"operation": "terms",
@@ -279,7 +281,8 @@ func Test_populatePanelConfigJSONDefaults_region_map(t *testing.T) {
 				"operation": "sum",
 				"field": "count",
 				"empty_as_null": false,
-				"show_metric_label": true
+				"show_metric_label": true,
+				"color": {"type": "auto"}
 			}
 		}
 	}`
@@ -304,7 +307,8 @@ func Test_populatePanelConfigJSONDefaults_heatmap(t *testing.T) {
 				"operation": "max",
 				"field": "cpu",
 				"empty_as_null": false,
-				"show_metric_label": true
+				"show_metric_label": true,
+				"color": {"type": "auto"}
 			}
 		}
 	}`
@@ -344,7 +348,7 @@ func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
 							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
 						}
 					],
-					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true}]
+					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true, "color": {"type": "auto"}}]
 				}
 			}`,
 		},
@@ -428,7 +432,7 @@ func Test_populatePanelConfigJSONDefaults_mosaic(t *testing.T) {
 							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
 						}
 					],
-					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true}]
+					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true, "color": {"type": "auto"}}]
 				}
 			}`,
 		},
@@ -503,7 +507,7 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 					"layers": [
 						{
 							"type": "line",
-							"y": [{"operation": "count", "axis": "left", "empty_as_null": false, "fit": false}]
+							"y": [{"operation": "count", "axis": "left", "empty_as_null": false, "fit": false, "color": {"type": "auto"}}]
 						}
 					]
 				}
@@ -602,7 +606,7 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 				"attributes": {
 					"type": "datatable",
 					"filters": [],
-					"metrics": [{"operation": "count", "empty_as_null": false, "fit": false}]
+					"metrics": [{"operation": "count", "empty_as_null": false, "fit": false, "color": {"type": "auto"}}]
 				}
 			}`,
 		},

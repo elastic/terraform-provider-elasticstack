@@ -32,7 +32,7 @@ func Test_populateMarkdownFromAPI(t *testing.T) {
 	hideTitle := true
 	title := "panel title"
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
-		Content:     &content,
+		Content:     content,
 		Description: &description,
 		HideTitle:   &hideTitle,
 		Title:       &title,
@@ -58,11 +58,10 @@ func Test_buildMarkdownConfig(t *testing.T) {
 	}
 
 	cfg := buildMarkdownConfig(pm)
-	require.NotNil(t, cfg.Content)
 	require.NotNil(t, cfg.Description)
 	require.NotNil(t, cfg.HideTitle)
 	require.NotNil(t, cfg.Title)
-	assert.Equal(t, "hello", *cfg.Content)
+	assert.Equal(t, "hello", cfg.Content)
 	assert.Equal(t, "desc", *cfg.Description)
 	assert.False(t, *cfg.HideTitle)
 	assert.Equal(t, "panel title", *cfg.Title)

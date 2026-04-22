@@ -35,8 +35,8 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	title := "Pie Round-Trip"
 	desc := "Converter test"
-	donutHole := kbapi.PieNoESQLDonutHoleS
-	labelPos := kbapi.PieNoESQLLabelsPositionInside
+	donutHole := kbapi.PieStylingDonutHoleS
+	labelPos := kbapi.PieStylingLabelsPositionInside
 	visibility := kbapi.PieLegendVisibilityVisible
 	nested := true
 	truncateLines := float32(3)
@@ -44,11 +44,13 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	apiChart := kbapi.PieNoESQL{
 		Title:       &title,
 		Description: &desc,
-		DonutHole:   &donutHole,
-		Labels: &struct {
-			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
-			Visible  *bool                          `json:"visible,omitempty"`
-		}{Position: &labelPos},
+		Styling: kbapi.PieStyling{
+			DonutHole: &donutHole,
+			Labels: &struct {
+				Position *kbapi.PieStylingLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                           `json:"visible,omitempty"`
+			}{Position: &labelPos},
+		},
 		Legend: kbapi.PieLegend{
 			Size:               kbapi.LegendSizeAuto,
 			Nested:             &nested,
@@ -95,8 +97,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	// Setup test data
 	title := "My Pie Chart"
 	desc := "A delicious pie chart"
-	donutHole := kbapi.PieNoESQLDonutHoleS
-	labelPos := kbapi.PieNoESQLLabelsPositionInside
+	donutHole := kbapi.PieStylingDonutHoleS
+	labelPos := kbapi.PieStylingLabelsPositionInside
 
 	// Create a dummy dataset
 	dataset := kbapi.PieNoESQL_DataSource{}
@@ -119,11 +121,13 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	apiChart := kbapi.PieNoESQL{
 		Title:       &title,
 		Description: &desc,
-		DonutHole:   &donutHole,
-		Labels: &struct {
-			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
-			Visible  *bool                          `json:"visible,omitempty"`
-		}{Position: &labelPos},
+		Styling: kbapi.PieStyling{
+			DonutHole: &donutHole,
+			Labels: &struct {
+				Position *kbapi.PieStylingLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                           `json:"visible,omitempty"`
+			}{Position: &labelPos},
+		},
 		Legend:     legend,
 		DataSource: dataset,
 		Query:      query,

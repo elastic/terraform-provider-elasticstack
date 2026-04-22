@@ -122,22 +122,22 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	// Handle orientation
-	if api.Orientation != "" {
-		m.Orientation = types.StringValue(string(api.Orientation))
+	if api.Styling.Orientation != "" {
+		m.Orientation = types.StringValue(string(api.Styling.Orientation))
 	} else {
 		m.Orientation = types.StringNull()
 	}
 
 	// Handle font size
-	if api.FontSize != nil {
+	if api.Styling.FontSize != nil {
 		m.FontSize = &fontSizeModel{}
-		if api.FontSize.Min != nil {
-			m.FontSize.Min = types.Float64Value(float64(*api.FontSize.Min))
+		if api.Styling.FontSize.Min != nil {
+			m.FontSize.Min = types.Float64Value(float64(*api.Styling.FontSize.Min))
 		} else {
 			m.FontSize.Min = types.Float64Null()
 		}
-		if api.FontSize.Max != nil {
-			m.FontSize.Max = types.Float64Value(float64(*api.FontSize.Max))
+		if api.Styling.FontSize.Max != nil {
+			m.FontSize.Max = types.Float64Value(float64(*api.Styling.FontSize.Max))
 		} else {
 			m.FontSize.Max = types.Float64Null()
 		}
@@ -149,7 +149,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = mv
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	// Handle tagBy (as JSON) - union type
 	tagByBytes, err := api.TagBy.MarshalJSON()
@@ -157,7 +157,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	if !ok {
 		return diags
 	}
-	m.TagByJSON = tv
+	m.TagByJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.TagByJSON, tv, &diags)
 
 	return diags
 }
@@ -205,7 +205,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 
 	// Handle orientation
 	if !m.Orientation.IsNull() {
-		api.Orientation = kbapi.VisApiOrientation(m.Orientation.ValueString())
+		api.Styling.Orientation = kbapi.VisApiOrientation(m.Orientation.ValueString())
 	}
 
 	// Handle font size
@@ -222,7 +222,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 			maxValue := float32(m.FontSize.Max.ValueFloat64())
 			fontSize.Max = &maxValue
 		}
-		api.FontSize = &fontSize
+		api.Styling.FontSize = &fontSize
 	}
 
 	// Handle metric (as JSON)

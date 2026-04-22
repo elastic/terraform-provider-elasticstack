@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -39,7 +40,7 @@ func Test_dataLayerModel_fromAPINoESQL_toAPIXyLayerNoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
 	model := &dataLayerModel{}
-	diags := model.fromAPINoESQL(apiLayer)
+	diags := model.fromAPINoESQL(context.Background(), apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -71,7 +72,7 @@ func Test_dataLayerModel_fromAPIESql_toAPIXyLayerESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
 	model := &dataLayerModel{}
-	diags := model.fromAPIESql(apiLayer)
+	diags := model.fromAPIESql(context.Background(), apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -195,7 +196,7 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_referenceLine(t *te
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &xyLayerModel{}
-	diags := model.fromAPILayersNoESQL(apiLayer)
+	diags := model.fromAPILayersNoESQL(context.Background(), apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("reference_lines"), model.Type)
@@ -222,7 +223,7 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_dataLayer(t *testin
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &xyLayerModel{}
-	diags := model.fromAPILayersNoESQL(apiLayer)
+	diags := model.fromAPILayersNoESQL(context.Background(), apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("area"), model.Type)

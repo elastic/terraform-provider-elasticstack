@@ -277,18 +277,19 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
-			Mode: typeutils.StringishPointerValue(api.Values.Mode),
+			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
-		if api.Values.PercentDecimals != nil {
-			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Values.PercentDecimals))
+		if api.Styling.Values.PercentDecimals != nil {
+			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Styling.Values.PercentDecimals))
 		} else {
 			m.ValueDisplay.PercentDecimals = types.Float64Null()
 		}
 	}
 
 	if len(api.Metrics) > 0 {
+		priorMetrics := m.Metrics
 		m.Metrics = make([]waffleDSLMetric, len(api.Metrics))
 		for i, metric := range api.Metrics {
 			b, err := json.Marshal(metric)
@@ -296,14 +297,19 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
+			cfg := customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populatePieChartMetricDefaults,
 			)
+			if i < len(priorMetrics) {
+				cfg = preservePriorJSONWithDefaultsIfEquivalent(ctx, priorMetrics[i].Config, cfg, &diags)
+			}
+			m.Metrics[i].Config = cfg
 		}
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
+		priorGroupBy := m.GroupBy
 		m.GroupBy = make([]waffleDSLGroupBy, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			b, err := json.Marshal(gb)
@@ -311,10 +317,14 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal group_by", err.Error())
 				continue
 			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
+			cfg := customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populateLensGroupByDefaults,
 			)
+			if i < len(priorGroupBy) {
+				cfg = preservePriorJSONWithDefaultsIfEquivalent(ctx, priorGroupBy[i].Config, cfg, &diags)
+			}
+			m.GroupBy[i].Config = cfg
 		}
 	}
 
@@ -351,12 +361,12 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
-			Mode: typeutils.StringishPointerValue(api.Values.Mode),
+			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
-		if api.Values.PercentDecimals != nil {
-			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Values.PercentDecimals))
+		if api.Styling.Values.PercentDecimals != nil {
+			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Styling.Values.PercentDecimals))
 		} else {
 			m.ValueDisplay.PercentDecimals = types.Float64Null()
 		}
@@ -365,6 +375,14 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	if len(api.Metrics) > 0 {
 		m.EsqlMetrics = make([]waffleEsqlMetric, len(api.Metrics))
 		for i, met := range api.Metrics {
+			colorType := types.StringNull()
+			colorValue := types.StringNull()
+			if met.Color != nil {
+				if staticColor, colorErr := met.Color.AsStaticColor(); colorErr == nil {
+					colorType = types.StringValue(string(staticColor.Type))
+					colorValue = types.StringValue(staticColor.Color)
+				}
+			}
 			em := waffleEsqlMetric{
 				Column: types.StringValue(met.Column),
 				FormatJSON: func() jsontypes.Normalized {
@@ -379,8 +397,8 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 					return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
 				Color: &waffleStaticColor{
-					Type:  types.StringValue(string(met.Color.Type)),
-					Color: types.StringValue(met.Color.Color),
+					Type:  colorType,
+					Color: colorValue,
 				},
 			}
 			if met.Label != nil {
@@ -589,11 +607,11 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.Values = vd
+		api.Styling.Values = vd
 	} else {
 		// Required by the Dashboard API; omitting mode yields HTTP 400.
 		mode := kbapi.ValueDisplayModePercentage
-		api.Values = kbapi.ValueDisplay{
+		api.Styling.Values = kbapi.ValueDisplay{
 			Mode: &mode,
 		}
 	}
@@ -667,19 +685,19 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.Values = vd
+		api.Styling.Values = vd
 	} else {
 		mode := kbapi.ValueDisplayModePercentage
-		api.Values = kbapi.ValueDisplay{
+		api.Styling.Values = kbapi.ValueDisplay{
 			Mode: &mode,
 		}
 	}
 
 	metrics := make([]struct {
-		Color  kbapi.StaticColor `json:"color"`
-		Column string            `json:"column"`
-		Format kbapi.FormatType  `json:"format"`
-		Label  *string           `json:"label,omitempty"`
+		Color  *kbapi.WaffleESQL_Metrics_Color `json:"color,omitempty"`
+		Column string                          `json:"column"`
+		Format kbapi.FormatType                `json:"format"`
+		Label  *string                         `json:"label,omitempty"`
 	}, len(m.EsqlMetrics))
 	for i, em := range m.EsqlMetrics {
 		if err := json.Unmarshal([]byte(em.FormatJSON.ValueString()), &metrics[i].Format); err != nil {
@@ -690,10 +708,16 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			diags.AddError("Missing color", "waffle_config.esql_metrics color is required")
 			continue
 		}
-		metrics[i].Color = kbapi.StaticColor{
+		staticColor := kbapi.StaticColor{
 			Type:  kbapi.StaticColorType(em.Color.Type.ValueString()),
 			Color: em.Color.Color.ValueString(),
 		}
+		var color kbapi.WaffleESQL_Metrics_Color
+		if err := color.FromStaticColor(staticColor); err != nil {
+			diags.AddError("Failed to marshal metric color", err.Error())
+			continue
+		}
+		metrics[i].Color = &color
 		if typeutils.IsKnown(em.Label) {
 			s := em.Label.ValueString()
 			metrics[i].Label = &s

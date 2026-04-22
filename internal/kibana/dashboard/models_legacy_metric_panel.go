@@ -127,7 +127,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = mv
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	return diags
 }

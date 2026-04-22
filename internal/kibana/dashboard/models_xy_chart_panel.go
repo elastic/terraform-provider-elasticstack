@@ -97,9 +97,9 @@ type xyChartConfigModel struct {
 }
 
 type xyAxisModel struct {
-	X          *xyAxisConfigModel `tfsdk:"x"`
-	Y          *yAxisConfigModel  `tfsdk:"y"`
-	SecondaryY *yAxisConfigModel  `tfsdk:"secondary_y"`
+	X  *xyAxisConfigModel `tfsdk:"x"`
+	Y  *yAxisConfigModel  `tfsdk:"y"`
+	Y2 *yAxisConfigModel  `tfsdk:"y2"`
 }
 
 func (m *xyAxisModel) fromAPI(apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics {
@@ -133,12 +133,12 @@ func (m *xyAxisModel) fromAPI(apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics
 		}
 	}
 
-	if apiAxis.SecondaryY != nil {
-		m.SecondaryY = &yAxisConfigModel{}
-		secondaryYDiags := m.SecondaryY.fromAPISecondaryY(apiAxis.SecondaryY)
-		diags.Append(secondaryYDiags...)
-		if m.SecondaryY.isEmpty() {
-			m.SecondaryY = nil
+	if apiAxis.Y2 != nil {
+		m.Y2 = &yAxisConfigModel{}
+		y2Diags := m.Y2.fromAPIY2(apiAxis.Y2)
+		diags.Append(y2Diags...)
+		if m.Y2.isEmpty() {
+			m.Y2 = nil
 		}
 	}
 
@@ -191,10 +191,10 @@ func (m *xyAxisModel) toAPI() (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
 		axis.Y = yAxis
 	}
 
-	if m.SecondaryY != nil {
-		secondaryYAxis, secondaryYDiags := m.SecondaryY.toAPISecondaryY()
-		diags.Append(secondaryYDiags...)
-		axis.SecondaryY = secondaryYAxis
+	if m.Y2 != nil {
+		y2Axis, y2Diags := m.Y2.toAPIY2()
+		diags.Append(y2Diags...)
+		axis.Y2 = y2Axis
 	}
 
 	return axis, diags
@@ -337,7 +337,6 @@ func (m *yAxisConfigModel) isEmpty() bool {
 }
 
 func (m *yAxisConfigModel) fromAPIY(apiAxis *struct {
-	Anchor *kbapi.VisApiXyAxisConfigYAnchor  `json:"anchor,omitempty"`
 	Domain kbapi.VisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -390,7 +389,6 @@ func (m *yAxisConfigModel) fromAPIY(apiAxis *struct {
 }
 
 func (m *yAxisConfigModel) toAPIY() (*struct {
-	Anchor *kbapi.VisApiXyAxisConfigYAnchor  `json:"anchor,omitempty"`
 	Domain kbapi.VisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -413,7 +411,6 @@ func (m *yAxisConfigModel) toAPIY() (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Anchor *kbapi.VisApiXyAxisConfigYAnchor  `json:"anchor,omitempty"`
 		Domain kbapi.VisApiXyAxisConfig_Y_Domain `json:"domain"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
@@ -461,16 +458,15 @@ func (m *yAxisConfigModel) toAPIY() (*struct {
 	return yAxis, diags
 }
 
-func (m *yAxisConfigModel) fromAPISecondaryY(apiAxis *struct {
-	Anchor *kbapi.VisApiXyAxisConfigSecondaryYAnchor  `json:"anchor,omitempty"`
-	Domain kbapi.VisApiXyAxisConfig_SecondaryY_Domain `json:"domain"`
+func (m *yAxisConfigModel) fromAPIY2(apiAxis *struct {
+	Domain kbapi.VisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
 		Orientation kbapi.VisApiOrientation `json:"orientation"`
 	} `json:"labels,omitempty"`
-	Scale *kbapi.VisApiXyAxisConfigSecondaryYScale `json:"scale,omitempty"`
+	Scale *kbapi.VisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 	Ticks *struct {
 		Visible bool `json:"visible"`
 	} `json:"ticks,omitempty"`
@@ -514,16 +510,15 @@ func (m *yAxisConfigModel) fromAPISecondaryY(apiAxis *struct {
 	return diags
 }
 
-func (m *yAxisConfigModel) toAPISecondaryY() (*struct {
-	Anchor *kbapi.VisApiXyAxisConfigSecondaryYAnchor  `json:"anchor,omitempty"`
-	Domain kbapi.VisApiXyAxisConfig_SecondaryY_Domain `json:"domain"`
+func (m *yAxisConfigModel) toAPIY2() (*struct {
+	Domain kbapi.VisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
 		Orientation kbapi.VisApiOrientation `json:"orientation"`
 	} `json:"labels,omitempty"`
-	Scale *kbapi.VisApiXyAxisConfigSecondaryYScale `json:"scale,omitempty"`
+	Scale *kbapi.VisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 	Ticks *struct {
 		Visible bool `json:"visible"`
 	} `json:"ticks,omitempty"`
@@ -538,15 +533,14 @@ func (m *yAxisConfigModel) toAPISecondaryY() (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Anchor *kbapi.VisApiXyAxisConfigSecondaryYAnchor  `json:"anchor,omitempty"`
-		Domain kbapi.VisApiXyAxisConfig_SecondaryY_Domain `json:"domain"`
+		Domain kbapi.VisApiXyAxisConfig_Y2_Domain `json:"domain"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
 		Labels *struct {
 			Orientation kbapi.VisApiOrientation `json:"orientation"`
 		} `json:"labels,omitempty"`
-		Scale *kbapi.VisApiXyAxisConfigSecondaryYScale `json:"scale,omitempty"`
+		Scale *kbapi.VisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 		Ticks *struct {
 			Visible bool `json:"visible"`
 		} `json:"ticks,omitempty"`
@@ -572,7 +566,7 @@ func (m *yAxisConfigModel) toAPISecondaryY() (*struct {
 		}{Orientation: kbapi.VisApiOrientation(m.LabelOrientation.ValueString())}
 	}
 	if typeutils.IsKnown(m.Scale) {
-		scale := kbapi.VisApiXyAxisConfigSecondaryYScale(m.Scale.ValueString())
+		scale := kbapi.VisApiXyAxisConfigY2Scale(m.Scale.ValueString())
 		yAxis.Scale = &scale
 	}
 	if m.Title != nil {
@@ -797,7 +791,7 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 
 	// Try inside legend first
 	legendInside, err := apiLegend.AsXyLegendInside()
-	if err == nil && legendInside.Placement == kbapi.XyLegendInsidePlacementInside {
+	if err == nil && legendInside.Placement == kbapi.Inside {
 		m.Inside = types.BoolValue(true)
 		m.Visibility = typeutils.StringishPointerValue(legendInside.Visibility)
 		m.Alignment = typeutils.StringishPointerValue(legendInside.Position)
@@ -931,7 +925,7 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 
 	if isInside {
 		var legend kbapi.XyLegendInside
-		legend.Placement = kbapi.XyLegendInsidePlacementInside
+		legend.Placement = kbapi.Inside
 		legend.Visibility = &insideVisibility
 
 		if typeutils.IsKnown(m.TruncateAfterLines) {
@@ -1212,10 +1206,14 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.X
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
+		priorLayers := m.Layers
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
-		for _, apiLayer := range apiChart.Layers {
+		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
-			layerDiags := layer.fromAPILayersNoESQL(apiLayer)
+			if i < len(priorLayers) {
+				layer = priorLayers[i]
+			}
+			layerDiags := layer.fromAPILayersNoESQL(ctx, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1251,10 +1249,14 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyC
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
+		priorLayers := m.Layers
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
-		for _, apiLayer := range apiChart.Layers {
+		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
-			layerDiags := layer.fromAPILayerESQL(apiLayer)
+			if i < len(priorLayers) {
+				layer = priorLayers[i]
+			}
+			layerDiags := layer.fromAPILayerESQL(ctx, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1317,11 +1319,11 @@ func alignXYAxisStateFromPlan(plan, state *xyAxisModel) {
 	alignXYXAxisStateFromPlan(plan.X, state.X)
 	alignXYYAxisStateFromPlan(plan.Y, state.Y)
 
-	if plan.SecondaryY != nil && state.SecondaryY == nil {
-		state.SecondaryY = cloneYAxisConfigModel(plan.SecondaryY)
+	if plan.Y2 != nil && state.Y2 == nil {
+		state.Y2 = cloneYAxisConfigModel(plan.Y2)
 		return
 	}
-	alignXYSecondaryYAxisStateFromPlan(plan.SecondaryY, state.SecondaryY)
+	alignXYY2AxisStateFromPlan(plan.Y2, state.Y2)
 }
 
 func alignXYXAxisStateFromPlan(plan, state *xyAxisConfigModel) {
@@ -1358,7 +1360,7 @@ func alignXYYAxisStateFromPlan(plan, state *yAxisConfigModel) {
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
-func alignXYSecondaryYAxisStateFromPlan(plan, state *yAxisConfigModel) {
+func alignXYY2AxisStateFromPlan(plan, state *yAxisConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1411,10 +1413,13 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []xyLayerModel) {
 			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.DataSourceJSON, &stateLayer.DataLayer.DataSourceJSON, "time_field")
 			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.XJSON, &stateLayer.DataLayer.XJSON)
 			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.BreakdownByJSON, &stateLayer.DataLayer.BreakdownByJSON)
+			preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(planLayer.DataLayer.BreakdownByJSON, &stateLayer.DataLayer.BreakdownByJSON, populateLensGroupByDefaults)
 
 			m := min(len(stateLayer.DataLayer.Y), len(planLayer.DataLayer.Y))
 			for j := range m {
+				preservePlanJSONIfStateOmitsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "color")
 				preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "axis_id")
+				preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, populateLensMetricDefaults)
 			}
 		}
 
@@ -1425,7 +1430,7 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []xyLayerModel) {
 		preservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.DataSourceJSON, &stateLayer.ReferenceLineLayer.DataSourceJSON, "time_field")
 		m := min(len(stateLayer.ReferenceLineLayer.Thresholds), len(planLayer.ReferenceLineLayer.Thresholds))
 		for j := range m {
-			preservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, &stateLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, "axis_id")
+			preservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, &stateLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, "axis_id", "color")
 		}
 	}
 }

@@ -35,8 +35,11 @@ resource "elasticstack_kibana_dashboard" "test" {
 
           time_field = "@timestamp"
         })
-        density = {
-          mode = "compact"
+        styling = {
+          density = {
+            mode = "compact"
+          }
+          paging = 10
         }
         query = {
           language   = "kql"
@@ -57,7 +60,6 @@ resource "elasticstack_kibana_dashboard" "test" {
         ]
         ignore_global_filters = false
         sampling              = 1
-        paging                = 10
       }
     }
   }]

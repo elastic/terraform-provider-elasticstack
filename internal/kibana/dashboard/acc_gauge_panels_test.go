@@ -58,7 +58,7 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.query.expression", ""),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.data_source_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.metric_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.shape_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.styling.shape_json"),
 				),
 			},
 			{

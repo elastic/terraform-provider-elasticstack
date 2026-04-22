@@ -138,6 +138,9 @@ func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
 		if _, exists := model["show_metric_label"]; !exists {
 			model["show_metric_label"] = true
 		}
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{"type": "auto"}
+		}
 	}
 	return model
 }
@@ -185,6 +188,9 @@ func populateLensMetricDefaults(model map[string]any) map[string]any {
 	if _, exists := model["fit"]; !exists {
 		model["fit"] = false
 	}
+	if _, exists := model["color"]; !exists {
+		model["color"] = map[string]any{"type": "auto"}
+	}
 
 	metricType, _ := model["type"].(string)
 
@@ -223,6 +229,20 @@ func populateLensMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
+	_, hadColor := model["color"]
+	model = populateLensMetricDefaults(model)
+	if model == nil {
+		return model
+	}
+
+	if metricType, _ := model["type"].(string); metricType == "secondary" && !hadColor {
+		model["color"] = map[string]any{"type": "none"}
+	}
+
+	return model
+}
+
 // populateTagcloudTagByDefaults populates default values for tagcloud tag_by configuration
 func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	if model == nil {
@@ -232,9 +252,16 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
 		if _, exists := model["rank_by"]; !exists {
 			model["rank_by"] = map[string]any{
-				"type":      "column",
-				"metric":    0,
-				"direction": "desc",
+				"type":         "metric",
+				"metric_index": float64(0),
+				"direction":    "desc",
+			}
+		}
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{
+				"mode":    "categorical",
+				"palette": "default",
+				"mapping": []any{},
 			}
 		}
 	}
@@ -360,7 +387,10 @@ func populateGaugeMetricDefaults(model map[string]any) map[string]any {
 		model["title"] = map[string]any{"visible": true}
 	}
 	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = map[string]any{"visible": true, "mode": dashboardValueAuto}
+		model["ticks"] = map[string]any{"visible": true, "mode": "bands"}
+	}
+	if _, exists := model["color"]; !exists {
+		model["color"] = map[string]any{"type": "auto"}
 	}
 
 	return model
@@ -377,6 +407,9 @@ func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
 		}
 		if _, exists := model["show_metric_label"]; !exists {
 			model["show_metric_label"] = true
+		}
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{"type": "auto"}
 		}
 	}
 	return model
@@ -1483,7 +1516,7 @@ func getXYAxisSchema() map[string]schema.Attribute {
 			Optional:            true,
 			Attributes:          getYAxisAttributes(),
 		},
-		"secondary_y": schema.SingleNestedAttribute{
+		"y2": schema.SingleNestedAttribute{
 			MarkdownDescription: "Secondary Y-axis configuration with scale and bounds.",
 			Optional:            true,
 			Attributes:          getYAxisAttributes(),
@@ -1904,11 +1937,6 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		Required:            true,
 		Attributes:          getHeatmapAxesSchema(),
 	}
-	attrs["cells"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Cells configuration for the heatmap.",
-		Required:            true,
-		Attributes:          getHeatmapCellsSchema(),
-	}
 	attrs["legend"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Legend configuration for the heatmap.",
 		Required:            true,
@@ -1928,6 +1956,17 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		MarkdownDescription: heatmapYAxisDescription,
 		CustomType:          jsontypes.NormalizedType{},
 		Optional:            true,
+	}
+	attrs["styling"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Heatmap styling configuration.",
+		Required:            true,
+		Attributes: map[string]schema.Attribute{
+			"cells": schema.SingleNestedAttribute{
+				MarkdownDescription: "Cells configuration for the heatmap.",
+				Required:            true,
+				Attributes:          getHeatmapCellsSchema(),
+			},
+		},
 	}
 	return attrs
 }
@@ -2436,10 +2475,16 @@ func getGaugeSchema() map[string]schema.Attribute {
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateGaugeMetricDefaults),
 		Required:            true,
 	}
-	attrs["shape_json"] = schema.StringAttribute{
-		MarkdownDescription: "Gauge shape configuration as JSON. Supports bullet and circular gauges.",
-		CustomType:          jsontypes.NormalizedType{},
-		Optional:            true,
+	attrs["styling"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Gauge styling configuration.",
+		Required:            true,
+		Attributes: map[string]schema.Attribute{
+			"shape_json": schema.StringAttribute{
+				MarkdownDescription: "Gauge shape configuration as JSON. Supports bullet and circular gauges.",
+				CustomType:          jsontypes.NormalizedType{},
+				Optional:            true,
+			},
+		},
 	}
 	return attrs
 }
@@ -2467,7 +2512,7 @@ func getMetricChart() map[string]schema.Attribute {
 			Attributes: map[string]schema.Attribute{
 				"config_json": schema.StringAttribute{
 					MarkdownDescription: metricChartMetricConfigDescription,
-					CustomType:          customtypes.NewJSONWithDefaultsType(populateLensMetricDefaults),
+					CustomType:          customtypes.NewJSONWithDefaultsType(populateMetricChartMetricDefaults),
 					Required:            true,
 				},
 			},
@@ -2509,11 +2554,6 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Dataset configuration as JSON. For standard datatables, this specifies the data view and query.",
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["density"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Density configuration for the datatable.",
-		Required:            true,
-		Attributes:          getDatatableDensitySchema(),
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data.",
@@ -2559,14 +2599,10 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 			},
 		},
 	}
-	attrs["sort_by_json"] = schema.StringAttribute{
-		MarkdownDescription: "Sort configuration as JSON. Only one column can be sorted at a time.",
-		CustomType:          jsontypes.NormalizedType{},
-		Optional:            true,
-	}
-	attrs["paging"] = schema.Int64Attribute{
-		MarkdownDescription: "Enables pagination and sets the number of rows to display per page.",
-		Optional:            true,
+	attrs["styling"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Datatable styling and display configuration.",
+		Required:            true,
+		Attributes:          getDatatableStylingSchema(),
 	}
 	return attrs
 }
@@ -2577,11 +2613,6 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query.",
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["density"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Density configuration for the datatable.",
-		Required:            true,
-		Attributes:          getDatatableDensitySchema(),
 	}
 	attrs["metrics"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
@@ -2622,16 +2653,31 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 			},
 		},
 	}
-	attrs["sort_by_json"] = schema.StringAttribute{
-		MarkdownDescription: "Sort configuration as JSON. Only one column can be sorted at a time.",
-		CustomType:          jsontypes.NormalizedType{},
-		Optional:            true,
-	}
-	attrs["paging"] = schema.Int64Attribute{
-		MarkdownDescription: "Enables pagination and sets the number of rows to display per page.",
-		Optional:            true,
+	attrs["styling"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Datatable styling and display configuration.",
+		Required:            true,
+		Attributes:          getDatatableStylingSchema(),
 	}
 	return attrs
+}
+
+func getDatatableStylingSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"density": schema.SingleNestedAttribute{
+			MarkdownDescription: "Density configuration for the datatable.",
+			Required:            true,
+			Attributes:          getDatatableDensitySchema(),
+		},
+		"sort_by_json": schema.StringAttribute{
+			MarkdownDescription: "Sort configuration as JSON. Only one column can be sorted at a time.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+		"paging": schema.Int64Attribute{
+			MarkdownDescription: "Enables pagination and sets the number of rows to display per page.",
+			Optional:            true,
+		},
+	}
 }
 
 func getDatatableDensitySchema() map[string]schema.Attribute {
@@ -2694,6 +2740,9 @@ func populatePieChartMetricDefaults(model map[string]any) map[string]any {
 
 	if _, exists := model["empty_as_null"]; !exists {
 		model["empty_as_null"] = false
+	}
+	if _, exists := model["color"]; !exists {
+		model["color"] = map[string]any{"type": "auto"}
 	}
 
 	// Set defaults for format

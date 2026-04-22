@@ -39,7 +39,7 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	raw := []byte(`{
 		"x":{"grid":{"visible":true},"ticks":{"visible":false}},
 		"y":{"grid":{"visible":true},"ticks":{"visible":true},"domain":{"type":"fit"}},
-		"secondary_y":{"grid":{"visible":false},"ticks":{"visible":true},"domain":{"type":"fit"}}
+		"y2":{"grid":{"visible":false},"ticks":{"visible":true},"domain":{"type":"fit"}}
 	}`)
 	var apiAxis kbapi.VisApiXyAxisConfig
 	require.NoError(t, json.Unmarshal(raw, &apiAxis))
@@ -56,8 +56,8 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.Y.Grid)
 	assert.Equal(t, types.BoolValue(true), model.Y.Ticks)
 
-	require.NotNil(t, model.SecondaryY)
-	assert.Equal(t, types.BoolValue(false), model.SecondaryY.Grid)
+	require.NotNil(t, model.Y2)
+	assert.Equal(t, types.BoolValue(false), model.Y2.Grid)
 
 	out, d := model.toAPI()
 	require.False(t, d.HasError())
@@ -209,7 +209,7 @@ func Test_yAxisConfigModel_fromAPIY_toAPIY(t *testing.T) {
 
 func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
 	raw := []byte(`{
-		"secondary_y":{
+		"y2":{
 			"grid":{"visible":false},
 			"ticks":{"visible":true},
 			"labels":{"orientation":"angled"},
@@ -220,10 +220,10 @@ func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
 	}`)
 	var env kbapi.VisApiXyAxisConfig
 	require.NoError(t, json.Unmarshal(raw, &env))
-	require.NotNil(t, env.SecondaryY)
+	require.NotNil(t, env.Y2)
 
 	model := &yAxisConfigModel{}
-	diags := model.fromAPISecondaryY(env.SecondaryY)
+	diags := model.fromAPIY2(env.Y2)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.BoolValue(false), model.Grid)
@@ -231,7 +231,7 @@ func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
 	assert.Equal(t, types.StringValue("angled"), model.LabelOrientation)
 	assert.Equal(t, types.StringValue("log"), model.Scale)
 
-	apiY, diags := model.toAPISecondaryY()
+	apiY, diags := model.toAPIY2()
 	require.False(t, diags.HasError())
 	require.NotNil(t, apiY)
 }
@@ -437,7 +437,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 				visibility := kbapi.XyLegendInsideVisibilityVisible
 				position := kbapi.TopLeft
 				legend := kbapi.XyLegendInside{
-					Placement:  kbapi.XyLegendInsidePlacementInside,
+					Placement:  kbapi.Inside,
 					Visibility: &visibility,
 					Layout: &struct {
 						Truncate *struct {
@@ -738,9 +738,9 @@ func Test_yAxisConfigModel_toAPIY_nil(t *testing.T) {
 	assert.Nil(t, apiAxis)
 }
 
-func Test_yAxisConfigModel_toAPISecondaryY_nil(t *testing.T) {
+func Test_yAxisConfigModel_toAPIY2_nil(t *testing.T) {
 	var model *yAxisConfigModel
-	apiAxis, diags := model.toAPISecondaryY()
+	apiAxis, diags := model.toAPIY2()
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
@@ -800,7 +800,7 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 						Scale:            types.StringValue("linear"),
 						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
 					},
-					SecondaryY: &yAxisConfigModel{
+					Y2: &yAxisConfigModel{
 						Title: &axisTitleModel{
 							Value:   types.StringValue("Rate"),
 							Visible: types.BoolValue(true),
@@ -881,7 +881,7 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 						Scale:            types.StringValue("linear"),
 						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":true}`),
 					},
-					SecondaryY: nil,
+					Y2: nil,
 				},
 				Decorations: &xyDecorationsModel{
 					ShowEndZones:          types.BoolValue(false),
@@ -939,8 +939,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 	assert.True(t, got.Axis.X.Ticks.IsNull())
 	assert.True(t, got.Axis.X.LabelOrientation.IsNull())
 	assert.True(t, got.Axis.X.DomainJSON.IsNull())
-	require.NotNil(t, got.Axis.SecondaryY)
-	assert.Equal(t, planPanels[0].XYChartConfig.Axis.SecondaryY.DomainJSON.ValueString(), got.Axis.SecondaryY.DomainJSON.ValueString())
+	require.NotNil(t, got.Axis.Y2)
+	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y2.DomainJSON.ValueString(), got.Axis.Y2.DomainJSON.ValueString())
 	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
 	assert.True(t, got.Decorations.ShowEndZones.IsNull())
 	assert.True(t, got.Decorations.ShowCurrentTimeMarker.IsNull())

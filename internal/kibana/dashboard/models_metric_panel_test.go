@@ -468,3 +468,17 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+func Test_metricChartMetricConfigsEquivalent_secondaryDefaults(t *testing.T) {
+	prior := customtypes.NewJSONWithDefaultsValue(
+		`{"field":"bytes","filter":{"expression":"","language":"kql"},"format":{"type":"number"},"operation":"sum","time_scale":"h","type":"secondary"}`,
+		populateMetricChartMetricDefaults,
+	)
+	current := customtypes.NewJSONWithDefaultsValue(
+		`{"type":"secondary","operation":"sum","field":"bytes","empty_as_null":false,"time_scale":"h",`+
+			`"filter":{"expression":"","language":"kql"},`+
+			`"format":{"type":"number","decimals":2,"compact":false},"color":{"type":"none"}}`,
+		populateMetricChartMetricDefaults,
+	)
+	assert.True(t, metricChartMetricConfigsEquivalent(prior, current))
+}

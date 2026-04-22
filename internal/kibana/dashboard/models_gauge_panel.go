@@ -81,7 +81,11 @@ type gaugeConfigModel struct {
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	ShapeJSON           jsontypes.Normalized                              `tfsdk:"shape_json"`
+	Styling             *gaugeStylingModel                                `tfsdk:"styling"`
+}
+
+type gaugeStylingModel struct {
+	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
 }
 
 func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) diag.Diagnostics {
@@ -115,17 +119,18 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = mv
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	if api.Shape != nil {
-		shapeBytes, err := api.Shape.MarshalJSON()
+	m.Styling = &gaugeStylingModel{}
+	if api.Styling.Shape != nil {
+		shapeBytes, err := api.Styling.Shape.MarshalJSON()
 		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
 		if !ok {
 			return diags
 		}
-		m.ShapeJSON = sv
+		m.Styling.ShapeJSON = sv
 	} else {
-		m.ShapeJSON = jsontypes.NewNormalizedNull()
+		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
@@ -175,12 +180,12 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		}
 	}
 
-	if typeutils.IsKnown(m.ShapeJSON) {
-		var shape kbapi.GaugeNoESQL_Shape
-		shapeDiags := m.ShapeJSON.Unmarshal(&shape)
+	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
+		var shape kbapi.GaugeStyling_Shape
+		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
-			api.Shape = &shape
+			api.Styling.Shape = &shape
 		}
 	}
 
