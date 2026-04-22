@@ -133,7 +133,7 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$(cat .terraform-version)"
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources

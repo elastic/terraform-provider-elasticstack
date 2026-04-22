@@ -1,8 +1,8 @@
 ## 1. Establish `.terraform-version` as the shared Terraform source of truth
 
-- [ ] 1.1 Add a root `.terraform-version` file pinned to the current latest stable Terraform release.
-- [ ] 1.2 Update `docs-generate` to read `.terraform-version` and pass that value to `tfplugindocs generate --tf-version ...`.
-- [ ] 1.3 Ensure related aggregate targets (`gen`, `lint`, `check-docs`, `check-lint`) continue to exercise the pinned docs-generation path through `docs-generate`.
+- [x] 1.1 Add a root `.terraform-version` file pinned to the current latest stable Terraform release.
+- [x] 1.2 Update `docs-generate` to read `.terraform-version` and pass that value to `tfplugindocs generate --tf-version ...`.
+- [x] 1.3 Ensure related aggregate targets (`gen`, `lint`, `check-docs`, `check-lint`) continue to exercise the pinned docs-generation path through `docs-generate`.
 
 ## 2. Align CI with `.terraform-version`
 
