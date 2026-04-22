@@ -20,6 +20,7 @@ package datafeed
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,15 +43,21 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
+	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Before deleting, we need to stop the datafeed if it's running
-	_, stopDiags := r.maybeStopDatafeed(ctx, datafeedID)
+	_, stopDiags := r.maybeStopDatafeed(ctx, client, datafeedID)
 	resp.Diagnostics.Append(stopDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Delete the datafeed
-	deleteDiags := elasticsearch.DeleteDatafeed(ctx, r.client, datafeedID, false)
+	deleteDiags := elasticsearch.DeleteDatafeed(ctx, client, datafeedID, false)
 	resp.Diagnostics.Append(deleteDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -59,9 +66,15 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 	// The resource is automatically removed from state on successful delete
 }
 
-func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedID string) (bool, diag.Diagnostics) {
+func (r *datafeedResource) maybeStopDatafeed(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	datafeedID string,
+) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	// Check current state
-	currentState, diags := GetDatafeedState(ctx, r.client, datafeedID)
+	currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -76,14 +89,14 @@ func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedID str
 	}
 
 	// Stop the datafeed
-	stopDiags := elasticsearch.StopDatafeed(ctx, r.client, datafeedID, false, 0)
+	stopDiags := elasticsearch.StopDatafeed(ctx, client, datafeedID, false, 0)
 	diags.Append(stopDiags...)
 	if diags.HasError() {
 		return true, diags
 	}
 
 	// Wait for the datafeed to reach stopped state
-	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedID, StateStopped)
+	_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStopped)
 	diags.Append(waitDiags...)
 	if diags.HasError() {
 		return true, diags

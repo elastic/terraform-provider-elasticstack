@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Treemap Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Treemap Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -22,17 +27,19 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
 
     treemap_config = {
-      title       = "Complete Treemap"
-      description = "Complete treemap visualization"
+      title       = ""
+      description = ""
 
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
 
       query = {
-        language = "kuery"
-        query    = "service.name:*"
+        language   = "kql"
+        expression = "service.name:*"
       }
 
       filters = [
@@ -55,13 +62,18 @@ resource "elasticstack_kibana_dashboard" "test" {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }
           }
           fields = ["service.name"]
-          size   = 5
+          rank_by = {
+            direction    = "desc"
+            metric_index = 0
+            type         = "metric"
+          }
+          limit = 5
         }
       ])
 
@@ -71,12 +83,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      label_position = "hidden"
-
       legend = {
         nested               = false
-        size                 = "small"
-        visible              = "show"
+        size                 = "s"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 

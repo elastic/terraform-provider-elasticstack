@@ -18,7 +18,7 @@
 package slo
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,56 +33,75 @@ type tfKqlCustomIndicator struct {
 	TimestampField types.String `tfsdk:"timestamp_field"`
 }
 
-func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func (m tfModel) kqlCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	if len(m.KqlCustomIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}, diags
+		return false, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
 	ind := m.KqlCustomIndicator[0]
 
-	var filterObj *slo.KqlWithFilters
+	var filterObj *kbapi.SLOsKqlWithFilters
 	if typeutils.IsKnown(ind.Filter) {
 		v := ind.Filter.ValueString()
-		filterObj = &slo.KqlWithFilters{String: &v}
+		var f kbapi.SLOsKqlWithFilters
+		if err := f.FromSLOsKqlWithFilters0(v); err != nil {
+			diags.AddError("Invalid configuration", "kql_custom_indicator.filter: "+err.Error())
+			return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+		}
+		filterObj = &f
 	}
 
-	// Default good and total to empty string if not provided, as they are required by the API
-	// and must be marshallable to valid JSON
+	// Default good and total to empty string if not provided, as they are required by the API.
 	goodStr := ""
 	if typeutils.IsKnown(ind.Good) {
 		goodStr = ind.Good.ValueString()
 	}
-	good := slo.KqlWithFiltersGood{String: &goodStr}
+	var good kbapi.SLOsKqlWithFiltersGood
+	if err := good.FromSLOsKqlWithFiltersGood0(goodStr); err != nil {
+		diags.AddError("Invalid configuration", "kql_custom_indicator.good: "+err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
 
 	totalStr := ""
 	if typeutils.IsKnown(ind.Total) {
 		totalStr = ind.Total.ValueString()
 	}
-	total := slo.KqlWithFiltersTotal{String: &totalStr}
-
-	params := slo.IndicatorPropertiesCustomKqlParams{
-		Index:          ind.Index.ValueString(),
-		DataViewId:     stringPtr(ind.DataViewID),
-		Filter:         filterObj,
-		Good:           good,
-		Total:          total,
-		TimestampField: ind.TimestampField.ValueString(),
+	var total kbapi.SLOsKqlWithFiltersTotal
+	if err := total.FromSLOsKqlWithFiltersTotal0(totalStr); err != nil {
+		diags.AddError("Invalid configuration", "kql_custom_indicator.total: "+err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
-	return true, slo.SloWithSummaryResponseIndicator{
-		IndicatorPropertiesCustomKql: &slo.IndicatorPropertiesCustomKql{
-			Type:   indicatorAddressToType["kql_custom_indicator"],
-			Params: params,
+	kqlIndicator := kbapi.SLOsIndicatorPropertiesCustomKql{
+		Type: indicatorAddressToType["kql_custom_indicator"],
+		Params: struct {
+			DataViewId     *string                       `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+			Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+			Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+			Index          string                        `json:"index"`
+			TimestampField string                        `json:"timestampField"`
+			Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+		}{
+			Index:          ind.Index.ValueString(),
+			DataViewId:     stringPtr(ind.DataViewID),
+			Filter:         filterObj,
+			Good:           good,
+			Total:          total,
+			TimestampField: ind.TimestampField.ValueString(),
 		},
-	}, diags
+	}
+
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	if err := result.FromSLOsIndicatorPropertiesCustomKql(kqlIndicator); err != nil {
+		diags.AddError("Failed to build KQL indicator", err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
+	return true, result, diags
 }
 
-func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomKql) diag.Diagnostics {
+func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator kbapi.SLOsIndicatorPropertiesCustomKql) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	if apiIndicator == nil {
-		return diags
-	}
 
 	p := apiIndicator.Params
 	ind := tfKqlCustomIndicator{
@@ -93,17 +112,30 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorProp
 		Total:          types.StringNull(),
 		DataViewID:     types.StringNull(),
 	}
-	if p.Filter != nil && p.Filter.String != nil {
-		ind.Filter = types.StringValue(*p.Filter.String)
+
+	if p.Filter != nil {
+		// Try string variant first; fall back to object variant's KqlQuery field.
+		// Note: AsSLOsKqlWithFilters0 always succeeds on kbapi unions (json.RawMessage).
+		// We dispatch on whether the object variant's KqlQuery is set to distinguish variants.
+		if f1, err := p.Filter.AsSLOsKqlWithFilters1(); err == nil && f1.KqlQuery != nil {
+			ind.Filter = types.StringValue(*f1.KqlQuery)
+		} else if s, err := p.Filter.AsSLOsKqlWithFilters0(); err == nil {
+			ind.Filter = types.StringValue(s)
+		}
 	}
-	// Handle good and total fields - these are always present in the API response
-	// If they are empty strings, preserve that in the state
-	if p.Good.String != nil {
-		ind.Good = types.StringValue(*p.Good.String)
+
+	// Dispatch on object variant's KqlQuery field; fall back to string variant.
+	if g1, err := p.Good.AsSLOsKqlWithFiltersGood1(); err == nil && g1.KqlQuery != nil {
+		ind.Good = types.StringValue(*g1.KqlQuery)
+	} else if s, err := p.Good.AsSLOsKqlWithFiltersGood0(); err == nil {
+		ind.Good = types.StringValue(s)
 	}
-	if p.Total.String != nil {
-		ind.Total = types.StringValue(*p.Total.String)
+	if t1, err := p.Total.AsSLOsKqlWithFiltersTotal1(); err == nil && t1.KqlQuery != nil {
+		ind.Total = types.StringValue(*t1.KqlQuery)
+	} else if s, err := p.Total.AsSLOsKqlWithFiltersTotal0(); err == nil {
+		ind.Total = types.StringValue(s)
 	}
+
 	if p.DataViewId != nil {
 		ind.DataViewID = types.StringValue(*p.DataViewId)
 	}

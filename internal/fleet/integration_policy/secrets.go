@@ -130,10 +130,26 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	}
 
 	handleVars(schemautil.Deref(resp.Vars))
-	for _, input := range resp.Inputs {
+	respInputs, err := resp.Inputs.AsPackagePolicyMappedInputs()
+	if err != nil {
+		respInputs = kbapi.PackagePolicyMappedInputs{}
+	}
+	for inputID, input := range respInputs {
 		handleVars(schemautil.Deref(input.Vars))
-		for _, stream := range schemautil.Deref(input.Streams) {
+		for streamID, stream := range schemautil.Deref(input.Streams) {
 			handleVars(schemautil.Deref(stream.Vars))
+			// write back modified stream
+			if input.Streams != nil {
+				(*input.Streams)[streamID] = stream
+			}
+		}
+		respInputs[inputID] = input
+	}
+	// Write modified inputs back to the union field
+	if len(respInputs) > 0 {
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(respInputs); err != nil {
+			diags.AddError("failed to write back mapped inputs", err.Error())
+			return
 		}
 	}
 
@@ -205,14 +221,38 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		}
 	}
 
-	handleVars(schemautil.Deref(req.Vars), schemautil.Deref(resp.Vars))
-	for inputID, inputReq := range schemautil.Deref(req.Inputs) {
-		inputResp := resp.Inputs[inputID]
+	// Extract mapped inputs from union types for secrets handling.
+	// If either extraction fails (e.g. nil or malformed union), skip secrets
+	// processing to avoid clobbering secret values with nil.
+	reqMapped, err := req.AsPackagePolicyRequestMappedInputs()
+	if err != nil {
+		return
+	}
+	respMapped, err := resp.Inputs.AsPackagePolicyMappedInputs()
+	if err != nil {
+		respMapped = kbapi.PackagePolicyMappedInputs{}
+	}
+
+	handleVars(schemautil.Deref(reqMapped.Vars), schemautil.Deref(resp.Vars))
+	for inputID, inputReq := range schemautil.Deref(reqMapped.Inputs) {
+		inputResp := respMapped[inputID]
 		handleVars(schemautil.Deref(inputReq.Vars), schemautil.Deref(inputResp.Vars))
 		streamsResp := schemautil.Deref(inputResp.Streams)
 		for streamID, streamReq := range schemautil.Deref(inputReq.Streams) {
 			streamResp := streamsResp[streamID]
 			handleVars(schemautil.Deref(streamReq.Vars), schemautil.Deref(streamResp.Vars))
+			// write back modified stream
+			if inputResp.Streams != nil {
+				(*inputResp.Streams)[streamID] = streamResp
+			}
+		}
+		respMapped[inputID] = inputResp
+	}
+	// Write modified inputs back to the union field
+	if len(respMapped) > 0 {
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(respMapped); err != nil {
+			diags.AddError("failed to write back mapped inputs", err.Error())
+			return
 		}
 	}
 

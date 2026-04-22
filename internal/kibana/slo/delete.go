@@ -21,8 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	clientkibana "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -35,7 +34,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	if r.client == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured API client")
+		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
@@ -45,7 +50,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	// Note: internal/clients/kibana.DeleteSlo expects (spaceId, sloId).
-	sdkDiags := clientkibana.DeleteSlo(ctx, r.client, compID.ClusterID, compID.ResourceID)
-	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	oapi, err := apiClient.GetKibanaOapiClient()
+	if err != nil {
+		response.Diagnostics.AddError("Failed to get Kibana API client", err.Error())
+		return
+	}
+
+	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
+	// DeleteSlo signature: (ctx, client, spaceID, sloID).
+	response.Diagnostics.Append(kibanaoapi.DeleteSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)...)
 }

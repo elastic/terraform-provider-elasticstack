@@ -35,7 +35,7 @@ func NewRoleMappingDataSource() datasource.DataSource {
 }
 
 type roleMappingDataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (d *roleMappingDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -46,7 +46,7 @@ func (d *roleMappingDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieves role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -86,7 +86,7 @@ func (d *roleMappingDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 }
 
 func (d *roleMappingDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	d.client = client
 }
@@ -100,7 +100,7 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	roleMappingName := data.Name.ValueString()
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
+	client, diags := d.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -115,7 +115,7 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 	data.ID = types.StringValue(id.String())
 
 	// Use the extracted read function
-	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return

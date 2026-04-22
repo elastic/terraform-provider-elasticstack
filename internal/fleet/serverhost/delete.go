@@ -34,7 +34,13 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -51,6 +57,6 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	diags = fleet.DeleteFleetServerHost(ctx, client, hostID, spaceID)
+	diags = fleet.DeleteFleetServerHost(ctx, fleetClient, hostID, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

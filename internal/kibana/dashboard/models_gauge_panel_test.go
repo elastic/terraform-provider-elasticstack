@@ -51,23 +51,23 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.5)),
 				}
 
-				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				require.NoError(t, err)
-				err = json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query)
+				err = json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
 
-				var shape kbapi.GaugeNoESQL_Shape
+				var shape kbapi.GaugeStyling_Shape
 				err = json.Unmarshal([]byte(`{"type":"circle"}`), &shape)
 				require.NoError(t, err)
-				api.Shape = &shape
+				api.Styling.Shape = &shape
 
-				var fItem kbapi.GaugeNoESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				err = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"host.name","operator":"is","value":"foo"}}`), &fItem)
 				require.NoError(t, err)
-				filters := []kbapi.GaugeNoESQL_Filters_Item{fItem}
-				api.Filters = &filters
+				filters := []kbapi.LensPanelFilters_Item{fItem}
+				api.Filters = filters
 
 				return api
 			}(),
@@ -77,8 +77,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolValue(true),
 				Sampling:            types.Float64Value(0.5),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"),
-					Query:    types.StringValue("status:active"),
+					Language:   types.StringValue("kql"),
+					Expression: types.StringValue("status:active"),
 				},
 			},
 		},
@@ -89,9 +89,9 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Type: kbapi.GaugeNoESQLTypeGauge,
 				}
 
-				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				require.NoError(t, err)
-				err = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
+				err = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
@@ -104,8 +104,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"), // Language should default to "kuery"
-					Query:    types.StringValue("*"),
+					Language:   types.StringValue("kql"), // Language should default to "kql"
+					Expression: types.StringValue("*"),
 				},
 			},
 		},
@@ -125,14 +125,15 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 			if tt.expected.Query != nil {
 				require.NotNil(t, model.Query, "Query should not be nil")
 				assert.Equal(t, tt.expected.Query.Language, model.Query.Language, "Query language should match")
-				assert.Equal(t, tt.expected.Query.Query, model.Query.Query, "Query text should match")
+				assert.Equal(t, tt.expected.Query.Expression, model.Query.Expression, "Query text should match")
 			}
 
-			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
+			assert.False(t, model.DataSourceJSON.IsNull(), "Dataset should not be null")
 			assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
 
 			if tt.name == "full gauge config" {
-				assert.False(t, model.ShapeJSON.IsNull(), "Shape should not be null")
+				require.NotNil(t, model.Styling)
+				assert.False(t, model.Styling.ShapeJSON.IsNull(), "Shape should not be null")
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 
@@ -172,15 +173,12 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
-	var gaugeChart kbapi.GaugeChart
-	require.NoError(t, gaugeChart.FromGaugeNoESQL(api))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromGaugeChart(gaugeChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromGaugeNoESQL(api))
 
 	converter := newGaugePanelConfigConverter()
 	pm := &panelModel{}
@@ -191,9 +189,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	gaugeChart2, err := attrs2.AsGaugeChart()
-	require.NoError(t, err)
-	gaugeNoESQL2, err := gaugeChart2.AsGaugeNoESQL()
+	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Round-Trip Gauge", *gaugeNoESQL2.Title)
 	assert.Equal(t, "Converter round-trip test", *gaugeNoESQL2.Description)

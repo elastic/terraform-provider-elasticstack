@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Waffle Panel (ES|QL)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Waffle Panel (ES|QL)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -25,7 +30,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "ESQL Waffle"
       description = "Waffle visualization using ES|QL"
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type = "esql"
         # Single-bucket STATS avoids group-by coloring rules in Lens ("Coloring cannot be
         # assigned to a collapsed grouping dimension" with BY + collapse).
@@ -35,12 +40,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       # Omit `query` for ES|QL mode (see provider docs).
 
       legend = {
-        size = "medium"
+        size = "m"
       }
 
       esql_metrics = [{
         column      = "c"
-        operation   = "value"
         format_json = jsonencode({ type = "number" })
         color = {
           type  = "static"

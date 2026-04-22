@@ -42,7 +42,7 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Configures the data stream lifecycle for the targeted data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

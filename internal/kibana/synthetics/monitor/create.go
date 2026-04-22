@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -29,11 +30,6 @@ import (
 var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
@@ -41,7 +37,18 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if oapiClient == nil {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
@@ -53,9 +60,14 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	spaceID := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, spaceID)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", input.config.Name, spaceID), err.Error())
+	result, diags := kibanaoapi.CreateMonitor(ctx, oapiClient, spaceID, *input)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if result == nil {
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", plan.Name.ValueString(), spaceID), "empty response from API")
 		return
 	}
 

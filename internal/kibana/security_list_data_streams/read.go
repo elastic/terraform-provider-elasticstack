@@ -32,6 +32,12 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// During import, space_id might not be set yet, derive it from ID
 	if !typeutils.IsKnown(state.SpaceID) && typeutils.IsKnown(state.ID) {
 		state.SpaceID = state.ID
@@ -40,14 +46,14 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 	spaceID := state.SpaceID.ValueString()
 
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
 	}
 
 	// Check if the data streams exist
-	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, oapiClient, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -26,7 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -286,7 +286,7 @@ func TestAccResourceSlo(t *testing.T) {
 	}
 }
 
-//go:embed testdata/TestAccResourceSloGroupBy/single_element/test.tf
+//go:embed testdata/TestAccResourceSloGroupBy/single_element/main.tf
 var singleElementConfig string
 
 func TestAccResourceSloGroupBy(t *testing.T) {
@@ -682,7 +682,7 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 				// Verify the current (Framework) implementation can read and manage the SDK-created state.
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
-				Config:                   sloFromSDKCreateConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
 				},
@@ -751,7 +751,12 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 }
 
 func checkResourceSloDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return err
+	}
+
+	oapi, err := client.GetKibanaOapiClient()
 	if err != nil {
 		return err
 	}
@@ -760,16 +765,15 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_slo" {
 			continue
 		}
+		// CompositeID stores spaceID as ClusterID and sloID as ResourceID.
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		slo, diags := kibana.GetSlo(context.Background(), client, compID.ResourceID, compID.ClusterID)
+		res, diags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {
-			if len(diags) > 1 || diags[0].Summary != "404 Not Found" {
-				return fmt.Errorf("Failed to check if SLO was destroyed: %v", diags)
-			}
+			return fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
 		}
 
-		if slo != nil {
+		if res != nil {
 			return fmt.Errorf("SLO (%s) still exists", compID.ResourceID)
 		}
 	}

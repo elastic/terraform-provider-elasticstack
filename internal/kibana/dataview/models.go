@@ -331,10 +331,11 @@ func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string)
 }
 
 type dataViewModel struct {
-	ID       types.String `tfsdk:"id"`
-	SpaceID  types.String `tfsdk:"space_id"`
-	Override types.Bool   `tfsdk:"override"`
-	DataView types.Object `tfsdk:"data_view"` // > innerModel
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	Override         types.Bool   `tfsdk:"override"`
+	DataView         types.Object `tfsdk:"data_view"` // > innerModel
 }
 
 type innerModel struct {

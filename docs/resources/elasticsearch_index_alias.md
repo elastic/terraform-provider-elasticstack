@@ -21,7 +21,7 @@ Manages an Elasticsearch alias. See the [alias documentation](https://www.elasti
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `read_indices` (Attributes Set) Set of read indices for the alias. (see [below for nested schema](#nestedatt--read_indices))
 - `write_index` (Attributes) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedatt--write_index))
 

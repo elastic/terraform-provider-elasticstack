@@ -43,13 +43,8 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	gaugeChart, err := attrs.AsGaugeChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	gaugeNoESQL, err := gaugeChart.AsGaugeNoESQL()
+func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -58,26 +53,20 @@ func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, p
 	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.GaugeConfig
 
 	gaugeNoESQL, gaugeDiags := configModel.toAPI()
 	diags.Append(gaugeDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
-	var gaugeChart kbapi.GaugeChart
-	if err := gaugeChart.FromGaugeNoESQL(gaugeNoESQL); err != nil {
-		diags.AddError("Failed to convert gauge to schema", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
-	}
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	if err := attrs.FromGaugeChart(gaugeChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	if err := attrs.FromGaugeNoESQL(gaugeNoESQL); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
@@ -86,13 +75,17 @@ func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDash
 type gaugeConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	ShapeJSON           jsontypes.Normalized                              `tfsdk:"shape_json"`
+	Styling             *gaugeStylingModel                                `tfsdk:"styling"`
+}
+
+type gaugeStylingModel struct {
+	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
 }
 
 func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) diag.Diagnostics {
@@ -102,12 +95,12 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	v, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -119,37 +112,25 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filterSchema := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filterSchema)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	metricBytes, err := api.Metric.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateGaugeMetricDefaults, &diags)
+	if !ok {
 		return diags
 	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue(
-		string(metricBytes),
-		populateGaugeMetricDefaults,
-	)
+	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	if api.Shape != nil {
-		shapeBytes, err := api.Shape.MarshalJSON()
-		if err != nil {
-			diags.AddError("Failed to marshal shape", err.Error())
+	m.Styling = &gaugeStylingModel{}
+	if api.Styling.Shape != nil {
+		shapeBytes, err := api.Styling.Shape.MarshalJSON()
+		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
+		if !ok {
 			return diags
 		}
-		m.ShapeJSON = jsontypes.NewNormalizedValue(string(shapeBytes))
+		m.Styling.ShapeJSON = sv
 	} else {
-		m.ShapeJSON = jsontypes.NewNormalizedNull()
+		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
@@ -160,6 +141,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var api kbapi.GaugeNoESQL
 
 	api.Type = kbapi.GaugeNoESQLTypeGauge
+	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -169,9 +151,9 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if typeutils.IsKnown(m.DatasetJSON) {
-		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
-			diags.AddError("Failed to unmarshal dataset", err.Error())
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
 			return api, diags
 		}
 	}
@@ -189,20 +171,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Query = m.Query.toAPI()
 	}
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.GaugeNoESQL_Filters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.GaugeNoESQL_Filters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
@@ -211,12 +180,12 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		}
 	}
 
-	if typeutils.IsKnown(m.ShapeJSON) {
-		var shape kbapi.GaugeNoESQL_Shape
-		shapeDiags := m.ShapeJSON.Unmarshal(&shape)
+	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
+		var shape kbapi.GaugeStyling_Shape
+		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
-			api.Shape = &shape
+			api.Styling.Shape = &shape
 		}
 	}
 

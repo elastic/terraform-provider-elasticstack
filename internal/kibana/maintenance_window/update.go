@@ -21,6 +21,7 @@ import (
 	"context"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,22 +35,31 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	if sdkDiags.HasError() {
+	client, diags := r.client.GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	serverFlavor, sdkDiags := r.client.ServerFlavor(ctx)
-	if sdkDiags.HasError() {
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverFlavor, sdkDiags := client.ServerFlavor(ctx)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
-	if diags.HasError() {
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -62,7 +72,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	maintenanceWindowID, spaceID := planMaintenanceWindow.getMaintenanceWindowIDAndSpaceID()
-	diags = kibanaoapi.UpdateMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID, body)
+	diags = kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,7 +82,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
-	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

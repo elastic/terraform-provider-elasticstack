@@ -41,8 +41,14 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
+	client, diags := d.client.GetKibanaClient(ctx, config.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	oapiClient, err := d.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
 		return
@@ -109,6 +115,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	var state dataSourceModel
 	state.ID = types.StringValue(compositeID.String())
 	state.SpaceID = types.StringValue(spaceID)
+	state.KibanaConnection = config.KibanaConnection
 	state.Objects = config.Objects
 	state.ExcludeExportDetails = types.BoolValue(excludeExportDetails)
 	state.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)

@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceKibanaConnector(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceConnector,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "name", "myconnector"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "space_id", "default"),
@@ -41,22 +41,3 @@ func TestAccDataSourceKibanaConnector(t *testing.T) {
 		},
 	})
 }
-
-const testAccDataSourceConnector = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "slack" {
-	name              = "myconnector"
-	connector_type_id = ".slack"
-	secrets = jsonencode({
-	  webhookUrl = "https://internet.com"
-	})
-  }
-
-data "elasticstack_kibana_action_connector" "myconnector" {
-	name    = elasticstack_kibana_action_connector.slack.name
-}
-`

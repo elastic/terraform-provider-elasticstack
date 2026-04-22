@@ -19,11 +19,14 @@ package integrationds_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -32,12 +35,12 @@ var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
-				Config:   testAccDataSourceIntegration,
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
 					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
@@ -47,16 +50,28 @@ func TestAccDataSourceIntegration(t *testing.T) {
 	})
 }
 
-const testAccDataSourceIntegration = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
+func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
+	spaceID := strings.ToLower("test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_name": config.StringVariable(spaceID),
+					"space_id":   config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "space_id", spaceID),
+					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
+				),
+			},
+		},
+	})
 }
-
-data "elasticstack_fleet_integration" "test" {
-  name = "tcp"
-}
-`
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key
 // is not empty.

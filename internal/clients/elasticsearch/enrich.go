@@ -56,7 +56,7 @@ func getPolicyType(m map[string]enrichPolicyResponse) (string, error) {
 	return "", fmt.Errorf("did not find expected policy type")
 }
 
-func GetEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
+func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -116,7 +116,7 @@ func tryJSONUnmarshalString(s string) (any, bool) {
 	return data, true
 }
 
-func PutEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, policy *models.EnrichPolicy) diag.Diagnostics {
+func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 	payloadPolicy := map[string]any{
 		"indices":       policy.Indices,
@@ -154,7 +154,7 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, policy *
 	return diags
 }
 
-func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, policyName string) diag.Diagnostics {
+func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -173,7 +173,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, polic
 	return diags
 }
 
-func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.APIClient, policyName string) diag.Diagnostics {
+func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {

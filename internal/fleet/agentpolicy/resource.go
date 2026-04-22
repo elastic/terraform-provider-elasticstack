@@ -53,13 +53,16 @@ func NewResource() resource.Resource {
 }
 
 type agentPolicyResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *agentPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *agentPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -85,48 +88,48 @@ func (r *agentPolicyResource) ImportState(ctx context.Context, req resource.Impo
 	}
 }
 
-func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
-	supportsGDT, diags := r.client.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
+func (r *agentPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
+	supportsGDT, diags := apiClient.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsSupportsAgentless, diags := r.client.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
+	supportsSupportsAgentless, diags := apiClient.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsInactivityTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
+	supportsInactivityTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsUnenrollmentTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
+	supportsUnenrollmentTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsSpaceIDs, diags := r.client.EnforceMinVersion(ctx, MinVersionSpaceIDs)
+	supportsSpaceIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceIDs)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsRequiredVersions, diags := r.client.EnforceMinVersion(ctx, MinVersionRequiredVersions)
+	supportsRequiredVersions, diags := apiClient.EnforceMinVersion(ctx, MinVersionRequiredVersions)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsAgentFeatures, diags := r.client.EnforceMinVersion(ctx, MinVersionAgentFeatures)
+	supportsAgentFeatures, diags := apiClient.EnforceMinVersion(ctx, MinVersionAgentFeatures)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsAdvancedMonitoring, diags := r.client.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
+	supportsAdvancedMonitoring, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsAdvancedSettings, diags := r.client.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
+	supportsAdvancedSettings, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}

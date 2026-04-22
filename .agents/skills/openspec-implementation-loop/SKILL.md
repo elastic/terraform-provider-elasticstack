@@ -1,0 +1,332 @@
+---
+name: "openspec-implementation-loop"
+description: "Orchestrates an end-to-end implementation loop for a single OpenSpec change: select a change, ask commit-only vs PR delivery, implement one top-level task at a time with a fresh dedicated subagent for each task, run review and verification subagents after each completed top-level task, feed findings back for fixes, push to origin, then either watch GitHub Actions on the branch (commit mode) or create a PR and watch PR checks while polling for and addressing PR reviews (PR mode). Use when the user wants to implement an approved OpenSpec proposal/change with iterative review and CI feedback."
+license: "MIT"
+compatibility: "Requires openspec CLI, git, and GitHub CLI."
+metadata:
+  author: openspec
+  version: "2.0"
+---
+
+Orchestrate an implementation loop around a single OpenSpec change.
+
+**Input**: Optionally specify a change name. If omitted, you MUST ask the user which change to implement.
+
+**High-level flow**
+
+1. Select the change
+2. **Ask delivery mode (commit vs PR) — do this immediately after selecting the change, not after implementation**
+3. Load OpenSpec context
+4. Determine remaining top-level tasks
+5. For each remaining top-level task, start a fresh implementor subagent
+6. Run required local validation after each top-level task
+7. Run review subagents in parallel after each top-level task
+8. Send findings back to that task's implementor and repeat until clean, then move to the next top-level task
+9. Push the branch to `origin`
+10. **Commit mode**: Watch GitHub Actions on the pushed branch/commit  
+    **PR mode**: Create a PR, watch PR checks, run a deterministic PR-state poll on every cadence tick so CI and review feedback are checked together, add `verify-openspec` only after the current head is green and review feedback is addressed, and keep addressing feedback until the PR is approved for the current head
+11. Report final outcome
+
+**Steps**
+
+1. **Select exactly one change**
+
+   If a name is provided, use it.
+
+   Otherwise:
+   - Run `openspec list --json`
+   - Use the **AskUserQuestion tool** to let the user choose a single active change
+   - Show the change name, schema if available, and status
+
+   **IMPORTANT**:
+   - Do NOT guess
+   - Do NOT auto-select
+   - Do NOT implement multiple changes in one run
+
+   Always announce: `Using change: <name>`.
+
+2. **Choose delivery mode (ask immediately — before loading context or starting the implementor)**
+
+   Use **AskUserQuestion** (or an equivalent explicit user prompt) right after step 1. Do **not** defer this until after implementation or push.
+
+   Offer two options:
+
+   - **Commit-only**: Push your work to `origin` on the current branch. After each push, monitor GitHub Actions for the **branch / commits** you pushed (same behavior as the historical workflow).
+   - **Pull request**: After the **initial** push of the implementation loop, **create a PR** (for example with `gh pr create`). Then monitor **PR** workflow runs (checks on the PR), and **actively handle PR reviews** as described in step 12.
+
+   Record the user’s choice and refer to it from push onward (steps 10–12).
+
+3. **Load OpenSpec status and context**
+
+   Run:
+   ```bash
+   openspec status --change "<name>" --json
+   openspec instructions apply --change "<name>" --json
+   ```
+
+   Parse the outputs to determine:
+   - `schemaName`
+   - current task progress
+   - `state`
+   - `contextFiles`
+   - the ordered list of top-level tasks (for example `1`, `2`, `3`) and which of them are still incomplete
+
+   Read every file listed in `contextFiles`.
+
+   **Handle states**:
+   - If `state: "blocked"`: stop and explain what artifact is missing; suggest continuing the change artifacts first
+   - If `state: "all_done"`: skip directly to the push / CI stage because all top-level tasks are already complete
+   - Otherwise: proceed to the per-top-level-task implementation loop
+
+4. **Determine the remaining top-level tasks**
+
+   Build an ordered queue of incomplete top-level tasks from the OpenSpec task list.
+
+   Interpret a top-level task as the parent task number such as `1`, `2`, or `3`. Each top-level task includes all of its nested subtasks such as `1.1`, `1.2`, `1.3`.
+
+   For each incomplete top-level task:
+   - gather the subtasks that belong to it
+   - understand the intended scope from the proposal/design/specs
+   - process the top-level tasks sequentially unless the user explicitly asks for a different strategy
+
+5. **Start a fresh implementor subagent for the current top-level task**
+
+   Launch a dedicated write-capable subagent for the current top-level task only. Do **not** reuse the prior task's implementor for later top-level tasks.
+
+   The implementor prompt should instruct it to:
+   - implement only the selected change
+   - focus only on the current top-level task and complete all of its nested subtasks before stopping
+   - follow the `openspec-apply-change` skill/process for the change
+   - sync delta specs when implementation requires spec synchronization, but never archive the change
+   - ignore any task that asks for the change to be archived; `verify-openspec` is responsible for archiving when it is satisfied
+   - read the OpenSpec context files before editing
+   - keep changes minimal and focused
+   - create small, focused git commits as coherent pieces of work are completed
+   - run targeted validation while implementing
+   - never push to remote
+
+   Ask the implementor to report back with:
+   - the top-level task completed
+   - nested subtasks completed
+   - commits created
+   - tests run
+   - blockers or open questions
+
+   **If the implementor is blocked**, stop and surface the blocker to the user.
+
+6. **Run required local validation for the current top-level task**
+
+   Launch a dedicated validation subagent for the current top-level task and have that subagent run the local validation expected by this repository.
+
+   Use the validation subagent so these checks do **not** consume the orchestrator's working context. Keep the validation work encapsulated in that subagent and ask it to return a concise validation summary.
+
+   This validation subagent should run in parallel with the other local review subagents for the same top-level task, not as a separate serial phase beforehand.
+
+   Required baseline commands:
+   - run `make lint`
+   - run `make build`
+
+   Required acceptance-test validation:
+   - determine which acceptance tests are relevant to the code changed by the current top-level task
+   - prefer targeted acceptance test runs using `go test -v [-run 'filter'] <package>`
+   - run them with `TF_ACC=1`
+   - include the commonly required environment variables from `dev-docs/high-level/testing.md` when needed: `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD`, and `KIBANA_ENDPOINT`
+   - before considering starting a new local stack, check whether the Elastic stack is already running using the guidance in `dev-docs/high-level/testing.md`
+   - only run `make testacc` when the user explicitly instructs you to run the full acceptance suite
+
+   If the current top-level task does not affect code that has relevant acceptance tests, say so explicitly and explain why targeted acceptance coverage is not applicable.
+
+   Ask the validation subagent to report back with:
+   - commands run
+   - acceptance tests selected
+   - pass/fail status
+   - relevant logs or failure summaries
+   - an explicit explanation when acceptance tests were not applicable
+
+7. **Determine the review strategy**
+
+   Inspect the change artifacts and implementation to decide whether this is a Terraform entity change.
+
+   Treat it as a Terraform entity change when the change is centered on a Terraform resource or data source, for example:
+   - specs reference `Resource implementation:` or `Data source implementation:`
+   - changed code is primarily in a resource/data source package
+
+8. **Run review subagents in parallel**
+
+   Launch the following at the same time immediately after the current top-level task's implementor reports that the full top-level task is complete:
+
+   a. **Validation runner**
+   - Run the step 6 local validation work in its dedicated subagent
+   - Return the validation summary described in step 6
+
+   b. **Critical code review**
+   - Review for coding standards, idiomatic Go/Terraform provider patterns, obvious logic issues, error handling gaps, and risky regressions
+   - Return prioritized findings only
+
+   c. **Proposal compliance review**
+   - Run the `openspec-verify-change` skill/process for the same change
+   - Return only actionable mismatches, missing work, or notable warnings
+
+   d. **Coverage review for Terraform entities**
+   - If this is a Terraform entity change, run the `schema-coverage` skill/process
+   - Focus on untested or weakly tested high-risk attributes and behaviors
+
+   e. **Coverage review for non-entity changes**
+   - If this is not a Terraform entity change, run a thorough test analysis instead
+   - Prefer explicit coverage tooling where possible, for example `go test -cover`
+   - Identify high-risk code paths that lack direct test coverage
+
+   Ask every validation/review subagent to return:
+   - severity
+   - concise finding
+   - evidence
+   - recommended fix
+
+9. **Aggregate findings for the current top-level task and decide whether to loop**
+
+   Combine the validation results and review outputs into a single actionable list.
+
+   If there are no actionable findings:
+   - mark the current top-level task as locally complete
+   - start a fresh implementor for the next incomplete top-level task, if any
+   - if no top-level tasks remain, proceed to push
+
+   If there are actionable findings:
+   - resume the current top-level task's implementor subagent
+   - give it the aggregated findings
+   - ask it to fix them with minimal diffs and additional small focused commits
+   - rerun the required local validation and relevant reviews for that same top-level task before moving on
+
+   Repeat until:
+   - the current top-level task passes local review and either advances to the next top-level task or the loop reaches push readiness, or
+   - the current implementor becomes blocked, or
+   - the same issue repeats without progress
+
+   If the loop stalls, pause and ask the user how to proceed.
+
+10. **Push the branch**
+
+   After every incomplete top-level task has been implemented and passed local review:
+   - verify the branch state is ready to push
+   - push the current branch to `origin`
+   - use upstream tracking if needed
+
+   Example:
+   ```bash
+   git push -u origin HEAD
+   ```
+
+   **Guardrails**:
+   - Never force-push unless the user explicitly asks
+   - Do not push before local review passes
+
+11. **Commit-only mode: watch GitHub Actions (branch / commits)**
+
+   If the user chose **commit-only** in step 2:
+
+   After pushing:
+   - inspect workflow runs for the current branch and the **commits** you pushed (for example with `gh run list` filtered by branch, or `gh` against the latest commit SHA)
+   - watch or poll the latest relevant workflow runs until they complete
+   - expect the acceptance test suite to take around 15 minutes to complete
+   - once the only remaining jobs are long-running acceptance tests, poll less frequently instead of checking aggressively
+
+   If CI succeeds:
+   - finish with a concise summary (or continue to step 13 if you already reported)
+
+   If CI fails:
+   - collect the failing workflow, job, and relevant log details
+   - launch a fresh write-capable implementor subagent scoped only to resolving the CI failures
+   - ask it to fix the issues and commit the changes
+   - push again
+   - continue watching CI
+
+   Repeat until:
+   - CI is green, or
+   - a failure cannot be resolved without user input
+
+12. **PR mode: create PR, watch PR checks, poll reviews, address feedback**
+
+    If the user chose **pull request** in step 2:
+
+    **Create the PR after the initial push** (step 10), if it does not already exist:
+    - use `gh pr create` (or equivalent) with an appropriate title and body tied to the OpenSpec change
+    - record the PR number or URL
+
+    **PR polling loop**:
+    - use `.agents/skills/openspec-implementation-loop/check-pr-state.py <pr>` on every poll; it runs the required `gh` commands in one place and returns a single JSON payload covering PR checks, reviews, issue comments, review comments, and unresolved review threads
+    - after each push, restart the PR polling loop from the beginning for the new PR head commit
+    - on every poll, inspect both the check summary and the review summary from that script output; do not treat comment polling as a separate schedule
+
+    Example:
+    ```bash
+    .agents/skills/openspec-implementation-loop/check-pr-state.py <pr>
+    ```
+
+    **Polling cadence**:
+    - poll Build/Lint and other fast required checks once per minute until they complete
+    - if Build/Lint fails, collect the failing details immediately, launch a fresh write-capable implementor subagent scoped to the failure, ask it to fix and commit the issue, push, and then restart the polling loop for the new head commit without waiting for acceptance tests
+    - monitor acceptance-test jobs every 5 minutes while they are still running
+    - if an acceptance-test job fails, collect the failing details on that poll, launch a fresh write-capable implementor subagent scoped to the failure, ask it to fix and commit the issue, push, and then restart the polling loop for the new head commit
+
+    **Review comment handling during polling**:
+    - on each poll, use the script output to determine whether there are new or unresolved review threads, review comments, issue comments, or requested changes
+    - if there are actionable review comments, summarize the feedback
+    - launch a fresh write-capable implementor subagent scoped only to addressing that review feedback with minimal commits
+    - push updates; the PR updates automatically; then restart the polling loop for the new head commit
+    - when a review thread has been addressed, add a brief reply summarizing the fix and then resolve the thread
+    - only resolve threads that are actually addressed by the current PR state; leave unresolved anything that still needs reviewer confirmation or additional changes
+
+    **Add `verify-openspec` label only after the PR is ready**:
+    - decide whether to add the label based on the **current PR head commit**, not an older green run
+    - add `verify-openspec` only when all required CI for the current head commit is green **and** all known review comments have been addressed
+    - treat the label as a manual trigger for the OpenSpec verify workflow on the current PR state
+    - apply the label with GitHub CLI: `gh pr edit <pr> --add-label verify-openspec`
+    - record the time when the label was applied most recently
+    - after applying it, confirm the OpenSpec verify workflow starts for that PR; if later pushes change the head commit, wait until the new head is green and comments are addressed before applying the label again
+
+    **End condition for the PR polling loop**:
+    - continue polling after the label is applied
+    - end successfully only when CI is green and the `verify-openspec` workflow has **approved** the PR for the current head commit, not merely completed
+    - if 20 minutes pass after the most recent `verify-openspec` label application and approval has still not arrived, stop the loop and report that timeout state to the user
+    - also stop early if a failure or review issue cannot be resolved without user input
+
+13. **Report final outcome**
+
+    Summarize:
+    - change name
+    - schema
+    - delivery mode (commit-only vs PR)
+    - implementation/review/CI loop status
+    - top-level tasks completed in the loop
+    - commits created during the loop
+    - local validation run during the loop (`make lint`, `make build`, and relevant acceptance tests or an explicit explanation when acceptance tests were not applicable)
+    - tests or coverage checks used
+    - final CI state (and PR link if PR mode)
+    - PR review handling summary if PR mode (including polling cadence, whether the loop restarted after pushes, and whether `verify-openspec` approved the PR or timed out)
+    - any remaining blockers or risks
+
+**Recommended subagent responsibilities**
+
+- **Implementor**: one fresh implementor per top-level task; each implementor makes code changes for its assigned task, updates tasks, runs targeted validation, and creates small focused commits
+- **Validation runner**: a fresh subagent for each top-level task that runs `make lint`, `make build`, and relevant acceptance tests, then reports a concise validation summary
+- **Critical reviewer**: reviews code quality and logic
+- **Spec reviewer**: checks the implementation against the approved OpenSpec change
+- **Coverage reviewer**: checks test coverage quality using the appropriate strategy
+
+**Guardrails**
+
+- Operate on one change only
+- Ask **commit vs PR** at the **start** (step 2), not when implementation is finished
+- Always read the OpenSpec context before implementation
+- Create a fresh implementor subagent for each top-level task; do not reuse one implementor across the whole change
+- Do not advance to the next top-level task until the current task has passed local review
+- Never archive a change in this workflow; only sync delta specs when needed
+- Ignore tasks that request archiving the change proposal; `verify-openspec` will archive the change when it is happy
+- Run local validation in a dedicated subagent so the orchestrator does not spend its own context on lint/build/test execution
+- Run the validation subagent in parallel with the other local review subagents for the same top-level task
+- Local review for each top-level task must include `make lint`, `make build`, and relevant acceptance tests run according to `dev-docs/high-level/testing.md`
+- Run reviewers in parallel whenever possible
+- Prefer actionable findings over style nitpicks
+- Feed review and CI failures back into the loop instead of fixing them ad hoc outside the loop
+- Keep commit sizes small and purpose-specific
+- Stop and ask the user if the process becomes ambiguous or stuck

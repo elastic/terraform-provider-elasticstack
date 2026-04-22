@@ -31,7 +31,13 @@ func (d *outputDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	client, err := d.client.GetFleetClient()
+	apiClient, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := apiClient.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

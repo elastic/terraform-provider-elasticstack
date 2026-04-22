@@ -21,7 +21,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,12 +36,6 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, state.ElasticsearchConnection, r.client)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	compID, diags := state.GetID()
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
@@ -55,7 +48,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 
-	found, diags := readILMAttachment(ctx, client, &state)
+	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	found, diags := readILMAttachment(ctx, &state, client)
 	if !found {
 		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)

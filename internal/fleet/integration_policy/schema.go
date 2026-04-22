@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"os"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -153,7 +154,10 @@ func getSchemaV2() schema.Schema {
 				NestedObject: getInputsNestedObject(varsAreSensitive),
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {

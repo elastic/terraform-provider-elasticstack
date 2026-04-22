@@ -42,13 +42,13 @@ var (
 )
 
 type Resource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 var configuredResources = []*Resource{}
 
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 	configuredResources = append(configuredResources, r)
@@ -91,9 +91,14 @@ type clusterVersionPrivateData struct {
 	Version string
 }
 
-func (r *Resource) saveClusterVersion(ctx context.Context, client *clients.APIClient, priv privateData) diag.Diagnostics {
+func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv privateData) diag.Diagnostics {
+	client, diags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
+	if diags.HasError() {
+		return diags
+	}
+
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

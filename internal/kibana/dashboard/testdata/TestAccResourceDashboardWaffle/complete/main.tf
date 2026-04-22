@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Waffle Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Waffle Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,13 +28,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     waffle_config = {
       title       = "Complete Waffle"
       description = "Complete waffle visualization"
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
       filters = [
         {
@@ -44,8 +51,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
       legend = {
-        size                 = "small"
-        visible              = "show"
+        size                 = "s"
+        visible              = "visible"
         truncate_after_lines = 8
         values               = ["absolute"]
       }

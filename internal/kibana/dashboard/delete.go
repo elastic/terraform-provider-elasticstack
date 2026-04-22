@@ -34,6 +34,12 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Parse composite ID
 	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -45,7 +51,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, err := r.client.GetKibanaOapiClient()
+	kibanaClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
 		return

@@ -38,6 +38,14 @@ type AlertingRule struct {
 	ScheduledTaskID *string
 	ExecutionStatus AlertingRuleExecutionStatus
 	AlertDelay      *float32
+	Flapping        *AlertingRuleFlapping
+}
+
+// AlertingRuleFlapping is rule-level flapping detection settings (Kibana 8.16+).
+type AlertingRuleFlapping struct {
+	LookBackWindow        int64
+	StatusChangeThreshold int64
+	Enabled               *bool
 }
 
 type AlertingRuleSchedule struct {

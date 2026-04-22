@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Legacy Metric Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Legacy Metric Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,13 +28,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     legacy_metric_config = {
       title       = "Updated Legacy Metric"
       description = "Updated description"
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "lucene"
-        query    = "status:500"
+        language   = "lucene"
+        expression = "status:500"
       }
       filters = [
         {

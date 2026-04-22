@@ -38,8 +38,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get server version to validate version-specific features
-	serverVersion, versionDiags := r.client.ServerVersion(ctx)
+	serverVersion, versionDiags := client.ServerVersion(ctx)
 	if versionDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		return
@@ -52,7 +58,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	oapiClient, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -72,7 +78,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	// Re-read rule from API to get the authoritative state
 	// (sometimes create response differs from what's actually stored)
-	exists, readDiags := r.readRuleFromAPI(ctx, &plan)
+	exists, readDiags := r.readRuleFromAPI(ctx, client, &plan)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return

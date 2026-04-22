@@ -20,7 +20,6 @@ package alias
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -45,7 +44,7 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	aliasName := planModel.Name.ValueString()
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -121,7 +120,13 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Read back the alias to ensure state consistency, updating the current model
-	diags = readAliasIntoModel(ctx, client, aliasName, &planModel)
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

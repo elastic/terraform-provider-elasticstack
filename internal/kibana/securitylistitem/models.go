@@ -30,17 +30,18 @@ import (
 )
 
 type Model struct {
-	ID         types.String         `tfsdk:"id"`
-	ListItemID types.String         `tfsdk:"list_item_id"`
-	SpaceID    types.String         `tfsdk:"space_id"`
-	ListID     types.String         `tfsdk:"list_id"`
-	Value      types.String         `tfsdk:"value"`
-	Meta       jsontypes.Normalized `tfsdk:"meta"`
-	CreatedAt  types.String         `tfsdk:"created_at"`
-	CreatedBy  types.String         `tfsdk:"created_by"`
-	UpdatedAt  types.String         `tfsdk:"updated_at"`
-	UpdatedBy  types.String         `tfsdk:"updated_by"`
-	VersionID  types.String         `tfsdk:"version_id"`
+	ID               types.String         `tfsdk:"id"`
+	KibanaConnection types.List           `tfsdk:"kibana_connection"`
+	ListItemID       types.String         `tfsdk:"list_item_id"`
+	SpaceID          types.String         `tfsdk:"space_id"`
+	ListID           types.String         `tfsdk:"list_id"`
+	Value            types.String         `tfsdk:"value"`
+	Meta             jsontypes.Normalized `tfsdk:"meta"`
+	CreatedAt        types.String         `tfsdk:"created_at"`
+	CreatedBy        types.String         `tfsdk:"created_by"`
+	UpdatedAt        types.String         `tfsdk:"updated_at"`
+	UpdatedBy        types.String         `tfsdk:"updated_by"`
+	VersionID        types.String         `tfsdk:"version_id"`
 }
 
 // toAPICreateModel converts the Terraform model to the API create request body

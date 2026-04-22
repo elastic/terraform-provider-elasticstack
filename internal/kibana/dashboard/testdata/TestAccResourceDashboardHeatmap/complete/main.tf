@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Heatmap Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Heatmap Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,13 +28,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     heatmap_config = {
       title       = "Complete Heatmap"
       description = "Complete heatmap visualization"
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
       filters = [
         {
@@ -52,8 +59,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             label = "All"
             filter = {
-              query    = "*"
-              language = "kuery"
+              expression = "*"
+              language   = "kql"
             }
           }
         ]
@@ -64,8 +71,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             label = "All"
             filter = {
-              query    = "*"
-              language = "kuery"
+              expression = "*"
+              language   = "kql"
             }
           }
         ]
@@ -91,15 +98,16 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
         }
       }
-      cells = {
-        labels = {
-          visible = false
+      styling = {
+        cells = {
+          labels = {
+            visible = false
+          }
         }
       }
       legend = {
-        visible              = true
-        size                 = "small"
-        position             = "left"
+        visibility           = "hidden"
+        size                 = "s"
         truncate_after_lines = 10
       }
       ignore_global_filters = true

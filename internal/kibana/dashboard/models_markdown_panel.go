@@ -30,18 +30,18 @@ type markdownConfigModel struct {
 	Title       types.String `tfsdk:"title"`
 }
 
-func populateMarkdownFromAPI(pm *panelModel, config kbapi.KbnDashboardPanelMarkdownConfig0) {
+func populateMarkdownFromAPI(pm *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:     types.StringPointerValue(config.Content),
+		Content:     types.StringValue(config.Content),
 		Description: types.StringPointerValue(config.Description),
 		HideTitle:   types.BoolPointerValue(config.HideTitle),
 		Title:       types.StringPointerValue(config.Title),
 	}
 }
 
-func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelMarkdownConfig0 {
-	config := kbapi.KbnDashboardPanelMarkdownConfig0{
-		Content: pm.MarkdownConfig.Content.ValueStringPointer(),
+func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig0 {
+	config := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
+		Content: pm.MarkdownConfig.Content.ValueString(),
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
 		config.Description = pm.MarkdownConfig.Description.ValueStringPointer()

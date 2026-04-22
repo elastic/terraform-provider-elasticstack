@@ -37,7 +37,7 @@ func NewResource() resource.Resource {
 }
 
 type securityListResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *securityListResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -45,9 +45,12 @@ func (r *securityListResource) Metadata(_ context.Context, req resource.Metadata
 }
 
 func (r *securityListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *securityListResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

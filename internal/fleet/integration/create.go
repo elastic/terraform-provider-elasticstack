@@ -20,7 +20,10 @@ package integration
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -43,7 +46,13 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	respDiags.Append(apiClientDiags...)
+	if respDiags.HasError() {
+		return
+	}
+
+	fleetClient, err := apiClient.GetFleetClient()
 	if err != nil {
 		respDiags.AddError(err.Error(), "")
 		return
@@ -60,7 +69,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	// Check if version-dependent parameters are set and validate version support
 	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
 	if needsVersionCheck {
-		serverVersion, versionDiags := r.client.ServerVersion(ctx)
+		serverVersion, versionDiags := apiClient.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		if respDiags.HasError() {
 			return
@@ -98,9 +107,47 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
-	diags = fleet.InstallPackage(ctx, client, name, version, installOptions)
+	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
+		return
+	}
+
+	waitErr := asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, installOptions.SpaceID)
+		if getDiags.HasError() {
+			return false, fmt.Errorf("failed to read package installation status: %s", getDiags[0].Summary())
+		}
+		if pkg == nil {
+			return false, nil
+		}
+
+		if pkg.InstallationInfo != nil {
+			switch pkg.InstallationInfo.InstallStatus {
+			case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
+				return true, nil
+			case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
+				return false, fmt.Errorf("package %s/%s installation failed", name, version)
+			}
+		}
+
+		// Fallback for older Fleet responses that only expose the legacy status field.
+		if pkg.Status != nil {
+			if strings.EqualFold(*pkg.Status, "installed") {
+				return true, nil
+			}
+			if strings.EqualFold(*pkg.Status, "install_failed") {
+				return false, fmt.Errorf("package %s/%s installation failed", name, version)
+			}
+		}
+
+		return false, nil
+	})
+	if waitErr != nil {
+		respDiags.AddError(
+			"Failed to install Fleet integration package",
+			fmt.Sprintf("Package %s/%s did not reach an installed state: %s", name, version, waitErr.Error()),
+		)
 		return
 	}
 

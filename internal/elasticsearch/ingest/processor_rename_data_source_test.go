@@ -26,14 +26,55 @@ import (
 
 func TestAccDataSourceIngestProcessorRename(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorRename,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_rename.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "target_field", "cloud.provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRename),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_rename.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "target_field", "cloud.provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description", "Rename provider field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if", "ctx.provider != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.0", `{"set":{"field":"error.message","value":"rename failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag", "rename-provider"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRenameAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_rename.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "service.name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "target_field", "service.type"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRenameUpdated),
 				),
 			},
 		},
@@ -49,13 +90,31 @@ const expectedJSONRename = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorRename = `
-provider "elasticstack" {
-  elasticsearch {}
-}
+const expectedJSONRenameAllAttributes = `{
+	"rename": {
+		"description": "Rename provider field",
+		"field": "provider",
+		"if": "ctx.provider != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "rename failed"
+				}
+			}
+		],
+		"tag": "rename-provider",
+		"target_field": "cloud.provider"
+	}
+}`
 
-data "elasticstack_elasticsearch_ingest_processor_rename" "test" {
-  field        = "provider"
-  target_field = "cloud.provider"
-}
-`
+const expectedJSONRenameUpdated = `{
+	"rename": {
+		"field": "service.name",
+		"target_field": "service.type",
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`

@@ -18,11 +18,13 @@
 package kibana_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -100,7 +102,12 @@ func TestAccResourceSpace(t *testing.T) {
 }
 
 func checkResourceSpaceDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	scopedClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return err
+	}
+
+	oapiClient, err := scopedClient.GetKibanaOapiClient()
 	if err != nil {
 		return err
 	}
@@ -110,16 +117,12 @@ func checkResourceSpaceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		kibanaClient, err := client.GetKibanaClient()
-		if err != nil {
-			return err
-		}
-		res, err := kibanaClient.KibanaSpaces.Get(rs.Primary.ID)
-		if err != nil {
-			return err
+		space, diags := kibanaoapi.GetSpace(context.Background(), oapiClient, rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("error checking space destroy: %s", diags[0].Detail())
 		}
 
-		if res != nil {
+		if space != nil {
 			return fmt.Errorf("Space (%s) still exists", rs.Primary.ID)
 		}
 	}

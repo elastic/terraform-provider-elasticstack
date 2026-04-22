@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -103,6 +104,7 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			"settings": schema.SingleNestedBlock{
 				Description: "The default settings should be sufficient for most users, but if needed, these properties can be overwritten.",
 				PlanModifiers: []planmodifier.Object{

@@ -20,6 +20,7 @@ package integration
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -82,5 +83,8 @@ set ` + "`skip_destroy` to `true`."
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
+	}
+	resp.Schema.Blocks = map[string]schema.Block{
+		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 }

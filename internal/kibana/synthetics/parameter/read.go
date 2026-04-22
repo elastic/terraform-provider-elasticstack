@@ -19,31 +19,39 @@ package parameter
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net/http"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Client, resourceID string, state *tfsdk.State, diagnostics *diag.Diagnostics) {
+func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Client, resourceID string, kibanaConnection types.List, state *tfsdk.State, diagnostics *diag.Diagnostics) {
 	getResult, err := kibanaClient.API.GetParameterWithResponse(ctx, resourceID)
 	if err != nil {
-		var apiError *kbapi.APIError
-		if errors.As(err, &apiError) && apiError.Code == 404 {
-			state.RemoveResource(ctx)
-			return
-		}
-
 		diagnostics.AddError(fmt.Sprintf("Failed to get parameter `%s`", resourceID), err.Error())
 		return
 	}
 
+	if getResult.StatusCode() == http.StatusNotFound {
+		state.RemoveResource(ctx)
+		return
+	}
+
+	if getResult.JSON200 == nil {
+		diagnostics.AddError(
+			fmt.Sprintf("Failed to get parameter `%s`", resourceID),
+			fmt.Sprintf("API returned unexpected status %d: %s", getResult.StatusCode(), string(getResult.Body)),
+		)
+		return
+	}
+
 	model := modelV0FromOAPI(*getResult.JSON200)
+	model.KibanaConnection = kibanaConnection
 
 	// Set refreshed state
 	diags := state.Set(ctx, &model)
@@ -54,15 +62,21 @@ func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Clien
 }
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	kibanaClient := synthetics.GetKibanaOAPIClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var state tfModelV0
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
@@ -78,5 +92,5 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		resourceID = compositeID.ResourceID
 	}
 
-	r.readState(ctx, kibanaClient, resourceID, &response.State, &response.Diagnostics)
+	r.readState(ctx, kibanaClient, resourceID, state.KibanaConnection, &response.State, &response.Diagnostics)
 }

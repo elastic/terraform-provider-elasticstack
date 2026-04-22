@@ -55,19 +55,19 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.75)),
 				}
 
-				lang := kbapi.FilterSimpleLanguage("kuery")
+				lang := kbapi.FilterSimpleLanguage("kql")
 				api.Query = kbapi.FilterSimple{
-					Language: &lang,
-					Query:    "*",
+					Language:   &lang,
+					Expression: "*",
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
-				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
+				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
-				var fItem kbapi.RegionMapNoESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				_ = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"active"}}`), &fItem)
-				api.Filters = &[]kbapi.RegionMapNoESQL_Filters_Item{fItem}
+				api.Filters = []kbapi.LensPanelFilters_Item{fItem}
 
 				return &api
 			}(),
@@ -87,13 +87,13 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.25)),
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)
+				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
-				var fItem kbapi.RegionMapESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				_ = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"region","operator":"is","value":"US"}}`), &fItem)
-				api.Filters = &[]kbapi.RegionMapESQL_Filters_Item{fItem}
+				api.Filters = []kbapi.LensPanelFilters_Item{fItem}
 
 				return &api
 			}(),
@@ -117,13 +117,13 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			assert.Equal(t, types.StringValue(tt.expectTitle), model.Title)
-			assert.False(t, model.DatasetJSON.IsNull())
+			assert.False(t, model.DataSourceJSON.IsNull())
 			assert.False(t, model.MetricJSON.IsNull())
 			assert.False(t, model.RegionJSON.IsNull())
 
 			if tt.expectQuery {
 				require.NotNil(t, model.Query)
-				assert.Equal(t, types.StringValue("*"), model.Query.Query)
+				assert.Equal(t, types.StringValue("*"), model.Query.Expression)
 			} else {
 				assert.Nil(t, model.Query)
 			}
@@ -145,7 +145,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Equal(t, tt.expectTitle, *apiNoESQL.Title)
 				require.NotNil(t, apiNoESQL.Sampling)
 				assert.InDelta(t, tt.expectSample, *apiNoESQL.Sampling, 0.001)
-				assert.Equal(t, "*", apiNoESQL.Query.Query)
+				assert.Equal(t, "*", apiNoESQL.Query.Expression)
 			}
 		})
 	}
@@ -161,17 +161,14 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.75)),
 	}
-	lang := kbapi.FilterSimpleLanguage("kuery")
-	api.Query = kbapi.FilterSimple{Language: &lang, Query: "*"}
-	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+	lang := kbapi.FilterSimpleLanguage("kql")
+	api.Query = kbapi.FilterSimple{Language: &lang, Expression: "*"}
+	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource)
 	_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
-	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
+	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
-	var regionMapChart kbapi.RegionMapChart
-	require.NoError(t, regionMapChart.FromRegionMapNoESQL(api))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromRegionMapNoESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
@@ -182,9 +179,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsRegionMapChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsRegionMapNoESQL()
+	noESQL2, err := attrs2.AsRegionMapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Region Map Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.RegionMapNoESQLTypeRegionMap, noESQL2.Type)
@@ -200,15 +195,12 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(0.25)),
 	}
-	_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)
+	_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource)
 	_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
-	var regionMapChart kbapi.RegionMapChart
-	require.NoError(t, regionMapChart.FromRegionMapESQL(api))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromRegionMapESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
@@ -219,9 +211,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsRegionMapChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsRegionMapESQL()
+	esql2, err := attrs2.AsRegionMapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "ESQL Region Map Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.RegionMapESQLTypeRegionMap, esql2.Type)

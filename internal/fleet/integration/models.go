@@ -24,6 +24,7 @@ import (
 
 type integrationModel struct {
 	ID                        types.String `tfsdk:"id"`
+	KibanaConnection          types.List   `tfsdk:"kibana_connection"`
 	Name                      types.String `tfsdk:"name"`
 	Version                   types.String `tfsdk:"version"`
 	Force                     types.Bool   `tfsdk:"force"`

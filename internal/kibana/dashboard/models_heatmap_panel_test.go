@@ -42,29 +42,26 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimple{
-			Query: "status:200",
+			Expression: "status:200",
 			Language: func() *kbapi.FilterSimpleLanguage {
-				lang := kbapi.FilterSimpleLanguage("kuery")
+				lang := kbapi.FilterSimpleLanguage("kql")
 				return &lang
 			}(),
 		},
-		Axis: kbapi.HeatmapAxes{
+		Axes: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{
 				Labels: &struct {
-					Orientation *kbapi.HeatmapXAxisLabelsOrientation `json:"orientation,omitempty"`
-					Visible     *bool                                `json:"visible,omitempty"`
+					Orientation kbapi.VisApiOrientation `json:"orientation"`
+					Visible     *bool                   `json:"visible,omitempty"`
 				}{
-					Orientation: func() *kbapi.HeatmapXAxisLabelsOrientation {
-						orientation := kbapi.HeatmapXAxisLabelsOrientation("horizontal")
-						return &orientation
-					}(),
-					Visible: new(true),
+					Orientation: kbapi.VisApiOrientation("horizontal"),
+					Visible:     new(true),
 				},
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("X Axis"),
+					Text:    new("X Axis"),
 					Visible: new(true),
 				},
 			},
@@ -75,43 +72,44 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 					Visible: new(false),
 				},
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("Y Axis"),
+					Text:    new("Y Axis"),
 					Visible: new(true),
 				},
 			},
 		},
-		Cells: kbapi.HeatmapCells{
-			Labels: &struct {
-				Visible *bool `json:"visible,omitempty"`
-			}{
-				Visible: new(true),
+		Styling: kbapi.HeatmapStyling{
+			Cells: kbapi.HeatmapCells{
+				Labels: &struct {
+					Visible *bool `json:"visible,omitempty"`
+				}{
+					Visible: new(true),
+				},
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
-			Size: kbapi.LegendSizeMedium,
-			Position: func() *kbapi.HeatmapLegendPosition {
-				pos := kbapi.HeatmapLegendPosition("right")
-				return &pos
+			Size: kbapi.LegendSizeM,
+			Visibility: func() *kbapi.HeatmapLegendVisibility {
+				visibility := kbapi.HeatmapLegendVisibilityVisible
+				return &visibility
 			}(),
-			Visible:            new(true),
 			TruncateAfterLines: new(float32(4)),
 		},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`), &heatmap.X))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
 	var yAxis kbapi.HeatmapNoESQL_Y
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`), &yAxis))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &yAxis))
 	heatmap.Y = &yAxis
 
-	var fItem kbapi.HeatmapNoESQL_Filters_Item
+	var fItem kbapi.LensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"200"}}`), &fItem))
-	filters := []kbapi.HeatmapNoESQL_Filters_Item{fItem}
-	heatmap.Filters = &filters
+	filters := []kbapi.LensPanelFilters_Item{fItem}
+	heatmap.Filters = filters
 
 	model := &heatmapConfigModel{}
 	diags := model.fromAPINoESQL(context.Background(), heatmap)
@@ -122,15 +120,17 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
-	assert.Equal(t, types.StringValue("status:200"), model.Query.Query)
-	assert.Equal(t, types.StringValue("kuery"), model.Query.Language)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.Equal(t, types.StringValue("status:200"), model.Query.Expression)
+	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.MetricJSON.IsNull())
 	assert.False(t, model.XAxisJSON.IsNull())
 	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axes)
-	require.NotNil(t, model.Cells)
+	require.NotNil(t, model.Styling)
+	require.NotNil(t, model.Styling.Cells)
 	require.NotNil(t, model.Legend)
+	assert.Equal(t, types.StringValue("visible"), model.Legend.Visibility)
 
 	chart, diags := model.toAPI()
 	require.False(t, diags.HasError())
@@ -140,8 +140,26 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
-	assert.Equal(t, kbapi.LegendSizeMedium, heatmapRoundTrip.Legend.Size)
-	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Query)
+	assert.Equal(t, kbapi.LegendSizeM, heatmapRoundTrip.Legend.Size)
+	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
+}
+
+func Test_heatmapLegendModel_visibility_hidden_roundTrip(t *testing.T) {
+	api := kbapi.HeatmapLegend{
+		Size: kbapi.LegendSizeS,
+		Visibility: func() *kbapi.HeatmapLegendVisibility {
+			v := kbapi.HeatmapLegendVisibilityHidden
+			return &v
+		}(),
+	}
+	var m heatmapLegendModel
+	m.fromAPI(api)
+	assert.Equal(t, types.StringValue("hidden"), m.Visibility)
+
+	out, diags := m.toAPI()
+	require.False(t, diags.HasError())
+	require.NotNil(t, out.Visibility)
+	assert.Equal(t, kbapi.HeatmapLegendVisibilityHidden, *out.Visibility)
 }
 
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
@@ -151,12 +169,12 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		"description": "ESQL heatmap description",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axis": {
+		"axes": {
 			"x": { "labels": { "orientation": "angled", "visible": true } },
 			"y": { "labels": { "visible": true } }
 		},
-		"cells": { "labels": { "visible": false } },
-		"legend": { "size": "small", "visible": false },
+		"styling": { "cells": { "labels": { "visible": false } } },
+		"legend": { "size": "s", "visibility": "hidden" },
 		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"metric": {
 			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
@@ -184,7 +202,6 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, heatmapRoundTrip.Type)
 	assert.Equal(t, "bytes", heatmapRoundTrip.Metric.Column)
-	assert.Equal(t, kbapi.HeatmapESQLMetricOperationValue, heatmapRoundTrip.Metric.Operation)
 }
 
 func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -197,19 +214,26 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimple{
-			Query:    "status:200",
-			Language: new(kbapi.FilterSimpleLanguage("kuery")),
+			Expression: "status:200",
+			Language:   new(kbapi.FilterSimpleLanguage("kql")),
+		},
+		Axes: kbapi.HeatmapAxes{
+			X: kbapi.HeatmapXAxis{},
+			Y: kbapi.HeatmapYAxis{},
+		},
+		Styling: kbapi.HeatmapStyling{
+			Cells: kbapi.HeatmapCells{},
+		},
+		Legend: kbapi.HeatmapLegend{
+			Size: kbapi.LegendSizeM,
 		},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`), &heatmap.X))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
 
-	var heatmapChart kbapi.HeatmapChart
-	require.NoError(t, heatmapChart.FromHeatmapNoESQL(heatmap))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromHeatmapNoESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
@@ -220,9 +244,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsHeatmapChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsHeatmapNoESQL()
+	noESQL2, err := attrs2.AsHeatmapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, noESQL2.Type)
@@ -237,10 +259,10 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"description": "Converter test",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axis": { "x": {}, "y": {} },
-		"cells": {},
-		"legend": { "size": "medium" },
-		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"axes": { "x": {}, "y": {} },
+		"styling": { "cells": {} },
+		"legend": { "size": "m" },
+		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
 		"metric": {
 			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
 			"column": "bytes",
@@ -253,11 +275,8 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var heatmap kbapi.HeatmapESQL
 	require.NoError(t, json.Unmarshal([]byte(esqlRoundTripJSON), &heatmap))
 
-	var heatmapChart kbapi.HeatmapChart
-	require.NoError(t, heatmapChart.FromHeatmapESQL(heatmap))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromHeatmapESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
@@ -268,9 +287,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsHeatmapChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsHeatmapESQL()
+	esql2, err := attrs2.AsHeatmapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, esql2.Type)

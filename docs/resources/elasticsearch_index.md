@@ -73,7 +73,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name `_none` indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
@@ -134,7 +134,8 @@ If specified, this mapping can include: field names, [field data types](https://
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource
+- `concrete_name` (String) The concrete Elasticsearch index name managed by this resource. For static index names this equals `name`. For date math index names this is the resolved concrete index name returned by Elasticsearch after creation.
+- `id` (String) Internal identifier of the resource in the format <cluster_uuid>/<concrete_index_name>.
 - `settings_raw` (String) All raw settings fetched from the cluster.
 
 <a id="nestedatt--alias"></a>
@@ -201,5 +202,5 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 # Index settings are *not* included in the import, and so any settings defined in the elasticstack_elasticsearch_index
 # resource definition will show up as an addition in the next `terraform plan` operation. 
 # Applying these settings 'changes' should be safe, resulting in no actual change to the backing index. 
-terraform import elasticstack_elasticsearch_index.my_index <cluster_uuid>/<index_name>
+terraform import elasticstack_elasticsearch_index.my_index <cluster_uuid>/<concrete_index_name>
 ```

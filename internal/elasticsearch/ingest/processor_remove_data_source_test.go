@@ -26,13 +26,57 @@ import (
 
 func TestAccDataSourceIngestProcessorRemove(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorRemove,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_remove.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "user_agent"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemove),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_remove.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "event.original"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "user_agent"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "description", "Remove user agent fields"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "if", "ctx.user_agent != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.0", `{"set":{"field":"error.message","value":"remove failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "tag", "remove-fields"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemoveAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_remove.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "host.name"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "user.name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemoveUpdated),
 				),
 			},
 		},
@@ -47,12 +91,35 @@ const expectedJSONRemove = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorRemove = `
-provider "elasticstack" {
-  elasticsearch {}
-}
+const expectedJSONRemoveAllAttributes = `{
+	"remove": {
+		"description": "Remove user agent fields",
+		"field": [
+			"event.original",
+			"user_agent"
+		],
+		"if": "ctx.user_agent != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "remove failed"
+				}
+			}
+		],
+		"tag": "remove-fields"
+	}
+}`
 
-data "elasticstack_elasticsearch_ingest_processor_remove" "test" {
-  field = ["user_agent"]
-}
-`
+const expectedJSONRemoveUpdated = `{
+	"remove": {
+		"field": [
+			"user.name",
+			"host.name"
+		],
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`

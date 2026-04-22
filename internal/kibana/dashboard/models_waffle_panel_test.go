@@ -31,15 +31,15 @@ import (
 
 func Test_waffleChartJSONUsesESQLDataset(t *testing.T) {
 	t.Parallel()
-	esql, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"esql","query":"FROM x"}}`))
+	esql, err := waffleChartJSONUsesESQLDataset([]byte(`{"data_source":{"type":"esql","query":"FROM x"}}`))
 	require.NoError(t, err)
 	assert.True(t, esql)
 
-	esqlTable, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"table","table":{}}}`))
+	esqlTable, err := waffleChartJSONUsesESQLDataset([]byte(`{"data_source":{"type":"table","table":{}}}`))
 	require.NoError(t, err)
 	assert.True(t, esqlTable)
 
-	no, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"dataView","id":"x"},"query":{"query":""}}`))
+	no, err := waffleChartJSONUsesESQLDataset([]byte(`{"data_source":{"type":"dataView","id":"x"},"query":{"query":""}}`))
 	require.NoError(t, err)
 	assert.False(t, no)
 }
@@ -49,7 +49,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	// NoESQL with an empty lens query and no language: the old heuristic treated this as ES|QL.
 	apiJSON := `{
 		"type": "waffle",
-		"dataset": {"type":"dataView","id":"metrics-*"},
+		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"query":""},
 		"legend": {"size":"medium","visible":"auto"},
 		"metrics": [{"operation":"count"}]
@@ -57,11 +57,8 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	var waffle kbapi.WaffleNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
 
-	var waffleChart kbapi.WaffleChart
-	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromWaffleChart(waffleChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
@@ -70,7 +67,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	require.NotNil(t, pm.WaffleConfig)
 	assert.False(t, pm.WaffleConfig.usesESQL())
 	require.NotNil(t, pm.WaffleConfig.Query)
-	assert.True(t, pm.WaffleConfig.Query.Query.IsNull() || pm.WaffleConfig.Query.Query.ValueString() == "")
+	assert.True(t, pm.WaffleConfig.Query.Expression.IsNull() || pm.WaffleConfig.Query.Expression.ValueString() == "")
 }
 
 func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -80,8 +77,8 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 		"type": "waffle",
 		"title": "Waffle NoESQL Round-Trip",
 		"description": "test",
-		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":""},
+		"data_source": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kql","query":""},
 		"legend": {"size":"medium","visible":"auto"},
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
@@ -89,11 +86,8 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var waffle kbapi.WaffleNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
 
-	var waffleChart kbapi.WaffleChart
-	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromWaffleChart(waffleChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
@@ -104,9 +98,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError(), "%s", diags)
 
-	chart2, err := attrs2.AsWaffleChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsWaffleNoESQL()
+	noESQL2, err := attrs2.AsWaffleNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Waffle NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.WaffleNoESQLTypeWaffle, noESQL2.Type)
@@ -122,52 +114,48 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var colorMap kbapi.ColorMapping
 	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}`), &colorMap))
 
+	staticColorUnion := kbapi.WaffleESQL_Metrics_Color{}
+	require.NoError(t, staticColorUnion.FromStaticColor(kbapi.StaticColor{
+		Type:  kbapi.Static,
+		Color: "#006BB4",
+	}))
+
 	waffle := kbapi.WaffleESQL{
 		Type:        kbapi.WaffleESQLTypeWaffle,
 		Title:       new("Waffle ESQL Round-Trip"),
 		Description: new("esql test"),
-		Legend:      kbapi.WaffleLegend{Size: kbapi.LegendSizeSmall},
+		Legend:      kbapi.WaffleLegend{Size: kbapi.LegendSizeS},
 		Metrics: []struct {
-			Color     kbapi.StaticColor                `json:"color"`
-			Column    string                           `json:"column"`
-			Format    kbapi.FormatType                 `json:"format"`
-			Label     *string                          `json:"label,omitempty"`
-			Operation kbapi.WaffleESQLMetricsOperation `json:"operation"`
+			Color  *kbapi.WaffleESQL_Metrics_Color `json:"color,omitempty"`
+			Column string                          `json:"column"`
+			Format kbapi.FormatType                `json:"format"`
+			Label  *string                         `json:"label,omitempty"`
 		}{
 			{
-				Column:    "cnt",
-				Operation: kbapi.WaffleESQLMetricsOperationValue,
-				Format:    format,
-				Color: kbapi.StaticColor{
-					Type:  kbapi.Static,
-					Color: "#006BB4",
-				},
+				Column: "cnt",
+				Format: format,
+				Color:  &staticColorUnion,
 			},
 		},
 		GroupBy: &[]struct {
-			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
-			Color      kbapi.ColorMapping               `json:"color"`
-			Column     string                           `json:"column"`
-			Format     kbapi.FormatType                 `json:"format"`
-			Label      *string                          `json:"label,omitempty"`
-			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
+			CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+			Color      kbapi.ColorMapping `json:"color"`
+			Column     string             `json:"column"`
+			Format     kbapi.FormatType   `json:"format"`
+			Label      *string            `json:"label,omitempty"`
 		}{
 			{
 				Column:     "host",
 				Format:     format,
-				Operation:  kbapi.WaffleESQLGroupByOperationValue,
 				CollapseBy: kbapi.CollapseByAvg,
 				Color:      colorMap,
 			},
 		},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT() BY host | LIMIT 10"}`), &waffle.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT() BY host | LIMIT 10"}`), &waffle.DataSource))
 
-	var waffleChart kbapi.WaffleChart
-	require.NoError(t, waffleChart.FromWaffleESQL(waffle))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromWaffleChart(waffleChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromWaffleESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
@@ -179,9 +167,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError(), "%s", diags)
 
-	chart2, err := attrs2.AsWaffleChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsWaffleESQL()
+	esql2, err := attrs2.AsWaffleESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Waffle ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.WaffleESQLTypeWaffle, esql2.Type)
@@ -193,26 +179,26 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 	m := &waffleConfigModel{
-		DatasetJSON: jsontypes.NewNormalizedNull(),
+		DataSourceJSON: jsontypes.NewNormalizedNull(),
 		Legend: &waffleLegendModel{
 			Size: types.StringValue("medium"),
 		},
 		Query: &filterSimpleModel{
-			Language: types.StringValue("kuery"),
-			Query:    types.StringValue(""),
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 	}
 	_, diags := m.toAPI()
 	require.True(t, diags.HasError())
 
 	m2 := &waffleConfigModel{
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
 		Legend: &waffleLegendModel{
 			Size: types.StringValue("medium"),
 		},
 		Query: &filterSimpleModel{
-			Language: types.StringValue("kuery"),
-			Query:    types.StringValue(""),
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 		Metrics: nil,
 	}
@@ -222,7 +208,7 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 
 func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
 	m := &waffleConfigModel{
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x | LIMIT 1"}`),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x | LIMIT 1"}`),
 		Legend: &waffleLegendModel{
 			Size: types.StringValue("medium"),
 		},

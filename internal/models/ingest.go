@@ -206,6 +206,20 @@ type ProcessorHTMLStrip struct {
 	ProcessortFields
 }
 
+type ProcessorInferenceInputOutput struct {
+	InputField  string `json:"input_field"`
+	OutputField string `json:"output_field,omitempty"`
+}
+
+type ProcessorInference struct {
+	CommonProcessor
+
+	ModelID     string                         `json:"model_id"`
+	InputOutput *ProcessorInferenceInputOutput `json:"input_output,omitempty"`
+	FieldMap    map[string]string              `json:"field_map,omitempty"`
+	TargetField string                         `json:"target_field,omitempty"`
+}
+
 type ProcessorJoin struct {
 	CommonProcessor
 

@@ -41,13 +41,19 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, r.client)
+	body, diags := planModel.toAPIUpdateModel(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -64,7 +70,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Update using the operational space from STATE
 	// The API will handle adding/removing output from spaces based on space_ids in body
-	output, diags := fleet.UpdateOutput(ctx, client, outputID, spaceID, body)
+	output, diags := fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

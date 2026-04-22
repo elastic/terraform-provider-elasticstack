@@ -168,7 +168,11 @@ func ResourceSlm() *schema.Resource {
 }
 
 func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -250,7 +254,11 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 }
 
 func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}
@@ -342,7 +350,11 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
+	factory, diags := clients.ConvertMetaToFactory(meta)
+	if diags.HasError() {
+		return diags
+	}
+	client, diags := factory.GetElasticsearchClientFromSDK(d)
 	if diags.HasError() {
 		return diags
 	}

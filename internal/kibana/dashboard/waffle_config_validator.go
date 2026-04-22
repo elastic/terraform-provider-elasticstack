@@ -29,7 +29,7 @@ import (
 var _ validator.Object = waffleConfigModeValidator{}
 
 // waffleConfigModeValidator enforces consistency between non-ES|QL and ES|QL waffle fields,
-// matching heatmap-style ES|QL detection (omit `query` or leave both `query.query` and `query.language` unset).
+// matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
 type waffleConfigModeValidator struct{}
 
 func (waffleConfigModeValidator) Description(_ context.Context) string {
@@ -75,7 +75,10 @@ func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics,
 	}
 	if esqlMode {
 		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {
-			add("Invalid waffle_config for ES|QL mode", "Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.query` and `query.language` unset). Use `esql_metrics` instead.")
+			add(
+				"Invalid waffle_config for ES|QL mode",
+				"Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metrics` instead.",
+			)
 		}
 		if !esqlMetrics.Unknown && esqlMetrics.Count < 1 {
 			add("Missing esql_metrics", "ES|QL waffles require at least one `esql_metrics` entry.")
@@ -107,7 +110,7 @@ func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req valid
 	if !esqlMode {
 		var lang, qStr types.String
 		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("language"), &lang)...)
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("query"), &qStr)...)
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("expression"), &qStr)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}

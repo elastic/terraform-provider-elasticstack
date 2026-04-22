@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,85 +50,118 @@ type tfTimesliceMetricMetric struct {
 	Filter      types.String  `tfsdk:"filter"`
 }
 
-func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func buildTimesliceMetricItem(metric tfTimesliceMetricMetric, idx int) (kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var item kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
+
+	var filter *string
+	if typeutils.IsKnown(metric.Filter) {
+		filter = metric.Filter.ValueStringPointer()
+	}
+
+	agg := metric.Aggregation.ValueString()
+	switch {
+	case slices.Contains(timesliceMetricAggregationsBasic, agg):
+		bm := kbapi.SLOsTimesliceMetricBasicMetricWithField{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsTimesliceMetricBasicMetricWithFieldAggregation(agg),
+			Field:       metric.Field.ValueString(),
+			Filter:      filter,
+		}
+		if err := item.FromSLOsTimesliceMetricBasicMetricWithField(bm); err != nil {
+			diags.AddError("Invalid configuration", fmt.Sprintf("metrics[%d]: %s", idx, err.Error()))
+		}
+	case agg == timesliceMetricAggregationPercentile:
+		pm := kbapi.SLOsTimesliceMetricPercentileMetric{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsTimesliceMetricPercentileMetricAggregation(agg),
+			Field:       metric.Field.ValueString(),
+			Percentile:  float32(metric.Percentile.ValueFloat64()),
+			Filter:      filter,
+		}
+		if err := item.FromSLOsTimesliceMetricPercentileMetric(pm); err != nil {
+			diags.AddError("Invalid configuration", fmt.Sprintf("metrics[%d]: %s", idx, err.Error()))
+		}
+	case agg == timesliceMetricAggregationDocCount:
+		dm := kbapi.SLOsTimesliceMetricDocCountMetric{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsTimesliceMetricDocCountMetricAggregation(agg),
+			Filter:      filter,
+		}
+		if err := item.FromSLOsTimesliceMetricDocCountMetric(dm); err != nil {
+			diags.AddError("Invalid configuration", fmt.Sprintf("metrics[%d]: %s", idx, err.Error()))
+		}
+	default:
+		diags.AddError("Invalid configuration", fmt.Sprintf("metrics[%d]: unsupported aggregation '%s'", idx, agg))
+	}
+	return item, diags
+}
+
+func (m tfModel) timesliceMetricIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(m.TimesliceMetricIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}, diags
+		return false, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
 	ind := m.TimesliceMetricIndicator[0]
 	if len(ind.Metric) != 1 {
 		diags.AddError("Invalid configuration", "timeslice_metric_indicator.metric must have exactly 1 item")
-		return true, slo.SloWithSummaryResponseIndicator{}, diags
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 	metricDef := ind.Metric[0]
 
-	metrics := make([]slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, 0, len(metricDef.Metrics))
+	metrics := make([]kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item, 0, len(metricDef.Metrics))
 	for i, metric := range metricDef.Metrics {
-		var filter *string
-		if typeutils.IsKnown(metric.Filter) {
-			filter = metric.Filter.ValueStringPointer()
+		item, itemDiags := buildTimesliceMetricItem(metric, i)
+		diags.Append(itemDiags...)
+		if diags.HasError() {
+			return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 		}
-
-		agg := metric.Aggregation.ValueString()
-		switch {
-		case slices.Contains(timesliceMetricAggregationsBasic, agg):
-			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-				TimesliceMetricBasicMetricWithField: &slo.TimesliceMetricBasicMetricWithField{
-					Name:        metric.Name.ValueString(),
-					Aggregation: agg,
-					Field:       metric.Field.ValueString(),
-					Filter:      filter,
-				},
-			})
-		case agg == timesliceMetricAggregationPercentile:
-			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-				TimesliceMetricPercentileMetric: &slo.TimesliceMetricPercentileMetric{
-					Name:        metric.Name.ValueString(),
-					Aggregation: agg,
-					Field:       metric.Field.ValueString(),
-					Percentile:  metric.Percentile.ValueFloat64(),
-					Filter:      filter,
-				},
-			})
-		case agg == timesliceMetricAggregationDocCount:
-			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-				TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
-					Name:        metric.Name.ValueString(),
-					Aggregation: agg,
-					Filter:      filter,
-				},
-			})
-		default:
-			diags.AddError("Invalid configuration", fmt.Sprintf("metrics[%d]: unsupported aggregation '%s'", i, agg))
-			return true, slo.SloWithSummaryResponseIndicator{}, diags
-		}
+		metrics = append(metrics, item)
 	}
 
-	return true, slo.SloWithSummaryResponseIndicator{
-		IndicatorPropertiesTimesliceMetric: &slo.IndicatorPropertiesTimesliceMetric{
-			Type: indicatorAddressToType["timeslice_metric_indicator"],
-			Params: slo.IndicatorPropertiesTimesliceMetricParams{
-				Index:          ind.Index.ValueString(),
-				DataViewId:     stringPtr(ind.DataViewID),
-				TimestampField: ind.TimestampField.ValueString(),
-				Filter:         stringPtr(ind.Filter),
-				Metric: slo.IndicatorPropertiesTimesliceMetricParamsMetric{
-					Metrics:    metrics,
-					Equation:   metricDef.Equation.ValueString(),
-					Comparator: metricDef.Comparator.ValueString(),
-					Threshold:  metricDef.Threshold.ValueFloat64(),
-				},
+	tsIndicator := kbapi.SLOsIndicatorPropertiesTimesliceMetric{
+		Type: indicatorAddressToType["timeslice_metric_indicator"],
+		Params: struct {
+			DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+			Filter     *string `json:"filter,omitempty"`
+			Index      string  `json:"index"`
+			Metric     struct {
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
+				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+				Threshold  float32                                                                   `json:"threshold"`
+			} `json:"metric"`
+			TimestampField string `json:"timestampField"`
+		}{
+			Index:          ind.Index.ValueString(),
+			DataViewId:     stringPtr(ind.DataViewID),
+			TimestampField: ind.TimestampField.ValueString(),
+			Filter:         stringPtr(ind.Filter),
+			Metric: struct {
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
+				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+				Threshold  float32                                                                   `json:"threshold"`
+			}{
+				Metrics:    metrics,
+				Equation:   metricDef.Equation.ValueString(),
+				Comparator: kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator(metricDef.Comparator.ValueString()),
+				Threshold:  float32(metricDef.Threshold.ValueFloat64()),
 			},
 		},
-	}, diags
+	}
+
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	if err := result.FromSLOsIndicatorPropertiesTimesliceMetric(tsIndicator); err != nil {
+		diags.AddError("Failed to build Timeslice Metric indicator", err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
+	return true, result, diags
 }
 
-func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator *slo.IndicatorPropertiesTimesliceMetric) diag.Diagnostics {
+func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator kbapi.SLOsIndicatorPropertiesTimesliceMetric) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	if apiIndicator == nil {
-		return diags
-	}
 
 	p := apiIndicator.Params
 	ind := tfTimesliceMetricIndicator{
@@ -148,23 +181,30 @@ func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator *slo.Indicat
 			Percentile: types.Float64Null(),
 			Filter:     types.StringNull(),
 		}
-		if mm.TimesliceMetricBasicMetricWithField != nil {
-			metric.Name = types.StringValue(mm.TimesliceMetricBasicMetricWithField.Name)
-			metric.Aggregation = types.StringValue(mm.TimesliceMetricBasicMetricWithField.Aggregation)
-			metric.Field = types.StringValue(mm.TimesliceMetricBasicMetricWithField.Field)
-			metric.Filter = types.StringPointerValue(mm.TimesliceMetricBasicMetricWithField.Filter)
-		}
-		if mm.TimesliceMetricPercentileMetric != nil {
-			metric.Name = types.StringValue(mm.TimesliceMetricPercentileMetric.Name)
-			metric.Aggregation = types.StringValue(mm.TimesliceMetricPercentileMetric.Aggregation)
-			metric.Field = types.StringValue(mm.TimesliceMetricPercentileMetric.Field)
-			metric.Percentile = types.Float64Value(mm.TimesliceMetricPercentileMetric.Percentile)
-			metric.Filter = types.StringPointerValue(mm.TimesliceMetricPercentileMetric.Filter)
-		}
-		if mm.TimesliceMetricDocCountMetric != nil {
-			metric.Name = types.StringValue(mm.TimesliceMetricDocCountMetric.Name)
-			metric.Aggregation = types.StringValue(mm.TimesliceMetricDocCountMetric.Aggregation)
-			metric.Filter = types.StringPointerValue(mm.TimesliceMetricDocCountMetric.Filter)
+		// All As* calls on kbapi unions succeed because they just unmarshal raw JSON.
+		// Use the aggregation field value to determine which variant to read, mirroring
+		// the write-path switch in buildTimesliceMetricItem.
+		if pm, err := mm.AsSLOsTimesliceMetricPercentileMetric(); err == nil && string(pm.Aggregation) == timesliceMetricAggregationPercentile {
+			metric.Name = types.StringValue(pm.Name)
+			metric.Aggregation = types.StringValue(string(pm.Aggregation))
+			metric.Field = types.StringValue(pm.Field)
+			metric.Percentile = types.Float64Value(float64(pm.Percentile))
+			metric.Filter = types.StringPointerValue(pm.Filter)
+		} else if dm, err := mm.AsSLOsTimesliceMetricDocCountMetric(); err == nil && string(dm.Aggregation) == timesliceMetricAggregationDocCount {
+			metric.Name = types.StringValue(dm.Name)
+			metric.Aggregation = types.StringValue(string(dm.Aggregation))
+			metric.Filter = types.StringPointerValue(dm.Filter)
+		} else if bm, err := mm.AsSLOsTimesliceMetricBasicMetricWithField(); err == nil && bm.Name != "" {
+			metric.Name = types.StringValue(bm.Name)
+			metric.Aggregation = types.StringValue(string(bm.Aggregation))
+			metric.Field = types.StringValue(bm.Field)
+			metric.Filter = types.StringPointerValue(bm.Filter)
+		} else {
+			diags.AddError(
+				"Unrecognized timeslice metric aggregation type",
+				"Could not determine the aggregation type for a timeslice metric entry. The API returned an unrecognized metric variant.",
+			)
+			return diags
 		}
 		tm = append(tm, metric)
 	}
@@ -172,8 +212,8 @@ func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator *slo.Indicat
 	ind.Metric = []tfTimesliceMetricDefinition{{
 		Metrics:    tm,
 		Equation:   types.StringValue(p.Metric.Equation),
-		Comparator: types.StringValue(p.Metric.Comparator),
-		Threshold:  types.Float64Value(p.Metric.Threshold),
+		Comparator: types.StringValue(string(p.Metric.Comparator)),
+		Threshold:  types.Float64Value(float64(p.Metric.Threshold)),
 	}}
 
 	m.TimesliceMetricIndicator = []tfTimesliceMetricIndicator{ind}

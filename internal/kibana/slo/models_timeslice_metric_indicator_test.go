@@ -20,11 +20,93 @@ package slo
 import (
 	"testing"
 
-	generatedslo "github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const (
+	testTimesliceSumFilter = "status:200"
+	testTimesliceDocFilter = "labels.env:prod"
+	testTimesliceDvID      = "dv-1"
+)
+
+// buildBasicMetricItem builds a timeslice metric item containing a basic metric with field.
+func buildBasicMetricItem(t *testing.T, name, agg, field string, filter *string) kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item {
+	t.Helper()
+	var item kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
+	bm := kbapi.SLOsTimesliceMetricBasicMetricWithField{
+		Name:        name,
+		Aggregation: kbapi.SLOsTimesliceMetricBasicMetricWithFieldAggregation(agg),
+		Field:       field,
+		Filter:      filter,
+	}
+	require.NoError(t, item.FromSLOsTimesliceMetricBasicMetricWithField(bm))
+	return item
+}
+
+// buildPercentileItem builds a timeslice metric item containing a percentile metric.
+func buildPercentileItem(t *testing.T, name, agg, field string, percentile float32, filter *string) kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item {
+	t.Helper()
+	var item kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
+	pm := kbapi.SLOsTimesliceMetricPercentileMetric{
+		Name:        name,
+		Aggregation: kbapi.SLOsTimesliceMetricPercentileMetricAggregation(agg),
+		Field:       field,
+		Percentile:  percentile,
+		Filter:      filter,
+	}
+	require.NoError(t, item.FromSLOsTimesliceMetricPercentileMetric(pm))
+	return item
+}
+
+// buildDocCountItem builds a timeslice metric item containing a doc_count metric.
+func buildDocCountItem(t *testing.T, name string, filter *string) kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item {
+	t.Helper()
+	var item kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
+	dm := kbapi.SLOsTimesliceMetricDocCountMetric{
+		Name:        name,
+		Aggregation: "doc_count",
+		Filter:      filter,
+	}
+	require.NoError(t, item.FromSLOsTimesliceMetricDocCountMetric(dm))
+	return item
+}
+
+// buildTimesliceAPI constructs a kbapi.SLOsIndicatorPropertiesTimesliceMetric.
+func buildTimesliceAPI(dvID *string, filter *string, items []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item) kbapi.SLOsIndicatorPropertiesTimesliceMetric {
+	return kbapi.SLOsIndicatorPropertiesTimesliceMetric{
+		Params: struct {
+			DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+			Filter     *string `json:"filter,omitempty"`
+			Index      string  `json:"index"`
+			Metric     struct {
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
+				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+				Threshold  float32                                                                   `json:"threshold"`
+			} `json:"metric"`
+			TimestampField string `json:"timestampField"`
+		}{
+			Index:          "metrics-*",
+			DataViewId:     dvID,
+			Filter:         filter,
+			TimestampField: "@timestamp",
+			Metric: struct {
+				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
+				Equation   string                                                                    `json:"equation"`
+				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
+				Threshold  float32                                                                   `json:"threshold"`
+			}{
+				Equation:   "a",
+				Comparator: "GT",
+				Threshold:  1.23,
+				Metrics:    items,
+			},
+		},
+	}
+}
 
 func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 	t.Run("returns ok=false when not configured", func(t *testing.T) {
@@ -49,9 +131,11 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 	})
 
 	t.Run("maps all supported metric variants", func(t *testing.T) {
+		sumFilter := testTimesliceSumFilter
+		docFilter := testTimesliceDocFilter
 		m := tfModel{TimesliceMetricIndicator: []tfTimesliceMetricIndicator{{
 			Index:          types.StringValue("metrics-*"),
-			DataViewID:     types.StringValue("dv-1"),
+			DataViewID:     types.StringValue(testTimesliceDvID),
 			TimestampField: types.StringValue("@timestamp"),
 			Filter:         types.StringNull(),
 			Metric: []tfTimesliceMetricDefinition{{
@@ -64,7 +148,7 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 						Aggregation: types.StringValue("sum"),
 						Field:       types.StringValue("foo"),
 						Percentile:  types.Float64Null(),
-						Filter:      types.StringValue("status:200"),
+						Filter:      types.StringValue(sumFilter),
 					},
 					{
 						Name:        types.StringValue("p95"),
@@ -78,7 +162,7 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 						Aggregation: types.StringValue("doc_count"),
 						Field:       types.StringNull(),
 						Percentile:  types.Float64Null(),
-						Filter:      types.StringValue("labels.env:prod"),
+						Filter:      types.StringValue(docFilter),
 					},
 				},
 			}},
@@ -87,20 +171,26 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.timesliceMetricIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesTimesliceMetric)
 
-		metrics := ind.IndicatorPropertiesTimesliceMetric.Params.Metric.Metrics
+		apiInd, err := ind.AsSLOsIndicatorPropertiesTimesliceMetric()
+		require.NoError(t, err)
+
+		metrics := apiInd.Params.Metric.Metrics
 		require.Len(t, metrics, 3)
-		require.NotNil(t, metrics[0].TimesliceMetricBasicMetricWithField)
-		require.NotNil(t, metrics[0].TimesliceMetricBasicMetricWithField.Filter)
-		assert.Equal(t, "status:200", *metrics[0].TimesliceMetricBasicMetricWithField.Filter)
 
-		require.NotNil(t, metrics[1].TimesliceMetricPercentileMetric)
-		assert.InDelta(t, 95.0, metrics[1].TimesliceMetricPercentileMetric.Percentile, 1e-9)
+		bm, err := metrics[0].AsSLOsTimesliceMetricBasicMetricWithField()
+		require.NoError(t, err)
+		require.NotNil(t, bm.Filter)
+		assert.Equal(t, sumFilter, *bm.Filter)
 
-		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric)
-		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric.Filter)
-		assert.Equal(t, "labels.env:prod", *metrics[2].TimesliceMetricDocCountMetric.Filter)
+		pm, err := metrics[1].AsSLOsTimesliceMetricPercentileMetric()
+		require.NoError(t, err)
+		assert.InDelta(t, 95.0, pm.Percentile, 1e-3)
+
+		dm, err := metrics[2].AsSLOsTimesliceMetricDocCountMetric()
+		require.NoError(t, err)
+		require.NotNil(t, dm.Filter)
+		assert.Equal(t, docFilter, *dm.Filter)
 	})
 
 	for _, agg := range []string{"last_value", "cardinality", "std_deviation"} {
@@ -127,13 +217,16 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 			ok, ind, diags := m.timesliceMetricIndicatorToAPI()
 			require.True(t, ok)
 			require.False(t, diags.HasError())
-			require.NotNil(t, ind.IndicatorPropertiesTimesliceMetric)
 
-			metrics := ind.IndicatorPropertiesTimesliceMetric.Params.Metric.Metrics
+			apiInd, err := ind.AsSLOsIndicatorPropertiesTimesliceMetric()
+			require.NoError(t, err)
+
+			metrics := apiInd.Params.Metric.Metrics
 			require.Len(t, metrics, 1)
-			require.NotNil(t, metrics[0].TimesliceMetricBasicMetricWithField)
-			assert.Equal(t, agg, metrics[0].TimesliceMetricBasicMetricWithField.Aggregation)
-			assert.Equal(t, "some.field", metrics[0].TimesliceMetricBasicMetricWithField.Field)
+			bm, err := metrics[0].AsSLOsTimesliceMetricBasicMetricWithField()
+			require.NoError(t, err)
+			assert.Equal(t, agg, string(bm.Aggregation))
+			assert.Equal(t, "some.field", bm.Field)
 		})
 	}
 
@@ -165,46 +258,16 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 }
 
 func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
+	sumFilter := testTimesliceSumFilter
+	docFilter := testTimesliceDocFilter
+	dvID := testTimesliceDvID
+
 	t.Run("maps metric variants including filters", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesTimesliceMetric{
-			Params: generatedslo.IndicatorPropertiesTimesliceMetricParams{
-				Index:          "metrics-*",
-				DataViewId:     new("dv-1"),
-				TimestampField: "@timestamp",
-				Filter:         nil,
-				Metric: generatedslo.IndicatorPropertiesTimesliceMetricParamsMetric{
-					Equation:   "a",
-					Comparator: "GT",
-					Threshold:  1.23,
-					Metrics: []generatedslo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-						{
-							TimesliceMetricBasicMetricWithField: &generatedslo.TimesliceMetricBasicMetricWithField{
-								Name:        "a",
-								Aggregation: "sum",
-								Field:       "foo",
-								Filter:      new("status:200"),
-							},
-						},
-						{
-							TimesliceMetricPercentileMetric: &generatedslo.TimesliceMetricPercentileMetric{
-								Name:        "p95",
-								Aggregation: "percentile",
-								Field:       "latency",
-								Percentile:  95,
-								Filter:      nil,
-							},
-						},
-						{
-							TimesliceMetricDocCountMetric: &generatedslo.TimesliceMetricDocCountMetric{
-								Name:        "c",
-								Aggregation: "doc_count",
-								Filter:      new("labels.env:prod"),
-							},
-						},
-					},
-				},
-			},
-		}
+		api := buildTimesliceAPI(&dvID, nil, []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item{
+			buildBasicMetricItem(t, "a", "sum", "foo", &sumFilter),
+			buildPercentileItem(t, "p95", "percentile", "latency", 95, nil),
+			buildDocCountItem(t, "c", &docFilter),
+		})
 
 		var m tfModel
 		diags := m.populateFromTimesliceMetricIndicator(api)
@@ -212,45 +275,25 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 		require.Len(t, m.TimesliceMetricIndicator, 1)
 
 		ind := m.TimesliceMetricIndicator[0]
-		assert.Equal(t, "dv-1", ind.DataViewID.ValueString())
+		assert.Equal(t, testTimesliceDvID, ind.DataViewID.ValueString())
 		require.Len(t, ind.Metric, 1)
 		require.Len(t, ind.Metric[0].Metrics, 3)
 
 		assert.Equal(t, "sum", ind.Metric[0].Metrics[0].Aggregation.ValueString())
-		assert.Equal(t, "status:200", ind.Metric[0].Metrics[0].Filter.ValueString())
+		assert.Equal(t, sumFilter, ind.Metric[0].Metrics[0].Filter.ValueString())
 
 		assert.Equal(t, "percentile", ind.Metric[0].Metrics[1].Aggregation.ValueString())
 		assert.True(t, ind.Metric[0].Metrics[1].Filter.IsNull())
 		assert.InDelta(t, 95.0, ind.Metric[0].Metrics[1].Percentile.ValueFloat64(), 1e-9)
 
 		assert.Equal(t, "doc_count", ind.Metric[0].Metrics[2].Aggregation.ValueString())
-		assert.Equal(t, "labels.env:prod", ind.Metric[0].Metrics[2].Filter.ValueString())
+		assert.Equal(t, docFilter, ind.Metric[0].Metrics[2].Filter.ValueString())
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesTimesliceMetric{
-			Params: generatedslo.IndicatorPropertiesTimesliceMetricParams{
-				Index:          "metrics-*",
-				DataViewId:     nil,
-				TimestampField: "@timestamp",
-				Filter:         nil,
-				Metric: generatedslo.IndicatorPropertiesTimesliceMetricParamsMetric{
-					Equation:   "a",
-					Comparator: "GT",
-					Threshold:  1,
-					Metrics: []generatedslo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
-						{
-							TimesliceMetricBasicMetricWithField: &generatedslo.TimesliceMetricBasicMetricWithField{
-								Name:        "a",
-								Aggregation: "sum",
-								Field:       "foo",
-								Filter:      nil,
-							},
-						},
-					},
-				},
-			},
-		}
+		api := buildTimesliceAPI(nil, nil, []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item{
+			buildBasicMetricItem(t, "a", "sum", "foo", nil),
+		})
 
 		var m tfModel
 		diags := m.populateFromTimesliceMetricIndicator(api)
@@ -261,12 +304,5 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 		assert.True(t, ind.DataViewID.IsNull())
 		assert.True(t, ind.Filter.IsNull())
 		assert.True(t, ind.Metric[0].Metrics[0].Filter.IsNull())
-	})
-
-	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {
-		var m tfModel
-		diags := m.populateFromTimesliceMetricIndicator(nil)
-		require.False(t, diags.HasError())
-		assert.Nil(t, m.TimesliceMetricIndicator)
 	})
 }

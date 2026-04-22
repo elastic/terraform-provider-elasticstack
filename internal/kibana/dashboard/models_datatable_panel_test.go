@@ -105,13 +105,13 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Description:         new("NoESQL description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Density:             density,
+		Styling:             kbapi.DatatableStyling{Density: density},
 		Query:               kbapi.FilterSimple{},
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","query":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
 	metric := kbapi.DatatableNoESQL_Metrics_Item{}
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
@@ -127,12 +127,12 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	splits := []kbapi.DatatableNoESQL_SplitMetricsBy_Item{split}
 	api.SplitMetricsBy = &splits
 
-	sortBy := kbapi.DatatableNoESQL_SortBy{}
+	sortBy := kbapi.DatatableStyling_SortBy{}
 	require.NoError(t, json.Unmarshal([]byte(`{"column_type":"metric","direction":"asc","index":0}`), &sortBy))
-	api.SortBy = &sortBy
+	api.Styling.SortBy = &sortBy
 
-	paging := kbapi.DatatableNoESQLPaging(10)
-	api.Paging = &paging
+	paging := kbapi.DatatableStylingPaging(10)
+	api.Styling.Paging = &paging
 
 	model := &datatableNoESQLConfigModel{}
 	diags := model.fromAPI(context.Background(), api)
@@ -140,20 +140,21 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
 	assert.Equal(t, types.StringValue("NoESQL description"), model.Description)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
-	assert.Equal(t, types.StringValue("*"), model.Query.Query)
+	assert.Equal(t, types.StringValue("*"), model.Query.Expression)
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.Rows, 1)
 	assert.Len(t, model.SplitMetricsBy, 1)
-	assert.Equal(t, types.Int64Value(10), model.Paging)
+	require.NotNil(t, model.Styling)
+	assert.Equal(t, types.Int64Value(10), model.Styling.Paging)
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, apiRoundTrip.Type)
-	assert.NotNil(t, apiRoundTrip.Paging)
+	assert.NotNil(t, apiRoundTrip.Styling.Paging)
 }
 
 func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
@@ -162,9 +163,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	metric := kbapi.DatatableESQLMetric{
-		Column:    "system.cpu.user.pct",
-		Operation: kbapi.DatatableESQLMetricOperationValue,
-		Format:    kbapi.FormatType{},
+		Column: "system.cpu.user.pct",
+		Format: kbapi.FormatType{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &metric.Format))
 
@@ -179,27 +179,23 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Column       string                               `json:"column"`
 		Format       kbapi.FormatType                     `json:"format"`
 		Label        *string                              `json:"label,omitempty"`
-		Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 		Visible      *bool                                `json:"visible,omitempty"`
 		Width        *float32                             `json:"width,omitempty"`
 	}{
 		Column:     "host.name",
 		Format:     rowFormat,
-		Operation:  kbapi.DatatableESQLRowsOperationValue,
 		CollapseBy: kbapi.CollapseByAvg,
 	}
 
 	splitFormat := kbapi.FormatType{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &splitFormat))
 	split := struct {
-		Column    string                                     `json:"column"`
-		Format    kbapi.FormatType                           `json:"format"`
-		Label     *string                                    `json:"label,omitempty"`
-		Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
+		Column string           `json:"column"`
+		Format kbapi.FormatType `json:"format"`
+		Label  *string          `json:"label,omitempty"`
 	}{
-		Column:    "host.name",
-		Format:    splitFormat,
-		Operation: kbapi.DatatableESQLSplitMetricsByOperationValue,
+		Column: "host.name",
+		Format: splitFormat,
 	}
 
 	api := kbapi.DatatableESQL{
@@ -208,7 +204,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Description:         new("ESQL description"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
-		Density:             density,
+		Styling:             kbapi.DatatableStyling{Density: density},
 		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {
 			Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
@@ -219,26 +215,24 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 			Column       string                               `json:"column"`
 			Format       kbapi.FormatType                     `json:"format"`
 			Label        *string                              `json:"label,omitempty"`
-			Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 			Visible      *bool                                `json:"visible,omitempty"`
 			Width        *float32                             `json:"width,omitempty"`
 		}{row},
 		SplitMetricsBy: &[]struct {
-			Column    string                                     `json:"column"`
-			Format    kbapi.FormatType                           `json:"format"`
-			Label     *string                                    `json:"label,omitempty"`
-			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
+			Column string           `json:"column"`
+			Format kbapi.FormatType `json:"format"`
+			Label  *string          `json:"label,omitempty"`
 		}{split},
 	}
 
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`), &api.DataSource))
 
-	sortBy := kbapi.DatatableESQL_SortBy{}
+	sortBy := kbapi.DatatableStyling_SortBy{}
 	require.NoError(t, json.Unmarshal([]byte(`{"column_type":"metric","direction":"desc","index":0}`), &sortBy))
-	api.SortBy = &sortBy
+	api.Styling.SortBy = &sortBy
 
-	paging := kbapi.DatatableESQLPaging(20)
-	api.Paging = &paging
+	paging := kbapi.DatatableStylingPaging(20)
+	api.Styling.Paging = &paging
 
 	model := &datatableESQLConfigModel{}
 	diags := model.fromAPI(context.Background(), api)
@@ -246,18 +240,19 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL description"), model.Description)
-	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Equal(t, types.BoolValue(false), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(1), model.Sampling)
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.Rows, 1)
 	assert.Len(t, model.SplitMetricsBy, 1)
-	assert.Equal(t, types.Int64Value(20), model.Paging)
+	require.NotNil(t, model.Styling)
+	assert.Equal(t, types.Int64Value(20), model.Styling.Paging)
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, apiRoundTrip.Type)
-	assert.NotNil(t, apiRoundTrip.Paging)
+	assert.NotNil(t, apiRoundTrip.Styling.Paging)
 	assert.NotNil(t, apiRoundTrip.Rows)
 }
 
@@ -275,24 +270,23 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Density: kbapi.DatatableDensity{
-			Mode: new(kbapi.DatatableDensityModeDefault),
-			Height: &struct {
-				Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
-				Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
-			}{Header: &header, Value: &value},
+		Styling: kbapi.DatatableStyling{
+			Density: kbapi.DatatableDensity{
+				Mode: new(kbapi.DatatableDensityModeDefault),
+				Height: &struct {
+					Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
+					Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
+				}{Header: &header, Value: &value},
+			},
 		},
 		Query:   kbapi.FilterSimple{},
 		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","query":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
-	var datatableChart kbapi.DatatableChart
-	require.NoError(t, datatableChart.FromDatatableNoESQL(api))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromDatatableNoESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
@@ -303,9 +297,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsDatatableChart()
-	require.NoError(t, err)
-	noESQL2, err := chart2.AsDatatableNoESQL()
+	noESQL2, err := attrs2.AsDatatableNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable NoESQL Round-Trip", *noESQL2.Title)
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, noESQL2.Type)
@@ -315,8 +307,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	ctx := context.Background()
 
 	metric := kbapi.DatatableESQLMetric{
-		Column:    "host.name",
-		Operation: kbapi.DatatableESQLMetricOperationValue,
+		Column: "host.name",
 	}
 	api := kbapi.DatatableESQL{
 		Type:                kbapi.DatatableESQLTypeDataTable,
@@ -324,16 +315,13 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
-		Density:             kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)},
+		Styling:             kbapi.DatatableStyling{Density: kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)}},
 		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
-	var datatableChart kbapi.DatatableChart
-	require.NoError(t, datatableChart.FromDatatableESQL(api))
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromDatatableESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
@@ -344,9 +332,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	chart2, err := attrs2.AsDatatableChart()
-	require.NoError(t, err)
-	esql2, err := chart2.AsDatatableESQL()
+	esql2, err := attrs2.AsDatatableESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, esql2.Type)

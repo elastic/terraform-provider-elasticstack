@@ -22,6 +22,7 @@ import (
 	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -82,6 +83,7 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 	// Convert V1 model to V2 model
 	stateModelV2 := integrationPolicyModel{
 		ID:                 m.ID,
+		KibanaConnection:   providerschema.KibanaConnectionNullList(),
 		PolicyID:           m.PolicyID,
 		Name:               m.Name,
 		Namespace:          m.Namespace,
@@ -152,7 +154,7 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 		return types.MapNull(getInputStreamType()), nil
 	}
 
-	var apiStreams map[string]kbapi.PackagePolicyInputStream
+	var apiStreams map[string]kbapi.PackagePolicyMappedInputStream
 	diags := v1.Unmarshal(&apiStreams)
 	if diags.HasError() {
 		return types.MapNull(getInputStreamType()), diags

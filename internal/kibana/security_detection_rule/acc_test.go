@@ -1541,7 +1541,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 }
 
 func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

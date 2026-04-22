@@ -37,7 +37,7 @@ var _ resource.ResourceWithUpgradeState = &Resource{}
 var sloResourceDescription string
 
 type Resource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func NewResource() resource.Resource {
@@ -45,9 +45,12 @@ func NewResource() resource.Resource {
 }
 
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
-	r.client = client
+	if response.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {

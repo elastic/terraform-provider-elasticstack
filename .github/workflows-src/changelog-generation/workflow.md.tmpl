@@ -1,0 +1,243 @@
+---
+name: Changelog Generation
+description: >-
+  Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch,
+  rewrites the Unreleased section. On prep-release-* pull requests, rewrites the concrete release
+  section. Uses a deterministic pre-activation phase to resolve the previous release tag, compare
+  range, merged PR set, and target section mode, then an agent phase to generate changelog content
+  strictly from PR-level summaries with full provenance.
+on:
+  schedule:
+    - cron: daily
+  workflow_dispatch:
+  pull_request_target:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+    - name: Resolve release context
+      id: resolve_release_context
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/resolve-release-context.inline.js
+    - name: Gather PR evidence
+      id: gather_pr_evidence
+      uses: actions/github-script@v8
+      env:
+        PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
+        COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+        MODE: ${{ steps.resolve_release_context.outputs.mode }}
+        TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/gather-pr-evidence.inline.js
+    - name: Upload release evidence artifact
+      if: steps.gather_pr_evidence.outputs.has_evidence == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: changelog-release-evidence
+        path: ${{ steps.gather_pr_evidence.outputs.evidence_file_path }}
+        if-no-files-found: error
+if: >-
+  (github.event_name != 'pull_request_target' ||
+  startsWith(github.head_ref, 'prep-release-')) &&
+  needs.pre_activation.outputs.has_evidence == 'true'
+steps:
+  - name: Download release evidence artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: changelog-release-evidence
+      path: /tmp/gh-aw/agent
+  - name: Verify evidence manifest path
+    run: test -f /tmp/gh-aw/agent/evidence.json
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup repository dependencies
+    run: make setup
+engine:
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pre-activation:
+    outputs:
+      mode: ${{ steps.resolve_release_context.outputs.mode }}
+      previous_tag: ${{ steps.resolve_release_context.outputs.previous_tag }}
+      compare_range: ${{ steps.resolve_release_context.outputs.compare_range }}
+      target_version: ${{ steps.resolve_release_context.outputs.target_version }}
+      target_branch: ${{ steps.resolve_release_context.outputs.target_branch }}
+      has_evidence: ${{ steps.gather_pr_evidence.outputs.has_evidence }}
+tools:
+  github:
+    toolsets: [repos, pull_requests]
+network:
+  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  push-to-pull-request-branch:
+    target: triggering
+    max: 1
+  create-pull-request:
+    max: 1
+    preserve-branch-name: true
+  update-pull-request:
+    max: 1
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Changelog Generation
+
+You generate or update `CHANGELOG.md` strictly from the merged pull-request evidence in workflow memory. You do **not** narrate individual commits, invent entries without PR backing, or guess user impact. Every changelog bullet MUST come from a PR in the evidence manifest. Never reference a PR number or URL that does not appear in the manifest.
+
+## Pre-activation context
+
+Deterministic pre-activation steps have already resolved the release context and gathered PR evidence. Do **not** re-query git or GitHub for commit lists or PR metadata; use the values below and the evidence manifest in workflow memory.
+
+- **Mode**: `${{ needs.pre_activation.outputs.mode }}` — either `unreleased` (schedule/dispatch) or `release` (prep-release-* PR)
+- **Previous tag**: `${{ needs.pre_activation.outputs.previous_tag }}`
+- **Compare range**: `${{ needs.pre_activation.outputs.compare_range }}`
+- **Target version** (release mode only): `${{ needs.pre_activation.outputs.target_version }}`
+- **Target branch**: `${{ needs.pre_activation.outputs.target_branch }}`
+
+## Evidence manifest
+
+Read the evidence manifest from workflow memory at:
+```
+/tmp/gh-aw/agent/evidence.json
+```
+
+The manifest contains:
+- `mode`, `target_version`, `previous_tag`, `compare_range`, `target_section`, `target_section_mode`
+- `pull_requests[]`: each entry has `number`, `title`, `url`, `merge_commit_sha`, `author`, `labels`, `touched_files`, `classification` (`user-facing` | `internal` | `uncertain`), `inclusion_rationale`, `exclusion_rationale`
+
+## Execution steps
+
+1. **Read the evidence manifest** from workflow memory (path above).
+
+2. **Read `CHANGELOG.md`** to understand the current structure, sub-heading style, and target section.
+
+3. **Determine which PRs to include**:
+   - PRs classified as `user-facing` SHOULD always be included unless you have a clear specific reason not to.
+   - PRs classified as `uncertain`: use your judgment based on PR title, description, and `touched_files`. Include if they touch provider implementation paths (`internal/`, `pkg/`, `libs/`, `provider/`, `go.mod`) and have a meaningful, user-visible title. Exclude automated-sounding entries (e.g., dependency bumps, CI changes, doc-only).
+   - PRs classified as `internal` MAY be omitted. Include only if you have a specific reason the user impact is significant.
+   - Never include a PR entry without its `number` and `url` from the manifest.
+   - Never invent PR numbers. Every bullet MUST end with `([#NNN](url))` or `([#NNN](url), [#MMM](url))` citation format using real PR numbers from the manifest.
+
+4. **Pre-write validation rules** (enforce before generating):
+   - Every changelog bullet MUST be backed by exactly one or more PRs from the evidence manifest.
+   - No commit-level narration (e.g., bullets referencing commit SHAs or "Fix typo in xyz.go" without PR backing).
+   - No fabricated PR numbers not present in the evidence.
+   - If there are no user-facing PRs in the evidence, emit `noop` with a clear reason.
+
+5. **Generate the changelog section**:
+
+   For **`unreleased`** mode:
+   - Rewrite **only** the `## [Unreleased]` section of `CHANGELOG.md`.
+   - Preserve all other sections (previous release sections) exactly as-is.
+   - Match the existing sub-heading style used in the file (look at current sections — the file uses e.g. `### Changes`, `### Breaking changes`). Do **not** invent sub-headings not already used in the file.
+   - Each bullet: `- <summary> ([#<number>](<url>))`
+
+   For **`release`** mode:
+   - Rewrite **only** the `## [${{ needs.pre_activation.outputs.target_version }}] - <today's date in YYYY-MM-DD format>` section.
+   - If a section for this version already exists, replace it. If not, insert it immediately after the `## [Unreleased]` section.
+   - Preserve all other sections exactly as-is (including the `## [Unreleased]` section — do **not** clear it).
+
+6. **Write provenance JSON** to `/tmp/gh-aw/agent/provenance.json`. This file is written to workflow memory only — it is ephemeral support data and MUST NOT be added to the git index or committed. The file must contain machine-readable provenance mapping each bullet to its backing PR:
+
+   ```json
+   {
+     "generated_at": "<ISO timestamp>",
+     "mode": "<unreleased|release>",
+     "target_version": "<version or empty>",
+     "compare_range": "<range>",
+     "bullets": [
+       {
+         "text": "Add resource X (#123)",
+         "pr_numbers": [123],
+         "pr_urls": ["https://github.com/.../pull/123"]
+       }
+     ]
+   }
+   ```
+
+   Every bullet in the changelog section MUST have a corresponding entry in `bullets[]`. Do **not** include bullets for PRs you excluded.
+
+7. **Run provenance validation** before writing `CHANGELOG.md`. Call:
+
+   ```
+   go run ./scripts/changelog-generation validate-provenance \
+     --evidence /tmp/gh-aw/agent/evidence.json \
+     --provenance /tmp/gh-aw/agent/provenance.json
+   ```
+
+   This validates that every bullet in `provenance.json` references a PR present in the evidence manifest and that PR numbers are not fabricated. It exits 0 on success and non-zero on failure, outputting a JSON result.
+
+   - If validation **fails**: emit `noop` with the validation failure reason. Do **not** write `CHANGELOG.md` or push.
+   - If validation **passes**: proceed to write `CHANGELOG.md`.
+
+8. **Write `CHANGELOG.md`** using the rewriter. First write the new section body (without the header line) to `/tmp/gh-aw/agent/section.md`, then call:
+
+   ```
+   go run ./scripts/changelog-generation rewrite-changelog-section \
+     --mode <unreleased|release> \
+     [--target-version <version>] \
+     --section-file /tmp/gh-aw/agent/section.md
+   ```
+
+   This handles both `unreleased` and `release` modes, preserves all other sections and the link footer exactly, and outputs a JSON result confirming success.
+
+9. **Commit and push**:
+
+   Commit only `CHANGELOG.md`.
+
+   For **`release`** mode:
+   - Commit message: `chore(changelog): update changelog for v${{ needs.pre_activation.outputs.target_version }}`
+   - Use the `push-to-pull-request-branch` safe output to push to the triggering `prep-release-*` branch. Do **not** create a new PR — the release PR already exists.
+
+   For **`unreleased`** mode (singleton branch/PR orchestration):
+   - Commit message: `chore(changelog): update unreleased changelog section`
+   - Use `create-pull-request` targeting branch `generated-changelog`. The framework handles branch creation and PR reuse — calling `create-pull-request` with the same branch name will force-push to the existing branch if it exists and reuse the open PR. Always call `create-pull-request` once regardless of whether the branch or PR already exists:
+     - PR title: `chore: update CHANGELOG.md [Unreleased] section`
+     - PR body (include all three elements):
+       1. Date of generation (today's date in YYYY-MM-DD format)
+       2. The compare range used: `${{ needs.pre_activation.outputs.compare_range }}`
+       3. A note that this PR is auto-generated by the changelog-generation workflow and re-runs will overwrite the branch — do not make manual edits to the branch.
+   - After `create-pull-request`, use `update-pull-request` to refresh the PR description with the new date and compare range.
+
+10. **If no action is taken** (no user-facing PRs, or CHANGELOG.md is already up-to-date): emit `noop` with a clear reason. Do **not** push an empty commit.
+
+## Constraints
+
+- Generate changelog entries strictly at the **pull-request level**, not the commit level.
+- Every bullet MUST end with `([#NNN](url))` citation linking to the real PR — no bullets without a PR citation.
+- Write `/tmp/gh-aw/agent/provenance.json` with machine-readable bullet-to-PR mappings for every included bullet before writing CHANGELOG.md.
+- Provenance validation (step 7) MUST pass before CHANGELOG.md is written or any push occurs.
+- Do **not** modify any release sections other than the target section for this run.
+- Do **not** change the file's link footer (e.g., `[Unreleased]: https://...` comparison links) — preserve them exactly.
+- Do **not** invent categories or sub-headings not present in the existing file.

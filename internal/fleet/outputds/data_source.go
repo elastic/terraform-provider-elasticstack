@@ -34,7 +34,7 @@ func NewDataSource() datasource.DataSource {
 }
 
 type outputDataSource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (d *outputDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -45,10 +45,10 @@ func (d *outputDataSource) Configure(_ context.Context, req datasource.Configure
 	if req.ProviderData == nil {
 		return
 	}
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	d.client = client
+	d.client = factory
 }

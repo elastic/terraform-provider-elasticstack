@@ -35,7 +35,7 @@ import (
 )
 
 // readRoleMapping reads role mapping data from Elasticsearch and returns Data
-func readRoleMapping(ctx context.Context, client *clients.APIClient, roleMappingName string, elasticsearchConnection types.List) (*Data, diag.Diagnostics) {
+func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string, client *clients.ElasticsearchScopedClient) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	roleMapping, apiDiags := elasticsearch.GetRoleMapping(ctx, client, roleMappingName)
@@ -57,7 +57,7 @@ func readRoleMapping(ctx context.Context, client *clients.APIClient, roleMapping
 		return nil, diags
 	}
 	data.ID = types.StringValue(compID.String())
-	data.ElasticsearchConnection = elasticsearchConnection
+	data.ElasticsearchConnection = stateData.ElasticsearchConnection
 	data.Name = types.StringValue(roleMapping.Name)
 	data.Enabled = types.BoolValue(roleMapping.Enabled)
 
@@ -112,13 +112,13 @@ func (r *roleMappingResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 	roleMappingName := compID.ResourceID
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	readData, diags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	readData, diags := readRoleMapping(ctx, data, roleMappingName, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

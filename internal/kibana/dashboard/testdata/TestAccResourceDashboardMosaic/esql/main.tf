@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Mosaic Panel (ES|QL)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Mosaic Panel (ES|QL)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -25,7 +30,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "ESQL Mosaic"
       description = "Mosaic visualization using ES|QL"
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type  = "esql"
         query = "FROM metrics-* | KEEP host.name, service.name, bytes | LIMIT 50"
       })
@@ -34,14 +39,17 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_by_json = jsonencode([
         {
-          operation   = "value"
-          column      = "host.name"
+          operation = "value"
+          column    = "host.name"
+          format = {
+            type = "number"
+          }
           collapse_by = "avg"
           color = {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }
@@ -51,14 +59,17 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_breakdown_by_json = jsonencode([
         {
-          operation   = "value"
-          column      = "service.name"
+          operation = "value"
+          column    = "service.name"
+          format = {
+            type = "number"
+          }
           collapse_by = "avg"
           color = {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }
@@ -79,8 +90,8 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
-        visible              = "show"
+        size                 = "s"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 

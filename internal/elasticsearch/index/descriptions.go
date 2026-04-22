@@ -33,9 +33,3 @@ var componentTemplateSettingsDescription string
 
 //go:embed descriptions/index_template_resource.md
 var indexTemplateResourceDescription string
-
-//go:embed descriptions/ilm_resource.md
-var ilmResourceDescription string
-
-//go:embed descriptions/ilm_set_priority_action.md
-var ilmSetPriorityActionDescription string

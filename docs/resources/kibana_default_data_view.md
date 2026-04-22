@@ -41,9 +41,23 @@ resource "elasticstack_kibana_default_data_view" "default" {
 
 - `data_view_id` (String) The data view identifier to set as default. NOTE: The API does not validate whether it is a valid identifier. Leave this unset (or explicitly `null`) to unset the default data view.
 - `force` (Boolean) Update an existing default data view identifier. If set to false and a default data view already exists, the operation will fail.
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `skip_delete` (Boolean) If set to true, the default data view will not be unset when the resource is destroyed. The existing default data view will remain unchanged.
 - `space_id` (String) The Kibana space ID to set the default data view in. Defaults to `default`.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource.
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.

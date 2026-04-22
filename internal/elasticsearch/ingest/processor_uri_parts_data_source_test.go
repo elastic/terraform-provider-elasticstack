@@ -26,14 +26,41 @@ import (
 
 func TestAccDataSourceIngestProcessorURIParts(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorURIParts,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "input_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field", "url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "keep_original", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "remove_if_successful", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIParts),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "request.uri"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field", "parsed_url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "keep_original", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "remove_if_successful", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "description", "Parse URI parts from request"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "if", "ctx.request?.uri != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "tag", "uri-parts-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.0", `{"set":{"field":"error.message","value":"uri parts failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIPartsAllAttributes),
 				),
 			},
 		},
@@ -50,15 +77,23 @@ const expectedJSONURIParts = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorURIParts = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_uri_parts" "test" {
-  field                = "input_field"
-  target_field         = "url"
-  keep_original        = true
-  remove_if_successful = false
-}
-`
+const expectedJSONURIPartsAllAttributes = `{
+	"uri_parts": {
+		"description": "Parse URI parts from request",
+		"field": "request.uri",
+		"if": "ctx.request?.uri != null",
+		"ignore_failure": true,
+		"keep_original": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "uri parts failed"
+				}
+			}
+		],
+		"remove_if_successful": true,
+		"tag": "uri-parts-tag",
+		"target_field": "parsed_url"
+	}
+}`

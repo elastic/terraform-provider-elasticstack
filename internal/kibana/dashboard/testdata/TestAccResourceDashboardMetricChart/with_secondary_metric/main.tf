@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Metric Chart Panel with Secondary Metric"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Metric Chart Panel with Secondary Metric"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,13 +28,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     metric_chart_config = {
       title       = "Sample Metric Chart with Secondary Metric"
       description = "Test metric chart with secondary metric"
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = "status:active"
+        language   = "kql"
+        expression = "status:active"
       }
       metrics = [
         {
@@ -39,29 +46,21 @@ resource "elasticstack_kibana_dashboard" "test" {
             format = {
               type = "number"
             }
-            alignments = {
-              labels = "center"
-            }
-            icon = {
-              name = "document"
-            }
           })
         },
         {
           config_json = jsonencode({
-            type              = "secondary",
-            operation         = "last_value",
-            field             = "@timestamp",
-            sort_by           = "@timestamp",
-            show_array_values = false,
-            label_position    = "before",
-            alignments = {
-              value = "right"
+            type      = "secondary"
+            operation = "sum"
+            field     = "bytes"
+            format = {
+              type = "number"
             }
             filter = {
-              query    = "\"@timestamp\": *"
-              language = "kuery"
+              expression = ""
+              language   = "kql"
             }
+            time_scale = "h"
           })
         }
       ]

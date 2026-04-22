@@ -34,7 +34,13 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -56,7 +62,7 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Update using the operational space from STATE
 	// API handles adding/removing server host from spaces based on space_ids in body
-	host, diags := fleet.UpdateFleetServerHost(ctx, client, hostID, spaceID, body)
+	host, diags := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

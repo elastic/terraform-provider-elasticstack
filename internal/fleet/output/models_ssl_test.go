@@ -21,7 +21,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func Test_objectValueToSSL(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *kbapi.NewOutputSsl
+		want    *outputSSLAPIModel
 		wantErr bool
 	}{
 		{
@@ -55,7 +54,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					},
 				),
 			},
-			want: &kbapi.NewOutputSsl{
+			want: &outputSSLAPIModel{
 				Certificate:            new("cert"),
 				CertificateAuthorities: &[]string{"ca"},
 				Key:                    new("key"),
@@ -81,7 +80,7 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *kbapi.UpdateOutputSsl
+		want    *outputSSLAPIModel
 		wantErr bool
 	}{
 		{
@@ -102,7 +101,7 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 					},
 				),
 			},
-			want: &kbapi.UpdateOutputSsl{
+			want: &outputSSLAPIModel{
 				Certificate:            new("cert"),
 				CertificateAuthorities: &[]string{"ca"},
 				Key:                    new("key"),
@@ -123,7 +122,9 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 
 func Test_sslToObjectValue(t *testing.T) {
 	type args struct {
-		ssl *kbapi.OutputSsl
+		certificate            *string
+		certificateAuthorities *[]string
+		key                    *string
 	}
 	tests := []struct {
 		name    string
@@ -134,40 +135,36 @@ func Test_sslToObjectValue(t *testing.T) {
 		{
 			name: "returns nil when ssl is nil",
 			args: args{
-				ssl: nil,
+				certificate:            nil,
+				certificateAuthorities: nil,
+				key:                    nil,
 			},
 			want: types.ObjectNull(getSslAttrTypes()),
 		},
 		{
 			name: "returns null object when ssl has all empty fields",
 			args: args{
-				ssl: &kbapi.OutputSsl{
-					Certificate:            nil,
-					CertificateAuthorities: nil,
-					Key:                    nil,
-				},
+				certificate:            nil,
+				certificateAuthorities: nil,
+				key:                    nil,
 			},
 			want: types.ObjectNull(getSslAttrTypes()),
 		},
 		{
 			name: "returns null object when ssl has empty string pointers and empty slice",
 			args: args{
-				ssl: &kbapi.OutputSsl{
-					Certificate:            new(""),
-					CertificateAuthorities: &[]string{},
-					Key:                    new(""),
-				},
+				certificate:            new(""),
+				certificateAuthorities: &[]string{},
+				key:                    new(""),
 			},
 			want: types.ObjectNull(getSslAttrTypes()),
 		},
 		{
 			name: "returns an object when populated",
 			args: args{
-				ssl: &kbapi.OutputSsl{
-					Certificate:            new("cert"),
-					CertificateAuthorities: &[]string{"ca"},
-					Key:                    new("key"),
-				},
+				certificate:            new("cert"),
+				certificateAuthorities: &[]string{"ca"},
+				key:                    new("key"),
 			},
 			want: types.ObjectValueMust(
 				getSslAttrTypes(),
@@ -181,7 +178,7 @@ func Test_sslToObjectValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, diags := sslToObjectValue(context.Background(), tt.args.ssl)
+			got, diags := sslToObjectValue(context.Background(), tt.args.certificate, tt.args.certificateAuthorities, tt.args.key)
 			if (diags.HasError()) != tt.wantErr {
 				t.Errorf("sslToObjectValue() error = %v, wantErr %v", diags.HasError(), tt.wantErr)
 				return

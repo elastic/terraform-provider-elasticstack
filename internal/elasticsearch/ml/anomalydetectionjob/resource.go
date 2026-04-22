@@ -31,7 +31,7 @@ func NewAnomalyDetectionJobResource() resource.Resource {
 }
 
 type anomalyDetectionJobResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *anomalyDetectionJobResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -39,7 +39,7 @@ func (r *anomalyDetectionJobResource) Metadata(_ context.Context, req resource.M
 }
 
 func (r *anomalyDetectionJobResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

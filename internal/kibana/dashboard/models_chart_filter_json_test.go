@@ -28,14 +28,14 @@ import (
 
 func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 	raw := `{"type":"condition","condition":{"field":"host.name","operator":"is","value":"staging"}}`
-	var item kbapi.XyChart_Filters_Item
+	var item kbapi.LensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(raw), &item))
 
 	m := chartFilterJSONModel{}
 	diags := m.populateFromAPIItem(item)
 	require.False(t, diags.HasError())
 
-	var out kbapi.XyChart_Filters_Item
+	var out kbapi.LensPanelFilters_Item
 	diags = decodeChartFilterJSON(m.FilterJSON, &out)
 	require.False(t, diags.HasError())
 
@@ -51,7 +51,7 @@ func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 }
 
 func Test_decodeChartFilterJSON_rejects_empty(t *testing.T) {
-	var item kbapi.XyChart_Filters_Item
+	var item kbapi.LensPanelFilters_Item
 	diags := decodeChartFilterJSON(jsontypes.NewNormalizedNull(), &item)
 	require.True(t, diags.HasError())
 }

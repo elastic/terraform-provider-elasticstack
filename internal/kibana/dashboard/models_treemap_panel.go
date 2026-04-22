@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -43,73 +44,55 @@ type treemapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	treemapChart, err := attrs.AsTreemapChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	if pm.TreemapConfig == nil {
 		pm.TreemapConfig = &treemapConfigModel{}
 	}
 
-	datasetType := ""
-	if attrsJSON, err := attrs.MarshalJSON(); err == nil {
-		var attrsMap map[string]any
-		if err := json.Unmarshal(attrsJSON, &attrsMap); err == nil {
-			if dataset, ok := attrsMap["dataset"].(map[string]any); ok {
-				if t, ok := dataset["type"].(string); ok {
-					datasetType = t
-				}
-			}
-		}
+	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
+		return pm.TreemapConfig.fromAPINoESQL(noESQL)
 	}
 
-	if datasetType == "esql" {
-		treemapESQL, err := treemapChart.AsTreemapESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		return pm.TreemapConfig.fromAPIESQL(treemapESQL)
-	}
-
-	treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
+	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
+	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TreemapConfig
 
-	treemapChart, treemapDiags := configModel.toAPI()
+	attrs, treemapDiags := configModel.toAPI()
 	diags.Append(treemapDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
-	}
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	if err := attrs.FromTreemapChart(treemapChart); err != nil {
-		diags.AddError("Failed to create treemap attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
-	}
-
 	return attrs, diags
+}
+
+func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
+	body, err := api.DataSource.MarshalJSON()
+	if err != nil {
+		return false
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &ds); err != nil {
+		return false
+	}
+	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
 type treemapConfigModel struct {
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                                `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                       `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                  `tfsdk:"query"`
 	Filters             []chartFilterJSONModel                              `tfsdk:"filters"`
 	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
 	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
-	LabelPosition       types.String                                        `tfsdk:"label_position"`
 	Legend              *partitionLegendModel                               `tfsdk:"legend"`
 	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
 }
@@ -122,12 +105,12 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
+	datasetBytes, err := api.DataSource.MarshalJSON()
 	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+		diags.AddError("Failed to marshal data_source_json", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -144,37 +127,23 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		diags.AddError("Failed to marshal metrics", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsBytes), populatePartitionMetricsDefaults)
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+	if len(api.Filters) > 0 {
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
-	}
-
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	} else if !typeutils.IsKnown(m.LabelPosition) {
-		m.LabelPosition = types.StringNull()
 	}
 
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -194,12 +163,12 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
+	datasetBytes, err := json.Marshal(api.DataSource)
 	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+		diags.AddError("Failed to marshal data_source_json", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -216,34 +185,20 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		diags.AddError("Failed to marshal metrics", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsBytes), populatePartitionMetricsDefaults)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+	if len(api.Filters) > 0 {
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
-	}
-
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	} else if !typeutils.IsKnown(m.LabelPosition) {
-		m.LabelPosition = types.StringNull()
 	}
 
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -251,158 +206,83 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	return diags
 }
 
-func (m *treemapConfigModel) toAPI() (kbapi.TreemapChart, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChart
 
 	if m == nil {
-		return treemapChart, diags
+		return attrs, diags
 	}
 
 	if m.usesESQL() {
-		return m.toAPIESQLChartSchema()
+		esql, esqlDiags := m.toAPITreemapESQL()
+		diags.Append(esqlDiags...)
+		if diags.HasError() {
+			return attrs, diags
+		}
+		if err := attrs.FromTreemapESQL(esql); err != nil {
+			diags.AddError("Failed to create treemap ES|QL schema", err.Error())
+		}
+		return attrs, diags
 	}
 
 	noESQL, noESQLDiags := m.toAPINoESQL()
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
-		return treemapChart, diags
+		return attrs, diags
 	}
-	if err := treemapChart.FromTreemapNoESQL(noESQL); err != nil {
+	if err := attrs.FromTreemapNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to create treemap schema", err.Error())
 	}
 
-	return treemapChart, diags
+	return attrs, diags
 }
 
-func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChart
+	var api kbapi.TreemapESQL
 
-	attrs := map[string]any{
-		"type": string(kbapi.TreemapESQLTypeTreemap),
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "treemap_config.data_source_json must be provided")
+		return api, diags
 	}
-
-	if typeutils.IsKnown(m.Title) {
-		attrs["title"] = m.Title.ValueString()
-	}
-	if typeutils.IsKnown(m.Description) {
-		attrs["description"] = m.Description.ValueString()
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		attrs["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		attrs["sampling"] = m.Sampling.ValueFloat64()
-	}
-
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
-		return treemapChart, diags
-	}
-	var dataset any
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
-		return treemapChart, diags
-	}
-	attrs["dataset"] = dataset
-
 	if m.GroupBy.IsNull() {
 		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
-		return treemapChart, diags
+		return api, diags
 	}
-	var groupBy any
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
-		diags.AddError("Failed to unmarshal group_by", err.Error())
-		return treemapChart, diags
-	}
-	attrs["group_by"] = groupBy
-
 	if m.Metrics.IsNull() {
 		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
-		return treemapChart, diags
+		return api, diags
 	}
-	var metrics any
-	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &metrics); err != nil {
-		diags.AddError("Failed to unmarshal metrics", err.Error())
-		return treemapChart, diags
-	}
-	attrs["metrics"] = metrics
-
-	if len(m.Filters) > 0 {
-		filters := make([]any, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var filterAny map[string]any
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &filterAny)
-			diags.Append(filterDiags...)
-			if diags.HasError() {
-				return treemapChart, diags
-			}
-			filters = append(filters, filterAny)
-		}
-		attrs["filters"] = filters
-	}
-
-	if typeutils.IsKnown(m.LabelPosition) {
-		attrs["label_position"] = m.LabelPosition.ValueString()
-	}
-
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
-		return treemapChart, diags
+		return api, diags
 	}
-	legendBytes, err := json.Marshal(m.Legend.toTreemapLegend())
-	if err != nil {
-		diags.AddError("Failed to marshal legend", err.Error())
-		return treemapChart, diags
-	}
-	var legend any
-	if err := json.Unmarshal(legendBytes, &legend); err != nil {
-		diags.AddError("Failed to unmarshal legend", err.Error())
-		return treemapChart, diags
-	}
-	attrs["legend"] = legend
-
-	if m.ValueDisplay != nil {
-		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toValueDisplay())
-		if err != nil {
-			diags.AddError("Failed to marshal value_display", err.Error())
-			return treemapChart, diags
-		}
-		var valueDisplay any
-		if err := json.Unmarshal(valueDisplayBytes, &valueDisplay); err != nil {
-			diags.AddError("Failed to unmarshal value_display", err.Error())
-			return treemapChart, diags
-		}
-		attrs["value_display"] = valueDisplay
+	if diags.HasError() {
+		return api, diags
 	}
 
-	attrsJSON, err := json.Marshal(attrs)
-	if err != nil {
-		diags.AddError("Failed to marshal treemap attributes", err.Error())
-		return treemapChart, diags
+	mergeJSON := fmt.Sprintf(
+		`{"type":"treemap","data_source":%s,"group_by":%s,"metrics":%s}`,
+		m.DataSourceJSON.ValueString(),
+		m.GroupBy.ValueString(),
+		m.Metrics.ValueString(),
+	)
+	if err := json.Unmarshal([]byte(mergeJSON), &api); err != nil {
+		diags.AddError("Failed to unmarshal treemap ES|QL payload", err.Error())
+		return api, diags
 	}
-	if err := json.Unmarshal(attrsJSON, &treemapChart); err != nil {
-		diags.AddError("Failed to create treemap chart schema", err.Error())
-		return treemapChart, diags
+	if api.GroupBy == nil || len(*api.GroupBy) == 0 {
+		diags.AddError("Invalid group_by_json", "treemap_config.group_by_json must contain at least one item")
+		return api, diags
+	}
+	if len(api.Metrics) == 0 {
+		diags.AddError("Invalid metrics_json", "treemap_config.metrics_json must contain at least one item")
+		return api, diags
 	}
 
-	return treemapChart, diags
-}
-
-func (m *treemapConfigModel) usesESQL() bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
-}
-
-func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	api := kbapi.TreemapNoESQL{Type: kbapi.TreemapNoESQLTypeTreemap}
+	api.Legend = m.Legend.toTreemapLegend()
+	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -417,12 +297,54 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	if m.ValueDisplay != nil {
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+	} else {
+		defaultMode := kbapi.ValueDisplayModePercentage
+		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+	}
+
+	return api, diags
+}
+
+func (m *treemapConfigModel) usesESQL() bool {
+	if m == nil {
+		return false
+	}
+	if m.Query == nil {
+		return true
+	}
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
+}
+
+func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	api := kbapi.TreemapNoESQL{
+		Type:      kbapi.TreemapNoESQLTypeTreemap,
+		TimeRange: lensPanelTimeRange(),
+	}
+
+	if typeutils.IsKnown(m.Title) {
+		api.Title = new(m.Title.ValueString())
+	}
+	if typeutils.IsKnown(m.Description) {
+		api.Description = new(m.Description.ValueString())
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
+	}
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "treemap_config.data_source_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
 		return api, diags
 	}
 
@@ -462,25 +384,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	}
 	api.Query = m.Query.toAPI()
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.TreemapNoESQL_Filters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.TreemapNoESQL_Filters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
-
-	if typeutils.IsKnown(m.LabelPosition) {
-		lp := kbapi.TreemapNoESQLLabelPosition(m.LabelPosition.ValueString())
-		api.LabelPosition = &lp
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
@@ -489,7 +393,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api.Legend = m.Legend.toTreemapLegend()
 
 	if m.ValueDisplay != nil {
-		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

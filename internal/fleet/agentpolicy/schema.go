@@ -20,6 +20,7 @@ package agentpolicy
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
@@ -407,7 +408,11 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
-		}}
+		},
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		},
+	}
 }
 func getGlobalDataTagsAttrTypes() attr.Type {
 	return getSchema().Attributes["global_data_tags"].GetType()

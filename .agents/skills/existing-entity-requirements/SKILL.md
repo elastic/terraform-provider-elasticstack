@@ -1,5 +1,5 @@
 ---
-name: entity-requirements
+name: existing-entity-requirements
 description: Examines an existing Terraform resource or data source implementation and produces an OpenSpec requirements document under openspec/specs/. Use when the user asks to document requirements for a Terraform entity, capture behavior from code, or write a requirements doc for a resource/data source.
 ---
 

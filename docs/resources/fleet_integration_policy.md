@@ -99,9 +99,10 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
-- `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
+- `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.
 
 The provider injects the '__tf_provider_context' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '__tf_provider_context' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.
@@ -147,6 +148,22 @@ Read-Only:
 
 - `enabled` (Boolean) Default enabled state for the stream.
 - `vars` (String) Stream-level variable defaults as JSON.
+
+
+
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.
 
 ## Import
 

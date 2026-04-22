@@ -26,14 +26,55 @@ import (
 
 func TestAccDataSourceIngestProcessorTrim(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorTrim,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_trim.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrim),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_trim.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "target_field", "trimmed_message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "description", "Trim whitespace from message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "if", "ctx.message != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "on_failure.0", `{"set":{"field":"error.message","value":"trim failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "tag", "trim-message"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrimAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_trim.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "my.field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "target_field", "trimmed_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrimUpdated),
 				),
 			},
 		},
@@ -48,12 +89,31 @@ const expectedJSONTrim = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorTrim = `
-provider "elasticstack" {
-  elasticsearch {}
-}
+const expectedJSONTrimAllAttributes = `{
+	"trim": {
+		"description": "Trim whitespace from message",
+		"field": "message",
+		"if": "ctx.message != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "trim failed"
+				}
+			}
+		],
+		"tag": "trim-message",
+		"target_field": "trimmed_message"
+	}
+}`
 
-data "elasticstack_elasticsearch_ingest_processor_trim" "test" {
-  field = "foo"
-}
-`
+const expectedJSONTrimUpdated = `{
+	"trim": {
+		"field": "my.field",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"target_field": "trimmed_field"
+	}
+}`

@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorFingerprint(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorFingerprint,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fingerprint.test", "json", expectedJSONFingerprint),
 				),
@@ -49,15 +49,5 @@ const expectedJSONFingerprint = `{
 		"method": "SHA-1",
 		"target_field": "fingerprint"
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorFingerprint = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_fingerprint" "test" {
-  fields = ["user"]
 }
 `

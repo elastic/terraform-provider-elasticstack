@@ -1,0 +1,245 @@
+# `elasticstack_elasticsearch_watch` — Schema and Functional Requirements
+
+Resource implementation: `internal/elasticsearch/watcher/watch/`
+
+## Purpose
+
+Define schema and behavior for the Elasticsearch Watcher resource: API usage, identity/import, connection, JSON mapping, and read-time state synchronization. Manages Elasticsearch watches via the Watcher API, enabling scheduled or event-driven automated actions.
+
+## Schema
+
+```hcl
+resource "elasticstack_elasticsearch_watch" "example" {
+  id       = <computed, string> # internal identifier: <cluster_uuid>/<watch_id>
+  watch_id = <required, string> # force new
+
+  active   = <optional, bool>   # default: true
+  trigger  = <required, string> # JSON object
+  input    = <optional, string> # JSON object; default: {"none":{}}
+  condition = <optional, string> # JSON object; default: {"always":{}}
+  actions   = <optional, string> # JSON object; default: {}
+  metadata  = <optional, string> # JSON object; default: {}
+  transform = <optional, string> # JSON object; omitted when not set
+
+  throttle_period_in_millis = <optional, int> # default: 5000
+
+  elasticsearch_connection {
+    endpoints                = <optional, list(string)>
+    username                 = <optional, string>
+    password                 = <optional, string>
+    api_key                  = <optional, string>
+    bearer_token             = <optional, string>
+    es_client_authentication = <optional, string>
+    insecure                 = <optional, bool>
+    headers                  = <optional, map(string)>
+    ca_file                  = <optional, string>
+    ca_data                  = <optional, string>
+    cert_file                = <optional, string>
+    key_file                 = <optional, string>
+    cert_data                = <optional, string>
+    key_data                 = <optional, string>
+  }
+}
+```
+## Requirements
+### Requirement: Watcher CRUD APIs (REQ-001–REQ-004)
+
+The resource SHALL use the Elasticsearch Put Watch API to create and update watches ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-put-watch.html)). The resource SHALL use the Elasticsearch Get Watch API to read a watch ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-get-watch.html)). The resource SHALL use the Elasticsearch Delete Watch API to delete a watch ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-delete-watch.html)). When Elasticsearch returns a non-success status for create, update, read, or delete requests (other than 404 on read), the resource SHALL surface the API error as a Terraform diagnostic.
+
+#### Scenario: API failure on create
+
+- GIVEN the Put Watch API returns a non-success response
+- WHEN the provider handles the response
+- THEN Terraform diagnostics SHALL include the error from the API
+
+#### Scenario: API failure on delete
+
+- GIVEN the Delete Watch API returns a non-success response
+- WHEN the provider handles the response
+- THEN Terraform diagnostics SHALL include the error from the API
+
+### Requirement: Identity (REQ-005–REQ-006)
+
+The resource SHALL expose a computed `id` attribute representing the watch in the format `<cluster_uuid>/<watch_id>`. During create and update, the resource SHALL compute `id` by combining the current cluster UUID with the configured `watch_id` value.
+
+#### Scenario: ID set on create
+
+- GIVEN a successful Put Watch API call
+- WHEN create completes
+- THEN the `id` in state SHALL be in the format `<cluster_uuid>/<watch_id>`
+
+### Requirement: Import (REQ-007–REQ-008)
+The resource SHALL support import by storing the provided `id` value in state when the import identifier is in the format `<cluster_uuid>/<watch_id>`. For import and all subsequent read/delete operations, the resource SHALL require the `id` to be in the format `<cluster_uuid>/<watch_id>` and SHALL return an error diagnostic when the format is invalid.
+
+#### Scenario: Import with valid composite id
+- **GIVEN** an `id` in the format `<cluster_uuid>/<watch_id>`
+- **WHEN** import completes
+- **THEN** the `id` SHALL be stored in state for subsequent operations
+
+#### Scenario: Invalid id format
+- **GIVEN** a stored or imported `id` that does not contain exactly one `/`
+- **WHEN** read or delete runs
+- **THEN** the resource SHALL return an error diagnostic with "Wrong resource ID"
+
+### Requirement: Lifecycle (REQ-009)
+
+Changing `watch_id` SHALL require replacement (`ForceNew`). Updates to all other attributes SHALL be applied in place using the Put Watch API.
+
+#### Scenario: watch_id change triggers replacement
+
+- GIVEN an existing watch resource
+- WHEN `watch_id` is changed in configuration
+- THEN Terraform SHALL plan a destroy-and-recreate for the resource
+
+### Requirement: Connection (REQ-010–REQ-011)
+
+By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured on the resource, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls.
+
+#### Scenario: Resource-level connection override
+
+- GIVEN `elasticsearch_connection` is set with custom endpoints or credentials
+- WHEN create, read, update, or delete runs
+- THEN all API calls SHALL use the resource-scoped client instead of the provider client
+
+### Requirement: Create and update (REQ-012–REQ-013)
+
+On create and update, the resource SHALL construct a watch body from Terraform config, including `trigger`, `input`, `condition`, `actions`, `metadata`, optional `transform`, and `throttle_period_in_millis`, and submit it to the Put Watch API along with the `active` flag. After a successful Put Watch call, the resource SHALL set `id` in state and perform a read to refresh state.
+
+#### Scenario: Read-back after create
+
+- GIVEN a successful Put Watch API call on create
+- WHEN create finishes
+- THEN the resource SHALL perform a GET to refresh all state attributes
+
+### Requirement: Read (REQ-014–REQ-016)
+
+On read, the resource SHALL parse `id` using the framework resource's composite ID format to extract the watch identifier. The resource SHALL call the Get Watch API with the extracted watch identifier. When the Get Watch API returns 404, the resource SHALL remove itself from state. When the API returns a successful response, the resource SHALL decode the JSON response and update state from the response, except that for `actions` the resource SHALL preserve prior known Terraform values of any JSON type at nested paths where the API returns the redacted string sentinel. The prior `actions` JSON SHALL be the last-applied value from Terraform state when read is a refresh, and the configured value from the Terraform plan when read runs as read-after-write after create or update.
+
+#### Scenario: Watch not found on refresh
+
+- GIVEN the watch no longer exists on the cluster
+- WHEN read runs
+- THEN the resource SHALL be removed from state without an error
+
+#### Scenario: Redacted action secret during refresh
+
+- GIVEN the last-applied `actions` value in Terraform state includes a concrete nested action secret at a path
+- WHEN read runs and the Get Watch API returns the same path with a redacted string sentinel
+- THEN the resource SHALL preserve the prior state concrete value at that path while updating the rest of state from the API response
+
+#### Scenario: Redacted action secret after create or update read-after-write
+
+- GIVEN the Terraform plan for the apply includes a concrete `actions` value for a nested action secret at a path
+- WHEN read runs as read-after-write after a successful Put Watch and the Get Watch API returns that path with a redacted string sentinel
+- THEN the resource SHALL preserve the prior plan concrete value at that path while updating the rest of state from the API response
+
+#### Scenario: Redacted action header preserved when prior is a non-string
+
+- **GIVEN** the prior `actions` JSON has a non-string value at a nested path (for example `headers.Authorization = {"id": "service-now-key"}` or an inline-script object `{"source": "...", "lang": "painless"}`)
+- **WHEN** read runs and the Get Watch API returns the redacted string sentinel at that same path
+- **THEN** the resource SHALL preserve the prior non-string value at that path while updating the rest of state from the API response
+
+### Requirement: Delete (REQ-017)
+
+On delete, the resource SHALL parse `id` to extract the watch identifier and call the Delete Watch API with that identifier. The resource SHALL surface any non-success API response as a diagnostic error.
+
+#### Scenario: Successful delete
+
+- GIVEN a watch exists in state
+- WHEN delete runs
+- THEN the resource SHALL call the Delete Watch API with the watch identifier from `id`
+
+### Requirement: JSON field mapping — create/update (REQ-018–REQ-022)
+
+On create and update, the resource SHALL unmarshal each JSON string attribute (`trigger`, `input`, `condition`, `actions`, `metadata`) into a `map[string]any` before constructing the API request body; if any unmarshal fails, the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API. When `transform` is configured, the resource SHALL include its JSON object in the Put Watch request body. When `transform` is not configured on **create**, the `transform` field SHALL be omitted from the Put Watch JSON body. When `transform` is not configured on **update**, the Put Watch JSON body SHALL include `transform` with an empty JSON object `{}` so Elasticsearch clears any existing transform (omitting the field is not sufficient on update). The `throttle_period_in_millis` value SHALL be included in the request body when non-zero. The `active` flag SHALL be passed as a query parameter to the Put Watch API.
+
+#### Scenario: Invalid JSON in trigger
+
+- GIVEN `trigger` is set to a non-JSON string
+- WHEN create or update runs
+- THEN the resource SHALL return a diagnostic error and SHALL NOT call the Put Watch API
+
+#### Scenario: transform omitted when not set on create
+
+- GIVEN `transform` is not configured
+- WHEN create builds the request body
+- THEN the `transform` field SHALL be omitted from the Put Watch JSON body
+
+#### Scenario: transform omitted when not set on update
+
+- GIVEN `transform` is not configured
+- WHEN update builds the request body for an existing watch
+- THEN the Put Watch JSON body SHALL include `transform` with an empty JSON object
+
+### Requirement: Defaulted watch attributes (REQ-028)
+
+When `active` is omitted from configuration, the resource SHALL behave as if `active` were `true`. When `throttle_period_in_millis` is omitted, the resource SHALL submit the default throttle period and SHALL store the refreshed value in state. When `input`, `condition`, `actions`, or `metadata` are omitted, the resource SHALL use their documented JSON defaults during create and update.
+
+#### Scenario: active omitted from configuration
+
+- GIVEN a watch configuration that omits `active`
+- WHEN the resource is created and refreshed
+- THEN the `active` attribute in state SHALL be `true`
+
+#### Scenario: throttle period omitted from configuration
+
+- GIVEN a watch configuration that omits `throttle_period_in_millis`
+- WHEN the resource is created and refreshed
+- THEN the `throttle_period_in_millis` attribute in state SHALL be `5000`
+
+### Requirement: JSON field mapping — read/state (REQ-023–REQ-027)
+
+On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, and `metadata` back into normalized JSON strings and store them in state. For `actions`, the resource SHALL marshal the API response into a normalized JSON string, but when the API response contains the redacted string sentinel at a nested path and the prior known Terraform `actions` JSON value (state on refresh, or plan on read-after-write after create or update) has a concrete value of any JSON type at the same path, the resource SHALL preserve that prior concrete value at that path in the final stored JSON. When no prior concrete value exists for a redacted `actions` path, or when the prior value at that path is itself the redacted string sentinel, the resource SHALL store the API value as returned. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a normalized JSON string and store it in state. When the API response has a nil `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL normalize semantically equivalent JSON so formatting-only changes do not create perpetual diffs.
+
+#### Scenario: transform removed from the remote watch
+
+- **GIVEN** the watch previously had a `transform` stored in Terraform state
+- **WHEN** read runs and the API response has no `transform` field
+- **THEN** the `transform` attribute SHALL be cleared from state
+
+#### Scenario: active synced from watch status
+
+- **GIVEN** the watch is deactivated on the cluster
+- **WHEN** read runs
+- **THEN** `active` in state SHALL reflect `watch.status.state.active` from the API response
+
+#### Scenario: redacted action secret preserved from prior state
+
+- **GIVEN** the last-applied `actions` JSON in Terraform state includes a concrete nested secret value at a path
+- **WHEN** read runs and the API response returns `::es_redacted::` for that nested action path
+- **THEN** the final `actions` value in state SHALL keep the prior concrete secret for that path
+- **AND** non-redacted action fields from the API response SHALL still be reflected in state
+
+#### Scenario: imported watch with redacted action secret
+
+- **GIVEN** Terraform has no prior concrete `actions` value in state or plan for a redacted nested path
+- **WHEN** read runs and the API response returns `::es_redacted::` for that path
+- **THEN** the `actions` value in state SHALL store the redacted API value for that path
+
+#### Scenario: redacted action header preserved when prior is an object
+
+- **GIVEN** the prior `actions` JSON has an object at a nested path (for example a stored-script reference `headers.Authorization = {"id": "service-now-key"}`)
+- **WHEN** read runs and the API response returns `::es_redacted::` for that nested action path
+- **THEN** the final `actions` value in state SHALL keep the prior object at that path
+- **AND** non-redacted action fields from the API response SHALL still be reflected in state
+
+#### Scenario: redacted action header preserved when prior is an inline script
+
+- **GIVEN** the prior `actions` JSON has an inline-script object at a nested path (for example `headers.Authorization = {"source": "return 'Bearer x'", "lang": "painless"}`)
+- **WHEN** read runs and the API response returns `::es_redacted::` for that nested action path
+- **THEN** the final `actions` value in state SHALL keep the prior inline-script object at that path
+
+#### Scenario: redacted action leaf preserved when prior is an array
+
+- **GIVEN** the prior `actions` JSON has an array at a nested path
+- **WHEN** read runs and the API response returns `::es_redacted::` for that nested action path
+- **THEN** the final `actions` value in state SHALL keep the prior array at that path
+
+### Requirement: SDK-to-Framework watch state compatibility (REQ-029)
+After the watch resource is migrated to the Terraform Plugin Framework, the resource SHALL continue to manage state created by the last SDK-backed provider release without requiring import, recreation, or changes to the configured resource type. The migrated resource SHALL preserve the existing composite `id` format, `watch_id` semantics, and import identifier format.
+
+#### Scenario: upgrade an SDK-managed watch
+- **GIVEN** a watch created by the last SDK-backed release of the provider
+- **WHEN** Terraform refreshes and plans the resource with the Plugin Framework implementation
+- **THEN** the resource SHALL keep the same `id` and `watch_id` without forcing replacement
+

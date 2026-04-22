@@ -36,7 +36,7 @@ func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana
 	config := base.toKibanaOapiConfig()
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return config, nil
+		return config.withEnvironmentOverrides(), nil
 	}
 
 	kibConnList, ok := kibConn.([]any)
@@ -187,12 +187,127 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 	return config.withEnvironmentOverrides(), nil
 }
 
+// newKibanaOapiConfigFromSDKResource reads kibana connection settings from a
+// resource-level kibana_connection block for the OpenAPI client.
+func newKibanaOapiConfigFromSDKResource(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
+	config := base.toKibanaOapiConfig()
+	kibConn, ok := d.GetOk(kibanaConnectionKey)
+	if !ok {
+		return config, nil
+	}
+
+	kibConnList, ok := kibConn.([]any)
+	if !ok || len(kibConnList) == 0 {
+		return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection must be a non-empty list")
+	}
+
+	if kib := kibConnList[0]; kib != nil {
+		kibConfig, ok := kib.(map[string]any)
+		if !ok {
+			return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection[0] must be an object")
+		}
+
+		if usernameRaw, usernameOk := kibConfig["username"]; usernameOk {
+			switch v := usernameRaw.(type) {
+			case string:
+				if v != "" {
+					config.Username = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.username must be a string")
+			}
+		}
+
+		if passwordRaw, passwordOk := kibConfig["password"]; passwordOk {
+			switch v := passwordRaw.(type) {
+			case string:
+				if v != "" {
+					config.Password = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.password must be a string")
+			}
+		}
+
+		if apiKeyRaw, apiKeyOk := kibConfig["api_key"]; apiKeyOk {
+			switch v := apiKeyRaw.(type) {
+			case string:
+				if v != "" {
+					config.APIKey = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.api_key must be a string")
+			}
+		}
+
+		if bearerTokenRaw, bearerTokenOk := kibConfig["bearer_token"]; bearerTokenOk {
+			switch v := bearerTokenRaw.(type) {
+			case string:
+				if v != "" {
+					config.BearerToken = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.bearer_token must be a string")
+			}
+		}
+
+		if endpointsRaw, endpointsOk := kibConfig["endpoints"]; endpointsOk {
+			endpointsList, ok := endpointsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list")
+			}
+			if len(endpointsList) > 0 {
+				if endpoint := endpointsList[0]; endpoint != nil {
+					endpointStr, ok := endpoint.(string)
+					if !ok {
+						return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list of strings")
+					}
+					config.URL = endpointStr
+				}
+			}
+		}
+
+		if caCertsRaw, caCertsOk := kibConfig["ca_certs"]; caCertsOk {
+			caCerts, ok := caCertsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list")
+			}
+			for _, elem := range caCerts {
+				if elem == nil {
+					continue
+				}
+				vStr, ok := elem.(string)
+				if !ok {
+					return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list of strings")
+				}
+				config.CACerts = append(config.CACerts, vStr)
+			}
+		}
+
+		if insecureRaw, insecureOk := kibConfig["insecure"]; insecureOk {
+			insecure, ok := insecureRaw.(bool)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.insecure must be a bool")
+			}
+			if insecure {
+				config.Insecure = true
+			}
+		}
+	}
+
+	return config.withEnvironmentOverrides(), nil
+}
+
 func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
 	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
-	k.URL = withEnvironmentOverride(k.URL, "KIBANA_ENDPOINT")
+	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}

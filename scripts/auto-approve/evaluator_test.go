@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,22 +31,22 @@ func TestEvaluate(t *testing.T) {
 
 	makeCommit := func(login string) *github.RepositoryCommit {
 		return &github.RepositoryCommit{
-			Author: &github.User{Login: github.Ptr(login)},
+			Author: &github.User{Login: new(login)},
 		}
 	}
 
 	makeFile := func(name string) *github.CommitFile {
-		return &github.CommitFile{Filename: github.Ptr(name)}
+		return &github.CommitFile{Filename: new(name)}
 	}
 
 	baseInput := EvaluationInput{
 		PullRequest: &github.PullRequest{
-			State:     github.Ptr("open"),
-			Draft:     github.Ptr(false),
-			Additions: github.Ptr(120),
-			Deletions: github.Ptr(90),
+			State:     new("open"),
+			Draft:     new(false),
+			Additions: new(120),
+			Deletions: new(90),
 			User: &github.User{
-				Login: github.Ptr("github-copilot[bot]"),
+				Login: new("github-copilot[bot]"),
 			},
 		},
 		Commits: []*github.RepositoryCommit{
@@ -43,8 +60,8 @@ func TestEvaluate(t *testing.T) {
 		ApproverLogin: "github-actions[bot]",
 		Reviews: []*github.PullRequestReview{
 			{
-				State: github.Ptr("COMMENTED"),
-				User:  &github.User{Login: github.Ptr("github-actions[bot]")},
+				State: new("COMMENTED"),
+				User:  &github.User{Login: new("github-actions[bot]")},
 			},
 		},
 	}
@@ -58,7 +75,7 @@ func TestEvaluate(t *testing.T) {
 	}{
 		{
 			name:        "approves when all gates pass",
-			mutate:      func(in *EvaluationInput) {},
+			mutate:      func(_ *EvaluationInput) {},
 			wantApprove: true,
 			wantReason:  "all gates passed",
 		},
@@ -74,11 +91,11 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "approves dependabot without copilot-only gates",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.User = &github.User{Login: github.Ptr("dependabot[bot]")}
+				in.PullRequest.User = &github.User{Login: new("dependabot[bot]")}
 				in.Commits = []*github.RepositoryCommit{makeCommit("octocat")}
 				in.Files = []*github.CommitFile{makeFile("README.md")}
-				in.PullRequest.Additions = github.Ptr(500)
-				in.PullRequest.Deletions = github.Ptr(500)
+				in.PullRequest.Additions = new(500)
+				in.PullRequest.Deletions = new(500)
 			},
 			wantApprove: true,
 			wantReason:  "all gates passed",
@@ -102,8 +119,8 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "approves copilot PR with total edits between 300 and 1000",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Additions = github.Ptr(400)
-				in.PullRequest.Deletions = github.Ptr(500)
+				in.PullRequest.Additions = new(400)
+				in.PullRequest.Deletions = new(500)
 			},
 			wantApprove: true,
 			wantReason:  "all gates passed",
@@ -111,8 +128,8 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "rejects exactly 1000 edited lines",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Additions = github.Ptr(600)
-				in.PullRequest.Deletions = github.Ptr(400)
+				in.PullRequest.Additions = new(600)
+				in.PullRequest.Deletions = new(400)
 			},
 			wantApprove: false,
 			wantReason:  "edited lines must be < 1000",
@@ -120,8 +137,8 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "rejects over 1000 edited lines",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Additions = github.Ptr(600)
-				in.PullRequest.Deletions = github.Ptr(500)
+				in.PullRequest.Additions = new(600)
+				in.PullRequest.Deletions = new(500)
 			},
 			wantApprove: false,
 			wantReason:  "edited lines must be < 1000",
@@ -129,7 +146,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "rejects when no category matches",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.User = &github.User{Login: github.Ptr("octocat")}
+				in.PullRequest.User = &github.User{Login: new("octocat")}
 			},
 			wantApprove: false,
 			wantReason:  "did not match any auto-approve category",
@@ -138,8 +155,8 @@ func TestEvaluate(t *testing.T) {
 			name: "skips when approver already approved",
 			mutate: func(in *EvaluationInput) {
 				in.Reviews = append(in.Reviews, &github.PullRequestReview{
-					State: github.Ptr("APPROVED"),
-					User:  &github.User{Login: github.Ptr("github-actions[bot]")},
+					State: new("APPROVED"),
+					User:  &github.User{Login: new("github-actions[bot]")},
 				})
 			},
 			wantApprove:     false,
@@ -149,7 +166,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "rejects non open pull request",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.State = github.Ptr("closed")
+				in.PullRequest.State = new("closed")
 			},
 			wantApprove: false,
 			wantReason:  "pull request is not open",
@@ -157,7 +174,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "approves draft pull request when all gates pass",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Draft = github.Ptr(true)
+				in.PullRequest.Draft = new(true)
 			},
 			wantApprove: true,
 			wantReason:  "all gates passed",
@@ -165,10 +182,112 @@ func TestEvaluate(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			input := cloneInput(baseInput)
+			tc.mutate(&input)
+
+			got := Evaluate(input)
+			assert.Equal(t, tc.wantApprove, got.ShouldApprove)
+			assert.Equal(t, tc.wantAlreadySeen, got.AlreadyApproved)
+			require.NotEmpty(t, got.Reasons)
+			assert.True(t, hasReasonContaining(got.Reasons, tc.wantReason))
+		})
+	}
+
+	generatedChangelogBase := EvaluationInput{
+		PullRequest: &github.PullRequest{
+			State:     new("open"),
+			Draft:     new(false),
+			Additions: new(50),
+			Deletions: new(10),
+			User: &github.User{
+				Login: new("github-actions[bot]"),
+			},
+			Head: &github.PullRequestBranch{
+				Ref: new("generated-changelog"),
+			},
+		},
+		Commits: []*github.RepositoryCommit{
+			makeCommit("github-actions[bot]"),
+		},
+		Files: []*github.CommitFile{
+			makeFile("CHANGELOG.md"),
+		},
+		ApproverLogin: "github-actions[bot]",
+		Reviews:       []*github.PullRequestReview{},
+	}
+
+	generatedChangelogTests := []struct {
+		name            string
+		mutate          func(in *EvaluationInput)
+		wantApprove     bool
+		wantAlreadySeen bool
+		wantReason      string
+	}{
+		{
+			name:        "approves when all gates pass",
+			mutate:      func(_ *EvaluationInput) {},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
+			name: "does not match generated-changelog when head branch is different",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.Head = &github.PullRequestBranch{Ref: new("some-other-branch")}
+				in.PullRequest.User = &github.User{Login: new("github-copilot[bot]")}
+				in.Commits = []*github.RepositoryCommit{makeCommit("github-copilot[bot]")}
+				in.Files = []*github.CommitFile{makeFile("internal/foo/resource_test.go")}
+				in.PullRequest.Additions = new(10)
+				in.PullRequest.Deletions = new(5)
+			},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
+			name: "fails when a commit author is not github-actions[bot]",
+			mutate: func(in *EvaluationInput) {
+				in.Commits = []*github.RepositoryCommit{
+					makeCommit("github-actions[bot]"),
+					makeCommit("octocat"),
+				}
+			},
+			wantApprove: false,
+			wantReason:  "not all commits are authored by github-actions[bot]",
+		},
+		{
+			name: "fails when a file other than CHANGELOG.md is changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{makeFile("README.md")}
+			},
+			wantApprove: false,
+			wantReason:  "pull request contains files other than CHANGELOG.md",
+		},
+		{
+			name: "fails when CHANGELOG.md and another file are both changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{
+					makeFile("CHANGELOG.md"),
+					makeFile("go.mod"),
+				}
+			},
+			wantApprove: false,
+			wantReason:  "pull request contains files other than CHANGELOG.md",
+		},
+		{
+			name: "fails when no files are changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{}
+			},
+			wantApprove: false,
+			wantReason:  "pull request contains files other than CHANGELOG.md",
+		},
+	}
+
+	for _, tc := range generatedChangelogTests {
+		t.Run("generated-changelog/"+tc.name, func(t *testing.T) {
+			t.Parallel()
+			input := cloneInput(generatedChangelogBase)
 			tc.mutate(&input)
 
 			got := Evaluate(input)
@@ -193,12 +312,15 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 	out := in
 
 	out.PullRequest = &github.PullRequest{
-		State:     github.Ptr(in.PullRequest.GetState()),
-		Draft:     github.Ptr(in.PullRequest.GetDraft()),
-		Additions: github.Ptr(in.PullRequest.GetAdditions()),
-		Deletions: github.Ptr(in.PullRequest.GetDeletions()),
+		State:     new(in.PullRequest.GetState()),
+		Draft:     new(in.PullRequest.GetDraft()),
+		Additions: new(in.PullRequest.GetAdditions()),
+		Deletions: new(in.PullRequest.GetDeletions()),
 		User: &github.User{
-			Login: github.Ptr(in.PullRequest.GetUser().GetLogin()),
+			Login: new(in.PullRequest.GetUser().GetLogin()),
+		},
+		Head: &github.PullRequestBranch{
+			Ref: new(in.PullRequest.GetHead().GetRef()),
 		},
 	}
 
@@ -206,7 +328,7 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 	for _, c := range in.Commits {
 		out.Commits = append(out.Commits, &github.RepositoryCommit{
 			Author: &github.User{
-				Login: github.Ptr(c.Author.GetLogin()),
+				Login: new(c.Author.GetLogin()),
 			},
 		})
 	}
@@ -214,16 +336,16 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 	out.Files = make([]*github.CommitFile, 0, len(in.Files))
 	for _, f := range in.Files {
 		out.Files = append(out.Files, &github.CommitFile{
-			Filename: github.Ptr(f.GetFilename()),
+			Filename: new(f.GetFilename()),
 		})
 	}
 
 	out.Reviews = make([]*github.PullRequestReview, 0, len(in.Reviews))
 	for _, review := range in.Reviews {
 		out.Reviews = append(out.Reviews, &github.PullRequestReview{
-			State: github.Ptr(review.GetState()),
+			State: new(review.GetState()),
 			User: &github.User{
-				Login: github.Ptr(review.GetUser().GetLogin()),
+				Login: new(review.GetUser().GetLogin()),
 			},
 		})
 	}

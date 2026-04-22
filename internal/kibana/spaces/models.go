@@ -21,8 +21,9 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 
 // dataSourceModel maps the data source schema data.
 type dataSourceModel struct {
-	ID     types.String `tfsdk:"id"`
-	Spaces []model      `tfsdk:"spaces"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	Spaces           []model      `tfsdk:"spaces"`
 }
 
 // model maps spaces schema data.

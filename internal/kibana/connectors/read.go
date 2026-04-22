@@ -28,7 +28,7 @@ import (
 
 // readConnectorFromAPI fetches a connector from the API and populates the given model
 // Returns true if the connector was found, false if it doesn't exist
-func (r *Resource) readConnectorFromAPI(ctx context.Context, client *clients.APIClient, model *tfModel) (bool, diag.Diagnostics) {
+func (r *Resource) readConnectorFromAPI(ctx context.Context, client *clients.KibanaScopedClient, model *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
@@ -65,7 +65,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, state.KibanaConnection, r.client)
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

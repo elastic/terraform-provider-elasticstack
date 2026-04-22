@@ -29,12 +29,13 @@ import (
 )
 
 type serverHostModel struct {
-	ID       types.String `tfsdk:"id"`
-	HostID   types.String `tfsdk:"host_id"`
-	Name     types.String `tfsdk:"name"`
-	Hosts    types.List   `tfsdk:"hosts"`
-	Default  types.Bool   `tfsdk:"default"`
-	SpaceIDs types.Set    `tfsdk:"space_ids"` // > string
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	HostID           types.String `tfsdk:"host_id"`
+	Name             types.String `tfsdk:"name"`
+	Hosts            types.List   `tfsdk:"hosts"`
+	Default          types.Bool   `tfsdk:"default"`
+	SpaceIDs         types.Set    `tfsdk:"space_ids"` // > string
 }
 
 func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {

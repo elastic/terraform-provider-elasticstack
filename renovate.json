@@ -3,6 +3,9 @@
   "extends": [
     "local>elastic/renovate-config"
   ],
+  "labels": [
+    "no-changelog"
+  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -35,6 +38,9 @@
         "/^github\\.com/hashicorp//"
       ]
     }
+  ],
+  "ignorePaths": [
+    ".github/workflows/*.lock.yml"
   ],
   "automerge": true,
   "automergeStrategy": "squash",

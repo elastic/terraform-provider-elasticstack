@@ -31,7 +31,20 @@ func populatePanelConfigJSONDefaults(config map[string]any) map[string]any {
 		config["attributes"] = populateLensAttributesDefaults(attrs)
 	}
 
-	// Markdown panels have title, content - no additional defaults needed
+	// Markdown panels have inline top-level fields.
+	if content, hasContent := config["content"]; hasContent {
+		if _, ok := content.(string); ok {
+			settings, _ := config["settings"].(map[string]any)
+			if settings == nil {
+				settings = map[string]any{}
+			}
+			if _, exists := settings["open_links_in_new_tab"]; !exists {
+				settings["open_links_in_new_tab"] = true
+			}
+			config["settings"] = settings
+		}
+	}
+
 	return config
 }
 
@@ -60,8 +73,10 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 		populateHeatmapAttributes(attrs)
 	case "treemap":
 		populateTreemapAttributes(attrs)
+	case "mosaic":
+		populateMosaicAttributes(attrs)
 	case "waffle":
-		populateWaffleAttributes(attrs)
+		populatePieChartAttributes(attrs)
 	case "xy":
 		populateXYChartAttributes(attrs)
 	case "datatable":
@@ -73,11 +88,15 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 	return attrs
 }
 
-func populateLegacyMetricAttributes(attrs map[string]any) {
-	// Ensure filters: [] when absent (API may omit when empty)
+func ensureLensFiltersDefault(attrs map[string]any) {
 	if _, exists := attrs["filters"]; !exists {
 		attrs["filters"] = []any{}
 	}
+}
+
+func populateLegacyMetricAttributes(attrs map[string]any) {
+	// Ensure filters: [] when absent (API may omit when empty)
+	ensureLensFiltersDefault(attrs)
 
 	// Apply metric defaults (show_array_values, empty_as_null, format)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
@@ -86,9 +105,7 @@ func populateLegacyMetricAttributes(attrs map[string]any) {
 }
 
 func populateTagcloudAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateTagcloudMetricDefaults(metric)
 	}
@@ -98,31 +115,25 @@ func populateTagcloudAttributes(attrs map[string]any) {
 }
 
 func populateGaugeAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateGaugeMetricDefaults(metric)
 	}
 }
 
 func populateMetricChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = populateLensMetricDefaults(metricMap)
+				metrics[i] = populateMetricChartMetricDefaults(metricMap)
 			}
 		}
 	}
 }
 
 func populatePieChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
@@ -139,34 +150,22 @@ func populatePieChartAttributes(attrs map[string]any) {
 	}
 }
 
-// populateWaffleAttributes mirrors pie chart defaulting for metrics and group_by (see getWaffleSchema
-// and models_waffle_panel: same populatePieChartMetricDefaults / populateLensGroupByDefaults).
-func populateWaffleAttributes(attrs map[string]any) {
-	populatePieChartAttributes(attrs)
-}
-
 func populateRegionMapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateRegionMapMetricDefaults(metric)
 	}
 }
 
 func populateHeatmapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateTagcloudMetricDefaults(metric)
 	}
 }
 
 func populateTreemapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if groupBy, ok := attrs["group_by"].([]any); ok {
 		groupByMaps := make([]map[string]any, 0, len(groupBy))
 		for _, g := range groupBy {
@@ -198,10 +197,28 @@ func populateTreemapAttributes(attrs map[string]any) {
 	}
 }
 
-func populateXYChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
+func populateMosaicAttributes(attrs map[string]any) {
+	populateTreemapAttributes(attrs)
+
+	if groupBreakdownBy, ok := attrs["group_breakdown_by"].([]any); ok {
+		groupBreakdownMaps := make([]map[string]any, 0, len(groupBreakdownBy))
+		for _, g := range groupBreakdownBy {
+			if m, ok := g.(map[string]any); ok {
+				groupBreakdownMaps = append(groupBreakdownMaps, m)
+			}
+		}
+
+		populated := populatePartitionGroupByDefaults(groupBreakdownMaps)
+		for i := range groupBreakdownBy {
+			if i < len(populated) {
+				groupBreakdownBy[i] = populated[i]
+			}
+		}
 	}
+}
+
+func populateXYChartAttributes(attrs map[string]any) {
+	ensureLensFiltersDefault(attrs)
 	// XY chart has layers: each layer can be a data layer (has "y" array) or reference line
 	if layers, ok := attrs["layers"].([]any); ok {
 		for _, layer := range layers {
@@ -222,9 +239,7 @@ func populateXYChartAttributes(attrs map[string]any) {
 }
 
 func populateDatatableAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	// Datatable metrics: each item is a metric config (operation, format, etc.)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {

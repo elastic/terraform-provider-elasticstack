@@ -21,17 +21,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	plan := new(tfModelV0)
 	diags := request.Plan.Get(ctx, plan)
 	response.Diagnostics.Append(diags...)
@@ -39,7 +34,18 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, r.client)...)
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if oapiClient == nil {
+		return
+	}
+
+	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
@@ -50,16 +56,22 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	monitorID, dg := synthetics.GetCompositeID(plan.ID.ValueString())
+	compositeID, dg := synthetics.GetCompositeID(plan.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
 	spaceID := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, kbapi.MonitorID(monitorID.ResourceID), input.config, input.fields, spaceID)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, space %s", input.config.Name, spaceID), err.Error())
+	monitorID := compositeID.ResourceID
+	result, diags := kibanaoapi.UpdateMonitor(ctx, oapiClient, spaceID, monitorID, *input)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	if result == nil {
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, space %s", plan.Name.ValueString(), spaceID), "empty response from API")
 		return
 	}
 

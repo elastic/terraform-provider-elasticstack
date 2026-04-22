@@ -37,13 +37,19 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx, r.client)
+	body, diags := planModel.toAPICreateModel(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -59,7 +65,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	output, diags := fleet.CreateOutput(ctx, client, spaceID, body)
+	output, diags := fleet.CreateOutput(ctx, fleetClient, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

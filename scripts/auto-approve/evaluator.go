@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -5,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 )
 
 const (
@@ -16,6 +33,9 @@ var allowedCopilotAuthorLogins = map[string]struct{}{
 	"github-copilot[bot]": {},
 	"Copilot":             {},
 }
+
+const generatedChangelogBranch = "generated-changelog"
+const generatedChangelogAuthor = "github-actions[bot]"
 
 type EvaluationInput struct {
 	PullRequest       *github.PullRequest
@@ -85,6 +105,10 @@ func matchedCategory(pr *github.PullRequest) string {
 		return ""
 	}
 
+	if pr.GetHead().GetRef() == generatedChangelogBranch {
+		return "generated-changelog"
+	}
+
 	author := pr.User.GetLogin()
 	if _, ok := allowedCopilotAuthorLogins[author]; ok {
 		return "copilot"
@@ -101,6 +125,8 @@ func evaluateCategoryGates(category string, input EvaluationInput) []string {
 		return evaluateCopilotCategory(input)
 	case "dependabot":
 		return nil
+	case "generated-changelog":
+		return evaluateGeneratedChangelogCategory(input)
 	default:
 		return []string{fmt.Sprintf("unknown auto-approve category %q", category)}
 	}
@@ -118,6 +144,40 @@ func evaluateCopilotCategory(input EvaluationInput) []string {
 		reasons = append(reasons, fmt.Sprintf("edited lines must be < %d", maxEditedLines))
 	}
 	return reasons
+}
+
+func evaluateGeneratedChangelogCategory(input EvaluationInput) []string {
+	reasons := make([]string, 0)
+	if !allCommitsByGeneratedChangelog(input.Commits) {
+		reasons = append(reasons, fmt.Sprintf("not all commits are authored by %s", generatedChangelogAuthor))
+	}
+	if len(input.Files) == 0 {
+		reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
+	}
+	for _, file := range input.Files {
+		if file == nil || file.GetFilename() != "CHANGELOG.md" {
+			reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
+			break
+		}
+	}
+	return reasons
+}
+
+func allCommitsByGeneratedChangelog(commits []*github.RepositoryCommit) bool {
+	if len(commits) == 0 {
+		return false
+	}
+
+	for _, commit := range commits {
+		if commit == nil || commit.Author == nil || commit.Author.Login == nil {
+			return false
+		}
+		if commit.Author.GetLogin() != generatedChangelogAuthor {
+			return false
+		}
+	}
+
+	return true
 }
 
 func allCommitsByCopilot(commits []*github.RepositoryCommit) bool {

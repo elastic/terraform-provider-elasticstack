@@ -20,7 +20,6 @@ package enrich
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -57,14 +56,14 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 	}
 
 	policyName := data.Name.ValueString()
-	id, sdkDiags := r.client.ID(ctx, policyName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, connDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	id, sdkDiags := client.ID(ctx, policyName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

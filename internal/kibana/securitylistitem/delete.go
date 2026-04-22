@@ -33,8 +33,14 @@ func (r *securityListItemResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -53,6 +59,6 @@ func (r *securityListItemResource) Delete(ctx context.Context, req resource.Dele
 		Id: &id,
 	}
 
-	diags := kibanaoapi.DeleteListItem(ctx, client, compID.ClusterID, params)
+	diags = kibanaoapi.DeleteListItem(ctx, oapiClient, compID.ClusterID, params)
 	resp.Diagnostics.Append(diags...)
 }

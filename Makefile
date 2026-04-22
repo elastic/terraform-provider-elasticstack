@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.14.3
+VERSION ?= 0.14.4
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -65,8 +65,12 @@ testacc-vs-docker:
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
+.PHONY: hook-test
+hook-test: ## Run hook JavaScript unit tests
+	@ node --test .agents/hooks/*.test.mjs
+
 .PHONY: test
-test: ## Run unit tests
+test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
@@ -131,6 +135,21 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
+.PHONY: workflow-generate
+workflow-generate: ## Generate workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json
+	@ gh aw compile
+
+.PHONY: workflow-test
+workflow-test: ## Run unit tests for workflow source generation
+	@ go test ./scripts/compile-workflow-sources -run 'TestCompileWorkflow'
+	@ go test ./scripts/kibana-spec-impact/... -count=1
+	@ node --test .github/workflows-src/lib/*.test.mjs
+
+.PHONY: check-workflows
+check-workflows: ## Check generated workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check --verbose
+
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
@@ -148,16 +167,40 @@ install: build ## Install built provider into the local terraform cache
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
 	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.4
 
+.PHONY: golangci-lint-custom
+golangci-lint-custom: tools
+	@ [[ -f $(GOBIN)/golangci-lint-custom ]] || $(GOBIN)/golangci-lint custom
+
 .PHONY: golangci-lint
-golangci-lint:
-	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
+golangci-lint: golangci-lint-custom
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
+
+LINT_PERF_DIR := $(CURDIR)/analysis/lint-perf-output/$(shell date +%Y%m%dT%H%M%S)
+
+.PHONY: lint-perf
+lint-perf: golangci-lint-custom ## Measure isolated custom-linter performance and write timing/profile artifacts
+	@ mkdir -p $(LINT_PERF_DIR)
+	@ echo "Writing per-run artifacts to $(LINT_PERF_DIR)"
+	@ echo "--- acctestconfigdirlint (golangci isolated run) ---"
+	@ { time $(GOBIN)/golangci-lint-custom run --enable-only=acctestconfigdirlint --concurrency=1 \
+		--cpu-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-cpu.prof \
+		--mem-profile-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-mem.prof \
+		--trace-path=$(LINT_PERF_DIR)/acctestconfigdirlint-golangci-trace.out \
+		./... ; } 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-lint.txt || true
+	@ echo "--- analyzer benchmarks ---"
+	@ go test ./analysis/acctestconfigdirlint/... -bench=. -benchmem \
+		-cpuprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-cpu.prof \
+		-memprofile=$(LINT_PERF_DIR)/acctestconfigdirlint-mem.prof \
+		-trace=$(LINT_PERF_DIR)/acctestconfigdirlint-trace.out \
+		-run='^$$' 2>&1 | tee $(LINT_PERF_DIR)/acctestconfigdirlint-bench.txt || true
+	@ echo "Artifacts written to $(LINT_PERF_DIR)/"
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint check-fmt check-docs
+check-lint: setup check-openspec golangci-lint check-workflows check-fmt gen check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
@@ -168,9 +211,9 @@ node_modules/.openspec-stamp: package-lock.json package.json
 	@ touch $@
 
 .PHONY: check-openspec
-check-openspec: ## Validate OpenSpec specs (structural); requires `make setup` or `make setup-openspec`
+check-openspec: ## Validate OpenSpec specs and change proposals (structural); requires `make setup` or `make setup-openspec`
 	@ test -x $(OPENSPEC_BIN) || { echo "OpenSpec CLI missing; run 'make setup' or 'make setup-openspec'" >&2; exit 1; }
-	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --specs
+	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --all
 
 .PHONY: renovate-post-upgrade
 renovate-post-upgrade: vendor notice
@@ -199,6 +242,15 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 
 .PHONY: setup
 setup: tools vendor setup-openspec ## Setup the dev environment
+
+.PHONY: prep-release
+prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|major, default: patch)
+	@ BUMP="$(or $(BUMP),patch)"; \
+	  case "$$BUMP" in \
+	    patch|minor|major) ;; \
+	    *) echo "BUMP must be patch, minor, or major (got: $$BUMP)" >&2; exit 1 ;; \
+	  esac; \
+	  gh workflow run prep-release.yml --field bump="$$BUMP"
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
@@ -238,22 +290,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-slo-client
-generate-slo-client: tools ## generate Kibana slo client
-	@ rm -rf generated/slo
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/slo-spec.yml \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=slo \
-		-p generateInterfaces=true \
-		-p useOneOfDiscriminatorLookup=true \
-		-g go \
-		-o /local/generated/slo \
-		 --type-mappings=float32=float64
-	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
-	@ go fmt ./generated/slo/...
-
-.PHONY: generate-clients
-generate-clients: generate-slo-client gen ## generate all clients

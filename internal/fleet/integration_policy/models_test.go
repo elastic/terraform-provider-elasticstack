@@ -76,8 +76,10 @@ func TestOutputIdHandling(t *testing.T) {
 
 		result, diags := model.toAPIModel(context.Background(), feat)
 		require.Empty(t, diags)
-		require.NotNil(t, result.OutputId)
-		require.Equal(t, "test-output-id", *result.OutputId)
+		mappedResult, err := result.AsPackagePolicyRequestMappedInputs()
+		require.NoError(t, err)
+		require.NotNil(t, mappedResult.OutputId)
+		require.Equal(t, "test-output-id", *mappedResult.OutputId)
 	})
 
 	t.Run("toAPIModel_unsupported_version", func(t *testing.T) {

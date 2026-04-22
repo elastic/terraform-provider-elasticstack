@@ -30,10 +30,8 @@ import (
 const resourceName = synthetics.MetadataPrefix + "monitor"
 
 // NewResource creates a new synthetics monitor resource
-func NewResource(validateLocation bool) resource.Resource {
-	return &Resource{
-		validateLocation: validateLocation,
-	}
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
 // Ensure provider-defined types fully satisfy framework interfaces
@@ -45,12 +43,14 @@ var _ synthetics.ESAPIClient = &Resource{}
 
 // Resource represents a synthetics monitor resource
 type Resource struct {
-	validateLocation bool
-	client           *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
-func (r *Resource) GetClient() *clients.APIClient {
-	return r.client
+func (r *Resource) GetClient() *clients.KibanaScopedClient {
+	if r.client == nil {
+		return nil
+	}
+	return clients.NewKibanaScopedClientFromFactory(r.client)
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
@@ -73,9 +73,12 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 }
 
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
-	r.client = client
+	if response.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
@@ -83,5 +86,5 @@ func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest,
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
-	response.Schema = monitorConfigSchema(r.validateLocation)
+	response.Schema = monitorConfigSchema()
 }

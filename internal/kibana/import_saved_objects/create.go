@@ -22,13 +22,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/mitchellh/mapstructure"
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
@@ -43,32 +45,35 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	kibanaClient, err := r.client.GetKibanaClient()
-	if err != nil {
-		diags.AddError("unable to get kibana client", err.Error())
+	client, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return
 	}
 
-	resp, err := kibanaClient.KibanaSavedObject.Import([]byte(model.FileContents.ValueString()), model.Overwrite.ValueBool(), model.SpaceID.ValueString())
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		diags.AddError("failed to import saved objects", err.Error())
+		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
 		return
 	}
 
-	var respModel responseModel
-
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  &respModel,
-		TagName: "json",
-	})
-	if err != nil {
-		diags.AddError("failed to create model decoder", err.Error())
-		return
+	params := kbapi.PostSavedObjectsImportParams{}
+	if typeutils.IsKnown(model.Overwrite) && model.Overwrite.ValueBool() {
+		v := true
+		params.Overwrite = &v
+	}
+	if typeutils.IsKnown(model.CreateNewCopies) && model.CreateNewCopies.ValueBool() {
+		v := true
+		params.CreateNewCopies = &v
+	}
+	if typeutils.IsKnown(model.CompatibilityMode) && model.CompatibilityMode.ValueBool() {
+		v := true
+		params.CompatibilityMode = &v
 	}
 
-	err = decoder.Decode(resp)
-	if err != nil {
-		diags.AddError("failed to decode response", err.Error())
+	result, importDiags := kibanaoapi.ImportSavedObjects(ctx, oapiClient, model.SpaceID.ValueString(), []byte(model.FileContents.ValueString()), params)
+	diags.Append(importDiags...)
+	if diags.HasError() {
 		return
 	}
 
@@ -77,22 +82,27 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	}
 
 	diags.Append(state.Set(ctx, model)...)
-	diags.Append(state.SetAttribute(ctx, path.Root("success"), respModel.Success)...)
-	diags.Append(state.SetAttribute(ctx, path.Root("success_count"), respModel.SuccessCount)...)
-	diags.Append(state.SetAttribute(ctx, path.Root("errors"), respModel.Errors)...)
-	diags.Append(state.SetAttribute(ctx, path.Root("success_results"), respModel.SuccessResults)...)
+	diags.Append(state.SetAttribute(ctx, path.Root("success"), result.Success)...)
+	diags.Append(state.SetAttribute(ctx, path.Root("success_count"), result.SuccessCount)...)
+
+	errors := mapImportErrors(result.Errors)
+	diags.Append(state.SetAttribute(ctx, path.Root("errors"), errors)...)
+
+	successResults := mapSuccessResults(result.SuccessResults)
+	diags.Append(state.SetAttribute(ctx, path.Root("success_results"), successResults)...)
+
 	if diags.HasError() {
 		return
 	}
 
-	if !respModel.Success && !model.IgnoreImportErrors.ValueBool() {
+	if !result.Success && (!typeutils.IsKnown(model.IgnoreImportErrors) || !model.IgnoreImportErrors.ValueBool()) {
 		var detail strings.Builder
-		for i, err := range respModel.Errors {
-			fmt.Fprintf(&detail, "import error [%d]: %s\n", i, err)
+		for i, e := range errors {
+			fmt.Fprintf(&detail, "import error [%d]: %s\n", i, e)
 		}
-		detail.WriteString("see the `errors` attribute for the full resposne")
+		detail.WriteString("see the `errors` attribute for the full response")
 
-		if respModel.SuccessCount > 0 {
+		if result.SuccessCount > 0 {
 			diags.AddWarning(
 				"not all objects were imported successfully",
 				detail.String(),
@@ -106,11 +116,67 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	}
 }
 
-type responseModel struct {
-	Success        bool            `json:"success"`
-	SuccessCount   int             `json:"successCount"`
-	Errors         []importError   `json:"errors"`
-	SuccessResults []importSuccess `json:"successResults"`
+// mapImportErrors converts the raw map slice from the API response into typed importError structs.
+func mapImportErrors(raw []map[string]any) []importError {
+	result := make([]importError, 0, len(raw))
+	for _, m := range raw {
+		ie := importError{}
+		if v, ok := m["id"].(string); ok {
+			ie.ID = v
+		}
+		if v, ok := m["type"].(string); ok {
+			ie.Type = v
+		}
+		if v, ok := m["title"].(string); ok {
+			ie.Title = v
+		}
+		if errMap, ok := m["error"].(map[string]any); ok {
+			if v, ok := errMap["type"].(string); ok {
+				ie.Error = importErrorType{Type: v}
+			}
+		}
+		if metaMap, ok := m["meta"].(map[string]any); ok {
+			meta := importMeta{}
+			if v, ok := metaMap["icon"].(string); ok {
+				meta.Icon = v
+			}
+			if v, ok := metaMap["title"].(string); ok {
+				meta.Title = v
+			}
+			ie.Meta = meta
+		}
+		result = append(result, ie)
+	}
+	return result
+}
+
+// mapSuccessResults converts the raw map slice from the API response into typed importSuccess structs.
+func mapSuccessResults(raw []map[string]any) []importSuccess {
+	result := make([]importSuccess, 0, len(raw))
+	for _, m := range raw {
+		is := importSuccess{}
+		if v, ok := m["id"].(string); ok {
+			is.ID = v
+		}
+		if v, ok := m["type"].(string); ok {
+			is.Type = v
+		}
+		if v, ok := m["destinationId"].(string); ok {
+			is.DestinationID = v
+		}
+		if metaMap, ok := m["meta"].(map[string]any); ok {
+			meta := importMeta{}
+			if v, ok := metaMap["icon"].(string); ok {
+				meta.Icon = v
+			}
+			if v, ok := metaMap["title"].(string); ok {
+				meta.Title = v
+			}
+			is.Meta = meta
+		}
+		result = append(result, is)
+	}
+	return result
 }
 
 type importSuccess struct {

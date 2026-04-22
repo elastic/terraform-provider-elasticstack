@@ -19,12 +19,51 @@ package config
 
 import (
 	"context"
+	"net/http"
 
-	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// NewFromFrameworkKibanaResource builds a Kibana-scoped Client from a
+// resource-level kibana_connection block. It returns nil when the slice is
+// empty so the caller can fall back to the provider-level default client.
+// All Kibana-derived client surfaces (Kibana OpenAPI, Fleet) are built from
+// the scoped connection; no Elasticsearch client is set.
+func NewFromFrameworkKibanaResource(ctx context.Context, kibanaConns []KibanaConnection, version string) (*Client, diag.Diagnostics) {
+	if len(kibanaConns) == 0 {
+		return nil, nil
+	}
+
+	ua := buildUserAgent(version)
+	base := baseConfig{
+		UserAgent: ua,
+		Header:    http.Header{"User-Agent": []string{ua}},
+	}
+
+	client := Client{
+		UserAgent: base.UserAgent,
+	}
+
+	// Use a synthetic ProviderConfiguration that contains only the kibana block
+	// so we can reuse the existing newKibanaOapiConfigFromFramework function.
+	scopedCfg := ProviderConfiguration{
+		Kibana: kibanaConns,
+	}
+
+	kibanaOapiCfg, diags := newKibanaOapiConfigFromFramework(ctx, scopedCfg, base)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
+
+	fleetCfg := kibanaOapiCfg.toFleetConfig().withEnvironmentOverrides()
+	client.Fleet = (*fleet.Config)(&fleetCfg)
+
+	return &client, nil
+}
 
 func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version string) (Client, diag.Diagnostics) {
 	base := newBaseConfigFromFramework(cfg, version)
@@ -40,13 +79,6 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 	if esCfg != nil {
 		client.Elasticsearch = new(esCfg.toElasticsearchConfiguration())
 	}
-
-	kibanaCfg, diags := newKibanaConfigFromFramework(ctx, cfg, base)
-	if diags.HasError() {
-		return Client{}, diags
-	}
-
-	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
 	kibanaOapiCfg, diags := newKibanaOapiConfigFromFramework(ctx, cfg, base)
 	if diags.HasError() {

@@ -26,13 +26,49 @@ import (
 
 func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorReroute,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination", "logs-generic-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONReroute),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_optional_fields"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination", "logs-app-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset", "application"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace", "production"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "description", "Route application logs"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "if", "ctx.service?.name != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "tag", "reroute-app-logs"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteAllOptionalFields),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination", "logs-fallback-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.0", `{"set":{"field":"error.message","value":"reroute failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteOnFailure),
 				),
 			},
 		},
@@ -46,12 +82,29 @@ const expectedJSONReroute = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorReroute = `
-provider "elasticstack" {
-  elasticsearch {}
-}
+const expectedJSONRerouteAllOptionalFields = `{
+	"reroute": {
+		"description": "Route application logs",
+		"if": "ctx.service?.name != null",
+		"ignore_failure": false,
+		"tag": "reroute-app-logs",
+		"destination": "logs-app-default",
+		"dataset": "application",
+		"namespace": "production"
+	}
+}`
 
-data "elasticstack_elasticsearch_ingest_processor_reroute" "test" {
-  destination = "logs-generic-default"
-}
-`
+const expectedJSONRerouteOnFailure = `{
+	"reroute": {
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "reroute failed"
+				}
+			}
+		],
+		"destination": "logs-fallback-default"
+	}
+}`

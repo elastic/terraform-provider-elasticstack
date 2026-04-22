@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -94,5 +95,8 @@ func (r *securityListItemResource) Schema(_ context.Context, _ resource.SchemaRe
 				Computed:            true,
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }

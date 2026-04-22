@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with XY Chart Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with XY Chart Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -24,7 +29,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample XY Chart"
       description = "Test XY chart visualization"
       axis = {
-        left = {
+        y = {
           scale = "linear"
           title = {
             value   = "Count"
@@ -33,13 +38,13 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "horizontal"
-          extent_json = jsonencode({
-            type  = "custom"
-            start = 0
-            end   = 100
+          domain_json = jsonencode({
+            type = "custom"
+            min  = 0
+            max  = 100
           })
         }
-        right = {
+        y2 = {
           scale = "sqrt"
           title = {
             value   = "Rate"
@@ -48,8 +53,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = false
           grid              = false
           label_orientation = "vertical"
-          extent_json = jsonencode({
-            type = "focus"
+          domain_json = jsonencode({
+            type = "fit"
           })
         }
         x = {
@@ -60,9 +65,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "angled"
-          extent_json = jsonencode({
-            type             = "full"
-            integer_rounding = true
+          domain_json = jsonencode({
+            type = "fit"
           })
         }
       }
@@ -78,9 +82,9 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset_json = jsonencode({
-              type = "dataView"
-              id   = "metrics-*"
+            data_source_json = jsonencode({
+              type          = "data_view_spec"
+              index_pattern = "metrics-*"
             })
             y = [
               {
@@ -99,8 +103,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

@@ -30,24 +30,30 @@ import (
 var errJobNotFound = fmt.Errorf("ML job not found")
 
 // getJobState returns the current state of a job
-func (r *mlJobStateResource) getJobState(ctx context.Context, jobID string) (*string, diag.Diagnostics) {
+func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateData, jobID string) (*string, diag.Diagnostics) {
+	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	// Get job stats to check current state
-	currentJob, diags := elasticsearch.GetMLJobStats(ctx, r.client, jobID)
+	currentJob, getDiags := elasticsearch.GetMLJobStats(ctx, client, jobID)
+	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	if currentJob == nil {
-		return nil, nil
+		return nil, diags
 	}
 
-	return &currentJob.State, nil
+	return &currentJob.State, diags
 }
 
 // waitForJobState waits for a job to reach the desired state
-func (r *mlJobStateResource) waitForJobState(ctx context.Context, jobID, desiredState string) diag.Diagnostics {
+func (r *mlJobStateResource) waitForJobState(ctx context.Context, data MLJobStateData, jobID, desiredState string) diag.Diagnostics {
 	stateChecker := func(ctx context.Context) (bool, error) {
-		currentState, diags := r.getJobState(ctx, jobID)
+		currentState, diags := r.getJobState(ctx, data, jobID)
 		if diags.HasError() {
 			return false, diagutil.FwDiagsAsError(diags)
 		}

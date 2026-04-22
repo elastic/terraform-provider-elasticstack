@@ -20,7 +20,6 @@ package index
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,20 +33,12 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	name := planModel.Name.ValueString()
-	id, sdkDiags := client.ID(ctx, name)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
-	}
-
-	planModel.ID = types.StringValue(id.String())
 	apiModel, diags := planModel.toAPIModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -62,10 +53,23 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 
 	params := planModel.toPutIndexParams(serverFlavor)
 
-	resp.Diagnostics.Append(elasticsearch.PutIndex(ctx, client, &apiModel, &params)...)
+	concreteName, diags := elasticsearch.PutIndex(ctx, client, &apiModel, &params)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Compute id from the cluster UUID and the concrete index name returned by
+	// Elasticsearch.  For static names concreteName equals the configured name.
+	// For date math names concreteName is the resolved index (e.g. logs-2024.01.15).
+	id, sdkDiags := client.ID(ctx, concreteName)
+	if sdkDiags.HasError() {
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
+	}
+
+	planModel.ID = types.StringValue(id.String())
+	planModel.ConcreteName = types.StringValue(concreteName)
 
 	finalModel, diags := readIndex(ctx, planModel, client)
 	resp.Diagnostics.Append(diags...)

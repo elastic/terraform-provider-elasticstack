@@ -21,21 +21,29 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
 
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	var plan tfModelV0
 	diags := request.State.Get(ctx, &plan)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
 		return
 	}
 
@@ -51,11 +59,23 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		resourceID = compositeID.ResourceID
 	}
 
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, resourceID)
+	spaceID := effectiveSpaceID(plan.SpaceID, compositeID)
 
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`", resourceID), err.Error())
-		return
+	if requiresSpaceIDMinVersion(spaceID) {
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			response.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
+			)
+			return
+		}
 	}
 
+	dg = kibanaoapi.DeletePrivateLocation(ctx, kibanaClient, spaceID, resourceID)
+	response.Diagnostics.Append(dg...)
 }

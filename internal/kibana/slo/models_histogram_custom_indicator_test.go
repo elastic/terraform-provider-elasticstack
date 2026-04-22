@@ -20,7 +20,7 @@ package slo
 import (
 	"testing"
 
-	generatedslo "github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,9 +74,11 @@ func TestHistogramCustomIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.histogramCustomIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesHistogram)
 
-		params := ind.IndicatorPropertiesHistogram.Params
+		apiInd, err := ind.AsSLOsIndicatorPropertiesHistogram()
+		require.NoError(t, err)
+
+		params := apiInd.Params
 		require.NotNil(t, params.DataViewId)
 		assert.Equal(t, "dv-1", *params.DataViewId)
 		require.Nil(t, params.Filter)
@@ -84,37 +86,73 @@ func TestHistogramCustomIndicator_ToAPI(t *testing.T) {
 		require.NotNil(t, params.Good.Filter)
 		assert.Equal(t, "status:200", *params.Good.Filter)
 		require.NotNil(t, params.Good.From)
-		assert.InDelta(t, 0.0, *params.Good.From, 1e-9)
+		assert.InDelta(t, 0.0, *params.Good.From, 1e-3)
 		assert.Nil(t, params.Good.To)
 
 		assert.Nil(t, params.Total.Filter)
 		assert.Nil(t, params.Total.From)
 		require.NotNil(t, params.Total.To)
-		assert.InDelta(t, 10.0, *params.Total.To, 1e-9)
+		assert.InDelta(t, 10.0, *params.Total.To, 1e-3)
 	})
 }
 
 func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("maps ranges and optional pointers", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesHistogram{
-			Params: generatedslo.IndicatorPropertiesHistogramParams{
+		dvID := "dv-1"
+		goodFilter := "status:200"
+		goodFrom := float32(0.0)
+		totalTo := float32(10.0)
+
+		api := kbapi.SLOsIndicatorPropertiesHistogram{
+			Params: struct {
+				DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				} `json:"good"`
+				Index          string `json:"index"`
+				TimestampField string `json:"timestampField"`
+				Total          struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				} `json:"total"`
+			}{
 				Index:          "logs-*",
-				DataViewId:     new("dv-1"),
+				DataViewId:     &dvID,
 				Filter:         nil,
 				TimestampField: "@timestamp",
-				Good: generatedslo.IndicatorPropertiesHistogramParamsGood{
+				Good: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				}{
 					Aggregation: "sum",
 					Field:       "latency",
-					Filter:      new("status:200"),
-					From:        new(0.0),
+					Filter:      &goodFilter,
+					From:        &goodFrom,
 					To:          nil,
 				},
-				Total: generatedslo.IndicatorPropertiesHistogramParamsTotal{
+				Total: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				}{
 					Aggregation: "sum",
 					Field:       "latency",
 					Filter:      nil,
 					From:        nil,
-					To:          new(10.0),
+					To:          &totalTo,
 				},
 			},
 		}
@@ -136,20 +174,51 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesHistogram{
-			Params: generatedslo.IndicatorPropertiesHistogramParams{
+		api := kbapi.SLOsIndicatorPropertiesHistogram{
+			Params: struct {
+				DataViewId *string `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter     *string `json:"filter,omitempty"`
+				Good       struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				} `json:"good"`
+				Index          string `json:"index"`
+				TimestampField string `json:"timestampField"`
+				Total          struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				} `json:"total"`
+			}{
 				Index:          "logs-*",
 				DataViewId:     nil,
 				Filter:         nil,
 				TimestampField: "@timestamp",
-				Good: generatedslo.IndicatorPropertiesHistogramParamsGood{
+				Good: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
+					Field       string                                                      `json:"field"`
+					Filter      *string                                                     `json:"filter,omitempty"`
+					From        *float32                                                    `json:"from,omitempty"`
+					To          *float32                                                    `json:"to,omitempty"`
+				}{
 					Aggregation: "sum",
 					Field:       "latency",
 					Filter:      nil,
 					From:        nil,
 					To:          nil,
 				},
-				Total: generatedslo.IndicatorPropertiesHistogramParamsTotal{
+				Total: struct {
+					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
+					Field       string                                                       `json:"field"`
+					Filter      *string                                                      `json:"filter,omitempty"`
+					From        *float32                                                     `json:"from,omitempty"`
+					To          *float32                                                     `json:"to,omitempty"`
+				}{
 					Aggregation: "sum",
 					Field:       "latency",
 					Filter:      nil,
@@ -170,12 +239,5 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 		assert.True(t, ind.Good[0].Filter.IsNull())
 		assert.True(t, ind.Good[0].From.IsNull())
 		assert.True(t, ind.Good[0].To.IsNull())
-	})
-
-	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {
-		var m tfModel
-		diags := m.populateFromHistogramCustomIndicator(nil)
-		require.False(t, diags.HasError())
-		assert.Nil(t, m.HistogramCustomIndicator)
 	})
 }

@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with XY Chart Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with XY Chart Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -24,8 +29,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample XY Chart"
       description = "Test XY chart visualization"
       axis = {
-        left = {
+        y = {
           scale = "linear"
+          domain_json = jsonencode({
+            type = "fit"
+          })
           title = {
             value   = "Count"
             visible = true
@@ -48,9 +56,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         {
           type = "line"
           data_layer = {
-            dataset_json = jsonencode({
-              type = "dataView"
-              id   = "metrics-*"
+            data_source_json = jsonencode({
+              type          = "data_view_spec"
+              index_pattern = "metrics-*"
             })
             ignore_global_filters = false
             sampling              = 1
@@ -68,14 +76,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       legend = {
         visibility           = "visible"
         inside               = false
-        position             = "bottom"
-        size                 = "large"
+        position             = "right"
+        size                 = "l"
         truncate_after_lines = 3
         statistics           = ["avg", "max"]
       }
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

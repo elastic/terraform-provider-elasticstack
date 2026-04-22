@@ -1,0 +1,273 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package dashboard
+
+import (
+	"context"
+	"encoding/json"
+	"reflect"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// alignDashboardStateFromPlanPanels preserves practitioner intent that depends on
+// the full top-level panel slice. Common per-panel alignment already happens
+// inside mapPanelFromAPI.
+func alignDashboardStateFromPlanPanels(planPanels, statePanels []panelModel) {
+	alignXYChartStateFromPlanPanels(planPanels, statePanels)
+}
+
+func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
+	if plan == nil || state == nil {
+		return
+	}
+
+	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
+	alignDatatableStateFromPlan(plan.DatatableConfig, state.DatatableConfig)
+	alignGaugeStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
+	alignHeatmapStateFromPlan(ctx, plan.HeatmapConfig, state.HeatmapConfig)
+	alignLegacyMetricStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
+	alignMetricStateFromPlan(plan.MetricChartConfig, state.MetricChartConfig)
+	alignMosaicStateFromPlan(plan.MosaicConfig, state.MosaicConfig)
+	alignPieStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
+	alignRegionMapStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
+	alignTagcloudStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
+	alignTreemapStateFromPlan(plan.TreemapConfig, state.TreemapConfig)
+	alignWaffleStateFromPlan(ctx, plan.WaffleConfig, state.WaffleConfig)
+	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
+}
+
+func alignDatatableStateFromPlan(plan, state *datatableConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignDatatableNoESQLStateFromPlan(plan.NoESQL, state.NoESQL)
+	alignDatatableESQLStateFromPlan(plan.ESQL, state.ESQL)
+}
+
+func alignDatatableNoESQLStateFromPlan(plan, state *datatableNoESQLConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignDatatableESQLStateFromPlan(plan, state *datatableESQLConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignGaugeStateFromPlan(ctx context.Context, plan, state *gaugeConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+}
+
+func alignHeatmapStateFromPlan(ctx context.Context, plan, state *heatmapConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+}
+
+func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *legacyMetricConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+}
+
+func alignMetricStateFromPlan(plan, state *metricChartConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
+	m := min(len(plan.Metrics), len(state.Metrics))
+	for i := range m {
+		preserveMetricChartMetricConfigFromPlan(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON)
+	}
+}
+
+func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignPieStateFromPlan(plan, state *pieChartConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignRegionMapStateFromPlan(ctx context.Context, plan, state *regionMapConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+}
+
+func alignTagcloudStateFromPlan(ctx context.Context, plan, state *tagcloudConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	preservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
+}
+
+func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	m := min(len(plan.Metrics), len(state.Metrics))
+	for i := range m {
+		preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
+	}
+	g := min(len(plan.GroupBy), len(state.GroupBy))
+	for i := range g {
+		preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
+	}
+}
+
+func alignEsqlControlStateFromPlan(plan, state *esqlControlConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	preserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
+	preserveKnownStringIfStateBlank(plan.Title, &state.Title)
+	preserveKnownListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
+}
+
+func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
+	preserveKnownStringIfStateBlank(planTitle, stateTitle)
+	preserveKnownStringIfStateBlank(planDescription, stateDescription)
+}
+
+func preserveKnownListIfStateNull(plan types.List, state *types.List) {
+	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
+		*state = plan
+	}
+}
+
+func preservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	eq, diags := plan.StringSemanticEquals(ctx, *state)
+	if !diags.HasError() && eq {
+		*state = plan
+	}
+}
+
+func metricChartMetricConfigsEquivalent(plan, state customtypes.JSONWithDefaultsValue[map[string]any]) bool {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(state) {
+		return false
+	}
+
+	var planObj map[string]any
+	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+		return false
+	}
+	var stateObj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return false
+	}
+
+	planNormalized := normalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(planObj))
+	stateNormalized := normalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(stateObj))
+	return reflect.DeepEqual(planNormalized, stateNormalized)
+}
+
+func preserveMetricChartMetricConfigFromPlan(plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
+	if metricChartMetricConfigsEquivalent(plan, *state) {
+		*state = plan
+	}
+}
+
+func preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsontypes.Normalized, state *jsontypes.Normalized, defaults func(T) T) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	var planObj T
+	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+		return
+	}
+	var stateObj T
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+
+	planNormalized := normalizeXYPlanComparisonJSON(defaults(planObj))
+	stateNormalized := normalizeXYPlanComparisonJSON(defaults(stateObj))
+	if reflect.DeepEqual(planNormalized, stateNormalized) {
+		*state = plan
+	}
+}
+
+func preservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *jsontypes.Normalized, optionalKeys ...string) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	var planObj map[string]any
+	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+		return
+	}
+	var stateObj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+
+	for _, key := range optionalKeys {
+		if _, hasState := stateObj[key]; hasState {
+			continue
+		}
+		delete(planObj, key)
+	}
+
+	stateNormalized := normalizeXYPlanComparisonJSON(stateObj)
+	planNormalized := normalizeXYPlanComparisonJSON(planObj)
+	if reflect.DeepEqual(stateNormalized, planNormalized) {
+		*state = plan
+	}
+}

@@ -19,6 +19,7 @@ package serverhost_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -28,12 +29,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minVersionFleetServerHost = version.Must(version.NewVersion("8.6.0"))
+
+//go:embed testdata/TestAccResourceFleetServerHostFromSDK/create/main.tf
+var testAccResourceFleetServerHostFromSDKConfig string
 
 func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
@@ -50,8 +55,10 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:   testAccResourceFleetServerHostCreate(policyName),
-
+				Config:   testAccResourceFleetServerHostFromSDKConfig,
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
@@ -62,7 +69,10 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:                   testAccResourceFleetServerHostCreate(policyName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
@@ -78,13 +88,16 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceFleetServerHostDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:   testAccResourceFleetServerHostCreate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
@@ -93,8 +106,12 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:   testAccResourceFleetServerHostUpdate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("Updated FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
@@ -103,8 +120,12 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:            testAccResourceFleetServerHostUpdate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+				},
 				ResourceName:      "elasticstack_fleet_server_host.test_host",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -113,44 +134,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 	})
 }
 
-func testAccResourceFleetServerHostCreate(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_server_host" "test_host" {
-  name               = "%s"
-  host_id            = "fleet-server-host-id"
-  default            =  false
-  hosts              = [
-    "https://fleet-server:8220"
-  ]
-}
-`, fmt.Sprintf("FleetServerHost %s", id))
-}
-
-func testAccResourceFleetServerHostUpdate(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_server_host" "test_host" {
-  name               = "%s"
-  host_id            = "fleet-server-host-id"
-  default            =  false
-  hosts              = [
-    "https://fleet-server:8220"
-  ]
-}
-`, fmt.Sprintf("Updated FleetServerHost %s", id))
-}
-
 func checkResourceFleetServerHostDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
 	}

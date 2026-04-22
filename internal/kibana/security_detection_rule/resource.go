@@ -34,7 +34,7 @@ func NewSecurityDetectionRuleResource() resource.Resource {
 }
 
 type securityDetectionRuleResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *securityDetectionRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -42,9 +42,12 @@ func (r *securityDetectionRuleResource) Metadata(_ context.Context, req resource
 }
 
 func (r *securityDetectionRuleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	r.client = client
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *securityDetectionRuleResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

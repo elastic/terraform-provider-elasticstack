@@ -32,7 +32,7 @@ func NewDatafeedResource() resource.Resource {
 }
 
 type datafeedResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *datafeedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -40,7 +40,7 @@ func (r *datafeedResource) Metadata(_ context.Context, req resource.MetadataRequ
 }
 
 func (r *datafeedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

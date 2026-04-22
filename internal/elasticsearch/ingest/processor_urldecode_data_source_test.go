@@ -26,14 +26,49 @@ import (
 
 func TestAccDataSourceIngestProcessorUrldecode(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUrldecode,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "my_url_to_decode"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecode),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "source.url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "target_field", "decoded.url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "description", "Decode URL-encoded field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "if", "ctx.source?.url != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "tag", "urldecode-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecodeAllAttributes),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorUrldecodeOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "field", "source.url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "json", expectedJSONUrldecodeOnFailure),
 				),
 			},
 		},
@@ -48,12 +83,30 @@ const expectedJSONUrldecode = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorUrldecode = `
-provider "elasticstack" {
-  elasticsearch {}
-}
+const expectedJSONUrldecodeAllAttributes = `{
+	"urldecode": {
+		"description": "Decode URL-encoded field",
+		"field": "source.url",
+		"if": "ctx.source?.url != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"tag": "urldecode-tag",
+		"target_field": "decoded.url"
+	}
+}`
 
-data "elasticstack_elasticsearch_ingest_processor_urldecode" "test" {
-  field = "my_url_to_decode"
-}
-`
+const expectedJSONUrldecodeOnFailure = `{
+	"urldecode": {
+		"field": "source.url",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "{{ _ingest.on_failure_message }}"
+				}
+			}
+		]
+	}
+}`

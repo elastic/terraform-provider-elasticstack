@@ -31,8 +31,8 @@ func Test_populateMarkdownFromAPI(t *testing.T) {
 	description := "desc"
 	hideTitle := true
 	title := "panel title"
-	cfg := kbapi.KbnDashboardPanelMarkdownConfig0{
-		Content:     &content,
+	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
+		Content:     content,
 		Description: &description,
 		HideTitle:   &hideTitle,
 		Title:       &title,
@@ -58,11 +58,10 @@ func Test_buildMarkdownConfig(t *testing.T) {
 	}
 
 	cfg := buildMarkdownConfig(pm)
-	require.NotNil(t, cfg.Content)
 	require.NotNil(t, cfg.Description)
 	require.NotNil(t, cfg.HideTitle)
 	require.NotNil(t, cfg.Title)
-	assert.Equal(t, "hello", *cfg.Content)
+	assert.Equal(t, "hello", cfg.Content)
 	assert.Equal(t, "desc", *cfg.Description)
 	assert.False(t, *cfg.HideTitle)
 	assert.Equal(t, "panel title", *cfg.Title)
@@ -77,10 +76,10 @@ func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 	}
 
 	cfg0 := buildMarkdownConfig(pm)
-	var union kbapi.KbnDashboardPanelMarkdown_Config
-	require.NoError(t, union.FromKbnDashboardPanelMarkdownConfig0(cfg0))
+	var union kbapi.KbnDashboardPanelTypeMarkdown_Config
+	require.NoError(t, union.FromKbnDashboardPanelTypeMarkdownConfig0(cfg0))
 
-	decoded, err := union.AsKbnDashboardPanelMarkdownConfig0()
+	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig0()
 	require.NoError(t, err)
 
 	pm2 := &panelModel{}

@@ -61,6 +61,9 @@ var processorGsubDataSourceDescription string
 //go:embed descriptions/html_strip_data_source.md
 var processorHTMLStripDataSourceDescription string
 
+//go:embed descriptions/inference_data_source.md
+var processorInferenceDataSourceDescription string
+
 //go:embed descriptions/join_data_source.md
 var processorJoinDataSourceDescription string
 

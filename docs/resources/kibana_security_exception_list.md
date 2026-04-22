@@ -39,6 +39,7 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 
 ### Optional
 
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `list_id` (String) The exception list's human readable string identifier.
 - `meta` (String) Placeholder for metadata about the list container as JSON string.
 - `namespace_type` (String) Determines whether the exception list is available in all Kibana spaces or just the space in which it is created. Can be `single` (default) or `agnostic`.
@@ -55,3 +56,16 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 - `tie_breaker_id` (String) Field used in search to ensure all containers are sorted and returned correctly.
 - `updated_at` (String) The timestamp of when the exception list was last updated.
 - `updated_by` (String) The user who last updated the exception list.
+
+<a id="nestedblock--kibana_connection"></a>
+### Nested Schema for `kibana_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
+- `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
+- `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `password` (String, Sensitive) Password to use for API authentication to Kibana.
+- `username` (String) Username to use for API authentication to Kibana.

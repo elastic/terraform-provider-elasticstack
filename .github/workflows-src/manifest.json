@@ -1,0 +1,28 @@
+{
+  "workflows": [
+    {
+      "template": ".github/workflows-src/openspec-verify-label/workflow.md.tmpl",
+      "output": ".github/workflows/openspec-verify-label.md"
+    },
+    {
+      "template": ".github/workflows-src/schema-coverage-rotation/workflow.md.tmpl",
+      "output": ".github/workflows/schema-coverage-rotation.md"
+    },
+    {
+      "template": ".github/workflows-src/test/workflow.yml.tmpl",
+      "output": ".github/workflows/test.yml"
+    },
+    {
+      "template": ".github/workflows-src/changelog-generation/workflow.yml.tmpl",
+      "output": ".github/workflows/changelog-generation.yml"
+    },
+    {
+      "template": ".github/workflows-src/kibana-spec-impact/workflow.md.tmpl",
+      "output": ".github/workflows/kibana-spec-impact.md"
+    },
+    {
+      "template": ".github/workflows-src/pr-changelog-check/workflow.yml.tmpl",
+      "output": ".github/workflows/pr-changelog-check.yml"
+    }
+  ]
+}

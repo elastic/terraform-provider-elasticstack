@@ -20,7 +20,7 @@ package slo
 import (
 	"math"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -35,40 +35,56 @@ type tfApmLatencyIndicator struct {
 	Threshold       types.Int64  `tfsdk:"threshold"`
 }
 
-func (m tfModel) apmLatencyIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator) {
+func (m tfModel) apmLatencyIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
 	if len(m.ApmLatencyIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}
+		return false, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
 	ind := m.ApmLatencyIndicator[0]
 
-	return true, slo.SloWithSummaryResponseIndicator{
-		IndicatorPropertiesApmLatency: &slo.IndicatorPropertiesApmLatency{
-			Type: indicatorAddressToType["apm_latency_indicator"],
-			Params: slo.IndicatorPropertiesApmLatencyParams{
-				Service:         ind.Service.ValueString(),
-				Environment:     ind.Environment.ValueString(),
-				TransactionType: ind.TransactionType.ValueString(),
-				TransactionName: ind.TransactionName.ValueString(),
-				Filter:          stringPtr(ind.Filter),
-				Index:           ind.Index.ValueString(),
-				Threshold:       float64(ind.Threshold.ValueInt64()),
-			},
+	apmLatency := kbapi.SLOsIndicatorPropertiesApmLatency{
+		Type: indicatorAddressToType["apm_latency_indicator"],
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			Threshold       float32 `json:"threshold"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{
+			Service:         ind.Service.ValueString(),
+			Environment:     ind.Environment.ValueString(),
+			TransactionType: ind.TransactionType.ValueString(),
+			TransactionName: ind.TransactionName.ValueString(),
+			Filter:          stringPtr(ind.Filter),
+			Index:           ind.Index.ValueString(),
+			Threshold:       float32(ind.Threshold.ValueInt64()),
 		},
 	}
+
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	if err := result.FromSLOsIndicatorPropertiesApmLatency(apmLatency); err != nil {
+		diags.AddError("Failed to build APM Latency indicator", err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
+	return true, result, diags
 }
 
-func (m *tfModel) populateFromApmLatencyIndicator(apiIndicator *slo.IndicatorPropertiesApmLatency) diag.Diagnostics {
+func (m *tfModel) populateFromApmLatencyIndicator(apiIndicator kbapi.SLOsIndicatorPropertiesApmLatency) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if apiIndicator == nil {
+	if apiIndicator.Params.Threshold != apiIndicator.Params.Threshold { // NaN check
+		diags.AddError("Invalid API response", "indicator.params.threshold must be a valid number")
+		return diags
+	}
+	threshold := float64(apiIndicator.Params.Threshold)
+	if math.IsInf(threshold, 0) || threshold < 0 {
+		diags.AddError("Invalid API response", "indicator.params.threshold must be a non-negative finite number")
 		return diags
 	}
 
 	p := apiIndicator.Params
-	if math.IsNaN(p.Threshold) || math.IsInf(p.Threshold, 0) || p.Threshold < 0 {
-		diags.AddError("Invalid API response", "indicator.params.threshold must be a non-negative finite number")
-		return diags
-	}
 	m.ApmLatencyIndicator = []tfApmLatencyIndicator{{
 		Environment:     types.StringValue(p.Environment),
 		Service:         types.StringValue(p.Service),

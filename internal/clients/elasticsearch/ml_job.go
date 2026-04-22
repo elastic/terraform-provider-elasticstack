@@ -33,7 +33,7 @@ import (
 )
 
 // OpenMLJob opens a machine learning job
-func OpenMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string) diag.Diagnostics {
+func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -55,7 +55,7 @@ func OpenMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string) 
 }
 
 // PutDatafeed creates a machine learning datafeed
-func PutDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, createRequest models.DatafeedCreateRequest) diag.Diagnostics {
+func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, createRequest models.DatafeedCreateRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -85,7 +85,7 @@ func PutDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID s
 }
 
 // CloseMLJob closes a machine learning job
-func CloseMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
+func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -118,7 +118,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string,
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job
-func GetMLJobStats(ctx context.Context, apiClient *clients.APIClient, jobID string) (*models.MLJob, diag.Diagnostics) {
+func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*models.MLJob, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -164,7 +164,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.APIClient, jobID stri
 }
 
 // GetDatafeed retrieves a machine learning datafeed
-func GetDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string) (*models.Datafeed, diag.Diagnostics) {
+func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*models.Datafeed, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -214,7 +214,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID s
 }
 
 // UpdateDatafeed updates a machine learning datafeed
-func UpdateDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, request models.DatafeedUpdateRequest) diag.Diagnostics {
+func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request models.DatafeedUpdateRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -243,7 +243,7 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedI
 }
 
 // DeleteDatafeed deletes a machine learning datafeed
-func DeleteDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, force bool) diag.Diagnostics {
+func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -270,7 +270,7 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedI
 }
 
 // StopDatafeed stops a machine learning datafeed
-func StopDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
+func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -302,7 +302,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID 
 }
 
 // StartDatafeed starts a machine learning datafeed
-func StartDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
+func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -340,7 +340,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID
 }
 
 // GetDatafeedStats retrieves the statistics for a machine learning datafeed
-func GetDatafeedStats(ctx context.Context, apiClient *clients.APIClient, datafeedID string) (*models.DatafeedStats, diag.Diagnostics) {
+func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*models.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()

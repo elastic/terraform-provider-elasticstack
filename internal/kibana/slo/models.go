@@ -19,8 +19,9 @@ package slo
 
 import (
 	"fmt"
+	"strconv"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -35,7 +36,8 @@ var tfSettingsAttrTypes = map[string]attr.Type{
 }
 
 type tfModel struct {
-	ID types.String `tfsdk:"id"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 
 	SloID        types.String `tfsdk:"slo_id"`
 	Name         types.String `tfsdk:"name"`
@@ -92,16 +94,16 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		return models.Slo{}, diags
 	}
 
-	tw := slo.TimeWindow{
-		Type:     m.TimeWindow[0].Type.ValueString(),
+	tw := kbapi.SLOsTimeWindow{
+		Type:     kbapi.SLOsTimeWindowType(m.TimeWindow[0].Type.ValueString()),
 		Duration: m.TimeWindow[0].Duration.ValueString(),
 	}
 
-	obj := slo.Objective{
-		Target: m.Objective[0].Target.ValueFloat64(),
+	obj := kbapi.SLOsObjective{
+		Target: float32(m.Objective[0].Target.ValueFloat64()),
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceTarget) {
-		v := m.Objective[0].TimesliceTarget.ValueFloat64()
+		v := float32(m.Objective[0].TimesliceTarget.ValueFloat64())
 		obj.TimesliceTarget = &v
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceWindow) {
@@ -109,7 +111,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		obj.TimesliceWindow = &v
 	}
 
-	var settings *slo.Settings
+	var settings *kbapi.SLOsSettings
 	if typeutils.IsKnown(m.Settings) {
 		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
 		diags.Append(settingsDiags...)
@@ -124,7 +126,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		Description:     m.Description.ValueString(),
 		Indicator:       indicator,
 		TimeWindow:      tw,
-		BudgetingMethod: slo.BudgetingMethod(m.BudgetMethod.ValueString()),
+		BudgetingMethod: kbapi.SLOsBudgetingMethod(m.BudgetMethod.ValueString()),
 		Objective:       obj,
 		Settings:        settings,
 		SpaceID:         m.SpaceID.ValueString(),
@@ -152,6 +154,10 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 			}
 		}
 	}
+	// Preserve an explicitly empty tags list so that clearing tags is sent to the API.
+	if m.Tags != nil {
+		apiModel.Tags = []string{}
+	}
 	for _, t := range m.Tags {
 		if typeutils.IsKnown(t) {
 			apiModel.Tags = append(apiModel.Tags, t.ValueString())
@@ -161,7 +167,7 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	return apiModel, diags
 }
 
-func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func (m tfModel) indicatorToAPI() (kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if ok, ind, indDiags := m.kqlCustomIndicatorToAPI(); ok {
@@ -174,7 +180,8 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		return ind, diags
 	}
 
-	if ok, ind := m.apmLatencyIndicatorToAPI(); ok {
+	if ok, ind, indDiags := m.apmLatencyIndicatorToAPI(); ok {
+		diags.Append(indDiags...)
 		return ind, diags
 	}
 
@@ -197,7 +204,7 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		"Invalid configuration",
 		"exactly one indicator block must be set",
 	)
-	return slo.SloWithSummaryResponseIndicator{}, diags
+	return kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 }
 
 func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
@@ -214,14 +221,14 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 
 	m.TimeWindow = []tfTimeWindow{{
 		Duration: types.StringValue(apiModel.TimeWindow.Duration),
-		Type:     types.StringValue(apiModel.TimeWindow.Type),
+		Type:     types.StringValue(string(apiModel.TimeWindow.Type)),
 	}}
 
 	obj := tfObjective{
-		Target: types.Float64Value(apiModel.Objective.Target),
+		Target: types.Float64Value(float32ToFloat64(apiModel.Objective.Target)),
 	}
 	if apiModel.Objective.TimesliceTarget != nil {
-		obj.TimesliceTarget = types.Float64Value(*apiModel.Objective.TimesliceTarget)
+		obj.TimesliceTarget = types.Float64Value(float32ToFloat64(*apiModel.Objective.TimesliceTarget))
 	} else {
 		obj.TimesliceTarget = types.Float64Null()
 	}
@@ -268,27 +275,27 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.KqlCustomIndicator = nil
 	m.TimesliceMetricIndicator = nil
 
-	switch {
-	case apiModel.Indicator.IndicatorPropertiesApmAvailability != nil:
-		diags.Append(m.populateFromApmAvailabilityIndicator(apiModel.Indicator.IndicatorPropertiesApmAvailability)...)
+	indicatorValue, err := apiModel.Indicator.ValueByDiscriminator()
+	if err != nil {
+		diags.AddError("Unexpected API response", "failed to determine indicator type: "+err.Error())
+		return diags
+	}
 
-	case apiModel.Indicator.IndicatorPropertiesApmLatency != nil:
-		diags.Append(m.populateFromApmLatencyIndicator(apiModel.Indicator.IndicatorPropertiesApmLatency)...)
-
-	case apiModel.Indicator.IndicatorPropertiesCustomKql != nil:
-		diags.Append(m.populateFromKqlCustomIndicator(apiModel.Indicator.IndicatorPropertiesCustomKql)...)
-
-	case apiModel.Indicator.IndicatorPropertiesHistogram != nil:
-		diags.Append(m.populateFromHistogramCustomIndicator(apiModel.Indicator.IndicatorPropertiesHistogram)...)
-
-	case apiModel.Indicator.IndicatorPropertiesCustomMetric != nil:
-		diags.Append(m.populateFromMetricCustomIndicator(apiModel.Indicator.IndicatorPropertiesCustomMetric)...)
-
-	case apiModel.Indicator.IndicatorPropertiesTimesliceMetric != nil:
-		diags.Append(m.populateFromTimesliceMetricIndicator(apiModel.Indicator.IndicatorPropertiesTimesliceMetric)...)
-
+	switch ind := indicatorValue.(type) {
+	case kbapi.SLOsIndicatorPropertiesApmAvailability:
+		diags.Append(m.populateFromApmAvailabilityIndicator(ind)...)
+	case kbapi.SLOsIndicatorPropertiesApmLatency:
+		diags.Append(m.populateFromApmLatencyIndicator(ind)...)
+	case kbapi.SLOsIndicatorPropertiesCustomKql:
+		diags.Append(m.populateFromKqlCustomIndicator(ind)...)
+	case kbapi.SLOsIndicatorPropertiesHistogram:
+		diags.Append(m.populateFromHistogramCustomIndicator(ind)...)
+	case kbapi.SLOsIndicatorPropertiesCustomMetric:
+		diags.Append(m.populateFromMetricCustomIndicator(ind)...)
+	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
+		diags.Append(m.populateFromTimesliceMetricIndicator(ind)...)
 	default:
-		diags.AddError("Unexpected API response", "indicator not set")
+		diags.AddError("Unexpected API response", fmt.Sprintf("unknown indicator type: %T", indicatorValue))
 		return diags
 	}
 
@@ -325,8 +332,8 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 	}, diags
 }
 
-func (s tfSettings) toAPIModel() *slo.Settings {
-	settings := slo.Settings{}
+func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
+	settings := kbapi.SLOsSettings{}
 	hasAny := false
 
 	if typeutils.IsKnown(s.SyncDelay) {
@@ -349,6 +356,19 @@ func (s tfSettings) toAPIModel() *slo.Settings {
 		return nil
 	}
 	return &settings
+}
+
+// float32ToFloat64 converts a float32 to float64 via its canonical shortest
+// decimal representation. This avoids false precision: a direct float64(f32)
+// cast adds spurious low-order bits (e.g. float64(float32(0.999)) produces
+// 0.9990000128746033, not 0.999). By formatting as the shortest float32
+// decimal and re-parsing as float64 we get the value Terraform would store
+// for the user-written literal (e.g. "0.999" → 0.99899999999999999911, which
+// is the same IEEE 754 double that strconv.ParseFloat("0.999", 64) returns).
+func float32ToFloat64(v float32) float64 {
+	s := strconv.FormatFloat(float64(v), 'f', -1, 32)
+	f, _ := strconv.ParseFloat(s, 64)
+	return f
 }
 
 func stringPtr(v types.String) *string {

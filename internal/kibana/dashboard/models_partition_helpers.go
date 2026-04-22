@@ -68,7 +68,7 @@ func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float3
 }
 
 // partitionLegendModel is the shared Terraform model for partition chart legends
-// (treemap, mosaic). Used by both treemap and mosaic config models.
+// (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
 type partitionLegendModel struct {
 	Nested            types.Bool    `tfsdk:"nested"`
 	Size              types.String  `tfsdk:"size"`
@@ -84,8 +84,8 @@ func (m *partitionLegendModel) fromTreemapLegend(api kbapi.TreemapLegend) {
 	} else {
 		m.TruncateAfterLine = types.Float64Null()
 	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -99,8 +99,8 @@ func (m *partitionLegendModel) fromMosaicLegend(api kbapi.MosaicLegend) {
 	} else {
 		m.TruncateAfterLine = types.Float64Null()
 	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -115,8 +115,8 @@ func (m *partitionLegendModel) toTreemapLegend() kbapi.TreemapLegend {
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.TreemapLegendVisible(m.Visible.ValueString())
-		legend.Visible = &v
+		v := kbapi.TreemapLegendVisibility(m.Visible.ValueString())
+		legend.Visibility = &v
 	}
 	return legend
 }
@@ -130,8 +130,43 @@ func (m *partitionLegendModel) toMosaicLegend() kbapi.MosaicLegend {
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.MosaicLegendVisible(m.Visible.ValueString())
-		legend.Visible = &v
+		v := kbapi.MosaicLegendVisibility(m.Visible.ValueString())
+		legend.Visibility = &v
+	}
+	return legend
+}
+
+func (m *partitionLegendModel) fromPieLegend(api kbapi.PieLegend) {
+	m.Nested = types.BoolPointerValue(api.Nested)
+	if api.Size != "" {
+		m.Size = types.StringValue(string(api.Size))
+	} else {
+		m.Size = types.StringValue(string(kbapi.LegendSizeAuto))
+	}
+	if api.TruncateAfterLines != nil {
+		m.TruncateAfterLine = types.Float64Value(float64(*api.TruncateAfterLines))
+	} else {
+		m.TruncateAfterLine = types.Float64Null()
+	}
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
+	} else {
+		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
+		m.Visible = types.StringValue(string(kbapi.PieLegendVisibilityAuto))
+	}
+}
+
+func (m *partitionLegendModel) toPieLegend() kbapi.PieLegend {
+	legend := kbapi.PieLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
+	if typeutils.IsKnown(m.Nested) {
+		legend.Nested = new(m.Nested.ValueBool())
+	}
+	if typeutils.IsKnown(m.TruncateAfterLine) {
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
+	}
+	if typeutils.IsKnown(m.Visible) {
+		v := kbapi.PieLegendVisibility(m.Visible.ValueString())
+		legend.Visibility = &v
 	}
 	return legend
 }
@@ -144,7 +179,7 @@ type partitionValueDisplay struct {
 }
 
 func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
-	m.Mode = types.StringValue(string(api.Mode))
+	m.Mode = typeutils.StringishPointerValue(api.Mode)
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
 	} else {
@@ -153,8 +188,10 @@ func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
 }
 
 func (m *partitionValueDisplay) toValueDisplay() kbapi.ValueDisplay {
-	vd := kbapi.ValueDisplay{
-		Mode: kbapi.ValueDisplayMode(m.Mode.ValueString()),
+	vd := kbapi.ValueDisplay{}
+	if typeutils.IsKnown(m.Mode) {
+		mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
+		vd.Mode = &mode
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
 		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))

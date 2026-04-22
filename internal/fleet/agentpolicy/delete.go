@@ -35,7 +35,13 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -58,7 +64,7 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Delete using the operational space from STATE
-	diags = fleet.DeleteAgentPolicy(ctx, client, policyID, spaceID)
+	diags = fleet.DeleteAgentPolicy(ctx, fleetClient, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 }

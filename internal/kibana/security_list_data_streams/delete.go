@@ -31,7 +31,13 @@ func (r *securityListDataStreamsResource) Delete(ctx context.Context, req resour
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -39,6 +45,6 @@ func (r *securityListDataStreamsResource) Delete(ctx context.Context, req resour
 
 	spaceID := state.SpaceID.ValueString()
 
-	diags := kibanaoapi.DeleteListIndex(ctx, client, spaceID)
+	diags = kibanaoapi.DeleteListIndex(ctx, oapiClient, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

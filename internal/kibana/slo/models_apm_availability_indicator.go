@@ -18,7 +18,7 @@
 package slo
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -32,34 +32,43 @@ type tfApmAvailabilityIndicator struct {
 	TransactionName types.String `tfsdk:"transaction_name"`
 }
 
-func (m tfModel) apmAvailabilityIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
+func (m tfModel) apmAvailabilityIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	if len(m.ApmAvailabilityIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}, diags
+		return false, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
 	}
 
 	ind := m.ApmAvailabilityIndicator[0]
 
-	return true, slo.SloWithSummaryResponseIndicator{
-		IndicatorPropertiesApmAvailability: &slo.IndicatorPropertiesApmAvailability{
-			Type: indicatorAddressToType["apm_availability_indicator"],
-			Params: slo.IndicatorPropertiesApmAvailabilityParams{
-				Service:         ind.Service.ValueString(),
-				Environment:     ind.Environment.ValueString(),
-				TransactionType: ind.TransactionType.ValueString(),
-				TransactionName: ind.TransactionName.ValueString(),
-				Filter:          stringPtr(ind.Filter),
-				Index:           ind.Index.ValueString(),
-			},
+	apmAvailability := kbapi.SLOsIndicatorPropertiesApmAvailability{
+		Type: indicatorAddressToType["apm_availability_indicator"],
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{
+			Service:         ind.Service.ValueString(),
+			Environment:     ind.Environment.ValueString(),
+			TransactionType: ind.TransactionType.ValueString(),
+			TransactionName: ind.TransactionName.ValueString(),
+			Filter:          stringPtr(ind.Filter),
+			Index:           ind.Index.ValueString(),
 		},
-	}, diags
+	}
+
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	if err := result.FromSLOsIndicatorPropertiesApmAvailability(apmAvailability); err != nil {
+		diags.AddError("Failed to build APM Availability indicator", err.Error())
+		return true, kbapi.SLOsSloWithSummaryResponse_Indicator{}, diags
+	}
+	return true, result, diags
 }
 
-func (m *tfModel) populateFromApmAvailabilityIndicator(apiIndicator *slo.IndicatorPropertiesApmAvailability) diag.Diagnostics {
+func (m *tfModel) populateFromApmAvailabilityIndicator(apiIndicator kbapi.SLOsIndicatorPropertiesApmAvailability) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	if apiIndicator == nil {
-		return diags
-	}
 
 	p := apiIndicator.Params
 	m.ApmAvailabilityIndicator = []tfApmAvailabilityIndicator{{

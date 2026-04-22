@@ -26,13 +26,60 @@ import (
 
 func TestAccDataSourceIngestProcessorSplit(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSplit,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_split.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "my_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "separator", "\\s+"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "preserve_trailing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplit),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_split.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "separator", ","),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "target_field", "message_parts"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "preserve_trailing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "description", "Split a comma-delimited message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "if", "ctx.message != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "on_failure.0", `{"set":{"field":"error.message","value":"split failed"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "tag", "split-message"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplitAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_split.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "my_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "separator", "\\s+"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "preserve_trailing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplit),
 				),
 			},
@@ -50,13 +97,24 @@ const expectedJSONSplit = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorSplit = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_split" "test" {
-  field     = "my_field"
-  separator = "\\s+"
-}
-`
+const expectedJSONSplitAllAttributes = `{
+	"split": {
+		"description": "Split a comma-delimited message",
+		"if": "ctx.message != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "split failed"
+				}
+			}
+		],
+		"tag": "split-message",
+		"field": "message",
+		"target_field": "message_parts",
+		"ignore_missing": true,
+		"separator": ",",
+		"preserve_trailing": true
+	}
+}`

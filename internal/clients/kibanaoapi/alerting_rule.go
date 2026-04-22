@@ -31,10 +31,17 @@ import (
 
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	body := buildCreateRequestBody(rule)
+
+	var req kbapi.PostAlertingRuleIdJSONRequestBody
+	err := req.FromAlertingRuleAPIBodyGeneric(body)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
+	}
+
 	resp, err := client.API.PostAlertingRuleIdWithResponse(
 		ctx,
 		rule.RuleID,
-		body,
+		req,
 		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
@@ -236,6 +243,11 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		AlertDelay *struct {
 			Active float32 `json:"active"`
 		} `json:"alert_delay"`
+		Flapping *struct {
+			Enabled               *bool   `json:"enabled,omitempty"`
+			LookBackWindow        float64 `json:"look_back_window"`
+			StatusChangeThreshold float64 `json:"status_change_threshold"`
+		} `json:"flapping"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -317,6 +329,15 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		alertDelay = &intermediate.AlertDelay.Active
 	}
 
+	var flapping *models.AlertingRuleFlapping
+	if intermediate.Flapping != nil {
+		flapping = &models.AlertingRuleFlapping{
+			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
+			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
+			Enabled:               intermediate.Flapping.Enabled,
+		}
+	}
+
 	var lastExecutionDate *time.Time
 	if intermediate.ExecutionStatus.LastExecutionDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
@@ -350,11 +371,12 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		},
 		Actions:    actions,
 		AlertDelay: alertDelay,
+		Flapping:   flapping,
 	}, nil
 }
 
-func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJSONRequestBody {
-	body := kbapi.PostAlertingRuleIdJSONRequestBody{
+func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyGeneric {
+	body := kbapi.AlertingRuleAPIBodyGeneric{
 		Consumer:   rule.Consumer,
 		Name:       rule.Name,
 		RuleTypeId: rule.RuleTypeID,
@@ -366,9 +388,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 	}
 
 	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams{
-			AdditionalProperties: rule.Params,
-		}
+		params := kbapi.AlertingRuleAPIParams(rule.Params)
 		body.Params = &params
 	}
 
@@ -377,7 +397,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 	}
 
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.PostAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
+		notifyWhen := kbapi.AlertingRuleAPIBodyGenericNotifyWhen(*rule.NotifyWhen)
 		body.NotifyWhen = &notifyWhen
 	}
 
@@ -398,6 +418,10 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		}
 	}
 
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
+	}
+
 	if len(rule.Actions) > 0 {
 		actions := make([]struct {
 			AlertsFilter *struct {
@@ -405,7 +429,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 					Dsl     *string `json:"dsl,omitempty"`
 					Filters []struct {
 						State *struct {
-							Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+							Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 						} `json:"$state,omitempty"`
 						Meta  map[string]any  `json:"meta"`
 						Query *map[string]any `json:"query,omitempty"`
@@ -413,7 +437,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 					Kql string `json:"kql"`
 				} `json:"query,omitempty"`
 				Timeframe *struct {
-					Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+					Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
 					Hours struct {
 						End   string `json:"end"`
 						Start string `json:"start"`
@@ -422,7 +446,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 				} `json:"timeframe,omitempty"`
 			} `json:"alerts_filter,omitempty"`
 			Frequency *struct {
-				NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
+				NotifyWhen kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen `json:"notify_when"`
 				Summary    bool                                                       `json:"summary"`
 				Throttle   *string                                                    `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
@@ -445,11 +469,11 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 
 			if action.Frequency != nil {
 				actions[i].Frequency = &struct {
-					NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
+					NotifyWhen kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen `json:"notify_when"`
 					Summary    bool                                                       `json:"summary"`
 					Throttle   *string                                                    `json:"throttle,omitempty"`
 				}{
-					NotifyWhen: kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
+					NotifyWhen: kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
 					Summary:    action.Frequency.Summary,
 					Throttle:   action.Frequency.Throttle,
 				}
@@ -461,7 +485,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 						Dsl     *string `json:"dsl,omitempty"`
 						Filters []struct {
 							State *struct {
-								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
 							Meta  map[string]any  `json:"meta"`
 							Query *map[string]any `json:"query,omitempty"`
@@ -469,7 +493,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 						Kql string `json:"kql"`
 					} `json:"query,omitempty"`
 					Timeframe *struct {
-						Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+						Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
 						Hours struct {
 							End   string `json:"end"`
 							Start string `json:"start"`
@@ -483,7 +507,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 						Dsl     *string `json:"dsl,omitempty"`
 						Filters []struct {
 							State *struct {
-								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
 							Meta  map[string]any  `json:"meta"`
 							Query *map[string]any `json:"query,omitempty"`
@@ -493,7 +517,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 						Kql: *action.AlertsFilter.Kql,
 						Filters: []struct {
 							State *struct {
-								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
 							Meta  map[string]any  `json:"meta"`
 							Query *map[string]any `json:"query,omitempty"`
@@ -502,13 +526,13 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 				}
 
 				if action.AlertsFilter.Timeframe != nil {
-					days := make([]kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays, len(action.AlertsFilter.Timeframe.Days))
+					days := make([]kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays, len(action.AlertsFilter.Timeframe.Days))
 					for j, d := range action.AlertsFilter.Timeframe.Days {
-						days[j] = kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays(d)
+						days[j] = kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays(d)
 					}
 
 					filter.Timeframe = &struct {
-						Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+						Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
 						Hours struct {
 							End   string `json:"end"`
 							Start string `json:"start"`
@@ -571,6 +595,10 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		}{
 			Active: *rule.AlertDelay,
 		}
+	}
+
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
 	}
 
 	if len(rule.Actions) > 0 {
@@ -705,6 +733,25 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	return body
+}
+
+// flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
+// Using an alias (not a new defined type) keeps values assignable to both Post and Put Flapping fields in kbapi.
+type flappingWire = struct {
+	Enabled               *bool   `json:"enabled,omitempty"`
+	LookBackWindow        float32 `json:"look_back_window"`
+	StatusChangeThreshold float32 `json:"status_change_threshold"`
+}
+
+func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
+	if f == nil {
+		return nil
+	}
+	return &flappingWire{
+		Enabled:               f.Enabled,
+		LookBackWindow:        float32(f.LookBackWindow),
+		StatusChangeThreshold: float32(f.StatusChangeThreshold),
+	}
 }
 
 func valueOrDefault(val *string, def string) string {

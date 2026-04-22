@@ -22,18 +22,28 @@ import (
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var planModel dataViewModel
+	var stateModel dataViewModel
 
 	diags := req.Plan.Get(ctx, &planModel)
+	resp.Diagnostics.Append(diags...)
+	diags = req.State.Get(ctx, &stateModel) // read state
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -46,8 +56,33 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	viewID, spaceID := planModel.getViewIDAndSpaceID()
-	dataView, diags := kibanaoapi.UpdateDataView(ctx, client, spaceID, viewID, body)
+	dataView, diags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Update namespaces via spaces API
+	var stateInner, planInner innerModel
+	diags = stateModel.DataView.As(ctx, &stateInner, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(diags...)
+	diags = planModel.DataView.As(ctx, &planInner, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(diags...)
+
+	if !resp.Diagnostics.HasError() {
+		var oldNS, newNS []string
+		diags = stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)
+		resp.Diagnostics.Append(diags...)
+		diags = planInner.Namespaces.ElementsAs(ctx, &newNS, false)
+		resp.Diagnostics.Append(diags...)
+
+		if !resp.Diagnostics.HasError() {
+			resp.Diagnostics.Append(
+				kibanaoapi.UpdateDataViewNamespaces(ctx, oapiClient, viewID, oldNS, newNS)...,
+			)
+		}
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}

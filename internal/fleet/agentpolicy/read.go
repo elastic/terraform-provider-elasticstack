@@ -34,7 +34,13 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	client, err := r.client.GetFleetClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	fleetClient, err := client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -50,7 +56,7 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	// Query using the operational space from STATE
-	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
+	policy, diags := fleet.GetAgentPolicy(ctx, fleetClient, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

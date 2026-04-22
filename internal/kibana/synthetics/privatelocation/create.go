@@ -21,16 +21,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
 
 	var plan tfModelV0
 	diags := request.Plan.Get(ctx, &plan)
@@ -39,15 +36,53 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	input := plan.toPrivateLocationConfig()
-
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, input)
-	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`", input.Label), err.Error())
+	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
-	plan = toModelV0(*result)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if kibanaClient == nil {
+		return
+	}
+
+	spaceID := plan.SpaceID.ValueString()
+
+	if requiresSpaceIDMinVersion(spaceID) {
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			response.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
+			)
+			return
+		}
+	}
+
+	// Preserve the planned geo values before the API call. The Kibana API stores geo
+	// coordinates as float32 and returns float32-precision values on read (e.g.
+	// 42.42 → 42.41999816894531). If we blindly set state from the API response, the
+	// state value differs from the plan value, which Terraform rejects as an
+	// inconsistent result. We use the planned values (from config) so state matches
+	// the plan. The Float32PrecisionType custom type handles subsequent semantic
+	// equality checks so that subsequent plans detect no diff.
+	plannedGeo := plan.Geo
+
+	body := privateLocationToCreateBody(plan)
+	result, dg := kibanaoapi.CreatePrivateLocation(ctx, kibanaClient, spaceID, body)
+	response.Diagnostics.Append(dg...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	plan = privateLocationFromAPI(*result, spaceID, plan.KibanaConnection)
+	// Restore geo from plan to keep state consistent with what was planned.
+	plan.Geo = plannedGeo
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

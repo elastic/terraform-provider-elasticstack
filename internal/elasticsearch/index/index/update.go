@@ -23,12 +23,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -44,20 +42,26 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	name := planModel.Name.ValueString()
-	id, sdkDiags := client.ID(ctx, name)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	// Use the concrete index identity from the current state so update operations
+	// target the concrete managed index, not the configured (possibly date math) name.
+	stateID, diags := stateModel.GetID()
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+	concreteName := stateID.ResourceID
 
-	planModel.ID = types.StringValue(id.String())
+	// Carry the id and concrete_name forward from state into the plan model so the
+	// post-update read uses the same concrete identity.
+	planModel.ID = stateModel.ID
+	planModel.ConcreteName = stateModel.ConcreteName
+
 	planAPIModel, diags := planModel.toAPIModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -71,18 +75,21 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	if !planModel.Alias.Equal(stateModel.Alias) {
-		resp.Diagnostics.Append(r.updateAliases(ctx, client, name, planAPIModel.Aliases, stateAPIModel.Aliases)...)
+		resp.Diagnostics.Append(r.updateAliases(ctx, client, concreteName, planAPIModel.Aliases, stateAPIModel.Aliases)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	resp.Diagnostics.Append(r.updateSettings(ctx, client, name, planAPIModel.Settings, stateAPIModel.Settings)...)
+	resp.Diagnostics.Append(r.updateSettings(ctx, client, concreteName, planAPIModel.Settings, stateAPIModel.Settings)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(r.updateMappings(ctx, client, name, planModel.Mappings, stateModel.Mappings)...)
+	resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, planModel.Mappings, stateModel.Mappings)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	finalModel, diags := readIndex(ctx, planModel, client)
 	resp.Diagnostics.Append(diags...)
@@ -95,11 +102,12 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 func (r *Resource) updateAliases(
 	ctx context.Context,
-	client *clients.APIClient,
+	client *clients.ElasticsearchScopedClient,
 	indexName string,
 	planAliases map[string]models.IndexAlias,
 	stateAliases map[string]models.IndexAlias,
 ) diag.Diagnostics {
+	var diags diag.Diagnostics
 	aliasesToDelete := []string{}
 	for aliasName := range stateAliases {
 		if _, ok := planAliases[aliasName]; !ok {
@@ -108,23 +116,33 @@ func (r *Resource) updateAliases(
 	}
 
 	if len(aliasesToDelete) > 0 {
-		diags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete)
+		opDiags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
 	for _, alias := range planAliases {
-		diags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &alias)
+		opDiags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &alias)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
-	return nil
+	return diags
 }
 
-func (r *Resource) updateSettings(ctx context.Context, client *clients.APIClient, indexName string, planSettings map[string]any, stateSettings map[string]any) diag.Diagnostics {
+func (r *Resource) updateSettings(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	indexName string,
+	planSettings map[string]any,
+	stateSettings map[string]any,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	planDynamicSettings := map[string]any{}
 	stateDynamicSettings := map[string]any{}
 
@@ -146,16 +164,25 @@ func (r *Resource) updateSettings(ctx context.Context, client *clients.APIClient
 			}
 		}
 
-		diags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, planDynamicSettings)
+		opDiags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, planDynamicSettings)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
-	return nil
+	return diags
 }
 
-func (r *Resource) updateMappings(ctx context.Context, client *clients.APIClient, indexName string, planMappings jsontypes.Normalized, stateMappings jsontypes.Normalized) diag.Diagnostics {
+func (r *Resource) updateMappings(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	indexName string,
+	planMappings jsontypes.Normalized,
+	stateMappings jsontypes.Normalized,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	areEqual, diags := planMappings.StringSemanticEquals(ctx, stateMappings)
 	if diags.HasError() {
 		return diags
@@ -165,10 +192,11 @@ func (r *Resource) updateMappings(ctx context.Context, client *clients.APIClient
 		return nil
 	}
 
-	diags = elasticsearch.UpdateIndexMappings(ctx, client, indexName, planMappings.ValueString())
+	opDiags := elasticsearch.UpdateIndexMappings(ctx, client, indexName, planMappings.ValueString())
+	diags.Append(opDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	return nil
+	return diags
 }

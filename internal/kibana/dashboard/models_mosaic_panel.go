@@ -43,66 +43,49 @@ type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	mosaicChart, err := attrs.AsMosaicChart()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	if pm.MosaicConfig == nil {
 		pm.MosaicConfig = &mosaicConfigModel{}
 	}
 
-	datasetType := ""
-	if attrsJSON, err := attrs.MarshalJSON(); err == nil {
-		var attrsMap map[string]any
-		if err := json.Unmarshal(attrsJSON, &attrsMap); err == nil {
-			if dataset, ok := attrsMap["dataset"].(map[string]any); ok {
-				if t, ok := dataset["type"].(string); ok {
-					datasetType = t
-				}
-			}
-		}
+	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
+		return pm.MosaicConfig.fromAPINoESQL(noESQL)
 	}
 
-	if datasetType == legacyMetricDatasetTypeESQL {
-		mosaicESQL, err := mosaicChart.AsMosaicESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		return pm.MosaicConfig.fromAPIESQL(mosaicESQL)
-	}
-
-	mosaicNoESQL, err := mosaicChart.AsMosaicNoESQL()
+	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MosaicConfig.fromAPINoESQL(mosaicNoESQL)
+	return pm.MosaicConfig.fromAPIESQL(mosaicESQL)
 }
 
-func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.MosaicConfig
 
-	mosaicChart, mosaicDiags := configModel.toAPI()
+	attrs, mosaicDiags := configModel.toAPI()
 	diags.Append(mosaicDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
-	}
-
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	if err := attrs.FromMosaicChart(mosaicChart); err != nil {
-		diags.AddError("Failed to create mosaic attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
-	}
-
 	return attrs, diags
+}
+
+func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
+	body, err := api.DataSource.MarshalJSON()
+	if err != nil {
+		return false
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &ds); err != nil {
+		return false
+	}
+	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
 type mosaicConfigModel struct {
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                                `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                       `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                  `tfsdk:"query"`
@@ -122,12 +105,12 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = dv
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -159,21 +142,13 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 		diags.AddError("Failed to marshal metrics_json", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsWrapped), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+	if len(api.Filters) > 0 {
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
 	}
@@ -181,9 +156,9 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -201,12 +176,12 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = dv
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -238,18 +213,10 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 		diags.AddError("Failed to marshal metrics_json", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsWrapped), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+	if len(api.Filters) > 0 {
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
 	}
@@ -257,9 +224,9 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -267,28 +234,36 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	return diags
 }
 
-func (m *mosaicConfigModel) toAPI() (kbapi.MosaicChart, diag.Diagnostics) {
+func (m *mosaicConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	var mosaicChart kbapi.MosaicChart
 
 	if m == nil {
-		return mosaicChart, diags
+		return attrs, diags
 	}
 
 	if m.usesESQL() {
-		return m.toAPIESQLChartSchema()
+		esql, esqlDiags := m.toAPIMosaicESQL()
+		diags.Append(esqlDiags...)
+		if diags.HasError() {
+			return attrs, diags
+		}
+		if err := attrs.FromMosaicESQL(esql); err != nil {
+			diags.AddError("Failed to create mosaic ES|QL schema", err.Error())
+		}
+		return attrs, diags
 	}
 
 	noESQL, noESQLDiags := m.toAPINoESQL()
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
-		return mosaicChart, diags
+		return attrs, diags
 	}
-	if err := mosaicChart.FromMosaicNoESQL(noESQL); err != nil {
+	if err := attrs.FromMosaicNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to create mosaic schema", err.Error())
 	}
 
-	return mosaicChart, diags
+	return attrs, diags
 }
 
 func (m *mosaicConfigModel) usesESQL() bool {
@@ -298,66 +273,67 @@ func (m *mosaicConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diagnostics) {
+func (m *mosaicConfigModel) toAPIMosaicESQL() (kbapi.MosaicESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var mosaicChart kbapi.MosaicChart
+	var api kbapi.MosaicESQL
 
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "mosaic_config.dataset_json must be provided")
-		return mosaicChart, diags
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
+		return api, diags
 	}
 	if m.GroupBy.IsNull() {
 		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
-		return mosaicChart, diags
+		return api, diags
 	}
 	if m.GroupBreakdownBy.IsNull() {
 		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
-		return mosaicChart, diags
+		return api, diags
 	}
 	if m.Metrics.IsNull() {
 		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")
-		return mosaicChart, diags
+		return api, diags
 	}
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
-		return mosaicChart, diags
+		return api, diags
 	}
 	if diags.HasError() {
-		return mosaicChart, diags
+		return api, diags
 	}
 
-	api := kbapi.MosaicESQL{
-		Type:   kbapi.MosaicESQLTypeMosaic,
-		Legend: m.Legend.toMosaicLegend(),
+	api = kbapi.MosaicESQL{
+		Type:      kbapi.MosaicESQLTypeMosaic,
+		Legend:    m.Legend.toMosaicLegend(),
+		TimeRange: lensPanelTimeRange(),
 	}
 
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
-		return mosaicChart, diags
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
+		return api, diags
 	}
 	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
-		return mosaicChart, diags
+		return api, diags
 	}
 	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &api.GroupBreakdownBy); err != nil {
 		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
-		return mosaicChart, diags
+		return api, diags
 	}
 	var rawMetrics []json.RawMessage
 	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &rawMetrics); err != nil {
 		diags.AddError("Failed to unmarshal metrics_json", err.Error())
-		return mosaicChart, diags
+		return api, diags
 	}
 	if len(rawMetrics) != 1 {
 		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
-		return mosaicChart, diags
+		return api, diags
 	}
 	if err := json.Unmarshal(rawMetrics[0], &api.Metric); err != nil {
 		diags.AddError("Failed to unmarshal metric", err.Error())
-		return mosaicChart, diags
+		return api, diags
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -373,37 +349,24 @@ func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diag
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.MosaicESQL_Filters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.MosaicESQL_Filters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if diags.HasError() {
-				return mosaicChart, diags
-			}
-			filters = append(filters, item)
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+	} else {
+		defaultMode := kbapi.ValueDisplayModePercentage
+		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
-	if err := mosaicChart.FromMosaicESQL(api); err != nil {
-		diags.AddError("Failed to create mosaic chart schema", err.Error())
-		return mosaicChart, diags
-	}
-
-	return mosaicChart, diags
+	return api, diags
 }
 
 func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.MosaicNoESQL{Type: kbapi.MosaicNoESQLTypeMosaic}
+	api := kbapi.MosaicNoESQL{
+		Type:      kbapi.MosaicNoESQLTypeMosaic,
+		TimeRange: lensPanelTimeRange(),
+	}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -418,12 +381,12 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "mosaic_config.dataset_json must be provided")
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
 		return api, diags
 	}
 
@@ -481,20 +444,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	}
 	api.Query = m.Query.toAPI()
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.MosaicNoESQL_Filters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.MosaicNoESQL_Filters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
@@ -503,7 +453,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	api.Legend = m.Legend.toMosaicLegend()
 
 	if m.ValueDisplay != nil {
-		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

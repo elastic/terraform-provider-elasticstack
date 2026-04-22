@@ -35,6 +35,12 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, data.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Parse ID to get space_id and rule_id
 	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -45,7 +51,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	spaceID := compID.ClusterID
 
 	// Get the rule using kbapi client
-	kbClient, err := r.client.GetKibanaOapiClient()
+	kbClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting Kibana client",

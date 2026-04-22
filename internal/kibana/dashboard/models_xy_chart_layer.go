@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -36,7 +37,7 @@ type xyLayerModel struct {
 
 // dataLayerModel represents a data layer (NoESQL or ESQL)
 type dataLayerModel struct {
-	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64        `tfsdk:"sampling"`
 	XJSON               jsontypes.Normalized `tfsdk:"x_json"`
@@ -51,7 +52,7 @@ type yMetricModel struct {
 
 // referenceLineLayerModel represents a reference line layer
 type referenceLineLayerModel struct {
-	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
+	DataSourceJSON      jsontypes.Normalized `tfsdk:"data_source_json"`
 	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64        `tfsdk:"sampling"`
 	Thresholds          []thresholdModel     `tfsdk:"thresholds"`
@@ -71,119 +72,113 @@ type thresholdModel struct {
 	Text        types.String         `tfsdk:"text"`
 }
 
-// fromAPI populates the layer model from API response
-func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChart_Layers_Item) diag.Diagnostics {
+func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoESQLType {
+	return kbapi.XyReferenceLineLayerNoESQLType(tfType)
+}
+
+// fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
+func (m *xyLayerModel) fromAPILayersNoESQL(ctx context.Context, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Try to determine which layer type it is by marshaling and unmarshaling
-	var layerType struct {
-		Type string `json:"type"`
-	}
 	layerJSON, err := apiLayer.MarshalJSON()
 	if err != nil {
 		diags.AddError("Failed to marshal layer", err.Error())
 		return diags
 	}
+
+	var layerType struct {
+		Type string `json:"type"`
+	}
 	if err := json.Unmarshal(layerJSON, &layerType); err != nil {
 		diags.AddError("Failed to determine layer type", err.Error())
 		return diags
 	}
-
 	m.Type = types.StringValue(layerType.Type)
 
-	// Check if it's a reference line layer
-	// Kibana uses "referenceLines" in the Lens model.
-	isReferenceLine := layerType.Type == "referenceLines"
-
+	isReferenceLine := layerType.Type == "referenceLines" || layerType.Type == string(kbapi.ReferenceLines)
 	if isReferenceLine {
-		// Determine whether the layer is ES|QL or NoESQL based on the dataset type.
-		// The generated union unmarshalers are permissive enough that ES|QL payloads can
-		// successfully unmarshal into the NoESQL structs, so we need a discriminator.
-		isESQL := false
-		var meta struct {
-			Dataset map[string]any `json:"dataset"`
+		refLine, err := apiLayer.AsXyReferenceLineLayerNoESQL()
+		if err != nil {
+			diags.AddError("Failed to parse reference line layer", err.Error())
+			return diags
 		}
-		if err := json.Unmarshal(layerJSON, &meta); err == nil {
-			if datasetType, ok := meta.Dataset["type"].(string); ok && datasetType == "esql" {
-				isESQL = true
-			}
-		}
+		m.ReferenceLineLayer = &referenceLineLayerModel{}
+		return m.ReferenceLineLayer.fromAPINoESQL(refLine)
+	}
 
-		if !isESQL {
-			if refLineNoESql, err := apiLayer.AsXyReferenceLineLayerNoESQL(); err == nil {
-				m.ReferenceLineLayer = &referenceLineLayerModel{}
-				return m.ReferenceLineLayer.fromAPINoESQL(refLineNoESql)
-			}
-		}
-
-		if refLineESql, err := apiLayer.AsXyReferenceLineLayerESQL(); err == nil {
-			m.ReferenceLineLayer = &referenceLineLayerModel{}
-			return m.ReferenceLineLayer.fromAPIESql(refLineESql)
-		}
-
-		diags.AddError("Failed to parse reference line layer", "Unable to parse as NoESQL or ESQL reference line")
+	if layerType.Type == string(kbapi.Annotations) {
+		diags.AddError("Unsupported XY layer type", "annotation layers are not supported by this resource")
 		return diags
 	}
 
-	// It's a data layer - try NoESQL first
-	dataLayerNoESql, err := apiLayer.AsXyLayerNoESQL()
-	if err == nil {
-		m.DataLayer = &dataLayerModel{}
-		return m.DataLayer.fromAPINoESQL(dataLayerNoESql)
+	dl, err := apiLayer.AsXyLayerNoESQL()
+	if err != nil {
+		diags.AddError("Failed to parse data layer", err.Error())
+		return diags
 	}
-
-	// Try ESQL data layer
-	dataLayerESql, err := apiLayer.AsXyLayerESQL()
-	if err == nil {
-		m.DataLayer = &dataLayerModel{}
-		return m.DataLayer.fromAPIESql(dataLayerESql)
-	}
-
-	diags.AddError("Failed to parse data layer", "Unable to parse as NoESQL or ESQL data layer")
-	return diags
+	m.DataLayer = &dataLayerModel{}
+	return m.DataLayer.fromAPINoESQL(ctx, dl)
 }
 
-// toAPI converts the layer model to API format
-func (m *xyLayerModel) toAPI() (kbapi.XyChart_Layers_Item, diag.Diagnostics) {
+// fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
+func (m *xyLayerModel) fromAPILayerESQL(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+	m.Type = types.StringValue(string(apiLayer.Type))
+	m.DataLayer = &dataLayerModel{}
+	return m.DataLayer.fromAPIESql(ctx, apiLayer)
+}
+
+// toAPILayersNoESQL converts the layer model to the DSL layer union type.
+func (m *xyLayerModel) toAPILayersNoESQL() (kbapi.XyLayersNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var result kbapi.XyChart_Layers_Item
+	var out kbapi.XyLayersNoESQL
 
 	if m.ReferenceLineLayer != nil {
-		// Convert reference line layer
-		refLineJSON, refDiags := m.ReferenceLineLayer.toAPI(m.Type.ValueString())
+		ref, refDiags := m.ReferenceLineLayer.toAPIXyReferenceLineLayerNoESQL(m.Type.ValueString())
 		diags.Append(refDiags...)
-		if !refDiags.HasError() {
-			if err := result.UnmarshalJSON(refLineJSON); err != nil {
-				diags.AddError("Failed to unmarshal reference line layer", err.Error())
-			}
+		if diags.HasError() {
+			return out, diags
 		}
-		return result, diags
+		if err := out.FromXyReferenceLineLayerNoESQL(ref); err != nil {
+			diags.AddError("Failed to build reference line layer", err.Error())
+		}
+		return out, diags
 	}
 
 	if m.DataLayer != nil {
-		// Convert data layer
-		dataJSON, dataDiags := m.DataLayer.toAPI(m.Type.ValueString())
+		dl, dataDiags := m.DataLayer.toAPIXyLayerNoESQL(m.Type.ValueString())
 		diags.Append(dataDiags...)
-		if !dataDiags.HasError() {
-			if err := result.UnmarshalJSON(dataJSON); err != nil {
-				diags.AddError("Failed to unmarshal data layer", err.Error())
-			}
+		if diags.HasError() {
+			return out, diags
 		}
-		return result, diags
+		if err := out.FromXyLayerNoESQL(dl); err != nil {
+			diags.AddError("Failed to build data layer", err.Error())
+		}
+		return out, diags
 	}
 
 	diags.AddError("Invalid layer", "Layer must have either data_layer or reference_line_layer configured")
-	return result, diags
+	return out, diags
+}
+
+// toAPILayerESQL converts a configured data layer to the ES|QL API layer type.
+func (m *xyLayerModel) toAPILayerESQL() (kbapi.XyLayerESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var zero kbapi.XyLayerESQL
+	if m.DataLayer == nil {
+		diags.AddError("Invalid layer", "ES|QL XY charts require a data_layer")
+		return zero, diags
+	}
+	return m.DataLayer.toAPIXyLayerESQL(m.Type.ValueString())
 }
 
 // fromAPINoESQL populates data layer from NoESQL API response
-func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
-	datasetJSON, err := json.Marshal(apiLayer.Dataset)
+	datasetJSON, err := json.Marshal(apiLayer.DataSource)
 	if err == nil {
-		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -205,18 +200,24 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, populateLensGroupByDefaults, &diags)
 		}
 	}
 
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
+		priorY := m.Y
 		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
-		for _, y := range apiLayer.Y {
+		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
+				cfg := jsontypes.NewNormalizedValue(string(yJSON))
+				if i < len(priorY) {
+					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
+				}
 				m.Y = append(m.Y, yMetricModel{
-					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: cfg,
 				})
 			}
 		}
@@ -226,13 +227,13 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 }
 
 // fromAPIESql populates data layer from ESQL API response
-func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
-	datasetJSON, err := json.Marshal(apiLayer.Dataset)
+	datasetJSON, err := json.Marshal(apiLayer.DataSource)
 	if err == nil {
-		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -254,18 +255,24 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, populateLensGroupByDefaults, &diags)
 		}
 	}
 
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
+		priorY := m.Y
 		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
-		for _, y := range apiLayer.Y {
+		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
+				cfg := jsontypes.NewNormalizedValue(string(yJSON))
+				if i < len(priorY) {
+					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
+				}
 				m.Y = append(m.Y, yMetricModel{
-					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: cfg,
 				})
 			}
 		}
@@ -274,65 +281,112 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 	return diags
 }
 
-// toAPI converts data layer to API JSON
-func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnostics) {
+// toAPIXyLayerNoESQL converts a data layer model to the typed non-ES|QL API layer.
+func (m *dataLayerModel) toAPIXyLayerNoESQL(layerType string) (kbapi.XyLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	layer := kbapi.XyLayerNoESQL{Type: kbapi.XyLayerNoESQLType(layerType)}
 
-	// Build a map with all the fields
-	layer := map[string]any{
-		"type": layerType,
-	}
-
-	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset any
-		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
-		layer["dataset"] = dataset
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		diags.Append(m.DataSourceJSON.Unmarshal(&layer.DataSource)...)
 	}
 
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
+		layer.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		s := float32(m.Sampling.ValueFloat64())
+		layer.Sampling = &s
 	}
 
+	if typeutils.IsKnown(m.XJSON) {
+		var x kbapi.XyLayerNoESQL_X
+		diags.Append(m.XJSON.Unmarshal(&x)...)
+		if !diags.HasError() {
+			layer.X = &x
+		}
+	}
+
+	if typeutils.IsKnown(m.BreakdownByJSON) {
+		var bb kbapi.XyLayerNoESQL_BreakdownBy
+		diags.Append(m.BreakdownByJSON.Unmarshal(&bb)...)
+		if !diags.HasError() {
+			layer.BreakdownBy = &bb
+		}
+	}
+
+	if len(m.Y) > 0 {
+		layer.Y = make([]kbapi.XyLayerNoESQL_Y_Item, 0, len(m.Y))
+		for _, y := range m.Y {
+			if !typeutils.IsKnown(y.ConfigJSON) {
+				continue
+			}
+			var item kbapi.XyLayerNoESQL_Y_Item
+			diags.Append(y.ConfigJSON.Unmarshal(&item)...)
+			layer.Y = append(layer.Y, item)
+		}
+	}
+
+	return layer, diags
+}
+
+// toAPIXyLayerESQL converts a data layer model to the typed ES|QL API layer.
+func (m *dataLayerModel) toAPIXyLayerESQL(layerType string) (kbapi.XyLayerESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var zero kbapi.XyLayerESQL
+
+	layer := map[string]any{
+		"type": layerType,
+	}
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		var ds any
+		diags.Append(m.DataSourceJSON.Unmarshal(&ds)...)
+		layer["data_source"] = ds
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
+	}
 	if typeutils.IsKnown(m.Sampling) {
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
-
 	if typeutils.IsKnown(m.XJSON) {
 		var x any
 		diags.Append(m.XJSON.Unmarshal(&x)...)
 		layer["x"] = x
 	}
-
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy any
-		diags.Append(m.BreakdownByJSON.Unmarshal(&breakdownBy)...)
-		layer["breakdown_by"] = breakdownBy
+		var bb any
+		diags.Append(m.BreakdownByJSON.Unmarshal(&bb)...)
+		layer["breakdown_by"] = bb
 	}
-
-	// Convert Y metrics
 	if len(m.Y) > 0 {
 		yMetrics := make([]any, 0, len(m.Y))
 		for _, y := range m.Y {
-			if typeutils.IsKnown(y.ConfigJSON) {
-				var yConfig any
-				diags.Append(y.ConfigJSON.Unmarshal(&yConfig)...)
-				yMetrics = append(yMetrics, yConfig)
+			if !typeutils.IsKnown(y.ConfigJSON) {
+				continue
 			}
+			var yc any
+			diags.Append(y.ConfigJSON.Unmarshal(&yc)...)
+			yMetrics = append(yMetrics, yc)
 		}
 		layer["y"] = yMetrics
 	}
 
 	if diags.HasError() {
-		return nil, diags
+		return zero, diags
 	}
 
 	layerJSON, err := json.Marshal(layer)
 	if err != nil {
-		diags.AddError("Failed to marshal layer", err.Error())
-		return nil, diags
+		diags.AddError("Failed to marshal ES|QL data layer", err.Error())
+		return zero, diags
 	}
 
-	return layerJSON, diags
+	var out kbapi.XyLayerESQL
+	if err := json.Unmarshal(layerJSON, &out); err != nil {
+		diags.AddError("Failed to decode ES|QL data layer", err.Error())
+		return zero, diags
+	}
+	return out, diags
 }
 
 // fromAPINoESQL populates reference line layer from NoESQL API response
@@ -340,9 +394,9 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
-	datasetJSON, err := json.Marshal(apiLayer.Dataset)
+	datasetJSON, err := json.Marshal(apiLayer.DataSource)
 	if err == nil {
-		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -361,6 +415,18 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 			thresholdJSON, err := json.Marshal(t)
 			if err != nil {
 				continue
+			}
+
+			var probe map[string]any
+			_ = json.Unmarshal(thresholdJSON, &probe)
+			if _, hasAxis := probe["axis"].(string); hasAxis || probe["column"] != nil {
+				var tm thresholdModel
+				tmDiags := tm.fromAPIJSON(thresholdJSON)
+				diags.Append(tmDiags...)
+				if !tmDiags.HasError() {
+					m.Thresholds = append(m.Thresholds, tm)
+					continue
+				}
 			}
 
 			// NoESQL reference line thresholds are operation definitions (count, sum, static_value, formula, etc)
@@ -383,102 +449,69 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 	return diags
 }
 
-// fromAPIESql populates reference line layer from ESQL API response
-func (m *referenceLineLayerModel) fromAPIESql(apiLayer kbapi.XyReferenceLineLayerESQL) diag.Diagnostics {
+// toAPIXyReferenceLineLayerNoESQL converts a reference line layer model to the typed API layer.
+func (m *referenceLineLayerModel) toAPIXyReferenceLineLayerNoESQL(layerType string) (kbapi.XyReferenceLineLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	// Marshal to JSON to preserve the exact structure
-	datasetJSON, err := json.Marshal(apiLayer.Dataset)
-	if err == nil {
-		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
-	} else {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	layer := kbapi.XyReferenceLineLayerNoESQL{
+		Type: xyReferenceLineLayerTypeFromTF(layerType),
 	}
 
-	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	if apiLayer.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiLayer.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		diags.Append(m.DataSourceJSON.Unmarshal(&layer.DataSource)...)
 	}
-
-	// Convert thresholds
-	if len(apiLayer.Thresholds) > 0 {
-		m.Thresholds = make([]thresholdModel, 0, len(apiLayer.Thresholds))
-		for _, t := range apiLayer.Thresholds {
-			thresholdJSON, err := json.Marshal(t)
-			if err != nil {
-				continue
-			}
-
-			var threshold thresholdModel
-			thresholdDiags := threshold.fromAPIJSON(thresholdJSON)
-			diags.Append(thresholdDiags...)
-			if !thresholdDiags.HasError() {
-				m.Thresholds = append(m.Thresholds, threshold)
-			}
-		}
-	}
-
-	return diags
-}
-
-// toAPI converts reference line layer to API JSON
-func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// Build a map with all the fields
-	layer := map[string]any{
-		"type": layerType,
-	}
-
-	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset any
-		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
-		layer["dataset"] = dataset
-	}
-
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
+		layer.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
-
 	if typeutils.IsKnown(m.Sampling) {
-		layer["sampling"] = m.Sampling.ValueFloat64()
+		s := float32(m.Sampling.ValueFloat64())
+		layer.Sampling = &s
 	}
 
-	// Convert thresholds
 	if len(m.Thresholds) > 0 {
-		thresholds := make([]any, 0, len(m.Thresholds))
+		items := make([]kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
-			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
 			if typeutils.IsKnown(t.ValueJSON) {
 				var op any
-				diags.Append(t.ValueJSON.Unmarshal(&op)...)
-				thresholds = append(thresholds, op)
+				valueDiags := t.ValueJSON.Unmarshal(&op)
+				diags.Append(valueDiags...)
+				if valueDiags.HasError() {
+					continue
+				}
+				opBytes, err := json.Marshal(op)
+				if err != nil {
+					diags.AddError("Failed to marshal reference line threshold", err.Error())
+					continue
+				}
+				var item kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item
+				if err := item.UnmarshalJSON(opBytes); err != nil {
+					diags.AddError("Failed to decode reference line threshold", err.Error())
+					continue
+				}
+				items = append(items, item)
 				continue
 			}
 
-			// For ES|QL layers, thresholds are a structured object.
 			thresholdMap, tDiags := t.toAPI()
 			diags.Append(tDiags...)
-			if !tDiags.HasError() {
-				thresholds = append(thresholds, thresholdMap)
+			if tDiags.HasError() {
+				continue
 			}
+			thBytes, err := json.Marshal(thresholdMap)
+			if err != nil {
+				diags.AddError("Failed to marshal reference line threshold", err.Error())
+				continue
+			}
+			var item kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item
+			if err := item.UnmarshalJSON(thBytes); err != nil {
+				diags.AddError("Failed to decode reference line threshold", err.Error())
+				continue
+			}
+			items = append(items, item)
 		}
-		layer["thresholds"] = thresholds
+		layer.Thresholds = items
 	}
 
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	layerJSON, err := json.Marshal(layer)
-	if err != nil {
-		diags.AddError("Failed to marshal reference line layer", err.Error())
-		return nil, diags
-	}
-
-	return layerJSON, diags
+	return layer, diags
 }
 
 // fromAPIJSON populates threshold from JSON

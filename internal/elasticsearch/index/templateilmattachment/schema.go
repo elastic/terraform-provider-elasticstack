@@ -39,7 +39,7 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 
 		Attributes: map[string]schema.Attribute{

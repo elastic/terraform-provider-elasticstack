@@ -45,12 +45,10 @@ func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *
 	}
 }
 
-// These headers and query parameters appear to be required by the Dashboard API at the moment.
-func addAPIVersionQueryParamRequestEditor() func(ctx context.Context, req *http.Request) error {
+// The Dashboard API currently requires allowUnmappedKeys for these requests.
+func addDashboardRequestShapeEditor() func(ctx context.Context, req *http.Request) error {
 	return func(_ context.Context, req *http.Request) error {
-		req.Header.Add("x-elastic-internal-origin", "Kibana")
 		query := req.URL.Query()
-		query.Add("apiVersion", "1")
 		query.Add("allowUnmappedKeys", "true")
 		req.URL.RawQuery = query.Encode()
 		return nil
@@ -62,7 +60,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 	resp, err := client.API.GetDashboardsIdWithResponse(
 		ctx, dashboardID,
 		spaceAwarePathRequestEditor(spaceID),
-		addAPIVersionQueryParamRequestEditor(),
+		addDashboardRequestShapeEditor(),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -79,12 +77,11 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 }
 
 // CreateDashboard creates a new dashboard.
-func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsIdJSONRequestBody) (*kbapi.PostDashboardsIdResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsIdWithResponse(
-		ctx, dashboardID,
-		req,
+func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
+	resp, err := client.API.PostDashboardsWithResponse(
+		ctx, req,
 		spaceAwarePathRequestEditor(spaceID),
-		addAPIVersionQueryParamRequestEditor(),
+		addDashboardRequestShapeEditor(),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -101,9 +98,9 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 // UpdateDashboard updates an existing dashboard.
 func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PutDashboardsIdJSONRequestBody) (*kbapi.PutDashboardsIdResponse, diag.Diagnostics) {
 	resp, err := client.API.PutDashboardsIdWithResponse(
-		ctx, dashboardID, &kbapi.PutDashboardsIdParams{}, req,
+		ctx, dashboardID, req,
 		spaceAwarePathRequestEditor(spaceID),
-		addAPIVersionQueryParamRequestEditor(),
+		addDashboardRequestShapeEditor(),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -122,7 +119,7 @@ func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	resp, err := client.API.DeleteDashboardsIdWithResponse(
 		ctx, dashboardID,
 		spaceAwarePathRequestEditor(spaceID),
-		addAPIVersionQueryParamRequestEditor(),
+		addDashboardRequestShapeEditor(),
 	)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)

@@ -38,7 +38,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		name             string
 		advancedSettings types.Object
 		wantNil          bool
-		checkResult      func(t *testing.T, result *advancedSettingsAPIResult)
+		checkResult      func(t *testing.T, result *advancedSettingsAPIValues)
 	}{
 		{
 			name:             "null advanced_settings returns nil",
@@ -76,7 +76,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				MonitoringRuntimeExperimental: types.StringNull(),
 			}),
 			wantNil: false,
-			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+			checkResult: func(t *testing.T, result *advancedSettingsAPIValues) {
 				assert.Equal(t, "debug", result.AgentLoggingLevel)
 				assert.Nil(t, result.AgentLoggingToFiles)
 			},
@@ -96,7 +96,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				MonitoringRuntimeExperimental: types.StringNull(),
 			}),
 			wantNil: false,
-			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+			checkResult: func(t *testing.T, result *advancedSettingsAPIValues) {
 				assert.Equal(t, int32(4), result.AgentLimitsGoMaxProcs)
 			},
 		},
@@ -115,7 +115,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				MonitoringRuntimeExperimental: types.StringValue(""),
 			}),
 			wantNil: false,
-			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+			checkResult: func(t *testing.T, result *advancedSettingsAPIValues) {
 				assert.Equal(t, "info", result.AgentLoggingLevel)
 				assert.Equal(t, true, result.AgentLoggingToFiles)
 				assert.Equal(t, "30s", result.AgentLoggingFilesInterval)

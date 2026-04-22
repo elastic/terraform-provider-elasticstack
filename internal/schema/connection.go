@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -29,7 +30,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
+// KibanaConnectionNullList returns a properly-typed null list value for the
+// kibana_connection block. Use this when building a state struct from scratch
+// (e.g., in ImportState or state upgraders) so the framework can match the
+// list element type against the schema instead of encountering a zero-value.
+func KibanaConnectionNullList() types.List {
+	return types.ListNull(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"api_key":      types.StringType,
+			"bearer_token": types.StringType,
+			"ca_certs":     types.ListType{ElemType: types.StringType},
+			"endpoints":    types.ListType{ElemType: types.StringType},
+			"insecure":     types.BoolType,
+			"password":     types.StringType,
+			"username":     types.StringType,
+		},
+	})
+}
+
+func GetEsFWConnectionBlock() fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
 	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
@@ -42,9 +61,8 @@ func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
 	keyDataPath := path.MatchRelative().AtParent().AtName("key_data")
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: "Elasticsearch connection configuration block. ",
-		Description:         "Elasticsearch connection configuration block. ",
-		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
+		MarkdownDescription: "Elasticsearch connection configuration block.",
+		Description:         "Elasticsearch connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
@@ -299,8 +317,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	}
 
 	return &schema.Schema{
-		Description: fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
-		Deprecated:  getDeprecationMessage(isProviderConfiguration),
+		Description: "Elasticsearch connection configuration block.",
 		Type:        schema.TypeList,
 		MaxItems:    1,
 		Optional:    true,
@@ -415,7 +432,26 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
+	return getKibanaConnectionSchema("kibana")
+}
+
+// GetKibanaEntityConnectionSchema returns the schema for a resource-level
+// kibana_connection block. It uses path references scoped to kibana_connection
+// rather than the provider-level kibana block.
+func GetKibanaEntityConnectionSchema() *schema.Schema {
+	return getKibanaConnectionSchema("kibana_connection")
+}
+
+// getKibanaConnectionSchema is the shared implementation for both the
+// provider-level kibana block and the entity-local kibana_connection block.
+// keyName controls the path prefix used in ConflictsWith / RequiredWith
+// validation metadata.
+func getKibanaConnectionSchema(keyName string) *schema.Schema {
+	usernamePath := makePathRef(keyName, "username")
+	passwordPath := makePathRef(keyName, "password")
+	apiKeyPath := makePathRef(keyName, "api_key")
+	bearerTokenPath := makePathRef(keyName, "bearer_token")
+
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,
@@ -428,29 +464,27 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Type:          schema.TypeString,
 					Optional:      true,
 					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("KIBANA_API_KEY", nil),
-					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.bearer_token"},
+					ConflictsWith: []string{passwordPath, usernamePath, bearerTokenPath},
 				},
 				"bearer_token": {
 					Description:   "Bearer Token to use for authentication to Kibana",
 					Type:          schema.TypeString,
 					Optional:      true,
 					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("KIBANA_BEARER_TOKEN", nil),
-					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.api_key"},
+					ConflictsWith: []string{passwordPath, usernamePath, apiKeyPath},
 				},
 				"username": {
 					Description:  "Username to use for API authentication to Kibana.",
 					Type:         schema.TypeString,
 					Optional:     true,
-					RequiredWith: []string{"kibana.0.password"},
+					RequiredWith: []string{passwordPath},
 				},
 				"password": {
 					Description:  "Password to use for API authentication to Kibana.",
 					Type:         schema.TypeString,
 					Optional:     true,
 					Sensitive:    true,
-					RequiredWith: []string{"kibana.0.username"},
+					RequiredWith: []string{usernamePath},
 				},
 				"endpoints": {
 					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
@@ -543,11 +577,4 @@ func GetFleetConnectionSchema() *schema.Schema {
 
 func makePathRef(keyName string, keyValue string) string {
 	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
-}
-
-func getDeprecationMessage(isProviderConfiguration bool) string {
-	if isProviderConfiguration {
-		return ""
-	}
-	return "This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead."
 }

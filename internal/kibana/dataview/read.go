@@ -33,14 +33,20 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, stateModel.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	viewID, spaceID := stateModel.getViewIDAndSpaceID()
-	dataView, diags := kibanaoapi.GetDataView(ctx, client, spaceID, viewID)
+	dataView, diags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

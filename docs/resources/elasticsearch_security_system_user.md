@@ -43,7 +43,7 @@ resource "elasticstack_elasticsearch_security_system_user" "kibana_system" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
 - `password` (String, Sensitive) The user's password. Passwords must be at least 6 characters long.
 - `password_hash` (String, Sensitive) A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).

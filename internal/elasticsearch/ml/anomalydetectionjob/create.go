@@ -52,7 +52,13 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML anomaly detection job: %s", jobID))
 
-	esClient, err := r.client.GetESClient()
+	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	esClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
@@ -80,7 +86,7 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 	}
 
 	// Read the created job to get the full state.
-	compID, sdkDiags := r.client.ID(ctx, jobID)
+	compID, sdkDiags := client.ID(ctx, jobID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return

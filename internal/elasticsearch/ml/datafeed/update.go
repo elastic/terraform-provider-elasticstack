@@ -49,6 +49,12 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Convert to API update model
 	updateRequest, diags := plan.toAPIUpdateModel(ctx)
 	resp.Diagnostics.Append(diags...)
@@ -56,14 +62,14 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	needsRestart, diags := r.maybeStopDatafeed(ctx, datafeedID)
+	needsRestart, diags := r.maybeStopDatafeed(ctx, client, datafeedID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Update the datafeed
-	updateDiags := elasticsearch.UpdateDatafeed(ctx, r.client, datafeedID, *updateRequest)
+	updateDiags := elasticsearch.UpdateDatafeed(ctx, client, datafeedID, *updateRequest)
 	resp.Diagnostics.Append(updateDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,14 +77,14 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 
 	// Restart the datafeed if it was running
 	if needsRestart {
-		startDiags := elasticsearch.StartDatafeed(ctx, r.client, datafeedID, "", "", 0)
+		startDiags := elasticsearch.StartDatafeed(ctx, client, datafeedID, "", "", 0)
 		resp.Diagnostics.Append(startDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
 		// Wait for the datafeed to reach started state
-		_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedID, StateStarted)
+		_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStarted)
 		resp.Diagnostics.Append(waitDiags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -86,7 +92,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Read the updated datafeed to get the full state
-	compID, sdkDiags := r.client.ID(ctx, datafeedID)
+	compID, sdkDiags := client.ID(ctx, datafeedID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return

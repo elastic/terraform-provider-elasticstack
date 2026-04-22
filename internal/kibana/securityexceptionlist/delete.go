@@ -35,7 +35,13 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -60,7 +66,7 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 		params.NamespaceType = &nsType
 	}
 
-	diags = kibanaoapi.DeleteExceptionList(ctx, client, compID.ClusterID, params)
+	diags = kibanaoapi.DeleteExceptionList(ctx, oapiClient, compID.ClusterID, params)
 
 	resp.Diagnostics.Append(diags...)
 }

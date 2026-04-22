@@ -33,8 +33,14 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Get Kibana client
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
@@ -55,7 +61,7 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	// Update the list item
-	updatedListItem, diags := kibanaoapi.UpdateListItem(ctx, client, compID.ClusterID, *updateReq)
+	updatedListItem, diags := kibanaoapi.UpdateListItem(ctx, oapiClient, compID.ClusterID, *updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,7 +78,7 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 		Id: &id,
 	}
 
-	listItem, diags := kibanaoapi.GetListItem(ctx, client, compID.ClusterID, readParams)
+	listItem, diags := kibanaoapi.GetListItem(ctx, oapiClient, compID.ClusterID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

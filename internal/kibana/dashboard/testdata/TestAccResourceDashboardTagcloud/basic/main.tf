@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Tagcloud Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Tagcloud Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,13 +28,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     tagcloud_config = {
       title       = "Sample Tagcloud"
       description = "Test tagcloud visualization"
-      dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+      data_source_json = jsonencode({
+        type          = "data_view_spec"
+        index_pattern = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language   = "kql"
+        expression = ""
       }
       metric_json = jsonencode({
         operation = "count"
@@ -37,7 +44,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["host.name"]
-        size      = 10
+        limit     = 10
       })
       orientation = "horizontal"
       font_size = {

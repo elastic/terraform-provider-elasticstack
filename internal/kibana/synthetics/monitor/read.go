@@ -19,24 +19,28 @@ package monitor
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	kibanaClient := synthetics.GetKibanaClient(r, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
 	state := new(tfModelV0)
 	diags := request.State.Get(ctx, state)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
+		return
+	}
+
+	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
+
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	if oapiClient == nil {
 		return
 	}
 
@@ -47,16 +51,16 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	}
 
 	spaceID := compositeID.ClusterID
-	monitorID := kbapi.MonitorID(compositeID.ResourceID)
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorID, spaceID)
-	if err != nil {
-		var apiError *kbapi.APIError
-		if errors.As(err, &apiError) && apiError.Code == 404 {
-			response.State.RemoveResource(ctx)
-			return
-		}
+	monitorID := compositeID.ResourceID
+	result, diags := kibanaoapi.GetMonitor(ctx, oapiClient, spaceID, monitorID)
+	response.Diagnostics.Append(diags...)
+	if response.Diagnostics.HasError() {
+		return
+	}
 
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get monitor `%s`, space %s", monitorID, spaceID), err.Error())
+	if result == nil {
+		// 404 — monitor no longer exists
+		response.State.RemoveResource(ctx)
 		return
 	}
 

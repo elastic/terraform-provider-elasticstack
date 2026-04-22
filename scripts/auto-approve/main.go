@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -8,7 +25,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 	"golang.org/x/oauth2"
 )
 
@@ -93,6 +110,17 @@ func run(ctx context.Context) error {
 		PullRequestNumber: prNumber,
 	})
 
+	// Report approval outcome as a GitHub Actions output
+	if outputFile := os.Getenv("GITHUB_OUTPUT"); outputFile != "" {
+		approved := "false"
+		if result.ShouldApprove || result.AlreadyApproved {
+			approved = "true"
+		}
+		if err := appendToFile(outputFile, fmt.Sprintf("approved=%s\n", approved)); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to write GITHUB_OUTPUT: %v\n", err)
+		}
+	}
+
 	logJSON("evaluation", map[string]any{
 		"owner":        owner,
 		"repo":         name,
@@ -110,8 +138,8 @@ func run(ctx context.Context) error {
 		approvalReason = fmt.Sprintf("category=%s gates passed", result.CategoryMatched)
 	}
 	review := &github.PullRequestReviewRequest{
-		Event: github.Ptr("APPROVE"),
-		Body:  github.Ptr("Auto-approved by policy: " + approvalReason + "."),
+		Event: new("APPROVE"),
+		Body:  new("Auto-approved by policy: " + approvalReason + "."),
 	}
 
 	if _, _, err := client.PullRequests.CreateReview(ctx, owner, name, prNumber, review); err != nil {
@@ -226,6 +254,16 @@ func listAllReviews(ctx context.Context, client *github.Client, owner, repo stri
 	}
 
 	return reviews, nil
+}
+
+func appendToFile(path, content string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
 }
 
 func logJSON(kind string, payload map[string]any) {

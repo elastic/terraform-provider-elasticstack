@@ -76,7 +76,13 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	esClient, err := r.client.GetESClient()
+	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	esClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return

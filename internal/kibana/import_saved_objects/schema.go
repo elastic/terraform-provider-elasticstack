@@ -19,9 +19,12 @@ package importsavedobjects
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -32,22 +35,54 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
+var _ resource.ResourceWithConfigValidators = &Resource{}
 
-// TODO - Uncomment these lines when we're using a kibana client which supports create_new_copies and compatibility_mode
-// create_new_copies and compatibility_mode aren't supported by the current version of the Kibana client
-// We can add these ourselves once https://github.com/elastic/terraform-provider-elasticstack/pull/372 is merged
+func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		// create_new_copies = true cannot be combined with overwrite = true
+		bothTrueConflict("create_new_copies", "overwrite"),
+		// create_new_copies = true cannot be combined with compatibility_mode = true
+		bothTrueConflict("create_new_copies", "compatibility_mode"),
+	}
+}
 
-// var _ resource.ResourceWithConfigValidators = &Resource{}
+// bothTrueConflict returns a ConfigValidator that errors only when both named
+// boolean attributes are explicitly set to true. This is narrower than
+// resourcevalidator.Conflicting, which fires whenever both attributes are
+// non-null regardless of their values.
+func bothTrueConflict(attr1, attr2 string) resource.ConfigValidator {
+	return &bothTrueValidator{attr1: attr1, attr2: attr2}
+}
 
-// func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
-// 	return []resource.ConfigValidator{
-// 		resourcevalidator.Conflicting(
-// 			path.MatchRoot("create_new_copies"),
-// 			path.MatchRoot("overwrite"),
-// 			path.MatchRoot("compatibility_mode"),
-// 		),
-// 	}
-// }
+type bothTrueValidator struct {
+	attr1 string
+	attr2 string
+}
+
+func (v *bothTrueValidator) Description(_ context.Context) string {
+	return fmt.Sprintf("%s and %s cannot both be true", v.attr1, v.attr2)
+}
+
+func (v *bothTrueValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *bothTrueValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var val1, val2 types.Bool
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(v.attr1), &val1)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(v.attr2), &val2)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !val1.IsNull() && !val1.IsUnknown() && val1.ValueBool() &&
+		!val2.IsNull() && !val2.IsUnknown() && val2.ValueBool() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root(v.attr1),
+			"Invalid attribute combination",
+			fmt.Sprintf("%s and %s cannot both be set to true", v.attr1, v.attr2),
+		)
+	}
+}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -68,21 +103,21 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description: "If set to true, errors during the import process will not fail the configuration application",
 				Optional:    true,
 			},
-			// create_new_copies and compatibility_mode aren't supported by the current version of the Kibana client
-			// We can add these ourselves once https://github.com/elastic/terraform-provider-elasticstack/pull/372 is merged
-			// "create_new_copies": schema.BoolAttribute{
-			// 	Description: "Creates copies of saved objects, regenerates each object ID, and resets the origin. When used, potential conflict errors are avoided.",
-			// 	Optional:    true,
-			// },
+			"create_new_copies": schema.BoolAttribute{
+				Description: "Creates copies of saved objects, regenerates each object ID, and resets the origin. " +
+					"When used, potential conflict errors are avoided. Cannot be used with overwrite or compatibility_mode.",
+				Optional: true,
+			},
 			"overwrite": schema.BoolAttribute{
 				Description: "Overwrites saved objects when they already exist. When used, potential conflict errors are automatically resolved by overwriting the destination object.",
 				Optional:    true,
 			},
-			// "compatibility_mode": schema.BoolAttribute{
-			// 	Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions.
-			// 	Use this option only if you encounter issues with imported saved objects.",
-			// 	Optional:    true,
-			// },
+			"compatibility_mode": schema.BoolAttribute{
+				Description: "Applies various adjustments to the saved objects that are being imported to maintain " +
+					"compatibility between different Kibana versions. Use this option only if you encounter issues with " +
+					"imported saved objects. Cannot be used with create_new_copies.",
+				Optional: true,
+			},
 			"file_contents": schema.StringAttribute{
 				Description: "The contents of the exported saved objects file.",
 				Required:    true,
@@ -134,17 +169,28 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				},
 			},
 		},
-	}
+
+		Blocks: map[string]schema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		}}
 }
 
 type Resource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
+}
+
+// NewResource returns a new Resource instance for provider registration and tests.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
 func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(request.ProviderData)
+	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
 	response.Diagnostics.Append(diags...)
-	r.client = client
+	if response.Diagnostics.HasError() {
+		return
+	}
+	r.client = factory
 }
 
 func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
@@ -153,14 +199,15 @@ func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest,
 
 type modelV0 struct {
 	ID                 types.String `tfsdk:"id"`
+	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
 	SpaceID            types.String `tfsdk:"space_id"`
 	IgnoreImportErrors types.Bool   `tfsdk:"ignore_import_errors"`
-	// CreateNewCopies    types.Bool   `tfsdk:"create_new_copies"`
-	Overwrite types.Bool `tfsdk:"overwrite"`
-	// CompatibilityMode  types.Bool   `tfsdk:"compatibility_mode"`
-	FileContents   types.String `tfsdk:"file_contents"`
-	Success        types.Bool   `tfsdk:"success"`
-	SuccessCount   types.Int64  `tfsdk:"success_count"`
-	Errors         types.List   `tfsdk:"errors"`
-	SuccessResults types.List   `tfsdk:"success_results"`
+	CreateNewCopies    types.Bool   `tfsdk:"create_new_copies"`
+	Overwrite          types.Bool   `tfsdk:"overwrite"`
+	CompatibilityMode  types.Bool   `tfsdk:"compatibility_mode"`
+	FileContents       types.String `tfsdk:"file_contents"`
+	Success            types.Bool   `tfsdk:"success"`
+	SuccessCount       types.Int64  `tfsdk:"success_count"`
+	Errors             types.List   `tfsdk:"errors"`
+	SuccessResults     types.List   `tfsdk:"success_results"`
 }

@@ -142,7 +142,7 @@ resource "elasticstack_elasticsearch_ml_datafeed_state" "non-realtime" {
 ### Optional
 
 - `datafeed_timeout` (String) Timeout for the operation. Examples: `30s`, `5m`, `1h`. Default is `30s`.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `end` (String) The time that the datafeed should end collecting data. When not specified, the datafeed continues in real-time. This property must be specified in RFC 3339 format.
 - `force` (Boolean) When stopping a datafeed, use to forcefully stop it.
 - `start` (String) The time that the datafeed should start collecting data. When not specified, the datafeed starts in real-time. This property must be specified in RFC 3339 format.

@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorForeach(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorForeach,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "json", expectedJSONForeach),
 				),
@@ -53,21 +53,5 @@ const expectedJSONForeach = `{
 			}
 		}
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorForeach = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
-  field = "_ingest._value"
-  type  = "integer"
-}
-
-data "elasticstack_elasticsearch_ingest_processor_foreach" "test" {
-  field     = "values"
-  processor = data.elasticstack_elasticsearch_ingest_processor_convert.test.json
 }
 `

@@ -134,6 +134,58 @@ func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
 	}
 }
 
+func TestValidateRuleParamsApmTransactionRulesAllowSearchConfiguration(t *testing.T) {
+	testCases := []struct {
+		name     string
+		ruleType string
+		params   map[string]any
+	}{
+		{
+			name:     "transaction error rate",
+			ruleType: "apm.transaction_error_rate",
+			params: map[string]any{
+				"environment": "ENVIRONMENT_ALL",
+				"searchConfiguration": map[string]any{
+					"query": map[string]any{
+						"language": "kuery",
+						"query":    "test*",
+					},
+				},
+				"threshold":    30.0,
+				"useKqlFilter": true,
+				"windowSize":   5.0,
+				"windowUnit":   "m",
+			},
+		},
+		{
+			name:     "transaction duration",
+			ruleType: "apm.transaction_duration",
+			params: map[string]any{
+				"aggregationType": "avg",
+				"environment":     "ENVIRONMENT_ALL",
+				"searchConfiguration": map[string]any{
+					"query": map[string]any{
+						"language": "kuery",
+						"query":    "test*",
+					},
+				},
+				"threshold":    1500.0,
+				"useKqlFilter": true,
+				"windowSize":   5.0,
+				"windowUnit":   "m",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if errs := validateRuleParams(tc.ruleType, tc.params); len(errs) > 0 {
+				t.Fatalf("expected no validation errors, got: %v", errs)
+			}
+		})
+	}
+}
+
 func TestValidateRuleParamsRejectsUnexpectedKeys(t *testing.T) {
 	params := map[string]any{
 		"windowSize":          5.0,

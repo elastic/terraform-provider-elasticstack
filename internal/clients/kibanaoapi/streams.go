@@ -1,0 +1,251 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package kibanaoapi
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
+
+// streamsLockRetry retries fn (up to maxAttempts) when the Kibana Streams API
+// returns HTTP 409 "Could not acquire lock for applying changes". The API holds
+// a short exclusive lock during writes; a brief exponential backoff resolves
+// the contention without user-visible errors on concurrent applies/destroys.
+func streamsLockRetry[T any](ctx context.Context, maxAttempts int, fn func() (T, int, diag.Diagnostics)) (T, diag.Diagnostics) {
+	backoff := 500 * time.Millisecond
+	for attempt := 1; ; attempt++ {
+		result, statusCode, diags := fn()
+		if statusCode != http.StatusConflict || attempt >= maxAttempts {
+			return result, diags
+		}
+		select {
+		case <-ctx.Done():
+			return result, diagutil.FrameworkDiagFromError(ctx.Err())
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+	}
+}
+
+// StreamResponse is our own typed response struct for the Streams API.
+//
+// NOTE: The generated kbapi response types (GetStreamsNameResponse,
+// PutStreamsNameResponse) only carry raw Body []byte — there are no typed JSON200
+// fields. We therefore unmarshal manually into this struct. If the kbapi
+// generator is ever updated to emit typed response bodies for these endpoints,
+// this struct can be replaced.
+type StreamResponse struct {
+	// Stream is the discriminated stream definition.
+	Stream StreamDefinition `json:"stream"`
+	// Dashboards contains IDs of dashboards linked to this stream.
+	Dashboards []string `json:"dashboards,omitempty"`
+	// Queries contains ES|QL queries attached to this stream.
+	Queries []StreamQuery `json:"queries,omitempty"`
+}
+
+// StreamDefinition is the top-level discriminated union for stream definitions.
+// The "type" field acts as the discriminator: "wired", "classic", or "query".
+type StreamDefinition struct {
+	// Type discriminates the stream variant: "wired", "classic", or "query".
+	Type string `json:"type"`
+	// Name is the stream name (returned on read, not required on write).
+	Name string `json:"name,omitempty"`
+	// Description is a human-readable description of the stream.
+	Description string `json:"description"`
+
+	// Ingest is populated for wired and classic streams.
+	Ingest *StreamIngest `json:"ingest,omitempty"`
+
+	// Query is populated for query streams.
+	Query *StreamQueryESQLDef `json:"query,omitempty"`
+}
+
+// StreamIngest holds ingest settings shared by wired and classic streams.
+type StreamIngest struct {
+	Processing   StreamProcessing     `json:"processing"`
+	Settings     StreamIngestSettings `json:"settings,omitempty"` //nolint:modernize
+	Lifecycle    json.RawMessage      `json:"lifecycle,omitempty"`
+	FailureStore json.RawMessage      `json:"failure_store,omitempty"`
+	// Wired is populated only for wired streams.
+	Wired *StreamIngestWired `json:"wired,omitempty"`
+	// Classic is populated only for classic streams.
+	Classic *StreamIngestClassic `json:"classic,omitempty"`
+}
+
+// StreamProcessing holds the processing pipeline steps.
+type StreamProcessing struct {
+	Steps     json.RawMessage `json:"steps,omitempty"`
+	UpdatedAt any             `json:"updated_at,omitempty"`
+}
+
+// StreamIngestSettings holds simple index settings.
+type StreamIngestSettings struct {
+	IndexNumberOfReplicas *StreamIngestSettingValue `json:"index.number_of_replicas,omitempty"`
+	IndexNumberOfShards   *StreamIngestSettingValue `json:"index.number_of_shards,omitempty"`
+	IndexRefreshInterval  *StreamIngestSettingValue `json:"index.refresh_interval,omitempty"`
+}
+
+// StreamIngestSettingValue wraps an index setting value.
+type StreamIngestSettingValue struct {
+	Value any `json:"value"`
+}
+
+// StreamIngestWired holds wired-stream specific ingest config.
+type StreamIngestWired struct {
+	// Fields is a map of field_name -> field_definition. The field definition
+	// itself is a union type (string type name, or a full definition object),
+	// so we keep it as raw JSON.
+	Fields json.RawMessage `json:"fields,omitempty"`
+	// Routing must be present even when empty — omitempty would omit an empty
+	// slice as null which the API rejects.
+	Routing []StreamRoutingRule `json:"routing"`
+}
+
+// StreamRoutingRule defines a single routing rule for a wired stream.
+type StreamRoutingRule struct {
+	Destination string          `json:"destination"`
+	Status      *string         `json:"status,omitempty"`
+	Where       json.RawMessage `json:"where"`
+}
+
+// StreamIngestClassic holds classic-stream specific ingest config.
+type StreamIngestClassic struct {
+	// FieldOverrides is a map of field_name -> field_override_definition.
+	FieldOverrides json.RawMessage `json:"field_overrides,omitempty"`
+}
+
+// StreamQueryESQLDef holds the query definition for a query stream.
+type StreamQueryESQLDef struct {
+	Esql string `json:"esql"`
+	// View must always be serialised (even as empty string) because the API
+	// treats a missing "view" key as invalid.
+	View string `json:"view"`
+}
+
+// StreamQuery holds an ES|QL query attached to a stream.
+type StreamQuery struct {
+	ID            string          `json:"id"`
+	Title         string          `json:"title"`
+	Description   string          `json:"description"`
+	Esql          StreamQueryEsql `json:"esql"`
+	SeverityScore *float32        `json:"severity_score,omitempty"`
+	Evidence      *[]string       `json:"evidence,omitempty"`
+}
+
+// StreamQueryEsql holds the ES|QL query string.
+type StreamQueryEsql struct {
+	Query string `json:"query"`
+}
+
+// StreamUpsertRequest is the body for PUT /api/streams/{name}.
+// All three array fields are required by the API — they must be present even
+// when empty (sending null or omitting them causes HTTP 400).
+type StreamUpsertRequest struct {
+	Stream     StreamDefinition `json:"stream"`
+	Dashboards []string         `json:"dashboards"`
+	Rules      []string         `json:"rules"`
+	Queries    []StreamQuery    `json:"queries"`
+}
+
+// GetStream reads a specific stream from the API.
+func GetStream(ctx context.Context, client *Client, spaceID string, name string) (*StreamResponse, diag.Diagnostics) {
+	resp, err := client.API.GetStreamsNameWithResponse(
+		ctx, name, kbapi.GetStreamsNameJSONRequestBody{},
+		spaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		var streamResp StreamResponse
+		if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
+			return nil, diagutil.FrameworkDiagFromError(jsonErr)
+		}
+		return &streamResp, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpsertStream creates or updates a stream via PUT /api/streams/{name}.
+// Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
+//
+// We use PutStreamsNameWithBodyWithResponse (raw bytes) rather than the typed
+// PutStreamsNameWithResponse path because the generated kbapi.PutStreamsNameJSONRequestBody
+// is an anyOf union wrapper with an unexported `union json.RawMessage` field;
+// encoding/json cannot marshal unexported fields, so the typed path would send an
+// empty body. Track oapi-codegen#1665 for when this can be replaced with the typed path.
+func UpsertStream(ctx context.Context, client *Client, spaceID string, name string, req StreamUpsertRequest) (*StreamResponse, diag.Diagnostics) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return streamsLockRetry(ctx, 5, func() (*StreamResponse, int, diag.Diagnostics) {
+		resp, err := client.API.PutStreamsNameWithBodyWithResponse(
+			ctx, name, "application/json", bytes.NewReader(body),
+			spaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			var streamResp StreamResponse
+			if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
+				return nil, resp.StatusCode(), diagutil.FrameworkDiagFromError(jsonErr)
+			}
+			return &streamResp, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+		}
+	})
+}
+
+// DeleteStream deletes a wired or query stream via DELETE /api/streams/{name}.
+// For classic streams this is a no-op (classic streams cannot be deleted via the API).
+// Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
+func DeleteStream(ctx context.Context, client *Client, spaceID string, name string) diag.Diagnostics {
+	_, diags := streamsLockRetry(ctx, 5, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.DeleteStreamsNameWithResponse(
+			ctx, name, kbapi.DeleteStreamsNameJSONRequestBody{},
+			spaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		switch resp.StatusCode() {
+		case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
+			return struct{}{}, resp.StatusCode(), nil
+		default:
+			return struct{}{}, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+		}
+	})
+	return diags
+}

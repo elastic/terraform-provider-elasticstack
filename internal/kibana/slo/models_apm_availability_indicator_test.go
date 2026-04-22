@@ -20,7 +20,7 @@ package slo
 import (
 	"testing"
 
-	generatedslo "github.com/elastic/terraform-provider-elasticstack/generated/slo"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,15 +48,16 @@ func TestApmAvailabilityIndicator_ToAPI(t *testing.T) {
 		require.True(t, ok)
 		require.False(t, diags.HasError())
 
-		require.NotNil(t, ind.IndicatorPropertiesApmAvailability)
-		assert.Equal(t, indicatorAddressToType["apm_availability_indicator"], ind.IndicatorPropertiesApmAvailability.Type)
-		assert.Equal(t, "svc", ind.IndicatorPropertiesApmAvailability.Params.Service)
-		assert.Equal(t, "prod", ind.IndicatorPropertiesApmAvailability.Params.Environment)
-		assert.Equal(t, "request", ind.IndicatorPropertiesApmAvailability.Params.TransactionType)
-		assert.Equal(t, "GET /", ind.IndicatorPropertiesApmAvailability.Params.TransactionName)
-		assert.Equal(t, "apm-*", ind.IndicatorPropertiesApmAvailability.Params.Index)
-		require.NotNil(t, ind.IndicatorPropertiesApmAvailability.Params.Filter)
-		assert.Equal(t, "service.name:foo", *ind.IndicatorPropertiesApmAvailability.Params.Filter)
+		apiInd, err := ind.AsSLOsIndicatorPropertiesApmAvailability()
+		require.NoError(t, err)
+		assert.Equal(t, indicatorAddressToType["apm_availability_indicator"], apiInd.Type)
+		assert.Equal(t, "svc", apiInd.Params.Service)
+		assert.Equal(t, "prod", apiInd.Params.Environment)
+		assert.Equal(t, "request", apiInd.Params.TransactionType)
+		assert.Equal(t, "GET /", apiInd.Params.TransactionName)
+		assert.Equal(t, "apm-*", apiInd.Params.Index)
+		require.NotNil(t, apiInd.Params.Filter)
+		assert.Equal(t, "service.name:foo", *apiInd.Params.Filter)
 	})
 
 	t.Run("omits filter when unknown", func(t *testing.T) {
@@ -72,8 +73,9 @@ func TestApmAvailabilityIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.apmAvailabilityIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesApmAvailability)
-		assert.Nil(t, ind.IndicatorPropertiesApmAvailability.Params.Filter)
+		apiInd, err := ind.AsSLOsIndicatorPropertiesApmAvailability()
+		require.NoError(t, err)
+		assert.Nil(t, apiInd.Params.Filter)
 	})
 
 	t.Run("omits filter when null", func(t *testing.T) {
@@ -89,21 +91,30 @@ func TestApmAvailabilityIndicator_ToAPI(t *testing.T) {
 		ok, ind, diags := m.apmAvailabilityIndicatorToAPI()
 		require.True(t, ok)
 		require.False(t, diags.HasError())
-		require.NotNil(t, ind.IndicatorPropertiesApmAvailability)
-		assert.Nil(t, ind.IndicatorPropertiesApmAvailability.Params.Filter)
+		apiInd, err := ind.AsSLOsIndicatorPropertiesApmAvailability()
+		require.NoError(t, err)
+		assert.Nil(t, apiInd.Params.Filter)
 	})
 }
 
 func TestApmAvailabilityIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("maps all fields with optional filter", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesApmAvailability{
-			Params: generatedslo.IndicatorPropertiesApmAvailabilityParams{
+		filter := "service.name:foo"
+		api := kbapi.SLOsIndicatorPropertiesApmAvailability{
+			Params: struct {
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
+			}{
 				Service:         "svc",
 				Environment:     "prod",
 				TransactionType: "request",
 				TransactionName: "GET /",
 				Index:           "apm-*",
-				Filter:          new("service.name:foo"),
+				Filter:          &filter,
 			},
 		}
 
@@ -122,8 +133,15 @@ func TestApmAvailabilityIndicator_PopulateFromAPI(t *testing.T) {
 	})
 
 	t.Run("sets filter to null when not present", func(t *testing.T) {
-		api := &generatedslo.IndicatorPropertiesApmAvailability{
-			Params: generatedslo.IndicatorPropertiesApmAvailabilityParams{
+		api := kbapi.SLOsIndicatorPropertiesApmAvailability{
+			Params: struct {
+				Environment     string  `json:"environment"`
+				Filter          *string `json:"filter,omitempty"`
+				Index           string  `json:"index"`
+				Service         string  `json:"service"`
+				TransactionName string  `json:"transactionName"`
+				TransactionType string  `json:"transactionType"`
+			}{
 				Service:         "svc",
 				Environment:     "prod",
 				TransactionType: "request",
@@ -138,12 +156,5 @@ func TestApmAvailabilityIndicator_PopulateFromAPI(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.Len(t, m.ApmAvailabilityIndicator, 1)
 		assert.True(t, m.ApmAvailabilityIndicator[0].Filter.IsNull())
-	})
-
-	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {
-		var m tfModel
-		diags := m.populateFromApmAvailabilityIndicator(nil)
-		require.False(t, diags.HasError())
-		assert.Nil(t, m.ApmAvailabilityIndicator)
 	})
 }

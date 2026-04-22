@@ -36,6 +36,12 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Parse composite ID to get space_id and resource_id
 	compID, compIDDiags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
 	resp.Diagnostics.Append(compIDDiags...)
@@ -43,21 +49,21 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	client, err := r.client.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
 	}
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, r.client)
+	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Update the exception item
-	updateResp, diags := kibanaoapi.UpdateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
+	updateResp, diags := kibanaoapi.UpdateExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +87,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

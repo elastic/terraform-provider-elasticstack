@@ -3,13 +3,17 @@ variable "name" {
   type        = string
 }
 
+variable "rule_id" {
+  type = string
+}
+
 provider "elasticstack" {
   kibana {}
 }
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name        = var.name
-  rule_id     = "bf33ce2d-9fc4-5131-a350-b5bd6482735c"
+  rule_id     = var.rule_id
   consumer    = "alerts"
   notify_when = "onActiveAlert"
   params = jsonencode({

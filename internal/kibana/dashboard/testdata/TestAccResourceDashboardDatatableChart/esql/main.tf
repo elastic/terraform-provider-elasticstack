@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with ES|QL Datatable Panel"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with ES|QL Datatable Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -23,12 +28,14 @@ resource "elasticstack_kibana_dashboard" "test" {
     datatable_config = {
       esql = {
         title = "count"
-        dataset_json = jsonencode({
+        data_source_json = jsonencode({
           type  = "esql"
           query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
         })
-        density = {
-          mode = "default"
+        styling = {
+          density = {
+            mode = "default"
+          }
         }
         metrics = [
           {

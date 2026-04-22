@@ -1,0 +1,39 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package ilm
+
+import "github.com/hashicorp/go-version"
+
+// currentSchemaVersion is the Terraform resource schema version (state upgrades run from prior versions).
+const currentSchemaVersion int64 = 1
+
+const (
+	ilmPhaseHot    = "hot"
+	ilmPhaseWarm   = "warm"
+	ilmPhaseCold   = "cold"
+	ilmPhaseFrozen = "frozen"
+	ilmPhaseDelete = "delete"
+)
+
+// RolloverMinConditionsMinSupportedVersion is the minimum Elasticsearch version for rollover min_* conditions.
+var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
+
+// MaxPrimaryShardDocsMinSupportedVersion is the minimum Elasticsearch version for max_primary_shard_docs.
+var MaxPrimaryShardDocsMinSupportedVersion = version.Must(version.NewVersion("8.2.0"))
+
+var supportedIlmPhases = [...]string{ilmPhaseHot, ilmPhaseWarm, ilmPhaseCold, ilmPhaseFrozen, ilmPhaseDelete}

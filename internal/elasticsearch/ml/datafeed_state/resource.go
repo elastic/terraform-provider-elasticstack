@@ -30,7 +30,7 @@ func NewMLDatafeedStateResource() resource.Resource {
 }
 
 type mlDatafeedStateResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *mlDatafeedStateResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -38,7 +38,7 @@ func (r *mlDatafeedStateResource) Metadata(_ context.Context, req resource.Metad
 }
 
 func (r *mlDatafeedStateResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

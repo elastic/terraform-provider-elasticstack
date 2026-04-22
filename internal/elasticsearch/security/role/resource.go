@@ -38,7 +38,7 @@ func NewRoleResource() resource.Resource {
 }
 
 type roleResource struct {
-	client *clients.APIClient
+	client *clients.ProviderClientFactory
 }
 
 func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -46,7 +46,7 @@ func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest,
 }
 
 func (r *roleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
+	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }

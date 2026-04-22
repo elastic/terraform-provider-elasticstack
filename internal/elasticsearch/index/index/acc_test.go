@@ -126,7 +126,7 @@ func TestAccResourceIndex(t *testing.T) {
 	})
 }
 
-//go:embed testdata/TestAccResourceIndexFromSDK/index.tf
+//go:embed testdata/TestAccResourceIndexFromSDK/main.tf
 var sdkCreateTestConfig string
 
 func TestAccResourceIndexFromSDK(t *testing.T) {
@@ -512,8 +512,73 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 	})
 }
 
+// TestAccResourceIndexDateMath covers create/read stability and update-path
+// regression for date math index names:
+//   - Task 3.2: state preserves the configured date math expression in `name` and
+//     persists the resolved concrete index in `concrete_name`.
+//   - Task 3.3: alias and mapping updates after create from a date math expression
+//     target the concrete managed index.
+func TestAccResourceIndexDateMath(t *testing.T) {
+	// Use a fixed date math expression.  The concrete index name resolved by
+	// Elasticsearch will differ from this expression (e.g. logs-2024.01.15).
+	dateMathName := `<logs-{now/d}>`
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: create the index using the date math expression and verify
+				// that name is preserved as the configured expression while
+				// concrete_name holds the resolved concrete index.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(dateMathName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// name must remain the configured date math expression.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "name", dateMathName),
+					// concrete_name must be set and must differ from the date math expression.
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_date_math", "concrete_name"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_index.test_date_math", "concrete_name", func(val string) error {
+						if val == dateMathName {
+							return fmt.Errorf("concrete_name %q must not equal the date math expression", val)
+						}
+						return nil
+					}),
+					// alias created during create must be present.
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_date_math", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("date_math_alias_1"),
+					}),
+				),
+			},
+			{
+				// Step 2: update aliases and mappings — all updates must target the
+				// persisted concrete index identity, not the date math expression.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_alias"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(dateMathName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// name is still the configured date math expression after the update.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "name", dateMathName),
+					// concrete_name is still set (preserved from create).
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_date_math", "concrete_name"),
+					// Alias from create is still present after the mappings update.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math", "alias.#", "1"),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_date_math", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("date_math_alias_1"),
+					}),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIndexDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
 	}

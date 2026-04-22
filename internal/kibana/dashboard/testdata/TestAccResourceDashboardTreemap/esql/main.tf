@@ -3,17 +3,22 @@ variable "dashboard_title" {
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
-  title                  = var.dashboard_title
-  description            = "Dashboard with Treemap Panel (ES|QL)"
-  time_from              = "now-15m"
-  time_to                = "now"
-  refresh_interval_pause = true
-  refresh_interval_value = 0
-  query_language         = "kuery"
-  query_text             = ""
-
+  title       = var.dashboard_title
+  description = "Dashboard with Treemap Panel (ES|QL)"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
   panels = [{
-    type = "lens"
+    type = "vis"
     grid = {
       x = 0
       y = 0
@@ -22,10 +27,10 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
 
     treemap_config = {
-      title       = "ESQL Treemap"
-      description = "Treemap visualization using ES|QL"
+      title       = ""
+      description = ""
 
-      dataset_json = jsonencode({
+      data_source_json = jsonencode({
         type  = "esql"
         query = "FROM metrics-* | KEEP host.name, bytes | LIMIT 50"
       })
@@ -34,16 +39,31 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_by_json = jsonencode([
         {
-          operation   = "value"
-          column      = "host.name"
+          column = "host.name"
+          format = {
+            type = "number"
+          }
+          color = {
+            mode    = "categorical"
+            palette = "default"
+            mapping = []
+            unassigned = {
+              type  = "color_code"
+              value = "#D3DAE6"
+            }
+          }
           collapse_by = "avg"
         }
       ])
 
       metrics_json = jsonencode([
         {
-          operation = "value"
-          column    = "bytes"
+          column = "bytes"
+          format = {
+            type     = "number"
+            decimals = 2
+            compact  = false
+          }
           color = {
             type  = "static"
             color = "#54B399"
@@ -51,12 +71,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      label_position = "hidden"
-
       legend = {
         nested               = false
-        size                 = "small"
-        visible              = "show"
+        size                 = "s"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 
