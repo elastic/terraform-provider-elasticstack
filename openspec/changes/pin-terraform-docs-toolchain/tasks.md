@@ -19,6 +19,6 @@
 
 ## 4. Verify behavior
 
-- [ ] 4.1 Run targeted validation for docs generation (for example `make docs-generate` and/or `make check-docs`) and confirm docs generation succeeds while reading the pinned version from `.terraform-version`.
-- [ ] 4.2 Run workflow validation/tests required by the repo (`make check-workflows` / `make workflow-test`) if workflow sources changed.
-- [ ] 4.3 Run the relevant aggregate validation (`make check-lint` or an equivalent targeted subset) to confirm the deterministic docs-generation path integrates cleanly.
+- [x] 4.1 Run targeted validation for docs generation (for example `make docs-generate` and/or `make check-docs`) and confirm docs generation succeeds while reading the pinned version from `.terraform-version`.
+- [x] 4.2 Run workflow validation/tests required by the repo (`make check-workflows` / `make workflow-test`) if workflow sources changed.
+- [x] 4.3 Run the relevant aggregate validation (`make check-lint` or an equivalent targeted subset) to confirm the deterministic docs-generation path integrates cleanly.
