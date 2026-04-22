@@ -6,9 +6,9 @@
 
 ## 2. Align CI with `.terraform-version`
 
-- [ ] 2.1 Update the lint/docs validation workflow configuration so the Terraform setup step reads and uses the same `.terraform-version` value as local docs generation.
-- [ ] 2.2 Regenerate workflow artifacts if the source workflow templates are the canonical edit point.
-- [ ] 2.3 Verify CI source/tests covering workflow generation still pass after the Terraform version source change.
+- [x] 2.1 Update the lint/docs validation workflow configuration so the Terraform setup step reads and uses the same `.terraform-version` value as local docs generation.
+- [x] 2.2 Regenerate workflow artifacts if the source workflow templates are the canonical edit point.
+- [x] 2.3 Verify CI source/tests covering workflow generation still pass after the Terraform version source change.
 
 ## 3. Update requirements, contributor docs, and Renovate expectations
 
