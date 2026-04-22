@@ -105,8 +105,16 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Cont
 	//
 	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
 	// return an empty standard-query object, so query presence is not reliable.
-	if pm.MetricChartConfig == nil {
-		pm.MetricChartConfig = &metricChartConfigModel{}
+	//
+	// Always allocate a fresh metricChartConfigModel so that fromAPIVariant0/1
+	// does not mutate the plan's struct (pm is seeded from the plan via pm = *tfPanel,
+	// so pm.MetricChartConfig is aliased to the plan's pointer). Seed the fresh
+	// struct with the prior metrics slice so the inline priorMetrics preservation
+	// inside fromAPIVariant0 can still compare against plan values.
+	priorConfig := pm.MetricChartConfig
+	pm.MetricChartConfig = &metricChartConfigModel{}
+	if priorConfig != nil {
+		pm.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
 		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
