@@ -64,6 +64,8 @@ See [`generated-clients.md`](./generated-clients.md).
 
 See [`documentation.md`](./documentation.md).
 
+When you run `make docs-generate`, the command uses the Terraform CLI version pinned in the repository root `.terraform-version` file via `tfplugindocs`. If docs generation behavior changes because Terraform needs to be updated, update `.terraform-version` rather than relying on a locally installed Terraform version.
+
 ## Repo structure
 
 See [`repo-structure.md`](./repo-structure.md).

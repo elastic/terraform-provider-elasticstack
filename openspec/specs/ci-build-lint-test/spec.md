@@ -35,7 +35,7 @@ The workflow name SHALL be `Build/Lint/Test`. The workflow SHALL run on `push` t
 
 ### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)
 
-The `build` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up Node.js (24.x), run `make vendor`, run `make workflow-test`, run `make hook-test`, and run `make build-ci`. The `lint` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up Terraform without wrapper mode, install Node.js (24.x), run `npm ci`, run `openspec validate --specs` with telemetry disabled, and run `make check-lint`.
+The `build` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up Node.js (24.x), run `make vendor`, run `make workflow-test`, run `make hook-test`, and run `make build-ci`. The `lint` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, read the Terraform CLI version from the repository root `.terraform-version` file, set up Terraform without wrapper mode using that pinned version, install Node.js (24.x), run `npm ci`, run `openspec validate --specs` with telemetry disabled, and run `make check-lint`.
 
 #### Scenario: Build job runs workflow and hook tests
 

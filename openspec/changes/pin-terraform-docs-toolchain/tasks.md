@@ -12,10 +12,10 @@
 
 ## 3. Update requirements, contributor docs, and Renovate expectations
 
-- [ ] 3.1 Update the relevant OpenSpec requirements (at minimum `openspec/specs/makefile-workflows/spec.md`) to state that `docs-generate` uses the Terraform CLI version pinned in `.terraform-version` rather than a developer-installed version.
-- [ ] 3.2 Update `dev-docs/high-level/documentation.md` to document the `.terraform-version` policy for docs generation and where it is configured.
-- [ ] 3.3 Update any additional contributor guidance that mentions docs generation if needed for consistency.
-- [ ] 3.4 Verify the repository's `renovate.json` configuration allows built-in `.terraform-version` updates, and adjust only if necessary.
+- [x] 3.1 Update the relevant OpenSpec requirements (at minimum `openspec/specs/makefile-workflows/spec.md`) to state that `docs-generate` uses the Terraform CLI version pinned in `.terraform-version` rather than a developer-installed version.
+- [x] 3.2 Update `dev-docs/high-level/documentation.md` to document the `.terraform-version` policy for docs generation and where it is configured.
+- [x] 3.3 Update any additional contributor guidance that mentions docs generation if needed for consistency.
+- [x] 3.4 Verify the repository's `renovate.json` configuration allows built-in `.terraform-version` updates, and adjust only if necessary.
 
 ## 4. Verify behavior
 
