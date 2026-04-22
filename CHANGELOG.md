@@ -2,7 +2,8 @@
 
 ### Changes
 
-- Add `elasticstack_fleet_agent_download_source` resource ([#2801](https://github.com/elastic/terraform-provider-elasticstack/pull/2081))
+- Fix "provider produced inconsistent result after apply" for SLO resources when objective target, timeslice target, or histogram range from/to values are not exactly representable in float32 ([#2401](https://github.com/elastic/terraform-provider-elasticstack/pull/2401))
+- Add `elasticstack_fleet_agent_download_source` resource ([#2081](https://github.com/elastic/terraform-provider-elasticstack/pull/2081))
 
 ## [0.14.4] - 2026-04-20
 
