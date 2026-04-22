@@ -10,6 +10,7 @@ This repo already pins other tooling versions in repository-controlled files (fo
 - **Update** `make docs-generate` to read `.terraform-version` and pass that version to `tfplugindocs`.
 - **Document** the pinned Terraform version policy and where it is configured.
 - **Align** CI Terraform setup for docs/lint validation with `.terraform-version` so local and CI docs generation use the same CLI version.
+- **Refresh** the `tfplugindocs` tool dependency to a release that carries HashiCorp's updated release-signing key material, because the existing dependency chain fails while downloading the pinned Terraform CLI with `openpgp: key expired`.
 - **Adopt** the current latest stable Terraform release as the initial pinned value, with future updates managed through Renovate's built-in `.terraform-version` support.
 
 ## Capabilities
@@ -27,6 +28,7 @@ This repo already pins other tooling versions in repository-controlled files (fo
 
 - `.terraform-version` — add the repository-owned Terraform CLI version file, initially pinned to the current latest stable release.
 - `Makefile` — update `docs-generate` to read `.terraform-version` and use it in `tfplugindocs` invocation.
+- `go.mod` / `go.sum` — refresh the `terraform-plugin-docs` tool dependency (and its transitive toolchain dependencies) so docs generation can still download and verify the pinned Terraform CLI release.
 - `dev-docs/high-level/documentation.md` and possibly `dev-docs/high-level/contributing.md` — explain the pinned Terraform version policy and contributor expectations.
 - `.github/workflows/test.yml` and/or generated workflow sources — align Terraform setup in lint/docs-related jobs with `.terraform-version`.
 - `renovate.json` — verify the repository's Renovate configuration allows built-in `.terraform-version` updates as the ongoing maintenance path.

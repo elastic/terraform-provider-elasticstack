@@ -40,6 +40,8 @@ This is preferred over a Makefile-local variable because the version becomes vis
 
 `docs-generate` SHALL read `.terraform-version` and pass the resulting pinned version via `tfplugindocs generate --tf-version <version>`. This uses upstream-supported behavior while keeping the tool invocation deterministic even on machines whose local Terraform installation does not respect `.terraform-version` automatically.
 
+During implementation, validation showed that the previously resolved `terraform-plugin-docs` / `hc-install` dependency chain could not download the pinned Terraform release because HashiCorp's older embedded OpenPGP public key had expired, producing `unable to verify checksums signature: openpgp: key expired`. To keep the intended `tfplugindocs`-managed flow viable, the repository SHALL refresh the `terraform-plugin-docs` tool dependency to a release that includes updated signing-key material.
+
 This is preferred over `--providers-schema` because the latter would require the repo to reimplement provider build + plugin layout + schema extraction orchestration that `tfplugindocs` already handles correctly.
 
 ### Align CI with `.terraform-version`
@@ -67,7 +69,8 @@ Contributor-facing documentation under `dev-docs/high-level/documentation.md` SH
 2. Wire `docs-generate` to read `.terraform-version` and pass it to `--tf-version`.
 3. Update CI Terraform setup for lint/docs validation to read the same version.
 4. Update contributor docs, Renovate expectations, and OpenSpec requirements.
-5. Verify docs generation and docs freshness checks still behave as expected.
+5. Refresh the `terraform-plugin-docs` tool dependency if needed so the pinned Terraform download/verification path remains functional.
+6. Verify docs generation and docs freshness checks still behave as expected.
 
 ## Open Questions
 
