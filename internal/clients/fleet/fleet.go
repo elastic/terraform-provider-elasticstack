@@ -28,7 +28,9 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -728,6 +730,30 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, f, spaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	// Kibana rate-limits EPM uploads with HTTP 429 ("Please wait Xs before uploading
+	// again."). Retry once after the requested delay so sequential tests that upload
+	// multiple packages do not fail due to back-to-back upload attempts.
+	if resp.StatusCode() == http.StatusTooManyRequests {
+		wait := 15 * time.Second
+		if m := regexp.MustCompile(`\b(\d+)s\b`).FindSubmatch(resp.Body); m != nil {
+			if secs, parseErr := strconv.Atoi(string(m[1])); parseErr == nil && secs > 0 {
+				wait = time.Duration(secs+2) * time.Second
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return nil, diagutil.FrameworkDiagFromError(ctx.Err())
+		case <-time.After(wait):
+		}
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("rewinding package file for retry after rate limit: %w", seekErr))
+		}
+		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, f, spaceAwarePathRequestEditor(opts.SpaceID))
+		if err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
 	}
 
 	switch resp.StatusCode() {
