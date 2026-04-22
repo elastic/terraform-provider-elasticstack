@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -120,6 +121,20 @@ func checkCustomIntegrationDestroy(s *terraform.State) error {
 
 		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
 		if diags.HasError() {
+			// On Kibana 7.17.x, the individual GET endpoint returns HTTP 400
+			// for custom packages ("filePath" param required). Since Uninstall
+			// also returns 404 on that version (best-effort deletion), treat this
+			// as destroyed rather than failing the check.
+			isFilePath400 := false
+			for _, d := range diags {
+				if strings.Contains(d.Detail(), "filePath") {
+					isFilePath400 = true
+					break
+				}
+			}
+			if isFilePath400 {
+				continue
+			}
 			return diagutil.FwDiagsAsError(diags)
 		}
 
