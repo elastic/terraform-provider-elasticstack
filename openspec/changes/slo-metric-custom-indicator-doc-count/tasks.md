@@ -1,8 +1,8 @@
 ## 1. Unit Tests
 
-- [ ] 1.1 Add `buildGoodItemDocCount` and `buildTotalItemDocCount` helpers (using `Metrics1`) inside `TestMetricCustomIndicator_PopulateFromAPI` in `models_metric_custom_indicator_test.go`
-- [ ] 1.2 Add subtest "uses Metrics1 for doc_count aggregation" to `TestMetricCustomIndicator_ToAPI` — builds a model with `aggregation = "doc_count"` and `Field: types.StringNull()`, calls `metricCustomIndicatorToAPI()`, asserts the result decodes as `GoodMetrics1`/`TotalMetrics1` with correct name, aggregation, and filter
-- [ ] 1.3 Add subtest "maps doc_count metrics without field" to `TestMetricCustomIndicator_PopulateFromAPI` — constructs `Metrics1` API items using the helpers from 1.1, calls `populateFromMetricCustomIndicator`, asserts `Field.IsNull()` for both good and total
+- [x] 1.1 Add `buildGoodItemDocCount` and `buildTotalItemDocCount` helpers (using `Metrics1`) inside `TestMetricCustomIndicator_PopulateFromAPI` in `models_metric_custom_indicator_test.go`
+- [x] 1.2 Add subtest "uses Metrics1 for doc_count aggregation" to `TestMetricCustomIndicator_ToAPI` — builds a model with `aggregation = "doc_count"` and `Field: types.StringNull()`, calls `metricCustomIndicatorToAPI()`, asserts the result decodes as `GoodMetrics1`/`TotalMetrics1` with correct name, aggregation, and filter
+- [x] 1.3 Add subtest "maps doc_count metrics without field" to `TestMetricCustomIndicator_PopulateFromAPI` — constructs `Metrics1` API items using the helpers from 1.1, calls `populateFromMetricCustomIndicator`, asserts `Field.IsNull()` for both good and total
 
 ## 2. Fix
 
