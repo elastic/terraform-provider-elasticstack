@@ -5,4 +5,4 @@
 
 ## 2. Update spec
 
-- [ ] 2.1 Sync the delta spec (`openspec/changes/release-pr-no-changelog-label/specs/ci-release-pr-preparation/spec.md`) into the canonical spec at `openspec/specs/ci-release-pr-preparation/spec.md`
+- [x] 2.1 Sync the delta spec (`openspec/changes/release-pr-no-changelog-label/specs/ci-release-pr-preparation/spec.md`) into the canonical spec at `openspec/specs/ci-release-pr-preparation/spec.md`

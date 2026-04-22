@@ -48,6 +48,19 @@ After applying its deterministic changes, the workflow SHALL create or update a 
 - **WHEN** the workflow is rerun for the same version
 - **THEN** the workflow SHALL update or reuse that release branch and pull request rather than opening a duplicate
 
+### Requirement: Release PR carries the no-changelog label
+The release preparation workflow SHALL apply the `no-changelog` label to the release PR. This label SHALL be present whether the PR is newly created or already exists (reused on a rerun). The `no-changelog` label is assumed to exist in the repository as a pre-condition.
+
+#### Scenario: New PR is created with no-changelog label
+- **WHEN** the workflow creates a new release PR
+- **THEN** the PR SHALL have the `no-changelog` label applied at creation time
+
+#### Scenario: Existing PR is labelled on reuse
+- **GIVEN** a release PR for the target version already exists
+- **WHEN** the workflow reruns and reuses that existing PR
+- **THEN** the workflow SHALL apply the `no-changelog` label to the existing PR
+- **AND** the label application SHALL be idempotent (re-applying an already-present label SHALL NOT cause an error)
+
 ### Requirement: Release PR triggers changelog regeneration for the release section
 The release preparation workflow SHALL create the release branch and pull request in a way that allows `ci-changelog-generation` to recognize the branch as a release-preparation PR and regenerate the concrete `## [x.y.z] - <date>` changelog section on that branch.
 
