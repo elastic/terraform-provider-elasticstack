@@ -392,3 +392,30 @@ func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
 		},
 	})
 }
+
+func TestAccFleetCustomIntegration_Timeouts(t *testing.T) {
+	pkgName := "testcustomtimeoutpkg"
+	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkCustomIntegrationDestroy,
+		Steps: []resource.TestStep{
+			// Verify that the resource operates normally when an explicit timeouts block
+			// is configured. The timeout is set generously (20m) to confirm the block is
+			// accepted and wired through to the context deadline without affecting behaviour.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("timeouts"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "package_version"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+		},
+	})
+}
