@@ -56,12 +56,28 @@ The generated response type (`PostFleetEpmPackagesResponse`) has only `Body []by
 
 **Rationale**: The Fleet API accepts both. Extension-based detection is simple and sufficient; users building packages with `elastic-package` always produce standard zip files.
 
+### 6. AlreadyInstalled signal and zip manifest fallback
+
+**Decision**: When the Fleet API returns a non-2xx response containing "already installed" (which happens on Kibana 8.0.x when re-uploading a package that is already installed), `UploadPackage` returns `AlreadyInstalled: true` plus the package name and version parsed from the zip manifest. The caller (Update handler) then uninstalls and retries the upload.
+
+**Rationale**: Kibana 8.0.x rejects re-uploads of the same package when it is already installed. Detecting this via the response body and returning a structured signal (rather than a hard error) lets the Update handler implement the "uninstall-and-retry" pattern without treating the response as an unrecoverable failure.
+
+**Zip manifest parsing**: The name and version are parsed from `manifest.yml` inside the zip (the file at `<pkgName>-<pkgVersion>/manifest.yml`). This is used both as a fallback for the `AlreadyInstalled` case (where the normal `GetPackages` path cannot be used) and as a fallback when the upload response body does not contain name/version fields (older Kibana versions).
+
+**Response body parsing across versions**: The upload response field for name and version changed across Kibana versions:
+- `_meta.name` / `_meta.version` — Kibana 8.8+
+- `items[0].name` / `items[0].version` — Kibana 8.0–8.7
+- `response[0].name` / `response[0].version` — Kibana 7.x
+
+The implementation tries all three paths in order. If none yields a package name, it falls back to parsing the zip manifest directly. If the manifest parse also fails, an error is returned. If a name was obtained from the response but no version was found, only the version is filled from the manifest.
+
 ## Risks / Trade-offs
 
 - **Upload is not idempotent for different versions**: Uploading a package with the same name but a different version installs both versions. The resource tracks only one version; the previous version must be explicitly uninstalled during update. The update path handles this.
 - **GetPackages may be slow for large registries**: The post-upload GetPackages call lists all packages. This is a single API call and is consistent with existing patterns, so acceptable.
 - **Plan modifier reads the file on every plan**: For large package files this adds latency at plan time. Users who want to avoid this can pin the file to a path where content changes are intentional.
 - **Package name changes mid-lifecycle**: If the embedded package name changes between versions, the update path uninstalls the old name. If the old package is referenced by an integration policy, the uninstall will fail in Fleet. Users must remove policy references first — this mirrors the behavior of `skip_destroy = false` on the integration resource.
+- **`space_id` acceptance test**: The `space_id` feature is implemented but is not covered by the basic acceptance tests because it requires a pre-existing Kibana space. The existing `elasticstack_kibana_space` resource can be used to create one in practice.
 
 ## Migration Plan
 
