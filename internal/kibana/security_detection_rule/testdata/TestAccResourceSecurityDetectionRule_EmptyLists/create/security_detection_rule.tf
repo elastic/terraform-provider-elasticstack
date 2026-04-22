@@ -21,10 +21,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index       = ["logs-*"]
 
   # Explicit empty lists – should remain [] in state, not become null.
-  actions           = []
-  exceptions_list   = []
-  severity_mapping  = []
-  risk_score_mapping = []
+  actions              = []
+  exceptions_list      = []
+  severity_mapping     = []
+  risk_score_mapping   = []
   related_integrations = []
 
   # Non-empty threat with a technique that has an explicit empty subtechnique list.

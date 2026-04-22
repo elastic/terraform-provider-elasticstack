@@ -2747,7 +2747,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 	})
 }
 
-
 // TestAccResourceSecurityDetectionRule_EmptyLists verifies that optional list
 // attributes configured as explicit empty lists ([]) remain empty lists in state
 // after apply/read rather than being converted to null.  Before the fix this
