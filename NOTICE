@@ -11353,10 +11353,10 @@ SOFTWARE.
 --------------------------------------------------------------------------------
 
 Dependency : github.com/ProtonMail/go-crypto
-Version: v1.3.0
+Version: v1.4.1
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/github.com/!proton!mail/go-crypto@v1.3.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/!proton!mail/go-crypto@v1.4.1/LICENSE:
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -17477,10 +17477,10 @@ Contents of probable licence file $GOMODCACHE/github.com/bluesky-social/indigo@v
 --------------------------------------------------------------------------------
 
 Dependency : github.com/bmatcuk/doublestar/v4
-Version: v4.9.1
+Version: v4.10.0
 Licence type (autodetected): MIT
 
-Contents of probable licence file $GOMODCACHE/github.com/bmatcuk/doublestar/v4@v4.9.1/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/bmatcuk/doublestar/v4@v4.10.0/LICENSE:
 
 The MIT License (MIT)
 
@@ -22562,10 +22562,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : github.com/go-git/go-billy/v5
-Version: v5.7.0
+Version: v5.8.0
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/go-git/go-billy/v5@v5.7.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/go-git/go-billy/v5@v5.8.0/LICENSE:
 
                                  Apache License
                            Version 2.0, January 2004
@@ -22773,10 +22773,10 @@ Contents of probable licence file $GOMODCACHE/github.com/go-git/go-billy/v5@v5.7
 --------------------------------------------------------------------------------
 
 Dependency : github.com/go-git/go-git/v5
-Version: v5.16.5
+Version: v5.18.0
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/go-git/go-git/v5@v5.16.5/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/go-git/go-git/v5@v5.18.0/LICENSE:
 
                                  Apache License
                            Version 2.0, January 2004
@@ -33937,10 +33937,10 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/hc-install
-Version: v0.9.3
+Version: v0.9.4
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/hc-install@v0.9.3/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/hc-install@v0.9.4/LICENSE:
 
 Copyright IBM Corp. 2020, 2026
 
@@ -35436,12 +35436,12 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-json
-Version: v0.27.2
+Version: v0.27.3-0.20260213134036-298b8f6b673a
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-json@v0.27.2/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-json@v0.27.3-0.20260213134036-298b8f6b673a/LICENSE:
 
-Copyright (c) 2019 HashiCorp, Inc.
+Copyright IBM Corp. 2019, 2026
 
 Mozilla Public License Version 2.0
 ==================================
@@ -35821,12 +35821,12 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-docs
-Version: v0.24.0
+Version: v0.25.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-docs@v0.24.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-docs@v0.25.0/LICENSE:
 
-Copyright (c) 2020 HashiCorp, Inc.
+Copyright IBM Corp. 2020, 2026
 
 Mozilla Public License Version 2.0
 ==================================
@@ -46439,14 +46439,14 @@ SOFTWARE.
 --------------------------------------------------------------------------------
 
 Dependency : github.com/zclconf/go-cty
-Version: v1.17.0
+Version: v1.18.1
 Licence type (autodetected): MIT
 
-Contents of probable licence file $GOMODCACHE/github.com/zclconf/go-cty@v1.17.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/zclconf/go-cty@v1.18.1/LICENSE:
 
 MIT License
 
-Copyright (c) 2017-2018 Martin Atkins
+Copyright (c) 2017-2026 Martin Atkins and various other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
