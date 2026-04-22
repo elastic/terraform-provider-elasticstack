@@ -28,6 +28,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// TestAccResourceDashboardMetricChartMinimalConfig is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/2355.
+// It applies a metric_chart_config that deliberately omits all optional attributes
+// that have Kibana-side defaults (ignore_global_filters, sampling, query.language,
+// and per-metric config_json fields: empty_as_null, color, format.decimals, format.compact).
+// If the issue is not fixed the first apply step fails with
+// "Provider produced inconsistent result after apply".
+// The second plan-only step verifies no drift remains after a clean apply.
+func TestAccResourceDashboardMetricChartMinimalConfig(t *testing.T) {
+	dashboardTitle := "Test Dashboard Metric Chart Minimal " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
+				),
+			},
+			{
+				// Same config, plan only — must show no changes after a clean apply.
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardMetricChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Metric Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
