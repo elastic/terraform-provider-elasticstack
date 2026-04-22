@@ -6,9 +6,9 @@
 
 ## 2. Fix
 
-- [ ] 2.1 In `schema.go` `metricCustomIndicatorSchema()`, change `field` from `Required: true` to `Optional: true` (with description) for both `good.metrics` and `total.metrics`
-- [ ] 2.2 In `models_metric_custom_indicator.go`, update `buildGoodMetricItem` to dispatch on `aggregation = "doc_count"`: use `SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1` (no field) for doc_count, keep existing `Metrics0` path for all other aggregations
-- [ ] 2.3 In `models_metric_custom_indicator.go`, apply the same dispatch to `buildTotalMetricItem` using `SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1`
+- [x] 2.1 In `schema.go` `metricCustomIndicatorSchema()`, change `field` from `Required: true` to `Optional: true` (with description) for both `good.metrics` and `total.metrics`
+- [x] 2.2 In `models_metric_custom_indicator.go`, update `buildGoodMetricItem` to dispatch on `aggregation = "doc_count"`: use `SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1` (no field) for doc_count, keep existing `Metrics0` path for all other aggregations
+- [x] 2.3 In `models_metric_custom_indicator.go`, apply the same dispatch to `buildTotalMetricItem` using `SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1`
 
 ## 3. Acceptance Test
 

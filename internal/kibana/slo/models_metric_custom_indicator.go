@@ -48,28 +48,50 @@ type tfMetricCustomMetric struct {
 
 func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item, error) {
 	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item
-	m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0{
-		Name:        metric.Name.ValueString(),
-		Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0Aggregation(metric.Aggregation.ValueString()),
-		Field:       metric.Field.ValueString(),
-		Filter:      stringPtr(metric.Filter),
-	}
-	if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(m0); err != nil {
-		return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
+	if metric.Aggregation.ValueString() == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1AggregationDocCount) {
+		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1Aggregation(metric.Aggregation.ValueString()),
+			Filter:      stringPtr(metric.Filter),
+		}
+		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(m1); err != nil {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
+		}
+	} else {
+		m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0Aggregation(metric.Aggregation.ValueString()),
+			Field:       metric.Field.ValueString(),
+			Filter:      stringPtr(metric.Filter),
+		}
+		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(m0); err != nil {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
+		}
 	}
 	return item, nil
 }
 
 func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item, error) {
 	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item
-	m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0{
-		Name:        metric.Name.ValueString(),
-		Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0Aggregation(metric.Aggregation.ValueString()),
-		Field:       metric.Field.ValueString(),
-		Filter:      stringPtr(metric.Filter),
-	}
-	if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(m0); err != nil {
-		return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
+	if metric.Aggregation.ValueString() == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1AggregationDocCount) {
+		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1Aggregation(metric.Aggregation.ValueString()),
+			Filter:      stringPtr(metric.Filter),
+		}
+		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(m1); err != nil {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
+		}
+	} else {
+		m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0{
+			Name:        metric.Name.ValueString(),
+			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0Aggregation(metric.Aggregation.ValueString()),
+			Field:       metric.Field.ValueString(),
+			Filter:      stringPtr(metric.Filter),
+		}
+		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(m0); err != nil {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
+		}
 	}
 	return item, nil
 }
