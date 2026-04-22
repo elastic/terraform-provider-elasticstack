@@ -15,7 +15,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   prep-release:
@@ -149,13 +148,6 @@ jobs:
             echo "No open PR found for branch ${BRANCH}"
             echo "EXISTS=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Label existing release PR
-        if: steps.pr-check.outputs.EXISTS == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr edit "${{ steps.pr-check.outputs.PR_URL }}" --add-label no-changelog
 
       - name: Create release PR
         if: steps.pr-check.outputs.EXISTS == 'false'
