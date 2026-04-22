@@ -82,7 +82,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	alignDashboardStateFromPlanPanels(ctx, planPanels, readModel.Panels)
+	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)

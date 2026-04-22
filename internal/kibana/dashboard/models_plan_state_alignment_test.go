@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_alignDashboardStateFromPlanPanels_preservesCommonPanelFields(t *testing.T) {
+func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 	planPanels := []panelModel{
 		{
 			MosaicConfig: &mosaicConfigModel{

@@ -76,7 +76,7 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 	case "mosaic":
 		populateMosaicAttributes(attrs)
 	case "waffle":
-		populateWaffleAttributes(attrs)
+		populatePieChartAttributes(attrs)
 	case "xy":
 		populateXYChartAttributes(attrs)
 	case "datatable":
@@ -88,11 +88,15 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 	return attrs
 }
 
-func populateLegacyMetricAttributes(attrs map[string]any) {
-	// Ensure filters: [] when absent (API may omit when empty)
+func ensureLensFiltersDefault(attrs map[string]any) {
 	if _, exists := attrs["filters"]; !exists {
 		attrs["filters"] = []any{}
 	}
+}
+
+func populateLegacyMetricAttributes(attrs map[string]any) {
+	// Ensure filters: [] when absent (API may omit when empty)
+	ensureLensFiltersDefault(attrs)
 
 	// Apply metric defaults (show_array_values, empty_as_null, format)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
@@ -101,9 +105,7 @@ func populateLegacyMetricAttributes(attrs map[string]any) {
 }
 
 func populateTagcloudAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateTagcloudMetricDefaults(metric)
 	}
@@ -113,18 +115,14 @@ func populateTagcloudAttributes(attrs map[string]any) {
 }
 
 func populateGaugeAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateGaugeMetricDefaults(metric)
 	}
 }
 
 func populateMetricChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
@@ -135,9 +133,7 @@ func populateMetricChartAttributes(attrs map[string]any) {
 }
 
 func populatePieChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
@@ -154,34 +150,22 @@ func populatePieChartAttributes(attrs map[string]any) {
 	}
 }
 
-// populateWaffleAttributes mirrors pie chart defaulting for metrics and group_by (see getWaffleSchema
-// and models_waffle_panel: same populatePieChartMetricDefaults / populateLensGroupByDefaults).
-func populateWaffleAttributes(attrs map[string]any) {
-	populatePieChartAttributes(attrs)
-}
-
 func populateRegionMapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateRegionMapMetricDefaults(metric)
 	}
 }
 
 func populateHeatmapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = populateTagcloudMetricDefaults(metric)
 	}
 }
 
 func populateTreemapAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	if groupBy, ok := attrs["group_by"].([]any); ok {
 		groupByMaps := make([]map[string]any, 0, len(groupBy))
 		for _, g := range groupBy {
@@ -234,9 +218,7 @@ func populateMosaicAttributes(attrs map[string]any) {
 }
 
 func populateXYChartAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	// XY chart has layers: each layer can be a data layer (has "y" array) or reference line
 	if layers, ok := attrs["layers"].([]any); ok {
 		for _, layer := range layers {
@@ -257,9 +239,7 @@ func populateXYChartAttributes(attrs map[string]any) {
 }
 
 func populateDatatableAttributes(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
+	ensureLensFiltersDefault(attrs)
 	// Datatable metrics: each item is a metric config (operation, format, etc.)
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {

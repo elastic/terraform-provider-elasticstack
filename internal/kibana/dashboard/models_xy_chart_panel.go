@@ -1302,8 +1302,7 @@ func alignXYChartStateFromPlan(plan, state *xyChartConfigModel) {
 		return
 	}
 
-	preserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	preserveKnownStringIfStateBlank(plan.Description, &state.Description)
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 
 	alignXYAxisStateFromPlan(plan.Axis, state.Axis)
 	alignXYDecorationsStateFromPlan(plan.Decorations, state.Decorations)

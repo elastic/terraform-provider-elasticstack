@@ -28,15 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// alignDashboardStateFromPlanPanels preserves practitioner intent for panel configs
-// when Kibana injects defaults on read or omits configured fields from responses.
-// Per-panel alignment is applied inside mapPanelFromAPI; this handles XY-specific
-// state that requires the full panel slice for cross-panel context.
-func alignDashboardStateFromPlanPanels(ctx context.Context, planPanels, statePanels []panelModel) {
-	n := min(len(statePanels), len(planPanels))
-	for i := range n {
-		alignPanelStateFromPlan(ctx, &planPanels[i], &statePanels[i])
-	}
+// alignDashboardStateFromPlanPanels preserves practitioner intent that depends on
+// the full top-level panel slice. Common per-panel alignment already happens
+// inside mapPanelFromAPI.
+func alignDashboardStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 }
 
@@ -50,7 +45,7 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
 	alignGaugeStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
 	alignHeatmapStateFromPlan(ctx, plan.HeatmapConfig, state.HeatmapConfig)
 	alignLegacyMetricStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
-	alignMetricStateFromPlan(ctx, plan.MetricChartConfig, state.MetricChartConfig)
+	alignMetricStateFromPlan(plan.MetricChartConfig, state.MetricChartConfig)
 	alignMosaicStateFromPlan(plan.MosaicConfig, state.MosaicConfig)
 	alignPieStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
 	alignRegionMapStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
@@ -106,7 +101,7 @@ func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *legacyMetr
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 }
 
-func alignMetricStateFromPlan(_ context.Context, plan, state *metricChartConfigModel) {
+func alignMetricStateFromPlan(plan, state *metricChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}

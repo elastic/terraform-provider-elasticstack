@@ -47,10 +47,10 @@ func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.D
 // buildFiltersForAPI converts the model filter slice into the kbapi type, appending errors to diags.
 // The returned slice is always non-nil (empty API payload is []kbapi.LensPanelFilters_Item{}).
 func buildFiltersForAPI(filters []chartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
-	result := []kbapi.LensPanelFilters_Item{}
 	if len(filters) == 0 {
-		return result
+		return []kbapi.LensPanelFilters_Item{}
 	}
+
 	items := make([]kbapi.LensPanelFilters_Item, 0, len(filters))
 	for _, f := range filters {
 		var item kbapi.LensPanelFilters_Item
@@ -60,10 +60,7 @@ func buildFiltersForAPI(filters []chartFilterJSONModel, diags *diag.Diagnostics)
 			items = append(items, item)
 		}
 	}
-	if len(items) > 0 {
-		return items
-	}
-	return result
+	return items
 }
 
 // marshalToNormalized stores the already-marshaled bytes as a jsontypes.Normalized value,
