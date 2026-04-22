@@ -198,6 +198,23 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
+			// Step 4: Verify skip_data_stream_rollover=true uploads successfully.
+			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_rollover"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPathV101),
+				},
+				PreConfig: func() {
+					time.Sleep(15 * time.Second)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
 		},
 	})
 }
