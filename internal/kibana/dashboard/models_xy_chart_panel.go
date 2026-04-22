@@ -1315,7 +1315,12 @@ func alignXYAxisStateFromPlan(plan, state *xyAxisModel) {
 		return
 	}
 
-	alignXYXAxisStateFromPlan(plan.X, state.X)
+	// When the user omits axis.x entirely, suppress any server-filled defaults.
+	if plan.X == nil {
+		state.X = nil
+	} else {
+		alignXYXAxisStateFromPlan(plan.X, state.X)
+	}
 	alignXYYAxisStateFromPlan(plan.Y, state.Y)
 
 	if plan.Y2 != nil && state.Y2 == nil {
@@ -1338,6 +1343,10 @@ func alignXYXAxisStateFromPlan(plan, state *xyAxisConfigModel) {
 	preserveKnownBoolIfStateNull(plan.Ticks, &state.Ticks)
 	preserveKnownStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
 	preserveKnownStringIfStateNull(plan.Scale, &state.Scale)
+	// When axis.title is omitted from config, suppress any server-filled defaults.
+	if plan.Title == nil {
+		state.Title = nil
+	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
 	preserveNullJSONIfStateMatches(plan.DomainJSON, &state.DomainJSON, `{"type":"fit","rounding":false}`)
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
@@ -1355,6 +1364,10 @@ func alignXYYAxisStateFromPlan(plan, state *yAxisConfigModel) {
 	preserveKnownBoolIfStateNull(plan.Ticks, &state.Ticks)
 	preserveKnownStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
 	preserveKnownStringIfStateNull(plan.Scale, &state.Scale)
+	// When axis.title is omitted from config, suppress any server-filled defaults.
+	if plan.Title == nil {
+		state.Title = nil
+	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
@@ -1368,6 +1381,10 @@ func alignXYY2AxisStateFromPlan(plan, state *yAxisConfigModel) {
 	preserveKnownBoolIfStateNull(plan.Ticks, &state.Ticks)
 	preserveKnownStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
 	preserveKnownStringIfStateNull(plan.Scale, &state.Scale)
+	// When axis.title is omitted from config, suppress any server-filled defaults.
+	if plan.Title == nil {
+		state.Title = nil
+	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }

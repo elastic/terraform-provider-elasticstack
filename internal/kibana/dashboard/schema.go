@@ -1479,20 +1479,24 @@ func getXYAxisSchema() map[string]schema.Attribute {
 						"visible": schema.BoolAttribute{
 							MarkdownDescription: "Whether to show the title.",
 							Optional:            true,
+							Computed:            true,
 						},
 					},
 				},
 				"ticks": schema.BoolAttribute{
 					MarkdownDescription: "Whether to show tick marks on the axis.",
 					Optional:            true,
+					Computed:            true,
 				},
 				"grid": schema.BoolAttribute{
 					MarkdownDescription: "Whether to show grid lines for this axis.",
 					Optional:            true,
+					Computed:            true,
 				},
 				"label_orientation": schema.StringAttribute{
 					MarkdownDescription: "Orientation of the axis labels.",
 					Optional:            true,
+					Computed:            true,
 					Validators: []validator.String{
 						stringvalidator.OneOf("horizontal", "vertical", "angled"),
 					},
@@ -1508,6 +1512,7 @@ func getXYAxisSchema() map[string]schema.Attribute {
 					MarkdownDescription: "Axis domain configuration as JSON. Can be 'fit' mode or 'custom' mode with min, max, and optional fit flags.",
 					CustomType:          jsontypes.NormalizedType{},
 					Optional:            true,
+					Computed:            true,
 				},
 			},
 		},
@@ -1538,6 +1543,7 @@ func getYAxisAttributes() map[string]schema.Attribute {
 				"visible": schema.BoolAttribute{
 					MarkdownDescription: "Whether to show the title.",
 					Optional:            true,
+					Computed:            true,
 				},
 			},
 		},
@@ -1559,6 +1565,7 @@ func getYAxisAttributes() map[string]schema.Attribute {
 		"scale": schema.StringAttribute{
 			MarkdownDescription: "Y-axis scale type for data transformation.",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("time", "linear", "log", "sqrt"),
 			},
@@ -1607,6 +1614,7 @@ func getXYDecorationsSchema() map[string]schema.Attribute {
 		"fill_opacity": schema.Float64Attribute{
 			MarkdownDescription: "Area chart fill opacity (0-1 typical, max 2 for legacy).",
 			Optional:            true,
+			Computed:            true,
 		},
 	}
 }
@@ -1641,6 +1649,7 @@ func getXYLegendSchema() map[string]schema.Attribute {
 		"visibility": schema.StringAttribute{
 			MarkdownDescription: "Legend visibility (auto, visible, hidden).",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf(dashboardValueAuto, "visible", "hidden"),
 			},
@@ -1657,10 +1666,12 @@ func getXYLegendSchema() map[string]schema.Attribute {
 		"inside": schema.BoolAttribute{
 			MarkdownDescription: "Position legend inside the chart. When true, use 'columns' and 'alignment'. When false or omitted, use 'position' and 'size'.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"position": schema.StringAttribute{
 			MarkdownDescription: "Legend position when positioned outside the chart. Valid when 'inside' is false or omitted.",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("top", "bottom", "left", "right"),
 			},
@@ -1693,6 +1704,7 @@ func getFilterSimple() map[string]schema.Attribute {
 		"language": schema.StringAttribute{
 			MarkdownDescription: "Query language (default: 'kql').",
 			Optional:            true,
+			Computed:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("kql", "lucene"),
 			},
@@ -1757,10 +1769,12 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"x_json": schema.StringAttribute{
 			MarkdownDescription: "X-axis configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
@@ -1799,10 +1813,12 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"thresholds": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of reference line thresholds.",
@@ -1986,10 +2002,12 @@ func lensChartBaseAttributes() map[string]schema.Attribute {
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
 			Optional:            true,
+			Computed:            true,
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",

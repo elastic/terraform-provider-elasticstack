@@ -106,6 +106,7 @@ func alignMetricStateFromPlan(plan, state *metricChartConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	preservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {

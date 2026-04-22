@@ -19,7 +19,7 @@ These are the primary **Make variables and conventions** intended for override o
 | `VERSION` | Terraform local install path segment for `make install` |
 | `USE_TLS` | Select TLS vs non-TLS Docker Compose stack |
 | `TEST`, `TESTARGS` | Unit test package scope and extra `go test` arguments |
-| `ACCTEST_PARALLELISM`, `RERUN_FAILS`, `TESTARGS` | Acceptance parallelism, gotestsum rerun policy, and extra test arguments (defaults use `?=`) |
+| `ACCTEST_PARALLELISM`, `RERUN_FAILS`, `RERUN_FAILS_MAX_FAILURES`, `TESTARGS` | Acceptance parallelism, gotestsum rerun policy including the rerun failure cap, and extra test arguments (defaults use `?=`) |
 | `ACCTEST_TIMEOUT`, `ACCTEST_COUNT` | Acceptance timeout and test count (defaults in Makefile; override via `make VAR=value` as for other Make variables) |
 | `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` | Credentials for local stack helpers and `testacc-vs-docker` |
 | `KIBANA_SYSTEM_USERNAME`, `KIBANA_SYSTEM_PASSWORD` | Kibana system user password setup against local Elasticsearch |
@@ -147,13 +147,14 @@ The `test` target SHALL run all repository unit-style test suites. It SHALL run 
 
 ### Requirement: Acceptance tests (REQ-023–REQ-024)
 
-The `testacc` target SHALL enable Terraform acceptance testing for the module tree, using gotestsum with rerun-of-fails behavior and tunable parallelism, timeout, and count via the acceptance-test variables. The `testacc-vs-docker` target SHALL run acceptance tests against a local Docker stack on default localhost ports with the configured Elasticsearch credentials.
+The `testacc` target SHALL enable Terraform acceptance testing for the module tree, using gotestsum with rerun-of-fails behavior, a configurable rerun max-failures cap, and tunable parallelism, timeout, and count via the acceptance-test variables. It SHALL invoke the repository-wide package scope `./...` and pass verbose Go test output through to the underlying test run. The `testacc-vs-docker` target SHALL run acceptance tests against a local Docker stack on default localhost ports with the configured Elasticsearch credentials.
 
 #### Scenario: Acceptance tests with defaults
 
 - GIVEN `make testacc`
 - WHEN the recipe runs
 - THEN `TF_ACC` SHALL be set for acceptance mode and tests SHALL run across `./...` with the Makefile’s timeout and parallelism defaults unless overridden
+- AND gotestsum reruns SHALL honor both the configured rerun count and the configured max-failures cap
 
 ### Requirement: Docker-wrapped acceptance tests (REQ-025–REQ-026)
 
@@ -223,31 +224,14 @@ The `copy-kibana-ca` target SHALL copy the Kibana TLS CA certificate from the ru
 
 ### Requirement: Documentation, workflow, and code generation (REQ-038–REQ-042)
 
-The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. The `workflow-generate` target SHALL regenerate the checked-in GitHub workflow artifacts from the repository-authored workflow sources, and it SHALL run only when explicitly requested. Aggregate targets such as `gen`, `lint`, `check-lint`, and `build` SHALL NOT depend on `workflow-generate`. The `workflow-test` target SHALL run the repository tests that cover workflow source generation. The `hook-test` target SHALL run `node --test .agents/hooks/*.test.mjs`. The `check-workflows` target SHALL verify that generated workflow artifacts are up to date without regenerating them. The `gen` target SHALL run documentation generation and `go generate` for the repository.
+The `docs-generate` target SHALL regenerate Terraform provider website/markdown documentation using **HashiCorp `terraform-plugin-docs`** (`tfplugindocs`) for provider name `terraform-provider-elasticstack`. `docs-generate` SHALL read the Terraform CLI version from the repository root `.terraform-version` file and SHALL pass that exact version to `tfplugindocs` via `--tf-version`, so documentation generation does not depend on whichever Terraform binary happens to be installed locally. The `workflow-generate` target SHALL regenerate the checked-in GitHub workflow artifacts from the repository-authored workflow sources, and it SHALL run only when explicitly requested. Aggregate targets such as `gen`, `lint`, `check-lint`, and `build` SHALL NOT depend on `workflow-generate`. The `workflow-test` target SHALL run the repository tests that cover workflow source generation. The `hook-test` target SHALL run `node --test .agents/hooks/*.test.mjs`. The `check-workflows` target SHALL verify that generated workflow artifacts are up to date without regenerating them. The `gen` target SHALL run documentation generation and `go generate` for the repository.
 
 #### Scenario: Docs generation
 
 - GIVEN `make docs-generate`
 - WHEN it succeeds
 - THEN `tfplugindocs` SHALL have regenerated provider docs to match the current schema
-
-#### Scenario: Manual workflow generation
-
-- GIVEN `make workflow-generate`
-- WHEN it succeeds
-- THEN the checked-in workflow artifacts SHALL be regenerated from the repository-authored workflow sources
-
-#### Scenario: Hook test target
-
-- GIVEN `make hook-test`
-- WHEN the target runs
-- THEN Node's test runner SHALL execute `.agents/hooks/*.test.mjs`
-
-#### Scenario: Workflow drift check without regeneration
-
-- GIVEN generated workflow sources are out of date with their checked-in templates
-- WHEN `make check-workflows` runs
-- THEN it SHALL fail without regenerating workflow artifacts
+- AND the Terraform CLI version used for schema extraction SHALL come from `.terraform-version`
 
 ### Requirement: golangci-lint execution (REQ-041–REQ-043)
 

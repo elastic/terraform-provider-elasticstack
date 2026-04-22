@@ -28,6 +28,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// TestAccResourceDashboardXYChartMinimalConfig is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/2355.
+// It applies an xy_chart_config that deliberately omits all optional attributes
+// that have Kibana-side defaults (e.g. legend.position, axis.y.scale,
+// decorations.fill_opacity, query.language, data_layer.sampling, …).
+// If the issue is not fixed the first apply step fails with
+// "Provider produced inconsistent result after apply".
+// The second plan-only step verifies no drift remains after a clean apply.
+func TestAccResourceDashboardXYChartMinimalConfig(t *testing.T) {
+	dashboardTitle := "Test Dashboard XY Chart Minimal " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
+				),
+			},
+			{
+				// Same config, plan only — must show no changes after a clean apply.
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},` +
 	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},` +
 	`"column":"host.name","format":{"type":"number"}}`

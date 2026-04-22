@@ -203,8 +203,12 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
           cache-dependency-path: go.sum
+      - name: Read pinned Terraform version
+        id: terraform-version
+        run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
       - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
         with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
           terraform_wrapper: false
 
       - name: Lint
@@ -325,7 +329,7 @@ jobs:
 
       - id: setup-fleet
         name: Setup Fleet
-        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1' || matrix.version == '9.0.8'
+        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1' || matrix.version == '9.0.8' || matrix.version == '9.1.9' || matrix.version == '9.2.3' || matrix.version == '9.3.0' || endsWith(matrix.version, '-SNAPSHOT')
         run: |-
           make setup-kibana-fleet
         env:

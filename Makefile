@@ -35,6 +35,7 @@ FLEET_IMAGE := elastic/elastic-agent
 endif
 
 RERUN_FAILS ?= 5
+RERUN_FAILS_MAX_FAILURES ?= 20
 
 export GOBIN = $(shell pwd)/bin
 
@@ -63,7 +64,7 @@ testacc-vs-docker:
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="./..." -- -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests
@@ -133,7 +134,8 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
+	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
+	go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
