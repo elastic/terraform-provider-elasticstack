@@ -26,5 +26,5 @@ _(none)_
 - `internal/kibana/slo/models_metric_custom_indicator.go` — write-path helpers
 - `internal/kibana/slo/models_metric_custom_indicator_test.go` — unit tests
 - `internal/kibana/slo/acc_test.go` — acceptance test function
-- `internal/kibana/slo/testdata/TestAccResourceSlo_metric_custom_indicator_doc_count/test/test.tf` — new testdata config
+- `internal/kibana/slo/testdata/TestAccResourceSlo_metric_custom_indicator_doc_count/` — new testdata config
 - No API client changes, no schema version bump, no state migration needed (adding optional attribute is backwards-compatible with existing state).
