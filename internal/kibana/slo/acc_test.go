@@ -750,6 +750,36 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 	})
 }
 
+// TestAccResourceSloFloatPrecision verifies that objective fields (target,
+// timeslice_target) round-trip through the provider without precision loss.
+// Prior to the fix in https://github.com/elastic/terraform-provider-elasticstack/issues/2396,
+// the generated client used float32 for these fields. Values like 0.999 are not
+// exactly representable in float32, so reading them back produced different bits
+// (e.g. float64(float32(0.999)) = 0.9990000128746033), causing a "provider
+// produced inconsistent result after apply" error.
+func TestAccResourceSloFloatPrecision(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceSloDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {

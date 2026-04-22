@@ -50,7 +50,7 @@ func (m tfModel) apmLatencyIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRespo
 			Filter          *string `json:"filter,omitempty"`
 			Index           string  `json:"index"`
 			Service         string  `json:"service"`
-			Threshold       float32 `json:"threshold"`
+			Threshold       float64 `json:"threshold"`
 			TransactionName string  `json:"transactionName"`
 			TransactionType string  `json:"transactionType"`
 		}{
@@ -60,7 +60,7 @@ func (m tfModel) apmLatencyIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRespo
 			TransactionName: ind.TransactionName.ValueString(),
 			Filter:          stringPtr(ind.Filter),
 			Index:           ind.Index.ValueString(),
-			Threshold:       float32(ind.Threshold.ValueInt64()),
+			Threshold:       float64(ind.Threshold.ValueInt64()),
 		},
 	}
 

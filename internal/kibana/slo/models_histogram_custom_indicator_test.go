@@ -100,8 +100,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("maps ranges and optional pointers", func(t *testing.T) {
 		dvID := "dv-1"
 		goodFilter := "status:200"
-		goodFrom := float32(0.0)
-		totalTo := float32(10.0)
+		goodFrom := float64(0.0)
+		totalTo := float64(10.0)
 
 		api := kbapi.SLOsIndicatorPropertiesHistogram{
 			Params: struct {
@@ -111,8 +111,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 					Field       string                                                      `json:"field"`
 					Filter      *string                                                     `json:"filter,omitempty"`
-					From        *float32                                                    `json:"from,omitempty"`
-					To          *float32                                                    `json:"to,omitempty"`
+					From        *float64                                                    `json:"from,omitempty"`
+					To          *float64                                                    `json:"to,omitempty"`
 				} `json:"good"`
 				Index          string `json:"index"`
 				TimestampField string `json:"timestampField"`
@@ -120,8 +120,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 					Field       string                                                       `json:"field"`
 					Filter      *string                                                      `json:"filter,omitempty"`
-					From        *float32                                                     `json:"from,omitempty"`
-					To          *float32                                                     `json:"to,omitempty"`
+					From        *float64                                                     `json:"from,omitempty"`
+					To          *float64                                                     `json:"to,omitempty"`
 				} `json:"total"`
 			}{
 				Index:          "logs-*",
@@ -132,8 +132,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 					Field       string                                                      `json:"field"`
 					Filter      *string                                                     `json:"filter,omitempty"`
-					From        *float32                                                    `json:"from,omitempty"`
-					To          *float32                                                    `json:"to,omitempty"`
+					From        *float64                                                    `json:"from,omitempty"`
+					To          *float64                                                    `json:"to,omitempty"`
 				}{
 					Aggregation: "sum",
 					Field:       "latency",
@@ -145,8 +145,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 					Field       string                                                       `json:"field"`
 					Filter      *string                                                      `json:"filter,omitempty"`
-					From        *float32                                                     `json:"from,omitempty"`
-					To          *float32                                                     `json:"to,omitempty"`
+					From        *float64                                                     `json:"from,omitempty"`
+					To          *float64                                                     `json:"to,omitempty"`
 				}{
 					Aggregation: "sum",
 					Field:       "latency",
@@ -182,8 +182,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 					Field       string                                                      `json:"field"`
 					Filter      *string                                                     `json:"filter,omitempty"`
-					From        *float32                                                    `json:"from,omitempty"`
-					To          *float32                                                    `json:"to,omitempty"`
+					From        *float64                                                    `json:"from,omitempty"`
+					To          *float64                                                    `json:"to,omitempty"`
 				} `json:"good"`
 				Index          string `json:"index"`
 				TimestampField string `json:"timestampField"`
@@ -191,8 +191,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 					Field       string                                                       `json:"field"`
 					Filter      *string                                                      `json:"filter,omitempty"`
-					From        *float32                                                     `json:"from,omitempty"`
-					To          *float32                                                     `json:"to,omitempty"`
+					From        *float64                                                     `json:"from,omitempty"`
+					To          *float64                                                     `json:"to,omitempty"`
 				} `json:"total"`
 			}{
 				Index:          "logs-*",
@@ -203,8 +203,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 					Field       string                                                      `json:"field"`
 					Filter      *string                                                     `json:"filter,omitempty"`
-					From        *float32                                                    `json:"from,omitempty"`
-					To          *float32                                                    `json:"to,omitempty"`
+					From        *float64                                                    `json:"from,omitempty"`
+					To          *float64                                                    `json:"to,omitempty"`
 				}{
 					Aggregation: "sum",
 					Field:       "latency",
@@ -216,8 +216,8 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 					Field       string                                                       `json:"field"`
 					Filter      *string                                                      `json:"filter,omitempty"`
-					From        *float32                                                     `json:"from,omitempty"`
-					To          *float32                                                     `json:"to,omitempty"`
+					From        *float64                                                     `json:"from,omitempty"`
+					To          *float64                                                     `json:"to,omitempty"`
 				}{
 					Aggregation: "sum",
 					Field:       "latency",

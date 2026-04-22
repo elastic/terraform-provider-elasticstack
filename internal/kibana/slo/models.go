@@ -19,7 +19,6 @@ package slo
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -100,10 +99,10 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	}
 
 	obj := kbapi.SLOsObjective{
-		Target: float32(m.Objective[0].Target.ValueFloat64()),
+		Target: m.Objective[0].Target.ValueFloat64(),
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceTarget) {
-		v := float32(m.Objective[0].TimesliceTarget.ValueFloat64())
+		v := m.Objective[0].TimesliceTarget.ValueFloat64()
 		obj.TimesliceTarget = &v
 	}
 	if typeutils.IsKnown(m.Objective[0].TimesliceWindow) {
@@ -225,10 +224,10 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	}}
 
 	obj := tfObjective{
-		Target: types.Float64Value(float32ToFloat64(apiModel.Objective.Target)),
+		Target: types.Float64Value(apiModel.Objective.Target),
 	}
 	if apiModel.Objective.TimesliceTarget != nil {
-		obj.TimesliceTarget = types.Float64Value(float32ToFloat64(*apiModel.Objective.TimesliceTarget))
+		obj.TimesliceTarget = types.Float64Value(*apiModel.Objective.TimesliceTarget)
 	} else {
 		obj.TimesliceTarget = types.Float64Null()
 	}
@@ -356,19 +355,6 @@ func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
 		return nil
 	}
 	return &settings
-}
-
-// float32ToFloat64 converts a float32 to float64 via its canonical shortest
-// decimal representation. This avoids false precision: a direct float64(f32)
-// cast adds spurious low-order bits (e.g. float64(float32(0.999)) produces
-// 0.9990000128746033, not 0.999). By formatting as the shortest float32
-// decimal and re-parsing as float64 we get the value Terraform would store
-// for the user-written literal (e.g. "0.999" → 0.99899999999999999911, which
-// is the same IEEE 754 double that strconv.ParseFloat("0.999", 64) returns).
-func float32ToFloat64(v float32) float64 {
-	s := strconv.FormatFloat(float64(v), 'f', -1, 32)
-	f, _ := strconv.ParseFloat(s, 64)
-	return f
 }
 
 func stringPtr(v types.String) *string {

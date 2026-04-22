@@ -88,7 +88,7 @@ func TestApmLatencyIndicator_PopulateFromAPI(t *testing.T) {
 				Filter          *string `json:"filter,omitempty"`
 				Index           string  `json:"index"`
 				Service         string  `json:"service"`
-				Threshold       float32 `json:"threshold"`
+				Threshold       float64 `json:"threshold"`
 				TransactionName string  `json:"transactionName"`
 				TransactionType string  `json:"transactionType"`
 			}{
@@ -121,7 +121,7 @@ func TestApmLatencyIndicator_PopulateFromAPI(t *testing.T) {
 				Filter          *string `json:"filter,omitempty"`
 				Index           string  `json:"index"`
 				Service         string  `json:"service"`
-				Threshold       float32 `json:"threshold"`
+				Threshold       float64 `json:"threshold"`
 				TransactionName string  `json:"transactionName"`
 				TransactionType string  `json:"transactionType"`
 			}{

@@ -47,7 +47,7 @@ func buildBasicMetricItem(t *testing.T, name, agg, field string, filter *string)
 }
 
 // buildPercentileItem builds a timeslice metric item containing a percentile metric.
-func buildPercentileItem(t *testing.T, name, agg, field string, percentile float32, filter *string) kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item {
+func buildPercentileItem(t *testing.T, name, agg, field string, percentile float64, filter *string) kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item {
 	t.Helper()
 	var item kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item
 	pm := kbapi.SLOsTimesliceMetricPercentileMetric{
@@ -85,7 +85,7 @@ func buildTimesliceAPI(dvID *string, filter *string, items []kbapi.SLOsIndicator
 				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
 				Equation   string                                                                    `json:"equation"`
 				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
-				Threshold  float32                                                                   `json:"threshold"`
+				Threshold  float64                                                                   `json:"threshold"`
 			} `json:"metric"`
 			TimestampField string `json:"timestampField"`
 		}{
@@ -97,7 +97,7 @@ func buildTimesliceAPI(dvID *string, filter *string, items []kbapi.SLOsIndicator
 				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
 				Equation   string                                                                    `json:"equation"`
 				Metrics    []kbapi.SLOsIndicatorPropertiesTimesliceMetric_Params_Metric_Metrics_Item `json:"metrics"`
-				Threshold  float32                                                                   `json:"threshold"`
+				Threshold  float64                                                                   `json:"threshold"`
 			}{
 				Equation:   "a",
 				Comparator: "GT",

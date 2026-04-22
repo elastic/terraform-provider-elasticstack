@@ -607,6 +607,7 @@ var transformers = []TransformFunc{
 	fixSyntheticsMonitorModels,
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
+	fixSloFloatFormats,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -1451,6 +1452,36 @@ func fixAlertingRuleBody(schema *Schema) {
 	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body", "requestBody.content.application/json.schema.anyOf.0")
 	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Generic", "requestBody.content.application/json.schema.anyOf.1")
 	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Body_Union", "requestBody.content.application/json.schema")
+}
+
+// fixSloFloatFormats adds format: double to all floating-point fields in SLO
+// schemas that the Terraform provider surfaces as Float64 attributes. Without
+// an explicit format the Kibana spec uses "type: number" which oapi-codegen
+// maps to float32, causing silent precision loss when users write values such
+// as 0.999 (see https://github.com/elastic/terraform-provider-elasticstack/issues/2396).
+// format: double instructs oapi-codegen to emit float64 instead, preserving
+// full IEEE-754 double precision throughout the read/write cycle.
+func fixSloFloatFormats(schema *Schema) {
+	// Objective target and timeslice target (the fields reported in issue #2396)
+	schema.Components.Set("schemas.SLOs_objective.properties.target.format", "double")
+	schema.Components.Set("schemas.SLOs_objective.properties.timesliceTarget.format", "double")
+
+	// Histogram range indicator good/total from & to
+	const histGoodFrom = "schemas.SLOs_indicator_properties_histogram.properties.params.properties.good.properties.from.format"
+	const histGoodTo = "schemas.SLOs_indicator_properties_histogram.properties.params.properties.good.properties.to.format"
+	const histTotalFrom = "schemas.SLOs_indicator_properties_histogram.properties.params.properties.total.properties.from.format"
+	const histTotalTo = "schemas.SLOs_indicator_properties_histogram.properties.params.properties.total.properties.to.format"
+	schema.Components.Set(histGoodFrom, "double")
+	schema.Components.Set(histGoodTo, "double")
+	schema.Components.Set(histTotalFrom, "double")
+	schema.Components.Set(histTotalTo, "double")
+
+	// APM latency threshold (milliseconds)
+	schema.Components.Set("schemas.SLOs_indicator_properties_apm_latency.properties.params.properties.threshold.format", "double")
+
+	// Timeslice metric threshold and percentile
+	schema.Components.Set("schemas.SLOs_indicator_properties_timeslice_metric.properties.params.properties.metric.properties.threshold.format", "double")
+	schema.Components.Set("schemas.SLOs_timeslice_metric_percentile_metric.properties.percentile.format", "double")
 }
 
 func fixAlertingRuleParams(schema *Schema) {

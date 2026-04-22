@@ -40,24 +40,6 @@ type tfHistogramRange struct {
 	To          types.Float64 `tfsdk:"to"`
 }
 
-// float64PtrToFloat32Ptr converts a *float64 to *float32, returning nil when the input is nil.
-func float64PtrToFloat32Ptr(v *float64) *float32 {
-	if v == nil {
-		return nil
-	}
-	f := float32(*v)
-	return &f
-}
-
-// float32PtrToFloat64Ptr converts a *float32 to *float64, returning nil when the input is nil.
-func float32PtrToFloat64Ptr(v *float32) *float64 {
-	if v == nil {
-		return nil
-	}
-	f := float64(*v)
-	return &f
-}
-
 func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(m.HistogramCustomIndicator) != 1 {
@@ -79,8 +61,8 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 				Field       string                                                      `json:"field"`
 				Filter      *string                                                     `json:"filter,omitempty"`
-				From        *float32                                                    `json:"from,omitempty"`
-				To          *float32                                                    `json:"to,omitempty"`
+				From        *float64                                                    `json:"from,omitempty"`
+				To          *float64                                                    `json:"to,omitempty"`
 			} `json:"good"`
 			Index          string `json:"index"`
 			TimestampField string `json:"timestampField"`
@@ -88,8 +70,8 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 				Field       string                                                       `json:"field"`
 				Filter      *string                                                      `json:"filter,omitempty"`
-				From        *float32                                                     `json:"from,omitempty"`
-				To          *float32                                                     `json:"to,omitempty"`
+				From        *float64                                                     `json:"from,omitempty"`
+				To          *float64                                                     `json:"to,omitempty"`
 			} `json:"total"`
 		}{
 			Index:          ind.Index.ValueString(),
@@ -100,27 +82,27 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
 				Field       string                                                      `json:"field"`
 				Filter      *string                                                     `json:"filter,omitempty"`
-				From        *float32                                                    `json:"from,omitempty"`
-				To          *float32                                                    `json:"to,omitempty"`
+				From        *float64                                                    `json:"from,omitempty"`
+				To          *float64                                                    `json:"to,omitempty"`
 			}{
 				Field:       ind.Good[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation(ind.Good[0].Aggregation.ValueString()),
 				Filter:      stringPtr(ind.Good[0].Filter),
-				From:        float64PtrToFloat32Ptr(float64Ptr(ind.Good[0].From)),
-				To:          float64PtrToFloat32Ptr(float64Ptr(ind.Good[0].To)),
+				From:        float64Ptr(ind.Good[0].From),
+				To:          float64Ptr(ind.Good[0].To),
 			},
 			Total: struct {
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
 				Field       string                                                       `json:"field"`
 				Filter      *string                                                      `json:"filter,omitempty"`
-				From        *float32                                                     `json:"from,omitempty"`
-				To          *float32                                                     `json:"to,omitempty"`
+				From        *float64                                                     `json:"from,omitempty"`
+				To          *float64                                                     `json:"to,omitempty"`
 			}{
 				Field:       ind.Total[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation(ind.Total[0].Aggregation.ValueString()),
 				Filter:      stringPtr(ind.Total[0].Filter),
-				From:        float64PtrToFloat32Ptr(float64Ptr(ind.Total[0].From)),
-				To:          float64PtrToFloat32Ptr(float64Ptr(ind.Total[0].To)),
+				From:        float64Ptr(ind.Total[0].From),
+				To:          float64Ptr(ind.Total[0].To),
 			},
 		},
 	}
@@ -146,15 +128,15 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 			Field:       types.StringValue(p.Good.Field),
 			Aggregation: types.StringValue(string(p.Good.Aggregation)),
 			Filter:      stringOrNull(p.Good.Filter),
-			From:        float64OrNull(float32PtrToFloat64Ptr(p.Good.From)),
-			To:          float64OrNull(float32PtrToFloat64Ptr(p.Good.To)),
+			From:        float64OrNull(p.Good.From),
+			To:          float64OrNull(p.Good.To),
 		}},
 		Total: []tfHistogramRange{{
 			Field:       types.StringValue(p.Total.Field),
 			Aggregation: types.StringValue(string(p.Total.Aggregation)),
 			Filter:      stringOrNull(p.Total.Filter),
-			From:        float64OrNull(float32PtrToFloat64Ptr(p.Total.From)),
-			To:          float64OrNull(float32PtrToFloat64Ptr(p.Total.To)),
+			From:        float64OrNull(p.Total.From),
+			To:          float64OrNull(p.Total.To),
 		}},
 	}
 	if p.DataViewId != nil {
