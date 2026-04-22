@@ -10,7 +10,7 @@ provider "elasticstack" {
 resource "elasticstack_fleet_custom_integration" "test" {
   package_path = var.package_path
 
-  timeouts {
+  timeouts = {
     create = "20m"
     update = "20m"
   }
