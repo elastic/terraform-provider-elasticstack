@@ -18,7 +18,7 @@ on:
   steps:
     - name: Verify trigger label
       id: verify_label
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -61,7 +61,7 @@ on:
     - name: Remove trigger label
       id: remove_trigger_label
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -126,7 +126,7 @@ on:
     - name: Classify pull request and select active change
       id: classify_and_select
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |

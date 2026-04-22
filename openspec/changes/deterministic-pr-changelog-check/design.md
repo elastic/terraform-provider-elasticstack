@@ -60,7 +60,7 @@ Since there is no agent, the gh-aw framework adds no value. A plain `.yml` file 
 
 - **Authors must write their own changelog section** → Mitigation: clear failure comment with format hint and link to docs; PR template should document the format
 - **`pull_request_target` is a privileged trigger** → Mitigation: no code checkout, no shell execution of PR content; only metadata reads and REST API writes
-- **`unlabeled` event not in trigger list** → If `no-changelog` label is removed, the check won't re-run until next push. Acceptable: removing the label implies the author intends to add a section, which requires a push anyway
+- **`unlabeled` event is in the trigger list** → Removing the `no-changelog` label immediately re-runs the check; no additional push is required. This risk no longer applies.
 - **Parser logic is inlined, not imported** → Unit tests in `lib/*.test.mjs` still cover the shared logic; the inline copy stays in sync because it's verbatim
 
 ## Migration Plan

@@ -31,14 +31,14 @@ jobs:
 
       - name: Resolve release context
         id: resolve_release_context
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           x-script-include: scripts/resolve-release-context.inline.js
 
       - name: Gather merged PRs
         id: gather_merged_prs
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
@@ -51,7 +51,7 @@ jobs:
       - name: Render changelog section
         id: render_changelog
         if: steps.gather_merged_prs.outputs.has_prs == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           MERGED_PRS_PATH: ${{ steps.gather_merged_prs.outputs.merged_prs_path }}
           MODE: ${{ steps.resolve_release_context.outputs.mode }}
@@ -89,7 +89,7 @@ jobs:
         if: >-
           steps.resolve_release_context.outputs.mode == 'release' &&
           steps.commit_release.outputs.ran == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
           TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
@@ -120,7 +120,7 @@ jobs:
         id: lookup_pr
         if: >-
           steps.push_unreleased.outputs.pushed == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
         with:
