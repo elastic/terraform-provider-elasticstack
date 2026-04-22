@@ -402,11 +402,11 @@ Optional:
 Required:
 
 - `aggregation` (String)
-- `field` (String)
 - `name` (String)
 
 Optional:
 
+- `field` (String) Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count.
 - `filter` (String)
 
 
@@ -428,11 +428,11 @@ Optional:
 Required:
 
 - `aggregation` (String)
-- `field` (String)
 - `name` (String)
 
 Optional:
 
+- `field` (String) Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count.
 - `filter` (String)
 
 
