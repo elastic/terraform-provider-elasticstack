@@ -78,11 +78,12 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		var result *fleet.UploadPackageResult
 
 		if spaceIDChanged {
-			// The target space changed. Upload to the new space first, then uninstall
-			// from the old space once the new space is confirmed to have the package.
-			// If Fleet reports the package is already installed in the target space
-			// (e.g. a previous partial update left it there), uninstall from the old
-			// space and retry the upload so the result carries name/version.
+			// The target space changed. Upload to the new space first.
+			// If the package is already installed in the target space (e.g. from a
+			// previous partial update), retry the upload so that the result carries
+			// the resolved name/version. Old-space removal is unconditional once the
+			// target space is confirmed to have the package — it follows both the
+			// fresh-install path and the already-installed retry path.
 			var uploadDiags diag.Diagnostics
 			result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
 			resp.Diagnostics.Append(uploadDiags...)
@@ -91,26 +92,21 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 			}
 
 			if result.AlreadyInstalled {
-				// Package already present in target space; remove from old space first,
-				// then retry so that result.PackageName/PackageVersion are populated.
-				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
+				// Target space already holds the package. Retry so that result carries
+				// resolved name/version; old-space cleanup follows unconditionally below.
 				result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
 				resp.Diagnostics.Append(uploadDiags...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
-			} else {
-				// Upload to new space succeeded; now remove from old space.
-				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
+			}
+
+			// Target space is confirmed to have the package (fresh install or
+			// already-installed). Remove from the old space unconditionally.
+			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
 		} else {
 			// Same space: attempt upload first (spec-mandated ordering). If Fleet rejects
