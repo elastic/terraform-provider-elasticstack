@@ -17,5 +17,5 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `make build` and confirm it compiles cleanly
-- [ ] 4.2 Run unit tests: `go test ./internal/kibana/slo/... -run TestMetricCustomIndicator` and confirm all subtests pass
+- [x] 4.1 Run `make build` and confirm it compiles cleanly
+- [x] 4.2 Run unit tests: `go test ./internal/kibana/slo/... -run TestMetricCustomIndicator` and confirm all subtests pass

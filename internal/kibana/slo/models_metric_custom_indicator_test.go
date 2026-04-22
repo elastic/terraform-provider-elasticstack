@@ -71,7 +71,7 @@ func TestMetricCustomIndicator_ToAPI(t *testing.T) {
 					Name:        types.StringValue("c"),
 					Aggregation: types.StringValue("sum"),
 					Field:       types.StringValue("total"),
-					Filter:      types.StringValue("status:200"),
+					Filter:      types.StringValue(testTimesliceSumFilter),
 				}},
 			}},
 		}}}
@@ -101,12 +101,12 @@ func TestMetricCustomIndicator_ToAPI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "c", totalMetric.Name)
 		require.NotNil(t, totalMetric.Filter)
-		assert.Equal(t, "status:200", *totalMetric.Filter)
+		assert.Equal(t, testTimesliceSumFilter, *totalMetric.Filter)
 		assert.Equal(t, "c", params.Total.Equation)
 	})
 
 	t.Run("uses Metrics1 for doc_count aggregation", func(t *testing.T) {
-		goodFilter := "status:200"
+		goodFilter := testTimesliceSumFilter
 		m := tfModel{MetricCustomIndicator: []tfMetricCustomIndicator{{
 			Index:          types.StringValue("metrics-*"),
 			DataViewID:     types.StringNull(),
@@ -209,7 +209,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 	t.Run("maps equations, metrics and optional pointers", func(t *testing.T) {
 		dvID := "dv-1"
 		overallFilter := "labels.env:prod"
-		totalFilter := "status:200"
+		totalFilter := testTimesliceSumFilter
 
 		api := kbapi.SLOsIndicatorPropertiesCustomMetric{
 			Params: struct {
@@ -270,7 +270,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 		require.Len(t, ind.Total, 1)
 		require.Len(t, ind.Total[0].Metrics, 1)
 		assert.Equal(t, "c", ind.Total[0].Equation.ValueString())
-		assert.Equal(t, "status:200", ind.Total[0].Metrics[0].Filter.ValueString())
+		assert.Equal(t, testTimesliceSumFilter, ind.Total[0].Metrics[0].Filter.ValueString())
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
@@ -321,7 +321,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 	})
 
 	t.Run("maps doc_count metrics without field", func(t *testing.T) {
-		goodFilter := "status:200"
+		goodFilter := testTimesliceSumFilter
 
 		api := kbapi.SLOsIndicatorPropertiesCustomMetric{
 			Params: struct {
