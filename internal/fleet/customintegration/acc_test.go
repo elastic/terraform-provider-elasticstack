@@ -364,3 +364,31 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 		},
 	})
 }
+
+func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
+	pkgName := "testcustomspacepkg"
+	spaceID := "acc-test-space-customintegration"
+	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkCustomIntegrationDestroy,
+		Steps: []resource.TestStep{
+			// Upload the package into a non-default Kibana space and verify
+			// all Fleet API calls are routed to /s/{space_id}/api/fleet/epm/packages.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+					"space_id":     config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "space_id", spaceID),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+		},
+	})
+}
