@@ -59,6 +59,11 @@ func (r *customIntegrationResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
+	if state.PackageVersion.IsNull() || state.PackageVersion.IsUnknown() || state.PackageVersion.ValueString() == "" {
+		tflog.Warn(ctx, "Skipping uninstall: package version is not set in state (Create may have failed before state was written)")
+		return
+	}
+
 	diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
 	resp.Diagnostics.Append(diags...)
 }

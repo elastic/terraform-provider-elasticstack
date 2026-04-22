@@ -75,6 +75,15 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	if result.PackageName == "" || result.PackageVersion == "" {
+		resp.Diagnostics.AddError(
+			"Package name or version could not be determined",
+			"Fleet returned an empty package name or version. If the package is already installed, "+
+				"ensure the archive contains a valid manifest.yml with non-empty name and version fields.",
+		)
+		return
+	}
+
 	checksum, err := computeSHA256(filePath)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to compute checksum", err.Error())
@@ -98,7 +107,7 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 // based on its extension.
 func detectContentType(filePath string) string {
 	lower := strings.ToLower(filePath)
-	if strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".gz") {
+	if strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".tgz") || strings.HasSuffix(lower, ".gz") {
 		return "application/gzip"
 	}
 	// Default to zip (covers .zip and unknown extensions).
