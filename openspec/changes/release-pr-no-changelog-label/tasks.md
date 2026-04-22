@@ -1,7 +1,7 @@
 ## 1. Update prep-release workflow
 
-- [ ] 1.1 Add `--label no-changelog` to the `gh pr create` call in the "Create release PR" step of `.github/workflows/prep-release.yml`
-- [ ] 1.2 Add a new step after "Check if release PR already exists" that runs `gh pr edit --add-label no-changelog` when the PR already exists (`steps.pr-check.outputs.EXISTS == 'true'`)
+- [x] 1.1 Add `--label no-changelog` to the `gh pr create` call in the "Create release PR" step of `.github/workflows/prep-release.yml`
+- [x] 1.2 Add a new step after "Check if release PR already exists" that runs `gh pr edit --add-label no-changelog` when the PR already exists (`steps.pr-check.outputs.EXISTS == 'true'`)
 
 ## 2. Update spec
 

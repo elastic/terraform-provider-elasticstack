@@ -149,6 +149,13 @@ jobs:
             echo "EXISTS=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Label existing release PR
+        if: steps.pr-check.outputs.EXISTS == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit "${{ steps.pr-check.outputs.PR_URL }}" --add-label no-changelog
+
       - name: Create release PR
         if: steps.pr-check.outputs.EXISTS == 'false'
         env:
@@ -174,7 +181,8 @@ jobs:
             --head "${BRANCH}" \
             --base main \
             --title "${PR_TITLE}" \
-            --body-file /tmp/pr-body.txt
+            --body-file /tmp/pr-body.txt \
+            --label no-changelog
 
       - name: Report outcome
         run: |
