@@ -710,6 +710,11 @@ type UploadPackageResult struct {
 	AlreadyInstalled bool
 }
 
+// readOnlyReader wraps an io.Reader to suppress io.Closer. Go's net/http
+// transport closes the request body after sending if it implements io.Closer;
+// wrapping the file prevents that so we can seek back and retry on HTTP 429.
+type readOnlyReader struct{ io.Reader }
+
 // UploadPackage uploads a custom integration package to Fleet and returns the
 // resolved package name and installed version. It opens the file at
 // opts.PackagePath, posts it to the Fleet EPM packages endpoint, extracts the
@@ -727,7 +732,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		SkipDataStreamRollover:    &opts.SkipDataStreamRollover,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, f, spaceAwarePathRequestEditor(opts.SpaceID))
+	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, spaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -750,7 +755,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
 			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("rewinding package file for retry after rate limit: %w", seekErr))
 		}
-		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, f, spaceAwarePathRequestEditor(opts.SpaceID))
+		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, spaceAwarePathRequestEditor(opts.SpaceID))
 		if err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
