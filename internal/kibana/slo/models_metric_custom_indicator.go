@@ -49,6 +49,9 @@ type tfMetricCustomMetric struct {
 func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item, error) {
 	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item
 	if metric.Aggregation.ValueString() == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1AggregationDocCount) {
+		if !metric.Field.IsNull() && !metric.Field.IsUnknown() {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, fmt.Errorf("field must not be set when aggregation is doc_count")
+		}
 		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1Aggregation(metric.Aggregation.ValueString()),
@@ -58,6 +61,9 @@ func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorProper
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
 		}
 	} else {
+		if metric.Field.IsNull() || metric.Field.IsUnknown() || metric.Field.ValueString() == "" {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, fmt.Errorf("field is required when aggregation is not doc_count")
+		}
 		m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0Aggregation(metric.Aggregation.ValueString()),
@@ -74,6 +80,9 @@ func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorProper
 func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item, error) {
 	var item kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item
 	if metric.Aggregation.ValueString() == string(kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1AggregationDocCount) {
+		if !metric.Field.IsNull() && !metric.Field.IsUnknown() {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, fmt.Errorf("field must not be set when aggregation is doc_count")
+		}
 		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1Aggregation(metric.Aggregation.ValueString()),
@@ -83,6 +92,9 @@ func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPrope
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
 		}
 	} else {
+		if metric.Field.IsNull() || metric.Field.IsUnknown() || metric.Field.ValueString() == "" {
+			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, fmt.Errorf("field is required when aggregation is not doc_count")
+		}
 		m0 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0Aggregation(metric.Aggregation.ValueString()),
