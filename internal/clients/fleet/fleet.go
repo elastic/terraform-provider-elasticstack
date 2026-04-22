@@ -18,7 +18,9 @@
 package fleet
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -744,7 +746,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 			// We do not attempt a confirmatory GetPackage here because on older Kibana
 			// (e.g. 7.17.x) the individual package endpoint also returns 404 for
 			// custom-uploaded packages; we trust the zip manifest instead.
-			pkgName, pkgVersion, zipErr := parsePackageInfoFromZip(opts.PackagePath)
+			pkgName, pkgVersion, zipErr := parsePackageInfo(opts.PackagePath)
 			if zipErr == nil && pkgName != "" && pkgVersion != "" {
 				return &UploadPackageResult{
 					AlreadyInstalled: true,
@@ -793,21 +795,21 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		packageVersion = uploadResp.Response[0].Version
 	}
 	if packageName == "" {
-		// Last resort: parse the name (and version) from the zip manifest. This is
-		// reliable across all Kibana versions but only works for zip archives.
-		var zipErr error
-		packageName, packageVersion, zipErr = parsePackageInfoFromZip(opts.PackagePath)
-		if zipErr != nil {
+		// Last resort: parse the name (and version) from the package archive. This is
+		// reliable across all Kibana versions and supports both zip and tar.gz archives.
+		var archErr error
+		packageName, packageVersion, archErr = parsePackageInfo(opts.PackagePath)
+		if archErr != nil {
 			return nil, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Invalid upload response",
-					"Fleet did not return a package name and the zip manifest could not be parsed: "+zipErr.Error(),
+					"Fleet did not return a package name and the archive manifest could not be parsed: "+archErr.Error(),
 				),
 			}
 		}
 	} else if packageVersion == "" {
 		// Have name from response but no version; fill in from zip manifest.
-		_, packageVersion, _ = parsePackageInfoFromZip(opts.PackagePath)
+		_, packageVersion, _ = parsePackageInfo(opts.PackagePath)
 	}
 
 	// Resolve the installed version by querying the package list and filtering by name.
@@ -859,6 +861,16 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 }
 
+// parsePackageInfo parses the package name and version from the manifest.yml
+// inside a package archive. It dispatches to the appropriate parser based on
+// the file extension (.zip or .tar.gz / .gz).
+func parsePackageInfo(path string) (name, version string, err error) {
+	if strings.HasSuffix(path, ".tar.gz") || strings.HasSuffix(path, ".tgz") {
+		return parsePackageInfoFromTarGz(path)
+	}
+	return parsePackageInfoFromZip(path)
+}
+
 // parsePackageInfoFromZip opens a zip archive at path, finds the top-level
 // manifest.yml, and extracts the package name and version fields. It is used as
 // a fallback when the Fleet upload API response does not include the package
@@ -898,4 +910,55 @@ func parsePackageInfoFromZip(path string) (name, version string, err error) {
 		}
 	}
 	return "", "", fmt.Errorf("manifest.yml with name field not found in zip")
+}
+
+// parsePackageInfoFromTarGz opens a gzip-compressed tar archive at path, finds
+// the top-level manifest.yml, and extracts the package name and version fields.
+// It is used as a fallback for tar.gz archives when the Fleet upload API
+// response does not include the package name or version (older Kibana versions).
+func parsePackageInfoFromTarGz(path string) (name, version string, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", "", fmt.Errorf("opening tar.gz %q: %w", path, err)
+	}
+	defer f.Close()
+
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return "", "", fmt.Errorf("creating gzip reader for %q: %w", path, err)
+	}
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
+	nameRe := regexp.MustCompile(`(?m)^name:\s*(\S+)`)
+	versionRe := regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", "", fmt.Errorf("reading tar.gz %q: %w", path, err)
+		}
+		if !strings.HasSuffix(hdr.Name, "/manifest.yml") && hdr.Name != "manifest.yml" {
+			continue
+		}
+		content, readErr := io.ReadAll(tr)
+		if readErr != nil {
+			return "", "", fmt.Errorf("reading manifest.yml from tar.gz: %w", readErr)
+		}
+		nameMatches := nameRe.FindSubmatch(content)
+		if len(nameMatches) >= 2 {
+			name = string(nameMatches[1])
+		}
+		versionMatches := versionRe.FindSubmatch(content)
+		if len(versionMatches) >= 2 {
+			version = string(versionMatches[1])
+		}
+		if name != "" {
+			return name, version, nil
+		}
+	}
+	return "", "", fmt.Errorf("manifest.yml with name field not found in tar.gz")
 }
