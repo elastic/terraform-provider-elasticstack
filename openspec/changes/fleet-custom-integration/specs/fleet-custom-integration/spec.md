@@ -1,3 +1,30 @@
+# `elasticstack_fleet_custom_integration` — Schema and Functional Requirements
+
+Resource implementation: `internal/fleet/customintegration`
+
+## Purpose
+
+Upload and manage a locally-built Fleet custom integration package archive via the Kibana EPM binary upload API (`POST /api/fleet/epm/packages`). Unlike `elasticstack_fleet_integration`, which installs packages from the Elastic package registry by name and version, this resource accepts a local `.zip` or `.tar.gz` archive and manages the full lifecycle: upload on create, verify on read, re-upload on content change, and uninstall on destroy.
+
+## Schema
+
+```hcl
+resource "elasticstack_fleet_custom_integration" "example" {
+  id              = <computed, string>   # schemautil.StringToHash(package_name + package_version)
+  package_path    = <required, string>   # path to local .zip or .tar.gz archive
+  package_name    = <computed, string>   # extracted from upload response
+  package_version = <computed, string>   # resolved via packages list API after upload
+  checksum        = <computed, string>   # SHA256 hex digest of the file at package_path
+
+  ignore_mapping_update_errors = <optional, bool>
+  skip_data_stream_rollover    = <optional, bool>
+  skip_destroy                 = <optional, bool>
+  space_id                     = <optional, string>
+
+  kibana_connection = <optional, block>  # overrides provider-level Kibana connection
+}
+```
+
 ## ADDED Requirements
 
 ### Requirement: Resource exists
@@ -8,7 +35,7 @@ The provider SHALL expose a `elasticstack_fleet_custom_integration` managed reso
 - **THEN** `elasticstack_fleet_custom_integration` is listed as a managed resource type
 
 ### Requirement: Create uploads package archive
-When the resource is created, the provider SHALL read the file at `package_path`, upload its binary contents to `POST /api/fleet/epm/packages` with the appropriate `Content-Type` header (`application/zip` for `.zip` files, `application/gzip` for `.gz` / `.tar.gz` files), and record the resulting package name and version in state.
+When the resource is created, the provider SHALL read the file at `package_path`, upload its binary contents to `POST /api/fleet/epm/packages` with the appropriate `Content-Type` header (`application/zip` for `.zip` files, `application/gzip` for `.gz` / `.tar.gz` files), and record the resulting package name and version in state. `package_version` SHALL be resolved from the upload response when present; if the upload response does not include a version, the provider SHALL query the packages list API for the matching `package_name` and select the highest semver version among entries with status `installed`. If no matching installed entry is found, the provider SHALL return an error diagnostic.
 
 #### Scenario: Successful upload of a zip archive
 - **WHEN** `package_path` points to a valid custom integration `.zip` file
@@ -16,15 +43,15 @@ When the resource is created, the provider SHALL read the file at `package_path`
 - **THEN** `package_name` is set from `_meta.name` in the upload response
 - **THEN** `package_version` is set from the installed package version retrieved via the packages list API
 - **THEN** `checksum` is set to the SHA256 hex digest of the uploaded file
-- **THEN** `id` is set to a stable hash of `package_name` and `package_version`
+- **THEN** `id` is set to `schemautil.StringToHash(package_name + package_version)`
 
 #### Scenario: Successful upload of a gzip archive
 - **WHEN** `package_path` points to a valid custom integration `.tar.gz` or `.gz` file
 - **THEN** the provider uploads the file contents with `Content-Type: application/gzip`
 - **THEN** all computed attributes (`package_name`, `package_version`, `checksum`, `id`) are populated
 
-#### Scenario: Upload fails with non-200 response
-- **WHEN** the Fleet API returns a non-200 status code
+#### Scenario: Upload fails with a non-success response
+- **WHEN** the Fleet API returns a non-success (non-2xx) status code
 - **THEN** the provider returns an error diagnostic describing the failure
 - **THEN** no state is written
 
@@ -110,3 +137,14 @@ The resource SHALL support `ignore_mapping_update_errors` and `skip_data_stream_
 #### Scenario: skip_data_stream_rollover set to true
 - **WHEN** `skip_data_stream_rollover = true`
 - **THEN** the upload request includes `skipDataStreamRollover=true` as a query parameter
+
+### Requirement: Connection
+The resource SHALL use the provider-level Fleet client obtained from provider configuration by default. When `kibana_connection` is configured on the resource, the resource SHALL resolve an effective scoped client from that block and SHALL use the Fleet client derived from the scoped connection for all CRUD operations.
+
+#### Scenario: Provider Fleet client used by default
+- **WHEN** `kibana_connection` is not configured on the resource
+- **THEN** the resource SHALL obtain its Fleet client from the provider configuration
+
+#### Scenario: Scoped Fleet client used when overridden
+- **WHEN** `kibana_connection` is configured on the resource
+- **THEN** the resource SHALL obtain its effective Fleet client from the scoped connection for all lifecycle operations

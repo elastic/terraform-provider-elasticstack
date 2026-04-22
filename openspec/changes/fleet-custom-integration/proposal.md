@@ -21,5 +21,5 @@ Users need to manage custom Fleet integration packages (built with `elastic-pack
 - New package: `internal/fleet/customintegration/`
 - New fleet client wrapper: `UploadPackage` added to `internal/clients/fleet/fleet.go`
 - Provider registration: `provider/plugin_framework.go` (new import + resource entry)
-- No changes to existing resources or API clients
+- No changes to existing resource behavior; the shared Fleet client is extended with a new `UploadPackage` method
 - Depends on generated kbapi function `PostFleetEpmPackagesWithBodyWithResponse` (already present in `generated/kbapi/kibana.gen.go`)
