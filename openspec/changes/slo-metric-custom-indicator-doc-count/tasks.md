@@ -12,8 +12,8 @@
 
 ## 3. Acceptance Test
 
-- [ ] 3.1 Create `internal/kibana/slo/testdata/TestAccResourceSlo_metric_custom_indicator_doc_count/test/test.tf` — SLO with `metric_custom_indicator` using `doc_count` for good (with filter) and total (no filter, no field)
-- [ ] 3.2 Add `TestAccResourceSlo_metric_custom_indicator_doc_count` to `acc_test.go` (after `TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics`) — single-step test with `SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion)`, asserting index, metric names, aggregations, filter presence, field absence, and equations
+- [x] 3.1 Create `internal/kibana/slo/testdata/TestAccResourceSlo_metric_custom_indicator_doc_count/test/test.tf` — SLO with `metric_custom_indicator` using `doc_count` for good (with filter) and total (no filter, no field)
+- [x] 3.2 Add `TestAccResourceSlo_metric_custom_indicator_doc_count` to `acc_test.go` (after `TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics`) — single-step test with `SkipFunc: versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion)`, asserting index, metric names, aggregations, filter presence, field absence, and equations
 
 ## 4. Verification
 
