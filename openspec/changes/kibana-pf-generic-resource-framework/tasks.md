@@ -18,6 +18,6 @@
 
 ## 4. Capture and verify the new reusable capability
 
-- [ ] 4.1 Add delta specs for the new generic-resource capability and the modified Agent Builder capabilities
-- [ ] 4.2 Verify the migrated resources with targeted unit and acceptance tests and validate the OpenSpec change artifacts
-- [ ] 4.3 Document any follow-on adoption considerations discovered during the Agent Builder migration without expanding the implementation scope in this change
+- [x] 4.1 Add delta specs for the new generic-resource capability and the modified Agent Builder capabilities
+- [x] 4.2 Verify the migrated resources with targeted unit and acceptance tests and validate the OpenSpec change artifacts
+- [x] 4.3 Document any follow-on adoption considerations discovered during the Agent Builder migration without expanding the implementation scope in this change
