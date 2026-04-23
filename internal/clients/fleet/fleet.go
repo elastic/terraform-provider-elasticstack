@@ -844,13 +844,14 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		_, packageVersion, _ = parsePackageInfo(opts.PackagePath)
 	}
 
-	// Resolve the installed version by querying the package list and filtering by name.
-	// GetFleetEpmPackages is the canonical source on newer Kibana (8.7+). On older
-	// Kibana it may not include custom (user-uploaded) packages; the fallback below
-	// handles that case.
+	// Resolve the installed version by querying the package list and filtering by
+	// name and status. GetFleetEpmPackages is the canonical source on newer Kibana
+	// (8.7+). On older Kibana it may not include custom (user-uploaded) packages;
+	// the fallback below handles that case.
 	//
 	// When multiple versions of the same package are listed, pick the highest
-	// installed semver so that state always tracks the most recent installation.
+	// semver among entries with status "installed" so that state always tracks the
+	// most recent confirmed installation rather than a registry-only entry.
 	packages, diags := GetPackages(ctx, client, true, opts.SpaceID)
 	if diags.HasError() {
 		return nil, diags
@@ -860,6 +861,9 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	var resolvedVersion string
 	for _, pkg := range packages {
 		if pkg.Name != packageName {
+			continue
+		}
+		if pkg.Status == nil || *pkg.Status != "installed" {
 			continue
 		}
 		v, parseErr := semver.NewVersion(pkg.Version)
