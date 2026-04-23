@@ -8,6 +8,7 @@ The final release changelog update currently depends on `ci-changelog-generation
 - Update `prep-release.yml` to invoke the shared changelog engine directly in release mode during release preparation, so release preparation fails immediately when changelog assembly fails.
 - Simplify `changelog-generation.yml` so its automatic triggers only cover scheduled unreleased maintenance, while `workflow_dispatch` also supports an explicit release mode via inputs.
 - Remove the `pull_request_target` release trigger path from the changelog-generation workflow and replace event-inferred release mode with explicit workflow inputs.
+- Update the workflow-source release-context and release-PR-refresh inline scripts, plus the authored workflow markdown template, so the compiled workflow, helper glue, and human-facing workflow documentation all describe and implement the same explicit release-mode contract.
 - Keep workflow responsibilities limited to checkout, commit/push, PR create/reuse/labeling, and PR metadata updates around the shared engine.
 
 ## Capabilities
@@ -24,5 +25,8 @@ The final release changelog update currently depends on `ci-changelog-generation
 - `.github/workflows/prep-release.yml`
 - `.github/workflows/changelog-generation.yml`
 - `.github/workflows-src/changelog-generation/workflow.yml.tmpl`
+- `.github/workflows-src/changelog-generation/workflow.md.tmpl`
+- `.github/workflows-src/changelog-generation/scripts/resolve-release-context.inline.js`
+- `.github/workflows-src/changelog-generation/scripts/refresh-release-pr.inline.js`
 - changelog-generation helper code migrated into a Go-based engine under `scripts/`
 - OpenSpec specs for `ci-changelog-generation` and `ci-release-pr-preparation`
