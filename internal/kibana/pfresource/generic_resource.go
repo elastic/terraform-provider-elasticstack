@@ -20,46 +20,243 @@ package pfresource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type ResourceAPI[CreateRequest any, UpdateRequest any, Remote any] interface {
-	Create(context.Context, *kibanaoapi.Client, string, CreateRequest) (string, diag.Diagnostics)
-	Get(context.Context, *kibanaoapi.Client, string, string) (Remote, diag.Diagnostics)
-	Update(context.Context, *kibanaoapi.Client, string, string, UpdateRequest) diag.Diagnostics
-	Delete(context.Context, *kibanaoapi.Client, string, string) diag.Diagnostics
+	Create(ctx context.Context, client *kibanaoapi.Client, spaceID string, request CreateRequest) (string, diag.Diagnostics)
+	Get(ctx context.Context, client *kibanaoapi.Client, spaceID string, resourceID string) (Remote, bool, diag.Diagnostics)
+	Update(ctx context.Context, client *kibanaoapi.Client, spaceID string, resourceID string, request UpdateRequest) diag.Diagnostics
+	Delete(ctx context.Context, client *kibanaoapi.Client, spaceID string, resourceID string) diag.Diagnostics
+}
+
+type KibanaConnectionModel interface {
+	GetKibanaConnection() types.List
+}
+
+type IDModel interface {
+	GetID() types.String
+	SetID(id types.String)
+}
+
+type SpaceIDModel interface {
+	GetSpaceID() types.String
+	SetSpaceID(spaceID types.String)
 }
 
 type ModelContract[CreateRequest any, UpdateRequest any, Remote any] interface {
+	KibanaConnectionModel
+	IDModel
 	VersionRequirement() VersionRequirement
-	ToCreateRequest(context.Context) (CreateRequest, diag.Diagnostics)
-	ToUpdateRequest(context.Context) (UpdateRequest, diag.Diagnostics)
-	PopulateFromRemote(context.Context, string, Remote) diag.Diagnostics
+	ToCreateRequest(ctx context.Context) (CreateRequest, diag.Diagnostics)
+	ToUpdateRequest(ctx context.Context) (UpdateRequest, diag.Diagnostics)
+	PopulateFromRemote(ctx context.Context, spaceID string, remote Remote) diag.Diagnostics
 }
 
-type Assembly interface {
+type Assembly[
+	CreateRequest any,
+	UpdateRequest any,
+	Remote any,
+	Model ModelContract[CreateRequest, UpdateRequest, Remote],
+] interface {
 	TypeNameSuffix() string
+	API() ResourceAPI[CreateRequest, UpdateRequest, Remote]
+	NewModel() Model
+	ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse)
 }
 
-func ReadAfterWrite[Remote any](ctx context.Context, api ResourceAPI[any, any, Remote], client *kibanaoapi.Client, spaceID string, resourceID string) (Remote, diag.Diagnostics) {
+type Orchestrator[
+	CreateRequest any,
+	UpdateRequest any,
+	Remote any,
+	Model ModelContract[CreateRequest, UpdateRequest, Remote],
+] struct {
+	Factory  *clients.ProviderClientFactory
+	Assembly Assembly[CreateRequest, UpdateRequest, Remote, Model]
+}
+
+type ResolvedRuntime struct {
+	ScopedClient *clients.KibanaScopedClient
+	APIClient    *kibanaoapi.Client
+}
+
+func ResolveRuntime[
+	CreateRequest any,
+	UpdateRequest any,
+	Remote any,
+	Model ModelContract[CreateRequest, UpdateRequest, Remote],
+](ctx context.Context, factory *clients.ProviderClientFactory, model Model) (*ResolvedRuntime, diag.Diagnostics) {
+	scopedClient, diags := ResolveKibanaClient(ctx, factory, model.GetKibanaConnection())
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if versionDiags := EnforceVersion(ctx, scopedClient, model.VersionRequirement()); versionDiags.HasError() {
+		return nil, versionDiags
+	}
+
+	apiClient, err := scopedClient.GetKibanaOapiClient()
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to create Kibana client", err.Error())}
+	}
+
+	return &ResolvedRuntime{ScopedClient: scopedClient, APIClient: apiClient}, nil
+}
+
+func ReadAfterWrite[
+	CreateRequest any,
+	UpdateRequest any,
+	Remote any,
+](
+	ctx context.Context,
+	api ResourceAPI[CreateRequest, UpdateRequest, Remote],
+	client *kibanaoapi.Client,
+	spaceID string,
+	resourceID string,
+) (Remote, diag.Diagnostics) {
+	remote, present, diags := api.Get(ctx, client, spaceID, resourceID)
+	if diags.HasError() {
+		var zero Remote
+		return zero, diags
+	}
+	if !present {
+		var zero Remote
+		return zero, diag.Diagnostics{diag.NewErrorDiagnostic(
+			"Resource not found after write",
+			"The resource could not be read back from Kibana after a successful write.",
+		)}
+	}
+	return remote, nil
+}
+
+func ReadRemote[
+	CreateRequest any,
+	UpdateRequest any,
+	Remote any,
+](
+	ctx context.Context,
+	api ResourceAPI[CreateRequest, UpdateRequest, Remote],
+	client *kibanaoapi.Client,
+	spaceID string,
+	resourceID string,
+) (Remote, bool, diag.Diagnostics) {
 	return api.Get(ctx, client, spaceID, resourceID)
 }
 
-func ReadRemote[Remote any](ctx context.Context, api ResourceAPI[any, any, Remote], client *kibanaoapi.Client, spaceID string, resourceID string) (Remote, bool, diag.Diagnostics) {
-	remote, diags := api.Get(ctx, client, spaceID, resourceID)
+func (o Orchestrator[CreateRequest, UpdateRequest, Remote, Model]) Create(
+	ctx context.Context,
+	model Model,
+	spaceID string,
+) (Model, diag.Diagnostics) {
+	runtime, diags := ResolveRuntime[CreateRequest, UpdateRequest, Remote](ctx, o.Factory, model)
 	if diags.HasError() {
-		var zero Remote
-		return zero, false, diags
+		return model, diags
 	}
-	if isNil(remote) {
-		var zero Remote
-		return zero, false, nil
+
+	request, reqDiags := model.ToCreateRequest(ctx)
+	if reqDiags.HasError() {
+		return model, reqDiags
 	}
-	return remote, true, nil
+
+	resourceID, createDiags := o.Assembly.API().Create(ctx, runtime.APIClient, spaceID, request)
+	if createDiags.HasError() {
+		return model, createDiags
+	}
+
+	remote, readDiags := ReadAfterWrite(ctx, o.Assembly.API(), runtime.APIClient, spaceID, resourceID)
+	if readDiags.HasError() {
+		return model, readDiags
+	}
+
+	model.SetID(types.StringValue(resourceID))
+	if spaceAware, ok := any(model).(SpaceIDModel); ok {
+		spaceAware.SetSpaceID(types.StringValue(spaceID))
+	}
+	populateDiags := model.PopulateFromRemote(ctx, spaceID, remote)
+	return model, populateDiags
 }
 
-func isNil[T any](v T) bool {
-	var zero T
-	return any(v) == any(zero)
+func (o Orchestrator[CreateRequest, UpdateRequest, Remote, Model]) Read(
+	ctx context.Context,
+	model Model,
+	spaceID string,
+) (Model, bool, diag.Diagnostics) {
+	runtime, diags := ResolveRuntime[CreateRequest, UpdateRequest, Remote](ctx, o.Factory, model)
+	if diags.HasError() {
+		return model, false, diags
+	}
+
+	remote, present, readDiags := ReadRemote(
+		ctx,
+		o.Assembly.API(),
+		runtime.APIClient,
+		spaceID,
+		model.GetID().ValueString(),
+	)
+	if readDiags.HasError() {
+		return model, false, readDiags
+	}
+	if !present {
+		return model, false, nil
+	}
+
+	if spaceAware, ok := any(model).(SpaceIDModel); ok {
+		spaceAware.SetSpaceID(types.StringValue(spaceID))
+	}
+	populateDiags := model.PopulateFromRemote(ctx, spaceID, remote)
+	return model, true, populateDiags
+}
+
+func (o Orchestrator[CreateRequest, UpdateRequest, Remote, Model]) Update(
+	ctx context.Context,
+	model Model,
+	spaceID string,
+) (Model, diag.Diagnostics) {
+	runtime, diags := ResolveRuntime[CreateRequest, UpdateRequest, Remote](ctx, o.Factory, model)
+	if diags.HasError() {
+		return model, diags
+	}
+
+	request, reqDiags := model.ToUpdateRequest(ctx)
+	if reqDiags.HasError() {
+		return model, reqDiags
+	}
+
+	updateDiags := o.Assembly.API().Update(ctx, runtime.APIClient, spaceID, model.GetID().ValueString(), request)
+	if updateDiags.HasError() {
+		return model, updateDiags
+	}
+
+	remote, readDiags := ReadAfterWrite(
+		ctx,
+		o.Assembly.API(),
+		runtime.APIClient,
+		spaceID,
+		model.GetID().ValueString(),
+	)
+	if readDiags.HasError() {
+		return model, readDiags
+	}
+
+	if spaceAware, ok := any(model).(SpaceIDModel); ok {
+		spaceAware.SetSpaceID(types.StringValue(spaceID))
+	}
+	populateDiags := model.PopulateFromRemote(ctx, spaceID, remote)
+	return model, populateDiags
+}
+
+func (o Orchestrator[CreateRequest, UpdateRequest, Remote, Model]) Delete(
+	ctx context.Context,
+	model Model,
+	spaceID string,
+) diag.Diagnostics {
+	runtime, diags := ResolveRuntime[CreateRequest, UpdateRequest, Remote](ctx, o.Factory, model)
+	if diags.HasError() {
+		return diags
+	}
+	return o.Assembly.API().Delete(ctx, runtime.APIClient, spaceID, model.GetID().ValueString())
 }

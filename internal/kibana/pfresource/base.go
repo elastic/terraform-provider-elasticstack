@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func Configure(ctx context.Context, providerData any, resp *resource.ConfigureResponse) *clients.ProviderClientFactory {
+func Configure(_ context.Context, providerData any, resp *resource.ConfigureResponse) *clients.ProviderClientFactory {
 	factory, diags := clients.ConvertProviderDataToFactory(providerData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -41,4 +41,19 @@ func Metadata(req resource.MetadataRequest, resp *resource.MetadataResponse, typ
 
 func ImportStatePassthroughID(ctx context.Context, idAttributeName string, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root(idAttributeName), req, resp)
+}
+
+func ImportStateCompositeID(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse, idAttributeName string, spaceIDAttributeName string) {
+	ImportStatePassthroughID(ctx, idAttributeName, req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compositeID, diags := ParseCompositeID(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(spaceIDAttributeName), compositeID.ClusterID)...)
 }
