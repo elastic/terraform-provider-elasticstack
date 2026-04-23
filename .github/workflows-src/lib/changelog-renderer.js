@@ -18,11 +18,15 @@
  *   summary text is preserved verbatim.
  */
 
-//include: ./pr-changelog-parser.js
-const {
-  parseChangelogSectionFull,
-  validateChangelogSectionFull,
-} = require('./pr-changelog-parser.js');
+let parseChangelogSectionFullRef = typeof parseChangelogSectionFull === 'function' ? parseChangelogSectionFull : null;
+let validateChangelogSectionFullRef = typeof validateChangelogSectionFull === 'function' ? validateChangelogSectionFull : null;
+
+if (!parseChangelogSectionFullRef || !validateChangelogSectionFullRef) {
+  ({
+    parseChangelogSectionFull: parseChangelogSectionFullRef,
+    validateChangelogSectionFull: validateChangelogSectionFullRef,
+  } = require('./pr-changelog-parser.js'));
+}
 
 const NO_CHANGELOG_LABEL = 'no-changelog';
 
@@ -127,7 +131,7 @@ function renderChangelogSection(mergedPRs) {
     }
 
     // Parse and validate the changelog section from the PR body
-    const parsed = parseChangelogSectionFull(body || '');
+    const parsed = parseChangelogSectionFullRef(body || '');
 
     if (parsed === null) {
       // No parseable ## Changelog section and no no-changelog label — hard fail
@@ -142,7 +146,7 @@ function renderChangelogSection(mergedPRs) {
     }
 
     // Validate structural correctness (invalid customerImpact, empty breaking-changes heading, etc.)
-    const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed);
+    const { valid, errors: validationErrors } = validateChangelogSectionFullRef(parsed);
     if (!valid) {
       if (parsed.customerImpact === null) {
         errors.push({

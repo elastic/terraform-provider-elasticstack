@@ -36,9 +36,10 @@ jobs:
 
       - name: Validate workflow inputs
         if: github.event_name == 'workflow_dispatch'
+        env:
+          MODE: ${{ inputs.mode }}
+          TARGET_VERSION: ${{ inputs.target_version || '' }}
         run: |
-          MODE="${{ inputs.mode }}"
-          TARGET_VERSION="${{ inputs.target_version }}"
           if [ "$MODE" = "release" ] && [ -z "$TARGET_VERSION" ]; then
             echo "target_version is required when mode=release" >&2
             exit 1
@@ -91,19 +92,16 @@ jobs:
 
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
-        if: >-
-          steps.changelog_engine.outputs.mode == 'unreleased' &&
-          steps.changelog_engine.outputs.has_pull_requests == 'true' &&
-          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'unreleased'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "No unreleased changelog changes to commit"
             echo "pushed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+          git add CHANGELOG.md
           git commit -m "chore(changelog): update unreleased changelog section"
           git push origin HEAD:generated-changelog --force
           echo "pushed=true" >> $GITHUB_OUTPUT

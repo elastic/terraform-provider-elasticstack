@@ -37,9 +37,10 @@ jobs:
 
       - name: Validate workflow inputs
         if: github.event_name == 'workflow_dispatch'
+        env:
+          MODE: ${{ inputs.mode }}
+          TARGET_VERSION: ${{ inputs.target_version || '' }}
         run: |
-          MODE="${{ inputs.mode }}"
-          TARGET_VERSION="${{ inputs.target_version }}"
           if [ "$MODE" = "release" ] && [ -z "$TARGET_VERSION" ]; then
             echo "target_version is required when mode=release" >&2
             exit 1
@@ -55,18 +56,751 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const RELEASE_BRANCH_PATTERN = /^prep-release-(.+)$/;
+            const SEMVER_TAG_PATTERN = /^v\d+\.\d+\.\d+$/;
+            
+            function resolveReleaseMode({ eventName, headBranch = '' }) {
+              let mode = 'unreleased';
+              let targetVersion = '';
+              let targetBranch = 'generated-changelog';
+            
+              if (eventName === 'pull_request' || eventName === 'pull_request_target') {
+                const match = headBranch.match(RELEASE_BRANCH_PATTERN);
+                if (match) {
+                  mode = 'release';
+                  targetVersion = match[1];
+                  targetBranch = headBranch;
+                }
+              }
+            
+              return { mode, targetVersion, targetBranch };
+            }
+            
+            function parseSemverTags(tagsRaw = '') {
+              return tagsRaw
+                .split('\n')
+                .map((tag) => tag.trim())
+                .filter((tag) => SEMVER_TAG_PATTERN.test(tag));
+            }
+            
+            function selectPreviousTag({ tags = [], mode = 'unreleased', targetVersion = '' }) {
+              const excludedTag = mode === 'release' && targetVersion ? `v${targetVersion}` : '';
+              const candidates = excludedTag ? tags.filter((tag) => tag !== excludedTag) : tags;
+            
+              return {
+                previousTag: candidates[0] ?? '',
+                excludedTag,
+                excludedCurrentTag: Boolean(excludedTag) && candidates.length < tags.length,
+              };
+            }
+            
+            function buildCompareRange(previousTag) {
+              return previousTag ? `${previousTag}..HEAD` : 'HEAD';
+            }
+            
+            function buildReleaseContext({ eventName, headBranch = '', tags = [] }) {
+              const modeResult = resolveReleaseMode({ eventName, headBranch });
+              const previousTagResult = selectPreviousTag({
+                tags,
+                mode: modeResult.mode,
+                targetVersion: modeResult.targetVersion,
+              });
+            
+              return {
+                ...modeResult,
+                ...previousTagResult,
+                compareRange: buildCompareRange(previousTagResult.previousTag),
+              };
+            }
+            
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                RELEASE_BRANCH_PATTERN,
+                SEMVER_TAG_PATTERN,
+                buildCompareRange,
+                buildReleaseContext,
+                parseSemverTags,
+                resolveReleaseMode,
+                selectPreviousTag,
+              };
+            }
+            
+            const USER_FACING_LABELS = new Set([
+              'enhancement',
+              'bug',
+              'feature',
+              'breaking-change',
+              'deprecation',
+              'new-resource',
+              'new-data-source',
+            ]);
+            
+            const INTERNAL_LABELS = new Set([
+              'dependencies',
+              'chore',
+              'internal',
+              'documentation',
+              'ci',
+              'test',
+              'openspec',
+            ]);
+            
+            const PROVIDER_PATH_PREFIXES = ['internal/', 'pkg/', 'libs/', 'provider/', 'go.mod', 'go.sum'];
+            
+            function getLabelNames(pr) {
+              return (pr.labels ?? []).map((label) => label.name);
+            }
+            
+            function classifyPullRequestForChangelog(pr, files = []) {
+              const labels = getLabelNames(pr);
+              const hasUserFacingLabel = labels.some((label) => USER_FACING_LABELS.has(label));
+              const hasInternalLabel = labels.some((label) => INTERNAL_LABELS.has(label));
+              const isAutomated =
+                pr.user?.login === 'dependabot[bot]' ||
+                pr.user?.login === 'dependabot' ||
+                pr.user?.login === 'github-actions[bot]';
+            
+              const touchesProviderCode = files.some((file) =>
+                PROVIDER_PATH_PREFIXES.some((prefix) => file.filename.startsWith(prefix))
+              );
+              const openspecOnly = files.length > 0 && files.every((file) => file.filename.startsWith('openspec/'));
+            
+              let classification;
+              let inclusionRationale;
+              let exclusionRationale;
+            
+              if (isAutomated) {
+                classification = 'internal';
+                exclusionRationale = `Automated PR by ${pr.user?.login}`;
+              } else if (openspecOnly) {
+                classification = 'internal';
+                exclusionRationale = 'Touches only openspec/ files — no provider code changes';
+              } else if (hasUserFacingLabel) {
+                classification = 'user-facing';
+                inclusionRationale = `Has user-facing label(s): ${labels
+                  .filter((label) => USER_FACING_LABELS.has(label))
+                  .join(', ')}`;
+              } else if (hasInternalLabel && !touchesProviderCode) {
+                classification = 'internal';
+                exclusionRationale = `Has internal label(s): ${labels
+                  .filter((label) => INTERNAL_LABELS.has(label))
+                  .join(', ')} and does not touch provider code`;
+              } else if (touchesProviderCode) {
+                classification = 'user-facing';
+                inclusionRationale = 'Touches provider implementation paths — presumed user-facing';
+              } else {
+                classification = 'uncertain';
+                inclusionRationale = 'Classification uncertain — agent to decide';
+              }
+            
+              return {
+                classification,
+                inclusionRationale: inclusionRationale ?? null,
+                exclusionRationale: exclusionRationale ?? null,
+              };
+            }
+            
+            function parseCommitShas(raw = '') {
+              return raw
+                .split('\n')
+                .map((sha) => sha.trim())
+                .filter(Boolean);
+            }
+            
+            function selectMergedPullRequests(prs = []) {
+              const seen = new Set();
+              const merged = [];
+            
+              for (const pr of prs) {
+                if (pr.state === 'closed' && pr.merged_at && !seen.has(pr.number)) {
+                  seen.add(pr.number);
+                  merged.push(pr);
+                }
+              }
+            
+              return merged;
+            }
+            
+            function buildPullRequestEvidence(pr, files = []) {
+              const { classification, inclusionRationale, exclusionRationale } =
+                classifyPullRequestForChangelog(pr, files);
+            
+              return {
+                number: pr.number,
+                title: pr.title,
+                url: pr.html_url,
+                merge_commit_sha: pr.merge_commit_sha,
+                author: pr.user?.login ?? 'unknown',
+                labels: getLabelNames(pr),
+                touched_files: files.map((file) => file.filename),
+                classification,
+                inclusion_rationale: inclusionRationale,
+                exclusion_rationale: exclusionRationale,
+              };
+            }
+            
+            function buildTargetSection({ mode = 'unreleased', targetVersion = '', date = new Date().toISOString() }) {
+              if (mode === 'release' && targetVersion) {
+                return `## [${targetVersion}] - ${String(date).split('T')[0]}`;
+              }
+            
+              return '## [Unreleased]';
+            }
+            
+            function countByClassification(evidence = []) {
+              return {
+                user_facing_count: evidence.filter((item) => item.classification === 'user-facing').length,
+                internal_count: evidence.filter((item) => item.classification === 'internal').length,
+                uncertain_count: evidence.filter((item) => item.classification === 'uncertain').length,
+              };
+            }
+            
+            function buildEvidenceManifest({
+              mode = 'unreleased',
+              targetVersion = '',
+              previousTag = '',
+              compareRange = 'HEAD',
+              evidence = [],
+              generatedAt = new Date().toISOString(),
+            }) {
+              const counts = countByClassification(evidence);
+            
+              return {
+                generated_at: generatedAt,
+                mode,
+                target_section: buildTargetSection({ mode, targetVersion, date: generatedAt }),
+                target_section_mode: mode,
+                target_version: targetVersion,
+                previous_tag: previousTag,
+                compare_range: compareRange,
+                pr_count: evidence.length,
+                ...counts,
+                pull_requests: evidence,
+              };
+            }
+            
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                INTERNAL_LABELS,
+                PROVIDER_PATH_PREFIXES,
+                USER_FACING_LABELS,
+                buildEvidenceManifest,
+                buildPullRequestEvidence,
+                buildTargetSection,
+                classifyPullRequestForChangelog,
+                countByClassification,
+                parseCommitShas,
+                selectMergedPullRequests,
+              };
+            }
+            
+            /**
+             * Helpers to parse and validate the PR-body `## Changelog` contract.
+             *
+             * Contract:
+             *   ## Changelog
+             *   Customer impact: <none|fix|enhancement|breaking>
+             *   Summary: <text>          (required when Customer impact is not "none")
+             *
+             *   ### Breaking changes
+             *   <free-form markdown>     (optional subsection)
+             */
+            
+            const VALID_CUSTOMER_IMPACTS = new Set(['none', 'fix', 'enhancement', 'breaking']);
+            
+            /**
+             * Extract the raw text of the `## Changelog` section from a PR body.
+             * Returns the content between `## Changelog` and the next `##`-level heading
+             * (or the end of the string).
+             *
+             * @param {string} body
+             * @returns {string|null}
+             */
+            function extractChangelogSection(body) {
+              if (!body) return null;
+            
+              const lines = body.split('\n');
+              let inChangelog = false;
+              /** @type {null | '`' | '~'} */
+              let fenceType = null;
+              const content = [];
+            
+              for (const line of lines) {
+                if (/^##\s+Changelog/.test(line)) {
+                  inChangelog = true;
+                  continue;
+                }
+                if (inChangelog) {
+                  if (fenceType === null && /^```/.test(line)) {
+                    fenceType = '`';
+                  } else if (fenceType === null && /^~~~/.test(line)) {
+                    fenceType = '~';
+                  } else if (fenceType === '`' && /^```/.test(line)) {
+                    fenceType = null;
+                  } else if (fenceType === '~' && /^~~~/.test(line)) {
+                    fenceType = null;
+                  }
+                  if (fenceType === null && /^##\s/.test(line)) {
+                    break;
+                  }
+                  content.push(line);
+                }
+              }
+            
+              if (!inChangelog) return null;
+            
+              return content.join('\n');
+            }
+            
+            /**
+             * Extract the raw markdown content of the `### Breaking changes` subsection
+             * from a PR body string. Returns everything from the heading line (exclusive)
+             * up to the next `##` or `###` heading, or the end of the string.
+             *
+             * @param {string} body
+             * @returns {string|null} Trimmed markdown content, or null if not present or empty.
+             */
+            function extractBreakingChanges(changelogSection) {
+              if (!changelogSection) return null;
+            
+              const lines = changelogSection.split('\n');
+              let inBreaking = false;
+              /** @type {null | '`' | '~'} */
+              let fenceType = null;
+              const content = [];
+            
+              for (const line of lines) {
+                if (/^###\s+Breaking changes/.test(line)) {
+                  inBreaking = true;
+                  continue;
+                }
+                if (inBreaking) {
+                  if (fenceType === null && /^```/.test(line)) {
+                    fenceType = '`';
+                  } else if (fenceType === null && /^~~~/.test(line)) {
+                    fenceType = '~';
+                  } else if (fenceType === '`' && /^```/.test(line)) {
+                    fenceType = null;
+                  } else if (fenceType === '~' && /^~~~/.test(line)) {
+                    fenceType = null;
+                  }
+                  if (fenceType === null && /^#{2,3}\s/.test(line)) {
+                    break;
+                  }
+                  content.push(line);
+                }
+              }
+            
+              if (!inBreaking) return null;
+            
+              const trimmed = content.join('\n').trimEnd();
+              return trimmed.length > 0 ? trimmed : null;
+            }
+            
+            /**
+             * Parse the `## Changelog` section from a PR body string.
+             *
+             * @param {string} body - Full PR body text.
+             * @returns {{ customerImpact: string|null, summary: string|null, breakingChanges: string|null }|null}
+             *   Returns null when no `## Changelog` section is found.
+             */
+            function parseChangelogSection(body) {
+              const section = extractChangelogSection(body);
+              if (section === null) return null;
+            
+              // Parse `Customer impact: <value>`
+              const customerImpactMatch = section.match(/^Customer impact:\s*(.+)$/m);
+              const customerImpact = customerImpactMatch ? customerImpactMatch[1].trim() : null;
+            
+              // Parse `Summary: <text>`
+              const summaryMatch = section.match(/^Summary:\s*(.+)$/m);
+              const summary = summaryMatch ? summaryMatch[1].trim() : null;
+            
+              // Extract breaking changes from the changelog section only
+              const breakingChanges = extractBreakingChanges(section);
+            
+              return {
+                customerImpact,
+                summary: summary || null,
+                breakingChanges,
+              };
+            }
+            
+            /**
+             * Validate a parsed changelog section.
+             *
+             * @param {{ customerImpact: string|null, summary: string|null, breakingChanges: string|null }|null} parsed
+             * @returns {{ valid: boolean, errors: string[] }}
+             */
+            function validateChangelogSection(parsed) {
+              const errors = [];
+            
+              if (parsed === null) {
+                errors.push('No ## Changelog section found in PR body');
+                return { valid: false, errors };
+              }
+            
+              const { customerImpact, summary } = parsed;
+            
+              // Validate Customer impact
+              if (!customerImpact) {
+                errors.push('Missing required field: Customer impact');
+              } else if (!VALID_CUSTOMER_IMPACTS.has(customerImpact)) {
+                errors.push(
+                  `Invalid Customer impact value: "${customerImpact}". Must be one of: ${[...VALID_CUSTOMER_IMPACTS].join(', ')}`
+                );
+              }
+            
+              // Summary is required unless Customer impact is "none"
+              if (customerImpact && customerImpact !== 'none' && VALID_CUSTOMER_IMPACTS.has(customerImpact)) {
+                if (!summary) {
+                  errors.push('Missing required field: Summary (required when Customer impact is not "none")');
+                }
+              }
+            
+              return {
+                valid: errors.length === 0,
+                errors,
+              };
+            }
+            
+            /**
+             * Internal variant that also detects whether a `### Breaking changes` heading
+             * was present but had no content.
+             *
+             * @param {string} body
+             * @returns {{ customerImpact: string|null, summary: string|null, breakingChanges: string|null, breakingChangesHeadingPresent: boolean }|null}
+             */
+            function parseChangelogSectionFull(body) {
+              const section = extractChangelogSection(body);
+              if (section === null) return null;
+            
+              const customerImpactMatch = section.match(/^Customer impact:\s*(.+)$/m);
+              const customerImpact = customerImpactMatch ? customerImpactMatch[1].trim() : null;
+            
+              const summaryMatch = section.match(/^Summary:\s*(.+)$/m);
+              const summary = summaryMatch ? summaryMatch[1].trim() : null;
+            
+              // Detect whether the heading exists within the changelog section (not the full body)
+              const lines = section.split('\n');
+              const breakingChangesHeadingPresent = lines.some((line) => /^###\s+Breaking changes/.test(line));
+              const breakingChanges = extractBreakingChanges(section);
+            
+              return {
+                customerImpact,
+                summary: summary || null,
+                breakingChanges,
+                breakingChangesHeadingPresent,
+              };
+            }
+            
+            /**
+             * Validate a full parsed changelog section (including empty breaking-changes detection).
+             *
+             * @param {ReturnType<typeof parseChangelogSectionFull>|null} parsed
+             * @returns {{ valid: boolean, errors: string[] }}
+             */
+            function validateChangelogSectionFull(parsed) {
+              const base = validateChangelogSection(parsed);
+              if (!parsed) return base;
+            
+              const errors = [...base.errors];
+            
+              if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
+                errors.push('### Breaking changes section is present but contains no content');
+              }
+            
+              if (parsed.customerImpact === 'breaking' && !parsed.breakingChangesHeadingPresent) {
+                errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
+              }
+            
+              return { valid: errors.length === 0, errors };
+            }
+            
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                VALID_CUSTOMER_IMPACTS,
+                extractBreakingChanges,
+                extractChangelogSection,
+                parseChangelogSection,
+                parseChangelogSectionFull,
+                validateChangelogSection,
+                validateChangelogSectionFull,
+              };
+            }
+            
+            /**
+             * Deterministic changelog renderer.
+             *
+             * Converts an array of merged PR metadata records (each with a parsed
+             * `## Changelog` section) into a rendered changelog section body.
+             *
+             * Rendering rules:
+             * - PRs with the `no-changelog` label are silently excluded.
+             * - PRs with `Customer impact: none` produce no change bullet (but may
+             *   still contribute breaking-change blocks).
+             * - PRs that have neither the `no-changelog` label nor a parseable
+             *   `## Changelog` section cause a hard assembly failure.
+             * - Breaking-change blocks from included PRs are collected and placed
+             *   under a `### Breaking changes` subsection.
+             * - Regular change bullets are placed under `### Changes`.
+             * - Normalization is minimal: standard `- ` bullet prefix, citation
+             *   shape `([#NNN](url))`, and consistent whitespace. Author-provided
+             *   summary text is preserved verbatim.
+             */
+            
+            let parseChangelogSectionFullRef = typeof parseChangelogSectionFull === 'function' ? parseChangelogSectionFull : null;
+            let validateChangelogSectionFullRef = typeof validateChangelogSectionFull === 'function' ? validateChangelogSectionFull : null;
+            
+            if (!parseChangelogSectionFullRef || !validateChangelogSectionFullRef) {
+              ({
+                parseChangelogSectionFull: parseChangelogSectionFullRef,
+                validateChangelogSectionFull: validateChangelogSectionFullRef,
+              } = require('./pr-changelog-parser.js'));
+            }
+            
+            const NO_CHANGELOG_LABEL = 'no-changelog';
+            
+            /**
+             * Result from assembling PR changelog data.
+             *
+             * @typedef {Object} RenderResult
+             * @property {boolean} success
+             * @property {string|null} sectionBody - Rendered markdown body (without section header line), or null on failure.
+             * @property {AssemblyError[]} errors - Assembly errors (non-empty only when success is false).
+             * @property {IncludedPR[]} included - PRs that contributed at least one bullet or breaking-change block.
+             * @property {ExcludedPR[]} excluded - PRs that were explicitly excluded (no-changelog or Customer impact: none).
+             */
+            
+            /**
+             * @typedef {Object} AssemblyError
+             * @property {number} prNumber
+             * @property {string} prUrl
+             * @property {string} reason
+             */
+            
+            /**
+             * @typedef {Object} IncludedPR
+             * @property {number} prNumber
+             * @property {string} prUrl
+             * @property {string} summary
+             * @property {string|null} breakingChanges
+             */
+            
+            /**
+             * @typedef {Object} ExcludedPR
+             * @property {number} prNumber
+             * @property {string} prUrl
+             * @property {string} reason
+             * @property {string|null} [breakingChanges] - Present when a `Customer impact: none` PR also had a ### Breaking changes block.
+             */
+            
+            /**
+             * Normalize a bullet line: ensure it starts with `- ` (strip leading `-`, `*`, `+` and spaces).
+             *
+             * @param {string} line
+             * @returns {string}
+             */
+            function normalizeBulletPrefix(line) {
+              return '- ' + line.replace(/^[-*+]\s*/, '').replace(/^\s+/, '');
+            }
+            
+            /**
+             * Build a citation string for a PR.
+             *
+             * @param {number} prNumber
+             * @param {string} prUrl
+             * @returns {string} e.g. `([#123](https://github.com/.../pull/123))`
+             */
+            function buildCitation(prNumber, prUrl) {
+              return `([#${prNumber}](${prUrl}))`;
+            }
+            
+            /**
+             * Build a normalized change bullet from a PR summary and citation.
+             *
+             * @param {string} summary - Author-provided summary text (preserved verbatim).
+             * @param {number} prNumber
+             * @param {string} prUrl
+             * @returns {string}
+             */
+            function buildChangeBullet(summary, prNumber, prUrl) {
+              // Normalize the bullet prefix on the summary line, then append the citation.
+              const normalizedSummary = normalizeBulletPrefix(summary.trim());
+              const citation = buildCitation(prNumber, prUrl);
+              return `${normalizedSummary} ${citation}`;
+            }
+            
+            /**
+             * Render a changelog section body from an array of merged PR records.
+             *
+             * Each PR record must have:
+             *   - `number` {number}
+             *   - `url` {string}
+             *   - `labels` {string[]}
+             *   - `body` {string|null}
+             *
+             * @param {Array<{number: number, url: string, labels: string[], body: string|null}>} mergedPRs
+             * @returns {RenderResult}
+             */
+            function renderChangelogSection(mergedPRs) {
+              const errors = [];
+              const included = [];
+              const excluded = [];
+            
+              const changeBullets = [];
+              const breakingChangeBlocks = [];
+            
+              for (const pr of mergedPRs) {
+                const { number: prNumber, url: prUrl, labels, body } = pr;
+                const labelNames = Array.isArray(labels) ? labels : [];
+            
+                // Exclude PRs with the no-changelog label
+                if (labelNames.includes(NO_CHANGELOG_LABEL)) {
+                  excluded.push({ prNumber, prUrl, reason: 'no-changelog label' });
+                  continue;
+                }
+            
+                // Parse and validate the changelog section from the PR body
+                const parsed = parseChangelogSectionFullRef(body || '');
+            
+                if (parsed === null) {
+                  // No parseable ## Changelog section and no no-changelog label — hard fail
+                  errors.push({
+                    prNumber,
+                    prUrl,
+                    reason:
+                      `PR #${prNumber} (${prUrl}) has no parseable ## Changelog section and is not labeled 'no-changelog'. ` +
+                      'Add a ## Changelog section to the PR body or apply the no-changelog label.',
+                  });
+                  continue;
+                }
+            
+                // Validate structural correctness (invalid customerImpact, empty breaking-changes heading, etc.)
+                const { valid, errors: validationErrors } = validateChangelogSectionFullRef(parsed);
+                if (!valid) {
+                  if (parsed.customerImpact === null) {
+                    errors.push({
+                      prNumber,
+                      prUrl,
+                      reason: `PR #${prNumber}: ## Changelog section is missing the required Customer impact field`,
+                    });
+                  } else {
+                    errors.push({
+                      prNumber,
+                      prUrl,
+                      reason: `PR #${prNumber}: ## Changelog section failed validation: ${validationErrors.join('; ')}`,
+                    });
+                  }
+                  continue;
+                }
+            
+                const { customerImpact, summary, breakingChanges } = parsed;
+            
+                // Collect breaking-change block regardless of customerImpact
+                if (breakingChanges) {
+                  breakingChangeBlocks.push({ prNumber, prUrl, breakingChanges });
+                }
+            
+                // customerImpact === null case is already caught by validateChangelogSectionFull above
+                if (customerImpact.trim().toLowerCase() === 'none') {
+                  const excludedEntry = { prNumber, prUrl, reason: 'Customer impact: none' };
+                  if (breakingChanges !== null) {
+                    excludedEntry.breakingChanges = breakingChanges;
+                  }
+                  excluded.push(excludedEntry);
+                  continue;
+                }
+            
+                if (!summary) {
+                  // Missing summary for a non-none impact — treat as assembly error
+                  errors.push({
+                    prNumber,
+                    prUrl,
+                    reason:
+                      `PR #${prNumber} (${prUrl}) has Customer impact: ${customerImpact} but is missing the required Summary field.`,
+                  });
+                  continue;
+                }
+            
+                const bullet = buildChangeBullet(summary, prNumber, prUrl);
+                changeBullets.push(bullet);
+                included.push({ prNumber, prUrl, summary, breakingChanges: breakingChanges || null });
+              }
+            
+              if (errors.length > 0) {
+                return { success: false, sectionBody: null, errors, included, excluded };
+              }
+            
+              // Render the section body
+              const sectionParts = [];
+            
+              if (breakingChangeBlocks.length > 0) {
+                sectionParts.push('### Breaking changes');
+                sectionParts.push('');
+                for (const { breakingChanges } of breakingChangeBlocks) {
+                  // Preserve the author-provided breaking-change prose verbatim, trimming
+                  // only trailing whitespace from the block as a whole.
+                  sectionParts.push(breakingChanges.trimEnd());
+                  sectionParts.push('');
+                }
+              }
+            
+              if (changeBullets.length > 0) {
+                sectionParts.push('### Changes');
+                sectionParts.push('');
+                for (const bullet of changeBullets) {
+                  sectionParts.push(bullet);
+                }
+                sectionParts.push('');
+              }
+            
+              // Trim trailing blank lines
+              while (sectionParts.length > 0 && sectionParts[sectionParts.length - 1] === '') {
+                sectionParts.pop();
+              }
+            
+              const sectionBody = sectionParts.length > 0 ? sectionParts.join('\n') : '';
+            
+              return { success: true, sectionBody, errors: [], included, excluded };
+            }
+            
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                NO_CHANGELOG_LABEL,
+                buildChangeBullet,
+                buildCitation,
+                normalizeBulletPrefix,
+                renderChangelogSection,
+              };
+            }
+            
             const fs = require('fs');
             const { execSync } = require('child_process');
             
-            const {
-              parseSemverTags,
-              buildReleaseContext,
-            } = require('./changelog-release-context.js');
-            const {
-              parseCommitShas,
-              buildEvidenceManifest,
-            } = require('./changelog-pr-evidence.js');
-            const { renderChangelogSection } = require('./changelog-renderer.js');
+            let parseSemverTagsRef = typeof parseSemverTags === 'function' ? parseSemverTags : null;
+            let buildReleaseContextRef = typeof buildReleaseContext === 'function' ? buildReleaseContext : null;
+            let parseCommitShasRef = typeof parseCommitShas === 'function' ? parseCommitShas : null;
+            let buildEvidenceManifestRef = typeof buildEvidenceManifest === 'function' ? buildEvidenceManifest : null;
+            let renderChangelogSectionRef = typeof renderChangelogSection === 'function' ? renderChangelogSection : null;
+            
+            if (!parseSemverTagsRef || !buildReleaseContextRef) {
+              ({
+                parseSemverTags: parseSemverTagsRef,
+                buildReleaseContext: buildReleaseContextRef,
+              } = require('./changelog-release-context.js'));
+            }
+            
+            if (!parseCommitShasRef || !buildEvidenceManifestRef) {
+              ({
+                parseCommitShas: parseCommitShasRef,
+                buildEvidenceManifest: buildEvidenceManifestRef,
+              } = require('./changelog-pr-evidence.js'));
+            }
+            
+            if (!renderChangelogSectionRef) {
+              ({ renderChangelogSection: renderChangelogSectionRef } = require('./changelog-renderer.js'));
+            }
             
             function listSemverTags({ exec = execSync } = {}) {
               const tagsRaw = exec('git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname', {
@@ -74,7 +808,7 @@ jobs:
                 stdio: ['pipe', 'pipe', 'pipe'],
               }).trim();
             
-              return parseSemverTags(tagsRaw);
+              return parseSemverTagsRef(tagsRaw);
             }
             
             function resolveEngineContext({
@@ -95,7 +829,7 @@ jobs:
                 throw new Error('release mode requires targetVersion');
               }
             
-              const previousTagResult = buildReleaseContext({
+              const previousTagResult = buildReleaseContextRef({
                 eventName: mode === 'release' ? 'pull_request' : 'workflow_dispatch',
                 headBranch: mode === 'release' ? `prep-release-${targetVersion}` : '',
                 tags,
@@ -119,7 +853,7 @@ jobs:
                 stdio: ['pipe', 'pipe', 'pipe'],
               }).trim();
             
-              return parseCommitShas(raw);
+              return parseCommitShasRef(raw);
             }
             
             function getLabelNames(pr) {
@@ -276,7 +1010,7 @@ jobs:
               });
               const prRecords = mergedPullRequests.map(buildRendererPullRequestRecord);
             
-              const manifest = buildEvidenceManifest({
+              const manifest = buildEvidenceManifestRef({
                 mode: releaseContext.mode,
                 targetVersion: releaseContext.targetVersion,
                 previousTag: releaseContext.previousTag,
@@ -285,7 +1019,7 @@ jobs:
                 generatedAt,
               });
             
-              const renderResult = renderChangelogSection(prRecords);
+              const renderResult = renderChangelogSectionRef(prRecords);
               if (!renderResult.success) {
                 const error = new Error('Changelog assembly failed');
                 error.renderErrors = renderResult.errors;
@@ -562,19 +1296,16 @@ jobs:
             
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
-        if: >-
-          steps.changelog_engine.outputs.mode == 'unreleased' &&
-          steps.changelog_engine.outputs.has_pull_requests == 'true' &&
-          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'unreleased'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "No unreleased changelog changes to commit"
             echo "pushed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+          git add CHANGELOG.md
           git commit -m "chore(changelog): update unreleased changelog section"
           git push origin HEAD:generated-changelog --force
           echo "pushed=true" >> $GITHUB_OUTPUT

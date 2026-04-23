@@ -1,15 +1,34 @@
+//include: ./changelog-release-context.js
+//include: ./changelog-pr-evidence.js
+//include: ./pr-changelog-parser.js
+//include: ./changelog-renderer.js
+
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-const {
-  parseSemverTags,
-  buildReleaseContext,
-} = require('./changelog-release-context.js');
-const {
-  parseCommitShas,
-  buildEvidenceManifest,
-} = require('./changelog-pr-evidence.js');
-const { renderChangelogSection } = require('./changelog-renderer.js');
+let parseSemverTagsRef = typeof parseSemverTags === 'function' ? parseSemverTags : null;
+let buildReleaseContextRef = typeof buildReleaseContext === 'function' ? buildReleaseContext : null;
+let parseCommitShasRef = typeof parseCommitShas === 'function' ? parseCommitShas : null;
+let buildEvidenceManifestRef = typeof buildEvidenceManifest === 'function' ? buildEvidenceManifest : null;
+let renderChangelogSectionRef = typeof renderChangelogSection === 'function' ? renderChangelogSection : null;
+
+if (!parseSemverTagsRef || !buildReleaseContextRef) {
+  ({
+    parseSemverTags: parseSemverTagsRef,
+    buildReleaseContext: buildReleaseContextRef,
+  } = require('./changelog-release-context.js'));
+}
+
+if (!parseCommitShasRef || !buildEvidenceManifestRef) {
+  ({
+    parseCommitShas: parseCommitShasRef,
+    buildEvidenceManifest: buildEvidenceManifestRef,
+  } = require('./changelog-pr-evidence.js'));
+}
+
+if (!renderChangelogSectionRef) {
+  ({ renderChangelogSection: renderChangelogSectionRef } = require('./changelog-renderer.js'));
+}
 
 function listSemverTags({ exec = execSync } = {}) {
   const tagsRaw = exec('git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname', {
@@ -17,7 +36,7 @@ function listSemverTags({ exec = execSync } = {}) {
     stdio: ['pipe', 'pipe', 'pipe'],
   }).trim();
 
-  return parseSemverTags(tagsRaw);
+  return parseSemverTagsRef(tagsRaw);
 }
 
 function resolveEngineContext({
@@ -38,7 +57,7 @@ function resolveEngineContext({
     throw new Error('release mode requires targetVersion');
   }
 
-  const previousTagResult = buildReleaseContext({
+  const previousTagResult = buildReleaseContextRef({
     eventName: mode === 'release' ? 'pull_request' : 'workflow_dispatch',
     headBranch: mode === 'release' ? `prep-release-${targetVersion}` : '',
     tags,
@@ -62,7 +81,7 @@ function listCommitShasInRange(compareRange, { exec = execSync } = {}) {
     stdio: ['pipe', 'pipe', 'pipe'],
   }).trim();
 
-  return parseCommitShas(raw);
+  return parseCommitShasRef(raw);
 }
 
 function getLabelNames(pr) {
@@ -219,7 +238,7 @@ async function runChangelogEngine({
   });
   const prRecords = mergedPullRequests.map(buildRendererPullRequestRecord);
 
-  const manifest = buildEvidenceManifest({
+  const manifest = buildEvidenceManifestRef({
     mode: releaseContext.mode,
     targetVersion: releaseContext.targetVersion,
     previousTag: releaseContext.previousTag,
@@ -228,7 +247,7 @@ async function runChangelogEngine({
     generatedAt,
   });
 
-  const renderResult = renderChangelogSection(prRecords);
+  const renderResult = renderChangelogSectionRef(prRecords);
   if (!renderResult.success) {
     const error = new Error('Changelog assembly failed');
     error.renderErrors = renderResult.errors;
