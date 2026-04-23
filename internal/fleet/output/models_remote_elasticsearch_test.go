@@ -73,8 +73,8 @@ func TestOutputModelRemoteElasticsearchModelMapsSSLCertificateAuthoritiesAndClie
 				types.StringValue("ca-1"),
 				types.StringValue("ca-2"),
 			}),
-			"certificate":      types.StringValue("client-cert"),
-			"key":              types.StringValue("client-key"),
+			"certificate":       types.StringValue("client-cert"),
+			"key":               types.StringValue("client-key"),
 			"verification_mode": types.StringNull(),
 		},
 	)
