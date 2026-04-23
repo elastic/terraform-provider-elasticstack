@@ -258,11 +258,15 @@ func (e *Engine) ResolveReleaseContext() (ReleaseContext, error) {
 			candidates = append(candidates, tag)
 		}
 	}
+	compareTarget := "HEAD"
+	if ctx.Mode == ModeRelease && ctx.ExcludedCurrentTag {
+		compareTarget = ctx.ExcludedTag
+	}
 	if len(candidates) > 0 {
 		ctx.PreviousTag = candidates[0]
-		ctx.CompareRange = ctx.PreviousTag + "..HEAD"
+		ctx.CompareRange = ctx.PreviousTag + ".." + compareTarget
 	} else {
-		ctx.CompareRange = "HEAD"
+		ctx.CompareRange = compareTarget
 	}
 
 	return ctx, nil

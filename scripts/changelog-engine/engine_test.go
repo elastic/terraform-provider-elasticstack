@@ -30,21 +30,48 @@ import (
 )
 
 func TestResolveReleaseContext(t *testing.T) {
-	engine := testEngine(t)
-	engine.gitExec = func(_ ...string) ([]byte, error) {
-		return []byte("v2.0.0\nv1.9.0\n"), nil
+	tests := []struct {
+		name                string
+		tags                string
+		wantPreviousTag     string
+		wantCompareRange    string
+		wantExcludedCurrent bool
+	}{
+		{
+			name:                "bounds release range to target tag when present",
+			tags:                "v2.0.0\nv1.9.0\n",
+			wantPreviousTag:     "v1.9.0",
+			wantCompareRange:    "v1.9.0..v2.0.0",
+			wantExcludedCurrent: true,
+		},
+		{
+			name:                "uses head when target tag is absent",
+			tags:                "v1.9.0\n",
+			wantPreviousTag:     "v1.9.0",
+			wantCompareRange:    "v1.9.0..HEAD",
+			wantExcludedCurrent: false,
+		},
 	}
-	engine.config.Mode = ModeRelease
-	engine.config.TargetVersion = "2.0.0"
 
-	ctx, err := engine.ResolveReleaseContext()
-	require.NoError(t, err)
-	assert.Equal(t, ModeRelease, ctx.Mode)
-	assert.Equal(t, "2.0.0", ctx.TargetVersion)
-	assert.Equal(t, "prep-release-2.0.0", ctx.TargetBranch)
-	assert.Equal(t, "v1.9.0", ctx.PreviousTag)
-	assert.Equal(t, "v1.9.0..HEAD", ctx.CompareRange)
-	assert.True(t, ctx.ExcludedCurrentTag)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine := testEngine(t)
+			engine.gitExec = func(_ ...string) ([]byte, error) {
+				return []byte(tt.tags), nil
+			}
+			engine.config.Mode = ModeRelease
+			engine.config.TargetVersion = "2.0.0"
+
+			ctx, err := engine.ResolveReleaseContext()
+			require.NoError(t, err)
+			assert.Equal(t, ModeRelease, ctx.Mode)
+			assert.Equal(t, "2.0.0", ctx.TargetVersion)
+			assert.Equal(t, "prep-release-2.0.0", ctx.TargetBranch)
+			assert.Equal(t, tt.wantPreviousTag, ctx.PreviousTag)
+			assert.Equal(t, tt.wantCompareRange, ctx.CompareRange)
+			assert.Equal(t, tt.wantExcludedCurrent, ctx.ExcludedCurrentTag)
+		})
+	}
 }
 
 func TestRenderChangelogSection(t *testing.T) {
