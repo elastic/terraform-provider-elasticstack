@@ -71,13 +71,13 @@ The generated response type (`PostFleetEpmPackagesResponse`) has only `Body []by
 
 The implementation tries all three paths in order. If none yields a package name, it falls back to parsing the zip manifest directly. If the manifest parse also fails, an error is returned. If a name was obtained from the response but no version was found, only the version is filled from the manifest.
 
-### 7. Drift detection on Kibana < 8.2 is not possible
+### 7. Minimum Kibana version: 8.2.0
 
-**Decision**: On Kibana < 8.2.0 the read path preserves existing state unconditionally rather than removing the resource, even if the package has been deleted out-of-band.
+**Decision**: Create, Read, and Update gate on Kibana >= 8.2.0 using `EnforceMinVersion` and return a clear error diagnostic if the connected version is older.
 
-**Rationale**: `GET /api/fleet/epm/packages/{name}/{version}` does not support custom-uploaded packages on older Kibana versions: 7.17.x returns HTTP 400 and 8.0.x–8.1.x returns HTTP 404 regardless of whether the package is installed. Treating these error responses as genuine absence would cause false-positive state removal on every refresh. Using `EnforceMinVersion(8.2.0)` to gate the drift-detection logic is the only safe option given the API behaviour on those versions.
+**Rationale**: On Kibana < 8.2, `GET /api/fleet/epm/packages/{name}/{version}` returns HTTP 400 (7.17.x) or HTTP 404 (8.0.x–8.1.x) for custom-uploaded packages regardless of installation status, making drift detection impossible. A resource that silently loses drift detection provides a broken user experience. An explicit version gate with a clear error message is better than silent misbehaviour.
 
-**Trade-off**: Out-of-band deletion of the package on Kibana < 8.2.0 will not be detected by `terraform plan` or `terraform refresh`. Users on those versions must reconcile state manually if the package is removed outside of Terraform. This is an accepted limitation documented in the spec compatibility exception.
+**Consequence**: Users on Kibana < 8.2 cannot use this resource. Kibana < 8.2 is EOL, so this is an acceptable constraint.
 
 ## Risks / Trade-offs
 

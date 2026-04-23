@@ -73,13 +73,13 @@ On each refresh, the provider SHALL verify the package is still installed by cal
 - **WHEN** the Fleet package info API returns a 404 or the package status is not `installed`
 - **THEN** the provider removes the resource from state, signalling drift
 
-#### Compatibility exception: Kibana < 8.2
-On Kibana versions before 8.2.0, `GET /api/fleet/epm/packages/{name}/{version}` does not
-support custom-uploaded packages: 7.17.x returns HTTP 400 and 8.0.x–8.1.x returns HTTP 404
-even when the package is installed. To avoid false-positive state removal on these versions,
-the provider uses `EnforceMinVersion` to detect whether the individual package GET endpoint
-is reliable, and preserves state rather than removing it when the endpoint is not trustworthy.
-Out-of-band deletion is not detected on Kibana < 8.2.0 as a consequence of this API limitation.
+#### Minimum version requirement: Kibana 8.2+
+This resource requires Kibana 8.2.0 or later. On Create, Read, and Update, the provider
+SHALL verify that the connected Kibana version meets this requirement and SHALL return an
+error diagnostic if it does not. This gate exists because `GET /api/fleet/epm/packages/{name}/{version}`
+does not support custom-uploaded packages on Kibana < 8.2 (7.17.x returns HTTP 400,
+8.0.x–8.1.x returns HTTP 404 regardless of installation status), making drift detection
+impossible on those versions.
 
 ### Requirement: Plan detects file content changes
 The provider SHALL compute the SHA256 hash of the file at `package_path` during plan and compare it to the stored `checksum`. If they differ, `package_name`, `package_version`, and `checksum` SHALL be marked as unknown in the plan, indicating a pending change.

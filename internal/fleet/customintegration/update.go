@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -60,6 +61,19 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 	fleetClient, err := apiClient.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
+		return
+	}
+
+	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(verDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !meetsMinVersion {
+		resp.Diagnostics.AddError(
+			"Kibana version not supported",
+			"elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
+		)
 		return
 	}
 
