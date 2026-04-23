@@ -12,6 +12,6 @@
 
 ## 3. Update release preparation workflow
 
-- [ ] 3.1 Refactor `.github/workflows/prep-release.yml` to invoke the shared changelog engine in release mode after applying the version bump and before PR creation/reuse
-- [ ] 3.2 Update release preparation to produce a single deterministic commit containing both the version bump and final release changelog update, while retaining deterministic branch naming, PR reuse, and `no-changelog` labeling
-- [ ] 3.3 Verify the updated workflow behavior and sync the canonical specs affected by release preparation and changelog generation
+- [x] 3.1 Refactor `.github/workflows/prep-release.yml` to invoke the shared changelog engine in release mode after applying the version bump and before PR creation/reuse
+- [x] 3.2 Update release preparation to produce a single deterministic commit containing both the version bump and final release changelog update, while retaining deterministic branch naming, PR reuse, and `no-changelog` labeling
+- [x] 3.3 Verify the updated workflow behavior and sync the canonical specs affected by release preparation and changelog generation
