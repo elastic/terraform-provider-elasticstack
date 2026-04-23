@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4e8595796b9d4e6dff0905d4b51698108e5b963b869bcd63edb0a5370da9bde5","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4.6"}
-# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6.3.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"8be27ccdcb4aa5a69150433f4acfb337f2a48264fba09d471a8d7b993ebe713c","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6.3.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"},{"repo":"hashicorp/setup-terraform","sha":"5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85","version":"v4"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -35,10 +35,12 @@
 #   - actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 #   - actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
 #   - actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+#   - actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
 #   - actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
 #   - actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
 #   - actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
 #   - github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
+#   - hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
 #
 # Container images used:
 #   - ghcr.io/github/gh-aw-firewall/agent:0.25.20
@@ -823,7 +825,7 @@ jobs:
         env:
           GH_AW_INFO_ENGINE_ID: "claude"
           GH_AW_INFO_ENGINE_NAME: "Claude Code"
-          GH_AW_INFO_MODEL: "llm-gateway/claude-sonnet-4.6"
+          GH_AW_INFO_MODEL: "llm-gateway/claude-sonnet-4-6"
           GH_AW_INFO_VERSION: "2.1.98"
           GH_AW_INFO_AGENT_VERSION: "2.1.98"
           GH_AW_INFO_CLI_VERSION: "v0.68.3"
@@ -908,19 +910,19 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF'
+          cat << 'GH_AW_PROMPT_36e2904a7afcbe20_EOF'
           <system>
-          GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF
+          GH_AW_PROMPT_36e2904a7afcbe20_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF'
+          cat << 'GH_AW_PROMPT_36e2904a7afcbe20_EOF'
           <safe-output-tools>
           Tools: create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF
+          GH_AW_PROMPT_36e2904a7afcbe20_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF'
+          cat << 'GH_AW_PROMPT_36e2904a7afcbe20_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -953,12 +955,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF
+          GH_AW_PROMPT_36e2904a7afcbe20_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF'
+          cat << 'GH_AW_PROMPT_36e2904a7afcbe20_EOF'
           </system>
           {{#runtime-import .github/workflows/code-factory-issue.md}}
-          GH_AW_PROMPT_d97be6e6c6fbbeb6_EOF
+          GH_AW_PROMPT_36e2904a7afcbe20_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
@@ -1088,10 +1090,24 @@ jobs:
         run: bash "${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh"
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          cache: false
+          go-version-file: go.mod
+      - name: Export Go paths for AWF chroot mode
+        run: |
+          echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+          echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+          echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: package.json
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
+        with:
+          terraform_wrapper: false
       - name: Setup repository dependencies
         run: make setup
 
@@ -1148,9 +1164,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_6cda1812eedda6b7_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_02d5384f4e9effd7_EOF'
           {"create_pull_request":{"labels":["code-factory"],"max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_6cda1812eedda6b7_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_02d5384f4e9effd7_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -1347,7 +1363,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_2921026a0353d70b_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_ef422c7ff2dad245_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -1387,7 +1403,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_2921026a0353d70b_EOF
+          GH_AW_MCP_CONFIG_ef422c7ff2dad245_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1477,7 +1493,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
           ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
-          ANTHROPIC_MODEL: llm-gateway/claude-sonnet-4.6
+          ANTHROPIC_MODEL: llm-gateway/claude-sonnet-4-6
           BASH_DEFAULT_TIMEOUT_MS: 60000
           BASH_MAX_TIMEOUT_MS: 60000
           DISABLE_BUG_COMMAND: 1
@@ -1899,7 +1915,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
           ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
-          ANTHROPIC_MODEL: llm-gateway/claude-sonnet-4.6
+          ANTHROPIC_MODEL: llm-gateway/claude-sonnet-4-6
           BASH_DEFAULT_TIMEOUT_MS: 60000
           BASH_MAX_TIMEOUT_MS: 60000
           DISABLE_BUG_COMMAND: 1
@@ -2721,7 +2737,7 @@ jobs:
       GH_AW_DETECTION_REASON: ${{ needs.detection.outputs.detection_reason }}
       GH_AW_EFFECTIVE_TOKENS: ${{ needs.agent.outputs.effective_tokens }}
       GH_AW_ENGINE_ID: "claude"
-      GH_AW_ENGINE_MODEL: "llm-gateway/claude-sonnet-4.6"
+      GH_AW_ENGINE_MODEL: "llm-gateway/claude-sonnet-4-6"
       GH_AW_WORKFLOW_ID: "code-factory-issue"
       GH_AW_WORKFLOW_NAME: "Code Factory Issue Intake"
     outputs:
