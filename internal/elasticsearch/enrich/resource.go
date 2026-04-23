@@ -67,6 +67,9 @@ func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaReques
 
 func (r *enrichPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("execute"), types.BoolValue(true))...)
 }
 
