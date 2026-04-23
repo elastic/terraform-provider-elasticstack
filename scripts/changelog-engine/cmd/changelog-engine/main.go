@@ -89,14 +89,15 @@ func run(ctx context.Context, cfg changelogengine.Config, outputPath string) (*c
 		}
 	}
 
-	if err := printGitHubOutput(result.Outputs); err != nil {
+	if err := printGitHubOutput(result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-func printGitHubOutput(outputs changelogengine.Outputs) error {
+func printGitHubOutput(result *changelogengine.RunResult) error {
+	outputs := result.Outputs
 	path := os.Getenv("GITHUB_OUTPUT")
 	if path == "" {
 		return nil
@@ -139,6 +140,23 @@ func printGitHubOutput(outputs changelogengine.Outputs) error {
 		return err
 	}
 	if _, err := fmt.Fprintf(f, "pr_count=%d\n", outputs.PRCount); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintln(f, "pull_requests<<EOF"); err != nil {
+		_ = f.Close()
+		return err
+	}
+	payload, err := json.Marshal(result.PullRequests)
+	if err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "%s\n", payload); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintln(f, "EOF"); err != nil {
 		_ = f.Close()
 		return err
 	}

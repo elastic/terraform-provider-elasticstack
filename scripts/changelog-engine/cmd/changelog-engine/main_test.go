@@ -79,5 +79,7 @@ func TestRunWritesJSONOutputAndGitHubOutputsSeparately(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(githubOutput), "mode=unreleased")
 	assert.Contains(t, string(githubOutput), "target_branch=generated-changelog")
+	assert.Contains(t, string(githubOutput), "pull_requests<<EOF")
+	assert.Contains(t, string(githubOutput), "[{\"number\":11")
 	assert.NotContains(t, string(githubOutput), "\"outputs\"")
 }
