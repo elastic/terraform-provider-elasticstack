@@ -3,10 +3,19 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-  pull_request_target:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+    inputs:
+      mode:
+        description: Changelog generation mode
+        required: true
+        default: unreleased
+        type: choice
+        options:
+          - unreleased
+          - release
+      target_version:
+        description: Release target version (required when mode=release)
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -16,10 +25,6 @@ jobs:
   generate-changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name != 'pull_request_target' ||
-      (startsWith(github.head_ref, 'prep-release-') &&
-       github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -27,46 +32,55 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || '' }}
+          ref: >-
+            ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release' &&
+                format('refs/heads/prep-release-{0}', github.event.inputs.target_version) || '' }}
 
       - name: Resolve release context
         id: resolve_release_context
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          mode: ${{ github.event.inputs.mode || 'unreleased' }}
+          target_version: ${{ github.event.inputs.target_version || '' }}
           x-script-include: scripts/resolve-release-context.inline.js
 
-      - name: Gather merged PRs
-        id: gather_merged_prs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+      - name: Run shared changelog engine
+        id: run_changelog_engine
         env:
-          PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/gather-merged-prs.inline.js
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          args=(
+            run ./scripts/changelog-engine
+            -mode "${{ steps.resolve_release_context.outputs.mode }}"
+            -changelog CHANGELOG.md
+            -output "$RUNNER_TEMP/changelog-engine-outputs"
+          )
 
-      - name: Render changelog section
-        id: render_changelog
-        if: steps.gather_merged_prs.outputs.has_prs == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        env:
-          MERGED_PRS_PATH: ${{ steps.gather_merged_prs.outputs.merged_prs_path }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-          CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/render-changelog.inline.js
+          if [[ -n "${{ steps.resolve_release_context.outputs.target_version }}" ]]; then
+            args+=(-target-version "${{ steps.resolve_release_context.outputs.target_version }}")
+          fi
+
+          if [[ -n "${{ steps.resolve_release_context.outputs.previous_tag }}" ]]; then
+            args+=(-previous-tag "${{ steps.resolve_release_context.outputs.previous_tag }}")
+          fi
+
+          go "${args[@]}"
+
+      - name: Load changelog engine outputs
+        id: changelog_engine
+        run: |
+          while IFS='=' read -r key value; do
+            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+          done < "$RUNNER_TEMP/changelog-engine-outputs"
 
       - name: Commit changelog (release mode)
         id: commit_release
         if: >-
           steps.resolve_release_context.outputs.mode == 'release' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
         env:
           TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
           TARGET_BRANCH: ${{ steps.resolve_release_context.outputs.target_branch }}
@@ -101,8 +115,7 @@ jobs:
         id: push_unreleased
         if: >-
           steps.resolve_release_context.outputs.mode == 'unreleased' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -1,7 +1,7 @@
 const { execSync } = require('child_process');
 //include: ../../lib/changelog-release-context.js
 
-// Determine mode from event
+// Determine mode from event or explicit workflow_dispatch inputs
 const eventName = context.eventName;
 const headBranch =
   context.payload.pull_request?.head?.ref ??
@@ -9,6 +9,13 @@ const headBranch =
   process.env.GITHUB_HEAD_REF ??
   process.env.GITHUB_REF_NAME ??
   '';
+const dispatchMode = core.getInput('mode') || 'unreleased';
+const targetVersionInput = core.getInput('target_version') || '';
+
+if (eventName === 'workflow_dispatch' && dispatchMode === 'release' && !targetVersionInput.trim()) {
+  core.setFailed('workflow_dispatch release mode requires a target_version input');
+  process.exit(1);
+}
 
 let tags = [];
 try {
@@ -23,7 +30,13 @@ try {
   core.warning(`Failed to list git tags: ${err.message}`);
 }
 
-const releaseContext = buildReleaseContext({ eventName, headBranch, tags });
+const releaseContext = buildReleaseContext({
+  eventName,
+  headBranch,
+  dispatchMode,
+  targetVersion: targetVersionInput,
+  tags,
+});
 
 if (releaseContext.mode === 'release') {
   core.info(`Release mode: branch=${headBranch}, version=${releaseContext.targetVersion}`);

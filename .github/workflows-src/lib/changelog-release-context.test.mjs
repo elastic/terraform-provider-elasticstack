@@ -25,7 +25,7 @@ test('resolveReleaseMode detects prep-release pull request branches', () => {
   );
 });
 
-test('resolveReleaseMode defaults to unreleased for non-release branches', () => {
+test('resolveReleaseMode defaults workflow_dispatch to unreleased', () => {
   assert.deepEqual(
     resolveReleaseMode({
       eventName: 'workflow_dispatch',
@@ -35,6 +35,21 @@ test('resolveReleaseMode defaults to unreleased for non-release branches', () =>
       mode: 'unreleased',
       targetVersion: '',
       targetBranch: 'generated-changelog',
+    }
+  );
+});
+
+test('resolveReleaseMode uses explicit workflow_dispatch release inputs', () => {
+  assert.deepEqual(
+    resolveReleaseMode({
+      eventName: 'workflow_dispatch',
+      dispatchMode: 'release',
+      targetVersion: '2.0.0',
+    }),
+    {
+      mode: 'release',
+      targetVersion: '2.0.0',
+      targetBranch: 'prep-release-2.0.0',
     }
   );
 });
@@ -66,11 +81,31 @@ test('buildCompareRange falls back to HEAD when no previous tag exists', () => {
   assert.equal(buildCompareRange('v1.2.2'), 'v1.2.2..HEAD');
 });
 
-test('buildReleaseContext combines mode and previous tag selection', () => {
+test('buildReleaseContext combines pull request release mode and previous tag selection', () => {
   assert.deepEqual(
     buildReleaseContext({
       eventName: 'pull_request_target',
       headBranch: 'prep-release-2.0.0',
+      tags: ['v2.0.0', 'v1.9.0'],
+    }),
+    {
+      mode: 'release',
+      targetVersion: '2.0.0',
+      targetBranch: 'prep-release-2.0.0',
+      previousTag: 'v1.9.0',
+      excludedTag: 'v2.0.0',
+      excludedCurrentTag: true,
+      compareRange: 'v1.9.0..HEAD',
+    }
+  );
+});
+
+test('buildReleaseContext combines workflow_dispatch release mode and previous tag selection', () => {
+  assert.deepEqual(
+    buildReleaseContext({
+      eventName: 'workflow_dispatch',
+      dispatchMode: 'release',
+      targetVersion: '2.0.0',
       tags: ['v2.0.0', 'v1.9.0'],
     }),
     {
