@@ -60,15 +60,29 @@ if: >-
   needs.pre_activation.outputs.actor_trusted == 'true' &&
   needs.pre_activation.outputs.duplicate_pr_found != 'true'
 steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
       node-version-file: package.json
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
   - name: Setup repository dependencies
     run: make setup
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4.6"
+  model: "llm-gateway/claude-sonnet-4-6"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
@@ -105,7 +119,7 @@ safe-outputs:
 
 # Code Factory issue intake worker
 
-You implement exactly one GitHub issue labeled `code-factory`. The triggering issue is the sole source of truth for scope, acceptance criteria, and requested behavior. Do not broaden the scope beyond what the issue describes unless the repository already requires it to make the implementation viable.
+You implement exactly one GitHub issue labeled `code-factory`. The triggering issue is the sole source of truth for scope and requested behavior. Any acceptance criteria defined by the issue must be met, and your changes must be properly covered by automated testing. Do not broaden the scope beyond what the issue describes unless the repository already requires it to make the implementation viable.
 
 ## Pre-activation context
 
@@ -123,6 +137,19 @@ Deterministic pre-activation has already decided that this issue event is eligib
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`
 - **Required branch**: `code-factory/issue-${{ github.event.issue.number }}`
+
+## Test environment
+
+The Elastic Stack is available in the agent environment. Run targeted acceptance tests with:
+
+```bash
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
+ELASTICSEARCH_USERNAME=elastic \
+ELASTICSEARCH_PASSWORD=password \
+KIBANA_ENDPOINT=http://host.docker.internal:5601 \
+TF_ACC=1 \
+go test -v -run TestAccResourceName ./path/to/package
+```
 
 ## Task
 
@@ -146,6 +173,7 @@ The linked pull request must:
 ## Guardrails
 
 - Do not re-check trigger eligibility, actor trust, or duplicate PR state; deterministic pre-activation already handled those checks.
+- Your changes must pass linting and testing locally before creating a pull request. `make build` must succeed, and targeted acceptance tests must pass.
 - Do not open a second pull request for the same issue.
 - Do not change the branch naming convention.
 - Do not open issues in this workflow.
