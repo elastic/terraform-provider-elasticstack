@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -36,6 +37,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
+
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &enrichPolicyResource{}
+var _ resource.ResourceWithConfigure = &enrichPolicyResource{}
+var _ resource.ResourceWithImportState = &enrichPolicyResource{}
 
 func NewEnrichPolicyResource() resource.Resource {
 	return &enrichPolicyResource{}
@@ -57,6 +63,11 @@ func (r *enrichPolicyResource) Configure(_ context.Context, req resource.Configu
 
 func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = GetResourceSchema()
+}
+
+func (r *enrichPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("execute"), types.BoolValue(true))...)
 }
 
 func GetResourceSchema() schema.Schema {
