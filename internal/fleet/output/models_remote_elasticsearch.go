@@ -40,9 +40,9 @@ func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, d
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key)
+		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
 	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil)
+		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
 	}
 
 	// Preserve configured secret when Fleet omits/redacts it in read responses.

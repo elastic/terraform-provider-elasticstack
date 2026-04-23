@@ -528,9 +528,9 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key)
+		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
 	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil)
+		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
 	}
 
 	// Kafka-specific fields - initialize kafka nested object

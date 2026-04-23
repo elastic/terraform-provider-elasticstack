@@ -178,7 +178,7 @@ func Test_sslToObjectValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, diags := sslToObjectValue(context.Background(), tt.args.certificate, tt.args.certificateAuthorities, tt.args.key)
+			got, diags := sslToObjectValue(context.Background(), tt.args.certificate, tt.args.certificateAuthorities, tt.args.key, nil)
 			if (diags.HasError()) != tt.wantErr {
 				t.Errorf("sslToObjectValue() error = %v, wantErr %v", diags.HasError(), tt.wantErr)
 				return
