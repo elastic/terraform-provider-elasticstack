@@ -1,0 +1,106 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/google/go-github/v85/github"
+	"golang.org/x/oauth2"
+)
+
+func main() {
+	if err := run(context.Background()); err != nil {
+		fmt.Fprintf(os.Stderr, "changelog-generation error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context) error {
+	token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
+	if token == "" {
+		return errors.New("missing GITHUB_TOKEN")
+	}
+	repoValue := strings.TrimSpace(os.Getenv("GITHUB_REPOSITORY"))
+	owner, repo, err := parseRepository(repoValue)
+	if err != nil {
+		return err
+	}
+	mode := strings.TrimSpace(os.Getenv("CHANGELOG_MODE"))
+	targetVersion := strings.TrimSpace(os.Getenv("TARGET_VERSION"))
+	changelogPath := strings.TrimSpace(os.Getenv("CHANGELOG_PATH"))
+	if changelogPath == "" {
+		changelogPath = "CHANGELOG.md"
+	}
+
+	client := githubClient(ctx, token)
+	result, err := runChangelogEngine(ctx, client, owner, repo, mode, targetVersion, changelogPath, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+
+	if outputFile := os.Getenv("GITHUB_OUTPUT"); outputFile != "" {
+		lines := []string{
+			fmt.Sprintf("mode=%s", result.Mode),
+			fmt.Sprintf("target_version=%s", result.TargetVersion),
+			fmt.Sprintf("target_branch=%s", result.TargetBranch),
+			fmt.Sprintf("previous_tag=%s", result.PreviousTag),
+			fmt.Sprintf("compare_range=%s", result.CompareRange),
+			fmt.Sprintf("section_header=%s", result.SectionHeader),
+			fmt.Sprintf("has_user_facing_changes=%t", result.HasUserFacingChanges),
+			fmt.Sprintf("has_pull_requests=%t", len(result.PullRequests) > 0),
+		}
+		for _, line := range lines {
+			if err := appendToFile(outputFile, line+"\n"); err != nil {
+				return fmt.Errorf("write GITHUB_OUTPUT: %w", err)
+			}
+		}
+	}
+
+	fmt.Printf("generated changelog section %q from %s\n", result.SectionHeader, result.CompareRange)
+	return nil
+}
+
+func githubClient(ctx context.Context, token string) *github.Client {
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	httpClient := oauth2.NewClient(ctx, tokenSource)
+	return github.NewClient(httpClient)
+}
+
+func parseRepository(repo string) (string, string, error) {
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		return "", "", fmt.Errorf("invalid GITHUB_REPOSITORY: %q", repo)
+	}
+	return parts[0], parts[1], nil
+}
+
+func appendToFile(path, content string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
+}

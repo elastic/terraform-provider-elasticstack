@@ -116,31 +116,21 @@ jobs:
             echo "CHANGED=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Setup Go for changelog engine
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
       - name: Generate release changelog
         id: changelog
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           CHANGELOG_MODE: release
           TARGET_VERSION: ${{ steps.version.outputs.TARGET_VERSION }}
           CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { runChangelogEngine } = require('./.github/workflows-src/lib/changelog-engine.js');
-
-            const result = await runChangelogEngine({
-              github,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              mode: process.env.CHANGELOG_MODE,
-              targetVersion: process.env.TARGET_VERSION,
-              changelogPath: process.env.CHANGELOG_PATH,
-            });
-
-            core.setOutput('target_version', result.targetVersion);
-            core.setOutput('compare_range', result.compareRange);
-            core.setOutput('section_header', result.sectionHeader);
-            core.setOutput('has_user_facing_changes', String(result.hasUserFacingChanges));
+        run: go run ./scripts/changelog-generation/...
 
       - name: Commit release preparation changes
         id: commit-release

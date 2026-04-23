@@ -45,16 +45,21 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
       - name: Run shared changelog engine
         id: changelog_engine
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           CHANGELOG_MODE: ${{ github.event_name == 'schedule' && 'unreleased' || inputs.mode }}
           TARGET_VERSION: ${{ inputs.target_version || '' }}
           CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/run-changelog-engine.inline.js
+        run: go run ./scripts/changelog-generation/...
 
       - name: Commit changelog (release mode)
         id: commit_release
