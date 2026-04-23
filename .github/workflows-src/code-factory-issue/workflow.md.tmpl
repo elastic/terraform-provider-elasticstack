@@ -174,9 +174,10 @@ Implement the triggering issue on branch `code-factory/issue-${{ github.event.is
 
 1. Read the issue title and body carefully and treat them as authoritative.
 2. Create or update the implementation on branch `code-factory/issue-${{ github.event.issue.number }}`.
-3. Open exactly one pull request for that branch using the `create-pull-request` safe output.
-4. Preserve canonical issue linkage metadata for deterministic reruns by including `Closes #${{ github.event.issue.number }}` in the PR body — this is the stable identifier that prevents duplicate PR creation on future workflow runs.
-5. Keep the pull request labeled `code-factory`.
+3. Verify your changes with `make build` and by ensuring targeted acceptance tests pass.
+4. Open exactly one pull request for that branch using the `create-pull-request` safe output.
+5. Preserve canonical issue linkage metadata for deterministic reruns by including `Closes #${{ github.event.issue.number }}` in the PR body — this is the stable identifier that prevents duplicate PR creation on future workflow runs.
+6. Keep the pull request labeled `code-factory`.
 
 ## Pull request contract
 
