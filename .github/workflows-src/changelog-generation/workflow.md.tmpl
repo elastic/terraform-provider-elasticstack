@@ -2,18 +2,23 @@
 name: Changelog Generation
 description: >-
   Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch,
-  rewrites the Unreleased section. On prep-release-* pull requests, rewrites the concrete release
-  section. Uses a deterministic pre-activation phase to resolve the previous release tag, compare
-  range, merged PR set, and target section mode, then an agent phase to generate changelog content
-  strictly from PR-level summaries with full provenance.
+  rewrites the Unreleased section. Maintainers can also use workflow_dispatch with explicit
+  release-mode inputs to rewrite the concrete release section for a prep-release-* branch.
 on:
   schedule:
     - cron: daily
   workflow_dispatch:
-  pull_request_target:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+    inputs:
+      mode:
+        description: Changelog generation mode
+        required: true
+        default: unreleased
+        type: choice
+        options: [unreleased, release]
+      target_version:
+        description: Release target version (required when mode=release)
+        required: false
+        type: string
   steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -45,8 +50,6 @@ on:
         path: ${{ steps.gather_pr_evidence.outputs.evidence_file_path }}
         if-no-files-found: error
 if: >-
-  (github.event_name != 'pull_request_target' ||
-  startsWith(github.head_ref, 'prep-release-')) &&
   needs.pre_activation.outputs.has_evidence == 'true'
 steps:
   - name: Download release evidence artifact
@@ -119,7 +122,7 @@ You generate or update `CHANGELOG.md` strictly from the merged pull-request evid
 
 Deterministic pre-activation steps have already resolved the release context and gathered PR evidence. Do **not** re-query git or GitHub for commit lists or PR metadata; use the values below and the evidence manifest in workflow memory.
 
-- **Mode**: `${{ needs.pre_activation.outputs.mode }}` — either `unreleased` (schedule/dispatch) or `release` (prep-release-* PR)
+- **Mode**: `${{ needs.pre_activation.outputs.mode }}` — either `unreleased` (schedule/manual dispatch) or `release` (explicit workflow_dispatch inputs)
 - **Previous tag**: `${{ needs.pre_activation.outputs.previous_tag }}`
 - **Compare range**: `${{ needs.pre_activation.outputs.compare_range }}`
 - **Target version** (release mode only): `${{ needs.pre_activation.outputs.target_version }}`

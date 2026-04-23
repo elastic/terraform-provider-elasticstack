@@ -72,9 +72,19 @@ jobs:
       - name: Load changelog engine outputs
         id: changelog_engine
         run: |
-          while IFS='=' read -r key value; do
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
-          done < "$RUNNER_TEMP/changelog-engine-outputs"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output_path = Path(os.environ['RUNNER_TEMP']) / 'changelog-engine-outputs'
+          github_output = Path(os.environ['GITHUB_OUTPUT'])
+          data = json.loads(output_path.read_text())
+
+          with github_output.open('a', encoding='utf-8') as fh:
+            for key, value in data.get('outputs', {}).items():
+              fh.write(f"{key}={str(value).lower() if isinstance(value, bool) else value}\n")
+          PY
 
       - name: Commit changelog (release mode)
         id: commit_release
@@ -105,8 +115,9 @@ jobs:
           steps.commit_release.outputs.ran == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           x-script-include: scripts/refresh-release-pr.inline.js

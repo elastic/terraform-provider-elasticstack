@@ -49,38 +49,21 @@ jobs:
             const RELEASE_BRANCH_PATTERN = /^prep-release-(.+)$/;
             const SEMVER_TAG_PATTERN = /^v\d+\.\d+\.\d+$/;
             
-            function resolveReleaseMode({ eventName, headBranch = '', dispatchMode = '', targetVersion = '' }) {
-              if (eventName === 'workflow_dispatch') {
-                if (dispatchMode === 'release') {
-                  const normalizedVersion = targetVersion.trim();
-                  return {
-                    mode: 'release',
-                    targetVersion: normalizedVersion,
-                    targetBranch: normalizedVersion ? `prep-release-${normalizedVersion}` : '',
-                  };
-                }
-            
+            function resolveReleaseMode({ eventName, dispatchMode = '', targetVersion = '' }) {
+              if (eventName === 'workflow_dispatch' && dispatchMode === 'release') {
+                const normalizedVersion = targetVersion.trim();
                 return {
-                  mode: 'unreleased',
-                  targetVersion: '',
-                  targetBranch: 'generated-changelog',
+                  mode: 'release',
+                  targetVersion: normalizedVersion,
+                  targetBranch: normalizedVersion ? `prep-release-${normalizedVersion}` : '',
                 };
               }
             
-              let mode = 'unreleased';
-              let resolvedTargetVersion = '';
-              let targetBranch = 'generated-changelog';
-            
-              if (eventName === 'pull_request' || eventName === 'pull_request_target') {
-                const match = headBranch.match(RELEASE_BRANCH_PATTERN);
-                if (match) {
-                  mode = 'release';
-                  resolvedTargetVersion = match[1];
-                  targetBranch = headBranch;
-                }
-              }
-            
-              return { mode, targetVersion: resolvedTargetVersion, targetBranch };
+              return {
+                mode: 'unreleased',
+                targetVersion: '',
+                targetBranch: 'generated-changelog',
+              };
             }
             
             function parseSemverTags(tagsRaw = '') {
@@ -107,12 +90,11 @@ jobs:
             
             function buildReleaseContext({
               eventName,
-              headBranch = '',
               dispatchMode = '',
               targetVersion = '',
               tags = [],
             }) {
-              const modeResult = resolveReleaseMode({ eventName, headBranch, dispatchMode, targetVersion });
+              const modeResult = resolveReleaseMode({ eventName, dispatchMode, targetVersion });
               const previousTagResult = selectPreviousTag({
                 tags,
                 mode: modeResult.mode,
@@ -226,9 +208,19 @@ jobs:
       - name: Load changelog engine outputs
         id: changelog_engine
         run: |
-          while IFS='=' read -r key value; do
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
-          done < "$RUNNER_TEMP/changelog-engine-outputs"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output_path = Path(os.environ['RUNNER_TEMP']) / 'changelog-engine-outputs'
+          github_output = Path(os.environ['GITHUB_OUTPUT'])
+          data = json.loads(output_path.read_text())
+
+          with github_output.open('a', encoding='utf-8') as fh:
+            for key, value in data.get('outputs', {}).items():
+              fh.write(f"{key}={str(value).lower() if isinstance(value, bool) else value}\n")
+          PY
 
       - name: Commit changelog (release mode)
         id: commit_release
@@ -259,8 +251,9 @@ jobs:
           steps.commit_release.outputs.ran == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -364,17 +357,32 @@ jobs:
             /**
              * Refresh the release prep PR body with generated metadata.
              *
-             * If prNumber is null/undefined, emits a warning and returns without failing.
+             * Finds the release PR by its `prep-release-*` head branch and updates its body.
+             * If no open release PR exists, emits a warning and returns without failing.
              *
-             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+             * @param {{ github: object, core: object, owner: string, repo: string, targetBranch: string, compareRange: string, targetVersion: string }} opts
              * @returns {Promise<void>}
              */
-            async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-              if (!prNumber) {
-                core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+            async function refreshReleasePR({ github, core, owner, repo, targetBranch, compareRange, targetVersion }) {
+              if (!targetBranch) {
+                core.warning('No target release branch provided; skipping PR metadata refresh');
                 return;
               }
             
+              const { data: releasePRs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${targetBranch}`,
+                base: 'main',
+              });
+            
+              if (releasePRs.length === 0) {
+                core.warning(`No open release PR found for branch ${targetBranch}; skipping PR metadata refresh`);
+                return;
+              }
+            
+              const prNumber = releasePRs[0].number;
               const prBody = buildReleasePRBody({ targetVersion, compareRange });
             
               core.info(`Refreshing release PR #${prNumber} metadata`);
@@ -397,11 +405,11 @@ jobs:
             }
             
             const { owner, repo } = context.repo;
-            const prNumber = context.payload.pull_request?.number ?? null;
             const compareRange = process.env.COMPARE_RANGE;
             const targetVersion = process.env.TARGET_VERSION;
+            const targetBranch = process.env.TARGET_BRANCH;
             
-            await refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion });
+            await refreshReleasePR({ github, core, owner, repo, targetBranch, compareRange, targetVersion });
             
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
@@ -531,17 +539,32 @@ jobs:
             /**
              * Refresh the release prep PR body with generated metadata.
              *
-             * If prNumber is null/undefined, emits a warning and returns without failing.
+             * Finds the release PR by its `prep-release-*` head branch and updates its body.
+             * If no open release PR exists, emits a warning and returns without failing.
              *
-             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+             * @param {{ github: object, core: object, owner: string, repo: string, targetBranch: string, compareRange: string, targetVersion: string }} opts
              * @returns {Promise<void>}
              */
-            async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-              if (!prNumber) {
-                core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+            async function refreshReleasePR({ github, core, owner, repo, targetBranch, compareRange, targetVersion }) {
+              if (!targetBranch) {
+                core.warning('No target release branch provided; skipping PR metadata refresh');
                 return;
               }
             
+              const { data: releasePRs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${targetBranch}`,
+                base: 'main',
+              });
+            
+              if (releasePRs.length === 0) {
+                core.warning(`No open release PR found for branch ${targetBranch}; skipping PR metadata refresh`);
+                return;
+              }
+            
+              const prNumber = releasePRs[0].number;
               const prBody = buildReleasePRBody({ targetVersion, compareRange });
             
               core.info(`Refreshing release PR #${prNumber} metadata`);
