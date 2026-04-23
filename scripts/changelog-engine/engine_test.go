@@ -31,7 +31,7 @@ import (
 
 func TestResolveReleaseContext(t *testing.T) {
 	engine := testEngine(t)
-	engine.gitExec = func(args ...string) ([]byte, error) {
+	engine.gitExec = func(_ ...string) ([]byte, error) {
 		return []byte("v2.0.0\nv1.9.0\n"), nil
 	}
 	engine.config.Mode = ModeRelease
@@ -125,29 +125,29 @@ func TestResolveMergedPullRequestsDeduplicatesAndFiltersMergedPRs(t *testing.T) 
 		switch sha {
 		case "sha1":
 			return []*github.PullRequest{{
-				Number:         github.Ptr(10),
-				Title:          github.Ptr("merged"),
-				HTMLURL:        github.Ptr("https://example.test/pr/10"),
-				State:          github.Ptr("closed"),
+				Number:         new(10),
+				Title:          new("merged"),
+				HTMLURL:        new("https://example.test/pr/10"),
+				State:          new("closed"),
 				MergedAt:       &github.Timestamp{Time: time.Date(2026, 4, 23, 0, 0, 0, 0, time.UTC)},
-				MergeCommitSHA: github.Ptr("merge-sha-10"),
-				Body:           github.Ptr("## Changelog\nCustomer impact: fix\nSummary: merged"),
-				Labels:         []*github.Label{{Name: github.Ptr("enhancement")}},
-				User:           &github.User{Login: github.Ptr("octocat")},
+				MergeCommitSHA: new("merge-sha-10"),
+				Body:           new("## Changelog\nCustomer impact: fix\nSummary: merged"),
+				Labels:         []*github.Label{{Name: new("enhancement")}},
+				User:           &github.User{Login: new("octocat")},
 			}}, nil
 		case "sha2":
 			return []*github.PullRequest{{
-				Number:   github.Ptr(10),
-				State:    github.Ptr("closed"),
+				Number:   new(10),
+				State:    new("closed"),
 				MergedAt: &github.Timestamp{Time: time.Date(2026, 4, 23, 0, 0, 0, 0, time.UTC)},
 			}, {
-				Number: github.Ptr(11),
-				State:  github.Ptr("open"),
+				Number: new(11),
+				State:  new("open"),
 			}}, nil
 		case "sha3":
 			return []*github.PullRequest{{
-				Number: github.Ptr(12),
-				State:  github.Ptr("closed"),
+				Number: new(12),
+				State:  new("closed"),
 			}}, nil
 		default:
 			return nil, nil
