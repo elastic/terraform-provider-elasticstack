@@ -5,9 +5,9 @@
 
 ## 2. Workflow orchestration
 
-- [ ] 2.1 Update `.github/workflows-src/kibana-spec-impact/workflow.md.tmpl` so `on.steps` checks out the repository before Go setup, declares the repo-memory `branch-name` explicitly, and initializes repo memory with a dedicated checkout/init step against that same branch before computing Kibana spec impact.
-- [ ] 2.2 Replace the current pre-activation report handoff with an explicit artifact upload in pre-activation and artifact download into `/tmp/gh-aw/agent` in the agent job.
-- [ ] 2.3 Rewrite the agent instructions so report and issued-file references point at `/tmp/gh-aw/agent`, while repo-memory persistence continues to use the configured `/tmp/gh-aw/repo-memory/...` path.
+- [x] 2.1 Update `.github/workflows-src/kibana-spec-impact/workflow.md.tmpl` so `on.steps` checks out the repository before Go setup, declares the repo-memory `branch-name` explicitly, and initializes repo memory with a dedicated checkout/init step against that same branch before computing Kibana spec impact.
+- [x] 2.2 Replace the current pre-activation report handoff with an explicit artifact upload in pre-activation and artifact download into `/tmp/gh-aw/agent` in the agent job.
+- [x] 2.3 Rewrite the agent instructions so report and issued-file references point at `/tmp/gh-aw/agent`, while repo-memory persistence continues to use the configured `/tmp/gh-aw/repo-memory/...` path.
 
 ## 3. Generated artifacts and verification
 
