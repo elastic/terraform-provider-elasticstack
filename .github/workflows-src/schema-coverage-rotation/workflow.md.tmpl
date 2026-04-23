@@ -9,6 +9,9 @@ on:
     - name: Compute issue slots
       id: compute_issue_slots
       uses: actions/github-script@v9
+      env:
+        ISSUE_SLOTS_LABEL: schema-coverage
+        ISSUE_SLOTS_CAP: "3"
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/compute_issue_slots.inline.js
@@ -68,7 +71,7 @@ steps:
 jobs:
   pre-activation:
     outputs:
-      open_schema_coverage_issues: ${{ steps.compute_issue_slots.outputs.open_schema_coverage_issues }}
+      open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
       issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
 ---
@@ -81,7 +84,7 @@ You are responsible for running schema-coverage analysis on up to `${{ needs.pre
 
 A deterministic pre-activation step has already computed schema-coverage issue capacity for this run. Do **not** query GitHub issue counts yourself; use only the values below.
 
-- **Open schema-coverage issues**: `${{ needs.pre_activation.outputs.open_schema_coverage_issues }}`
+- **Open schema-coverage issues**: `${{ needs.pre_activation.outputs.open_issues }}`
 - **Issue slots available**: `${{ needs.pre_activation.outputs.issue_slots_available }}`
 - **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
 

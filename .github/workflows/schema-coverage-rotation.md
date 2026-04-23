@@ -10,45 +10,62 @@ on:
     - name: Compute issue slots
       id: compute_issue_slots
       uses: actions/github-script@v9
+      env:
+        ISSUE_SLOTS_LABEL: schema-coverage
+        ISSUE_SLOTS_CAP: "3"
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const SCHEMA_COVERAGE_LABEL = 'schema-coverage';
-          const ISSUE_CAP = 3;
-          
           /**
-           * Computes schema-coverage issue slot availability.
-           * @param {number} openIssueCount - The number of currently open schema-coverage issues.
-           * @returns {{ open_schema_coverage_issues: number, issue_slots_available: number, gate_reason: string }}
+           * Computes issue slot availability for a labeled issue bucket.
+           * @param {{ label: string, issueCap: number | string, openIssueCount: number }} params
+           * @returns {{ open_issues: number, issue_slots_available: number, gate_reason: string }}
            */
-          function computeIssueSlots(openIssueCount) {
-            const slotsAvailable = Math.max(0, ISSUE_CAP - openIssueCount);
+          function computeIssueSlots({ label, issueCap, openIssueCount }) {
+            const normalizedLabel = String(label).trim();
+            const cap = Number(issueCap);
+          
+            if (!normalizedLabel) {
+              throw new Error('issue slot label must be a non-empty string');
+            }
+          
+            if (!Number.isInteger(cap) || cap < 0) {
+              throw new Error(`issue cap must be a non-negative integer, got: ${issueCap}`);
+            }
+          
+            if (!Number.isInteger(openIssueCount) || openIssueCount < 0) {
+              throw new Error(`open issue count must be a non-negative integer, got: ${openIssueCount}`);
+            }
+          
+            const slotsAvailable = Math.max(0, cap - openIssueCount);
           
             let gateReason;
             if (slotsAvailable === 0) {
-              gateReason = `Issue cap reached: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}. Agent job will be skipped.`;
+              gateReason = `Issue cap reached: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}. Agent job will be skipped.`;
             } else {
-              gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open schema-coverage issue(s), cap is ${ISSUE_CAP}.`;
+              gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}.`;
             }
           
             return {
-              open_schema_coverage_issues: openIssueCount,
+              open_issues: openIssueCount,
               issue_slots_available: slotsAvailable,
               gate_reason: gateReason,
             };
           }
           
           if (typeof module !== 'undefined') {
-            module.exports = { SCHEMA_COVERAGE_LABEL, ISSUE_CAP, computeIssueSlots };
+            module.exports = { computeIssueSlots };
           }
           
+          const ISSUE_LABEL = process.env.ISSUE_SLOTS_LABEL;
+          const ISSUE_CAP = process.env.ISSUE_SLOTS_CAP;
           const { owner, repo } = context.repo;
           
-          // Count open schema-coverage issues, excluding pull requests
+          // Count open issues for this workflow label, excluding pull requests
           const issues = await github.paginate(github.rest.issues.listForRepo, {
             owner,
             repo,
-            labels: SCHEMA_COVERAGE_LABEL,
+            labels: ISSUE_LABEL,
             state: 'open',
             per_page: 100,
           });
@@ -56,9 +73,13 @@ on:
           // GitHub issues API may return pull requests — exclude them
           const openIssueCount = issues.filter(item => !item.pull_request).length;
           
-          const result = computeIssueSlots(openIssueCount);
+          const result = computeIssueSlots({
+            label: ISSUE_LABEL,
+            issueCap: ISSUE_CAP,
+            openIssueCount,
+          });
           
-          core.setOutput('open_schema_coverage_issues', String(result.open_schema_coverage_issues));
+          core.setOutput('open_issues', String(result.open_issues));
           core.setOutput('issue_slots_available', String(result.issue_slots_available));
           core.setOutput('gate_reason', result.gate_reason);
           
@@ -120,7 +141,7 @@ steps:
 jobs:
   pre-activation:
     outputs:
-      open_schema_coverage_issues: ${{ steps.compute_issue_slots.outputs.open_schema_coverage_issues }}
+      open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
       issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
 ---
@@ -133,7 +154,7 @@ You are responsible for running schema-coverage analysis on up to `${{ needs.pre
 
 A deterministic pre-activation step has already computed schema-coverage issue capacity for this run. Do **not** query GitHub issue counts yourself; use only the values below.
 
-- **Open schema-coverage issues**: `${{ needs.pre_activation.outputs.open_schema_coverage_issues }}`
+- **Open schema-coverage issues**: `${{ needs.pre_activation.outputs.open_issues }}`
 - **Issue slots available**: `${{ needs.pre_activation.outputs.issue_slots_available }}`
 - **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
 

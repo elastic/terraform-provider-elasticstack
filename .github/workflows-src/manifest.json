@@ -5,6 +5,10 @@
       "output": ".github/workflows/openspec-verify-label.md"
     },
     {
+      "template": ".github/workflows-src/duplicate-code-detector/workflow.md.tmpl",
+      "output": ".github/workflows/duplicate-code-detector.md"
+    },
+    {
       "template": ".github/workflows-src/schema-coverage-rotation/workflow.md.tmpl",
       "output": ".github/workflows/schema-coverage-rotation.md"
     },
