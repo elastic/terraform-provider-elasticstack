@@ -239,7 +239,8 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"package_path": config.StringVariable(zipPathV100),
 				},
-				PlanOnly: true,
+				PlanOnly:             true,
+				ExpectNonEmptyPlan:   false,
 			},
 			// Step 3: Update — point package_path at a new zip with version 1.0.1.
 			// ModifyPlan detects the checksum change and marks computed fields Unknown,
