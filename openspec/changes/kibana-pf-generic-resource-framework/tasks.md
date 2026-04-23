@@ -1,8 +1,8 @@
 ## 1. Create the shared Kibana Plugin Framework resource foundation
 
-- [ ] 1.1 Add a shared package under `internal/kibana/` for Plugin Framework resource orchestration, including provider configuration/metadata helpers, Kibana scoped-client resolution, version enforcement, and composite-ID helpers for space-aware resources
-- [ ] 1.2 Define the generic resource assembly surface plus the typed model and API contracts that separate Terraform lifecycle orchestration, model/request mapping, and Kibana transport operations
-- [ ] 1.3 Add unit coverage for the shared framework behavior, especially version enforcement, composite-ID handling, read-after-write flow, and remote-not-found read behavior
+- [x] 1.1 Add a shared package under `internal/kibana/` for Plugin Framework resource orchestration, including provider configuration/metadata helpers, Kibana scoped-client resolution, version enforcement, and composite-ID helpers for space-aware resources
+- [x] 1.2 Define the generic resource assembly surface plus the typed model and API contracts that separate Terraform lifecycle orchestration, model/request mapping, and Kibana transport operations
+- [x] 1.3 Add unit coverage for the shared framework behavior, especially version enforcement, composite-ID handling, read-after-write flow, and remote-not-found read behavior
 
 ## 2. Introduce focused Agent Builder transport APIs
 
