@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -107,6 +107,19 @@ func checkCustomIntegrationDestroy(s *terraform.State) error {
 		return err
 	}
 
+	// GetPackage is unreliable for custom-uploaded packages before Kibana 8.2:
+	// 7.17.x returns HTTP 400 ("filePath"), 8.0.x–8.1.x returns 404 even when
+	// the package is installed. Skip destruction verification on those versions
+	// to avoid false signals — mirrors the compatibility guard in Read.
+	minVer := goversion.Must(goversion.NewVersion("8.2.0"))
+	supportsCustomPackageGet, verDiags := client.EnforceMinVersion(context.Background(), minVer)
+	if verDiags.HasError() {
+		return diagutil.FwDiagsAsError(diagutil.FrameworkDiagsFromSDK(verDiags))
+	}
+	if !supportsCustomPackageGet {
+		return nil
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_fleet_custom_integration" {
 			continue
@@ -123,20 +136,6 @@ func checkCustomIntegrationDestroy(s *terraform.State) error {
 
 		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
 		if diags.HasError() {
-			// On Kibana 7.17.x, the individual GET endpoint returns HTTP 400
-			// for custom packages ("filePath" param required). Since Uninstall
-			// also returns 404 on that version (best-effort deletion), treat this
-			// as destroyed rather than failing the check.
-			isFilePath400 := false
-			for _, d := range diags {
-				if strings.Contains(d.Detail(), "filePath") {
-					isFilePath400 = true
-					break
-				}
-			}
-			if isFilePath400 {
-				continue
-			}
 			return diagutil.FwDiagsAsError(diags)
 		}
 
