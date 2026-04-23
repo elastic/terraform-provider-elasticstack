@@ -24,7 +24,13 @@ import (
 	"strconv"
 )
 
-const defaultIssueCap = 5
+const (
+	defaultIssueCap                        = 5
+	gateReasonMissingReport                = "missing_report"
+	gateReasonHighConfidenceImpactsPresent = "high_confidence_impacts_present"
+	gateReasonTransformSchemaHintsPresent  = "transform_schema_hints_present"
+	gateReasonNoActionableImpacts          = "no_actionable_impacts"
+)
 
 type PreActivationOutputs struct {
 	ShouldRun           bool
@@ -41,21 +47,21 @@ func derivePreActivationOutputs(report *ImpactReport, issueCap int) PreActivatio
 		IssueCap: issueCap,
 	}
 	if report == nil {
-		outputs.GateReason = "missing_report"
+		outputs.GateReason = gateReasonMissingReport
 		return outputs
 	}
 	outputs.HighConfidenceCount = len(report.HighConfidence)
 	if outputs.HighConfidenceCount > 0 {
 		outputs.ShouldRun = true
-		outputs.GateReason = "high_confidence_impacts_present"
+		outputs.GateReason = gateReasonHighConfidenceImpactsPresent
 		return outputs
 	}
 	if len(report.TransformSchemaHints) > 0 {
 		outputs.ShouldRun = true
-		outputs.GateReason = "transform_schema_hints_present"
+		outputs.GateReason = gateReasonTransformSchemaHintsPresent
 		return outputs
 	}
-	outputs.GateReason = "no_actionable_impacts"
+	outputs.GateReason = gateReasonNoActionableImpacts
 	return outputs
 }
 
@@ -80,14 +86,18 @@ func appendGithubOutputs(path string, outputs PreActivationOutputs) error {
 		return fmt.Errorf("open github output: %w", err)
 	}
 	defer f.Close()
-	for key, value := range map[string]string{
-		"should_run":            strconv.FormatBool(outputs.ShouldRun),
-		"issue_cap":             strconv.Itoa(outputs.IssueCap),
-		"high_confidence_count": strconv.Itoa(outputs.HighConfidenceCount),
-		"gate_reason":           outputs.GateReason,
-	} {
-		if _, err := fmt.Fprintf(f, "%s=%s\n", key, value); err != nil {
-			return fmt.Errorf("write github output %s: %w", key, err)
+	entries := []struct {
+		key   string
+		value string
+	}{
+		{key: "run_agent", value: strconv.FormatBool(outputs.ShouldRun)},
+		{key: "issue_cap", value: strconv.Itoa(outputs.IssueCap)},
+		{key: "high_confidence_count", value: strconv.Itoa(outputs.HighConfidenceCount)},
+		{key: "gate_reason", value: outputs.GateReason},
+	}
+	for _, entry := range entries {
+		if _, err := fmt.Fprintf(f, "%s=%s\n", entry.key, entry.value); err != nil {
+			return fmt.Errorf("write github output %s: %w", entry.key, err)
 		}
 	}
 	return nil

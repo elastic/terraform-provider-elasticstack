@@ -187,11 +187,7 @@ func cmdPreActivation(args []string, stderr io.Writer) error {
 	if *memPath == "" {
 		return errors.New("--memory is required")
 	}
-	if _, err := os.Stat(*memPath); os.IsNotExist(err) {
-		if err := bootstrapMemoryFromSeed(*memPath, *seedPath); err != nil {
-			return fmt.Errorf("bootstrap memory: %w", err)
-		}
-	} else if err != nil {
+	if err := ensurePreActivationMemory(*memPath, *seedPath); err != nil {
 		return err
 	}
 	mem, err := loadMemory(*memPath)
@@ -215,10 +211,30 @@ func cmdPreActivation(args []string, stderr io.Writer) error {
 	outputs := derivePreActivationOutputs(report, *issueCap)
 	if outputFile := os.Getenv("GITHUB_OUTPUT"); outputFile != "" {
 		if err := appendGithubOutputs(outputFile, outputs); err != nil {
-			fmt.Fprintf(stderr, "warning: failed to write GITHUB_OUTPUT: %v\n", err)
+			return fmt.Errorf("write github outputs: %w", err)
 		}
 	}
-	fmt.Fprintf(stderr, "wrote report to %s; should_run=%t issue_cap=%d high_confidence_count=%d gate_reason=%s\n", *reportPath, outputs.ShouldRun, outputs.IssueCap, outputs.HighConfidenceCount, outputs.GateReason)
+	fmt.Fprintf(
+		stderr,
+		"wrote report to %s; run_agent=%t issue_cap=%d high_confidence_count=%d gate_reason=%s\n",
+		*reportPath,
+		outputs.ShouldRun,
+		outputs.IssueCap,
+		outputs.HighConfidenceCount,
+		outputs.GateReason,
+	)
+	return nil
+}
+
+func ensurePreActivationMemory(memPath, seedPath string) error {
+	if _, err := os.Stat(memPath); os.IsNotExist(err) {
+		if err := bootstrapMemoryFromSeed(memPath, seedPath); err != nil {
+			return fmt.Errorf("bootstrap memory: %w", err)
+		}
+		return nil
+	} else if err != nil {
+		return err
+	}
 	return nil
 }
 
