@@ -54,7 +54,11 @@ test.skip('workflow passes release context into gather-pr-evidence via supported
   // gather-pr-evidence step. This fixture is retained for historical reference.
 });
 
-test('workflow uploads and downloads evidence as an artifact instead of cross-job JSON', () => {
+// NOTE: The evidence-artifact upload/download pattern belongs to the old agentic
+// changelog generator that was superseded by the Go engine in scripts/changelog-generation.
+// The new workflow.yml.tmpl invokes the Go engine directly via `go run` and no longer
+// uses cross-job artifact transport for changelog evidence. These assertions are skipped.
+test.skip('workflow uploads and downloads evidence as an artifact instead of cross-job JSON (superseded by Go engine)', () => {
   assert.match(
     rawPrompt,
     /- name: Upload release evidence artifact\n\s+if: steps\.gather_pr_evidence\.outputs\.has_evidence == 'true'\n\s+uses: actions\/upload-artifact@v4\n\s+with:\n\s+name: changelog-release-evidence\n\s+path: \$\{\{ steps\.gather_pr_evidence\.outputs\.evidence_file_path \}\}\n\s+if-no-files-found: error/,
@@ -72,7 +76,11 @@ test('workflow uploads and downloads evidence as an artifact instead of cross-jo
   );
 });
 
-test('workflow listens to pull_request_target for main', () => {
+// NOTE: `pull_request_target` was removed from changelog-generation as part of the
+// shared-changelog-engine change. Scheduled/dispatch modes replace PR-triggered release.
+// The workflow.md.tmpl is the legacy agentic template and is not compiled. This test
+// is skipped so it does not assert the removed trigger as correct behavior.
+test.skip('workflow listens to pull_request_target for main (removed by shared-changelog-engine change)', () => {
   assert.match(
     rawPrompt,
     /pull_request_target:\n\s+branches:\n\s+- main\n\s+types: \[opened, synchronize, reopened\]/,
@@ -85,7 +93,9 @@ test('workflow listens to pull_request_target for main', () => {
   );
 });
 
-test('workflow restricts pull_request_target to prep-release branches before agent activation', () => {
+// NOTE: `pull_request_target` restriction logic is no longer present in the active
+// changelog-generation workflow since release mode is now explicit via workflow_dispatch.
+test.skip('workflow restricts pull_request_target to prep-release branches before agent activation (removed by shared-changelog-engine change)', () => {
   assert.match(
     rawPrompt,
     /\(github\.event_name != 'pull_request_target' \|\|\n\s+startsWith\(github\.head_ref, 'prep-release-'\)\) &&/,
