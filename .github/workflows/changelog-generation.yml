@@ -186,6 +186,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
         run: |
           set -euo pipefail
           args=(
@@ -194,8 +195,8 @@ jobs:
             -changelog CHANGELOG.md
           )
 
-          if [[ -n "${{ steps.resolve_release_context.outputs.target_version }}" ]]; then
-            args+=(-target-version "${{ steps.resolve_release_context.outputs.target_version }}")
+          if [[ -n "${TARGET_VERSION}" ]]; then
+            args+=(-target-version "${TARGET_VERSION}")
           fi
 
           go "${args[@]}"
