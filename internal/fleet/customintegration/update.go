@@ -101,11 +101,17 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 			}
 
 			if result.AlreadyInstalled {
-				// Target space already holds the package. Retry so that result carries
-				// resolved name/version; old-space cleanup follows unconditionally below.
-				result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-				resp.Diagnostics.Append(uploadDiags...)
-				if resp.Diagnostics.HasError() {
+				// Package is already installed in the target space. UploadPackage
+				// populates PackageName/PackageVersion from the zip manifest in this
+				// case. Guard against an unreadable manifest so we do not write empty
+				// identity into state before the old-space uninstall runs.
+				if result.PackageName == "" || result.PackageVersion == "" {
+					resp.Diagnostics.AddError(
+						"Cannot resolve package identity for space move",
+						"The package is already installed in the target space but the "+
+							"archive manifest could not be read. Uninstall the existing "+
+							"package from the target space manually before changing space_id.",
+					)
 					return
 				}
 			}

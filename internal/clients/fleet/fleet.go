@@ -32,6 +32,7 @@ import (
 	"strings"
 	"time"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -847,18 +848,38 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	// GetFleetEpmPackages is the canonical source on newer Kibana (8.7+). On older
 	// Kibana it may not include custom (user-uploaded) packages; the fallback below
 	// handles that case.
+	//
+	// When multiple versions of the same package are listed, pick the highest
+	// installed semver so that state always tracks the most recent installation.
 	packages, diags := GetPackages(ctx, client, true, opts.SpaceID)
 	if diags.HasError() {
 		return nil, diags
 	}
 
+	var highestSemver *semver.Version
+	var resolvedVersion string
 	for _, pkg := range packages {
-		if pkg.Name == packageName {
-			return &UploadPackageResult{
-				PackageName:    packageName,
-				PackageVersion: pkg.Version,
-			}, nil
+		if pkg.Name != packageName {
+			continue
 		}
+		v, parseErr := semver.NewVersion(pkg.Version)
+		if parseErr != nil {
+			// Non-semver version string: use it only if no valid candidate yet.
+			if resolvedVersion == "" {
+				resolvedVersion = pkg.Version
+			}
+			continue
+		}
+		if highestSemver == nil || v.GreaterThan(highestSemver) {
+			highestSemver = v
+			resolvedVersion = pkg.Version
+		}
+	}
+	if resolvedVersion != "" {
+		return &UploadPackageResult{
+			PackageName:    packageName,
+			PackageVersion: resolvedVersion,
+		}, nil
 	}
 
 	// GetFleetEpmPackages did not include the package. On older Kibana (< 8.7),
