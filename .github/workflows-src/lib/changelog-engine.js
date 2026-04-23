@@ -25,11 +25,9 @@ function resolveEngineContext({
   targetVersion = '',
   targetBranch,
   tags,
-  eventName,
-  headBranch = '',
 }) {
   if (!mode) {
-    return buildReleaseContext({ eventName, headBranch, tags });
+    throw new Error('mode is required');
   }
 
   if (mode !== 'release' && mode !== 'unreleased') {
@@ -40,25 +38,21 @@ function resolveEngineContext({
     throw new Error('release mode requires targetVersion');
   }
 
-  {
-    const previousTagResult = buildReleaseContext({
-      eventName: mode === 'release' ? 'pull_request' : 'workflow_dispatch',
-      headBranch: mode === 'release' ? `prep-release-${targetVersion}` : '',
-      tags,
-    });
+  const previousTagResult = buildReleaseContext({
+    eventName: mode === 'release' ? 'pull_request' : 'workflow_dispatch',
+    headBranch: mode === 'release' ? `prep-release-${targetVersion}` : '',
+    tags,
+  });
 
-    return {
-      mode,
-      targetVersion,
-      targetBranch: targetBranch ?? (mode === 'release' ? `prep-release-${targetVersion}` : 'generated-changelog'),
-      previousTag: previousTagResult.previousTag,
-      excludedTag: previousTagResult.excludedTag,
-      excludedCurrentTag: previousTagResult.excludedCurrentTag,
-      compareRange: previousTagResult.compareRange,
-    };
-  }
-
-  return buildReleaseContext({ eventName, headBranch, tags });
+  return {
+    mode,
+    targetVersion,
+    targetBranch: targetBranch ?? (mode === 'release' ? `prep-release-${targetVersion}` : 'generated-changelog'),
+    previousTag: previousTagResult.previousTag,
+    excludedTag: previousTagResult.excludedTag,
+    excludedCurrentTag: previousTagResult.excludedCurrentTag,
+    compareRange: previousTagResult.compareRange,
+  };
 }
 
 function listCommitShasInRange(compareRange, { exec = execSync } = {}) {

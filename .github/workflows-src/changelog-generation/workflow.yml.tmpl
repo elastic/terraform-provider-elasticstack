@@ -32,6 +32,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' && format('prep-release-{0}', inputs.target_version) || '' }}
 
       - name: Validate workflow inputs
         if: github.event_name == 'workflow_dispatch'
@@ -56,23 +57,20 @@ jobs:
 
       - name: Commit changelog (release mode)
         id: commit_release
-        if: >-
-          steps.changelog_engine.outputs.mode == 'release' &&
-          steps.changelog_engine.outputs.has_pull_requests == 'true' &&
-          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'release'
         env:
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
           TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "No release changelog changes to commit"
             echo "pushed=false" >> $GITHUB_OUTPUT
             echo "ran=true" >> $GITHUB_OUTPUT
             exit 0
           fi
+          git add CHANGELOG.md
           git commit -m "chore(changelog): update changelog for v${TARGET_VERSION}"
           git push origin HEAD:${TARGET_BRANCH}
           echo "pushed=true" >> $GITHUB_OUTPUT

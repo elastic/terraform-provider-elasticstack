@@ -93,7 +93,7 @@ jobs:
           BRANCH="${{ steps.meta.outputs.BRANCH }}"
           EXISTS="${{ steps.branch-check.outputs.EXISTS }}"
           if [ "$EXISTS" = "true" ]; then
-            git fetch origin "${BRANCH}"
+            git fetch origin "${BRANCH}:${BRANCH}"
             git checkout "${BRANCH}"
             git merge --no-edit origin/main || { git merge --abort; exit 1; }
           else
