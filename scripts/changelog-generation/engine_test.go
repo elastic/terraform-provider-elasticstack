@@ -77,3 +77,65 @@ func TestInsertReleaseSectionAfterUnreleased(t *testing.T) {
 		t.Fatalf("missing release section: %s", updated)
 	}
 }
+
+// TestRewritePreservesAdjacentSections verifies that replacing the Unreleased
+// section does not destroy surrounding sections (title, older releases).
+func TestRewritePreservesAdjacentSections(t *testing.T) {
+	content := "# Changelog\n\n## [Unreleased]\n\n- Old unreleased\n\n## [0.14.4] - 2026-01-01\n\n- Previous release\n\n## [0.14.3] - 2025-12-01\n\n- Even older"
+	_, newSection := buildSectionContent("unreleased", "", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), "### Changes\n\n- New")
+	updated := rewriteChangelogSection(content, newSection, "unreleased", "")
+	if !strings.Contains(updated, "# Changelog") {
+		t.Errorf("title heading lost: %s", updated)
+	}
+	if !strings.Contains(updated, "## [0.14.4] - 2026-01-01") {
+		t.Errorf("adjacent release section lost: %s", updated)
+	}
+	if !strings.Contains(updated, "## [0.14.3] - 2025-12-01") {
+		t.Errorf("older release section lost: %s", updated)
+	}
+	if !strings.Contains(updated, "- New") {
+		t.Errorf("new content missing: %s", updated)
+	}
+	if strings.Contains(updated, "- Old unreleased") {
+		t.Errorf("old unreleased content not replaced: %s", updated)
+	}
+}
+
+// TestReplaceExistingReleaseSection verifies that re-running in release mode
+// replaces an already-written release section rather than duplicating it.
+func TestReplaceExistingReleaseSection(t *testing.T) {
+	content := "# Changelog\n\n## [Unreleased]\n\n## [0.14.5] - 2026-01-01\n\n### Changes\n\n- Old release entry\n\n## [0.14.4] - 2025-12-01\n\n- Previous"
+	_, newSection := buildSectionContent("release", "0.14.5", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), "### Changes\n\n- Updated entry")
+	updated := rewriteChangelogSection(content, newSection, "release", "0.14.5")
+	if strings.Contains(updated, "- Old release entry") {
+		t.Errorf("old release entry not replaced: %s", updated)
+	}
+	if !strings.Contains(updated, "- Updated entry") {
+		t.Errorf("updated entry missing: %s", updated)
+	}
+	if !strings.Contains(updated, "## [0.14.4] - 2025-12-01") {
+		t.Errorf("older section lost: %s", updated)
+	}
+	// Section header should appear exactly once
+	count := strings.Count(updated, "## [0.14.5]")
+	if count != 1 {
+		t.Errorf("expected exactly 1 release section header, got %d: %s", count, updated)
+	}
+}
+
+// TestRewriteEmptySectionBody verifies that a section with no user-facing
+// changes still writes the header (no content lost or duplicated).
+func TestRewriteEmptySectionBody(t *testing.T) {
+	content := "# Changelog\n\n## [Unreleased]\n\n- Pending\n\n## [0.14.4] - 2026-01-01\n\n- Previous"
+	_, newSection := buildSectionContent("unreleased", "", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), "")
+	updated := rewriteChangelogSection(content, newSection, "unreleased", "")
+	if !strings.Contains(updated, "## [Unreleased]") {
+		t.Errorf("Unreleased header missing: %s", updated)
+	}
+	if strings.Contains(updated, "- Pending") {
+		t.Errorf("old pending entry not removed: %s", updated)
+	}
+	if !strings.Contains(updated, "## [0.14.4] - 2026-01-01") {
+		t.Errorf("adjacent section lost: %s", updated)
+	}
+}
