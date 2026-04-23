@@ -12,6 +12,6 @@
 
 ## 3. Validate workflow behavior and OpenSpec artifacts
 
-- [ ] 3.1 Add or update focused workflow-source tests covering issue-opened-with-label detection, trusted-actor gating, duplicate-PR suppression, and generated workflow expectations.
-- [ ] 3.2 Run the relevant workflow generation and workflow-source tests for the new `code-factory` issue workflow.
-- [ ] 3.3 Validate the OpenSpec change with `./node_modules/.bin/openspec validate code-factory-issue-workflow --type change` or an equivalent repository OpenSpec check.
+- [x] 3.1 Add or update focused workflow-source tests covering issue-opened-with-label detection, trusted-actor gating, duplicate-PR suppression, and generated workflow expectations.
+- [x] 3.2 Run the relevant workflow generation and workflow-source tests for the new `code-factory` issue workflow.
+- [x] 3.3 Validate the OpenSpec change with `./node_modules/.bin/openspec validate code-factory-issue-workflow --type change` or an equivalent repository OpenSpec check.
