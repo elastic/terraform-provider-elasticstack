@@ -11,16 +11,15 @@ const {
   selectPreviousTag,
 } = require('./changelog-release-context.js');
 
-test('resolveReleaseMode detects prep-release pull request branches', () => {
+test('resolveReleaseMode defaults non-dispatch events to unreleased', () => {
   assert.deepEqual(
     resolveReleaseMode({
-      eventName: 'pull_request',
-      headBranch: 'prep-release-1.2.3',
+      eventName: 'schedule',
     }),
     {
-      mode: 'release',
-      targetVersion: '1.2.3',
-      targetBranch: 'prep-release-1.2.3',
+      mode: 'unreleased',
+      targetVersion: '',
+      targetBranch: 'generated-changelog',
     }
   );
 });
@@ -81,25 +80,6 @@ test('buildCompareRange falls back to HEAD when no previous tag exists', () => {
   assert.equal(buildCompareRange('v1.2.2'), 'v1.2.2..HEAD');
 });
 
-test('buildReleaseContext combines pull request release mode and previous tag selection', () => {
-  assert.deepEqual(
-    buildReleaseContext({
-      eventName: 'pull_request_target',
-      headBranch: 'prep-release-2.0.0',
-      tags: ['v2.0.0', 'v1.9.0'],
-    }),
-    {
-      mode: 'release',
-      targetVersion: '2.0.0',
-      targetBranch: 'prep-release-2.0.0',
-      previousTag: 'v1.9.0',
-      excludedTag: 'v2.0.0',
-      excludedCurrentTag: true,
-      compareRange: 'v1.9.0..HEAD',
-    }
-  );
-});
-
 test('buildReleaseContext combines workflow_dispatch release mode and previous tag selection', () => {
   assert.deepEqual(
     buildReleaseContext({
@@ -115,6 +95,26 @@ test('buildReleaseContext combines workflow_dispatch release mode and previous t
       previousTag: 'v1.9.0',
       excludedTag: 'v2.0.0',
       excludedCurrentTag: true,
+      compareRange: 'v1.9.0..HEAD',
+    }
+  );
+});
+
+test('buildReleaseContext keeps current release tag when it is not present locally', () => {
+  assert.deepEqual(
+    buildReleaseContext({
+      eventName: 'workflow_dispatch',
+      dispatchMode: 'release',
+      targetVersion: '2.0.0',
+      tags: ['v1.9.0', 'v1.8.0'],
+    }),
+    {
+      mode: 'release',
+      targetVersion: '2.0.0',
+      targetBranch: 'prep-release-2.0.0',
+      previousTag: 'v1.9.0',
+      excludedTag: 'v2.0.0',
+      excludedCurrentTag: false,
       compareRange: 'v1.9.0..HEAD',
     }
   );

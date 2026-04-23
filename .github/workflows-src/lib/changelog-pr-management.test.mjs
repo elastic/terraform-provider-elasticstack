@@ -136,16 +136,23 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
 });
 
 // ---------------------------------------------------------------------------
-// refreshReleasePR: prNumber present → pulls.update called
+// refreshReleasePR: release PR found by target branch → pulls.update called
 // ---------------------------------------------------------------------------
 
-test('refreshReleasePR: prNumber present → calls pulls.update with correct body', async () => {
+test('refreshReleasePR: release PR found by target branch → calls pulls.update with correct body', async () => {
+  const listCalls = [];
   const updateCalls = [];
   const warnings = [];
 
   const github = {
     rest: {
       pulls: {
+        list: async (args) => {
+          listCalls.push(args);
+          return {
+            data: [{ number: 55, html_url: 'https://github.com/org/repo/pull/55' }],
+          };
+        },
         update: async (args) => {
           updateCalls.push(args);
           return { data: {} };
@@ -164,31 +171,41 @@ test('refreshReleasePR: prNumber present → calls pulls.update with correct bod
     core,
     owner: 'org',
     repo: 'repo',
-    prNumber: 55,
-    compareRange: 'v1.0.0...v2.0.0',
+    targetBranch: 'prep-release-2.0.0',
+    compareRange: 'v1.0.0..HEAD',
     targetVersion: '2.0.0',
+  });
+
+  assert.equal(listCalls.length, 1, 'pulls.list should be called once');
+  assert.deepEqual(listCalls[0], {
+    owner: 'org',
+    repo: 'repo',
+    state: 'open',
+    head: 'org:prep-release-2.0.0',
+    base: 'main',
   });
 
   assert.equal(updateCalls.length, 1, 'pulls.update should be called once');
   assert.equal(updateCalls[0].pull_number, 55);
   assert.ok(updateCalls[0].body.includes('**Version:** `2.0.0`'), 'body should include version');
-  assert.ok(updateCalls[0].body.includes('**Compare range:** `v1.0.0...v2.0.0`'), 'body should include compare range');
+  assert.ok(updateCalls[0].body.includes('**Compare range:** `v1.0.0..HEAD`'), 'body should include compare range');
   assert.match(updateCalls[0].body, /\*\*Generated:\*\* \d{4}-\d{2}-\d{2}/);
 
   assert.equal(warnings.length, 0, 'no warnings should be emitted');
 });
 
 // ---------------------------------------------------------------------------
-// refreshReleasePR: prNumber absent → core.warning called, no API call
+// refreshReleasePR: release PR missing → core.warning called, no update call
 // ---------------------------------------------------------------------------
 
-test('refreshReleasePR: prNumber absent → emits warning, does not call pulls.update', async () => {
+test('refreshReleasePR: release PR missing → emits warning, does not call pulls.update', async () => {
   const updateCalls = [];
   const warnings = [];
 
   const github = {
     rest: {
       pulls: {
+        list: async () => ({ data: [] }),
         update: async (args) => {
           updateCalls.push(args);
           return { data: {} };
@@ -207,12 +224,12 @@ test('refreshReleasePR: prNumber absent → emits warning, does not call pulls.u
     core,
     owner: 'org',
     repo: 'repo',
-    prNumber: null,
-    compareRange: 'v1.0.0...v2.0.0',
+    targetBranch: 'prep-release-2.0.0',
+    compareRange: 'v1.0.0..HEAD',
     targetVersion: '2.0.0',
   });
 
   assert.equal(updateCalls.length, 0, 'pulls.update should not be called');
   assert.equal(warnings.length, 1, 'one warning should be emitted');
-  assert.ok(warnings[0].includes('skipping PR metadata refresh'), 'warning message should mention skipping');
+  assert.ok(warnings[0].includes('No open release PR found for branch prep-release-2.0.0'), 'warning message should mention missing release PR');
 });

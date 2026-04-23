@@ -98,17 +98,32 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
 /**
  * Refresh the release prep PR body with generated metadata.
  *
- * If prNumber is null/undefined, emits a warning and returns without failing.
+ * Finds the release PR by its `prep-release-*` head branch and updates its body.
+ * If no open release PR exists, emits a warning and returns without failing.
  *
- * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+ * @param {{ github: object, core: object, owner: string, repo: string, targetBranch: string, compareRange: string, targetVersion: string }} opts
  * @returns {Promise<void>}
  */
-async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-  if (!prNumber) {
-    core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+async function refreshReleasePR({ github, core, owner, repo, targetBranch, compareRange, targetVersion }) {
+  if (!targetBranch) {
+    core.warning('No target release branch provided; skipping PR metadata refresh');
     return;
   }
 
+  const { data: releasePRs } = await github.rest.pulls.list({
+    owner,
+    repo,
+    state: 'open',
+    head: `${owner}:${targetBranch}`,
+    base: 'main',
+  });
+
+  if (releasePRs.length === 0) {
+    core.warning(`No open release PR found for branch ${targetBranch}; skipping PR metadata refresh`);
+    return;
+  }
+
+  const prNumber = releasePRs[0].number;
   const prBody = buildReleasePRBody({ targetVersion, compareRange });
 
   core.info(`Refreshing release PR #${prNumber} metadata`);
