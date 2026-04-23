@@ -2,12 +2,12 @@
 
 The current changelog automation mixes two concerns in one workflow: scheduled maintenance of the `## [Unreleased]` section and release-specific regeneration of a concrete `## [x.y.z] - <date>` section. Release mode is currently activated from `pull_request_target` events on `prep-release-*` branches, which makes final release changelog generation depend on PR event delivery and timing rather than on the release-preparation workflow that actually owns the release branch contents.
 
-The repository already contains deterministic changelog parsing and rendering logic spread across inline `actions/github-script` steps, small shared JavaScript helpers under `.github/workflows-src/lib/`, and a small `scripts/changelog-generation` Go entrypoint. The target design should preserve deterministic assembly and existing PR-body changelog-contract rules, while moving release-mode invocation to an explicit synchronous step in release preparation.
+The repository already contains deterministic changelog parsing and rendering logic spread across inline `actions/github-script` steps, small shared JavaScript helpers under `.github/workflows-src/lib/`, and a small `scripts/changelog-generation` Go entrypoint. The target design should preserve deterministic assembly and existing PR-body changelog-contract rules, while moving the workflow engine fully into a Go implementation under `/scripts` and moving release-mode invocation to an explicit synchronous step in release preparation.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Introduce a shared repository-authored changelog engine that can be invoked from multiple workflows with explicit mode inputs.
+- Introduce a shared repository-authored changelog engine implemented in Go under `/scripts` that can be invoked from multiple workflows with explicit mode inputs.
 - Make `prep-release.yml` responsible for invoking release-mode changelog generation before it creates or updates the release PR.
 - Keep scheduled unreleased generation in `changelog-generation.yml` and add an explicit manual `workflow_dispatch` release-mode fallback in the same workflow.
 - Keep changelog assembly fail-fast: invalid or missing PR changelog contracts in the authoritative range must fail release preparation and manual release regeneration.
@@ -21,8 +21,8 @@ The repository already contains deterministic changelog parsing and rendering lo
 
 ## Decisions
 
-### Use an explicit shared changelog engine instead of event-inferred release mode
-The changelog engine will be invoked with explicit workflow inputs that select `release` or `unreleased` mode. Release-mode behavior will no longer be inferred from `pull_request_target` event metadata.
+### Use an explicit shared Go changelog engine under `/scripts` instead of event-inferred release mode
+The changelog engine must be rewritten in Go under `/scripts` and will be invoked with explicit workflow inputs that select `release` or `unreleased` mode. Release-mode behavior will no longer be inferred from `pull_request_target` event metadata.
 
 This makes release preparation deterministic and enables a manual release fallback without needing synthetic PR events. It also removes the need for the changelog engine to interpret GitHub event shape as its primary control surface.
 
@@ -30,7 +30,7 @@ This makes release preparation deterministic and enables a manual release fallba
 - Keep `pull_request_target` as the release trigger: rejected because release preparation should not depend on downstream PR-event timing.
 - Use `workflow_run` or dispatch from `prep-release.yml`: rejected because explicit synchronous invocation inside release preparation is simpler and provides fail-fast semantics.
 
-### The shared engine resolves merged PRs through the GitHub API using the workflow token
+### The shared Go engine under `/scripts` resolves merged PRs through the GitHub API using the workflow token
 The engine will own authoritative-range discovery and merged-PR resolution, including GitHub API lookups needed to map commits in the compare range to merged pull requests and to retrieve their bodies, labels, and other required metadata. Workflows will provide authenticated environment context through the built-in workflow token.
 
 This keeps the core changelog assembly path self-contained and reusable across release and unreleased modes. It also avoids splitting the authoritative changelog assembly pipeline between workflow glue and engine internals.
@@ -72,7 +72,7 @@ This preserves a single operational place for changelog regeneration without kee
 
 ## Migration Plan
 
-1. Extract or consolidate the deterministic changelog engine behind a reusable repository-authored script interface.
+1. Extract or consolidate the deterministic changelog engine into a reusable Go-based repository-authored script interface under `/scripts`.
 2. Update `prep-release.yml` to invoke the engine in release mode after applying the version bump and before creating/updating the PR.
 3. Update `changelog-generation.yml` and its template to remove `pull_request_target`, add explicit `workflow_dispatch` inputs for release mode, and invoke the shared engine in unreleased or release mode accordingly.
 4. Preserve or adapt PR-management helper logic so unreleased mode still maintains the singleton `generated-changelog` PR and release mode can refresh release PR metadata when manually dispatched.

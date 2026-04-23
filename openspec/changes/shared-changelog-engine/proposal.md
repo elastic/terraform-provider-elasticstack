@@ -4,7 +4,7 @@ The final release changelog update currently depends on `ci-changelog-generation
 
 ## What Changes
 
-- Refactor changelog-generation logic into a shared repository-authored script/engine that resolves merged PRs via the GitHub API using the workflow token, parses PR-body changelog contracts, and rewrites `CHANGELOG.md` deterministically.
+- Refactor changelog-generation logic into a shared repository-authored script/engine implemented in Go under `/scripts` that resolves merged PRs via the GitHub API using the workflow token, parses PR-body changelog contracts, and rewrites `CHANGELOG.md` deterministically.
 - Update `prep-release.yml` to invoke the shared changelog engine directly in release mode during release preparation, so release preparation fails immediately when changelog assembly fails.
 - Simplify `changelog-generation.yml` so its automatic triggers only cover scheduled unreleased maintenance, while `workflow_dispatch` also supports an explicit release mode via inputs.
 - Remove the `pull_request_target` release trigger path from the changelog-generation workflow and replace event-inferred release mode with explicit workflow inputs.
@@ -16,13 +16,13 @@ The final release changelog update currently depends on `ci-changelog-generation
 <!-- None -->
 
 ### Modified Capabilities
-- `ci-changelog-generation`: Change workflow triggering and operating-mode selection so scheduled automation maintains the unreleased changelog, while release-mode execution is invoked explicitly and uses a shared repository-authored engine.
-- `ci-release-pr-preparation`: Change release preparation so the workflow deterministically generates the final release changelog section during preparation and creates a single ready-to-review release-preparation commit/PR.
+- `ci-changelog-generation`: Change workflow triggering and operating-mode selection so scheduled automation maintains the unreleased changelog, while release-mode execution is invoked explicitly and uses a shared repository-authored Go engine under `/scripts`.
+- `ci-release-pr-preparation`: Change release preparation so the workflow deterministically generates the final release changelog section during preparation using the same Go engine under `/scripts` and creates a single ready-to-review release-preparation commit/PR.
 
 ## Impact
 
 - `.github/workflows/prep-release.yml`
 - `.github/workflows/changelog-generation.yml`
 - `.github/workflows-src/changelog-generation/workflow.yml.tmpl`
-- changelog-generation helper code under `.github/workflows-src/lib/` and/or `scripts/changelog-generation/`
+- changelog-generation helper code migrated into a Go-based engine under `scripts/`
 - OpenSpec specs for `ci-changelog-generation` and `ci-release-pr-preparation`
