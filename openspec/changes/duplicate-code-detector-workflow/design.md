@@ -1,6 +1,6 @@
 ## Context
 
-The repository has added a `duplicate-code-detector` GitHub Agentic Workflow that periodically inspects recent repository changes for meaningful code duplication and opens follow-up issues for refactoring. The workflow fits an existing repository pattern: authored workflow source lives under `.github/workflows-src/`, checked-in generated artifacts live under `.github/workflows/`, and workflow behavior is partly deterministic before the agent starts reasoning.
+The repository has added a `duplicate-code-detector` GitHub Agentic Workflow that periodically inspects recent repository changes for meaningful code duplication and opens follow-up issues for refactoring. The repository-authored workflow is derived from the upstream `gh-aw` source at `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md` and then adapted to fit the existing repository pattern: authored workflow source lives under `.github/workflows-src/`, checked-in generated artifacts live under `.github/workflows/`, and workflow behavior is partly deterministic before the agent starts reasoning.
 
 The design needs to preserve the separation between deterministic gates and agent-driven analysis. Counting existing open issues, enforcing a per-run issue cap, and exposing that gate to the prompt are repository-authored concerns that must remain stable and testable. The agent should only handle the semantic duplicate-detection task and issue writing within those precomputed limits.
 
@@ -24,11 +24,12 @@ The design needs to preserve the separation between deterministic gates and agen
 
 ### 1. Use a generated GH AW workflow with authored source under `workflows-src`
 
-The workflow will be treated as a GitHub Agentic Workflow whose source is authored under `.github/workflows-src/duplicate-code-detector/`, generated to `.github/workflows/duplicate-code-detector.md`, and compiled to `.github/workflows/duplicate-code-detector.lock.yml`.
+The workflow will be treated as a GitHub Agentic Workflow whose repository source is authored under `.github/workflows-src/duplicate-code-detector/`, generated to `.github/workflows/duplicate-code-detector.md`, and compiled to `.github/workflows/duplicate-code-detector.lock.yml`. That repository source is expected to stay intentionally aligned with the upstream `gh-aw` duplicate-code detector workflow at `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md`, except where this repository needs explicit local adaptations such as issue-slot gating, labels, engine configuration, or generated-artifact handling.
 
 Why:
 - It matches the repository's existing pattern for authored workflow sources plus checked-in generated artifacts.
 - It keeps the editable source concise while preserving generated outputs for review and execution.
+- It records the upstream workflow source of truth while still making repository-specific deltas reviewable.
 - It makes regeneration and drift checking compatible with existing `scripts/compile-workflow-sources` and `gh aw compile` workflows.
 
 Alternative considered:
@@ -80,7 +81,7 @@ Alternative considered:
 ## Migration Plan
 
 1. Add the OpenSpec change for the new workflow capability.
-2. Implement or refine the authored workflow source, slot helper logic, and generated workflow artifacts.
+2. Implement or refine the authored workflow source, slot helper logic, and generated workflow artifacts while preserving a clear mapping back to the upstream `gh-aw` workflow source.
 3. Add or update focused workflow-source tests for the deterministic slot helper behavior.
 4. Regenerate the workflow outputs and validate the resulting change.
 5. Enable the workflow through the normal repository workflow rollout path.

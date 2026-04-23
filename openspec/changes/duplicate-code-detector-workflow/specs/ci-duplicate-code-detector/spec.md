@@ -1,6 +1,6 @@
 # `ci-duplicate-code-detector` — bounded duplicate-code issue detection workflow
 
-Workflow implementation: authored source under `.github/workflows-src/`, compiled to `.github/workflows/`.
+Workflow implementation: repository-authored source under `.github/workflows-src/`, derived from `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md`, and compiled to `.github/workflows/`.
 
 ## Purpose
 
@@ -9,11 +9,15 @@ Define requirements for a GitHub Agentic Workflow that analyzes recent repositor
 ## ADDED Requirements
 
 ### Requirement: Workflow artifacts and compilation
-The duplicate-code detector SHALL be authored as a GitHub Agentic Workflow markdown source under `.github/workflows-src/` and SHALL include generated workflow artifacts under `.github/workflows/`, including a compiled `.lock.yml` derived from the authored source. Contributors SHALL NOT hand-edit the generated workflow artifacts.
+The duplicate-code detector SHALL be authored as a GitHub Agentic Workflow markdown source under `.github/workflows-src/` and SHALL include generated workflow artifacts under `.github/workflows/`, including a compiled `.lock.yml` derived from the authored source. The repository-authored source SHALL identify `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md` as its upstream baseline. Contributors SHALL NOT hand-edit the generated workflow artifacts.
 
 #### Scenario: Source and generated artifacts stay paired
 - **WHEN** maintainers change duplicate-code detector behavior
 - **THEN** the authored workflow source, generated workflow markdown, and compiled lock artifact SHALL match the repository compiler output
+
+#### Scenario: Upstream workflow source remains referenced
+- **WHEN** maintainers review or update the repository-authored duplicate-code detector workflow source
+- **THEN** the change artifacts SHALL continue to reference `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md` as the upstream workflow source
 
 ### Requirement: Scheduled and manual triggering
 The duplicate-code detector SHALL support scheduled execution and manual `workflow_dispatch` execution.
