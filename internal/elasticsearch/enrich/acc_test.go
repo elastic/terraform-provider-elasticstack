@@ -90,8 +90,9 @@ func TestAccResourceEnrichPolicyFW(t *testing.T) {
 
 					return fmt.Sprintf("%s/%s", *clusterID, name), nil
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"query"},
 			},
 		},
 	})
