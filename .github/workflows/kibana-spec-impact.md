@@ -15,90 +15,44 @@ on:
       - 'generated/kbapi/**'
       - 'internal/clients/kibanaoapi/**'
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Setup Go
       uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
         cache: false
+    - name: Clone repo-memory branch
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        # NOTE: This branch name must match the repo-memory tool config branch-name below.
+        BRANCH_NAME: memory/kibana-spec-impact
+        TARGET_REPO: ${{ github.repository }}
+        MEMORY_DIR: /tmp/gh-aw/repo-memory/kibana-spec-impact
+        CREATE_ORPHAN: "true"
+      run: bash "${RUNNER_TEMP}/gh-aw/actions/clone_repo_memory_branch.sh"
     - name: Compute kibana spec impact
       id: compute_kibana_spec_impact
-      uses: actions/github-script@v9
+      env:
+        TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: "true"
+      run: |
+        mkdir -p /tmp/gh-aw/agent
+        go run ./scripts/kibana-spec-impact pre-activation \
+          --repo . \
+          --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
+          --target "${GITHUB_SHA:-HEAD}" \
+          --issue-cap 5 \
+          --report-path /tmp/gh-aw/agent/kibana-spec-impact-report.json
+    - name: Upload kibana spec impact report
+      if: success()
+      uses: actions/upload-artifact@v4
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const ISSUE_CAP = 5;
-          
-          /**
-           * Derives workflow gate outputs from a deterministic kibana-spec-impact report object.
-           * @param {object} report - Parsed JSON from `go run ./scripts/kibana-spec-impact report`.
-           * @returns {{ shouldRun: boolean, issueCap: number, kbapiChanged: boolean, transformHints: boolean, highConfidenceCount: number, gate_reason: string }}
-           */
-          function kibanaSpecImpactGate(report) {
-            const kbapiChanged = (report.changed_kbapi_symbols || []).length > 0;
-            const transformHints = (report.transform_schema_hints || []).length > 0;
-            const hi = report.high_confidence_impacts || [];
-            const shouldRun = kbapiChanged || transformHints;
-            const issueCap = Math.min(ISSUE_CAP, hi.length);
-            const gateReason = `kbapi_changed=${kbapiChanged} transform_hints=${transformHints} high_confidence=${hi.length}`;
-            return {
-              shouldRun,
-              issueCap,
-              kbapiChanged,
-              transformHints,
-              highConfidenceCount: hi.length,
-              gate_reason: gateReason,
-            };
-          }
-          
-          if (typeof module !== 'undefined') {
-            module.exports = { ISSUE_CAP, kibanaSpecImpactGate };
-          }
-          
-          const { execFileSync } = require('child_process');
-          const fs = require('fs');
-          const path = require('path');
-          
-          const ws = process.env.GITHUB_WORKSPACE;
-          const sha = process.env.GITHUB_SHA || 'HEAD';
-          
-          const defaultMem = '/tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json';
-          let mem = process.env.KIBANA_SPEC_IMPACT_MEMORY;
-          if (!mem && fs.existsSync(defaultMem)) {
-            mem = defaultMem;
-          } else if (!mem) {
-            mem = path.join(process.env.RUNNER_TEMP, 'kibana-spec-impact-memory.json');
-          }
-          
-          const goEnv = {
-            ...process.env,
-            TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: 'true',
-          };
-          
-          if (!fs.existsSync(mem)) {
-            execFileSync('go', ['run', './scripts/kibana-spec-impact', 'memory-bootstrap', '--memory', mem], {
-              cwd: ws,
-              env: goEnv,
-              stdio: 'inherit',
-            });
-          }
-          
-          const reportJson = execFileSync(
-            'go',
-            ['run', './scripts/kibana-spec-impact', 'report', '--repo', '.', '--memory', mem, '--target', sha],
-            { cwd: ws, encoding: 'utf8', env: goEnv },
-          );
-          
-          const r = JSON.parse(reportJson);
-          const g = kibanaSpecImpactGate(r);
-          
-          core.setOutput('should_run', g.shouldRun ? 'true' : 'false');
-          core.setOutput('issue_cap', String(g.issueCap));
-          core.setOutput('high_confidence_count', String(g.highConfidenceCount));
-          core.setOutput('gate_reason', g.gate_reason);
-          
-          fs.writeFileSync(path.join(ws, 'kibana-spec-impact-report.json'), JSON.stringify(r, null, 2) + '\n');
-          core.info(`kibana-spec-impact gate: ${g.gate_reason}`);
-          
+        name: kibana-spec-impact-report
+        path: /tmp/gh-aw/agent/kibana-spec-impact-report.json
+        if-no-files-found: error
 engine:
   id: claude
   model: "llm-gateway/gpt-5.4"
@@ -114,6 +68,8 @@ tools:
   timeout: 300
   repo-memory:
     - id: kibana-spec-impact
+      # NOTE: This branch name must match the BRANCH_NAME used in the pre-activation init step above.
+      branch-name: memory/kibana-spec-impact
       file-glob: ["memory/kibana-spec-impact/kibana-spec-impact.json"]
       create-orphan: true
       max-file-size: 524288
@@ -131,8 +87,15 @@ network:
 checkout:
   fetch-depth: 0
 if: >-
-  needs.pre_activation.outputs.should_run == 'true'
+  needs.pre_activation.outputs.run_agent == 'true'
 steps:
+  - name: Download kibana spec impact report
+    uses: actions/download-artifact@v4
+    with:
+      name: kibana-spec-impact-report
+      path: /tmp/gh-aw/agent
+  - name: Verify report artifact path
+    run: test -f /tmp/gh-aw/agent/kibana-spec-impact-report.json
   - name: Setup Go
     uses: actions/setup-go@v6
     with:
@@ -152,7 +115,7 @@ steps:
 jobs:
   pre_activation:
     outputs:
-      should_run: ${{ steps.compute_kibana_spec_impact.outputs.should_run }}
+      run_agent: ${{ steps.compute_kibana_spec_impact.outputs.run_agent }}
       issue_cap: ${{ steps.compute_kibana_spec_impact.outputs.issue_cap }}
       high_confidence_count: ${{ steps.compute_kibana_spec_impact.outputs.high_confidence_count }}
       gate_reason: ${{ steps.compute_kibana_spec_impact.outputs.gate_reason }}
@@ -166,14 +129,14 @@ You summarize **deterministic** Kibana client change evidence into at most one G
 
 Do **not** re-derive entity lists or kbapi diffs from scratch unless reproducing a bug. Use only:
 
-- **Should run**: `${{ needs.pre_activation.outputs.should_run }}` (this job runs only when `true`).
+- **Run agent**: `${{ needs.pre_activation.outputs.run_agent }}` (this job runs only when `true`).
 - **Issue cap**: `${{ needs.pre_activation.outputs.issue_cap }}` — maximum new issues with `create-issue` this run (high-confidence entities only).
 - **High-confidence entities (count)**: `${{ needs.pre_activation.outputs.high_confidence_count }}`
 - **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
 
 ## Deterministic report
 
-Read `kibana-spec-impact-report.json` at the repository root (written by pre-activation). It contains:
+Read `/tmp/gh-aw/agent/kibana-spec-impact-report.json` (downloaded from the pre-activation artifact). It contains:
 
 - `baseline_sha` / `target_sha`
 - `changed_kbapi_symbols`
@@ -183,22 +146,22 @@ Read `kibana-spec-impact-report.json` at the repository root (written by pre-act
 
 ## Execution
 
-1. Open and parse `kibana-spec-impact-report.json`.
+1. Open and parse `/tmp/gh-aw/agent/kibana-spec-impact-report.json`.
 2. For each entry in `high_confidence_impacts` **up to the issue cap**, create **one** issue per entity using `create-issue`. Title should include the Terraform entity name. Body must include:
    - Entity type and name, and implementation `pkg_path`.
    - Matched symbols / evidence from `matched_symbols`.
    - A concise note on likely provider follow-up (new schema fields, widened enums, new API capabilities) inferred from symbols and local code context.
 3. If `high_confidence_impacts` is empty but `transform_schema_hints` is non-empty, call `noop` explaining that only transform-layer hints were present (no high-confidence kbapi entity mapping).
 4. If there is nothing actionable, call `noop` with a short reason.
-5. Always write `kibana-spec-impact-issued.json` before persisting memory:
+5. Always write `/tmp/gh-aw/agent/kibana-spec-impact-issued.json` before persisting memory:
    - If `high_confidence_impacts` is **non-empty**: write a JSON array of Terraform `entity_name` values for which you **actually created** an issue this run (≤ issue cap). If you created **zero** issues despite impacts (for example a deliberate policy skip), write `[]` — the helper **requires** this file in that case so baseline advancement is never accidental.
    - If `high_confidence_impacts` is **empty**: write `[]` (the `--issued` flag is then optional on the helper, but writing the file keeps the flow uniform).
 6. Persist repo memory by running (this **always** advances the analyzed baseline to `target_sha`; dedupe fingerprints are recorded **only** for entity names listed in `--issued`, so capped entities stay eligible next run):
    ```
    go run ./scripts/kibana-spec-impact memory-record-from-report \
      --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
-     --report kibana-spec-impact-report.json \
-     --issued kibana-spec-impact-issued.json
+     --report /tmp/gh-aw/agent/kibana-spec-impact-report.json \
+     --issued /tmp/gh-aw/agent/kibana-spec-impact-issued.json
    ```
    Use the repo-memory path configured for this workflow if it differs in your environment. Run this after `noop` as well so successful analysis still advances the baseline when no new issues are created.
 
@@ -208,4 +171,4 @@ Read `kibana-spec-impact-report.json` at the repository root (written by pre-act
 - Do not open issues for `transform_schema_hints` alone in V1 (mention them in the body only when a high-confidence issue exists for context).
 - Do not exceed the issue cap. If fewer slots than entities, prioritize alphabetically by `entity_name` unless a maintainer instruction overrides.
 - Weak or broad matches are already filtered out by the helper; do not reopen suppressed fingerprints.
-- Only list entities in `kibana-spec-impact-issued.json` when you created their issue; the helper rejects `--issued` names that are not present in `high_confidence_impacts`. Capped eligible entities must be omitted so dedupe state never records them (avoids suppressing never-filed entities).
+- Only list entities in `/tmp/gh-aw/agent/kibana-spec-impact-issued.json` when you created their issue; the helper rejects `--issued` names that are not present in `high_confidence_impacts`. Capped eligible entities must be omitted so dedupe state never records them (avoids suppressing never-filed entities).

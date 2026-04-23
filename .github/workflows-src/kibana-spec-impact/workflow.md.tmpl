@@ -31,7 +31,7 @@ on:
         BRANCH_NAME: memory/kibana-spec-impact
         TARGET_REPO: ${{ github.repository }}
         MEMORY_DIR: /tmp/gh-aw/repo-memory/kibana-spec-impact
-        CREATE_ORPHAN: true
+        CREATE_ORPHAN: "true"
       run: bash "${RUNNER_TEMP}/gh-aw/actions/clone_repo_memory_branch.sh"
     - name: Compute kibana spec impact
       id: compute_kibana_spec_impact
