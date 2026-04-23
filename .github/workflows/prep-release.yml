@@ -174,7 +174,8 @@ jobs:
             --head "${BRANCH}" \
             --base main \
             --title "${PR_TITLE}" \
-            --body-file /tmp/pr-body.txt
+            --body-file /tmp/pr-body.txt \
+            --label no-changelog
 
       - name: Report outcome
         run: |
