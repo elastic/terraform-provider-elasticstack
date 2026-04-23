@@ -79,11 +79,12 @@ function checkActorTrust({ sender, permission }) {
 function checkDuplicatePR({ issueNumber, pullRequests }) {
   const expectedBranch = `code-factory/issue-${issueNumber}`;
   const expectedLink = `Closes #${issueNumber}`;
+  const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
   const duplicate = (pullRequests || []).find(pr => (
     pr.state === 'open' &&
     Array.isArray(pr.labels) && pr.labels.includes('code-factory') &&
     pr.head_branch === expectedBranch &&
-    String(pr.body || '').includes(expectedLink)
+    closesPattern.test(String(pr.body || ''))
   ));
 
   if (duplicate) {

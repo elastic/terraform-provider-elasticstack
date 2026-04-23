@@ -2,11 +2,13 @@
 
 const { owner, repo } = context.repo;
 const issueNumber = context.payload.issue?.number;
+const expectedBranch = `code-factory/issue-${issueNumber}`;
 
 const pulls = await github.paginate(github.rest.pulls.list, {
   owner,
   repo,
   state: 'open',
+  head: `${owner}:${expectedBranch}`,
   per_page: 100,
 });
 

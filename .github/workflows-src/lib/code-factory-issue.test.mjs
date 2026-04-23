@@ -202,6 +202,24 @@ test('checkDuplicatePR ignores PRs missing canonical Closes issue linkage', () =
   assert.equal(result.duplicate_pr_found, false);
 });
 
+test('checkDuplicatePR does not match a PR whose body has Closes issue linkage followed by more digits', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'Implements the requested change.\n\nCloses #420' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, false);
+});
+
+test('checkDuplicatePR matches when body has canonical Closes issue linkage at end of line', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'Implements the requested change.\n\nCloses #42\n' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, true);
+});
+
 test('checkDuplicatePR ignores PRs that are not open', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
