@@ -175,6 +175,13 @@ func getSchema() schema.Schema {
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
+					"verification_mode": schema.StringAttribute{
+						Description: "The SSL verification mode. One of `certificate`, `full`, `none`, `strict`.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("certificate", "full", "none", "strict"),
+						},
+					},
 				},
 			},
 			"kafka": schema.SingleNestedAttribute{
