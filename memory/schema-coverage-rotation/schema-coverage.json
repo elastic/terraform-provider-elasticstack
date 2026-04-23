@@ -109,7 +109,7 @@
     "elasticstack_elasticsearch_security_user": "2026-04-22T10:50:28Z",
     "elasticstack_elasticsearch_snapshot_repository": "2026-04-22T10:50:28Z",
     "elasticstack_fleet_enrollment_tokens": "2026-04-22T10:50:28Z",
-    "elasticstack_fleet_integration": null,
+    "elasticstack_fleet_integration": "2026-04-23T10:53:22Z",
     "elasticstack_fleet_output": null,
     "elasticstack_kibana_action_connector": null,
     "elasticstack_kibana_agentbuilder_agent": null,
