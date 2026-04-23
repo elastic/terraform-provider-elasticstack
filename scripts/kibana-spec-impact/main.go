@@ -53,6 +53,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdReport(args[1:], stdout, stderr)
 	case "resolve-baseline":
 		return cmdResolveBaseline(args[1:], stdout, stderr)
+	case "pre-activation":
+		return cmdPreActivation(args[1:], stderr)
 	case "memory-bootstrap":
 		return cmdMemoryBootstrap(args[1:], stderr)
 	case "memory-record-from-report":
@@ -69,6 +71,7 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "  inventory                    Print JSON entity inventory (stdout)")
 	fmt.Fprintln(w, "  report                       Emit JSON impact report for baseline..target")
 	fmt.Fprintln(w, "  resolve-baseline             Print resolved baseline SHA for the target revision")
+	fmt.Fprintln(w, "  pre-activation               Bootstrap memory if needed, write report, and emit workflow outputs")
 	fmt.Fprintln(w, "  memory-bootstrap             Copy seed memory to --memory if missing")
 	fmt.Fprintln(w, "  memory-record-from-report    Advance baseline; --issued required when report has high_confidence_impacts")
 	return errors.New("unknown or missing command")
@@ -165,6 +168,57 @@ func cmdResolveBaseline(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	fmt.Fprintln(stdout, baseline)
+	return nil
+}
+
+func cmdPreActivation(args []string, stderr io.Writer) error {
+	fs := flag.NewFlagSet("pre-activation", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	repoRoot := fs.String("repo", ".", "repository root")
+	memPath := fs.String("memory", "", "path to live memory file (required)")
+	seedPath := fs.String("seed", ".github/aw/memory/kibana-spec-impact.json", "seed memory path")
+	target := fs.String("target", "HEAD", "git revision for the analysis target")
+	baselineOverride := fs.String("baseline", "", "optional baseline revision (skips resolve-baseline)")
+	reportPath := fs.String("report-path", "kibana-spec-impact-report.json", "path to write the report JSON")
+	issueCap := fs.Int("issue-cap", defaultIssueCap, "maximum issues the workflow may create")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *memPath == "" {
+		return errors.New("--memory is required")
+	}
+	if _, err := os.Stat(*memPath); os.IsNotExist(err) {
+		if err := bootstrapMemoryFromSeed(*memPath, *seedPath); err != nil {
+			return fmt.Errorf("bootstrap memory: %w", err)
+		}
+	} else if err != nil {
+		return err
+	}
+	mem, err := loadMemory(*memPath)
+	if err != nil {
+		return err
+	}
+	baseline := *baselineOverride
+	if baseline == "" {
+		baseline, err = resolveBaseline(*repoRoot, mem, *target)
+		if err != nil {
+			return fmt.Errorf("resolve baseline: %w", err)
+		}
+	}
+	report, err := buildImpactReport(*repoRoot, mem, baseline, *target)
+	if err != nil {
+		return err
+	}
+	if err := writeReportFile(*reportPath, report); err != nil {
+		return err
+	}
+	outputs := derivePreActivationOutputs(report, *issueCap)
+	if outputFile := os.Getenv("GITHUB_OUTPUT"); outputFile != "" {
+		if err := appendGithubOutputs(outputFile, outputs); err != nil {
+			fmt.Fprintf(stderr, "warning: failed to write GITHUB_OUTPUT: %v\n", err)
+		}
+	}
+	fmt.Fprintf(stderr, "wrote report to %s; should_run=%t issue_cap=%d high_confidence_count=%d gate_reason=%s\n", *reportPath, outputs.ShouldRun, outputs.IssueCap, outputs.HighConfidenceCount, outputs.GateReason)
 	return nil
 }
 

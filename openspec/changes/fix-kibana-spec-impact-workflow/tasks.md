@@ -1,7 +1,7 @@
 ## 1. Helper contract
 
-- [ ] 1.1 Extend `scripts/kibana-spec-impact/` so the repository-local Go helper can perform the deterministic pre-activation flow: initialize memory when needed, compute the report, derive gate outputs, and write the report file used by the workflow.
-- [ ] 1.2 Add or update focused Go tests covering the pre-activation gate/report contract, including the emitted gate fields and report-file behavior.
+- [x] 1.1 Extend `scripts/kibana-spec-impact/` so the repository-local Go helper can perform the deterministic pre-activation flow: initialize memory when needed, compute the report, derive gate outputs, and write the report file used by the workflow.
+- [x] 1.2 Add or update focused Go tests covering the pre-activation gate/report contract, including the emitted gate fields and report-file behavior.
 
 ## 2. Workflow orchestration
 
