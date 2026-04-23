@@ -6,9 +6,9 @@
 
 ## 2. Introduce focused Agent Builder transport APIs
 
-- [ ] 2.1 Reorganize the Agent Builder transport helpers under `internal/clients/kibanaoapi/` into focused APIs that implement the new generic resource transport contracts for agents, tools, and workflows
-- [ ] 2.2 Preserve existing request/response semantics and error handling while reducing duplicated endpoint helper wiring
-- [ ] 2.3 Add or update tests for the focused transport APIs as needed to keep endpoint behavior covered during the migration
+- [x] 2.1 Reorganize the Agent Builder transport helpers under `internal/clients/kibanaoapi/` into focused APIs that implement the new generic resource transport contracts for agents, tools, and workflows
+- [x] 2.2 Preserve existing request/response semantics and error handling while reducing duplicated endpoint helper wiring
+- [x] 2.3 Add or update tests for the focused transport APIs as needed to keep endpoint behavior covered during the migration
 
 ## 3. Migrate Agent Builder resources to the shared framework
 
