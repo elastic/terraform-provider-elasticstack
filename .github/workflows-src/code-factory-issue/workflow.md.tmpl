@@ -17,6 +17,13 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/qualify_trigger.inline.js
+    - name: Capture issue context
+      id: capture_issue_context
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          core.setOutput('issue_body', context.payload.issue?.body ?? '');
     - name: Check actor trust
       id: check_actor_trust
       if: steps.qualify_trigger.outputs.event_eligible == 'true'
@@ -66,14 +73,15 @@ engine:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
+  issues: read
+  pull-requests: read
 jobs:
   pre-activation:
     outputs:
       event_eligible: ${{ steps.qualify_trigger.outputs.event_eligible }}
       event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+      issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
       actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
@@ -109,7 +117,7 @@ Deterministic pre-activation has already decided that this issue event is eligib
 - **Issue body**:
 
   ```markdown
-  ${{ github.event.issue.body }}
+  ${{ needs.pre_activation.outputs.issue_body }}
   ```
 
 - **Repository**: `${{ github.repository }}`
