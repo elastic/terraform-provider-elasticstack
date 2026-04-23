@@ -48,7 +48,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 
 	resourceID := state.ID.ValueString()
 
-	compositeID, dg := tryReadCompositeID(resourceID)
+	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

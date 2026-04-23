@@ -49,7 +49,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 
 	resourceID := state.ID.ValueString()
 
-	compositeID, dg := tryReadCompositeID(resourceID)
+	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

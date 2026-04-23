@@ -19,6 +19,7 @@ package synthetics
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,6 +39,16 @@ func GetCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 		return nil, dg
 	}
 	return compositeID, dg
+}
+
+// TryReadCompositeID parses a composite ID when the id contains "/".
+// Plain IDs are treated as legacy non-composite identifiers and return nil
+// without diagnostics.
+func TryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
+	if strings.Contains(id, "/") {
+		return GetCompositeID(id)
+	}
+	return nil, diag.Diagnostics{}
 }
 
 // Shared utility functions for type conversions

@@ -54,7 +54,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 
 	resourceID := plan.ID.ValueString()
 
-	compositeID, dg := tryReadCompositeID(resourceID)
+	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return

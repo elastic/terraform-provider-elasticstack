@@ -20,15 +20,12 @@ package parameter
 import (
 	_ "embed"
 	"slices"
-	"strings"
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -134,14 +131,6 @@ func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParamete
 		Tags:              new(schemautil.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
-}
-
-func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
-	if strings.Contains(id, "/") {
-		compositeID, diagnostics := synthetics.GetCompositeID(id)
-		return compositeID, diagnostics
-	}
-	return nil, diag.Diagnostics{}
 }
 
 func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {

@@ -19,13 +19,11 @@ package privatelocation
 
 import (
 	_ "embed"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -193,14 +191,6 @@ func geoFromAPIResponse(geo *struct {
 		Lat: NewFloat32PrecisionValue(float64(geo.Lat)),
 		Lon: NewFloat32PrecisionValue(float64(geo.Lon)),
 	}
-}
-
-func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
-	if strings.Contains(id, "/") {
-		compositeID, diagnostics := synthetics.GetCompositeID(id)
-		return compositeID, diagnostics
-	}
-	return nil, diag.Diagnostics{}
 }
 
 // effectiveSpaceID returns the Kibana space for API calls. When the resource id
