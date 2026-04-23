@@ -3,37 +3,36 @@
 Workflow implementation: authored GH AW source under `.github/workflows/`, backed by repository-authored template/source under `.github/workflows-src/`, with compiled `.lock.yml` committed from `gh aw compile`.
 
 ## Purpose
-Define a GitHub Agentic Workflow that maintains `CHANGELOG.md` from merged pull-request history. The workflow has one agentic changelog engine and two operating modes: maintaining the full `## [Unreleased]` section on branch `generated-changelog`, and regenerating a concrete release section for release-preparation pull requests.
+Define a GitHub Agentic Workflow that maintains `CHANGELOG.md` from merged pull-request history. The workflow has one agentic changelog engine and two operating modes: maintaining the full `## [Unreleased]` section on branch `generated-changelog`, and regenerating a concrete release section for an explicitly selected release-preparation branch.
 ## Requirements
 ### Requirement: Workflow artifacts and operating modes
 The changelog generator SHALL be authored as a deterministic workflow template under `.github/workflows-src/` and SHALL generate a checked-in workflow YAML artifact under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The workflow SHALL NOT require a GH AW markdown source or a compiled `.lock.yml`. The workflow SHALL support:
 
 - a scheduled mode
 - a manual `workflow_dispatch` mode
-- a `pull_request_target` mode for same-repository release-preparation branches matching the repository's `prep-release-*` naming contract
+- explicit workflow-dispatch inputs that allow maintainers to select `unreleased` or `release` execution mode
 
 #### Scenario: Source and compiled workflow stay paired
 - **WHEN** maintainers change changelog generator behavior
 - **THEN** the `.github/workflows-src/` template and generated `.github/workflows/changelog-generation.yml` SHALL match the current repository compiler output
 
-#### Scenario: Release-preparation pull request activates release mode
-- **GIVEN** a same-repository pull request whose head branch matches the configured `prep-release-*` pattern
-- **WHEN** the changelog generator runs for that pull request through `pull_request_target`
-- **THEN** it SHALL enter release-section generation mode for the triggering pull request branch
+#### Scenario: Manual dispatch can enter release mode explicitly
+- **WHEN** a maintainer dispatches the changelog generator with inputs selecting `release` mode and a target version
+- **THEN** the workflow SHALL enter release-section generation mode for the checked out target branch without relying on pull-request event metadata
 
 ### Requirement: Full-section regeneration uses authoritative ranges
 The changelog generator SHALL regenerate the full target section on each run from an authoritative range rather than appending only “since last run” changes.
 
-- In scheduled/manual mode, it SHALL regenerate the full `## [Unreleased]` section from the previous semver release tag to `main`.
-- In release-pull-request mode, it SHALL regenerate the full concrete `## [x.y.z] - <date>` section for the triggering release branch from the previous semver release tag to that branch head.
+- In scheduled/manual unreleased mode, it SHALL regenerate the full `## [Unreleased]` section from the previous semver release tag to `main`.
+- In explicit release mode, it SHALL regenerate the full concrete `## [x.y.z] - <date>` section for the checked out release branch from the previous semver release tag to that branch head.
 - In both modes, release-note content SHALL be assembled from merged pull requests in that authoritative range by parsing their PR-body changelog contract and labels.
 
 #### Scenario: Scheduled run rebuilds full Unreleased
-- **WHEN** the changelog generator runs in scheduled or manual mode
+- **WHEN** the changelog generator runs in scheduled mode
 - **THEN** it SHALL regenerate the entire `## [Unreleased]` section from the authoritative release range instead of incrementally appending entries
 
-#### Scenario: Release PR run rebuilds full release section
-- **WHEN** the changelog generator runs for a `prep-release-*` pull request
+#### Scenario: Manual release run rebuilds full release section
+- **WHEN** the changelog generator runs in explicit release mode for a checked out `prep-release-*` branch
 - **THEN** it SHALL regenerate the full `## [x.y.z] - <date>` section for that branch from the authoritative release range instead of incrementally appending entries
 
 ### Requirement: Deterministic validation gates changelog mutation
@@ -48,7 +47,7 @@ Before updating `CHANGELOG.md`, deterministic repository-authored validation SHA
 - **THEN** changelog mutation SHALL fail before `CHANGELOG.md` is updated
 
 ### Requirement: Scheduled/manual mode updates the singleton generated changelog PR
-In scheduled/manual mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists.
+In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists.
 
 #### Scenario: Generated changelog branch PR is reused
 - **GIVEN** the singleton branch `generated-changelog` already has an open pull request to `main`
@@ -60,15 +59,15 @@ In scheduled/manual mode, after deterministic validation succeeds, the workflow 
 - **WHEN** the scheduled/manual changelog generator produces an updated `CHANGELOG.md`
 - **THEN** the workflow SHALL create the pull request after pushing the branch update
 
-### Requirement: Release-pull-request mode updates only the triggering release section
-In release-pull-request mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the triggering release branch and SHALL push that change only to the triggering release pull request branch. When the workflow refreshes release PR metadata, it SHALL use the pull request number from event metadata rather than performing branch-based PR discovery.
+### Requirement: Explicit release mode updates only the targeted release section
+In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
 
-#### Scenario: Release mode updates only the triggering branch
-- **WHEN** the changelog generator runs for a `prep-release-*` pull request
-- **THEN** it SHALL push changelog updates only to the triggering release pull request branch
+#### Scenario: Release mode updates only the targeted branch
+- **WHEN** the changelog generator runs in explicit release mode for a release-preparation branch
+- **THEN** it SHALL push changelog updates only to that targeted release branch
 
 #### Scenario: Release mode does not rewrite Unreleased on the release branch
-- **WHEN** the changelog generator runs for a release-preparation pull request
+- **WHEN** the changelog generator runs in explicit release mode
 - **THEN** it SHALL regenerate the concrete release section needed for that branch without treating the branch as the singleton `Unreleased` maintenance branch
 
 ### Requirement: Merged PR changelog metadata is gathered for deterministic assembly
