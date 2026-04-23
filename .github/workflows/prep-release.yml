@@ -94,7 +94,7 @@ jobs:
           EXISTS="${{ steps.branch-check.outputs.EXISTS }}"
           if [ "$EXISTS" = "true" ]; then
             git fetch origin "${BRANCH}"
-            git checkout "${BRANCH}"
+            git checkout -B "${BRANCH}" "origin/${BRANCH}"
             git merge --no-edit origin/main || { git merge --abort; exit 1; }
           else
             git checkout main
@@ -118,8 +118,7 @@ jobs:
           go run ./scripts/changelog-engine \
             -mode release \
             -target-version "${{ steps.version.outputs.TARGET_VERSION }}" \
-            -changelog CHANGELOG.md \
-            -output "$RUNNER_TEMP/changelog-engine-outputs"
+            -changelog CHANGELOG.md
 
       - name: Commit release preparation changes
         id: commit_release_prep
