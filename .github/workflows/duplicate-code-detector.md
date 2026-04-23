@@ -4,7 +4,8 @@ name: Duplicate Code Detector
 description: Identifies duplicate code patterns across the codebase and suggests refactoring opportunities
 on:
   workflow_dispatch:
-  schedule: daily
+  schedule: 
+    - cron: daily
   steps:
     - name: Compute issue slots
       id: compute_issue_slots
