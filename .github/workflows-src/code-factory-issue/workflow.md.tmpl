@@ -1,0 +1,126 @@
+---
+name: Code Factory Issue Intake
+description: >-
+  Reacts to trusted qualifying `code-factory` issue events, suppresses duplicate linked pull
+  requests, and delegates implementation to an agent that creates exactly one linked PR per issue.
+on:
+  issues:
+    types: [opened, labeled]
+  steps:
+    - name: Qualify trigger event
+      id: qualify_trigger
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/qualify_trigger.inline.js
+    - name: Check actor trust
+      id: check_actor_trust
+      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_actor_trust.inline.js
+    - name: Check duplicate PR
+      id: check_duplicate_pr
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_duplicate_pr.inline.js
+if: >-
+  needs.pre_activation.outputs.event_eligible == 'true' &&
+  needs.pre_activation.outputs.actor_trusted == 'true' &&
+  needs.pre_activation.outputs.duplicate_pr_found != 'true'
+steps:
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup repository dependencies
+    run: make setup
+engine:
+  id: claude
+  model: "llm-gateway/claude-sonnet-4.6"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+jobs:
+  pre-activation:
+    outputs:
+      event_eligible: ${{ steps.qualify_trigger.outputs.event_eligible }}
+      event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+      actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+      actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+      duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      gate_reason: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+tools:
+  github:
+    toolsets: [issues, pull_requests, repos]
+network:
+  allowed: [defaults, node, elastic.litellm-prod.ai]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  create-pull-request:
+    labels: [code-factory]
+    max: 1
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Code Factory issue intake worker
+
+You implement exactly one GitHub issue labeled `code-factory`. The triggering issue is the sole source of truth for scope, acceptance criteria, and requested behavior. Do not broaden the scope beyond what the issue describes unless the repository already requires it to make the implementation viable.
+
+## Pre-activation context
+
+Deterministic pre-activation has already decided that this issue event is eligible, the actor is trusted, and there is no open linked `code-factory` pull request for the issue.
+
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+- **Issue number**: `${{ github.event.issue.number }}`
+- **Issue title**: `${{ github.event.issue.title }}`
+- **Issue body**:
+
+  ```markdown
+  ${{ github.event.issue.body }}
+  ```
+
+- **Repository**: `${{ github.repository }}`
+- **Triggered by**: `@${{ github.actor }}`
+- **Required branch**: `code-factory/issue-${{ github.event.issue.number }}`
+
+## Task
+
+Implement the triggering issue on branch `code-factory/issue-${{ github.event.issue.number }}` and create exactly one linked pull request labeled `code-factory`.
+
+1. Read the issue title and body carefully and treat them as authoritative.
+2. Create or update the implementation on branch `code-factory/issue-${{ github.event.issue.number }}`.
+3. Open exactly one pull request for that branch using the `create-pull-request` safe output.
+4. Ensure the pull request body contains `Closes #${{ github.event.issue.number }}` so later workflow runs can deterministically identify the linked PR.
+5. Keep the pull request labeled `code-factory`.
+
+## Pull request contract
+
+The linked pull request must:
+
+- use branch `code-factory/issue-${{ github.event.issue.number }}`
+- be the only open `code-factory` pull request for this issue
+- include explicit issue linkage via `Closes #${{ github.event.issue.number }}` in the PR body
+- stay focused on implementing the triggering issue only
+
+## Guardrails
+
+- Do not re-check trigger eligibility, actor trust, or duplicate PR state; deterministic pre-activation already handled those checks.
+- Do not open a second pull request for the same issue.
+- Do not change the branch naming convention.
+- Do not open issues in this workflow.
+- Do not use another issue, pull request, or external request as the source of truth over the triggering issue.
+- If you cannot make progress safely, use `noop` with a concise explanation instead of opening an extra pull request.

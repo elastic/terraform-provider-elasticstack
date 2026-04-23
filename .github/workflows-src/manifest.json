@@ -27,6 +27,10 @@
     {
       "template": ".github/workflows-src/pr-changelog-check/workflow.yml.tmpl",
       "output": ".github/workflows/pr-changelog-check.yml"
+    },
+    {
+      "template": ".github/workflows-src/code-factory-issue/workflow.md.tmpl",
+      "output": ".github/workflows/code-factory-issue.md"
     }
   ]
 }

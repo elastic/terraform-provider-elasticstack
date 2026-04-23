@@ -1,8 +1,8 @@
 ## 1. Author the `code-factory` issue-intake workflow contract
 
-- [ ] 1.1 Add the authored workflow source under `.github/workflows-src/code-factory-issue/` and register its generated output in `.github/workflows-src/manifest.json`.
-- [ ] 1.2 Define deterministic pre-activation handling for `issues.opened` and `issues.labeled`, including `code-factory` label qualification and trusted-actor evaluation for `github-actions[bot]` versus repository collaborators.
-- [ ] 1.3 Write the workflow prompt contract so the agent treats the triggering issue as the source of truth and creates exactly one linked `code-factory` PR on branch `code-factory/issue-<issue-number>`.
+- [x] 1.1 Add the authored workflow source under `.github/workflows-src/code-factory-issue/` and register its generated output in `.github/workflows-src/manifest.json`.
+- [x] 1.2 Define deterministic pre-activation handling for `issues.opened` and `issues.labeled`, including `code-factory` label qualification and trusted-actor evaluation for `github-actions[bot]` versus repository collaborators.
+- [x] 1.3 Write the workflow prompt contract so the agent treats the triggering issue as the source of truth and creates exactly one linked `code-factory` PR on branch `code-factory/issue-<issue-number>`.
 
 ## 2. Implement deterministic helper logic and duplicate suppression
 
