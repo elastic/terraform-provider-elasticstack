@@ -154,7 +154,7 @@ jobs:
       - name: Push release branch
         run: |
           BRANCH="${{ steps.meta.outputs.BRANCH }}"
-          git push origin "${BRANCH}"
+          git push --force-with-lease origin "${BRANCH}"
 
       - name: Check if release PR already exists
         id: pr-check
