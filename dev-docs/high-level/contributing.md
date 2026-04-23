@@ -86,13 +86,14 @@ To release a new provider version:
 
    This dispatches the `prep-release.yml` GitHub Actions workflow, which:
    - Computes the target version by finding the latest semver release tag (`v*.*.*`) on `main` and applying the requested bump.
-   - Creates (or reuses) a `prep-release-x.y.z` branch and opens a pull request with the `VERSION` variable in `Makefile` updated to the target version.
+   - Creates (or reuses) a `prep-release-x.y.z` branch.
+   - Updates the `VERSION` variable in `Makefile` to the target version.
+   - Regenerates the concrete `## [x.y.z] - YYYY-MM-DD` section in `CHANGELOG.md` using the shared changelog engine in release mode.
+   - Pushes a single deterministic release-preparation commit and creates or reuses the release pull request.
 
-2. **Await the changelog update**. The `changelog-generation` workflow automatically detects the new `prep-release-*` PR and regenerates the concrete `## [x.y.z] - YYYY-MM-DD` section in `CHANGELOG.md`, pushing the result to the `prep-release-*` branch.
+2. **Review and merge the release PR**. Once the final changelog section looks correct and all checks pass, merge the `prep-release-x.y.z` PR.
 
-3. **Review and merge the release PR**. Once the changelog section is populated and all checks pass, merge the `prep-release-x.y.z` PR.
-
-4. **Tag and release**. After the PR is merged, start the release by pushing the version tag to `main`:
+3. **Tag and release**. After the PR is merged, start the release by pushing the version tag to `main`:
 
    ```
    git tag v0.14.4 && git push origin v0.14.4
