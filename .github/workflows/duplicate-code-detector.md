@@ -95,7 +95,6 @@ safe-outputs:
   create-issue:
     title-prefix: "[duplicate-code] "
     labels: [duplicate-code, code-quality, automated-analysis]
-    group: true
     max: 3
 
 timeout-minutes: 15
