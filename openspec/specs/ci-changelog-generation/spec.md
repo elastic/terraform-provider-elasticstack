@@ -21,7 +21,7 @@ The changelog generator SHALL be authored as a deterministic workflow template u
 - **THEN** the workflow SHALL enter release-section generation mode for the checked out target branch without relying on pull-request event metadata
 
 ### Requirement: Full-section regeneration uses authoritative ranges
-The changelog generator SHALL regenerate the full target section on each run from an authoritative range rather than appending only "since last run" changes.
+The changelog generator SHALL regenerate the full target section on each run from an authoritative range rather than appending only “since last run” changes.
 
 - In scheduled/manual unreleased mode, it SHALL regenerate the full `## [Unreleased]` section from the previous semver release tag to `main`.
 - In explicit release mode, it SHALL regenerate the full concrete `## [x.y.z] - <date>` section for the checked out release branch from the previous semver release tag to that branch head.
@@ -106,3 +106,4 @@ The changelog generator SHALL apply only simple normalization needed to keep `CH
 #### Scenario: Simple formatting is normalized without semantic rewrite
 - **WHEN** deterministic assembly renders PR-body changelog content into `CHANGELOG.md`
 - **THEN** it SHALL preserve the author-provided meaning while applying only the minimal formatting normalization required by repository changelog conventions
+

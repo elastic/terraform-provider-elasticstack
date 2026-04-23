@@ -55,3 +55,4 @@ The release preparation workflow SHALL prepare release branches so that the chan
 - **GIVEN** a release-preparation branch for version `X` already exists
 - **WHEN** a maintainer manually dispatches the changelog-generation workflow in release mode for version `X`
 - **THEN** the workflow SHALL be able to regenerate the concrete release changelog section for that branch without requiring a new pull-request event
+
