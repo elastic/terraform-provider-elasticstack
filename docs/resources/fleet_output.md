@@ -352,6 +352,7 @@ Optional:
 - `certificate` (String) Client SSL certificate.
 - `certificate_authorities` (List of String) Server SSL certificate authorities.
 - `key` (String, Sensitive) Client SSL certificate key.
+- `verification_mode` (String) The SSL verification mode. One of `certificate`, `full`, `none`, `strict`.
 
 ## Import
 
