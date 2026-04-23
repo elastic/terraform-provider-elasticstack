@@ -30,10 +30,43 @@ import (
 )
 
 func main() {
+	// Support legacy subcommand-based invocation for backward compatibility:
+	//   go run ./scripts/changelog-generation <subcommand> [flags]
+	//
+	// When invoked without arguments (default GitHub Actions mode), the engine
+	// reads configuration from environment variables and runs the workflow engine.
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "validate-provenance":
+			runValidateProvenance(os.Args[2:])
+			return
+		case "rewrite-changelog-section":
+			runRewriteChangelogSection(os.Args[2:])
+			return
+		case "build-evidence-manifest":
+			runBuildEvidenceManifest(os.Args[2:])
+			return
+		default:
+			fmt.Fprintf(os.Stderr, "unknown subcommand: %q\n\n", os.Args[1])
+			printUsage()
+			os.Exit(1)
+		}
+	}
+
 	if err := run(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "changelog-generation error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func printUsage() {
+	fmt.Fprintln(os.Stderr, "Usage: go run ./scripts/changelog-generation <subcommand> [flags]")
+	fmt.Fprintln(os.Stderr, "       go run ./scripts/changelog-generation  (no subcommand: GitHub Actions engine mode)")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Subcommands:")
+	fmt.Fprintln(os.Stderr, "  validate-provenance       Validate provenance JSON against evidence manifest")
+	fmt.Fprintln(os.Stderr, "  rewrite-changelog-section Rewrite a section in CHANGELOG.md")
+	fmt.Fprintln(os.Stderr, "  build-evidence-manifest   Build an evidence manifest JSON")
 }
 
 func run(ctx context.Context) error {

@@ -19,9 +19,15 @@ package main
 
 import (
 	"fmt"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
+
+// linkDefinitionPattern matches Markdown reference link definitions like:
+// [0.14.5]: https://github.com/...
+var linkDefinitionPattern = regexp.MustCompile(`^\[.+\]:\s+https?://`)
 
 const changelogModeRelease = "release"
 
@@ -46,7 +52,52 @@ func findSectionEnd(lines []string, startIndex int) int {
 	return len(lines)
 }
 
+// splitChangelogFooter splits content into the main changelog body and any
+// trailing Markdown reference link definitions footer. The footer starts at
+// the first line (from the end) that begins a contiguous block of link
+// definitions separated from the body only by blank lines.
+func splitChangelogFooter(content string) (body, footer string) {
+	lines := strings.Split(content, "\n")
+	// Walk backwards to find the start of the footer block.
+	// We consider trailing blank lines and link-definition lines as footer.
+	footerStart := len(lines)
+	for i, v := range slices.Backward(lines) {
+		line := v
+		if linkDefinitionPattern.MatchString(line) || line == "" {
+			if linkDefinitionPattern.MatchString(line) {
+				footerStart = i
+			}
+			continue
+		}
+		break
+	}
+	if footerStart == len(lines) {
+		return content, ""
+	}
+	bodyLines := lines[:footerStart]
+	// Trim trailing blank lines from body.
+	for len(bodyLines) > 0 && bodyLines[len(bodyLines)-1] == "" {
+		bodyLines = bodyLines[:len(bodyLines)-1]
+	}
+	footerLines := lines[footerStart:]
+	// Trim leading blank lines from footer.
+	for len(footerLines) > 0 && footerLines[0] == "" {
+		footerLines = footerLines[1:]
+	}
+	return strings.Join(bodyLines, "\n"), strings.Join(footerLines, "\n")
+}
+
 func rewriteChangelogSection(content, newSectionContent, mode, targetVersion string) string {
+	// Preserve any trailing Markdown reference link definitions footer.
+	body, footer := splitChangelogFooter(content)
+	result := rewriteChangelogSectionBody(body, newSectionContent, mode, targetVersion)
+	if footer != "" {
+		return result + "\n\n" + footer
+	}
+	return result
+}
+
+func rewriteChangelogSectionBody(content, newSectionContent, mode, targetVersion string) string {
 	lines := strings.Split(content, "\n")
 	targetStart := -1
 	if mode == "unreleased" {

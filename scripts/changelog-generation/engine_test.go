@@ -123,6 +123,29 @@ func TestReplaceExistingReleaseSection(t *testing.T) {
 	}
 }
 
+// TestRewritePreservesLinkFooter verifies that the Markdown reference link
+// definitions at the bottom of CHANGELOG.md survive a section rewrite.
+func TestRewritePreservesLinkFooter(t *testing.T) {
+	content := "# Changelog\n\n## [Unreleased]\n\n- Old entry\n\n" +
+		"## [0.14.4] - 2026-01-01\n\n- Previous\n\n" +
+		"[Unreleased]: https://github.com/example/compare/v0.14.4...HEAD\n" +
+		"[0.14.4]: https://github.com/example/releases/tag/v0.14.4"
+	_, newSection := buildSectionContent("unreleased", "", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), "### Changes\n\n- New")
+	updated := rewriteChangelogSection(content, newSection, "unreleased", "")
+	if !strings.Contains(updated, "[Unreleased]: https://") {
+		t.Errorf("Unreleased link definition lost: %s", updated)
+	}
+	if !strings.Contains(updated, "[0.14.4]: https://") {
+		t.Errorf("0.14.4 link definition lost: %s", updated)
+	}
+	if !strings.Contains(updated, "- New") {
+		t.Errorf("new content missing: %s", updated)
+	}
+	if strings.Contains(updated, "- Old entry") {
+		t.Errorf("old entry not replaced: %s", updated)
+	}
+}
+
 // TestRewriteEmptySectionBody verifies that a section with no user-facing
 // changes still writes the header (no content lost or duplicated).
 func TestRewriteEmptySectionBody(t *testing.T) {
