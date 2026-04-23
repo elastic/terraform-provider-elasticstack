@@ -138,6 +138,10 @@ func printGitHubOutput(outputs changelogengine.Outputs) error {
 		_ = f.Close()
 		return err
 	}
+	if _, err := fmt.Fprintf(f, "pr_count=%d\n", outputs.PRCount); err != nil {
+		_ = f.Close()
+		return err
+	}
 	if err := f.Close(); err != nil {
 		return err
 	}
