@@ -1,4 +1,32 @@
-## MODIFIED Requirements
+# `ci-release-pr-preparation` — Deterministic release PR preparation workflow
+
+Workflow implementation: repository-authored GitHub Actions workflow under `.github/workflows/`.
+
+"Repository-authored" means the workflow uses standard GitHub Actions tooling - shell scripts, `git`, and the `gh` CLI - rather than agentic (LLM-driven) execution. Using `gh pr create`/`gh pr list` for PR management and configuring a bot git identity (`github-actions[bot]`) for commits are the expected implementation patterns in this context.
+
+## Purpose
+Define a deterministic workflow that prepares provider release pull requests by computing the target version, creating or updating a release branch, applying the version bump and final release changelog update together, and creating or reusing the release PR. The workflow invokes the shared changelog engine in release mode so the release pull request is ready to review without requiring a separate changelog-generation workflow run.
+## Requirements
+### Requirement: Workflow trigger and inputs
+The release preparation workflow SHALL run only from `workflow_dispatch` and SHALL accept a bump-mode input that supports `patch`, `minor`, and `major`, defaulting to `patch`.
+
+#### Scenario: Workflow dispatch defaults to patch
+- **WHEN** a maintainer dispatches the release preparation workflow without overriding the bump mode
+- **THEN** the workflow SHALL compute the next release version using the `patch` increment
+
+### Requirement: Deterministic release version and range discovery
+Before mutating repository state, deterministic repository-authored steps SHALL identify the previous semver release tag on `main`, compute the target release version from the dispatch bump input, and derive the deterministic release branch and pull-request title from that version.
+
+#### Scenario: Patch release selects the next patch version
+- **GIVEN** the latest release tag on `main` is `v0.14.3`
+- **WHEN** the workflow is dispatched with bump mode `patch`
+- **THEN** the target release version SHALL be `0.14.4`
+
+#### Scenario: Release branch and title derive from the target version
+- **GIVEN** the previous release tag is `v0.14.3`
+- **WHEN** deterministic pre-activation computes the release target
+- **THEN** the workflow SHALL derive a stable branch name such as `prep-release-0.14.4`
+- **AND** it SHALL derive a stable pull-request title such as `Prepare 0.14.4 release`
 
 ### Requirement: Release preparation changes are limited to deterministic version bump plumbing
 The release preparation workflow SHALL apply only the deterministic release-preparation changes owned by that workflow. It SHALL update the top-level provider `VERSION` in `Makefile` to the target version, and it SHALL invoke the shared deterministic changelog engine in release mode to regenerate the concrete release section in `CHANGELOG.md` before opening or reusing the release pull request. The workflow SHALL NOT perform agentic changelog synthesis.

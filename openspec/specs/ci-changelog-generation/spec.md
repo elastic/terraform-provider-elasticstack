@@ -1,5 +1,10 @@
-## MODIFIED Requirements
+# `ci-changelog-generation` — changelog generator
 
+Workflow implementation: repository-authored template under `.github/workflows-src/changelog-generation/`, compiled to `.github/workflows/changelog-generation.yml` via `scripts/compile-workflow-sources/main.go`. No GH AW markdown source or compiled `.lock.yml` is required.
+
+## Purpose
+Define a repository-authored workflow that maintains `CHANGELOG.md` from merged pull-request history. The workflow uses a shared changelog engine and supports two operating modes: maintaining the full `## [Unreleased]` section on branch `generated-changelog` (scheduled and manual unreleased dispatch), and regenerating a concrete release section for a targeted release-preparation branch (manual release dispatch).
+## Requirements
 ### Requirement: Workflow artifacts and operating modes
 The changelog generator SHALL be authored as a deterministic workflow template under `.github/workflows-src/` and SHALL generate a checked-in workflow YAML artifact under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The workflow SHALL NOT require a GH AW markdown source or a compiled `.lock.yml`. The workflow SHALL support:
 
@@ -16,7 +21,7 @@ The changelog generator SHALL be authored as a deterministic workflow template u
 - **THEN** the workflow SHALL enter release-section generation mode for the checked out target branch without relying on pull-request event metadata
 
 ### Requirement: Full-section regeneration uses authoritative ranges
-The changelog generator SHALL regenerate the full target section on each run from an authoritative range rather than appending only “since last run” changes.
+The changelog generator SHALL regenerate the full target section on each run from an authoritative range rather than appending only "since last run" changes.
 
 - In scheduled/manual unreleased mode, it SHALL regenerate the full `## [Unreleased]` section from the previous semver release tag to `main`.
 - In explicit release mode, it SHALL regenerate the full concrete `## [x.y.z] - <date>` section for the checked out release branch from the previous semver release tag to that branch head.
@@ -29,6 +34,17 @@ The changelog generator SHALL regenerate the full target section on each run fro
 #### Scenario: Manual release run rebuilds full release section
 - **WHEN** the changelog generator runs in explicit release mode for a checked out `prep-release-*` branch
 - **THEN** it SHALL regenerate the full `## [x.y.z] - <date>` section for that branch from the authoritative release range instead of incrementally appending entries
+
+### Requirement: Deterministic validation gates changelog mutation
+Before updating `CHANGELOG.md`, deterministic repository-authored validation SHALL verify that parsed changelog content from merged PRs is structurally valid and matches the repository changelog format for the target section. The validator SHALL reject output when referenced PR metadata cannot be resolved from the authoritative merged range, when the rendered changelog shape is invalid for the target section, or when extracted breaking-change content cannot be preserved as markdown inside the top-level breaking-changes section.
+
+#### Scenario: Unsupported pull request metadata is rejected
+- **WHEN** deterministic assembly encounters rendered changelog content that references merged PR metadata outside the authoritative range
+- **THEN** changelog mutation SHALL fail before `CHANGELOG.md` is updated
+
+#### Scenario: Invalid breaking-changes block is rejected
+- **WHEN** deterministic assembly encounters an extracted `### Breaking changes` subsection that cannot be preserved as markdown content in the target changelog section
+- **THEN** changelog mutation SHALL fail before `CHANGELOG.md` is updated
 
 ### Requirement: Scheduled/manual mode updates the singleton generated changelog PR
 In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists.
@@ -64,3 +80,29 @@ Before changelog rendering starts, a shared repository-authored changelog engine
 #### Scenario: Engine uses workflow token for GitHub API lookups
 - **WHEN** changelog assembly needs to resolve merged PRs in the authoritative range
 - **THEN** the shared changelog engine SHALL authenticate GitHub API requests with the workflow-provided repository token rather than requiring a separate credential source
+
+### Requirement: Parsed PR-body changelog sections drive release-note assembly
+The changelog generator SHALL parse the `## Changelog` section from each merged PR body and SHALL treat that contract as the authoritative source for release-note content. PRs labeled `no-changelog` and PR changelog entries with `Customer impact: none` SHALL be excluded from rendered changelog bullets. The optional `### Breaking changes` subsection, when present, SHALL be preserved as markdown content and rendered under the target version's top-level `### Breaking changes` section. A merged PR in the authoritative range that lacks both the `no-changelog` label and a parseable `## Changelog` section SHALL cause deterministic assembly to fail rather than being silently omitted or summarized from fallback text.
+
+#### Scenario: User-facing summary becomes a changelog bullet
+- **WHEN** a merged PR body contains a valid `## Changelog` section with `Customer impact` other than `none`
+- **THEN** the rendered target section SHALL include a changelog bullet derived from that PR's `Summary` and citation
+
+#### Scenario: `Customer impact: none` is excluded
+- **WHEN** a merged PR body contains `Customer impact: none`
+- **THEN** the rendered target section SHALL omit a normal changelog bullet for that PR
+
+#### Scenario: Missing changelog contract fails assembly
+- **WHEN** a merged PR in the authoritative range lacks both a parseable `## Changelog` section and the `no-changelog` label
+- **THEN** deterministic assembly SHALL fail before mutating `CHANGELOG.md`, with a repository-authored validation error that identifies the offending pull request
+
+#### Scenario: Breaking changes block is preserved
+- **WHEN** a merged PR body contains a non-empty `### Breaking changes` subsection
+- **THEN** the rendered target version SHALL include that markdown block under the top-level `### Breaking changes` section
+
+### Requirement: Output normalization stays minimal
+The changelog generator SHALL apply only simple normalization needed to keep `CHANGELOG.md` consistent. It MAY normalize bullet prefixes, pull-request citation shape, whitespace, and placement of preserved breaking-change blocks, but it SHALL NOT semantically rewrite author-provided summaries or breaking-change prose during scheduled/release assembly.
+
+#### Scenario: Simple formatting is normalized without semantic rewrite
+- **WHEN** deterministic assembly renders PR-body changelog content into `CHANGELOG.md`
+- **THEN** it SHALL preserve the author-provided meaning while applying only the minimal formatting normalization required by repository changelog conventions
