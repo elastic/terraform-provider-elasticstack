@@ -113,11 +113,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_VERSION: ${{ steps.version.outputs.TARGET_VERSION }}
         run: |
           set -euo pipefail
-          go run ./scripts/changelog-engine \
+          go run ./scripts/changelog-engine/cmd/changelog-engine \
             -mode release \
-            -target-version "${{ steps.version.outputs.TARGET_VERSION }}" \
+            -target-version "${TARGET_VERSION}" \
             -changelog CHANGELOG.md
 
       - name: Commit release preparation changes

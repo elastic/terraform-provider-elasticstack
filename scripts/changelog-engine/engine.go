@@ -100,9 +100,9 @@ type Outputs struct {
 }
 
 type RunResult struct {
-	Outputs      Outputs
-	PullRequests []PullRequestRecord
-	UpdatedBody  string
+	Outputs      Outputs             `json:"outputs"`
+	PullRequests []PullRequestRecord `json:"pull_requests"`
+	UpdatedBody  string              `json:"updated_body"`
 }
 
 type RenderResult struct {

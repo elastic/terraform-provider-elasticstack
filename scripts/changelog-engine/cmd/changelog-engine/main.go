@@ -106,15 +106,41 @@ func printGitHubOutput(outputs changelogengine.Outputs) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	fmt.Fprintf(f, "mode=%s\n", outputs.Mode)
-	fmt.Fprintf(f, "target_version=%s\n", outputs.TargetVersion)
-	fmt.Fprintf(f, "target_branch=%s\n", outputs.TargetBranch)
-	fmt.Fprintf(f, "previous_tag=%s\n", outputs.PreviousTag)
-	fmt.Fprintf(f, "compare_range=%s\n", outputs.CompareRange)
-	fmt.Fprintf(f, "section_header=%s\n", outputs.SectionHeader)
-	fmt.Fprintf(f, "has_changes=%t\n", outputs.HasChanges)
-	fmt.Fprintf(f, "has_user_facing_changes=%t\n", outputs.HasUserFacingChanges)
+	if _, err := fmt.Fprintf(f, "mode=%s\n", outputs.Mode); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "target_version=%s\n", outputs.TargetVersion); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "target_branch=%s\n", outputs.TargetBranch); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "previous_tag=%s\n", outputs.PreviousTag); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "compare_range=%s\n", outputs.CompareRange); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "section_header=%s\n", outputs.SectionHeader); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "has_changes=%t\n", outputs.HasChanges); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if _, err := fmt.Fprintf(f, "has_user_facing_changes=%t\n", outputs.HasUserFacingChanges); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
