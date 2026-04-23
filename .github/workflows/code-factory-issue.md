@@ -99,11 +99,12 @@ on:
           function checkDuplicatePR({ issueNumber, pullRequests }) {
             const expectedBranch = `code-factory/issue-${issueNumber}`;
             const expectedLink = `Closes #${issueNumber}`;
+            const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
               Array.isArray(pr.labels) && pr.labels.includes('code-factory') &&
               pr.head_branch === expectedBranch &&
-              String(pr.body || '').includes(expectedLink)
+              closesPattern.test(String(pr.body || ''))
             ));
           
             if (duplicate) {
@@ -274,11 +275,12 @@ on:
           function checkDuplicatePR({ issueNumber, pullRequests }) {
             const expectedBranch = `code-factory/issue-${issueNumber}`;
             const expectedLink = `Closes #${issueNumber}`;
+            const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
               Array.isArray(pr.labels) && pr.labels.includes('code-factory') &&
               pr.head_branch === expectedBranch &&
-              String(pr.body || '').includes(expectedLink)
+              closesPattern.test(String(pr.body || ''))
             ));
           
             if (duplicate) {
@@ -341,25 +343,31 @@ on:
           const { owner, repo } = context.repo;
           const sender = context.payload.sender?.login ?? '';
           
-          let permission = null;
-          if (sender !== 'github-actions[bot]') {
-            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-              owner,
-              repo,
-              username: sender,
-            });
-            permission = data.permission;
-          }
-          
-          const result = checkActorTrust({ sender, permission });
-          
-          core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');
-          core.setOutput('actor_trusted_reason', result.actor_trusted_reason);
-          
-          if (result.actor_trusted) {
-            core.info(`Actor trusted: ${result.actor_trusted_reason}`);
+          if (!sender) {
+            core.setOutput('actor_trusted', 'false');
+            core.setOutput('actor_trusted_reason', 'Trigger actor could not be identified; sender login is missing from the event payload.');
+            core.info('Actor not trusted: sender login is missing from the event payload.');
           } else {
-            core.info(`Actor not trusted: ${result.actor_trusted_reason}`);
+            let permission = null;
+            if (sender !== 'github-actions[bot]') {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner,
+                repo,
+                username: sender,
+              });
+              permission = data.permission;
+            }
+          
+            const result = checkActorTrust({ sender, permission });
+          
+            core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');
+            core.setOutput('actor_trusted_reason', result.actor_trusted_reason);
+          
+            if (result.actor_trusted) {
+              core.info(`Actor trusted: ${result.actor_trusted_reason}`);
+            } else {
+              core.info(`Actor not trusted: ${result.actor_trusted_reason}`);
+            }
           }
           
     - name: Check duplicate PR
@@ -452,11 +460,12 @@ on:
           function checkDuplicatePR({ issueNumber, pullRequests }) {
             const expectedBranch = `code-factory/issue-${issueNumber}`;
             const expectedLink = `Closes #${issueNumber}`;
+            const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
               Array.isArray(pr.labels) && pr.labels.includes('code-factory') &&
               pr.head_branch === expectedBranch &&
-              String(pr.body || '').includes(expectedLink)
+              closesPattern.test(String(pr.body || ''))
             ));
           
             if (duplicate) {
@@ -518,11 +527,13 @@ on:
           
           const { owner, repo } = context.repo;
           const issueNumber = context.payload.issue?.number;
+          const expectedBranch = `code-factory/issue-${issueNumber}`;
           
           const pulls = await github.paginate(github.rest.pulls.list, {
             owner,
             repo,
             state: 'open',
+            head: `${owner}:${expectedBranch}`,
             per_page: 100,
           });
           
@@ -643,11 +654,12 @@ on:
           function checkDuplicatePR({ issueNumber, pullRequests }) {
             const expectedBranch = `code-factory/issue-${issueNumber}`;
             const expectedLink = `Closes #${issueNumber}`;
+            const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
               Array.isArray(pr.labels) && pr.labels.includes('code-factory') &&
               pr.head_branch === expectedBranch &&
-              String(pr.body || '').includes(expectedLink)
+              closesPattern.test(String(pr.body || ''))
             ));
           
             if (duplicate) {
