@@ -352,7 +352,7 @@ jobs:
               runChangelogEngine,
             };
             
-            const mode = process.env.CHANGELOG_MODE || (context.eventName === 'schedule' ? 'unreleased' : 'unreleased');
+            const mode = process.env.CHANGELOG_MODE || 'unreleased';
             const targetVersion = process.env.TARGET_VERSION || '';
             
             const { owner, repo } = context.repo;
@@ -402,11 +402,12 @@ jobs:
       - name: Refresh release PR metadata (release mode)
         if: >-
           steps.changelog_engine.outputs.mode == 'release' &&
-          steps.commit_release.outputs.ran == 'true'
+          steps.commit_release.outputs.pushed == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -543,9 +544,27 @@ jobs:
             }
             
             const { owner, repo } = context.repo;
-            const prNumber = context.payload.pull_request?.number ?? null;
+            let prNumber = context.payload.pull_request?.number ?? null;
             const compareRange = process.env.COMPARE_RANGE;
             const targetVersion = process.env.TARGET_VERSION;
+            const targetBranch = process.env.TARGET_BRANCH;
+            
+            if (!prNumber && targetBranch) {
+              const { data: prs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${targetBranch}`,
+                base: 'main',
+              });
+              prNumber = prs[0]?.number ?? null;
+            
+              if (prNumber) {
+                core.info(`Resolved release PR #${prNumber} from branch ${targetBranch}`);
+              } else {
+                core.info(`No open release PR found for branch ${targetBranch}; skipping PR metadata refresh`);
+              }
+            }
             
             await refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion });
             

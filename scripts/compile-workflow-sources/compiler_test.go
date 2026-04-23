@@ -240,6 +240,32 @@ func TestCompileWorkflowDetectsIncludeCycles(t *testing.T) {
 	assertContains(t, err.Error(), "include cycle detected")
 }
 
+func TestCompileWorkflowIncludesChangelogGenerationDispatchContract(t *testing.T) {
+	rootDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootDir = filepath.Dir(filepath.Dir(rootDir))
+
+	templatePath := filepath.Join(rootDir, ".github", "workflows-src", "changelog-generation", "workflow.yml.tmpl")
+	outputPath := filepath.Join(t.TempDir(), "changelog-generation.yml")
+
+	if _, err := CompileWorkflow(CompileOptions{
+		TemplatePath: templatePath,
+		OutputPath:   outputPath,
+		RootDir:      rootDir,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	generated := readFile(t, outputPath)
+
+	assertContains(t, generated, "workflow_dispatch:\n    inputs:\n      mode:")
+	assertContains(t, generated, "target_version:")
+	assertContains(t, generated, "options:\n          - unreleased\n          - release")
+	assertNotContains(t, generated, "pull_request_target:")
+}
+
 func TestCompileWorkflowExpandsQuotedScriptInclude(t *testing.T) {
 	rootDir := t.TempDir()
 

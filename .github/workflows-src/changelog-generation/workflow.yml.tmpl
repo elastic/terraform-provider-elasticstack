@@ -81,11 +81,12 @@ jobs:
       - name: Refresh release PR metadata (release mode)
         if: >-
           steps.changelog_engine.outputs.mode == 'release' &&
-          steps.commit_release.outputs.ran == 'true'
+          steps.commit_release.outputs.pushed == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           x-script-include: scripts/refresh-release-pr.inline.js

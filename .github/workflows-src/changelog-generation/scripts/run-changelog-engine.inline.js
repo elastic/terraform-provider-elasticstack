@@ -1,6 +1,6 @@
 //include: ../../lib/changelog-engine.js
 
-const mode = process.env.CHANGELOG_MODE || (context.eventName === 'schedule' ? 'unreleased' : 'unreleased');
+const mode = process.env.CHANGELOG_MODE || 'unreleased';
 const targetVersion = process.env.TARGET_VERSION || '';
 
 const { owner, repo } = context.repo;
