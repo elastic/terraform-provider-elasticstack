@@ -6,9 +6,9 @@
 
 ## 2. Update changelog-generation workflow behavior
 
-- [ ] 2.1 Refactor `.github/workflows-src/changelog-generation/workflow.yml.tmpl` and generated workflow output to remove `pull_request_target`, add explicit `workflow_dispatch` inputs for release mode, and invoke the shared engine in both scheduled unreleased mode and manual release mode
-- [ ] 2.2 Keep unreleased-mode branch/PR management in workflow orchestration, ensuring scheduled or manually dispatched unreleased runs still maintain the singleton `generated-changelog` PR
-- [ ] 2.3 Preserve or update workflow-source helper tests/fixtures so compiled workflow behavior and manual release-mode dispatch semantics are covered
+- [x] 2.1 Refactor `.github/workflows-src/changelog-generation/workflow.yml.tmpl` and generated workflow output to remove `pull_request_target`, add explicit `workflow_dispatch` inputs for release mode, and invoke the shared engine in both scheduled unreleased mode and manual release mode
+- [x] 2.2 Keep unreleased-mode branch/PR management in workflow orchestration, ensuring scheduled or manually dispatched unreleased runs still maintain the singleton `generated-changelog` PR
+- [x] 2.3 Preserve or update workflow-source helper tests/fixtures so compiled workflow behavior and manual release-mode dispatch semantics are covered
 
 ## 3. Update release preparation workflow
 
