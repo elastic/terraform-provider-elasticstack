@@ -19,22 +19,18 @@ package agentbuildertool
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/pfresource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_                                       resource.Resource                = &ToolResource{}
-	_                                       resource.ResourceWithConfigure   = &ToolResource{}
-	_                                       resource.ResourceWithImportState = &ToolResource{}
-	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
-	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
-
-	defaultSpaceID = "default"
+	_ resource.Resource                = &ToolResource{}
+	_ resource.ResourceWithConfigure   = &ToolResource{}
+	_ resource.ResourceWithImportState = &ToolResource{}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -42,23 +38,126 @@ func NewResource() resource.Resource {
 	return &ToolResource{}
 }
 
+// ToolResource manages Kibana Agent Builder tools.
 type ToolResource struct {
-	client *clients.ProviderClientFactory
+	orchestrator pfresource.Orchestrator[kbapi.PostAgentBuilderToolsJSONRequestBody, kbapi.PutAgentBuilderToolsToolidJSONRequestBody, *models.Tool, *toolModel]
 }
 
-func (r *ToolResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+// Configure sets up the resource with the provider client factory.
+func (r *ToolResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory := pfresource.Configure(ctx, req.ProviderData, resp)
+	if factory == nil {
+		return
+	}
+
+	assembly := toolAssembly{}
+	r.orchestrator = pfresource.Orchestrator[kbapi.PostAgentBuilderToolsJSONRequestBody, kbapi.PutAgentBuilderToolsToolidJSONRequestBody, *models.Tool, *toolModel]{
+		Factory:  factory,
+		Assembly: assembly,
+	}
+}
+
+// Metadata returns the resource type name.
+func (r *ToolResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	pfresource.Metadata(req, resp, "kibana_agentbuilder_tool")
+}
+
+// ImportState imports the resource state.
+func (r *ToolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	assembly := toolAssembly{}
+	assembly.ImportState(ctx, req, resp)
+}
+
+// Create creates a new tool resource.
+func (r *ToolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan toolModel
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	r.client = factory
+
+	spaceID := plan.SpaceID.ValueString()
+	if spaceID == "" {
+		spaceID = defaultSpaceID
+	}
+
+	updated, diags := r.orchestrator.Create(ctx, &plan, spaceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
 }
 
-func (r *ToolResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_tool")
+// Read reads the current state of the tool resource.
+func (r *ToolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state toolModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updated, present, diags := r.orchestrator.Read(ctx, &state, compID.ClusterID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !present {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
 }
 
-func (r *ToolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// Update updates an existing tool resource.
+func (r *ToolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan toolModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updated, diags := r.orchestrator.Update(ctx, &plan, compID.ClusterID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
+}
+
+// Delete deletes the tool resource.
+func (r *ToolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state toolModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(r.orchestrator.Delete(ctx, &state, compID.ClusterID)...)
 }

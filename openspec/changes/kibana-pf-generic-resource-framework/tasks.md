@@ -12,9 +12,9 @@
 
 ## 3. Migrate Agent Builder resources to the shared framework
 
-- [ ] 3.1 Migrate `internal/kibana/agentbuilderagent/` to the shared framework while preserving schema, import behavior, version-gate messaging, and acceptance semantics
-- [ ] 3.2 Migrate `internal/kibana/agentbuildertool/` to the shared framework while preserving normalized JSON configuration handling, space-aware state population, and acceptance semantics
-- [ ] 3.3 Migrate `internal/kibana/agentbuilderworkflow/` to the shared framework while preserving normalized YAML handling, optional computed workflow IDs, invalid-workflow diagnostics, and acceptance semantics
+- [x] 3.1 Migrate `internal/kibana/agentbuilderagent/` to the shared framework while preserving schema, import behavior, version-gate messaging, and acceptance semantics
+- [x] 3.2 Migrate `internal/kibana/agentbuildertool/` to the shared framework while preserving normalized JSON configuration handling, space-aware state population, and acceptance semantics
+- [x] 3.3 Migrate `internal/kibana/agentbuilderworkflow/` to the shared framework while preserving normalized YAML handling, optional computed workflow IDs, invalid-workflow diagnostics, and acceptance semantics
 
 ## 4. Capture and verify the new reusable capability
 

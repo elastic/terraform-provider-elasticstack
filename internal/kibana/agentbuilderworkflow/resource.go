@@ -19,11 +19,11 @@ package agentbuilderworkflow
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/pfresource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -31,8 +31,6 @@ var (
 	_ resource.Resource                = &WorkflowResource{}
 	_ resource.ResourceWithConfigure   = &WorkflowResource{}
 	_ resource.ResourceWithImportState = &WorkflowResource{}
-	// Workflow API is GA from 9.4.x onwards
-	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -40,23 +38,126 @@ func NewResource() resource.Resource {
 	return &WorkflowResource{}
 }
 
+// WorkflowResource manages Kibana Agent Builder workflows.
 type WorkflowResource struct {
-	client *clients.ProviderClientFactory
+	orchestrator pfresource.Orchestrator[kbapi.PostWorkflowsWorkflowJSONRequestBody, kbapi.PutWorkflowsWorkflowIdJSONRequestBody, *models.Workflow, *workflowModel]
 }
 
-func (r *WorkflowResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+// Configure sets up the resource with the provider client factory.
+func (r *WorkflowResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	factory := pfresource.Configure(ctx, req.ProviderData, resp)
+	if factory == nil {
+		return
+	}
+
+	assembly := workflowAssembly{}
+	r.orchestrator = pfresource.Orchestrator[kbapi.PostWorkflowsWorkflowJSONRequestBody, kbapi.PutWorkflowsWorkflowIdJSONRequestBody, *models.Workflow, *workflowModel]{
+		Factory:  factory,
+		Assembly: assembly,
+	}
+}
+
+// Metadata returns the resource type name.
+func (r *WorkflowResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	pfresource.Metadata(req, resp, "kibana_agentbuilder_workflow")
+}
+
+// ImportState imports the resource state.
+func (r *WorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	assembly := workflowAssembly{}
+	assembly.ImportState(ctx, req, resp)
+}
+
+// Create creates a new workflow resource.
+func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan workflowModel
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	r.client = factory
+
+	spaceID := plan.SpaceID.ValueString()
+	if spaceID == "" {
+		spaceID = defaultSpaceID
+	}
+
+	updated, diags := r.orchestrator.Create(ctx, &plan, spaceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
 }
 
-func (r *WorkflowResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_workflow")
+// Read reads the current state of the workflow resource.
+func (r *WorkflowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state workflowModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updated, present, diags := r.orchestrator.Read(ctx, &state, compID.ClusterID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !present {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
 }
 
-func (r *WorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// Update updates an existing workflow resource.
+func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan workflowModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updated, diags := r.orchestrator.Update(ctx, &plan, compID.ClusterID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
+}
+
+// Delete deletes the workflow resource.
+func (r *WorkflowResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state workflowModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(r.orchestrator.Delete(ctx, &state, compID.ClusterID)...)
 }
