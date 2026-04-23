@@ -6,6 +6,10 @@ description: >-
 on:
   issues:
     types: [opened, labeled]
+  permissions:
+    contents: read
+    issues: read
+    pull-requests: read
   steps:
     - name: Qualify trigger event
       id: qualify_trigger
@@ -29,6 +33,21 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Finalize gate reason
+      id: finalize_gate
+      if: always()
+      uses: actions/github-script@v9
+      env:
+        EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/finalize_gate.inline.js
 if: >-
   needs.pre_activation.outputs.event_eligible == 'true' &&
   needs.pre_activation.outputs.actor_trusted == 'true' &&
@@ -59,7 +78,7 @@ jobs:
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
-      gate_reason: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+      gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:
     toolsets: [issues, pull_requests, repos]
@@ -104,7 +123,7 @@ Implement the triggering issue on branch `code-factory/issue-${{ github.event.is
 1. Read the issue title and body carefully and treat them as authoritative.
 2. Create or update the implementation on branch `code-factory/issue-${{ github.event.issue.number }}`.
 3. Open exactly one pull request for that branch using the `create-pull-request` safe output.
-4. Ensure the pull request body contains `Closes #${{ github.event.issue.number }}` so later workflow runs can deterministically identify the linked PR.
+4. Preserve canonical issue linkage metadata for deterministic reruns by including `Closes #${{ github.event.issue.number }}` in the PR body — this is the stable identifier that prevents duplicate PR creation on future workflow runs.
 5. Keep the pull request labeled `code-factory`.
 
 ## Pull request contract

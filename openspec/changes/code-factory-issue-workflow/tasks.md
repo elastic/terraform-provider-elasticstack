@@ -6,9 +6,9 @@
 
 ## 2. Implement deterministic helper logic and duplicate suppression
 
-- [ ] 2.1 Add extracted helper logic and inline scripts under `.github/workflows-src/lib/` and `.github/workflows-src/code-factory-issue/scripts/` for event qualification, actor trust checks, and duplicate linked-PR detection.
-- [ ] 2.2 Implement the duplicate linked-PR check so open PRs are matched using the `code-factory` label, deterministic head branch, and explicit issue reference metadata.
-- [ ] 2.3 Generate and commit the resulting workflow artifacts under `.github/workflows/`, including the compiled `.lock.yml` and any related lock metadata updates.
+- [x] 2.1 Add extracted helper logic and inline scripts under `.github/workflows-src/lib/` and `.github/workflows-src/code-factory-issue/scripts/` for event qualification, actor trust checks, and duplicate linked-PR detection.
+- [x] 2.2 Implement the duplicate linked-PR check so open PRs are matched using the `code-factory` label, deterministic head branch, and explicit issue reference metadata.
+- [x] 2.3 Generate and commit the resulting workflow artifacts under `.github/workflows/`, including the compiled `.lock.yml` and any related lock metadata updates.
 
 ## 3. Validate workflow behavior and OpenSpec artifacts
 

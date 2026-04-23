@@ -1,1 +1,25 @@
-// TODO: implement actor trust logic in task 2.
+//include: ../../lib/code-factory-issue.js
+
+const { owner, repo } = context.repo;
+const sender = context.payload.sender?.login ?? '';
+
+let permission = null;
+if (sender !== 'github-actions[bot]') {
+  const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+    owner,
+    repo,
+    username: sender,
+  });
+  permission = data.permission;
+}
+
+const result = checkActorTrust({ sender, permission });
+
+core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');
+core.setOutput('actor_trusted_reason', result.actor_trusted_reason);
+
+if (result.actor_trusted) {
+  core.info(`Actor trusted: ${result.actor_trusted_reason}`);
+} else {
+  core.info(`Actor not trusted: ${result.actor_trusted_reason}`);
+}
