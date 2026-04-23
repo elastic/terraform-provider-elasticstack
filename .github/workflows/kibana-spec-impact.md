@@ -24,16 +24,14 @@ on:
       with:
         go-version-file: go.mod
         cache: false
-    - name: Clone repo-memory branch
-      env:
-        GH_TOKEN: ${{ github.token }}
-        GITHUB_SERVER_URL: ${{ github.server_url }}
-        # NOTE: This branch name must match the repo-memory tool config branch-name below.
-        BRANCH_NAME: memory/kibana-spec-impact
-        TARGET_REPO: ${{ github.repository }}
-        MEMORY_DIR: /tmp/gh-aw/repo-memory/kibana-spec-impact
-        CREATE_ORPHAN: "true"
-      run: bash "${RUNNER_TEMP}/gh-aw/actions/clone_repo_memory_branch.sh"
+    # NOTE: This ref must match the repo-memory tool config branch-name below.
+    - name: Checkout repo-memory branch
+      uses: actions/checkout@v4
+      with:
+        ref: memory/kibana-spec-impact
+        path: /tmp/gh-aw/repo-memory/kibana-spec-impact
+        fetch-depth: 1
+      continue-on-error: true
     - name: Compute kibana spec impact
       id: compute_kibana_spec_impact
       env:
