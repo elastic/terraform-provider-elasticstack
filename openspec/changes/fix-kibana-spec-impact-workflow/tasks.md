@@ -11,6 +11,6 @@
 
 ## 3. Generated artifacts and verification
 
-- [ ] 3.1 Remove or retire obsolete inline workflow helper code if it is no longer referenced after the Go-based pre-activation flow lands.
+- [x] 3.1 Remove or retire obsolete inline workflow helper code if it is no longer referenced after the Go-based pre-activation flow lands.
 - [ ] 3.2 Regenerate `.github/workflows/kibana-spec-impact.md` and `.github/workflows/kibana-spec-impact.lock.yml` from the updated source template.
 - [ ] 3.3 Run `make workflow-test` and `make check-workflows`, then confirm the generated workflow contains the new checkout, repo-memory initialization, artifact handoff, and `/tmp/gh-aw/agent` prompt paths.
