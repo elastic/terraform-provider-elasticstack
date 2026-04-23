@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' && format('prep-release-{0}', inputs.target_version) || '' }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' && inputs.target_version != '' && format('prep-release-{0}', inputs.target_version) || '' }}
 
       - name: Validate workflow inputs
         if: github.event_name == 'workflow_dispatch'
