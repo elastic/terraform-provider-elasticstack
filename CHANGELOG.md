@@ -280,7 +280,7 @@ alias = [
   - Gracefully handle response action with no provided `frequency`
   - Add validation for required `anomaly_threshold` field in anomaly detection rules
   - Add support for `timeline_id` / `timeline_title` fields
-  - Gracefully handle `threat_query` not being provided for `threat_match` ule
+  - Gracefully handle `threat_query` not being provided for `threat_match` rule
 
 ## [0.11.19] - 2025-10-22
 
