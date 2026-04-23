@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package changelogengine
 
 import (
@@ -78,15 +95,15 @@ func TestRunWritesChangelogAndOutputs(t *testing.T) {
 			return nil, nil
 		}
 	}
-	engine.listPRsForCommitFunc = func(ctx context.Context, owner, repo, sha string) ([]*github.PullRequest, error) {
+	engine.listPRsForCommitFunc = func(_ context.Context, _, _, _ string) ([]*github.PullRequest, error) {
 		return []*github.PullRequest{{
-			Number:         github.Ptr(11),
-			HTMLURL:        github.Ptr("https://example.test/pr/11"),
-			State:          github.Ptr("closed"),
+			Number:         new(11),
+			HTMLURL:        new("https://example.test/pr/11"),
+			State:          new("closed"),
 			MergedAt:       &github.Timestamp{Time: time.Date(2026, 4, 23, 0, 0, 0, 0, time.UTC)},
-			MergeCommitSHA: github.Ptr("abc123"),
-			Body:           github.Ptr("## Changelog\nCustomer impact: fix\nSummary: Add a new thing"),
-			User:           &github.User{Login: github.Ptr("octocat")},
+			MergeCommitSHA: new("abc123"),
+			Body:           new("## Changelog\nCustomer impact: fix\nSummary: Add a new thing"),
+			User:           &github.User{Login: new("octocat")},
 		}}, nil
 	}
 
@@ -96,6 +113,58 @@ func TestRunWritesChangelogAndOutputs(t *testing.T) {
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- Add a new thing ([#11](https://example.test/pr/11))")
+}
+
+func TestResolveMergedPullRequestsDeduplicatesAndFiltersMergedPRs(t *testing.T) {
+	engine := testEngine(t)
+	engine.gitExec = func(args ...string) ([]byte, error) {
+		require.Equal(t, []string{"log", "--format=%H", "v1.0.0..HEAD"}, args)
+		return []byte("sha1\nsha2\nsha3\n"), nil
+	}
+	engine.listPRsForCommitFunc = func(_ context.Context, _, _, sha string) ([]*github.PullRequest, error) {
+		switch sha {
+		case "sha1":
+			return []*github.PullRequest{{
+				Number:         github.Ptr(10),
+				Title:          github.Ptr("merged"),
+				HTMLURL:        github.Ptr("https://example.test/pr/10"),
+				State:          github.Ptr("closed"),
+				MergedAt:       &github.Timestamp{Time: time.Date(2026, 4, 23, 0, 0, 0, 0, time.UTC)},
+				MergeCommitSHA: github.Ptr("merge-sha-10"),
+				Body:           github.Ptr("## Changelog\nCustomer impact: fix\nSummary: merged"),
+				Labels:         []*github.Label{{Name: github.Ptr("enhancement")}},
+				User:           &github.User{Login: github.Ptr("octocat")},
+			}}, nil
+		case "sha2":
+			return []*github.PullRequest{{
+				Number:   github.Ptr(10),
+				State:    github.Ptr("closed"),
+				MergedAt: &github.Timestamp{Time: time.Date(2026, 4, 23, 0, 0, 0, 0, time.UTC)},
+			}, {
+				Number: github.Ptr(11),
+				State:  github.Ptr("open"),
+			}}, nil
+		case "sha3":
+			return []*github.PullRequest{{
+				Number: github.Ptr(12),
+				State:  github.Ptr("closed"),
+			}}, nil
+		default:
+			return nil, nil
+		}
+	}
+
+	prs, err := engine.ResolveMergedPullRequests(context.Background(), "v1.0.0..HEAD")
+	require.NoError(t, err)
+	require.Len(t, prs, 1)
+	assert.Equal(t, 10, prs[0].Number)
+	assert.Equal(t, "merge-sha-10", prs[0].MergeCommitSHA)
+	assert.Equal(t, []string{"enhancement"}, prs[0].Labels)
+}
+
+func TestNewRequiresExplicitReleaseTargetVersion(t *testing.T) {
+	_, err := New(Config{Mode: ModeRelease, Owner: "elastic", Repo: "repo", Token: "token"})
+	require.EqualError(t, err, "release mode requires target version")
 }
 
 func testEngine(t *testing.T) *Engine {

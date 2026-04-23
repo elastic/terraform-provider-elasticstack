@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package changelogengine
 
 import (
@@ -27,7 +44,6 @@ const (
 
 var (
 	semverTagPattern      = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
-	releaseBranchPattern  = regexp.MustCompile(`^prep-release-(.+)$`)
 	changelogHeaderRegexp = regexp.MustCompile(`^##\s+Changelog`)
 	topSectionRegexp      = regexp.MustCompile(`^##\s`)
 	subSectionRegexp      = regexp.MustCompile(`^#{2,3}\s`)
@@ -350,7 +366,12 @@ func RenderChangelogSection(mergedPRs []PullRequestRecord) RenderResult {
 
 		parsed := ParseChangelogSection(pr.Body)
 		if parsed == nil {
-			result.Errors = append(result.Errors, AssemblyError{PRNumber: pr.Number, PRURL: pr.URL, Reason: fmt.Sprintf("PR #%d (%s) has no parseable ## Changelog section and is not labeled 'no-changelog'. Add a ## Changelog section to the PR body or apply the no-changelog label.", pr.Number, pr.URL)})
+			reason := fmt.Sprintf(
+				"PR #%d (%s) has no parseable ## Changelog section and is not labeled 'no-changelog'. Add a ## Changelog section to the PR body or apply the no-changelog label.",
+				pr.Number,
+				pr.URL,
+			)
+			result.Errors = append(result.Errors, AssemblyError{PRNumber: pr.Number, PRURL: pr.URL, Reason: reason})
 			continue
 		}
 
@@ -381,7 +402,12 @@ func RenderChangelogSection(mergedPRs []PullRequestRecord) RenderResult {
 
 		bullet := buildChangeBullet(parsed.Summary, pr.Number, pr.URL)
 		changeBullets = append(changeBullets, bullet)
-		result.Included = append(result.Included, IncludedPR{PRNumber: pr.Number, PRURL: pr.URL, Summary: parsed.Summary, BreakingChanges: parsed.BreakingChanges})
+		result.Included = append(result.Included, IncludedPR{
+			PRNumber:        pr.Number,
+			PRURL:           pr.URL,
+			Summary:         parsed.Summary,
+			BreakingChanges: parsed.BreakingChanges,
+		})
 	}
 
 	if len(result.Errors) > 0 {
@@ -427,7 +453,7 @@ func ParseChangelogSection(body string) *ParsedChangelog {
 	}
 
 	parsed := &ParsedChangelog{}
-	for _, line := range strings.Split(section, "\n") {
+	for line := range strings.SplitSeq(section, "\n") {
 		trimmed := strings.TrimSpace(line)
 		switch {
 		case strings.HasPrefix(trimmed, "Customer impact:"):
@@ -453,10 +479,18 @@ func ValidateChangelogSection(parsed *ParsedChangelog) []string {
 		errs = append(errs, "Missing required field: Customer impact")
 	case "none", "fix", "enhancement", "breaking":
 	default:
-		errs = append(errs, fmt.Sprintf("Invalid Customer impact value: %q. Must be one of: none, fix, enhancement, breaking", parsed.CustomerImpact))
+		errs = append(
+			errs,
+			fmt.Sprintf(
+				"Invalid Customer impact value: %q. Must be one of: none, fix, enhancement, breaking",
+				parsed.CustomerImpact,
+			),
+		)
 	}
 
-	if parsed.CustomerImpact != "" && !strings.EqualFold(parsed.CustomerImpact, "none") && parsed.Summary == "" {
+	if parsed.CustomerImpact != "" &&
+		!strings.EqualFold(parsed.CustomerImpact, "none") &&
+		parsed.Summary == "" {
 		errs = append(errs, "Missing required field: Summary (required when Customer impact is not \"none\")")
 	}
 	if parsed.BreakingChangesHeadingFound && parsed.BreakingChanges == "" {
@@ -472,7 +506,7 @@ func extractSection(body string, start *regexp.Regexp, end *regexp.Regexp) strin
 	var lines []string
 	inSection := false
 	var fence string
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if !inSection && start.MatchString(line) {
 			inSection = true
 			continue
@@ -569,12 +603,4 @@ func buildSectionHeader(mode Mode, targetVersion string, now time.Time) string {
 		return fmt.Sprintf("## [%s] - %s", targetVersion, now.UTC().Format("2006-01-02"))
 	}
 	return "## [Unreleased]"
-}
-
-func ResolveReleaseMode(eventName, headBranch string) (Mode, string, string) {
-	if (eventName == "pull_request" || eventName == "pull_request_target") && releaseBranchPattern.MatchString(headBranch) {
-		match := releaseBranchPattern.FindStringSubmatch(headBranch)
-		return ModeRelease, match[1], headBranch
-	}
-	return ModeUnreleased, "", "generated-changelog"
 }
