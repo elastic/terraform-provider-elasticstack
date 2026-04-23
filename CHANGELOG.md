@@ -298,7 +298,7 @@ Version 0.11.19 is equivalent to 0.12.1. It is being released to help mitigate i
   - Gracefully handle response action with no provided `frequency`
   - Add validation for required `anomaly_threshold` field in anomaly detection rules
   - Add support for `timeline_id` / `timeline_title` fields
-  - Gracefully handle `threat_query` not being provided for `threat_match` ule
+  - Gracefully handle `threat_query` not being provided for `threat_match` rule
 
 ## [0.11.18] - 2025-10-10
 
