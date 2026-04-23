@@ -86,12 +86,16 @@ func writeReportFile(path string, report *ImpactReport) error {
 	return nil
 }
 
-func appendGithubOutputs(path string, outputs PreActivationOutputs) error {
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("open github output: %w", err)
+func appendGithubOutputs(path string, outputs PreActivationOutputs) (err error) {
+	f, openErr := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if openErr != nil {
+		return fmt.Errorf("open github output: %w", openErr)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close github output: %w", closeErr)
+		}
+	}()
 	entries := []struct {
 		key   string
 		value string
