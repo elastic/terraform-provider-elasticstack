@@ -29,6 +29,7 @@ const (
 	gateReasonMissingReport                = "missing_report"
 	gateReasonHighConfidenceImpactsPresent = "high_confidence_impacts_present"
 	gateReasonTransformSchemaHintsPresent  = "transform_schema_hints_present"
+	gateReasonKbapiSymbolsChanged          = "kbapi_symbols_changed"
 	gateReasonNoActionableImpacts          = "no_actionable_impacts"
 )
 
@@ -59,6 +60,11 @@ func derivePreActivationOutputs(report *ImpactReport, issueCap int) PreActivatio
 	if len(report.TransformSchemaHints) > 0 {
 		outputs.ShouldRun = true
 		outputs.GateReason = gateReasonTransformSchemaHintsPresent
+		return outputs
+	}
+	if len(report.ChangedKbapiSymbols) > 0 {
+		outputs.ShouldRun = true
+		outputs.GateReason = gateReasonKbapiSymbolsChanged
 		return outputs
 	}
 	outputs.GateReason = gateReasonNoActionableImpacts

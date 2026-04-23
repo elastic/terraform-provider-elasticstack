@@ -75,6 +75,16 @@ func TestDerivePreActivationOutputs(t *testing.T) {
 			wantReason:   gateReasonNoActionableImpacts,
 			wantIssueCap: 7,
 		},
+		{
+			name: "kbapi symbols changed with no high-confidence or hints still runs agent",
+			report: &ImpactReport{
+				ChangedKbapiSymbols: []string{"SomeAPI.Method"},
+			},
+			wantRun:      true,
+			wantCnt:      0,
+			wantReason:   gateReasonKbapiSymbolsChanged,
+			wantIssueCap: defaultIssueCap,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
