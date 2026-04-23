@@ -15,7 +15,7 @@ on:
       - 'internal/clients/kibanaoapi/**'
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Setup Go
@@ -27,6 +27,7 @@ on:
       env:
         GH_TOKEN: ${{ github.token }}
         GITHUB_SERVER_URL: ${{ github.server_url }}
+        # NOTE: This branch name must match the repo-memory tool config branch-name below.
         BRANCH_NAME: memory/kibana-spec-impact
         TARGET_REPO: ${{ github.repository }}
         MEMORY_DIR: /tmp/gh-aw/repo-memory/kibana-spec-impact
@@ -66,6 +67,7 @@ tools:
   timeout: 300
   repo-memory:
     - id: kibana-spec-impact
+      # NOTE: This branch name must match the BRANCH_NAME used in the pre-activation init step above.
       branch-name: memory/kibana-spec-impact
       file-glob: ["memory/kibana-spec-impact/kibana-spec-impact.json"]
       create-orphan: true
