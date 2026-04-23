@@ -1,8 +1,8 @@
 ## 1. Extract the shared changelog engine
 
-- [ ] 1.1 Identify the current changelog-generation logic that must be rewritten into a shared Go repository-authored engine under `/scripts`, including release-context resolution, merged-PR discovery, changelog parsing/validation, rendering, and `CHANGELOG.md` rewriting
-- [ ] 1.2 Implement the shared Go engine under `/scripts` so it accepts explicit mode inputs (`unreleased` or `release`, with explicit target version for release mode), resolves merged PRs through the GitHub API using the workflow token, and emits structured outputs needed by workflows
-- [ ] 1.3 Preserve or add automated tests covering deterministic assembly, release/unreleased mode selection, GitHub-backed merged-PR resolution, and changelog-section rewriting behavior
+- [x] 1.1 Identify the current changelog-generation logic that must be rewritten into a shared Go repository-authored engine under `/scripts`, including release-context resolution, merged-PR discovery, changelog parsing/validation, rendering, and `CHANGELOG.md` rewriting
+- [x] 1.2 Implement the shared Go engine under `/scripts` so it accepts explicit mode inputs (`unreleased` or `release`, with explicit target version for release mode), resolves merged PRs through the GitHub API using the workflow token, and emits structured outputs needed by workflows
+- [x] 1.3 Preserve or add automated tests covering deterministic assembly, release/unreleased mode selection, GitHub-backed merged-PR resolution, and changelog-section rewriting behavior
 
 ## 2. Update changelog-generation workflow behavior
 
