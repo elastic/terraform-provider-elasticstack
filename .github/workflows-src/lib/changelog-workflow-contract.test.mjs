@@ -33,6 +33,8 @@ test('compiled changelog workflow matches source expectations', () => {
   assert.match(compiled, /- name: Push to generated-changelog branch \(unreleased mode\)/);
   assert.match(compiled, /steps\.resolve_release_context\.outputs\.mode == 'unreleased' &&/);
   assert.doesNotMatch(compiled, /Push to generated-changelog branch \(release mode\)/);
-  assert.match(compiled, /python - <<'PY'/);
-  assert.match(compiled, /json\.loads\(output_path\.read_text\(\)\)/);
+  assert.match(compiled, /id: changelog_engine/);
+  assert.match(compiled, /run \.\/scripts\/changelog-engine\/cmd\/changelog-engine/);
+  assert.doesNotMatch(compiled, /-previous-tag/);
+  assert.doesNotMatch(compiled, /Load changelog engine outputs/);
 });

@@ -46,45 +46,23 @@ jobs:
           x-script-include: scripts/resolve-release-context.inline.js
 
       - name: Run shared changelog engine
-        id: run_changelog_engine
+        id: changelog_engine
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           args=(
-            run ./scripts/changelog-engine
+            run ./scripts/changelog-engine/cmd/changelog-engine
             -mode "${{ steps.resolve_release_context.outputs.mode }}"
             -changelog CHANGELOG.md
-            -output "$RUNNER_TEMP/changelog-engine-outputs"
           )
 
           if [[ -n "${{ steps.resolve_release_context.outputs.target_version }}" ]]; then
             args+=(-target-version "${{ steps.resolve_release_context.outputs.target_version }}")
           fi
 
-          if [[ -n "${{ steps.resolve_release_context.outputs.previous_tag }}" ]]; then
-            args+=(-previous-tag "${{ steps.resolve_release_context.outputs.previous_tag }}")
-          fi
-
           go "${args[@]}"
-
-      - name: Load changelog engine outputs
-        id: changelog_engine
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          output_path = Path(os.environ['RUNNER_TEMP']) / 'changelog-engine-outputs'
-          github_output = Path(os.environ['GITHUB_OUTPUT'])
-          data = json.loads(output_path.read_text())
-
-          with github_output.open('a', encoding='utf-8') as fh:
-            for key, value in data.get('outputs', {}).items():
-              fh.write(f"{key}={str(value).lower() if isinstance(value, bool) else value}\n")
-          PY
 
       - name: Commit changelog (release mode)
         id: commit_release
