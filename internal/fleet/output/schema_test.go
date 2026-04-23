@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,15 +42,30 @@ func TestSchemaSSLVerificationModeValidator(t *testing.T) {
 	require.NotEmpty(t, vmAttr.Validators, "expected verification_mode to have validators")
 
 	validValues := []string{"certificate", "full", "none", "strict"}
+
+	// Valid values should pass all validators without errors.
 	for _, v := range validValues {
-		_ = types.StringValue(v) // exercise the type; validator description should list valid values
+		t.Run("valid/"+v, func(t *testing.T) {
+			t.Parallel()
+			req := validator.StringRequest{ConfigValue: types.StringValue(v)}
+			var resp validator.StringResponse
+			for _, val := range vmAttr.Validators {
+				val.ValidateString(context.Background(), req, &resp)
+			}
+			assert.False(t, resp.Diagnostics.HasError(), "expected %q to be valid, got: %v", v, resp.Diagnostics)
+		})
 	}
 
-	// Confirm the validator description covers the valid values.
-	desc := vmAttr.Validators[0].Description(context.Background())
-	for _, v := range validValues {
-		assert.Contains(t, desc, v, "validator description should mention %q", v)
-	}
+	// Invalid value should fail validation.
+	t.Run("invalid/value", func(t *testing.T) {
+		t.Parallel()
+		req := validator.StringRequest{ConfigValue: types.StringValue("invalid")}
+		var resp validator.StringResponse
+		for _, val := range vmAttr.Validators {
+			val.ValidateString(context.Background(), req, &resp)
+		}
+		assert.True(t, resp.Diagnostics.HasError(), "expected \"invalid\" to fail validation")
+	})
 }
 
 func TestSchemaIncludesRemoteElasticsearchTypeAndServiceToken(t *testing.T) {
