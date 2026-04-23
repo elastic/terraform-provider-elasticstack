@@ -73,6 +73,26 @@ func TestAccResourceEnrichPolicyFW(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ResourceName:             "elasticstack_elasticsearch_enrich_policy.policy",
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					if err != nil {
+						return "", err
+					}
+					clusterID, diag := client.ClusterID(context.Background())
+					if diag.HasError() {
+						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
+					}
+
+					return fmt.Sprintf("%s/%s", *clusterID, name), nil
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
