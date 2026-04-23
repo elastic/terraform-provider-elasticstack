@@ -118,6 +118,8 @@ jobs:
 
 Analyze code to identify duplicated patterns using semantic analysis. Report significant findings that require refactoring.
 
+Upstream baseline: `https://github.com/github/gh-aw/blob/main/.github/workflows/duplicate-code-detector.md`
+
 ## Pre-activation context
 
 A deterministic pre-activation step has already computed duplicate-code issue capacity for this run. Do **not** query GitHub issue counts yourself; use only the values below.
