@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -96,6 +97,26 @@ owner:
 	}
 
 	return zipPath
+}
+
+// preCheckMinKibanaVersion skips the test if the connected Kibana version is
+// older than 8.2.0. elasticstack_fleet_custom_integration requires 8.2+
+// because GET /api/fleet/epm/packages/{name}/{version} is unreliable for
+// custom packages on older versions.
+func preCheckMinKibanaVersion(t *testing.T) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create Kibana client for version check: %v", err)
+	}
+	minVer := goversion.Must(goversion.NewVersion("8.2.0"))
+	meets, verDiags := client.EnforceMinVersion(context.Background(), minVer)
+	if verDiags.HasError() {
+		t.Fatalf("failed to check Kibana version: %v", verDiags)
+	}
+	if !meets {
+		t.Skip("skipping: elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later")
+	}
 }
 
 // checkCustomIntegrationDestroy verifies that the custom integration package
@@ -200,7 +221,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 	zipPathV101 := buildMinimalIntegrationZip(t, pkgName, "1.0.1")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create — verify all computed attributes are set.
@@ -289,7 +310,7 @@ func TestAccFleetCustomIntegration_Gzip(t *testing.T) {
 	tgzPath := buildMinimalIntegrationTarGz(t, pkgName, "1.0.0")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Upload a tar.gz archive and verify computed attributes are set.
@@ -313,7 +334,7 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create with skip_destroy=true; package is NOT removed on destroy.
@@ -357,7 +378,7 @@ func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
 	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Upload the package into a non-default Kibana space and verify
@@ -384,7 +405,7 @@ func TestAccFleetCustomIntegration_Timeouts(t *testing.T) {
 	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
 			// Verify that the resource operates normally when an explicit timeouts block
