@@ -115,10 +115,18 @@ function computeGateReason({ eventEligible, eventEligibleReason, actorTrusted, a
     return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
   }
 
+  if (actorTrusted == null) {
+    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
+  }
+
   if (duplicatePrFound === true) {
     return {
       gate_reason: noDuplicateReason || `Found existing linked code-factory PR: ${duplicatePrUrl || '(unknown URL)'}.`,
     };
+  }
+
+  if (duplicatePrFound == null) {
+    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
   }
 
   return {

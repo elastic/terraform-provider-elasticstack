@@ -314,3 +314,31 @@ test('code-factory-issue lock file is compiled and exists', () => {
   const lock = readFileSync(lockPath, 'utf8');
   assert.ok(lock.length > 0);
 });
+
+test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
+  const result = computeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: null,
+    actorTrustedReason: null,
+    duplicatePrFound: null,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  });
+
+  assert.match(result.gate_reason, /Actor trust could not be determined/);
+});
+
+test('computeGateReason returns unknown reason when duplicatePrFound is null (step skipped)', () => {
+  const result = computeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: true,
+    actorTrustedReason: 'Actor is trusted.',
+    duplicatePrFound: null,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  });
+
+  assert.match(result.gate_reason, /Duplicate PR check did not complete/);
+});
