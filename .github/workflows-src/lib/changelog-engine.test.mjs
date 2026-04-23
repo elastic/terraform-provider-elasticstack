@@ -3,8 +3,6 @@ import test from 'node:test';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const parser = require('./pr-changelog-parser.js');
-Object.assign(global, parser);
 
 const {
   buildRendererPullRequestRecord,
@@ -160,7 +158,6 @@ test('runChangelogEngine assembles unreleased changelog from GitHub-backed merge
 
   assert.equal(result.compareRange, 'v1.2.3..HEAD');
   assert.equal(result.sectionHeader, '## [Unreleased]');
-  assert.equal(result.hasChanges, true);
   assert.equal(result.hasUserFacingChanges, true);
   assert.equal(result.manifest.pr_count, 1);
   assert.equal(result.pullRequests.length, 1);
@@ -200,5 +197,113 @@ test('runChangelogEngine assembles release changelog and rewrites only targeted 
   assert.equal(result.sectionHeader, '## [1.2.3] - 2026-04-20');
   assert.match(fs.get('CHANGELOG.md'), /## \[Unreleased\][\s\S]*Existing unreleased entry/);
   assert.match(fs.get('CHANGELOG.md'), /## \[1.2.3\] - 2026-04-20[\s\S]*added a useful feature \(\[#202\]/);
+});
+
+test('runChangelogEngine replaces an existing release section without disturbing adjacent sections', async () => {
+  const existingReleaseChangelog = `## [Unreleased]\n\n### Changes\n\n- Existing unreleased entry (#100)\n\n## [1.2.3] - 2026-04-20\n\n### Changes\n\n- Old generated entry (#150)\n\n## [0.14.3] - 2026-03-02\n\n### Changes\n\n- Stable release entry (#99)\n`;
+  const fs = makeFs({ 'CHANGELOG.md': existingReleaseChangelog });
+  const github = makeGithubClient({
+    pullRequestsByCommit: {
+      sha1: [makePullRequest({ number: 303, html_url: 'https://example.test/pr/303' })],
+    },
+  });
+  const exec = (command) => {
+    if (command.startsWith('git tag --list')) return 'v1.2.3\nv1.2.2\n';
+    if (command === 'git log --format=%H v1.2.2..HEAD') return 'sha1\n';
+    throw new Error(`unexpected exec command: ${command}`);
+  };
+
+  await runChangelogEngine({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    mode: 'release',
+    targetVersion: '1.2.3',
+    changelogPath: 'CHANGELOG.md',
+    generatedAt: '2026-04-20T12:00:00.000Z',
+    fsImpl: fs,
+    exec,
+  });
+
+  const updated = fs.get('CHANGELOG.md');
+  assert.match(updated, /## \[Unreleased\][\s\S]*Existing unreleased entry/);
+  assert.match(updated, /## \[1.2.3\] - 2026-04-20[\s\S]*added a useful feature \(\[#303\]/);
+  assert.doesNotMatch(updated, /Old generated entry/);
+  assert.match(updated, /## \[0.14.3\] - 2026-03-02[\s\S]*Stable release entry/);
+});
+
+test('runChangelogEngine requires explicit mode', async () => {
+  await assert.rejects(
+    runChangelogEngine({
+      github: makeGithubClient(),
+      owner: 'elastic',
+      repo: 'terraform-provider-elasticstack',
+      fsImpl: makeFs({ 'CHANGELOG.md': baseChangelog }),
+      exec: () => '',
+    }),
+    /mode is required/
+  );
+});
+
+test('runChangelogEngine rejects unsupported mode', async () => {
+  await assert.rejects(
+    runChangelogEngine({
+      github: makeGithubClient(),
+      owner: 'elastic',
+      repo: 'terraform-provider-elasticstack',
+      mode: 'auto',
+      fsImpl: makeFs({ 'CHANGELOG.md': baseChangelog }),
+      exec: () => '',
+    }),
+    /unsupported changelog mode: auto/
+  );
+});
+
+test('runChangelogEngine requires targetVersion in release mode', async () => {
+  await assert.rejects(
+    runChangelogEngine({
+      github: makeGithubClient(),
+      owner: 'elastic',
+      repo: 'terraform-provider-elasticstack',
+      mode: 'release',
+      fsImpl: makeFs({ 'CHANGELOG.md': baseChangelog }),
+      exec: () => '',
+    }),
+    /release mode requires targetVersion/
+  );
+});
+
+test('runChangelogEngine reports no user-facing changes when all merged PRs are excluded', async () => {
+  const fs = makeFs({ 'CHANGELOG.md': baseChangelog });
+  const github = makeGithubClient({
+    pullRequestsByCommit: {
+      sha1: [makePullRequest({
+        number: 404,
+        html_url: 'https://example.test/pr/404',
+        labels: [{ name: 'no-changelog' }],
+      })],
+    },
+  });
+  const exec = (command) => {
+    if (command.startsWith('git tag --list')) return 'v1.2.3\nv1.2.2\n';
+    if (command === 'git log --format=%H v1.2.3..HEAD') return 'sha1\n';
+    throw new Error(`unexpected exec command: ${command}`);
+  };
+
+  const result = await runChangelogEngine({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    mode: 'unreleased',
+    changelogPath: 'CHANGELOG.md',
+    generatedAt: '2026-04-20T12:00:00.000Z',
+    fsImpl: fs,
+    exec,
+  });
+
+  assert.equal(result.hasUserFacingChanges, false);
+  assert.equal(result.includedPullRequests.length, 0);
+  assert.equal(result.excludedPullRequests.length, 1);
+  assert.equal(result.pullRequests.length, 1);
 });
 

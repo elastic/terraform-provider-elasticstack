@@ -28,7 +28,11 @@ function resolveEngineContext({
   eventName,
   headBranch = '',
 }) {
-  if (mode && mode !== 'release' && mode !== 'unreleased') {
+  if (!mode) {
+    return buildReleaseContext({ eventName, headBranch, tags });
+  }
+
+  if (mode !== 'release' && mode !== 'unreleased') {
     throw new Error(`unsupported changelog mode: ${mode}`);
   }
 
@@ -36,7 +40,7 @@ function resolveEngineContext({
     throw new Error('release mode requires targetVersion');
   }
 
-  if (mode) {
+  {
     const previousTagResult = buildReleaseContext({
       eventName: mode === 'release' ? 'pull_request' : 'workflow_dispatch',
       headBranch: mode === 'release' ? `prep-release-${targetVersion}` : '',
@@ -194,6 +198,15 @@ async function runChangelogEngine({
   if (!owner || !repo) {
     throw new Error('owner and repo are required');
   }
+  if (!mode) {
+    throw new Error('mode is required');
+  }
+  if (mode !== 'release' && mode !== 'unreleased') {
+    throw new Error(`unsupported changelog mode: ${mode}`);
+  }
+  if (mode === 'release' && !targetVersion) {
+    throw new Error('release mode requires targetVersion');
+  }
 
   const resolvedTags = tags ?? listSemverTags({ exec });
   const releaseContext = resolveEngineContext({
@@ -262,7 +275,6 @@ async function runChangelogEngine({
     excludedCurrentTag: releaseContext.excludedCurrentTag,
     changelogPath,
     sectionHeader,
-    hasChanges: prRecords.length > 0,
     hasUserFacingChanges: renderResult.included.length > 0,
     manifest,
     pullRequests: prRecords,

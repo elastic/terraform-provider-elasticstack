@@ -19,7 +19,10 @@
  */
 
 //include: ./pr-changelog-parser.js
-/* global parseChangelogSectionFull, validateChangelogSectionFull */
+const {
+  parseChangelogSectionFull,
+  validateChangelogSectionFull,
+} = require('./pr-changelog-parser.js');
 
 const NO_CHANGELOG_LABEL = 'no-changelog';
 
