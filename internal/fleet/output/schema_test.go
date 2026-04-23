@@ -23,9 +23,34 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSchemaSSLVerificationModeValidator(t *testing.T) {
+	t.Parallel()
+
+	s := getSchema()
+
+	sslAttr, ok := s.Attributes["ssl"].(schema.SingleNestedAttribute)
+	require.True(t, ok, "expected ssl to be a SingleNestedAttribute")
+
+	vmAttr, ok := sslAttr.Attributes["verification_mode"].(schema.StringAttribute)
+	require.True(t, ok, "expected verification_mode to be a StringAttribute")
+	require.NotEmpty(t, vmAttr.Validators, "expected verification_mode to have validators")
+
+	validValues := []string{"certificate", "full", "none", "strict"}
+	for _, v := range validValues {
+		_ = types.StringValue(v) // exercise the type; validator description should list valid values
+	}
+
+	// Confirm the validator description covers the valid values.
+	desc := vmAttr.Validators[0].Description(context.Background())
+	for _, v := range validValues {
+		assert.Contains(t, desc, v, "validator description should mention %q", v)
+	}
+}
 
 func TestSchemaIncludesRemoteElasticsearchTypeAndServiceToken(t *testing.T) {
 	t.Parallel()
