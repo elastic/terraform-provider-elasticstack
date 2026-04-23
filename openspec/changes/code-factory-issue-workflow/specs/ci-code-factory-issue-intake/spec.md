@@ -1,3 +1,11 @@
+# `ci-code-factory-issue-intake` — Issue-intake agentic workflow for `code-factory` issues
+
+Workflow implementation: authored source under `.github/workflows-src/`, compiled to `.github/workflows/`.
+
+## Purpose
+
+Define requirements for a GitHub Agentic Workflow that reacts to qualifying `code-factory` issue events, verifies the triggering actor is trusted, suppresses duplicate linked pull requests, and delegates implementation to an agent that creates exactly one linked pull request per issue.
+
 ## ADDED Requirements
 
 ### Requirement: Workflow source is repository-authored and generated
@@ -11,16 +19,16 @@ The repository SHALL define the `code-factory` issue-intake automation as a repo
 - **WHEN** maintainers validate trigger qualification, trust policy, or duplicate detection
 - **THEN** the repository SHALL support focused tests for the extracted helper logic without requiring execution of the compiled workflow
 
-### Requirement: Workflow activates only for `code-factory` issue events
-The workflow SHALL subscribe to GitHub `issues` events and SHALL activate only for eligible `code-factory` issue triggers. Eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `code-factory`, and `issues.opened` when the issue already includes the `code-factory` label at creation time.
+### Requirement: Workflow activates the implementation agent only for qualifying `code-factory` issue events
+The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events, but it SHALL activate the implementation agent only for eligible `code-factory` issue triggers. Eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `code-factory`, and `issues.opened` when the issue already includes the `code-factory` label at creation time.
 
 #### Scenario: Label applied after issue creation
 - **WHEN** an `issues.labeled` event is received and `github.event.label.name` is `code-factory`
-- **THEN** the workflow SHALL treat the event as an eligible trigger
+- **THEN** the workflow SHALL treat the event as eligible to activate the implementation agent
 
 #### Scenario: Issue opens with the trigger label already present
 - **WHEN** an `issues.opened` event is received and the issue's initial labels include `code-factory`
-- **THEN** the workflow SHALL treat the event as an eligible trigger
+- **THEN** the workflow SHALL treat the event as eligible to activate the implementation agent
 
 #### Scenario: Non-trigger issue event is ignored
 - **WHEN** an `issues` event is received without the `code-factory` label in the qualifying position for that event type
