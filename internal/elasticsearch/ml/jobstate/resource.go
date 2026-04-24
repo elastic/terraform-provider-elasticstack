@@ -25,6 +25,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+var (
+	_ resource.Resource                = &mlJobStateResource{}
+	_ resource.ResourceWithConfigure   = &mlJobStateResource{}
+	_ resource.ResourceWithImportState = &mlJobStateResource{}
+)
+
 func NewMLJobStateResource() resource.Resource {
 	return &mlJobStateResource{}
 }

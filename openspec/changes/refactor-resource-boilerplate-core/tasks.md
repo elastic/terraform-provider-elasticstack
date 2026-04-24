@@ -9,7 +9,7 @@
 
 - [x] 2.1 Add unit tests for type-name generation across `elasticsearch`, `kibana`, `fleet`, and `apm` components.
 - [x] 2.2 Add conformance tests that verify embedded-core resources satisfy `resource.ResourceWithConfigure` without accidentally gaining `resource.ResourceWithImportState`.
-- [ ] 2.3 Preserve or add explicit concrete-resource interface assertions in pilot resources so promoted methods remain visible in review.
+- [x] 2.3 Preserve or add explicit concrete-resource interface assertions in pilot resources so promoted methods remain visible in review.
 
 ## 3. Trial Rollout
 
