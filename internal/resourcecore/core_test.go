@@ -77,6 +77,20 @@ func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
 	}
 }
 
+func TestCore_Client_nilSafe(t *testing.T) {
+	t.Run("nil_receiver", func(t *testing.T) {
+		t.Parallel()
+		var c *Core
+		require.Nil(t, c.Client())
+	})
+
+	t.Run("non_nil_before_configure", func(t *testing.T) {
+		t.Parallel()
+		c := New(ComponentFleet, "integration")
+		require.Nil(t, c.Client())
+	})
+}
+
 // embedCoreTestResource is a minimal [resource.Resource] that embeds [Core] as
 // pilot resources will. The [resource.Resource] and [resource.ResourceWithConfigure]
 // assignments are compile-time interface checks. The no-import case (embedding

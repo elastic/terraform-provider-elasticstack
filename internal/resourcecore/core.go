@@ -73,7 +73,12 @@ func (c *Core) Metadata(_ context.Context, req resource.MetadataRequest, resp *r
 }
 
 // Client returns the client factory from the last successful [Core.Configure]
-// assignment, or nil if none has been stored yet.
+// assignment, or nil if none has been stored yet. A nil *Core (e.g. a partially
+// constructed embed) returns nil so callers can surface diagnostics instead of
+// panicking.
 func (c *Core) Client() *clients.ProviderClientFactory {
+	if c == nil {
+		return nil
+	}
 	return c.client
 }
