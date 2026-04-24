@@ -1,1 +1,1 @@
-The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
+The Kibana space ID where this integration policy lives. Provide at most one element — the Fleet `package_policies` API does not support assigning a package policy to multiple spaces. When set, the space must match the space of the referenced agent policy. When omitted, the policy is created in the default space.

@@ -63,10 +63,11 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Determine space context for creating the package policy.
-	// The package policy must be created in the same space as the agent policy it references.
+	// The Fleet package_policies API supports at most one space per policy
+	// (schema enforces SizeAtMost(1) on space_ids). The package policy must
+	// be created in the same space as the agent policy it references.
 	var spaceID string
 	if typeutils.IsKnown(planModel.SpaceIDs) {
-		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
 		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {

@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -141,6 +142,16 @@ func getSchemaV2() schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
+				},
+				// The Fleet `package_policies` API does not support assigning a
+				// package policy to more than one space (the `PackagePolicyRequest`
+				// body has no `space_ids` field; the space is taken from the URL
+				// path). Historically this provider silently used only the first
+				// element of a multi-value `space_ids` set, producing state that
+				// disagreed with reality. Surface the limitation at plan time so
+				// users see a clear error instead of hidden drift.
+				Validators: []validator.Set{
+					setvalidator.SizeAtMost(1),
 				},
 			},
 			"inputs": schema.MapNestedAttribute{
