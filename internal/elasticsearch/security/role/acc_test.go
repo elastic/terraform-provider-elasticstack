@@ -339,7 +339,7 @@ func TestAccResourceSecurityRoleDetectsOutOfBandDrift(t *testing.T) {
   "description": "drifted description"
 }`)
 				},
-				RefreshState:       true,
+				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "drifted description"),
