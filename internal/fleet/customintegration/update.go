@@ -19,10 +19,14 @@ package customintegration
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -111,6 +115,12 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 			if resp.Diagnostics.HasError() {
 				return
 			}
+
+			diags = waitForInstalledCustomIntegration(ctx, fleetClient, result.PackageName, result.PackageVersion, plan.SpaceID.ValueString())
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		checksum, err := computeSHA256(filePath)
@@ -137,4 +147,43 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
+}
+
+func waitForInstalledCustomIntegration(ctx context.Context, fleetClient *fleet.Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
+	waitCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	defer cancel()
+
+	waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet custom integration", getPackageID(packageName, packageVersion), func(ctx context.Context) (bool, error) {
+		pkg, diags := fleet.GetPackage(ctx, fleetClient, packageName, packageVersion, spaceID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to read package installation status: %s", diags[0].Summary())
+		}
+		if pkg != nil && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
+			return true, nil
+		}
+
+		packages, diags := fleet.GetPackages(ctx, fleetClient, true, spaceID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to list packages during verification: %s", diags[0].Summary())
+		}
+		for _, candidate := range packages {
+			if candidate.Name != packageName || candidate.Version != packageVersion {
+				continue
+			}
+			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "installed") {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	})
+	if waitErr != nil {
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Package not ready after update",
+				fmt.Sprintf("Package %s/%s did not become readable as installed after update: %s", packageName, packageVersion, waitErr.Error()),
+			),
+		}
+	}
+	return nil
 }

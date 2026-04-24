@@ -19,6 +19,7 @@ package customintegration
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -72,6 +73,21 @@ func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	if pkg == nil {
+		packages, listDiags := fleet.GetPackages(ctx, fleetClient, true, state.SpaceID.ValueString())
+		if listDiags.HasError() {
+			resp.Diagnostics.Append(listDiags...)
+			return
+		}
+		for _, candidate := range packages {
+			if candidate.Name != state.PackageName.ValueString() || candidate.Version != state.PackageVersion.ValueString() {
+				continue
+			}
+			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "installed") {
+				diags = resp.State.Set(ctx, state)
+				resp.Diagnostics.Append(diags...)
+				return
+			}
+		}
 		resp.State.RemoveResource(ctx)
 		return
 	}

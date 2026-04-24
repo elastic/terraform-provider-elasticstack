@@ -13,7 +13,7 @@ resource "elasticstack_fleet_custom_integration" "example" {
   id              = <computed, string>   # schemautil.StringToHash(package_name + package_version)
   package_path    = <required, string>   # path to local .zip or .tar.gz archive
   package_name    = <computed, string>   # extracted from upload response
-  package_version = <computed, string>   # resolved via packages list API after upload
+  package_version = <computed, string>   # resolved via Fleet post-upload verification APIs
   checksum        = <computed, string>   # SHA256 hex digest of the file at package_path
 
   ignore_mapping_update_errors = <optional, bool>
@@ -37,13 +37,13 @@ The provider SHALL expose a `elasticstack_fleet_custom_integration` managed reso
 - **THEN** `elasticstack_fleet_custom_integration` is listed as a managed resource type
 
 ### Requirement: Create uploads package archive
-When the resource is created, the provider SHALL read the file at `package_path`, upload its binary contents to `POST /api/fleet/epm/packages` with the appropriate `Content-Type` header (`application/zip` for `.zip` files, `application/gzip` for `.gz` / `.tar.gz` files), and record the resulting package name and version in state. The provider SHALL extract `package_name` and `package_version` from the upload response when present, using the archive manifest only as a fallback when the upload response omits either field. After upload, the provider SHALL query the packages list API for the matching `package_name` and select the highest semver version among entries with status `installed`. If the packages list does not contain a matching installed entry and a package version was resolved from the upload response or archive manifest, the provider SHALL query the package info API for that exact `package_name` and `package_version` as a secondary verification step. If neither verification path finds a matching installed package, the provider SHALL return an error diagnostic.
+When the resource is created, the provider SHALL read the file at `package_path`, upload its binary contents to `POST /api/fleet/epm/packages` with the appropriate `Content-Type` header (`application/zip` for `.zip` files, `application/gzip` for `.gz` / `.tar.gz` files), and record the resulting package name and version in state. The provider SHALL extract `package_name` and `package_version` from the upload response when present, using the archive manifest only as a fallback when the upload response omits either field. After upload, the provider SHALL query the packages list API for the matching `package_name` and select the highest semver version among entries with status `installed`. If the packages list does not contain a matching installed entry and a package version was resolved from the upload response or archive manifest, the provider SHALL query the package info API for that exact `package_name` and `package_version` as a secondary verification step. If neither verification path finds a matching installed package, the provider SHALL return an error diagnostic rather than persisting the guessed version.
 
 #### Scenario: Successful upload of a zip archive
 - **WHEN** `package_path` points to a valid custom integration `.zip` file
 - **THEN** the provider uploads the file contents with `Content-Type: application/zip`
 - **THEN** `package_name` is set from `_meta.name` in the upload response
-- **THEN** `package_version` is set from the installed package version retrieved via the packages list API
+- **THEN** `package_version` is set from the installed package version confirmed by the Fleet verification APIs
 - **THEN** `checksum` is set to the SHA256 hex digest of the uploaded file
 - **THEN** `id` is set to a stable composite identifier derived from `package_name` and `package_version` (format: `<name>/<version>`)
 
@@ -63,14 +63,19 @@ When the resource is created, the provider SHALL read the file at `package_path`
 - **THEN** no state is written
 
 ### Requirement: Read verifies installation
-On each refresh, the provider SHALL verify the package is still installed by calling the Fleet package info API using the `package_name` and `package_version` stored in state.
+On each refresh, the provider SHALL verify the package is still installed using the `package_name` and `package_version` stored in state. The provider SHALL call the Fleet package info API first. If that API returns no package, the provider SHALL query the packages list API and look for an exact name/version match with installed status before concluding that the package is absent.
 
 #### Scenario: Package is installed
 - **WHEN** the Fleet package info API returns a package with status `installed`
 - **THEN** the resource remains in state unchanged
 
+#### Scenario: Package info API misses an installed package
+- **WHEN** the Fleet package info API returns no package for the stored name/version
+- **AND** the packages list API contains an exact match for that name/version with status `installed`
+- **THEN** the resource remains in state unchanged
+
 #### Scenario: Package is not found
-- **WHEN** the Fleet package info API returns a 404 or the package status is not `installed`
+- **WHEN** neither the package info API nor the packages list API confirms the stored package as installed
 - **THEN** the provider removes the resource from state, signalling drift
 
 #### Minimum version requirement: Kibana 8.2+
@@ -97,7 +102,7 @@ The provider SHALL compute the SHA256 hash of the file at `package_path` during 
 - **THEN** the provider returns an error diagnostic during plan
 
 ### Requirement: Update re-uploads on content change
-When an apply is triggered because the file content has changed, the provider SHALL re-upload the new file. If the resulting `package_name` from the upload differs from the one stored in state, the provider SHALL uninstall the old package after the upload succeeds (upload-first ordering is used because the new name is not known until after the upload completes).
+When an apply is triggered because the file content has changed, the provider SHALL re-upload the new file. If the resulting `package_name` or `package_version` differs from the values stored in state, the provider SHALL uninstall the old package after the upload succeeds (upload-first ordering is used because the final uploaded identity is not known until after the upload completes). When old-package cleanup is required, the provider SHALL wait until the replacement package becomes readable as installed before completing the update.
 
 #### Scenario: File content changed, same package name
 - **WHEN** the uploaded file has a different SHA256 but the resulting `package_name` matches the state value
@@ -108,6 +113,12 @@ When an apply is triggered because the file content has changed, the provider SH
 - **THEN** the provider uploads the new file
 - **THEN** the provider uninstalls the old package (using the name and version from state)
 - **THEN** `package_name`, `package_version`, `checksum`, and `id` are updated in state
+
+#### Scenario: File content changed, package version changed
+- **WHEN** the uploaded file results in the same `package_name` but a different `package_version`
+- **THEN** the provider uploads the new file
+- **THEN** the provider uninstalls the old package version from state
+- **THEN** the provider waits until the replacement package is readable as installed before completing the update
 
 #### Scenario: Query parameters changed only
 - **WHEN** `ignore_mapping_update_errors` or `skip_data_stream_rollover` are changed and `checksum` is unchanged
@@ -128,6 +139,11 @@ When the resource is destroyed and `skip_destroy` is `false` (default), the prov
 - **WHEN** `terraform destroy` is run and `skip_destroy = false`
 - **THEN** the provider calls the Fleet uninstall API for the package
 - **THEN** the resource is removed from state
+
+#### Scenario: Destroy with skip_destroy false but state is incomplete
+- **WHEN** `terraform destroy` is run and `skip_destroy = false`
+- **AND** either `package_name` or `package_version` is missing from state
+- **THEN** the provider returns an error diagnostic instead of silently skipping uninstall
 
 #### Scenario: Destroy with skip_destroy true
 - **WHEN** `terraform destroy` is run and `skip_destroy = true`

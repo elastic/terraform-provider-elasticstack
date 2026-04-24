@@ -34,6 +34,7 @@ import (
 
 	semver "github.com/Masterminds/semver/v3"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -844,6 +845,9 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 	}
 	if resolvedVersion != "" {
+		if diags := waitForPackageInstalled(ctx, client, packageName, resolvedVersion, opts.SpaceID); diags.HasError() {
+			return nil, diags
+		}
 		return &UploadPackageResult{
 			PackageName:    packageName,
 			PackageVersion: resolvedVersion,
@@ -853,6 +857,9 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	if packageVersion != "" {
 		pkg, pkgDiags := GetPackage(ctx, client, packageName, packageVersion, opts.SpaceID)
 		if !pkgDiags.HasError() && pkg != nil {
+			if diags := waitForPackageInstalled(ctx, client, packageName, packageVersion, opts.SpaceID); diags.HasError() {
+				return nil, diags
+			}
 			return &UploadPackageResult{
 				PackageName:    packageName,
 				PackageVersion: packageVersion,
@@ -879,6 +886,47 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 			detail,
 		),
 	}
+}
+
+func waitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
+	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet custom integration", fmt.Sprintf("%s/%s", packageName, packageVersion), func(ctx context.Context) (bool, error) {
+		pkg, diags := GetPackage(ctx, client, packageName, packageVersion, spaceID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to read package installation status: %s", diags[0].Summary())
+		}
+		if pkg == nil {
+			return false, nil
+		}
+		if pkg.InstallationInfo != nil {
+			switch pkg.InstallationInfo.InstallStatus {
+			case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
+				return true, nil
+			case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
+				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
+			}
+		}
+		if pkg.Status != nil {
+			if strings.EqualFold(*pkg.Status, "installed") {
+				return true, nil
+			}
+			if strings.EqualFold(*pkg.Status, "install_failed") {
+				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
+			}
+		}
+		return false, nil
+	})
+	if waitErr != nil {
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Package not ready after upload",
+				fmt.Sprintf("Package %s/%s did not reach an installed state after upload: %s", packageName, packageVersion, waitErr.Error()),
+			),
+		}
+	}
+	return nil
 }
 
 // parsePackageInfo parses the package name and version from the manifest.yml

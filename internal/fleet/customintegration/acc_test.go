@@ -221,10 +221,11 @@ owner:
 }
 
 func TestAccFleetCustomIntegration(t *testing.T) {
-	pkgName := "testcustompkg"
+	pkgNameV100 := "testcustompkg"
+	pkgNameV101 := "testcustompkgnext"
 
-	zipPathV100 := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
-	zipPathV101 := buildMinimalIntegrationZip(t, pkgName, "1.0.1")
+	zipPathV100 := buildMinimalIntegrationZip(t, pkgNameV100, "1.0.0")
+	zipPathV101 := buildMinimalIntegrationZip(t, pkgNameV101, "1.0.1")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
@@ -238,7 +239,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					"package_path": config.StringVariable(zipPathV100),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV100),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
@@ -254,9 +255,10 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
-			// Step 3: Update — point package_path at a new zip with version 1.0.1.
-			// ModifyPlan detects the checksum change and marks computed fields Unknown,
-			// triggering Update to re-upload and set new values.
+			// Step 3: Update — point package_path at a new zip with a new package name
+			// and version. ModifyPlan detects the checksum change and marks computed
+			// fields Unknown, triggering Update to re-upload, adopt the new package,
+			// and uninstall the old one.
 			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -268,11 +270,11 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					time.Sleep(15 * time.Second)
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.1"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					func(_ *terraform.State) error {
-						return checkPackageNotInstalledInFleet(pkgName, "1.0.0", "")
+						return checkPackageNotInstalledInFleet(pkgNameV100, "1.0.0", "")
 					},
 				),
 			},
@@ -288,7 +290,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					time.Sleep(15 * time.Second)
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
@@ -305,7 +307,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					time.Sleep(15 * time.Second)
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),

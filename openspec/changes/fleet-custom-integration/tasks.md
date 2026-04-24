@@ -1,7 +1,7 @@
 ## 1. Fleet Client Wrapper
 
 - [x] 1.1 Define `UploadPackageOptions` and `UploadPackageResult` types in `internal/clients/fleet/fleet.go`
-- [x] 1.2 Implement `UploadPackage` wrapper: call `PostFleetEpmPackagesWithBodyWithResponse`, unmarshal response body to extract `_meta.name`, call `GetPackages` to resolve version, return `UploadPackageResult`
+- [x] 1.2 Implement `UploadPackage` wrapper: call `PostFleetEpmPackagesWithBodyWithResponse`, unmarshal response body to extract package identity, use the archive manifest as a fallback when the response omits name/version, and verify the installed package via `GetPackages` with `GetPackage` as a secondary exact-version check before returning `UploadPackageResult`
 
 ## 2. Resource Package Skeleton
 
@@ -16,9 +16,9 @@
 ## 4. CRUD Operations
 
 - [x] 4.1 Create `create.go`: read file, detect content-type from extension, call `fleet.UploadPackage`, compute SHA256, populate all computed fields in state
-- [x] 4.2 Create `read.go`: use `package_name` + `package_version` from state to call `fleet.GetPackage`; remove from state if nil or not installed
-- [x] 4.3 Create `update.go`: re-upload file if checksum changed; if new `package_name` ≠ state value, uninstall old package first; update all computed fields in state
-- [x] 4.4 Create `delete.go`: uninstall package via `fleet.Uninstall` unless `skip_destroy = true`
+- [x] 4.2 Create `read.go`: use `package_name` + `package_version` from state to call `fleet.GetPackage`, fall back to `fleet.GetPackages` for an exact installed match when needed, and remove from state if neither API confirms the package
+- [x] 4.3 Create `update.go`: re-upload file if checksum changed; if the uploaded package name or version changes, uninstall the old package and wait for the replacement package to become readable before writing state
+- [x] 4.4 Create `delete.go`: uninstall package via `fleet.Uninstall` unless `skip_destroy = true`; return an error diagnostic if `skip_destroy = false` but state is missing `package_name` or `package_version`
 
 ## 5. Provider Registration
 
@@ -27,6 +27,6 @@
 
 ## 6. Tests and Verification
 
-- [x] 6.1 Write acceptance test in `acc_test.go`: upload a minimal valid custom integration zip, verify computed attributes are populated, verify clean plan on second apply, verify destroy removes the package
+- [x] 6.1 Write acceptance test in `acc_test.go`: upload a minimal valid custom integration archive, verify computed attributes are populated, verify clean plan on second apply, exercise update with a replacement package and cleanup assertion, and verify destroy removes the package
 - [x] 6.2 Run `make build` to verify compilation
 - [x] 6.3 Run the acceptance test against a live Kibana instance to verify end-to-end behaviour
