@@ -203,6 +203,8 @@ func TestAccResourceMLJobStateImportWithOptions(t *testing.T) {
 
 // TestAccResourceMLJobStateExplicitConnection exercises the elasticsearch_connection block
 // (scoped Elasticsearch client) while the anomaly job still uses the default connection.
+// After create+import, it updates state to closed under the same connection and re-imports
+// (mirrors kibana_connection / APM scoped-connection parity).
 func TestAccResourceMLJobStateExplicitConnection(t *testing.T) {
 	endpoints := testAccMLJobStateESEndpoints()
 	if len(endpoints) == 0 {
@@ -240,6 +242,42 @@ func TestAccResourceMLJobStateExplicitConnection(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("opened"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"endpoints": config.ListVariable(endpointVars...),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources[resourceName]
+					return rs.Primary.ID, nil
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("closed"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"endpoints": config.ListVariable(endpointVars...),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(resourceName, "state", "closed"),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "elasticsearch_connection.0.endpoints.0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("closed"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"endpoints": config.ListVariable(endpointVars...),
