@@ -271,6 +271,9 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.1"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+					func(_ *terraform.State) error {
+						return checkPackageNotInstalledInFleet(pkgName, "1.0.0", "")
+					},
 				),
 			},
 			// Step 4: Verify skip_data_stream_rollover=true uploads successfully.
@@ -388,6 +391,20 @@ func checkPackageStillInstalledInFleet(pkgName, pkgVersion, spaceID string) erro
 	if !installed {
 		return fmt.Errorf(
 			"expected package %s/%s to remain installed after skip_destroy=true destroy",
+			pkgName, pkgVersion,
+		)
+	}
+	return nil
+}
+
+func checkPackageNotInstalledInFleet(pkgName, pkgVersion, spaceID string) error {
+	installed, err := fleetPackageInstalled(context.Background(), pkgName, pkgVersion, spaceID)
+	if err != nil {
+		return err
+	}
+	if installed {
+		return fmt.Errorf(
+			"expected package %s/%s to be uninstalled after update",
 			pkgName, pkgVersion,
 		)
 	}

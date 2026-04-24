@@ -103,9 +103,9 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 			return
 		}
 
-		// If the package name changed, uninstall the old package from the same space
-		// now that the new one is successfully installed.
-		if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
+		// If the package name or version changed, uninstall the old package from the
+		// same space now that the new one is successfully installed.
+		if (result.PackageName != state.PackageName.ValueString() || result.PackageVersion != state.PackageVersion.ValueString()) && state.PackageName.ValueString() != "" {
 			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
 			resp.Diagnostics.Append(diags...)
 			if resp.Diagnostics.HasError() {
