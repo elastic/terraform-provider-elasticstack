@@ -106,9 +106,13 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	// empty string would be written to state and trigger "Provider produced
 	// inconsistent result after apply: was null, but now cty.StringVal("")".
 	// Treat an API empty-string as equivalent to null when the configured
-	// value is already null. See https://github.com/elastic/terraform-provider-elasticstack/issues/993.
-	if data.Description != nil && *data.Description == "" && model.Description.IsNull() {
-		// preserve null to match the plan; Kibana treats null and "" as equivalent for description
+	// value is already null. Kibana treats null and "" as equivalent for
+	// this field. See https://github.com/elastic/terraform-provider-elasticstack/issues/993.
+	apiEmpty := data.Description != nil && *data.Description == ""
+	if apiEmpty && model.Description.IsNull() {
+		// Explicit no-op: keep the null we already have in state so the
+		// plan/apply round-trip stays consistent.
+		model.Description = types.StringNull()
 	} else {
 		model.Description = types.StringPointerValue(data.Description)
 	}
