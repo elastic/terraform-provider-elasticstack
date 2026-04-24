@@ -28,7 +28,7 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `skip_data_stream_rollover` (Boolean) Set to true to skip data stream rollover during package installation.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
-- `space_id` (String) The Kibana space ID where this integration package should be installed.
+- `space_id` (String) The Kibana space ID where this integration package should be installed. Changing this value forces resource replacement.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
