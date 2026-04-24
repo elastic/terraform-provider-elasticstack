@@ -12,14 +12,14 @@ The provider SHALL provide a shared Plugin Framework resource core that construc
 - **THEN** `Metadata` SHALL set the type name to `<provider_type_name>_apm_agent_configuration`
 
 ### Requirement: Embedded resource core provides canonical provider client-factory wiring
-The shared Plugin Framework resource core SHALL store the configured `*clients.ProviderClientFactory` for use by the concrete resource. Its `Configure` implementation SHALL convert provider data by calling `clients.ConvertProviderDataToFactory`, append any returned diagnostics to the response, and when those diagnostics contain errors SHALL not assign a factory from that failed conversion and SHALL leave unchanged any factory previously stored by a successful `Configure` call. When there are no error diagnostics, it SHALL assign the conversion result (including a nil `*clients.ProviderClientFactory` when `providerData` is nil), replacing any prior stored value. The core SHALL expose access to the stored factory through a method rather than a mutable exported field.
+The shared Plugin Framework resource core SHALL store the configured `*clients.ProviderClientFactory` for use by the concrete resource. Its `Configure` implementation SHALL convert provider data by calling `clients.ConvertProviderDataToFactory` and append any returned diagnostics to the response. If, after appending, the response has any error-level diagnostics, the core SHALL not assign a factory from that conversion and SHALL leave unchanged any `*clients.ProviderClientFactory` previously stored by a successful `Configure` call. If there are no error-level diagnostics, it SHALL assign the conversion result (including a nil `*clients.ProviderClientFactory` when `providerData` is nil), replacing any prior stored value. The core SHALL expose access to the stored factory through a method rather than a mutable exported field.
 
 #### Scenario: Configure stores the provider client factory
 - **WHEN** `Configure` receives provider data that converts successfully to `*clients.ProviderClientFactory`
 - **THEN** the core SHALL retain that factory for later access by the concrete resource
 
 #### Scenario: Configure does not store a client after diagnostic failure
-- **WHEN** `Configure` appends diagnostics containing errors from provider-data conversion
+- **WHEN** `Configure` has appended the conversion diagnostics and the response has error-level diagnostics
 - **THEN** the core SHALL not assign a factory from that conversion, and SHALL leave unchanged any `*clients.ProviderClientFactory` previously stored by an earlier successful `Configure` call
 
 ### Requirement: Embedded resource core does not define import behavior
