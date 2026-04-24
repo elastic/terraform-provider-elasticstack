@@ -11,6 +11,6 @@
 
 ## 3. Verify the rollout
 
-- [ ] 3.1 Add a provider-package unit test that iterates the resources registered in `provider/plugin_framework.go` and asserts the registered Plugin Framework resources embed `*resourcecore.Core`.
-- [ ] 3.2 Add or update targeted tests and compile-time assertions that cover representative migrated resources with passthrough import, custom import, and no import support.
-- [ ] 3.3 Run targeted `go test` coverage for `./internal/resourcecore/...`, the provider package, and representative migrated packages, then run `make build`.
+- [x] 3.1 Add a provider-package unit test that iterates the resources registered in `provider/plugin_framework.go` and asserts the registered Plugin Framework resources embed `*resourcecore.Core`.
+- [x] 3.2 Add or update targeted tests and compile-time assertions that cover representative migrated resources with passthrough import, custom import, and no import support.
+- [x] 3.3 Run targeted `go test` coverage for `./internal/resourcecore/...`, the provider package, and representative migrated packages, then run `make build`.
