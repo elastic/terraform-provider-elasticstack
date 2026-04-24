@@ -127,6 +127,19 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          testAccResourceIntegrationKibanaConnectionVariables(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0"),
+				),
+			},
 		},
 	})
 }
