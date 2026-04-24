@@ -122,36 +122,42 @@ func preCheckMinKibanaVersion(t *testing.T) {
 // checkCustomIntegrationDestroy verifies that the custom integration package
 // is no longer installed after the resource is destroyed.
 func checkCustomIntegrationDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		return err
-	}
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_fleet_custom_integration" {
 			continue
-		}
-
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
 		}
 
 		pkgName := rs.Primary.Attributes["package_name"]
 		pkgVersion := rs.Primary.Attributes["package_version"]
 		spaceID := rs.Primary.Attributes["space_id"]
 
-		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
-		if diags.HasError() {
-			return diagutil.FwDiagsAsError(diags)
+		installed, err := fleetPackageInstalled(context.Background(), pkgName, pkgVersion, spaceID)
+		if err != nil {
+			return err
 		}
 
-		if pkg != nil && pkg.Status != nil && *pkg.Status == "installed" {
+		if installed {
 			return fmt.Errorf("custom integration package %s/%s still exists and is installed, but it should have been removed", pkgName, pkgVersion)
 		}
 	}
 
 	return nil
+}
+
+func fleetPackageInstalled(ctx context.Context, pkgName, pkgVersion, spaceID string) (bool, error) {
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return false, err
+	}
+	fleetClient, err := client.GetFleetClient()
+	if err != nil {
+		return false, err
+	}
+	pkg, diags := fleet.GetPackage(ctx, fleetClient, pkgName, pkgVersion, spaceID)
+	if diags.HasError() {
+		return false, diagutil.FwDiagsAsError(diags)
+	}
+	return pkg != nil && pkg.Status != nil && *pkg.Status == "installed", nil
 }
 
 // buildMinimalIntegrationTarGz creates a minimal valid Elastic custom integration
@@ -331,7 +337,8 @@ func TestAccFleetCustomIntegration_Gzip(t *testing.T) {
 
 func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 	pkgName := "testcustomskippkg"
-	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
+	pkgVersion := "1.0.0"
+	zipPath := buildMinimalIntegrationZip(t, pkgName, pkgVersion)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
@@ -360,7 +367,7 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 				},
 				Destroy: true,
 				Check: func(_ *terraform.State) error {
-					return checkPackageStillInstalledInFleet(pkgName, "1.0.0", "")
+					return checkPackageStillInstalledInFleet(pkgName, pkgVersion, "")
 				},
 			},
 			// Step 3: Re-create with skip_destroy=false. The package is already installed
@@ -388,21 +395,13 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 // checkPackageStillInstalledInFleet verifies that a custom integration package
 // is still installed in Fleet after a skip_destroy=true resource destroy.
 func checkPackageStillInstalledInFleet(pkgName, pkgVersion, spaceID string) error {
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	installed, err := fleetPackageInstalled(context.Background(), pkgName, pkgVersion, spaceID)
 	if err != nil {
 		return err
 	}
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		return err
-	}
-	pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
-	if diags.HasError() {
-		return diagutil.FwDiagsAsError(diags)
-	}
-	if pkg == nil || pkg.Status == nil || *pkg.Status != "installed" {
+	if !installed {
 		return fmt.Errorf(
-			"expected package %s/%s to remain installed after skip_destroy=true destroy, but it was not found",
+			"expected package %s/%s to remain installed after skip_destroy=true destroy",
 			pkgName, pkgVersion,
 		)
 	}
