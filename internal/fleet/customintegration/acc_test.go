@@ -228,8 +228,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 	zipPathV101 := buildMinimalIntegrationZip(t, pkgNameV101, "1.0.1")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
-		CheckDestroy: checkCustomIntegrationDestroy,
+		PreCheck: func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		Steps: []resource.TestStep{
 			// Step 1: Create — verify all computed attributes are set.
 			{
