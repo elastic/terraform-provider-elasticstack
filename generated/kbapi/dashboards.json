@@ -16,7 +16,7 @@
         "tags": [
           "Dashboards"
         ],
-        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "description": "Creates a new dashboard and returns its ID, full state, and metadata.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -35,7 +35,8 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
                     },
                     "data": {
                       "$ref": "#/components/schemas/kbn-dashboard-data"
@@ -81,7 +82,7 @@
         "tags": [
           "Dashboards"
         ],
-        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "description": "Returns a paginated list of dashboards. Each result includes title, description, tags, and metadata, but not the full panel layout. Use `GET /api/dashboards/{id}` to retrieve the complete state.",
         "responses": {
           "200": {
             "description": "success",
@@ -92,20 +93,25 @@
                   "properties": {
                     "dashboards": {
                       "type": "array",
+                      "description": "List of dashboards matching the query. Each entry includes summary fields but not the full panel layout.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The dashboard ID."
                           },
                           "data": {
                             "type": "object",
                             "properties": {
                               "description": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "A short description of the dashboard."
                               },
                               "tags": {
                                 "type": "array",
+                                "description": "Tag IDs associated with this dashboard.",
+                                "maxItems": 100,
                                 "items": {
                                   "type": "string"
                                 }
@@ -114,26 +120,18 @@
                                 "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
                               },
                               "title": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "The dashboard title."
                               },
                               "access_control": {
-                                "type": "object",
-                                "properties": {
-                                  "access_mode": {
-                                    "type": "string",
-                                    "enum": [
-                                      "write_restricted",
-                                      "default"
-                                    ]
-                                  }
-                                },
-                                "additionalProperties": false
+                                "$ref": "#/components/schemas/kbn-dashboard-access-control"
                               }
                             },
                             "additionalProperties": false,
                             "required": [
                               "time_range",
-                              "title"
+                              "title",
+                              "access_control"
                             ]
                           },
                           "meta": {
@@ -149,10 +147,12 @@
                       }
                     },
                     "total": {
-                      "type": "number"
+                      "type": "number",
+                      "description": "The total number of dashboards matching the query."
                     },
                     "page": {
-                      "type": "number"
+                      "type": "number",
+                      "description": "The current page number."
                     }
                   },
                   "additionalProperties": false,
@@ -177,7 +177,7 @@
             "schema": {
               "type": "number"
             },
-            "description": "The page of dashboards to return"
+            "description": "The page of results to return. Defaults to `1`."
           },
           {
             "name": "per_page",
@@ -186,7 +186,7 @@
             "schema": {
               "type": "number"
             },
-            "description": "The number of dashboards to return per page"
+            "description": "The number of results to return per page. Defaults to `20`."
           },
           {
             "name": "query",
@@ -195,7 +195,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "An Elasticsearch simple_query_string query that filters the dashboards in the response by \"title\" and \"description\""
+            "description": "Filters results by `title` and `description` using Elasticsearch [`simple_query_string`](https://www.elastic.co/docs/reference/query-languages/query-dsl/simple-query-string-query) syntax. Multi-word terms require all words to match."
           },
           {
             "name": "tags",
@@ -208,7 +208,7 @@
                 "type": "string"
               }
             },
-            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are included."
+            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching any of the tag IDs are included."
           },
           {
             "name": "excluded_tags",
@@ -221,7 +221,7 @@
                 "type": "string"
               }
             },
-            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching ANY of the tag IDs are excluded."
+            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching any of the tag IDs are excluded."
           }
         ],
         "operationId": "get-dashboards",
@@ -234,7 +234,7 @@
         "tags": [
           "Dashboards"
         ],
-        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "description": "Returns the complete state of a dashboard by ID.",
         "responses": {
           "200": {
             "description": "success",
@@ -244,7 +244,8 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
                     },
                     "data": {
                       "$ref": "#/components/schemas/kbn-dashboard-data"
@@ -254,6 +255,7 @@
                     },
                     "warnings": {
                       "type": "array",
+                      "description": "Panels dropped because their type is not supported by the API. Present only when one or more panels could not be returned.",
                       "maxItems": 100,
                       "items": {
                         "$ref": "#/components/schemas/kbn-dashboard-dropped-panel-warning"
@@ -285,14 +287,14 @@
             "schema": {
               "type": "string"
             },
-            "description": "A unique identifier for the dashboard."
+            "description": "The dashboard ID, as returned by the create or search endpoints."
           }
         ],
         "operationId": "get-dashboards-id",
         "x-state": "Technical Preview; added in 9.4.0"
       },
       "put": {
-        "summary": "Upsert dashboard",
+        "summary": "Upsert a dashboard",
         "tags": [
           "Dashboards"
         ],
@@ -330,10 +332,11 @@
                   },
                   "description": {
                     "type": "string",
-                    "description": "A short description."
+                    "description": "A short description of the dashboard."
                   },
                   "filters": {
                     "type": "array",
+                    "description": "Filters applied across all panels, including pinned panels.",
                     "maxItems": 500,
                     "items": {
                       "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
@@ -358,6 +361,7 @@
                   },
                   "panels": {
                     "type": "array",
+                    "description": "Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).",
                     "default": [],
                     "maxItems": 100,
                     "items": {
@@ -372,9 +376,6 @@
                             },
                             {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-type-image"
-                            },
-                            {
-                              "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                             },
                             {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-type-markdown"
@@ -408,6 +409,9 @@
                             },
                             {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-type-vis"
+                            },
+                            {
+                              "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                             }
                           ]
                         },
@@ -418,7 +422,8 @@
                     }
                   },
                   "project_routing": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Controls [cross-project search](https://www.elastic.co/docs/explore-analyze/cross-project-search/cross-project-search-project-routing) behavior for this dashboard (Serverless only). Set to `_alias:_origin` to scope data to the current project, or `_alias:*` to search across all projects. When omitted, the space default applies."
                   },
                   "query": {
                     "$ref": "#/components/schemas/kbn-as-code-query"
@@ -428,10 +433,10 @@
                   },
                   "tags": {
                     "type": "array",
+                    "description": "Tag IDs to associate with this dashboard.",
                     "maxItems": 100,
                     "items": {
-                      "type": "string",
-                      "description": "An array of tags ids applied to this dashboard"
+                      "type": "string"
                     }
                   },
                   "time_range": {
@@ -439,7 +444,7 @@
                   },
                   "title": {
                     "type": "string",
-                    "description": "A human-readable title for the dashboard"
+                    "description": "A human-readable title for the dashboard."
                   }
                 },
                 "additionalProperties": false,
@@ -463,7 +468,8 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
                     },
                     "data": {
                       "$ref": "#/components/schemas/kbn-dashboard-data"
@@ -490,7 +496,8 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
                     },
                     "data": {
                       "$ref": "#/components/schemas/kbn-dashboard-data"
@@ -544,7 +551,7 @@
         "tags": [
           "Dashboards"
         ],
-        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "description": "Permanently deletes a dashboard by ID.",
         "responses": {
           "200": {
             "description": "deleted"
@@ -574,7 +581,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "A unique identifier for the dashboard."
+            "description": "The dashboard ID, as returned by the create or search endpoints."
           }
         ],
         "operationId": "delete-dashboards-id",
@@ -820,11 +827,13 @@
               },
               "data_view_id": {
                 "type": "string",
-                "description": "The ID of the data view that the control is tied to"
+                "description": "The ID of the data view that the control is tied to",
+                "minLength": 1
               },
               "field_name": {
                 "type": "string",
-                "description": "The name of the field in the data view that the control is tied to"
+                "description": "The name of the field in the data view that the control is tied to",
+                "minLength": 1
               },
               "use_global_filters": {
                 "type": "boolean",
@@ -954,11 +963,13 @@
               },
               "data_view_id": {
                 "type": "string",
-                "description": "The ID of the data view that the control is tied to"
+                "description": "The ID of the data view that the control is tied to",
+                "minLength": 1
               },
               "field_name": {
                 "type": "string",
-                "description": "The name of the field in the data view that the control is tied to"
+                "description": "The name of the field in the data view that the control is tied to",
+                "minLength": 1
               },
               "use_global_filters": {
                 "type": "boolean",
@@ -1535,6 +1546,7 @@
       },
       "kbn-dashboard-options": {
         "type": "object",
+        "description": "Display and behavior settings for the dashboard.",
         "default": {
           "hide_panel_titles": false,
           "hide_panel_borders": false,
@@ -1547,70 +1559,71 @@
         "properties": {
           "auto_apply_filters": {
             "type": "boolean",
-            "description": "Auto apply control filters.",
+            "description": "When `true`, control filter changes are applied automatically. When `false`, control filter changes are applied manually through the dashboard's search update button. Defaults to `true`.",
             "default": true
           },
           "hide_panel_titles": {
             "type": "boolean",
-            "description": "Hide the panel titles in the dashboard.",
+            "description": "When `true`, panel titles are hidden. Defaults to `false`.",
             "default": false
           },
           "hide_panel_borders": {
             "type": "boolean",
-            "description": "Hide the panel borders in the dashboard.",
+            "description": "When `true`, panel borders are hidden. Defaults to `false`.",
             "default": false
           },
           "use_margins": {
             "type": "boolean",
-            "description": "Show margins between panels in the dashboard layout.",
+            "description": "When `true`, panels are separated by a margin. Defaults to `true`.",
             "default": true
           },
           "sync_colors": {
             "type": "boolean",
-            "description": "Synchronize colors between related panels in the dashboard.",
+            "description": "When `true`, colors are synchronized across panels that share a data source. Defaults to `false`.",
             "default": false
           },
           "sync_tooltips": {
             "type": "boolean",
-            "description": "Synchronize tooltips between related panels in the dashboard.",
+            "description": "When `true`, tooltips are synchronized across panels. Defaults to `false`.",
             "default": false
           },
           "sync_cursor": {
             "type": "boolean",
-            "description": "Synchronize cursor position between related panels in the dashboard.",
+            "description": "When `true`, the cursor position is synchronized across panels. Defaults to `true`.",
             "default": true
           }
         },
         "additionalProperties": false,
-        "title": "kbn-dashboard-options"
+        "title": "Options"
       },
       "kbn-dashboard-panel-grid": {
         "type": "object",
+        "description": "The position and size of the panel on the dashboard grid.",
         "properties": {
           "x": {
             "type": "number",
-            "description": "The x coordinate of the panel in grid units"
+            "description": "The x coordinate of the panel in grid units."
           },
           "y": {
             "type": "number",
-            "description": "The y coordinate of the panel in grid units"
+            "description": "The y coordinate of the panel in grid units."
           },
           "w": {
             "type": "number",
-            "description": "The width of the panel in grid units",
+            "description": "The width of the panel in grid units. Minimum `1`, maximum `48`. Defaults to `24`.",
             "default": 24,
             "minimum": 1,
             "maximum": 48
           },
           "h": {
             "type": "number",
-            "description": "The height of the panel in grid units",
+            "description": "The height of the panel in grid units. Minimum `1`. Defaults to `15`.",
             "default": 15,
             "minimum": 1
           }
         },
         "additionalProperties": false,
-        "title": "kbn-dashboard-panel-grid",
+        "title": "Panel grid",
         "required": [
           "x",
           "y"
@@ -2463,7 +2476,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "discover_session",
+        "title": "Discover session",
         "required": [
           "grid",
           "type",
@@ -2498,7 +2511,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "esql_control",
+        "title": "ES|QL variable control",
         "required": [
           "grid",
           "type",
@@ -2713,7 +2726,1330 @@
           }
         },
         "additionalProperties": false,
-        "title": "image",
+        "title": "Image",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-markdown": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "markdown"
+            ]
+          },
+          "config": {
+            "description": "Markdown panel config",
+            "anyOf": [
+              {
+                "type": "object",
+                "description": "Panel configuration stored inline",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "open_links_in_new_tab": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "hide_title": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "hide_border": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "By value",
+                "required": [
+                  "content",
+                  "settings"
+                ]
+              },
+              {
+                "type": "object",
+                "description": "Panel configuration stored in a linked library item",
+                "properties": {
+                  "ref_id": {
+                    "type": "string",
+                    "description": "The unique identifier of the markdown library item."
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "hide_title": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "hide_border": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "By reference",
+                "required": [
+                  "ref_id"
+                ]
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "Markdown",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-options_list_control": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "options_list_control"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "display_settings": {
+                "type": "object",
+                "properties": {
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "hide_action_bar": {
+                    "type": "boolean"
+                  },
+                  "hide_exclude": {
+                    "type": "boolean"
+                  },
+                  "hide_exists": {
+                    "type": "boolean"
+                  },
+                  "hide_sort": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": {
+                "type": "string",
+                "description": "A human-readable title for the control"
+              },
+              "data_view_id": {
+                "type": "string",
+                "description": "The ID of the data view that the control is tied to",
+                "minLength": 1
+              },
+              "field_name": {
+                "type": "string",
+                "description": "The name of the field in the data view that the control is tied to",
+                "minLength": 1
+              },
+              "use_global_filters": {
+                "type": "boolean",
+                "default": true
+              },
+              "ignore_validations": {
+                "type": "boolean",
+                "default": false
+              },
+              "exclude": {
+                "type": "boolean",
+                "default": false
+              },
+              "exists_selected": {
+                "type": "boolean",
+                "default": false
+              },
+              "run_past_timeout": {
+                "type": "boolean",
+                "default": false
+              },
+              "search_technique": {
+                "default": "wildcard",
+                "type": "string",
+                "enum": [
+                  "prefix",
+                  "wildcard",
+                  "exact"
+                ]
+              },
+              "selected_options": {
+                "type": "array",
+                "default": [],
+                "maxItems": 10000,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              "single_select": {
+                "type": "boolean",
+                "default": false
+              },
+              "sort": {
+                "type": "object",
+                "default": {
+                  "by": "_count",
+                  "direction": "desc"
+                },
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "enum": [
+                      "_count",
+                      "_key"
+                    ]
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "by",
+                  "direction"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "data_view_id",
+              "field_name"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "Options list control",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-range_slider_control": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "range_slider_control"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "A human-readable title for the control"
+              },
+              "data_view_id": {
+                "type": "string",
+                "description": "The ID of the data view that the control is tied to",
+                "minLength": 1
+              },
+              "field_name": {
+                "type": "string",
+                "description": "The name of the field in the data view that the control is tied to",
+                "minLength": 1
+              },
+              "use_global_filters": {
+                "type": "boolean",
+                "default": true
+              },
+              "ignore_validations": {
+                "type": "boolean",
+                "default": false
+              },
+              "value": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "step": {
+                "type": "number",
+                "default": 1,
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "data_view_id",
+              "field_name"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "Range slider control",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "slo-alerts-embeddable": {
+        "type": "object",
+        "description": "SLO Alerts embeddable schema",
+        "properties": {
+          "slos": {
+            "type": "array",
+            "description": "List of SLOs to display alerts for",
+            "default": [],
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "slo_id": {
+                  "type": "string",
+                  "description": "SLO ID"
+                },
+                "slo_instance_id": {
+                  "type": "string",
+                  "description": "SLO instance ID",
+                  "default": "*"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "slo_id"
+              ]
+            }
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-alerts-embeddable"
+      },
+      "kbn-dashboard-panel-type-slo_alerts": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slo_alerts"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/slo-alerts-embeddable"
+          }
+        },
+        "additionalProperties": false,
+        "title": "SLO alerts",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "slo-burn-rate-embeddable": {
+        "type": "object",
+        "description": "SLO Burn Rate embeddable schema",
+        "properties": {
+          "slo_id": {
+            "type": "string",
+            "description": "The ID of the SLO to display the burn rate for"
+          },
+          "slo_instance_id": {
+            "type": "string",
+            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
+            "default": "*"
+          },
+          "duration": {
+            "type": "string",
+            "description": "Duration for the burn rate chart in the format [value][unit], e.g. 5m, 3h, or 6d"
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-burn-rate-embeddable",
+        "required": [
+          "slo_id",
+          "duration"
+        ]
+      },
+      "kbn-dashboard-panel-type-slo_burn_rate": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slo_burn_rate"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/slo-burn-rate-embeddable"
+          }
+        },
+        "additionalProperties": false,
+        "title": "SLO burn rate",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "slo-error-budget-embeddable": {
+        "type": "object",
+        "description": "SLO Error Budget embeddable schema",
+        "properties": {
+          "slo_id": {
+            "type": "string",
+            "description": "The ID of the SLO to display the error budget for"
+          },
+          "slo_instance_id": {
+            "type": "string",
+            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
+            "default": "*"
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-error-budget-embeddable",
+        "required": [
+          "slo_id"
+        ]
+      },
+      "kbn-dashboard-panel-type-slo_error_budget": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slo_error_budget"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/slo-error-budget-embeddable"
+          }
+        },
+        "additionalProperties": false,
+        "title": "SLO error budget",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "slo-single-overview-embeddable": {
+        "type": "object",
+        "description": "SLO Single Overview embeddable schema",
+        "properties": {
+          "slo_id": {
+            "type": "string",
+            "description": "The ID of the SLO"
+          },
+          "slo_instance_id": {
+            "type": "string",
+            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
+            "default": "*"
+          },
+          "remote_name": {
+            "type": "string",
+            "description": "The name of the remote SLO"
+          },
+          "overview_mode": {
+            "type": "string",
+            "enum": [
+              "single"
+            ]
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-single-overview-embeddable",
+        "required": [
+          "slo_id",
+          "overview_mode"
+        ]
+      },
+      "slo-group-overview-embeddable": {
+        "type": "object",
+        "description": "SLO Group Overview embeddable schema",
+        "properties": {
+          "group_filters": {
+            "type": "object",
+            "default": {
+              "group_by": "status"
+            },
+            "properties": {
+              "group_by": {
+                "default": "status",
+                "type": "string",
+                "enum": [
+                  "slo.tags",
+                  "status",
+                  "slo.indicator.type",
+                  "_index"
+                ]
+              },
+              "groups": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "filters": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeConditionFilterSchema"
+                    },
+                    {
+                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeGroupFilterSchema"
+                    },
+                    {
+                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeDSLFilterSchema"
+                    },
+                    {
+                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeSpatialFilterSchema"
+                    }
+                  ]
+                }
+              },
+              "kql_query": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "overview_mode": {
+            "type": "string",
+            "enum": [
+              "groups"
+            ]
+          },
+          "drilldowns": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "encode_url": {
+                  "type": "boolean",
+                  "description": "When true, URL is escaped using percent encoding",
+                  "default": true
+                },
+                "open_in_new_tab": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "on_open_panel_menu"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "url_drilldown"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "title": "url_drilldown",
+              "required": [
+                "url",
+                "label",
+                "trigger",
+                "type"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "hide_title": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hide_border": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "slo-group-overview-embeddable",
+        "required": [
+          "overview_mode"
+        ]
+      },
+      "kbn-dashboard-panel-type-slo_overview": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slo_overview"
+            ]
+          },
+          "config": {
+            "description": "SLO Overview embeddable schema",
+            "discriminator": {
+              "propertyName": "overview_mode"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/slo-single-overview-embeddable"
+              },
+              {
+                "$ref": "#/components/schemas/slo-group-overview-embeddable"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "SLO overview",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-synthetics_monitors": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "synthetics_monitors"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "description": "Synthetics monitors embeddable schema",
+            "properties": {
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "projects": {
+                    "type": "array",
+                    "description": "Filter by project",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "description": "Filter by tags",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "monitor_ids": {
+                    "type": "array",
+                    "description": "Filter by monitor IDs",
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "monitor_types": {
+                    "type": "array",
+                    "description": "Filter by monitor types",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "locations": {
+                    "type": "array",
+                    "description": "Filter by monitor locations",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "view": {
+                "description": "View mode for the monitors embeddable (defaults to cardView)",
+                "type": "string",
+                "enum": [
+                  "cardView",
+                  "compactView"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "hide_title": {
+                "type": "boolean"
+              },
+              "title": {
+                "type": "string"
+              },
+              "hide_border": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "title": "Synthetics monitors",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-synthetics_stats_overview": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "synthetics_stats_overview"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "description": "Synthetics stats overview embeddable schema",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "hide_title": {
+                "type": "boolean"
+              },
+              "title": {
+                "type": "string"
+              },
+              "hide_border": {
+                "type": "boolean"
+              },
+              "drilldowns": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "encode_url": {
+                      "type": "boolean",
+                      "description": "When true, URL is escaped using percent encoding",
+                      "default": true
+                    },
+                    "open_in_new_tab": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "trigger": {
+                      "type": "string",
+                      "enum": [
+                        "on_open_panel_menu"
+                      ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "url_drilldown"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "title": "url_drilldown",
+                  "required": [
+                    "url",
+                    "label",
+                    "trigger",
+                    "type"
+                  ]
+                }
+              },
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "projects": {
+                    "type": "array",
+                    "description": "Filter by project",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "description": "Filter by tags",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "monitor_ids": {
+                    "type": "array",
+                    "description": "Filter by monitor IDs",
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "monitor_types": {
+                    "type": "array",
+                    "description": "Filter by monitor types",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "locations": {
+                    "type": "array",
+                    "description": "Filter by monitor locations",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "Display label for the filter option"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Value for the filter option"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "title": "Synthetics stats overview",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-time_slider_control": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "time_slider_control"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "start_percentage_of_time_range": {
+                "type": "number",
+                "default": 0,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "end_percentage_of_time_range": {
+                "type": "number",
+                "default": 1,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "is_anchored": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "title": "Time slider control",
         "required": [
           "grid",
           "type",
@@ -5697,6 +7033,23 @@
           "time_range"
         ]
       },
+      "xyLegendSeriesHeader": {
+        "type": "object",
+        "description": "Legend table series header configuration.",
+        "properties": {
+          "visible": {
+            "type": "boolean",
+            "description": "When true, shows the legend table series header."
+          },
+          "text": {
+            "type": "string",
+            "description": "Legend table series header text."
+          }
+        },
+        "additionalProperties": false,
+        "title": "xyLegendSeriesHeader",
+        "x-oas-optional": true
+      },
       "xyLegendOutsideHorizontal": {
         "type": "object",
         "description": "Outside legend positioned horizontal (top/bottom) of the chart",
@@ -5737,6 +7090,9 @@
                 "current_and_last_value"
               ]
             }
+          },
+          "series_header": {
+            "$ref": "#/components/schemas/xyLegendSeriesHeader"
           },
           "placement": {
             "type": "string",
@@ -5804,7 +7160,10 @@
           }
         },
         "additionalProperties": false,
-        "title": "Outside horizontal"
+        "title": "Outside horizontal",
+        "required": [
+          "series_header"
+        ]
       },
       "legendSize": {
         "description": "Legend size",
@@ -5860,6 +7219,9 @@
               ]
             }
           },
+          "series_header": {
+            "$ref": "#/components/schemas/xyLegendSeriesHeader"
+          },
           "placement": {
             "type": "string",
             "enum": [
@@ -5912,6 +7274,7 @@
         "additionalProperties": false,
         "title": "Outside vertical",
         "required": [
+          "series_header",
           "size"
         ]
       },
@@ -5955,6 +7318,9 @@
                 "current_and_last_value"
               ]
             }
+          },
+          "series_header": {
+            "$ref": "#/components/schemas/xyLegendSeriesHeader"
           },
           "placement": {
             "type": "string",
@@ -6014,6 +7380,7 @@
         "additionalProperties": false,
         "title": "Inside",
         "required": [
+          "series_header",
           "placement"
         ]
       },
@@ -8870,7 +10237,7 @@
             "description": "If true, ignore global filters when fetching data for this layer. Default is false.",
             "default": false
           },
-          "axes": {
+          "axis": {
             "$ref": "#/components/schemas/heatmapAxes"
           },
           "x": {
@@ -9126,7 +10493,7 @@
           "type",
           "legend",
           "filters",
-          "axes",
+          "axis",
           "x",
           "query",
           "data_source",
@@ -9168,7 +10535,7 @@
             "description": "If true, ignore global filters when fetching data for this layer. Default is false.",
             "default": false
           },
-          "axes": {
+          "axis": {
             "$ref": "#/components/schemas/heatmapAxes"
           },
           "x": {
@@ -9401,7 +10768,7 @@
           "type",
           "legend",
           "filters",
-          "axes",
+          "axis",
           "x",
           "data_source",
           "styling",
@@ -13900,1595 +15267,6 @@
           "time_range"
         ]
       },
-      "kbn-dashboard-panel-type-lens-dashboard-app": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "lens-dashboard-app"
-            ]
-          },
-          "config": {
-            "description": "Lens embeddable schema",
-            "anyOf": [
-              {
-                "description": "Panel configuration stored inline",
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/metricNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/metricESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/legacyMetricNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/xyChartNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/xyChartESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/gaugeNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/gaugeESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/heatmapNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/heatmapESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/tagcloudNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/tagcloudESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/regionMapNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/regionMapESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/datatableNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/datatableESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/pieNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/pieESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/mosaicNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/mosaicESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/treemapNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/treemapESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/waffleNoESQL"
-                  },
-                  {
-                    "$ref": "#/components/schemas/waffleESQL"
-                  }
-                ],
-                "title": "By value"
-              },
-              {
-                "type": "object",
-                "description": "Panel configuration stored in a linked library item",
-                "properties": {
-                  "ref_id": {
-                    "type": "string"
-                  },
-                  "references": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/kbn-content-management-utils-referenceSchema"
-                    }
-                  },
-                  "time_range": {
-                    "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "hide_title": {
-                    "type": "boolean"
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "hide_border": {
-                    "type": "boolean"
-                  },
-                  "drilldowns": {
-                    "type": "array",
-                    "maxItems": 100,
-                    "items": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "use_filters": {
-                              "type": "boolean",
-                              "description": "When enabled, filters are passed to the opening dashboard.",
-                              "default": true
-                            },
-                            "use_time_range": {
-                              "type": "boolean",
-                              "description": "When enabled, time range is passed to the opening dashboard.",
-                              "default": true
-                            },
-                            "open_in_new_tab": {
-                              "type": "boolean",
-                              "description": "When enabled, the dashboard opens in a new browser tab.",
-                              "default": false
-                            },
-                            "dashboard_id": {
-                              "type": "string"
-                            },
-                            "label": {
-                              "type": "string"
-                            },
-                            "trigger": {
-                              "type": "string",
-                              "enum": [
-                                "on_apply_filter"
-                              ]
-                            },
-                            "type": {
-                              "type": "string",
-                              "enum": [
-                                "dashboard_drilldown"
-                              ]
-                            }
-                          },
-                          "additionalProperties": false,
-                          "title": "dashboard_drilldown",
-                          "required": [
-                            "dashboard_id",
-                            "label",
-                            "trigger",
-                            "type"
-                          ]
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "open_in_new_tab": {
-                              "type": "boolean",
-                              "default": true
-                            },
-                            "label": {
-                              "type": "string"
-                            },
-                            "trigger": {
-                              "type": "string",
-                              "enum": [
-                                "on_apply_filter"
-                              ]
-                            },
-                            "type": {
-                              "type": "string",
-                              "enum": [
-                                "discover_drilldown"
-                              ]
-                            }
-                          },
-                          "additionalProperties": false,
-                          "title": "discover_drilldown",
-                          "required": [
-                            "label",
-                            "trigger",
-                            "type"
-                          ]
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "encode_url": {
-                              "type": "boolean",
-                              "description": "When true, URL is escaped using percent encoding",
-                              "default": true
-                            },
-                            "open_in_new_tab": {
-                              "type": "boolean",
-                              "default": true
-                            },
-                            "url": {
-                              "type": "string",
-                              "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                            },
-                            "label": {
-                              "type": "string"
-                            },
-                            "trigger": {
-                              "type": "string",
-                              "enum": [
-                                "on_click_row",
-                                "on_click_value",
-                                "on_open_panel_menu",
-                                "on_select_range"
-                              ]
-                            },
-                            "type": {
-                              "type": "string",
-                              "enum": [
-                                "url_drilldown"
-                              ]
-                            }
-                          },
-                          "additionalProperties": false,
-                          "title": "url_drilldown",
-                          "required": [
-                            "url",
-                            "label",
-                            "trigger",
-                            "type"
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                },
-                "additionalProperties": false,
-                "title": "By reference",
-                "required": [
-                  "ref_id",
-                  "time_range"
-                ]
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "lens-dashboard-app",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-markdown": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "markdown"
-            ]
-          },
-          "config": {
-            "description": "Markdown panel config",
-            "anyOf": [
-              {
-                "type": "object",
-                "description": "Panel configuration stored inline",
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "settings": {
-                    "type": "object",
-                    "properties": {
-                      "open_links_in_new_tab": {
-                        "type": "boolean",
-                        "default": true
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "hide_title": {
-                    "type": "boolean"
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "hide_border": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false,
-                "title": "By value",
-                "required": [
-                  "content",
-                  "settings"
-                ]
-              },
-              {
-                "type": "object",
-                "description": "Panel configuration stored in a linked library item",
-                "properties": {
-                  "ref_id": {
-                    "type": "string",
-                    "description": "The unique identifier of the markdown library item."
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "hide_title": {
-                    "type": "boolean"
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "hide_border": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false,
-                "title": "By reference",
-                "required": [
-                  "ref_id"
-                ]
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "markdown",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-options_list_control": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "options_list_control"
-            ]
-          },
-          "config": {
-            "type": "object",
-            "properties": {
-              "display_settings": {
-                "type": "object",
-                "properties": {
-                  "placeholder": {
-                    "type": "string"
-                  },
-                  "hide_action_bar": {
-                    "type": "boolean"
-                  },
-                  "hide_exclude": {
-                    "type": "boolean"
-                  },
-                  "hide_exists": {
-                    "type": "boolean"
-                  },
-                  "hide_sort": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false
-              },
-              "title": {
-                "type": "string",
-                "description": "A human-readable title for the control"
-              },
-              "data_view_id": {
-                "type": "string",
-                "description": "The ID of the data view that the control is tied to"
-              },
-              "field_name": {
-                "type": "string",
-                "description": "The name of the field in the data view that the control is tied to"
-              },
-              "use_global_filters": {
-                "type": "boolean",
-                "default": true
-              },
-              "ignore_validations": {
-                "type": "boolean",
-                "default": false
-              },
-              "exclude": {
-                "type": "boolean",
-                "default": false
-              },
-              "exists_selected": {
-                "type": "boolean",
-                "default": false
-              },
-              "run_past_timeout": {
-                "type": "boolean",
-                "default": false
-              },
-              "search_technique": {
-                "default": "wildcard",
-                "type": "string",
-                "enum": [
-                  "prefix",
-                  "wildcard",
-                  "exact"
-                ]
-              },
-              "selected_options": {
-                "type": "array",
-                "default": [],
-                "maxItems": 10000,
-                "items": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                }
-              },
-              "single_select": {
-                "type": "boolean",
-                "default": false
-              },
-              "sort": {
-                "type": "object",
-                "default": {
-                  "by": "_count",
-                  "direction": "desc"
-                },
-                "properties": {
-                  "by": {
-                    "type": "string",
-                    "enum": [
-                      "_count",
-                      "_key"
-                    ]
-                  },
-                  "direction": {
-                    "type": "string",
-                    "enum": [
-                      "asc",
-                      "desc"
-                    ]
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "by",
-                  "direction"
-                ]
-              }
-            },
-            "additionalProperties": false,
-            "required": [
-              "data_view_id",
-              "field_name"
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "options_list_control",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-range_slider_control": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "range_slider_control"
-            ]
-          },
-          "config": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "A human-readable title for the control"
-              },
-              "data_view_id": {
-                "type": "string",
-                "description": "The ID of the data view that the control is tied to"
-              },
-              "field_name": {
-                "type": "string",
-                "description": "The name of the field in the data view that the control is tied to"
-              },
-              "use_global_filters": {
-                "type": "boolean",
-                "default": true
-              },
-              "ignore_validations": {
-                "type": "boolean",
-                "default": false
-              },
-              "value": {
-                "type": "array",
-                "minItems": 2,
-                "maxItems": 2,
-                "items": {
-                  "type": "string"
-                }
-              },
-              "step": {
-                "type": "number",
-                "default": 1,
-                "minimum": 0
-              }
-            },
-            "additionalProperties": false,
-            "required": [
-              "data_view_id",
-              "field_name"
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "range_slider_control",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "slo-alerts-embeddable": {
-        "type": "object",
-        "description": "SLO Alerts embeddable schema",
-        "properties": {
-          "slos": {
-            "type": "array",
-            "description": "List of SLOs to display alerts for",
-            "default": [],
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "slo_id": {
-                  "type": "string",
-                  "description": "SLO ID"
-                },
-                "slo_instance_id": {
-                  "type": "string",
-                  "description": "SLO instance ID",
-                  "default": "*"
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "slo_id"
-              ]
-            }
-          },
-          "drilldowns": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "encode_url": {
-                  "type": "boolean",
-                  "description": "When true, URL is escaped using percent encoding",
-                  "default": true
-                },
-                "open_in_new_tab": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "url": {
-                  "type": "string",
-                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "trigger": {
-                  "type": "string",
-                  "enum": [
-                    "on_open_panel_menu"
-                  ]
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "url_drilldown"
-                  ]
-                }
-              },
-              "additionalProperties": false,
-              "title": "url_drilldown",
-              "required": [
-                "url",
-                "label",
-                "trigger",
-                "type"
-              ]
-            }
-          },
-          "description": {
-            "type": "string"
-          },
-          "hide_title": {
-            "type": "boolean"
-          },
-          "title": {
-            "type": "string"
-          },
-          "hide_border": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo-alerts-embeddable"
-      },
-      "kbn-dashboard-panel-type-slo_alerts": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "slo_alerts"
-            ]
-          },
-          "config": {
-            "$ref": "#/components/schemas/slo-alerts-embeddable"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo_alerts",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "slo-burn-rate-embeddable": {
-        "type": "object",
-        "description": "SLO Burn Rate embeddable schema",
-        "properties": {
-          "slo_id": {
-            "type": "string",
-            "description": "The ID of the SLO to display the burn rate for"
-          },
-          "slo_instance_id": {
-            "type": "string",
-            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
-            "default": "*"
-          },
-          "duration": {
-            "type": "string",
-            "description": "Duration for the burn rate chart in the format [value][unit], e.g. 5m, 3h, or 6d"
-          },
-          "drilldowns": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "encode_url": {
-                  "type": "boolean",
-                  "description": "When true, URL is escaped using percent encoding",
-                  "default": true
-                },
-                "open_in_new_tab": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "url": {
-                  "type": "string",
-                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "trigger": {
-                  "type": "string",
-                  "enum": [
-                    "on_open_panel_menu"
-                  ]
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "url_drilldown"
-                  ]
-                }
-              },
-              "additionalProperties": false,
-              "title": "url_drilldown",
-              "required": [
-                "url",
-                "label",
-                "trigger",
-                "type"
-              ]
-            }
-          },
-          "description": {
-            "type": "string"
-          },
-          "hide_title": {
-            "type": "boolean"
-          },
-          "title": {
-            "type": "string"
-          },
-          "hide_border": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo-burn-rate-embeddable",
-        "required": [
-          "slo_id",
-          "duration"
-        ]
-      },
-      "kbn-dashboard-panel-type-slo_burn_rate": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "slo_burn_rate"
-            ]
-          },
-          "config": {
-            "$ref": "#/components/schemas/slo-burn-rate-embeddable"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo_burn_rate",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "slo-error-budget-embeddable": {
-        "type": "object",
-        "description": "SLO Error Budget embeddable schema",
-        "properties": {
-          "slo_id": {
-            "type": "string",
-            "description": "The ID of the SLO to display the error budget for"
-          },
-          "slo_instance_id": {
-            "type": "string",
-            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
-            "default": "*"
-          },
-          "drilldowns": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "encode_url": {
-                  "type": "boolean",
-                  "description": "When true, URL is escaped using percent encoding",
-                  "default": true
-                },
-                "open_in_new_tab": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "url": {
-                  "type": "string",
-                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "trigger": {
-                  "type": "string",
-                  "enum": [
-                    "on_open_panel_menu"
-                  ]
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "url_drilldown"
-                  ]
-                }
-              },
-              "additionalProperties": false,
-              "title": "url_drilldown",
-              "required": [
-                "url",
-                "label",
-                "trigger",
-                "type"
-              ]
-            }
-          },
-          "description": {
-            "type": "string"
-          },
-          "hide_title": {
-            "type": "boolean"
-          },
-          "title": {
-            "type": "string"
-          },
-          "hide_border": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo-error-budget-embeddable",
-        "required": [
-          "slo_id"
-        ]
-      },
-      "kbn-dashboard-panel-type-slo_error_budget": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "slo_error_budget"
-            ]
-          },
-          "config": {
-            "$ref": "#/components/schemas/slo-error-budget-embeddable"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo_error_budget",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "slo-single-overview-embeddable": {
-        "type": "object",
-        "description": "SLO Single Overview embeddable schema",
-        "properties": {
-          "slo_id": {
-            "type": "string",
-            "description": "The ID of the SLO"
-          },
-          "slo_instance_id": {
-            "type": "string",
-            "description": "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to * (all instances).",
-            "default": "*"
-          },
-          "remote_name": {
-            "type": "string",
-            "description": "The name of the remote SLO"
-          },
-          "overview_mode": {
-            "type": "string",
-            "enum": [
-              "single"
-            ]
-          },
-          "drilldowns": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "encode_url": {
-                  "type": "boolean",
-                  "description": "When true, URL is escaped using percent encoding",
-                  "default": true
-                },
-                "open_in_new_tab": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "url": {
-                  "type": "string",
-                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "trigger": {
-                  "type": "string",
-                  "enum": [
-                    "on_open_panel_menu"
-                  ]
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "url_drilldown"
-                  ]
-                }
-              },
-              "additionalProperties": false,
-              "title": "url_drilldown",
-              "required": [
-                "url",
-                "label",
-                "trigger",
-                "type"
-              ]
-            }
-          },
-          "description": {
-            "type": "string"
-          },
-          "hide_title": {
-            "type": "boolean"
-          },
-          "title": {
-            "type": "string"
-          },
-          "hide_border": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo-single-overview-embeddable",
-        "required": [
-          "slo_id",
-          "overview_mode"
-        ]
-      },
-      "slo-group-overview-embeddable": {
-        "type": "object",
-        "description": "SLO Group Overview embeddable schema",
-        "properties": {
-          "group_filters": {
-            "type": "object",
-            "default": {
-              "group_by": "status"
-            },
-            "properties": {
-              "group_by": {
-                "default": "status",
-                "type": "string",
-                "enum": [
-                  "slo.tags",
-                  "status",
-                  "slo.indicator.type",
-                  "_index"
-                ]
-              },
-              "groups": {
-                "type": "array",
-                "maxItems": 100,
-                "items": {
-                  "type": "string"
-                }
-              },
-              "filters": {
-                "type": "array",
-                "maxItems": 500,
-                "items": {
-                  "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeConditionFilterSchema"
-                    },
-                    {
-                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeGroupFilterSchema"
-                    },
-                    {
-                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeDSLFilterSchema"
-                    },
-                    {
-                      "$ref": "#/components/schemas/kbn-as-code-filters-schema_asCodeSpatialFilterSchema"
-                    }
-                  ]
-                }
-              },
-              "kql_query": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          "overview_mode": {
-            "type": "string",
-            "enum": [
-              "groups"
-            ]
-          },
-          "drilldowns": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "type": "object",
-              "properties": {
-                "encode_url": {
-                  "type": "boolean",
-                  "description": "When true, URL is escaped using percent encoding",
-                  "default": true
-                },
-                "open_in_new_tab": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "url": {
-                  "type": "string",
-                  "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "trigger": {
-                  "type": "string",
-                  "enum": [
-                    "on_open_panel_menu"
-                  ]
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "url_drilldown"
-                  ]
-                }
-              },
-              "additionalProperties": false,
-              "title": "url_drilldown",
-              "required": [
-                "url",
-                "label",
-                "trigger",
-                "type"
-              ]
-            }
-          },
-          "description": {
-            "type": "string"
-          },
-          "hide_title": {
-            "type": "boolean"
-          },
-          "title": {
-            "type": "string"
-          },
-          "hide_border": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo-group-overview-embeddable",
-        "required": [
-          "overview_mode"
-        ]
-      },
-      "kbn-dashboard-panel-type-slo_overview": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "slo_overview"
-            ]
-          },
-          "config": {
-            "description": "SLO Overview embeddable schema",
-            "discriminator": {
-              "propertyName": "overview_mode"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/slo-single-overview-embeddable"
-              },
-              {
-                "$ref": "#/components/schemas/slo-group-overview-embeddable"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "slo_overview",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-synthetics_monitors": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "synthetics_monitors"
-            ]
-          },
-          "config": {
-            "type": "object",
-            "description": "Synthetics monitors embeddable schema",
-            "properties": {
-              "filters": {
-                "type": "object",
-                "properties": {
-                  "projects": {
-                    "type": "array",
-                    "description": "Filter by project",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "tags": {
-                    "type": "array",
-                    "description": "Filter by tags",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "monitor_ids": {
-                    "type": "array",
-                    "description": "Filter by monitor IDs",
-                    "maxItems": 5000,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "monitor_types": {
-                    "type": "array",
-                    "description": "Filter by monitor types",
-                    "maxItems": 10,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "locations": {
-                    "type": "array",
-                    "description": "Filter by monitor locations",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  }
-                },
-                "additionalProperties": false
-              },
-              "view": {
-                "description": "View mode for the monitors embeddable (defaults to cardView)",
-                "type": "string",
-                "enum": [
-                  "cardView",
-                  "compactView"
-                ]
-              },
-              "description": {
-                "type": "string"
-              },
-              "hide_title": {
-                "type": "boolean"
-              },
-              "title": {
-                "type": "string"
-              },
-              "hide_border": {
-                "type": "boolean"
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false,
-        "title": "synthetics_monitors",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-synthetics_stats_overview": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "synthetics_stats_overview"
-            ]
-          },
-          "config": {
-            "type": "object",
-            "description": "Synthetics stats overview embeddable schema",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "hide_title": {
-                "type": "boolean"
-              },
-              "title": {
-                "type": "string"
-              },
-              "hide_border": {
-                "type": "boolean"
-              },
-              "drilldowns": {
-                "type": "array",
-                "maxItems": 100,
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "encode_url": {
-                      "type": "boolean",
-                      "description": "When true, URL is escaped using percent encoding",
-                      "default": true
-                    },
-                    "open_in_new_tab": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "url": {
-                      "type": "string",
-                      "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
-                    },
-                    "label": {
-                      "type": "string"
-                    },
-                    "trigger": {
-                      "type": "string",
-                      "enum": [
-                        "on_open_panel_menu"
-                      ]
-                    },
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "url_drilldown"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "title": "url_drilldown",
-                  "required": [
-                    "url",
-                    "label",
-                    "trigger",
-                    "type"
-                  ]
-                }
-              },
-              "filters": {
-                "type": "object",
-                "properties": {
-                  "projects": {
-                    "type": "array",
-                    "description": "Filter by project",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "tags": {
-                    "type": "array",
-                    "description": "Filter by tags",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "monitor_ids": {
-                    "type": "array",
-                    "description": "Filter by monitor IDs",
-                    "maxItems": 5000,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "monitor_types": {
-                    "type": "array",
-                    "description": "Filter by monitor types",
-                    "maxItems": 10,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  },
-                  "locations": {
-                    "type": "array",
-                    "description": "Filter by monitor locations",
-                    "maxItems": 100,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "label": {
-                          "type": "string",
-                          "description": "Display label for the filter option"
-                        },
-                        "value": {
-                          "type": "string",
-                          "description": "Value for the filter option"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "required": [
-                        "label",
-                        "value"
-                      ]
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false,
-        "title": "synthetics_stats_overview",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
-      "kbn-dashboard-panel-type-time_slider_control": {
-        "type": "object",
-        "properties": {
-          "grid": {
-            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
-          },
-          "id": {
-            "type": "string",
-            "description": "The unique ID of the panel."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "time_slider_control"
-            ]
-          },
-          "config": {
-            "type": "object",
-            "properties": {
-              "start_percentage_of_time_range": {
-                "type": "number",
-                "default": 0,
-                "minimum": 0,
-                "maximum": 1
-              },
-              "end_percentage_of_time_range": {
-                "type": "number",
-                "default": 1,
-                "minimum": 0,
-                "maximum": 1
-              },
-              "is_anchored": {
-                "type": "boolean",
-                "default": false
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false,
-        "title": "time_slider_control",
-        "required": [
-          "grid",
-          "type",
-          "config"
-        ]
-      },
       "kbn-dashboard-panel-type-vis": {
         "type": "object",
         "properties": {
@@ -15752,7 +15530,277 @@
           }
         },
         "additionalProperties": false,
-        "title": "vis",
+        "title": "Visualization",
+        "required": [
+          "grid",
+          "type",
+          "config"
+        ]
+      },
+      "kbn-dashboard-panel-type-lens-dashboard-app": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "$ref": "#/components/schemas/kbn-dashboard-panel-grid"
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "lens-dashboard-app"
+            ]
+          },
+          "config": {
+            "description": "Lens embeddable schema",
+            "anyOf": [
+              {
+                "description": "Panel configuration stored inline",
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/metricNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/metricESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/legacyMetricNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/xyChartNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/xyChartESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/gaugeNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/gaugeESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/heatmapNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/heatmapESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/tagcloudNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/tagcloudESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/regionMapNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/regionMapESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/datatableNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/datatableESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/pieNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/pieESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/mosaicNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/mosaicESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/treemapNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/treemapESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/waffleNoESQL"
+                  },
+                  {
+                    "$ref": "#/components/schemas/waffleESQL"
+                  }
+                ],
+                "title": "By value"
+              },
+              {
+                "type": "object",
+                "description": "Panel configuration stored in a linked library item",
+                "properties": {
+                  "ref_id": {
+                    "type": "string"
+                  },
+                  "references": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/kbn-content-management-utils-referenceSchema"
+                    }
+                  },
+                  "time_range": {
+                    "$ref": "#/components/schemas/kbn-es-query-server-timeRangeSchema"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "hide_title": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "hide_border": {
+                    "type": "boolean"
+                  },
+                  "drilldowns": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "use_filters": {
+                              "type": "boolean",
+                              "description": "When enabled, filters are passed to the opening dashboard.",
+                              "default": true
+                            },
+                            "use_time_range": {
+                              "type": "boolean",
+                              "description": "When enabled, time range is passed to the opening dashboard.",
+                              "default": true
+                            },
+                            "open_in_new_tab": {
+                              "type": "boolean",
+                              "description": "When enabled, the dashboard opens in a new browser tab.",
+                              "default": false
+                            },
+                            "dashboard_id": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "trigger": {
+                              "type": "string",
+                              "enum": [
+                                "on_apply_filter"
+                              ]
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "dashboard_drilldown"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "dashboard_drilldown",
+                          "required": [
+                            "dashboard_id",
+                            "label",
+                            "trigger",
+                            "type"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "open_in_new_tab": {
+                              "type": "boolean",
+                              "default": true
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "trigger": {
+                              "type": "string",
+                              "enum": [
+                                "on_apply_filter"
+                              ]
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "discover_drilldown"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "discover_drilldown",
+                          "required": [
+                            "label",
+                            "trigger",
+                            "type"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "encode_url": {
+                              "type": "boolean",
+                              "description": "When true, URL is escaped using percent encoding",
+                              "default": true
+                            },
+                            "open_in_new_tab": {
+                              "type": "boolean",
+                              "default": true
+                            },
+                            "url": {
+                              "type": "string",
+                              "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "trigger": {
+                              "type": "string",
+                              "enum": [
+                                "on_click_row",
+                                "on_click_value",
+                                "on_open_panel_menu",
+                                "on_select_range"
+                              ]
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "url_drilldown"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "url_drilldown",
+                          "required": [
+                            "url",
+                            "label",
+                            "trigger",
+                            "type"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "By reference",
+                "required": [
+                  "ref_id",
+                  "time_range"
+                ]
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "Visualization (dashboard application)",
         "required": [
           "grid",
           "type",
@@ -15761,7 +15809,7 @@
       },
       "kbn-dashboard-section": {
         "type": "object",
-        "description": "Collapsable section",
+        "description": "A collapsible group of panels.",
         "properties": {
           "title": {
             "type": "string",
@@ -15769,7 +15817,7 @@
           },
           "collapsed": {
             "type": "boolean",
-            "description": "The collapsed state of the section.",
+            "description": "When `true`, the section is collapsed and its panels are not rendered until expanded. Useful for improving initial load time on large dashboards. Defaults to `false`.",
             "default": false
           },
           "grid": {
@@ -15777,7 +15825,7 @@
             "properties": {
               "y": {
                 "type": "number",
-                "description": "The y coordinate of the section in grid units"
+                "description": "The y coordinate of the section in grid units."
               }
             },
             "additionalProperties": false,
@@ -15803,9 +15851,6 @@
                 },
                 {
                   "$ref": "#/components/schemas/kbn-dashboard-panel-type-image"
-                },
-                {
-                  "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                 },
                 {
                   "$ref": "#/components/schemas/kbn-dashboard-panel-type-markdown"
@@ -15839,6 +15884,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/kbn-dashboard-panel-type-vis"
+                },
+                {
+                  "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                 }
               ]
             }
@@ -15849,7 +15897,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "section",
+        "title": "Section",
         "required": [
           "title",
           "grid"
@@ -15875,6 +15923,23 @@
           "pause",
           "value"
         ]
+      },
+      "kbn-dashboard-access-control": {
+        "type": "object",
+        "description": "Access control settings for the dashboard.",
+        "properties": {
+          "access_mode": {
+            "description": "Controls edit access to the dashboard. Set to `write_restricted` to prevent edits by users without explicit write permission. Defaults to `default` (all viewers can edit).",
+            "type": "string",
+            "enum": [
+              "write_restricted",
+              "default"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "Access control",
+        "x-oas-optional": true
       },
       "kbn-dashboard-data": {
         "type": "object",
@@ -15906,10 +15971,11 @@
           },
           "description": {
             "type": "string",
-            "description": "A short description."
+            "description": "A short description of the dashboard."
           },
           "filters": {
             "type": "array",
+            "description": "Filters applied across all panels, including pinned panels.",
             "maxItems": 500,
             "items": {
               "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
@@ -15934,6 +16000,7 @@
           },
           "panels": {
             "type": "array",
+            "description": "Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).",
             "default": [],
             "maxItems": 100,
             "items": {
@@ -15948,9 +16015,6 @@
                     },
                     {
                       "$ref": "#/components/schemas/kbn-dashboard-panel-type-image"
-                    },
-                    {
-                      "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                     },
                     {
                       "$ref": "#/components/schemas/kbn-dashboard-panel-type-markdown"
@@ -15984,6 +16048,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/kbn-dashboard-panel-type-vis"
+                    },
+                    {
+                      "$ref": "#/components/schemas/kbn-dashboard-panel-type-lens-dashboard-app"
                     }
                   ]
                 },
@@ -15994,7 +16061,8 @@
             }
           },
           "project_routing": {
-            "type": "string"
+            "type": "string",
+            "description": "Controls [cross-project search](https://www.elastic.co/docs/explore-analyze/cross-project-search/cross-project-search-project-routing) behavior for this dashboard (Serverless only). Set to `_alias:_origin` to scope data to the current project, or `_alias:*` to search across all projects. When omitted, the space default applies."
           },
           "query": {
             "$ref": "#/components/schemas/kbn-as-code-query"
@@ -16004,10 +16072,10 @@
           },
           "tags": {
             "type": "array",
+            "description": "Tag IDs to associate with this dashboard.",
             "maxItems": 100,
             "items": {
-              "type": "string",
-              "description": "An array of tags ids applied to this dashboard"
+              "type": "string"
             }
           },
           "time_range": {
@@ -16015,20 +16083,10 @@
           },
           "title": {
             "type": "string",
-            "description": "A human-readable title for the dashboard"
+            "description": "A human-readable title for the dashboard."
           },
           "access_control": {
-            "type": "object",
-            "properties": {
-              "access_mode": {
-                "type": "string",
-                "enum": [
-                  "write_restricted",
-                  "default"
-                ]
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/kbn-dashboard-access-control"
           }
         },
         "additionalProperties": false,
@@ -16038,32 +16096,40 @@
           "query",
           "refresh_interval",
           "time_range",
-          "title"
+          "title",
+          "access_control"
         ]
       },
       "kbn-as-code-meta": {
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "string",
+            "description": "Timestamp when the object was created (ISO 8601)."
           },
           "created_by": {
-            "type": "string"
+            "type": "string",
+            "description": "User profile ID of the user who created the object."
           },
           "managed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "When `true`, the object is managed by Kibana and cannot be edited by users."
           },
           "owner": {
-            "type": "string"
+            "type": "string",
+            "description": "Identifier of the plugin or team that owns this object."
           },
           "updated_at": {
-            "type": "string"
+            "type": "string",
+            "description": "Timestamp when the object was last updated (ISO 8601)."
           },
           "updated_by": {
-            "type": "string"
+            "type": "string",
+            "description": "User profile ID of the user who last updated the object."
           },
           "version": {
-            "type": "string"
+            "type": "string",
+            "description": "Internal version identifier for optimistic concurrency control."
           }
         },
         "additionalProperties": false,
@@ -16071,6 +16137,7 @@
       },
       "kbn-dashboard-dropped-panel-warning": {
         "type": "object",
+        "description": "A panel that was excluded from the response because its type is not supported by the API.",
         "properties": {
           "type": {
             "type": "string",
@@ -16079,18 +16146,22 @@
             ]
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "description": "Human-readable explanation of why the panel was dropped."
           },
           "panel_type": {
-            "type": "string"
+            "type": "string",
+            "description": "The type identifier of the dropped panel."
           },
           "panel_config": {
             "type": "object",
+            "description": "The original configuration of the dropped panel.",
             "properties": {},
             "additionalProperties": true
           },
           "panel_references": {
             "type": "array",
+            "description": "Saved object references used by the dropped panel.",
             "maxItems": 100,
             "items": {
               "$ref": "#/components/schemas/kbn-content-management-utils-referenceSchema"
@@ -16098,7 +16169,7 @@
           }
         },
         "additionalProperties": false,
-        "title": "kbn-dashboard-dropped-panel-warning",
+        "title": "Dropped panel",
         "required": [
           "type",
           "message",
