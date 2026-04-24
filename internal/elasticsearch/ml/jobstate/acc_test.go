@@ -83,6 +83,23 @@ func TestAccResourceMLJobState(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_job_state.test", "id"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("opened_with_options"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"force":       config.BoolVariable(true),
+					"job_timeout": config.StringVariable("1m"),
+				},
+				ResourceName:            "elasticstack_elasticsearch_ml_job_state.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "job_timeout", "timeouts"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_job_state.test"]
+					return rs.Primary.ID, nil
+				},
+			},
 		},
 	})
 }
