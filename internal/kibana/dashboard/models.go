@@ -121,10 +121,12 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	m.Options = m.mapOptionsFromAPI(data.Data.Options)
 
 	// Map access control
+	var accessMode *string
 	if data.Data.AccessControl.AccessMode != nil {
 		s := string(*data.Data.AccessControl.AccessMode)
-		m.AccessControl = newAccessControlFromAPI(&s)
+		accessMode = &s
 	}
+	m.AccessControl = newAccessControlFromAPI(accessMode)
 
 	// Map panels
 	panels, sections, panelsDiags := m.mapPanelsFromAPI(ctx, data.Data.Panels)

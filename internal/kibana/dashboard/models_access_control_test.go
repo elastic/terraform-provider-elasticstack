@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -62,4 +63,39 @@ func TestNewAccessControlFromAPI(t *testing.T) {
 		assert.NotNil(t, val)
 		assert.Equal(t, types.StringValue("write_restricted"), val.AccessMode)
 	})
+}
+
+func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing(t *testing.T) {
+	model := &dashboardModel{
+		AccessControl: &AccessControlValue{
+			AccessMode: types.StringValue("write_restricted"),
+		},
+	}
+
+	resp := &kbapi.GetDashboardsIdResponse{
+		JSON200: &struct {
+			Data     kbapi.KbnDashboardData                   `json:"data"`
+			Id       string                                   `json:"id"`
+			Meta     kbapi.KbnAsCodeMeta                      `json:"meta"`
+			Warnings *[]kbapi.KbnDashboardDroppedPanelWarning `json:"warnings,omitempty"`
+		}{
+			Data: kbapi.KbnDashboardData{
+				Title: "test dashboard",
+				Query: kbapi.KbnAsCodeQuery{},
+				TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
+					From: "now-15m",
+					To:   "now",
+				},
+				RefreshInterval: kbapi.KbnDataServiceServerRefreshIntervalSchema{
+					Pause: true,
+					Value: 0,
+				},
+			},
+			Id: "dashboard-id",
+		},
+	}
+
+	diags := model.populateFromAPI(context.Background(), resp, "dashboard-id", "default")
+	assert.False(t, diags.HasError())
+	assert.Nil(t, model.AccessControl)
 }
