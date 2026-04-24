@@ -34,7 +34,7 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

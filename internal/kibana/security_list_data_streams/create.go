@@ -31,7 +31,7 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

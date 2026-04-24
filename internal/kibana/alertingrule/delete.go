@@ -33,12 +33,12 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	if r.client == nil {
+	if r.Client() == nil {
 		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

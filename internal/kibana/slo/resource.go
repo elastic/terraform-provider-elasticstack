@@ -21,7 +21,7 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -37,24 +37,13 @@ var _ resource.ResourceWithUpgradeState = &Resource{}
 var sloResourceDescription string
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
 func NewResource() resource.Resource {
-	return &Resource{}
-}
-
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "slo"),
 	}
-	r.client = factory
-}
-
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_kibana_slo"
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {

@@ -19,9 +19,8 @@ package securityexceptionitem
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -35,25 +34,13 @@ var (
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &ExceptionItemResource{}
+	return &ExceptionItemResource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "security_exception_item"),
+	}
 }
 
 type ExceptionItemResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *ExceptionItemResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-// Metadata returns the provider type name.
-func (r *ExceptionItemResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_security_exception_item")
+	*resourcecore.Core
 }
 
 func (r *ExceptionItemResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

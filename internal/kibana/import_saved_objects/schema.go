@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -176,25 +176,14 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
 // NewResource returns a new Resource instance for provider registration and tests.
 func NewResource() resource.Resource {
-	return &Resource{}
-}
-
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "import_saved_objects"),
 	}
-	r.client = factory
-}
-
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_kibana_import_saved_objects"
 }
 
 type modelV0 struct {

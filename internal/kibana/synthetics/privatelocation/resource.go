@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -36,14 +37,14 @@ var _ resource.ResourceWithImportState = &Resource{}
 var _ synthetics.ESAPIClient = &Resource{}
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
 func (r *Resource) GetClient() *clients.KibanaScopedClient {
-	if r.client == nil {
+	if r.Client() == nil {
 		return nil
 	}
-	return clients.NewKibanaScopedClientFromFactory(r.client)
+	return clients.NewKibanaScopedClientFromFactory(r.Client())
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -54,17 +55,11 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+// NewResource returns a synthetics private location resource with shared bootstrap wiring.
+func NewResource() resource.Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_private_location"),
 	}
-	r.client = factory
-}
-
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + resourceName
 }
 
 func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, response *resource.UpdateResponse) {

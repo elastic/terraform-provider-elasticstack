@@ -34,7 +34,7 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

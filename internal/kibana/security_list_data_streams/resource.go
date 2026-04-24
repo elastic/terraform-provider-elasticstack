@@ -20,7 +20,7 @@ package securitylistdatastreams
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,24 +33,13 @@ var (
 )
 
 func NewResource() resource.Resource {
-	return &securityListDataStreamsResource{}
+	return &securityListDataStreamsResource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "security_list_data_streams"),
+	}
 }
 
 type securityListDataStreamsResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *securityListDataStreamsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_kibana_security_list_data_streams"
-}
-
-func (r *securityListDataStreamsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
+	*resourcecore.Core
 }
 
 func (r *securityListDataStreamsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

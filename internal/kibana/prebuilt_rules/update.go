@@ -40,7 +40,7 @@ func (r *PrebuiltRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	apiClient, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	apiClient, clientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags

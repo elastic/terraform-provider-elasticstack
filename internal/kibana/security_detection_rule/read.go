@@ -37,7 +37,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, data.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, data.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

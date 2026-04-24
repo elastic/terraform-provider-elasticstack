@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -37,21 +37,15 @@ var (
 	MinVersionSupportingPreconfiguredIDs = version.Must(version.NewVersion("8.8.0"))
 )
 
-type Resource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+// NewResource returns a configured resource for provider registration.
+func NewResource() resource.Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "action_connector"),
 	}
-	r.client = factory
 }
 
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_kibana_action_connector"
+type Resource struct {
+	*resourcecore.Core
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

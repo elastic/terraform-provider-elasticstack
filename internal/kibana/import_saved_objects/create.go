@@ -45,7 +45,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	client, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	client, clientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return

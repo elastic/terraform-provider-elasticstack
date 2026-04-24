@@ -35,7 +35,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
