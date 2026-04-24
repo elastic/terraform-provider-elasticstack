@@ -20,7 +20,7 @@ package agentconfiguration
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,24 +31,13 @@ var _ resource.ResourceWithConfigure = &resourceAgentConfiguration{}
 var _ resource.ResourceWithImportState = &resourceAgentConfiguration{}
 
 func NewAgentConfigurationResource() resource.Resource {
-	return &resourceAgentConfiguration{}
+	return &resourceAgentConfiguration{
+		Core: resourcecore.New(resourcecore.ComponentAPM, "agent_configuration"),
+	}
 }
 
 type resourceAgentConfiguration struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *resourceAgentConfiguration) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_apm_agent_configuration"
-}
-
-func (r *resourceAgentConfiguration) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
+	*resourcecore.Core
 }
 
 func (r *resourceAgentConfiguration) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
