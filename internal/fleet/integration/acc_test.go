@@ -20,9 +20,7 @@ package integration_test
 import (
 	"context"
 	_ "embed"
-	"os"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -118,7 +116,7 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          testAccResourceIntegrationKibanaConnectionVariables(),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
@@ -131,7 +129,7 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          testAccResourceIntegrationKibanaConnectionVariables(),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
@@ -142,31 +140,6 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceIntegrationKibanaConnectionVariables() config.Variables {
-	apiKey := os.Getenv("KIBANA_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
-	}
-	username := os.Getenv("KIBANA_USERNAME")
-	if username == "" {
-		username = os.Getenv("ELASTICSEARCH_USERNAME")
-	}
-	password := os.Getenv("KIBANA_PASSWORD")
-	if password == "" {
-		password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
-	kibanaEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
-
-	return config.Variables{
-		"kibana_endpoints": config.ListVariable(
-			config.StringVariable(kibanaEndpoint),
-		),
-		"api_key":  config.StringVariable(apiKey),
-		"username": config.StringVariable(username),
-		"password": config.StringVariable(password),
-	}
 }
 
 func TestAccResourceIntegrationWithPolicy(t *testing.T) {

@@ -143,7 +143,7 @@ func TestAccDataSourceOutputKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
-				ConfigVariables:          testAccOutputKibanaConnectionVariables(),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
 					append([]resource.TestCheckFunc{
 						resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
@@ -152,63 +152,11 @@ func TestAccDataSourceOutputKibanaConnection(t *testing.T) {
 						resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.endpoints.#", "1"),
 						resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.endpoints.0", strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))),
 						resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.insecure", "false"),
-					}, testAccOutputKibanaConnectionAuthChecks()...)...,
+					}, acctest.KibanaConnectionAuthChecks("data.elasticstack_fleet_output.test")...)...,
 				),
 			},
 		},
 	})
-}
-
-func testAccOutputKibanaConnectionVariables() config.Variables {
-	apiKey := os.Getenv("KIBANA_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
-	}
-
-	username := os.Getenv("KIBANA_USERNAME")
-	if username == "" {
-		username = os.Getenv("ELASTICSEARCH_USERNAME")
-	}
-
-	password := os.Getenv("KIBANA_PASSWORD")
-	if password == "" {
-		password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
-
-	return config.Variables{
-		"kibana_endpoints": config.ListVariable(config.StringVariable(strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT")))),
-		"api_key":          config.StringVariable(apiKey),
-		"username":         config.StringVariable(username),
-		"password":         config.StringVariable(password),
-	}
-}
-
-func testAccOutputKibanaConnectionAuthChecks() []resource.TestCheckFunc {
-	apiKey := os.Getenv("KIBANA_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
-	}
-
-	if apiKey != "" {
-		return []resource.TestCheckFunc{
-			resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.api_key", apiKey),
-		}
-	}
-
-	username := os.Getenv("KIBANA_USERNAME")
-	if username == "" {
-		username = os.Getenv("ELASTICSEARCH_USERNAME")
-	}
-
-	password := os.Getenv("KIBANA_PASSWORD")
-	if password == "" {
-		password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
-
-	return []resource.TestCheckFunc{
-		resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.username", username),
-		resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "kibana_connection.0.password", password),
-	}
 }
 
 //nolint:unparam // resourceName is always the same in tests but kept for API consistency with other helpers

@@ -19,9 +19,7 @@ package agentbuildertool_test
 
 import (
 	"fmt"
-	"os"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -133,7 +131,9 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
@@ -147,11 +147,13 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
-				ResourceName:             resourceID,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
@@ -160,7 +162,9 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "description", "Updated ES|QL tool (kibana_connection)"),
@@ -173,43 +177,19 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
-				ResourceName:             resourceID,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 			},
 		},
 	})
-}
-
-func testAccKibanaBuilderToolKibanaConnectionVariables(toolID string) config.Variables {
-	apiKey := os.Getenv("KIBANA_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
-	}
-	username := os.Getenv("KIBANA_USERNAME")
-	if username == "" {
-		username = os.Getenv("ELASTICSEARCH_USERNAME")
-	}
-	password := os.Getenv("KIBANA_PASSWORD")
-	if password == "" {
-		password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
-	kibanaEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
-
-	return config.Variables{
-		"tool_id": config.StringVariable(toolID),
-		"kibana_endpoints": config.ListVariable(
-			config.StringVariable(kibanaEndpoint),
-		),
-		"api_key":  config.StringVariable(apiKey),
-		"username": config.StringVariable(username),
-		"password": config.StringVariable(password),
-	}
 }
 
 func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
@@ -342,7 +322,9 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "type", "workflow"),
@@ -355,11 +337,13 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
-				ResourceName:             resourceID,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
@@ -368,7 +352,9 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "description", "Updated workflow tool (kibana_connection)"),
@@ -381,11 +367,13 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
-				ResourceName:             resourceID,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
