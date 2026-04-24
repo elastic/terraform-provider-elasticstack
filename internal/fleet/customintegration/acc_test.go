@@ -337,7 +337,7 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create with skip_destroy=true; package is NOT removed on destroy.
+			// Step 1: Create with skip_destroy=true.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_on"),
@@ -350,9 +350,22 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
-			// Step 2: Switch to skip_destroy=false. This triggers an Update (query-param
-			// only change). After the test suite the destroy runs with skip_destroy=false
-			// so the package IS removed.
+			// Step 2: Explicit destroy while skip_destroy=true is active. The resource
+			// is removed from Terraform state but the Fleet package must remain installed.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_on"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				},
+				Destroy: true,
+				Check: func(_ *terraform.State) error {
+					return checkPackageStillInstalledInFleet(pkgName, "1.0.0", "")
+				},
+			},
+			// Step 3: Re-create with skip_destroy=false. The package is already installed
+			// in Fleet (left by step 2); Create handles the AlreadyInstalled response and
+			// records it in state. The final framework destroy removes the package.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_off"),
@@ -370,6 +383,30 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 			},
 		},
 	})
+}
+
+// checkPackageStillInstalledInFleet verifies that a custom integration package
+// is still installed in Fleet after a skip_destroy=true resource destroy.
+func checkPackageStillInstalledInFleet(pkgName, pkgVersion, spaceID string) error {
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return err
+	}
+	fleetClient, err := client.GetFleetClient()
+	if err != nil {
+		return err
+	}
+	pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, spaceID)
+	if diags.HasError() {
+		return diagutil.FwDiagsAsError(diags)
+	}
+	if pkg == nil || pkg.Status == nil || *pkg.Status != "installed" {
+		return fmt.Errorf(
+			"expected package %s/%s to remain installed after skip_destroy=true destroy, but it was not found",
+			pkgName, pkgVersion,
+		)
+	}
+	return nil
 }
 
 func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
