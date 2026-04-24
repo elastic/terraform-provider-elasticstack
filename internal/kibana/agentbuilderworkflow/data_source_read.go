@@ -88,12 +88,11 @@ func (d *WorkflowDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: workflowID}
 
-	var state workflowDataSourceModel
-	state.ID = types.StringValue(compositeID.String())
-	state.SpaceID = types.StringValue(spaceID)
-	state.WorkflowID = types.StringValue(workflow.ID)
-	state.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
+	config.ID = types.StringValue(compositeID.String())
+	config.SpaceID = types.StringValue(spaceID)
+	config.WorkflowID = types.StringValue(workflow.ID)
+	config.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
 
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }
