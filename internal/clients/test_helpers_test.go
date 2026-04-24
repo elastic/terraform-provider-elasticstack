@@ -23,10 +23,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/stretchr/testify/require"
 )
 
 // newTestAPIClient returns a minimal *apiClient suitable for unit tests.
@@ -34,20 +32,7 @@ import (
 // calls are never made.
 func newTestAPIClient(t *testing.T) *apiClient {
 	t.Helper()
-
-	kibOapi, err := kibanaoapi.NewClient(kibanaoapi.Config{
-		URL:      "http://localhost:5601",
-		Username: "elastic",
-		Password: "changeme",
-	})
-	require.NoError(t, err)
-
-	return &apiClient{
-		kibanaOapi:     kibOapi,
-		version:        "unit-testing",
-		kibanaEndpoint: "http://localhost:5601",
-		fleetEndpoint:  "", // fleet client is nil; empty endpoint represents unconfigured Fleet
-	}
+	return newTestAPIClientCore(t)
 }
 
 // newMockKibanaServer returns an httptest.Server that responds to GET /api/status

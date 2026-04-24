@@ -77,16 +77,21 @@ func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
 	}
 }
 
-// embedCoreTestResource is a minimal [resource.Resource] that embeds [Core] as pilot
-// resources will, used only to assert embedding does not smuggle in import support.
+// embedCoreTestResource is a minimal [resource.Resource] that embeds [Core] as
+// pilot resources will. The [resource.Resource] and [resource.ResourceWithConfigure]
+// assignments are compile-time interface checks. Whether embedding [Core] avoids
+// [resource.ResourceWithImportState] is asserted at runtime in
+// TestEmbedCore_importStateAndConfigure, not via a compile-time `var` assignment
+// to [resource.ResourceWithImportState] (an assignment would be expected to fail
+// to compile; that failure is not the enforcement mechanism in this package).
 type embedCoreTestResource struct {
 	*Core
 }
 
 var (
-	_ resource.Resource                = (*embedCoreTestResource)(nil)
-	_ resource.ResourceWithConfigure   = (*embedCoreTestResource)(nil)
-	// Intentionally not: resource.ResourceWithImportState
+	_ resource.Resource              = (*embedCoreTestResource)(nil)
+	_ resource.ResourceWithConfigure = (*embedCoreTestResource)(nil)
+	// [resource.ResourceWithImportState] is not asserted here; see test above.
 )
 
 // embedCoreWithImport is the same shape as a pilot resource that defines its own import.
