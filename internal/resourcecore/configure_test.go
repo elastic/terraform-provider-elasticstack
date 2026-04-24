@@ -26,6 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// nonNilTestFactory returns a distinct, zero-valued *ProviderClientFactory. This is
+// enough for [Core.Configure] / [Core.Client] semantics tests; resolution methods
+// on the factory are not invoked.
+func nonNilTestFactory() *clients.ProviderClientFactory {
+	return new(clients.ProviderClientFactory)
+}
+
 func TestCore_Configure(t *testing.T) {
 	ctx := context.Background()
 
@@ -42,7 +49,7 @@ func TestCore_Configure(t *testing.T) {
 	t.Run("valid_factory_stores_that_pointer", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
-		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
+		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -54,7 +61,7 @@ func TestCore_Configure(t *testing.T) {
 	t.Run("success_then_untyped_nil_provider_data_replaces_with_nil_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
-		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
+		f := nonNilTestFactory()
 		var first resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &first)
 		require.False(t, first.Diagnostics.HasError())
@@ -69,7 +76,7 @@ func TestCore_Configure(t *testing.T) {
 	t.Run("invalid_provider_data_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
-		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
+		f := nonNilTestFactory()
 		var okResp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &okResp)
 		require.False(t, okResp.Diagnostics.HasError())
@@ -88,7 +95,7 @@ func TestCore_Configure(t *testing.T) {
 	t.Run("typed_nil_factory_pointer_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
-		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
+		f := nonNilTestFactory()
 		var okResp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &okResp)
 		require.False(t, okResp.Diagnostics.HasError())
