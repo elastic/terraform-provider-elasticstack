@@ -19,7 +19,9 @@ package agentbuildertool_test
 
 import (
 	"fmt"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -37,9 +39,12 @@ var (
 	below940Constraints                     = version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.4.0-SNAPSHOT"))
 )
 
+// testAccAgentBuilderEsqlResourceName is the address of the ESQL tool used in acc configs.
+const testAccAgentBuilderEsqlResourceName = "elasticstack_kibana_agentbuilder_tool.test_esql"
+
 func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
-	resourceID := "elasticstack_kibana_agentbuilder_tool.test_esql"
+	resourceID := testAccAgentBuilderEsqlResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
@@ -109,10 +114,79 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 	})
 }
 
+// TestAccResourceAgentBuilderToolEsqlKibanaConnection exercises a scoped
+// kibana_connection block (Kibana client from r.Client) with import round-trip.
+func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
+	toolID := "test-kb-conn-tool-" + uuid.New().String()[:8]
+	resourceID := testAccAgentBuilderEsqlResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
+					resource.TestCheckResourceAttr(resourceID, "type", "esql"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
+func testAccKibanaBuilderToolKibanaConnectionVariables(toolID string) config.Variables {
+	apiKey := os.Getenv("KIBANA_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	}
+	username := os.Getenv("KIBANA_USERNAME")
+	if username == "" {
+		username = os.Getenv("ELASTICSEARCH_USERNAME")
+	}
+	password := os.Getenv("KIBANA_PASSWORD")
+	if password == "" {
+		password = os.Getenv("ELASTICSEARCH_PASSWORD")
+	}
+	kibanaEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+
+	return config.Variables{
+		"tool_id": config.StringVariable(toolID),
+		"kibana_endpoints": config.ListVariable(
+			config.StringVariable(kibanaEndpoint),
+		),
+		"api_key":  config.StringVariable(apiKey),
+		"username": config.StringVariable(username),
+		"password": config.StringVariable(password),
+	}
+}
+
 func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
-	resourceID := "elasticstack_kibana_agentbuilder_tool.test_esql"
+	resourceID := testAccAgentBuilderEsqlResourceName
 	spaceResourceID := "elasticstack_kibana_space.test"
 
 	resource.Test(t, resource.TestCase{
