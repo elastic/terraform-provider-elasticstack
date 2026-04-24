@@ -75,7 +75,7 @@ func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing
 	resp := &kbapi.GetDashboardsIdResponse{
 		JSON200: &struct {
 			Data     kbapi.KbnDashboardData                   `json:"data"`
-			Id       string                                   `json:"id"`
+			Id       string                                   `json:"id"` //nolint:revive // var-naming: API struct field
 			Meta     kbapi.KbnAsCodeMeta                      `json:"meta"`
 			Warnings *[]kbapi.KbnDashboardDroppedPanelWarning `json:"warnings,omitempty"`
 		}{
