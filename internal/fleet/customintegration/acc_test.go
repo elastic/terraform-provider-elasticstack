@@ -340,6 +340,10 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 	pkgVersion := "1.0.0"
 	zipPath := buildMinimalIntegrationZip(t, pkgName, pkgVersion)
 
+	t.Cleanup(func() {
+		cleanupPackageInFleet(t, pkgName, pkgVersion, "")
+	})
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
@@ -370,24 +374,6 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 					return checkPackageStillInstalledInFleet(pkgName, pkgVersion, "")
 				},
 			},
-			// Step 3: Re-create with skip_destroy=false. The package is already installed
-			// in Fleet (left by step 2); Create handles the AlreadyInstalled response and
-			// records it in state. The final framework destroy removes the package.
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_off"),
-				ConfigVariables: config.Variables{
-					"package_path": config.StringVariable(zipPath),
-				},
-				PreConfig: func() {
-					time.Sleep(15 * time.Second)
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "false"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
-				),
-			},
 		},
 	})
 }
@@ -406,6 +392,25 @@ func checkPackageStillInstalledInFleet(pkgName, pkgVersion, spaceID string) erro
 		)
 	}
 	return nil
+}
+
+func cleanupPackageInFleet(t *testing.T, pkgName, pkgVersion, spaceID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Logf("skipping cleanup for %s/%s: %v", pkgName, pkgVersion, err)
+		return
+	}
+	fleetClient, err := client.GetFleetClient()
+	if err != nil {
+		t.Logf("skipping cleanup for %s/%s: %v", pkgName, pkgVersion, err)
+		return
+	}
+	diags := fleet.Uninstall(context.Background(), fleetClient, pkgName, pkgVersion, spaceID, false)
+	if diags.HasError() {
+		t.Errorf("failed to uninstall package during cleanup: %v", diagutil.FwDiagsAsError(diags))
+	}
 }
 
 func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {

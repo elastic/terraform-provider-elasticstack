@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -79,14 +78,12 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 
 	// Determine whether we need to re-upload. Re-upload is required if:
 	//   - The checksum is unknown (file content changed, signalled by ModifyPlan), or
-	//   - Query parameters changed (ignore_mapping_update_errors or skip_data_stream_rollover), or
-	//   - The target space changed (package must be installed in the new space).
+	//   - Query parameters changed (ignore_mapping_update_errors or skip_data_stream_rollover).
 	checksumChanged := plan.Checksum.IsUnknown()
 	queryParamsChanged := plan.IgnoreMappingUpdateErrors.ValueBool() != state.IgnoreMappingUpdateErrors.ValueBool() ||
 		plan.SkipDataStreamRollover.ValueBool() != state.SkipDataStreamRollover.ValueBool()
-	spaceIDChanged := plan.SpaceID.ValueString() != state.SpaceID.ValueString()
 
-	if checksumChanged || queryParamsChanged || spaceIDChanged {
+	if checksumChanged || queryParamsChanged {
 		filePath := plan.PackagePath.ValueString()
 		contentType := detectContentType(filePath)
 
@@ -100,86 +97,19 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 
 		var result *fleet.UploadPackageResult
 
-		if spaceIDChanged {
-			// The target space changed. Upload to the new space first.
-			// The spec requires old-space removal only after a confirmed successful
-			// upload — success must be an actual upload result, not inferred from a
-			// pre-existing target-space installation.
-			var uploadDiags diag.Diagnostics
-			result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-			resp.Diagnostics.Append(uploadDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
+		result, diags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-			if result.AlreadyInstalled {
-				// Package is already in the target space (e.g. from a prior partial
-				// update). Guard against an unreadable manifest so we have the
-				// identity required for the target-space uninstall below.
-				if result.PackageName == "" || result.PackageVersion == "" {
-					resp.Diagnostics.AddError(
-						"Cannot resolve package identity for space move",
-						"The package is already installed in the target space but the "+
-							"archive manifest could not be read. Uninstall the existing "+
-							"package from the target space manually before changing space_id.",
-					)
-					return
-				}
-				// Uninstall from the target space so that the retry below constitutes
-				// a confirmed successful upload rather than inferring success from the
-				// pre-existing state.
-				diags = fleet.Uninstall(ctx, fleetClient, result.PackageName, result.PackageVersion, plan.SpaceID.ValueString(), false)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-				result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-				resp.Diagnostics.Append(uploadDiags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-			}
-
-			// Target space now has the package via a confirmed upload.
-			// Remove from the old space.
+		// If the package name changed, uninstall the old package from the same space
+		// now that the new one is successfully installed.
+		if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
 			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
 			resp.Diagnostics.Append(diags...)
 			if resp.Diagnostics.HasError() {
 				return
-			}
-		} else {
-			// Same space: attempt upload first (spec-mandated ordering). If Fleet rejects
-			// because the same-name package is already installed (Kibana 8.0.x), uninstall
-			// the existing package and retry once.
-			var uploadDiags diag.Diagnostics
-			result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-			resp.Diagnostics.Append(uploadDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			if result.AlreadyInstalled {
-				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				result, uploadDiags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-				resp.Diagnostics.Append(uploadDiags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-			}
-
-			// If the package name changed, uninstall the old package from the same space
-			// now that the new one is successfully installed.
-			if result.PackageName != state.PackageName.ValueString() && state.PackageName.ValueString() != "" {
-				diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
 			}
 		}
 

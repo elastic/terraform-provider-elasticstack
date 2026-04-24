@@ -28,9 +28,7 @@ import (
 
 // minVersionCustomPackageGet is the minimum Kibana version at which
 // GET /api/fleet/epm/packages/{name}/{version} reliably supports
-// custom-uploaded packages. On older versions (7.17.x returns HTTP 400,
-// 8.0.x–8.1.x returns HTTP 404) drift detection is impossible, so this
-// resource requires Kibana >= 8.2.0.
+// custom-uploaded packages.
 var minVersionCustomPackageGet = goversion.Must(goversion.NewVersion("8.2.0"))
 
 func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {

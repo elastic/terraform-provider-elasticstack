@@ -86,11 +86,12 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 				Default:     booldefault.StaticBool(false),
 			},
 			"space_id": schema.StringAttribute{
-				Description: "The Kibana space ID where this integration package should be installed.",
+				Description: "The Kibana space ID where this integration package should be installed. Changing this value forces resource replacement.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{

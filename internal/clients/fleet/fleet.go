@@ -705,10 +705,6 @@ type UploadPackageResult struct {
 	PackageName string
 	// PackageVersion is the installed version resolved from the package list.
 	PackageVersion string
-	// AlreadyInstalled is true when Fleet rejected the upload because a package
-	// with the same name is already installed. The caller should uninstall the
-	// existing package and retry.
-	AlreadyInstalled bool
 }
 
 // readOnlyReader wraps an io.Reader to suppress io.Closer. Go's net/http
@@ -766,28 +762,6 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	case http.StatusOK, http.StatusCreated:
 		// intentional fall-through
 	default:
-		// Older Kibana (8.0.x) rejects re-uploading a same-name package that is
-		// already installed. Signal this condition so the caller can uninstall and
-		// retry rather than treating it as a hard failure.
-		//
-		// Populate PackageName/PackageVersion from the zip manifest so callers can
-		// adopt or uninstall the existing installation without returning empty fields.
-		if strings.Contains(string(resp.Body), "already installed") {
-			// Package is already installed. Parse name+version from the zip manifest
-			// and return them directly so callers can adopt the existing installation.
-			// We do not attempt a confirmatory GetPackage here because on older Kibana
-			// (e.g. 7.17.x) the individual package endpoint also returns 404 for
-			// custom-uploaded packages; we trust the zip manifest instead.
-			pkgName, pkgVersion, zipErr := parsePackageInfo(opts.PackagePath)
-			if zipErr == nil && pkgName != "" && pkgVersion != "" {
-				return &UploadPackageResult{
-					AlreadyInstalled: true,
-					PackageName:      pkgName,
-					PackageVersion:   pkgVersion,
-				}, nil
-			}
-			return &UploadPackageResult{AlreadyInstalled: true}, nil
-		}
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 
@@ -795,8 +769,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	// The field that carries the package name and version changed across Kibana versions:
 	//   - newer Kibana (8.8+): _meta.name / _meta.version
 	//   - older Kibana (8.0–8.7): items[0].name / items[0].version
-	//   - oldest Kibana (7.x): response[0].name / response[0].version
-	// Try all three paths; if none yields a name, fall back to parsing the
+	// Try both paths; if neither yields a name, fall back to parsing the
 	// zip manifest directly (version-independent but zip-only).
 	var uploadResp struct {
 		Meta struct {
@@ -807,10 +780,6 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 			Name    string `json:"name"`
 			Version string `json:"version"`
 		} `json:"items"`
-		Response []struct {
-			Name    string `json:"name"`
-			Version string `json:"version"`
-		} `json:"response"`
 	}
 	// Best-effort unmarshal; an error here is non-fatal — we fall through to
 	// the zip-manifest fallback below.
@@ -821,10 +790,6 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	if packageName == "" && len(uploadResp.Items) > 0 {
 		packageName = uploadResp.Items[0].Name
 		packageVersion = uploadResp.Items[0].Version
-	}
-	if packageName == "" && len(uploadResp.Response) > 0 {
-		packageName = uploadResp.Response[0].Name
-		packageVersion = uploadResp.Response[0].Version
 	}
 	if packageName == "" {
 		// Last resort: parse the name (and version) from the package archive. This is

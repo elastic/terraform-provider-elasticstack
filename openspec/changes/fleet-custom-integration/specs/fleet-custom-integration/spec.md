@@ -113,6 +113,14 @@ When an apply is triggered because the file content has changed, the provider SH
 - **WHEN** `ignore_mapping_update_errors` or `skip_data_stream_rollover` are changed and `checksum` is unchanged
 - **THEN** the provider re-uploads the file with the updated query parameters
 
+### Requirement: Space changes require replacement
+The provider SHALL treat `space_id` as a replacement-only attribute. Changing `space_id` SHALL destroy the existing resource instance and create a new one rather than moving the installed package in place.
+
+#### Scenario: space_id changed
+- **WHEN** `space_id` changes between the prior state and the planned configuration
+- **THEN** `terraform plan` marks the resource for replacement
+- **THEN** the provider does not attempt to migrate the package between spaces during update
+
 ### Requirement: Delete uninstalls package
 When the resource is destroyed and `skip_destroy` is `false` (default), the provider SHALL uninstall the package using the `package_name` and `package_version` stored in state.
 

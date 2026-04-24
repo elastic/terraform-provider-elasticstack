@@ -92,8 +92,8 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 	if result.PackageName == "" || result.PackageVersion == "" {
 		resp.Diagnostics.AddError(
 			"Package name or version could not be determined",
-			"Fleet returned an empty package name or version. If the package is already installed, "+
-				"ensure the archive contains a valid manifest.yml with non-empty name and version fields.",
+			"Fleet returned an empty package name or version. Ensure the archive contains "+
+				"a valid manifest.yml with non-empty name and version fields.",
 		)
 		return
 	}
