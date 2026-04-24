@@ -90,6 +90,21 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
 				),
 			},
+			{
+				// Import after update to verify the post-update state round-trips (covers Configure + metadata after CRUD)
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
 		},
 	})
 }
