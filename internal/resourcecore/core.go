@@ -66,7 +66,7 @@ func (c *Core) Configure(_ context.Context, req resource.ConfigureRequest, resp 
 	c.client = factory
 }
 
-// Metadata implements [resource.Resource] by setting the Terraform type name to
+// Metadata implements the Metadata method of [resource.Resource], setting the Terraform type name to
 // "<providerTypeName>_<component>_<resourceName>".
 func (c *Core) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, c.component, c.resourceName)

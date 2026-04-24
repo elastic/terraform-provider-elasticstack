@@ -16,8 +16,9 @@
 // under the License.
 
 // Package resourcecore provides a shared embedded core for Plugin Framework resources:
-// [Core] centralizes [resource.Resource] Configure and Metadata wiring and stores the
-// configured [*clients.ProviderClientFactory] for use via [Core.Client].
+// [Core] centralizes [resource.ResourceWithConfigure] Configure wiring, the Metadata method
+// required by [resource.Resource], and stores the configured [*clients.ProviderClientFactory]
+// for use via [Core.Client].
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
