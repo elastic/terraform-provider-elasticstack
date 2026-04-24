@@ -28,23 +28,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// NewResource creates a new synthetics monitor resource
-func NewResource() resource.Resource {
+// Resource represents a synthetics monitor resource
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_monitor"),
 	}
 }
 
 // Ensure provider-defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-var _ resource.ResourceWithConfigValidators = &Resource{}
-var _ synthetics.ESAPIClient = &Resource{}
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithImportState      = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+	_ synthetics.ESAPIClient                = newResource()
+)
 
-// Resource represents a synthetics monitor resource
-type Resource struct {
-	*resourcecore.Core
+// NewResource creates a new synthetics monitor resource
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) GetClient() *clients.KibanaScopedClient {

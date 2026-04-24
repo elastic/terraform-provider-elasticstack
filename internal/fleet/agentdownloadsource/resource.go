@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	_ resource.Resource                = &Resource{}
-	_ resource.ResourceWithConfigure   = &Resource{}
-	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
 )
 
 // Resource implements the Fleet Agent Download Source resource.
@@ -40,11 +40,15 @@ type Resource struct {
 	*resourcecore.Core
 }
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "agent_download_source"),
 	}
+}
+
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

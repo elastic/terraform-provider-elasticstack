@@ -27,11 +27,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-var _ resource.ResourceWithConfigValidators = &Resource{}
-var _ resource.ResourceWithUpgradeState = &Resource{}
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithImportState      = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+	_ resource.ResourceWithUpgradeState     = newResource()
+)
 
 //go:embed resource-description.md
 var sloResourceDescription string
@@ -40,10 +42,14 @@ type Resource struct {
 	*resourcecore.Core
 }
 
-func NewResource() resource.Resource {
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "slo"),
 	}
+}
+
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {

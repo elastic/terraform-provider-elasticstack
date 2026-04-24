@@ -23,17 +23,21 @@ import (
 )
 
 var (
-	_ resource.Resource              = &Resource{}
-	_ resource.ResourceWithConfigure = &Resource{}
+	_ resource.Resource              = newResource()
+	_ resource.ResourceWithConfigure = newResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "default_data_view"),
 	}
 }
 
-type Resource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newResource()
 }

@@ -30,15 +30,23 @@ import (
 
 const resourceName = synthetics.MetadataPrefix + "private_location"
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-var _ synthetics.ESAPIClient = &Resource{}
-
 type Resource struct {
 	*resourcecore.Core
 }
+
+func newResource() *Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_private_location"),
+	}
+}
+
+// Ensure provider defined types fully satisfy framework interfaces
+var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+	_ synthetics.ESAPIClient           = newResource()
+)
 
 func (r *Resource) GetClient() *clients.KibanaScopedClient {
 	if r.Client() == nil {
@@ -57,9 +65,7 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 
 // NewResource returns a synthetics private location resource with shared bootstrap wiring.
 func NewResource() resource.Resource {
-	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_private_location"),
-	}
+	return newResource()
 }
 
 func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, response *resource.UpdateResponse) {

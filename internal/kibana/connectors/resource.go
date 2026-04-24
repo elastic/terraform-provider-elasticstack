@@ -29,23 +29,27 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-
 var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+
 	MinVersionSupportingPreconfiguredIDs = version.Must(version.NewVersion("8.8.0"))
 )
 
-// NewResource returns a configured resource for provider registration.
-func NewResource() resource.Resource {
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "action_connector"),
 	}
 }
 
-type Resource struct {
-	*resourcecore.Core
+// NewResource returns a configured resource for provider registration.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

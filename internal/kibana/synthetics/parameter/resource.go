@@ -27,15 +27,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-var _ synthetics.ESAPIClient = &Resource{}
-
 type Resource struct {
 	*resourcecore.Core
 }
+
+func newResource() *Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_parameter"),
+	}
+}
+
+// Ensure provider defined types fully satisfy framework interfaces
+var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+	_ synthetics.ESAPIClient           = newResource()
+)
 
 func (r *Resource) GetClient() *clients.KibanaScopedClient {
 	if r.Client() == nil {
@@ -54,7 +62,5 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 
 // NewResource returns a synthetics parameter resource with shared bootstrap wiring.
 func NewResource() resource.Resource {
-	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_parameter"),
-	}
+	return newResource()
 }

@@ -26,19 +26,25 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &aliasResource{}
-var _ resource.ResourceWithConfigure = &aliasResource{}
-var _ resource.ResourceWithImportState = &aliasResource{}
-var _ resource.ResourceWithValidateConfig = &aliasResource{}
+var (
+	_ resource.Resource                   = newAliasResource()
+	_ resource.ResourceWithConfigure      = newAliasResource()
+	_ resource.ResourceWithImportState    = newAliasResource()
+	_ resource.ResourceWithValidateConfig = newAliasResource()
+)
 
-func NewAliasResource() resource.Resource {
+type aliasResource struct {
+	*resourcecore.Core
+}
+
+func newAliasResource() *aliasResource {
 	return &aliasResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index_alias"),
 	}
 }
 
-type aliasResource struct {
-	*resourcecore.Core
+func NewAliasResource() resource.Resource {
+	return newAliasResource()
 }
 
 func (r *aliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

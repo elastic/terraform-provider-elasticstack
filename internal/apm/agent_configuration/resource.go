@@ -26,18 +26,24 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &resourceAgentConfiguration{}
-var _ resource.ResourceWithConfigure = &resourceAgentConfiguration{}
-var _ resource.ResourceWithImportState = &resourceAgentConfiguration{}
+var (
+	_ resource.Resource                = newResourceAgentConfiguration()
+	_ resource.ResourceWithConfigure   = newResourceAgentConfiguration()
+	_ resource.ResourceWithImportState = newResourceAgentConfiguration()
+)
 
-func NewAgentConfigurationResource() resource.Resource {
+type resourceAgentConfiguration struct {
+	*resourcecore.Core
+}
+
+func newResourceAgentConfiguration() *resourceAgentConfiguration {
 	return &resourceAgentConfiguration{
 		Core: resourcecore.New(resourcecore.ComponentAPM, "agent_configuration"),
 	}
 }
 
-type resourceAgentConfiguration struct {
-	*resourcecore.Core
+func NewAgentConfigurationResource() resource.Resource {
+	return newResourceAgentConfiguration()
 }
 
 func (r *resourceAgentConfiguration) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

@@ -27,14 +27,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func NewAnomalyDetectionJobResource() resource.Resource {
+var (
+	_ resource.Resource                = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithConfigure   = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithImportState = newAnomalyDetectionJobResource()
+)
+
+type anomalyDetectionJobResource struct {
+	*resourcecore.Core
+}
+
+func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 	return &anomalyDetectionJobResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_anomaly_detection_job"),
 	}
 }
 
-type anomalyDetectionJobResource struct {
-	*resourcecore.Core
+func NewAnomalyDetectionJobResource() resource.Resource {
+	return newAnomalyDetectionJobResource()
 }
 
 func (r *anomalyDetectionJobResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

@@ -34,10 +34,10 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &integrationPolicyResource{}
-	_ resource.ResourceWithConfigure    = &integrationPolicyResource{}
-	_ resource.ResourceWithImportState  = &integrationPolicyResource{}
-	_ resource.ResourceWithUpgradeState = &integrationPolicyResource{}
+	_ resource.Resource                 = newIntegrationPolicyResource()
+	_ resource.ResourceWithConfigure    = newIntegrationPolicyResource()
+	_ resource.ResourceWithImportState  = newIntegrationPolicyResource()
+	_ resource.ResourceWithUpgradeState = newIntegrationPolicyResource()
 )
 
 var (
@@ -45,15 +45,19 @@ var (
 	MinVersionOutputID  = version.Must(version.NewVersion("8.16.0"))
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type integrationPolicyResource struct {
+	*resourcecore.Core
+}
+
+func newIntegrationPolicyResource() *integrationPolicyResource {
 	return &integrationPolicyResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "integration_policy"),
 	}
 }
 
-type integrationPolicyResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newIntegrationPolicyResource()
 }
 
 func (r *integrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

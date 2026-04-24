@@ -26,21 +26,25 @@ import (
 )
 
 var (
-	_ resource.Resource                   = &ExceptionItemResource{}
-	_ resource.ResourceWithConfigure      = &ExceptionItemResource{}
-	_ resource.ResourceWithImportState    = &ExceptionItemResource{}
-	_ resource.ResourceWithValidateConfig = &ExceptionItemResource{}
+	_ resource.Resource                   = newExceptionItemResource()
+	_ resource.ResourceWithConfigure      = newExceptionItemResource()
+	_ resource.ResourceWithImportState    = newExceptionItemResource()
+	_ resource.ResourceWithValidateConfig = newExceptionItemResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type ExceptionItemResource struct {
+	*resourcecore.Core
+}
+
+func newExceptionItemResource() *ExceptionItemResource {
 	return &ExceptionItemResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "security_exception_item"),
 	}
 }
 
-type ExceptionItemResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newExceptionItemResource()
 }
 
 func (r *ExceptionItemResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

@@ -26,19 +26,25 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
+var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+)
 
-// NewResource returns an index resource with shared bootstrap wiring.
-func NewResource() resource.Resource {
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index"),
 	}
 }
 
-type Resource struct {
-	*resourcecore.Core
+// NewResource returns an index resource with shared bootstrap wiring.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

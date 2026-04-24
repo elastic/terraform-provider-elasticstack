@@ -27,19 +27,23 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
-	_ resource.Resource                = &securityListItemResource{}
-	_ resource.ResourceWithConfigure   = &securityListItemResource{}
-	_ resource.ResourceWithImportState = &securityListItemResource{}
+	_ resource.Resource                = newSecurityListItemResource()
+	_ resource.ResourceWithConfigure   = newSecurityListItemResource()
+	_ resource.ResourceWithImportState = newSecurityListItemResource()
 )
 
-func NewResource() resource.Resource {
+type securityListItemResource struct {
+	*resourcecore.Core
+}
+
+func newSecurityListItemResource() *securityListItemResource {
 	return &securityListItemResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "security_list_item"),
 	}
 }
 
-type securityListItemResource struct {
-	*resourcecore.Core
+func NewResource() resource.Resource {
+	return newSecurityListItemResource()
 }
 
 func (r *securityListItemResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

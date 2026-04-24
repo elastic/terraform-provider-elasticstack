@@ -26,18 +26,24 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &userResource{}
-var _ resource.ResourceWithConfigure = &userResource{}
-var _ resource.ResourceWithImportState = &userResource{}
+var (
+	_ resource.Resource                = newUserResource()
+	_ resource.ResourceWithConfigure   = newUserResource()
+	_ resource.ResourceWithImportState = newUserResource()
+)
 
-func NewUserResource() resource.Resource {
+type userResource struct {
+	*resourcecore.Core
+}
+
+func newUserResource() *userResource {
 	return &userResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_user"),
 	}
 }
 
-type userResource struct {
-	*resourcecore.Core
+func NewUserResource() resource.Resource {
+	return newUserResource()
 }
 
 func (r *userResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

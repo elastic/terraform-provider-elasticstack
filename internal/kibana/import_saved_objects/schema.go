@@ -32,11 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithConfigValidators = &Resource{}
-
 func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		// create_new_copies = true cannot be combined with overwrite = true
@@ -179,11 +174,22 @@ type Resource struct {
 	*resourcecore.Core
 }
 
-// NewResource returns a new Resource instance for provider registration and tests.
-func NewResource() resource.Resource {
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "import_saved_objects"),
 	}
+}
+
+// Ensure provider defined types fully satisfy framework interfaces
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+)
+
+// NewResource returns a new Resource instance for provider registration and tests.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 type modelV0 struct {

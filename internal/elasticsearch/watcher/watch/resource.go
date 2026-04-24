@@ -26,19 +26,23 @@ import (
 )
 
 var (
-	_ resource.Resource                = &watchResource{}
-	_ resource.ResourceWithConfigure   = &watchResource{}
-	_ resource.ResourceWithImportState = &watchResource{}
+	_ resource.Resource                = newWatchResource()
+	_ resource.ResourceWithConfigure   = newWatchResource()
+	_ resource.ResourceWithImportState = newWatchResource()
 )
 
-func NewWatchResource() resource.Resource {
+type watchResource struct {
+	*resourcecore.Core
+}
+
+func newWatchResource() *watchResource {
 	return &watchResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "watch"),
 	}
 }
 
-type watchResource struct {
-	*resourcecore.Core
+func NewWatchResource() resource.Resource {
+	return newWatchResource()
 }
 
 func (r *watchResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

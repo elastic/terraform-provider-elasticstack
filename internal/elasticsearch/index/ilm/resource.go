@@ -26,21 +26,25 @@ import (
 )
 
 var (
-	_ resource.Resource                   = &Resource{}
-	_ resource.ResourceWithConfigure      = &Resource{}
-	_ resource.ResourceWithImportState    = &Resource{}
-	_ resource.ResourceWithValidateConfig = &Resource{}
-	_ resource.ResourceWithUpgradeState   = &Resource{}
+	_ resource.Resource                   = newResource()
+	_ resource.ResourceWithConfigure      = newResource()
+	_ resource.ResourceWithImportState    = newResource()
+	_ resource.ResourceWithValidateConfig = newResource()
+	_ resource.ResourceWithUpgradeState   = newResource()
 )
 
-func NewResource() resource.Resource {
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index_lifecycle"),
 	}
 }
 
-type Resource struct {
-	*resourcecore.Core
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

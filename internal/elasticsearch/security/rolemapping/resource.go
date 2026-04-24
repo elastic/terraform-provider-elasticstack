@@ -26,18 +26,24 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &roleMappingResource{}
-var _ resource.ResourceWithConfigure = &roleMappingResource{}
-var _ resource.ResourceWithImportState = &roleMappingResource{}
+var (
+	_ resource.Resource                = newRoleMappingResource()
+	_ resource.ResourceWithConfigure   = newRoleMappingResource()
+	_ resource.ResourceWithImportState = newRoleMappingResource()
+)
 
-func NewRoleMappingResource() resource.Resource {
+type roleMappingResource struct {
+	*resourcecore.Core
+}
+
+func newRoleMappingResource() *roleMappingResource {
 	return &roleMappingResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role_mapping"),
 	}
 }
 
-type roleMappingResource struct {
-	*resourcecore.Core
+func NewRoleMappingResource() resource.Resource {
+	return newRoleMappingResource()
 }
 
 func (r *roleMappingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

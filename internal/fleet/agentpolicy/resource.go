@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	_ resource.Resource                = &agentPolicyResource{}
-	_ resource.ResourceWithConfigure   = &agentPolicyResource{}
-	_ resource.ResourceWithImportState = &agentPolicyResource{}
+	_ resource.Resource                = newAgentPolicyResource()
+	_ resource.ResourceWithConfigure   = newAgentPolicyResource()
+	_ resource.ResourceWithImportState = newAgentPolicyResource()
 )
 
 var (
@@ -47,15 +47,19 @@ var (
 	MinVersionAdvancedSettings    = version.Must(version.NewVersion("8.17.0"))
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type agentPolicyResource struct {
+	*resourcecore.Core
+}
+
+func newAgentPolicyResource() *agentPolicyResource {
 	return &agentPolicyResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "agent_policy"),
 	}
 }
 
-type agentPolicyResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newAgentPolicyResource()
 }
 
 func (r *agentPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

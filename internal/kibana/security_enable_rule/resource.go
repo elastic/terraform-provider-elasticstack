@@ -24,19 +24,23 @@ import (
 )
 
 var (
-	_ resource.Resource              = &EnableRuleResource{}
-	_ resource.ResourceWithConfigure = &EnableRuleResource{}
+	_ resource.Resource              = newEnableRuleResource()
+	_ resource.ResourceWithConfigure = newEnableRuleResource()
 
 	minSupportedVersion = version.Must(version.NewVersion("8.11.0"))
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type EnableRuleResource struct {
+	*resourcecore.Core
+}
+
+func newEnableRuleResource() *EnableRuleResource {
 	return &EnableRuleResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "security_enable_rule"),
 	}
 }
 
-type EnableRuleResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newEnableRuleResource()
 }

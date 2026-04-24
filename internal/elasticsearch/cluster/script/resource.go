@@ -26,18 +26,24 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &scriptResource{}
-var _ resource.ResourceWithConfigure = &scriptResource{}
-var _ resource.ResourceWithImportState = &scriptResource{}
+var (
+	_ resource.Resource                = newScriptResource()
+	_ resource.ResourceWithConfigure   = newScriptResource()
+	_ resource.ResourceWithImportState = newScriptResource()
+)
 
-func NewScriptResource() resource.Resource {
+type scriptResource struct {
+	*resourcecore.Core
+}
+
+func newScriptResource() *scriptResource {
 	return &scriptResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "script"),
 	}
 }
 
-type scriptResource struct {
-	*resourcecore.Core
+func NewScriptResource() resource.Resource {
+	return newScriptResource()
 }
 
 func (r *scriptResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

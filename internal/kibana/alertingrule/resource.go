@@ -29,25 +29,29 @@ import (
 )
 
 var (
-	_ resource.Resource                   = &Resource{}
-	_ resource.ResourceWithConfigure      = &Resource{}
-	_ resource.ResourceWithImportState    = &Resource{}
-	_ resource.ResourceWithValidateConfig = &Resource{}
-	_ resource.ResourceWithUpgradeState   = &Resource{}
+	_ resource.Resource                   = newResource()
+	_ resource.ResourceWithConfigure      = newResource()
+	_ resource.ResourceWithImportState    = newResource()
+	_ resource.ResourceWithValidateConfig = newResource()
+	_ resource.ResourceWithUpgradeState   = newResource()
 )
 
 //go:embed resource-description.md
 var resourceDescription string
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "alerting_rule"),
 	}
 }
 
-type Resource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

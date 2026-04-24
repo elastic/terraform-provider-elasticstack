@@ -28,14 +28,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func NewDatafeedResource() resource.Resource {
+var (
+	_ resource.Resource                = newDatafeedResource()
+	_ resource.ResourceWithConfigure   = newDatafeedResource()
+	_ resource.ResourceWithImportState = newDatafeedResource()
+)
+
+type datafeedResource struct {
+	*resourcecore.Core
+}
+
+func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_datafeed"),
 	}
 }
 
-type datafeedResource struct {
-	*resourcecore.Core
+func NewDatafeedResource() resource.Resource {
+	return newDatafeedResource()
 }
 
 func (r *datafeedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

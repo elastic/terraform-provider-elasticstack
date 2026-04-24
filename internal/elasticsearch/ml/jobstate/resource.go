@@ -26,19 +26,23 @@ import (
 )
 
 var (
-	_ resource.Resource                = &mlJobStateResource{}
-	_ resource.ResourceWithConfigure   = &mlJobStateResource{}
-	_ resource.ResourceWithImportState = &mlJobStateResource{}
+	_ resource.Resource                = newMLJobStateResource()
+	_ resource.ResourceWithConfigure   = newMLJobStateResource()
+	_ resource.ResourceWithImportState = newMLJobStateResource()
 )
 
-func NewMLJobStateResource() resource.Resource {
+type mlJobStateResource struct {
+	*resourcecore.Core
+}
+
+func newMLJobStateResource() *mlJobStateResource {
 	return &mlJobStateResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_job_state"),
 	}
 }
 
-type mlJobStateResource struct {
-	*resourcecore.Core
+func NewMLJobStateResource() resource.Resource {
+	return newMLJobStateResource()
 }
 
 func (r *mlJobStateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

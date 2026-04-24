@@ -27,24 +27,28 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-
 var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+
 	MinVersion = version.Must(version.NewVersion("8.2.0"))
 )
 
-// NewResource creates a new resource instance.
-func NewResource() resource.Resource {
+// Resource defines the resource implementation.
+type Resource struct {
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
 	return &Resource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index_template_ilm_attachment"),
 	}
 }
 
-// Resource defines the resource implementation.
-type Resource struct {
-	*resourcecore.Core
+// NewResource creates a new resource instance.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

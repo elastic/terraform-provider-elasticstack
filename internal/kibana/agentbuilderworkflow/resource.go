@@ -27,22 +27,26 @@ import (
 )
 
 var (
-	_ resource.Resource                = &WorkflowResource{}
-	_ resource.ResourceWithConfigure   = &WorkflowResource{}
-	_ resource.ResourceWithImportState = &WorkflowResource{}
+	_ resource.Resource                = newWorkflowResource()
+	_ resource.ResourceWithConfigure   = newWorkflowResource()
+	_ resource.ResourceWithImportState = newWorkflowResource()
 	// Workflow API is GA from 9.4.x onwards
 	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type WorkflowResource struct {
+	*resourcecore.Core
+}
+
+func newWorkflowResource() *WorkflowResource {
 	return &WorkflowResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_workflow"),
 	}
 }
 
-type WorkflowResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newWorkflowResource()
 }
 
 func (r *WorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

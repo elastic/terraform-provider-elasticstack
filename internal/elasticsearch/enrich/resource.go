@@ -39,18 +39,24 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &enrichPolicyResource{}
-var _ resource.ResourceWithConfigure = &enrichPolicyResource{}
-var _ resource.ResourceWithImportState = &enrichPolicyResource{}
+var (
+	_ resource.Resource                = newEnrichPolicyResource()
+	_ resource.ResourceWithConfigure   = newEnrichPolicyResource()
+	_ resource.ResourceWithImportState = newEnrichPolicyResource()
+)
 
-func NewEnrichPolicyResource() resource.Resource {
+type enrichPolicyResource struct {
+	*resourcecore.Core
+}
+
+func newEnrichPolicyResource() *enrichPolicyResource {
 	return &enrichPolicyResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "enrich_policy"),
 	}
 }
 
-type enrichPolicyResource struct {
-	*resourcecore.Core
+func NewEnrichPolicyResource() resource.Resource {
+	return newEnrichPolicyResource()
 }
 
 func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {

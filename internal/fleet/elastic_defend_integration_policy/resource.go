@@ -27,20 +27,24 @@ import (
 )
 
 var (
-	_ resource.Resource                = &elasticDefendIntegrationPolicyResource{}
-	_ resource.ResourceWithConfigure   = &elasticDefendIntegrationPolicyResource{}
-	_ resource.ResourceWithImportState = &elasticDefendIntegrationPolicyResource{}
+	_ resource.Resource                = newElasticDefendIntegrationPolicyResource()
+	_ resource.ResourceWithConfigure   = newElasticDefendIntegrationPolicyResource()
+	_ resource.ResourceWithImportState = newElasticDefendIntegrationPolicyResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type elasticDefendIntegrationPolicyResource struct {
+	*resourcecore.Core
+}
+
+func newElasticDefendIntegrationPolicyResource() *elasticDefendIntegrationPolicyResource {
 	return &elasticDefendIntegrationPolicyResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "elastic_defend_integration_policy"),
 	}
 }
 
-type elasticDefendIntegrationPolicyResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newElasticDefendIntegrationPolicyResource()
 }
 
 func (r *elasticDefendIntegrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {

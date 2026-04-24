@@ -23,18 +23,22 @@ import (
 )
 
 var (
-	_ resource.Resource               = &customIntegrationResource{}
-	_ resource.ResourceWithConfigure  = &customIntegrationResource{}
-	_ resource.ResourceWithModifyPlan = &customIntegrationResource{}
+	_ resource.Resource               = newCustomIntegrationResource()
+	_ resource.ResourceWithConfigure  = newCustomIntegrationResource()
+	_ resource.ResourceWithModifyPlan = newCustomIntegrationResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type customIntegrationResource struct {
+	*resourcecore.Core
+}
+
+func newCustomIntegrationResource() *customIntegrationResource {
 	return &customIntegrationResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "custom_integration"),
 	}
 }
 
-type customIntegrationResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newCustomIntegrationResource()
 }

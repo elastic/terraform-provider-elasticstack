@@ -23,15 +23,21 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &systemUserResource{}
-var _ resource.ResourceWithConfigure = &systemUserResource{}
+var (
+	_ resource.Resource              = newSystemUserResource()
+	_ resource.ResourceWithConfigure = newSystemUserResource()
+)
 
-func NewSystemUserResource() resource.Resource {
+type systemUserResource struct {
+	*resourcecore.Core
+}
+
+func newSystemUserResource() *systemUserResource {
 	return &systemUserResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_system_user"),
 	}
 }
 
-type systemUserResource struct {
-	*resourcecore.Core
+func NewSystemUserResource() resource.Resource {
+	return newSystemUserResource()
 }

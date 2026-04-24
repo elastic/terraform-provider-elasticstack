@@ -26,20 +26,24 @@ import (
 )
 
 var (
-	_ resource.Resource                = &serverHostResource{}
-	_ resource.ResourceWithConfigure   = &serverHostResource{}
-	_ resource.ResourceWithImportState = &serverHostResource{}
+	_ resource.Resource                = newServerHostResource()
+	_ resource.ResourceWithConfigure   = newServerHostResource()
+	_ resource.ResourceWithImportState = newServerHostResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type serverHostResource struct {
+	*resourcecore.Core
+}
+
+func newServerHostResource() *serverHostResource {
 	return &serverHostResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "server_host"),
 	}
 }
 
-type serverHostResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newServerHostResource()
 }
 
 func (r *serverHostResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

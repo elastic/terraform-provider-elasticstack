@@ -30,23 +30,27 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &outputResource{}
-	_ resource.ResourceWithConfigure    = &outputResource{}
-	_ resource.ResourceWithImportState  = &outputResource{}
-	_ resource.ResourceWithUpgradeState = &outputResource{}
+	_ resource.Resource                 = newOutputResource()
+	_ resource.ResourceWithConfigure    = newOutputResource()
+	_ resource.ResourceWithImportState  = newOutputResource()
+	_ resource.ResourceWithUpgradeState = newOutputResource()
 )
 
 var MinVersionOutputKafka = version.Must(version.NewVersion("8.13.0"))
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type outputResource struct {
+	*resourcecore.Core
+}
+
+func newOutputResource() *outputResource {
 	return &outputResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "output"),
 	}
 }
 
-type outputResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newOutputResource()
 }
 
 func (r *outputResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

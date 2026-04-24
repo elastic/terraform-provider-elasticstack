@@ -26,19 +26,23 @@ import (
 )
 
 var (
-	_ resource.Resource                = &inferenceEndpointResource{}
-	_ resource.ResourceWithConfigure   = &inferenceEndpointResource{}
-	_ resource.ResourceWithImportState = &inferenceEndpointResource{}
+	_ resource.Resource                = newInferenceEndpointResource()
+	_ resource.ResourceWithConfigure   = newInferenceEndpointResource()
+	_ resource.ResourceWithImportState = newInferenceEndpointResource()
 )
 
-func NewInferenceEndpointResource() resource.Resource {
+type inferenceEndpointResource struct {
+	*resourcecore.Core
+}
+
+func newInferenceEndpointResource() *inferenceEndpointResource {
 	return &inferenceEndpointResource{
 		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "inference_endpoint"),
 	}
 }
 
-type inferenceEndpointResource struct {
-	*resourcecore.Core
+func NewInferenceEndpointResource() resource.Resource {
+	return newInferenceEndpointResource()
 }
 
 func (r *inferenceEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

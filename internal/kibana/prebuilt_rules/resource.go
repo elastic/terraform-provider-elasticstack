@@ -27,20 +27,24 @@ import (
 )
 
 var (
-	_ resource.Resource               = &PrebuiltRuleResource{}
-	_ resource.ResourceWithConfigure  = &PrebuiltRuleResource{}
-	_ resource.ResourceWithModifyPlan = &PrebuiltRuleResource{}
+	_ resource.Resource               = newPrebuiltRuleResource()
+	_ resource.ResourceWithConfigure  = newPrebuiltRuleResource()
+	_ resource.ResourceWithModifyPlan = newPrebuiltRuleResource()
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type PrebuiltRuleResource struct {
+	*resourcecore.Core
+}
+
+func newPrebuiltRuleResource() *PrebuiltRuleResource {
 	return &PrebuiltRuleResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "install_prebuilt_rules"),
 	}
 }
 
-type PrebuiltRuleResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newPrebuiltRuleResource()
 }
 
 func (r *PrebuiltRuleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {

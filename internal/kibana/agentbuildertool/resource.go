@@ -27,24 +27,28 @@ import (
 )
 
 var (
-	_                                       resource.Resource                = &ToolResource{}
-	_                                       resource.ResourceWithConfigure   = &ToolResource{}
-	_                                       resource.ResourceWithImportState = &ToolResource{}
+	_                                       resource.Resource                = newToolResource()
+	_                                       resource.ResourceWithConfigure   = newToolResource()
+	_                                       resource.ResourceWithImportState = newToolResource()
 	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
 	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 	defaultSpaceID = "default"
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type ToolResource struct {
+	*resourcecore.Core
+}
+
+func newToolResource() *ToolResource {
 	return &ToolResource{
 		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_tool"),
 	}
 }
 
-type ToolResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newToolResource()
 }
 
 func (r *ToolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

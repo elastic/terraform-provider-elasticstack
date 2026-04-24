@@ -24,9 +24,9 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &integrationResource{}
-	_ resource.ResourceWithConfigure    = &integrationResource{}
-	_ resource.ResourceWithUpgradeState = &integrationResource{}
+	_ resource.Resource                 = newIntegrationResource()
+	_ resource.ResourceWithConfigure    = newIntegrationResource()
+	_ resource.ResourceWithUpgradeState = newIntegrationResource()
 
 	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
 	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
@@ -34,13 +34,17 @@ var (
 	MinVersionSkipDataStreamRollover = MinVersionIgnoreMappingUpdateErrors
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+type integrationResource struct {
+	*resourcecore.Core
+}
+
+func newIntegrationResource() *integrationResource {
 	return &integrationResource{
 		Core: resourcecore.New(resourcecore.ComponentFleet, "integration"),
 	}
 }
 
-type integrationResource struct {
-	*resourcecore.Core
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newIntegrationResource()
 }
