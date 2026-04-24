@@ -640,6 +640,111 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 	}
 }
 
+// UploadPackageOptions holds the options for uploading a package archive.
+type UploadPackageOptions struct {
+	SpaceID                   string
+	ContentType               string // "application/zip" or "application/gzip"
+	IgnoreMappingUpdateErrors *bool
+	SkipDataStreamRollover    *bool
+}
+
+// UploadPackageResult describes the outcome of a successful package upload.
+// PackageVersion may be empty if the upload response did not carry a version
+// and the caller chose not to resolve it from GetPackages; callers that need
+// a guaranteed version should resolve it via GetPackages.
+type UploadPackageResult struct {
+	PackageName    string
+	PackageVersion string
+}
+
+// UploadPackage uploads a custom integration package archive to Kibana Fleet
+// via POST /api/fleet/epm/packages. body carries the raw binary archive
+// contents; the caller is responsible for closing any underlying reader.
+//
+// The Fleet upload response does not include a typed JSON payload in the
+// generated client, so the response body is parsed manually. The package
+// name is read from `_meta.name`; the version is returned when present in
+// `items[0].version` (or `response[0].version` on older servers) and left
+// empty otherwise.
+func UploadPackage(ctx context.Context, client *Client, body io.Reader, opts UploadPackageOptions) (UploadPackageResult, diag.Diagnostics) {
+	params := kbapi.PostFleetEpmPackagesParams{
+		IgnoreMappingUpdateErrors: opts.IgnoreMappingUpdateErrors,
+		SkipDataStreamRollover:    opts.SkipDataStreamRollover,
+	}
+
+	contentType := opts.ContentType
+	if contentType == "" {
+		contentType = "application/zip"
+	}
+
+	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, contentType, body, spaceAwarePathRequestEditor(opts.SpaceID))
+	if err != nil {
+		return UploadPackageResult{}, diagutil.FrameworkDiagFromError(err)
+	}
+
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return UploadPackageResult{}, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+
+	name, version, parseErr := parseUploadPackageResponse(resp.Body)
+	if parseErr != nil {
+		return UploadPackageResult{}, diagutil.FrameworkDiagFromError(parseErr)
+	}
+	if name == "" {
+		return UploadPackageResult{}, diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Package upload response did not include a name",
+				fmt.Sprintf("The Fleet API returned %d but the response body did not carry `_meta.name` or `items[].id`; cannot track the uploaded package in state. Raw body: %s", resp.StatusCode(), string(resp.Body)),
+			),
+		}
+	}
+	return UploadPackageResult{PackageName: name, PackageVersion: version}, nil
+}
+
+// parseUploadPackageResponse extracts the package name and (if present) the
+// version from the raw JSON response body returned by
+// POST /api/fleet/epm/packages. The response shape varies across Kibana
+// versions: newer versions use `items`, older versions use `response`; both
+// carry `_meta.name` once a package is installed.
+func parseUploadPackageResponse(body []byte) (name string, version string, err error) {
+	var envelope struct {
+		Meta struct {
+			Name string `json:"name"`
+		} `json:"_meta"`
+		Items []struct {
+			ID      string `json:"id"`
+			Type    string `json:"type"`
+			Version string `json:"version,omitempty"`
+		} `json:"items"`
+		Response []struct {
+			ID      string `json:"id"`
+			Type    string `json:"type"`
+			Version string `json:"version,omitempty"`
+		} `json:"response"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return "", "", fmt.Errorf("decode Fleet upload response: %w", err)
+	}
+	name = envelope.Meta.Name
+	// Walk assets for a version token; the assets list is generally large
+	// but any asset managed by the package carries the same version.
+	for _, it := range envelope.Items {
+		if it.Version != "" {
+			version = it.Version
+			break
+		}
+	}
+	if version == "" {
+		for _, it := range envelope.Response {
+			if it.Version != "" {
+				version = it.Version
+				break
+			}
+		}
+	}
+	return name, version, nil
+}
+
 // GetPackages returns information about the latest packages known to Fleet.
 // If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
 func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
