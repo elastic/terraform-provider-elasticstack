@@ -85,6 +85,16 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.log_level", "debug"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
+				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -158,6 +168,15 @@ func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.capture_body", "all"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables:          testAccAgentConfigurationKibanaConnectionVariables(serviceName),
+				ResourceName:             "elasticstack_apm_agent_configuration.test_config",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
 			},
 		},
 	})
