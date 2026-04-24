@@ -9,8 +9,10 @@ resource "elasticstack_kibana_space" "test" {
 }
 
 resource "elasticstack_fleet_output" "test" {
-  name      = "test"
-  type      = "elasticsearch"
-  hosts     = ["https://elasticsearch:9200"]
-  space_ids = ["default", "space1"]
+  name                 = "test"
+  type                 = "elasticsearch"
+  hosts                = ["https://elasticsearch:9200"]
+  space_ids            = ["default", "space1"]
+  default_integrations = false
+  default_monitoring   = false
 }
