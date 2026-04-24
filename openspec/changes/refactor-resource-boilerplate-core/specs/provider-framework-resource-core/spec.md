@@ -4,8 +4,8 @@
 The provider SHALL provide a shared Plugin Framework resource core that constructs Terraform resource type names from the configured provider type name, a typed component namespace, and a literal resource-name suffix. The constructed type name SHALL use the format `<provider_type_name>_<component>_<resource_name>`. The shared core SHALL support well-known component constants for `elasticsearch`, `kibana`, `fleet`, and `apm`.
 
 #### Scenario: Kibana resource type name is built from component and resource name
-- **WHEN** a resource core is configured with component `kibana` and resource name `agent_builder_tool`
-- **THEN** `Metadata` SHALL set the type name to `<provider_type_name>_kibana_agent_builder_tool`
+- **WHEN** a resource core is configured with component `kibana` and resource name `agentbuilder_tool`
+- **THEN** `Metadata` SHALL set the type name to `<provider_type_name>_kibana_agentbuilder_tool`
 
 #### Scenario: APM resource type name uses the APM namespace
 - **WHEN** a resource core is configured with component `apm` and resource name `agent_configuration`
