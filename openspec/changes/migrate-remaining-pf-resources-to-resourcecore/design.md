@@ -55,7 +55,7 @@ The existing `internal/resourcecore` unit and conformance tests already protect 
 
 ## Migration Plan
 
-1. Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and separate compatible resources from outliers.
+1. Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and separate compatible resources from outliers. **Task 1 output:** see [`resource-inventory.md`](./resource-inventory.md). **Follow-up:** every non-pilot Elasticsearch Plugin Framework resource today assigns the client factory even when conversion diagnostics fail; those are out of scope for mechanical `resourcecore` migration until `Configure` semantics align with the core (or a deliberate behavior change is approved).
 2. Convert compatible resources to embed `*resourcecore.Core`, initialize the core in constructors, and replace direct client-field usage with `Client()`.
 3. Keep explicit `ImportState`, schema, CRUD, and state-upgrade methods unchanged for every converted resource.
 4. Add the provider-package registry test for `provider/plugin_framework.go`, then run targeted tests for `./internal/resourcecore/...` and representative migrated packages that cover passthrough import, custom import, and no-import resource shapes.

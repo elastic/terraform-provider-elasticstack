@@ -1,7 +1,7 @@
 ## 1. Audit rollout scope
 
-- [ ] 1.1 Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and classify them as compatible or out-of-scope based on current `resourcecore` semantics.
-- [ ] 1.2 Record the component namespace, literal resource-name suffix, and import shape for each compatible resource so the migration preserves existing Terraform type names and import behavior.
+- [x] 1.1 Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and classify them as compatible or out-of-scope based on current `resourcecore` semantics.
+- [x] 1.2 Record the component namespace, literal resource-name suffix, and import shape for each compatible resource so the migration preserves existing Terraform type names and import behavior.
 
 ## 2. Migrate compatible resources
 
