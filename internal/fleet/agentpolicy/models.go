@@ -101,7 +101,17 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.ID = types.StringValue(data.Id)
 	model.PolicyID = types.StringValue(data.Id)
 	model.DataOutputID = types.StringPointerValue(data.DataOutputId)
-	model.Description = types.StringPointerValue(data.Description)
+	// The Fleet API normalizes an omitted description to an empty string in
+	// its response body. When the user's plan omits description (null), that
+	// empty string would be written to state and trigger "Provider produced
+	// inconsistent result after apply: was null, but now cty.StringVal("")".
+	// Treat an API empty-string as equivalent to null when the configured
+	// value is already null. See https://github.com/elastic/terraform-provider-elasticstack/issues/993.
+	if data.Description != nil && *data.Description == "" && model.Description.IsNull() {
+		// preserve null to match the plan; Kibana treats null and "" as equivalent for description
+	} else {
+		model.Description = types.StringPointerValue(data.Description)
+	}
 	model.DownloadSourceID = types.StringPointerValue(data.DownloadSourceId)
 	model.FleetServerHostID = types.StringPointerValue(data.FleetServerHostId)
 
