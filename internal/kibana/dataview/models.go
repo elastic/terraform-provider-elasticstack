@@ -31,6 +31,41 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// filterFieldAttrs drops entries that Kibana populated on its own (server-side
+// popularity statistics — `count` with no user-provided `custom_label`) unless
+// they are already tracked in Terraform state. Without this filter, interacting
+// with a data view in Kibana Discover silently produces drift that triggers a
+// whole-resource replacement because `field_attrs` carries RequiresReplace.
+// See https://github.com/elastic/terraform-provider-elasticstack/issues/1287.
+func filterFieldAttrs(apiAttrs map[string]kbapi.DataViewsFieldattrs, priorState types.Map) map[string]kbapi.DataViewsFieldattrs {
+	if len(apiAttrs) == 0 {
+		return apiAttrs
+	}
+	// Build a quick lookup of field names already present in state so we do not
+	// drop entries the user *did* configure — even ones where custom_label
+	// happens to be nil at the moment.
+	priorFields := map[string]struct{}{}
+	if typeutils.IsKnown(priorState) {
+		for name := range priorState.Elements() {
+			priorFields[name] = struct{}{}
+		}
+	}
+
+	filtered := make(map[string]kbapi.DataViewsFieldattrs, len(apiAttrs))
+	for name, attrs := range apiAttrs {
+		if attrs.CustomLabel != nil {
+			filtered[name] = attrs
+			continue
+		}
+		if _, inPrior := priorFields[name]; inPrior {
+			filtered[name] = attrs
+			continue
+		}
+		// Server-only entry (count-only, not previously configured) → drop.
+	}
+	return filtered
+}
+
 func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject, spaceID string) diag.Diagnostics {
 	if data == nil {
 		return nil
@@ -118,7 +153,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 							return item.Value
 						})),
 				FieldAttributes: semanticEqualEmptyMap(dvInner.FieldAttributes,
-					typeutils.MapToMapType(ctx, schemautil.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
+					typeutils.MapToMapType(ctx, filterFieldAttrs(schemautil.Deref(item.FieldAttrs), dvInner.FieldAttributes), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
 						func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
 							return fieldAttrModel{
 								CustomLabel: types.StringPointerValue(item.CustomLabel),
