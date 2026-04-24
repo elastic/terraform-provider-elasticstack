@@ -20,7 +20,7 @@ package script
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,21 +31,13 @@ var _ resource.ResourceWithConfigure = &scriptResource{}
 var _ resource.ResourceWithImportState = &scriptResource{}
 
 func NewScriptResource() resource.Resource {
-	return &scriptResource{}
+	return &scriptResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "script"),
+	}
 }
 
 type scriptResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *scriptResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_script"
-}
-
-func (r *scriptResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *scriptResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

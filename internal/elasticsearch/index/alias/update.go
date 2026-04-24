@@ -44,7 +44,7 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	aliasName := planModel.Name.ValueString()
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

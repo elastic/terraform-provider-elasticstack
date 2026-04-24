@@ -49,7 +49,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

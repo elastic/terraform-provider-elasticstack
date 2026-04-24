@@ -33,7 +33,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return

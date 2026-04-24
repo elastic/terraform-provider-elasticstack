@@ -43,7 +43,7 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

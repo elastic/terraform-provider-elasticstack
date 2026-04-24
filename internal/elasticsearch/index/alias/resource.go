@@ -20,7 +20,7 @@ package alias
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,21 +32,13 @@ var _ resource.ResourceWithImportState = &aliasResource{}
 var _ resource.ResourceWithValidateConfig = &aliasResource{}
 
 func NewAliasResource() resource.Resource {
-	return &aliasResource{}
+	return &aliasResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index_alias"),
+	}
 }
 
 type aliasResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *aliasResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_index_alias"
-}
-
-func (r *aliasResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *aliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -20,27 +20,19 @@ package datafeedstate
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func NewMLDatafeedStateResource() resource.Resource {
-	return &mlDatafeedStateResource{}
+	return &mlDatafeedStateResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_datafeed_state"),
+	}
 }
 
 type mlDatafeedStateResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *mlDatafeedStateResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_datafeed_state"
-}
-
-func (r *mlDatafeedStateResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *mlDatafeedStateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

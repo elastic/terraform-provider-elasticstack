@@ -34,7 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
@@ -44,21 +44,13 @@ var _ resource.ResourceWithConfigure = &enrichPolicyResource{}
 var _ resource.ResourceWithImportState = &enrichPolicyResource{}
 
 func NewEnrichPolicyResource() resource.Resource {
-	return &enrichPolicyResource{}
+	return &enrichPolicyResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "enrich_policy"),
+	}
 }
 
 type enrichPolicyResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *enrichPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_enrich_policy"
-}
-
-func (r *enrichPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {

@@ -35,7 +35,7 @@ func (r *inferenceEndpointResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	client, clientDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(clientDiags...)
 	if resp.Diagnostics.HasError() {
 		return

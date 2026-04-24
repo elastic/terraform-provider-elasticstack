@@ -40,7 +40,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 
 	roleMappingName := data.Name.ValueString()
 
-	client, frameworkDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, frameworkDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(frameworkDiags...)
 	if diags.HasError() {
 		return diags

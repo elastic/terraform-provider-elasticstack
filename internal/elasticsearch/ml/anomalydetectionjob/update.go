@@ -76,7 +76,7 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

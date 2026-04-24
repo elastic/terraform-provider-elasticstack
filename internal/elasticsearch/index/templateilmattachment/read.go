@@ -48,7 +48,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

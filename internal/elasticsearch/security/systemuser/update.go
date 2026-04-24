@@ -40,7 +40,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	usernameID := data.Username.ValueString()
-	client, connDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags

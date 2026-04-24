@@ -38,7 +38,7 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 	jobID := job.JobID.ValueString()
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
 
-	client, connDiags := r.client.GetElasticsearchClient(ctx, job.ElasticsearchConnection)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, job.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return false, diags

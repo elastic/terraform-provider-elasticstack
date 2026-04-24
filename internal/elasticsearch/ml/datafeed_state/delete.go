@@ -35,7 +35,7 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	client, fwDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, fwDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return

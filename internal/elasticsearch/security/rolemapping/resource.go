@@ -20,7 +20,7 @@ package rolemapping
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,21 +31,13 @@ var _ resource.ResourceWithConfigure = &roleMappingResource{}
 var _ resource.ResourceWithImportState = &roleMappingResource{}
 
 func NewRoleMappingResource() resource.Resource {
-	return &roleMappingResource{}
+	return &roleMappingResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role_mapping"),
+	}
 }
 
 type roleMappingResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *roleMappingResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_security_role_mapping"
-}
-
-func (r *roleMappingResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *roleMappingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

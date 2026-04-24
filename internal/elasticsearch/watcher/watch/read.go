@@ -55,7 +55,7 @@ func (r *watchResource) read(ctx context.Context, data Data) (*Data, diag.Diagno
 		return nil, diags
 	}
 
-	client, clientDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return nil, diags

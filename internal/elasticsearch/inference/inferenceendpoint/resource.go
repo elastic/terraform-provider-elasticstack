@@ -20,7 +20,7 @@ package inferenceendpoint
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,21 +32,13 @@ var (
 )
 
 func NewInferenceEndpointResource() resource.Resource {
-	return &inferenceEndpointResource{}
+	return &inferenceEndpointResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "inference_endpoint"),
+	}
 }
 
 type inferenceEndpointResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *inferenceEndpointResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_inference_endpoint"
-}
-
-func (r *inferenceEndpointResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *inferenceEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

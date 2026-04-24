@@ -40,7 +40,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 	policyName := compID.ResourceID
 
-	client, diags := r.client.GetElasticsearchClient(ctx, prior.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, prior.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

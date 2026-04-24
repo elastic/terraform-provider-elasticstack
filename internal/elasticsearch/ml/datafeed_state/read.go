@@ -50,7 +50,7 @@ func (r *mlDatafeedStateResource) Read(ctx context.Context, req resource.ReadReq
 }
 
 func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
-	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return nil, diags
 	}

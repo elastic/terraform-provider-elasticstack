@@ -45,7 +45,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	roleID := data.Name.ValueString()
-	client, clientDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags

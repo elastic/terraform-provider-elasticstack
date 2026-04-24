@@ -22,27 +22,20 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func NewDatafeedResource() resource.Resource {
-	return &datafeedResource{}
+	return &datafeedResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_datafeed"),
+	}
 }
 
 type datafeedResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *datafeedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_datafeed"
-}
-
-func (r *datafeedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+	*resourcecore.Core
 }
 
 func (r *datafeedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -81,7 +74,7 @@ func (r *datafeedResource) Delete(ctx context.Context, req resource.DeleteReques
 
 // resourceReady checks if the client is ready for API calls
 func (r *datafeedResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.client == nil {
+	if r.Client() == nil {
 		diags.AddError("Client not configured", "Provider client is not configured")
 		return false
 	}

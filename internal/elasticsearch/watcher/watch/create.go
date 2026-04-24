@@ -34,7 +34,7 @@ func (r *watchResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +81,7 @@ func (r *watchResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
