@@ -23,7 +23,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +42,13 @@ func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
 			want:         "elasticstack_elasticsearch_ml_job_state",
 		},
 		{
-			name:         "kibana",
+			name:         "kibana_spec_agent_builder_tool",
+			component:    ComponentKibana,
+			resourceName: "agent_builder_tool",
+			want:         "elasticstack_kibana_agent_builder_tool",
+		},
+		{
+			name:         "kibana_legacy_pilot_agentbuilder_tool",
 			component:    ComponentKibana,
 			resourceName: "agentbuilder_tool",
 			want:         "elasticstack_kibana_agentbuilder_tool",
@@ -99,30 +104,51 @@ func (r *embedCoreTestResource) Schema(_ context.Context, _ resource.SchemaReque
 	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{}}
 }
 
-func (r *embedCoreTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse)   {}
-func (r *embedCoreTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
-func (r *embedCoreTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
-func (r *embedCoreTestResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+func (r *embedCoreTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+}
+func (r *embedCoreTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedCoreTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+}
+func (r *embedCoreTestResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+}
 
 func (r *embedCoreWithImport) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{}}
 }
 
-func (r *embedCoreWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse)   {}
-func (r *embedCoreWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
-func (r *embedCoreWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
-func (r *embedCoreWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+func (r *embedCoreWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+}
+func (r *embedCoreWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedCoreWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+}
+func (r *embedCoreWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+}
 
 func (r *embedCoreWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
 }
 
-func TestEmbedCore_satisfiesConfigureButNotImportState(t *testing.T) {
-	r := &embedCoreTestResource{Core: New(ComponentElasticsearch, "x")}
-	anyR := any(r)
+func TestEmbedCore_importStateAndConfigure(t *testing.T) {
+	t.Run("no_explicit_import", func(t *testing.T) {
+		t.Parallel()
+		r := &embedCoreTestResource{Core: New(ComponentElasticsearch, "x")}
+		anyR := any(r)
 
-	_, okImp := anyR.(resource.ResourceWithImportState)
-	assert.False(t, okImp, "Core must not promote ImportState onto embedders (accidental importability)")
+		_, okCfg := anyR.(resource.ResourceWithConfigure)
+		require.True(t, okCfg, "embedded Core should allow ResourceWithConfigure via promoted Configure")
 
-	_, okCfg := anyR.(resource.ResourceWithConfigure)
-	assert.True(t, okCfg, "embedded Core should still allow ResourceWithConfigure via promoted Configure")
+		_, okImp := anyR.(resource.ResourceWithImportState)
+		require.False(t, okImp, "Core must not promote ImportState (accidental importability)")
+	})
+
+	t.Run("explicit_custom_import", func(t *testing.T) {
+		t.Parallel()
+		r := &embedCoreWithImport{Core: New(ComponentKibana, "agentbuilder_tool")}
+		anyR := any(r)
+
+		_, okImp := anyR.(resource.ResourceWithImportState)
+		require.True(t, okImp, "ImportState on the concrete type must still satisfy ResourceWithImportState when Core has none")
+
+		_, okCfg := anyR.(resource.ResourceWithConfigure)
+		require.True(t, okCfg, "concrete type with import should still implement ResourceWithConfigure")
+	})
 }
