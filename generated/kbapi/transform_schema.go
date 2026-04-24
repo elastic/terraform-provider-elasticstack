@@ -886,6 +886,22 @@ func transformKibanaPaths(schema *Schema) {
 		"responses.200.content.application/json.schema",
 		Map{"$ref": "#/components/schemas/Synthetics_getPrivateLocation"},
 	)
+	syntheticsPrivateLocationsPath.Post.Set(
+		"requestBody.content.application/json.schema.properties.geo.properties.lat.format",
+		"double",
+	)
+	syntheticsPrivateLocationsPath.Post.Set(
+		"requestBody.content.application/json.schema.properties.geo.properties.lon.format",
+		"double",
+	)
+	schema.Components.Set(
+		"schemas.Synthetics_getPrivateLocation.properties.geo.properties.lat.format",
+		"double",
+	)
+	schema.Components.Set(
+		"schemas.Synthetics_getPrivateLocation.properties.geo.properties.lon.format",
+		"double",
+	)
 
 	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
@@ -1545,8 +1561,8 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 	schema.Components.Set("schemas.geo_pos", Map{
 		"additionalProperties": false,
 		"properties": Map{
-			"lat": Map{"type": "number"},
-			"lon": Map{"type": "number"},
+			"lat": Map{"format": "double", "type": "number"},
+			"lon": Map{"format": "double", "type": "number"},
 		},
 		"type": "object",
 	})

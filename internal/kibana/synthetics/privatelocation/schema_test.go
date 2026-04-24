@@ -36,7 +36,7 @@ func Test_roundtrip(t *testing.T) {
 		label         string
 		agentPolicyID string
 		tags          []string
-		geo           *struct{ Lat, Lon float32 }
+		geo           *struct{ Lat, Lon float64 }
 		wantTags      []string
 		wantGeoNil    bool
 	}{
@@ -54,7 +54,7 @@ func Test_roundtrip(t *testing.T) {
 			label:         "label-2",
 			agentPolicyID: "agent-policy-id-2",
 			tags:          []string{"tag-1", "tag-2", "tag-3"},
-			geo:           &struct{ Lat, Lon float32 }{Lat: 43.2, Lon: 23.1},
+			geo:           &struct{ Lat, Lon float64 }{Lat: 43.2, Lon: 23.1},
 			wantTags:      []string{"tag-1", "tag-2", "tag-3"},
 		},
 		{
@@ -73,7 +73,7 @@ func Test_roundtrip(t *testing.T) {
 			spaceID:       "",
 			label:         "label-4",
 			agentPolicyID: "agent-policy-id-4",
-			geo:           &struct{ Lat, Lon float32 }{Lat: 43.2, Lon: 23.1},
+			geo:           &struct{ Lat, Lon float64 }{Lat: 43.2, Lon: 23.1},
 		},
 	}
 	for _, tt := range tests {
@@ -146,7 +146,7 @@ func Test_privateLocationFromAPI_tags(t *testing.T) {
 	assert.Equal(t, "region:us-east", model.Tags[1].ValueString())
 }
 
-// Test_privateLocationFromAPI_geo verifies that geo coordinates round-trip within float32 precision.
+// Test_privateLocationFromAPI_geo verifies that geo coordinates round-trip through the generated client model.
 func Test_privateLocationFromAPI_geo(t *testing.T) {
 	jsonPayload := `{
 		"id": "geo-loc",
@@ -161,9 +161,8 @@ func Test_privateLocationFromAPI_geo(t *testing.T) {
 	model := privateLocationFromAPI(loc, "", types.List{})
 
 	require.NotNil(t, model.Geo)
-	// float32 precision: accept up to ~0.001 delta
-	assert.InDelta(t, 48.8566, model.Geo.Lat.ValueFloat64(), 0.001)
-	assert.InDelta(t, 2.3522, model.Geo.Lon.ValueFloat64(), 0.001)
+	assert.InDelta(t, 48.8566, model.Geo.Lat.ValueFloat64(), 1e-9)
+	assert.InDelta(t, 2.3522, model.Geo.Lon.ValueFloat64(), 1e-9)
 	assert.Empty(t, model.Tags)
 }
 
@@ -187,8 +186,8 @@ func Test_privateLocationFromAPI_tagsAndGeo(t *testing.T) {
 	assert.Equal(t, "a", model.Tags[0].ValueString())
 	assert.Equal(t, "b", model.Tags[1].ValueString())
 	require.NotNil(t, model.Geo)
-	assert.InDelta(t, 10.5, model.Geo.Lat.ValueFloat64(), 0.001)
-	assert.InDelta(t, -20.3, model.Geo.Lon.ValueFloat64(), 0.001)
+	assert.InDelta(t, 10.5, model.Geo.Lat.ValueFloat64(), 1e-9)
+	assert.InDelta(t, -20.3, model.Geo.Lon.ValueFloat64(), 1e-9)
 }
 
 // Test_normalizePostResponse verifies that a POST response body (map[string]interface{}) can be
@@ -220,6 +219,6 @@ func Test_normalizePostResponse(t *testing.T) {
 	assert.Equal(t, "fresh", tags[1])
 
 	require.NotNil(t, loc.Geo)
-	assert.InDelta(t, 51.5074, float64(loc.Geo.Lat), 0.001)
-	assert.InDelta(t, -0.1278, float64(loc.Geo.Lon), 0.001)
+	assert.InDelta(t, 51.5074, loc.Geo.Lat, 1e-9)
+	assert.InDelta(t, -0.1278, loc.Geo.Lon, 1e-9)
 }
