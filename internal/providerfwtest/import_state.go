@@ -80,7 +80,7 @@ func zeroTerraformValue(typ tftypes.Type) (tftypes.Value, error) {
 	case tftypes.Set:
 		return tftypes.NewValue(t, nil), nil
 	case tftypes.Map:
-		return tftypes.NewValue(t, map[string]tftypes.Value{}), nil
+		return tftypes.NewValue(t, nil), nil
 	default:
 		if typ.Is(tftypes.String) || typ.Is(tftypes.Number) || typ.Is(tftypes.Bool) || typ.Is(tftypes.DynamicPseudoType) {
 			return tftypes.NewValue(typ, nil), nil
