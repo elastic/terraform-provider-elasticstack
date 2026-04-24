@@ -161,6 +161,9 @@ func waitForInstalledCustomIntegration(ctx context.Context, fleetClient *fleet.C
 		if pkg != nil && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			return true, nil
 		}
+		if pkg != nil && pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
+			return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
+		}
 
 		packages, diags := fleet.GetPackages(ctx, fleetClient, true, spaceID)
 		if diags.HasError() {
@@ -172,6 +175,9 @@ func waitForInstalledCustomIntegration(ctx context.Context, fleetClient *fleet.C
 			}
 			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "installed") {
 				return true, nil
+			}
+			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "install_failed") {
+				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
 			}
 		}
 
