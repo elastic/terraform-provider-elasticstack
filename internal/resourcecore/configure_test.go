@@ -29,6 +29,7 @@ import (
 func TestCore_Configure(t *testing.T) {
 	ctx := context.Background()
 
+	// ProviderData is an untyped nil interface: conversion succeeds and assigns nil.
 	t.Run("nil_provider_data_stores_nil_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
@@ -48,6 +49,23 @@ func TestCore_Configure(t *testing.T) {
 		require.Same(t, f, c.Client())
 	})
 
+	// After a non-nil factory is stored, ProviderData that converts with no error
+	// replaces it: untyped nil succeeds and clears the stored factory (delta spec).
+	t.Run("success_then_untyped_nil_provider_data_replaces_with_nil_client", func(t *testing.T) {
+		t.Parallel()
+		c := New(ComponentElasticsearch, "x")
+		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
+		var first resource.ConfigureResponse
+		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &first)
+		require.False(t, first.Diagnostics.HasError())
+		require.Same(t, f, c.Client())
+
+		var second resource.ConfigureResponse
+		c.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &second)
+		require.False(t, second.Diagnostics.HasError())
+		require.Nil(t, c.Client())
+	})
+
 	t.Run("invalid_provider_data_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
@@ -63,7 +81,11 @@ func TestCore_Configure(t *testing.T) {
 		require.Same(t, f, c.Client(), "client must stay the last successful assignment")
 	})
 
-	t.Run("nil_typed_factory_value_leaves_prior_client", func(t *testing.T) {
+	// Typed *ProviderClientFactory nil is not the same as an untyped nil interface:
+	// ConvertProviderDataToFactory treats the former as "set but invalid" and errors,
+	// distinct from the untyped nil success path in nil_provider_data_stores_nil_client
+	// and success_then_untyped_nil_provider_data_replaces_with_nil_client.
+	t.Run("typed_nil_factory_pointer_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
 		c := New(ComponentElasticsearch, "x")
 		f := clients.NewTestProviderClientFactoryForResourceUnitTests(t)
