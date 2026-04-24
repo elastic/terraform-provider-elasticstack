@@ -56,20 +56,19 @@ The generated response type (`PostFleetEpmPackagesResponse`) has only `Body []by
 
 **Rationale**: The Fleet API accepts both. Extension-based detection is simple and sufficient; users building packages with `elastic-package` always produce standard zip files.
 
-### 6. AlreadyInstalled signal and zip manifest fallback
+### 6. Upload response parsing and manifest fallback
 
-**Decision**: When the Fleet API returns a non-2xx response containing "already installed" (which happens on Kibana 8.0.x when re-uploading a package that is already installed), `UploadPackage` returns `AlreadyInstalled: true` plus the package name and version parsed from the zip manifest. The caller (Update handler) then uninstalls and retries the upload.
+**Decision**: `UploadPackage` treats the upload response as the first source of package identity and uses the archive manifest only as a fallback when the response omits the package name or version. The upload operation then verifies the result by querying the packages list API, and if that does not yield a match but a concrete version is known, it checks the package info API for that exact name/version pair. The provider returns an error if neither verification path confirms the package.
 
-**Rationale**: Kibana 8.0.x rejects re-uploads of the same package when it is already installed. Detecting this via the response body and returning a structured signal (rather than a hard error) lets the Update handler implement the "uninstall-and-retry" pattern without treating the response as an unrecoverable failure.
+**Rationale**: On supported Kibana versions (8.2+), the provider should only persist state after Fleet exposes the uploaded package through a verifiable Fleet read API. The packages list is the primary source, but the exact package info API is still useful as a narrower secondary check when the upload response or manifest already identified a concrete version. Falling back to guessed identity/version data without either read API confirming the package weakens verification and can mask installation or visibility problems.
 
-**Zip manifest parsing**: The name and version are parsed from `manifest.yml` inside the zip (the file at `<pkgName>-<pkgVersion>/manifest.yml`). This is used both as a fallback for the `AlreadyInstalled` case (where the normal `GetPackages` path cannot be used) and as a fallback when the upload response body does not contain name/version fields (older Kibana versions).
+**Zip manifest parsing**: The name and version are parsed from `manifest.yml` inside the archive as a fallback when the upload response body does not contain one or both fields.
 
 **Response body parsing across versions**: The upload response field for name and version changed across Kibana versions:
 - `_meta.name` / `_meta.version` — Kibana 8.8+
 - `items[0].name` / `items[0].version` — Kibana 8.0–8.7
-- `response[0].name` / `response[0].version` — Kibana 7.x
 
-The implementation tries all three paths in order. If none yields a package name, it falls back to parsing the zip manifest directly. If the manifest parse also fails, an error is returned. If a name was obtained from the response but no version was found, only the version is filled from the manifest.
+The implementation tries both paths in order. If neither yields a package name, it falls back to parsing the archive manifest directly. If the manifest parse also fails, an error is returned. If a name was obtained from the response but no version was found, only the version is filled from the manifest before post-upload verification via the packages list and, when possible, the exact package info API.
 
 ### 7. Minimum Kibana version: 8.2.0
 

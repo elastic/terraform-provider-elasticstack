@@ -55,12 +55,18 @@ func (r *customIntegrationResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	if state.PackageName.IsNull() || state.PackageName.IsUnknown() || state.PackageName.ValueString() == "" {
-		tflog.Warn(ctx, "Skipping uninstall: package name is not set in state (Create may have failed before state was written)")
+		resp.Diagnostics.AddError(
+			"Cannot uninstall custom integration package",
+			"skip_destroy is false, but package_name is not set in state. The provider cannot determine which Fleet package to uninstall.",
+		)
 		return
 	}
 
 	if state.PackageVersion.IsNull() || state.PackageVersion.IsUnknown() || state.PackageVersion.ValueString() == "" {
-		tflog.Warn(ctx, "Skipping uninstall: package version is not set in state (Create may have failed before state was written)")
+		resp.Diagnostics.AddError(
+			"Cannot uninstall custom integration package",
+			"skip_destroy is false, but package_version is not set in state. The provider cannot determine which Fleet package version to uninstall.",
+		)
 		return
 	}
 

@@ -810,9 +810,8 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 
 	// Resolve the installed version by querying the package list and filtering by
-	// name and status. GetFleetEpmPackages is the canonical source on newer Kibana
-	// (8.7+). On older Kibana it may not include custom (user-uploaded) packages;
-	// the fallback below handles that case.
+	// name and status. This is the post-upload verification source for the
+	// package version that we persist in state.
 	//
 	// When multiple versions of the same package are listed, pick the highest
 	// semver among entries with status "installed" so that state always tracks the
@@ -851,13 +850,6 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}, nil
 	}
 
-	// GetFleetEpmPackages did not include the package. On older Kibana (< 8.7),
-	// custom-uploaded packages are not listed in the global registry view. Try
-	// the individual GetPackage endpoint as a secondary check; if that also fails
-	// (e.g. 7.17.x returns 404 for custom packages on this endpoint too), fall
-	// back to the version already extracted from the upload response or zip manifest.
-	// The upload returned 200/201, so the package is installed — we trust the
-	// version we have rather than failing the operation.
 	if packageVersion != "" {
 		pkg, pkgDiags := GetPackage(ctx, client, packageName, packageVersion, opts.SpaceID)
 		if !pkgDiags.HasError() && pkg != nil {
@@ -866,18 +858,25 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 				PackageVersion: packageVersion,
 			}, nil
 		}
-		// GetPackage also did not find the package, but the upload succeeded.
-		// Trust the version from the upload response or zip manifest.
-		return &UploadPackageResult{
-			PackageName:    packageName,
-			PackageVersion: packageVersion,
-		}, nil
 	}
+
+	detail := fmt.Sprintf(
+		"Fleet accepted the upload for package %q, but neither the packages list nor the package info API returned a matching installed package.",
+		packageName,
+	)
+	if packageVersion != "" {
+		detail = fmt.Sprintf(
+			"Fleet accepted the upload for package %q and the upload/archive metadata resolved version %q, but neither the packages list nor the package info API returned a matching installed package.",
+			packageName,
+			packageVersion,
+		)
+	}
+	detail += " The provider requires a matching installed package to verify the upload result."
 
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic(
 			"Package not found after upload",
-			"Fleet did not return a package name or version in the upload response and the zip manifest could not be parsed",
+			detail,
 		),
 	}
 }
