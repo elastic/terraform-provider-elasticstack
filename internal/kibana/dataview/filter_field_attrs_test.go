@@ -18,16 +18,10 @@
 package dataview
 
 import (
-	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestFilterFieldAttrs pins the behaviour that resolves
@@ -37,92 +31,66 @@ import (
 // entries as drift, and because `field_attrs` carries `RequiresReplace`,
 // the entire resource (and its `id`) would be rebuilt on the next apply —
 // breaking every dashboard that referenced the prior data-view id.
+//
+// The filter drops entries whose `custom_label` is nil unconditionally, so
+// upgrading the provider also heals state that was polluted by older
+// versions that wrote count-only entries into it.
 func TestFilterFieldAttrs(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
 	str := func(s string) *string { return &s }
 	i64 := func(i int) *int { return &i }
 
-	elemType := getFieldAttrElemType()
-
-	buildPriorState := func(names ...string) types.Map {
-		if len(names) == 0 {
-			return types.MapNull(elemType)
-		}
-		var diags diag.Diagnostics
-		m := make(map[string]fieldAttrModel, len(names))
-		for _, n := range names {
-			m[n] = fieldAttrModel{
-				CustomLabel: types.StringValue("user-configured:" + n),
-				Count:       types.Int64Null(),
-			}
-		}
-		result := typeutils.MapValueFrom(ctx, m, elemType, path.Root("data_view").AtName("field_attrs"), &diags)
-		require.False(t, diags.HasError(), "test setup: %v", diags)
-		return result
-	}
-
 	tests := []struct {
-		name      string
-		api       map[string]kbapi.DataViewsFieldattrs
-		prior     types.Map
-		wantKeys  []string
+		name     string
+		api      map[string]kbapi.DataViewsFieldattrs
+		wantKeys []string
 	}{
 		{
-			name:     "empty API returns empty",
-			api:      map[string]kbapi.DataViewsFieldattrs{},
-			prior:    types.MapNull(elemType),
-			wantKeys: nil,
+			name: "empty API returns empty",
+			api:  map[string]kbapi.DataViewsFieldattrs{},
 		},
 		{
-			name:     "nil API returns nil",
-			api:      nil,
-			prior:    types.MapNull(elemType),
-			wantKeys: nil,
+			name: "nil API returns nil",
+			api:  nil,
 		},
 		{
-			name: "server-only count-only entries dropped when not in prior state",
+			name: "server-only count-only entries are dropped",
 			api: map[string]kbapi.DataViewsFieldattrs{
 				"host.hostname": {Count: i64(5)},
 				"event.action":  {Count: i64(12)},
 			},
-			prior:    types.MapNull(elemType),
-			wantKeys: nil,
 		},
 		{
-			name: "entries with custom_label kept even when also count-populated",
+			name: "entries with custom_label are kept, count-only siblings are dropped",
 			api: map[string]kbapi.DataViewsFieldattrs{
 				"message":       {CustomLabel: str("Log Message"), Count: i64(42)},
-				"host.hostname": {Count: i64(5)}, // server-only, no state
+				"host.hostname": {Count: i64(5)},
 			},
-			prior:    types.MapNull(elemType),
 			wantKeys: []string{"message"},
 		},
 		{
-			name: "server entries kept when their key is already in prior state",
-			api: map[string]kbapi.DataViewsFieldattrs{
-				"message":       {CustomLabel: str("Log Message"), Count: i64(42)},
-				"host.hostname": {Count: i64(5)}, // count-only but tracked previously
-			},
-			prior:    buildPriorState("host.hostname"),
-			wantKeys: []string{"message", "host.hostname"},
-		},
-		{
-			name: "all-server entries with empty prior state → empty output",
+			name: "count-only entries are dropped even when they are already in polluted state (self-heals)",
+			// Simulates a refresh after upgrading from an older provider
+			// version that had already pushed these into Terraform state.
 			api: map[string]kbapi.DataViewsFieldattrs{
 				"field.a": {Count: i64(1)},
 				"field.b": {Count: i64(2)},
 				"field.c": {Count: i64(3)},
 			},
-			prior:    buildPriorState(),
-			wantKeys: nil,
+		},
+		{
+			name: "custom_label with nil count is kept (user configured it)",
+			api: map[string]kbapi.DataViewsFieldattrs{
+				"only.label": {CustomLabel: str("Labelled Only")},
+			},
+			wantKeys: []string{"only.label"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := filterFieldAttrs(tc.api, tc.prior)
+			got := filterFieldAttrs(tc.api)
 
 			if len(tc.wantKeys) == 0 {
 				assert.Empty(t, got, "expected filter to drop all entries, got %v", got)
