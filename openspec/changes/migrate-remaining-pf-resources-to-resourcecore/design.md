@@ -2,7 +2,7 @@
 
 `internal/resourcecore` already defines the provider-wide Plugin Framework resource wiring for Terraform type-name construction, provider-data conversion, and client-factory storage. The first rollout intentionally stopped at four pilot resources so the team could validate promoted-method behavior, import boundaries, and readability before widening adoption.
 
-Issue [#2454](https://github.com/elastic/terraform-provider-elasticstack/issues/2454) shows that many remaining Plugin Framework resources still duplicate the same `Configure` and `Metadata` bodies that `resourcecore` was created to own. Most of that duplication is in Fleet and Kibana resources whose `Configure` behavior already matches the canonical early-return semantics in `resourcecore`. Some other Plugin Framework resources still differ slightly, such as assigning the converted client even when diagnostics are present, so this change needs an explicit compatibility boundary instead of assuming every Plugin Framework resource can be migrated mechanically.
+Issue [#2454](https://github.com/elastic/terraform-provider-elasticstack/issues/2454) shows that many remaining Plugin Framework resources still duplicate the same `Configure` and `Metadata` bodies that `resourcecore` was created to own. Most of that duplication is in Fleet and Kibana resources whose `Configure` behavior already matches the canonical early-return semantics in `resourcecore`. For this change, **one** additional bootstrap mismatch is explicitly in scope: assigning the converted factory **before** returning when conversion diagnostics are present (instead of `resourcecore`’s early return without replacing the stored factory). Resources that have **other** `Configure` side effects—**notably** `elasticstack_elasticsearch_security_api_key`, which mutates package-level `configuredResources`—remain **out of scope** as documented in [`resource-inventory.md`](./resource-inventory.md).
 
 ## Goals / Non-Goals
 
@@ -15,16 +15,16 @@ Issue [#2454](https://github.com/elastic/terraform-provider-elasticstack/issues/
 **Non-Goals:**
 - Changing Terraform resource names, schema shape, import identifiers, or external API behavior.
 - Converting Plugin Framework data sources or SDK resources.
-- Forcing resources with non-canonical `Configure` behavior onto `resourcecore` as part of this change.
+- Migrating Plugin Framework resources whose `Configure` does more than bootstrap wiring and the accepted assign-before-return pattern (see `elasticstack_elasticsearch_security_api_key` in the inventory).
 - Moving CRUD, validation, or state-upgrade logic into `resourcecore`.
 
 ## Decisions
 
-### Scope the rollout to resources already compatible with `resourcecore`
+### Scope the rollout to resources compatible with `resourcecore`, plus an approved `Configure` edge case
 
-This change will migrate resources whose local boilerplate is semantically equivalent to the shared core: they store a `*clients.ProviderClientFactory`, use `clients.ConvertProviderDataToFactory(req.ProviderData)`, append diagnostics, return early on errors, and construct a static Terraform type name from fixed namespace parts. Resources that still have materially different `Configure` behavior will be left for separate follow-up work so the migration remains a refactor rather than a behavior change.
+This change migrates resources whose bootstrap is equivalent to the shared core **or** whose **only** remaining mismatch is assigning the converted factory before returning when conversion diagnostics are present (see [`resource-inventory.md`](./resource-inventory.md)). After migration, those resources use [`Core.Configure`](../../../internal/resourcecore/core.go) (early return without assigning a new factory when errors are present). **`elasticstack_elasticsearch_security_api_key`** is the explicit outlier: its `Configure` also mutates package-level state, so it stays out of scope for this rollout.
 
-**Alternative considered:** migrate every remaining Plugin Framework resource in one pass. Rejected because some packages still differ in `Configure` semantics, and folding those behavior changes into this refactor would make review and rollback substantially harder.
+**Alternative considered:** treat assign-before-return Elasticsearch resources as permanently out of scope. Rejected after scope revision: that single mismatch is accepted so the rollout can remove duplicated bootstrap without tackling unrelated `Configure` side effects.
 
 ### Preserve resource-local import ownership and all non-bootstrap behavior
 
@@ -55,7 +55,7 @@ The existing `internal/resourcecore` unit and conformance tests already protect 
 
 ## Migration Plan
 
-1. Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and separate compatible resources from outliers. **Task 1 output:** see [`resource-inventory.md`](./resource-inventory.md). **Follow-up:** every non-pilot Elasticsearch Plugin Framework resource today assigns the client factory even when conversion diagnostics fail; those are out of scope for mechanical `resourcecore` migration until `Configure` semantics align with the core (or a deliberate behavior change is approved).
+1. Inventory the remaining Plugin Framework resources that still duplicate canonical `client` / `Configure` / `Metadata` wiring and separate compatible resources from outliers. **Task 1 output:** see [`resource-inventory.md`](./resource-inventory.md). **Revised scope:** audited Elasticsearch resources whose only bootstrap mismatch is assign-before-return are migrated in this change; see the inventory for `migrated` vs `out_of_scope` (e.g. `elasticstack_elasticsearch_security_api_key`).
 2. Convert compatible resources to embed `*resourcecore.Core`, initialize the core in constructors, and replace direct client-field usage with `Client()`.
 3. Keep explicit `ImportState`, schema, CRUD, and state-upgrade methods unchanged for every converted resource.
 4. Add the provider-package registry test for `provider/plugin_framework.go`, then run targeted tests for `./internal/resourcecore/...` and representative migrated packages that cover passthrough import, custom import, and no-import resource shapes.
