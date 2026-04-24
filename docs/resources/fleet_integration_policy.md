@@ -102,7 +102,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
-- `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
+- `space_ids` (Set of String) The Kibana space ID where this integration policy lives. Provide at most one element — the Fleet `package_policies` API does not support assigning a package policy to multiple spaces. When set, the space must match the space of the referenced agent policy. When omitted, the policy is created in the default space.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.
 
 The provider injects the '__tf_provider_context' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '__tf_provider_context' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.
