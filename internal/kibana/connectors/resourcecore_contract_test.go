@@ -18,17 +18,20 @@
 package connectors
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResource_embedsResourceCore(t *testing.T) {
 	t.Parallel()
-	_ = newResource()
 	rt := reflect.TypeFor[Resource]()
 	field, ok := rt.FieldByName("Core")
 	require.True(t, ok, "Resource should embed *resourcecore.Core as field Core")
@@ -36,9 +39,23 @@ func TestResource_embedsResourceCore(t *testing.T) {
 	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
 }
 
-func TestResource_customImportStillSatisfiesImportState(t *testing.T) {
+// Custom ImportState copies the import identifier onto id without parsing;
+// multi-segment IDs remain intact (contrast with fleet agent download source).
+func TestResource_importState_setsIDVerbatim(t *testing.T) {
 	t.Parallel()
-	r := newResource()
-	_, ok := any(r).(resource.ResourceWithImportState)
-	require.True(t, ok, "connectors use custom ImportState (set id from import id)")
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const importID = "preconfigured/my-connector"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, importID, id.ValueString())
 }

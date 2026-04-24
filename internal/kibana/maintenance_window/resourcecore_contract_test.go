@@ -18,17 +18,20 @@
 package maintenancewindow
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResource_embedsResourceCore(t *testing.T) {
 	t.Parallel()
-	_ = newResource()
 	rt := reflect.TypeFor[Resource]()
 	field, ok := rt.FieldByName("Core")
 	require.True(t, ok)
@@ -36,9 +39,21 @@ func TestResource_embedsResourceCore(t *testing.T) {
 	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
 }
 
-func TestResource_passthroughImport(t *testing.T) {
+func TestResource_importState_passthroughCompoundID(t *testing.T) {
 	t.Parallel()
-	r := newResource()
-	_, ok := any(r).(resource.ResourceWithImportState)
-	require.True(t, ok, "maintenance window uses ImportStatePassthroughID on id")
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const importID = "default/mw-id-with-slash"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, importID, id.ValueString())
 }

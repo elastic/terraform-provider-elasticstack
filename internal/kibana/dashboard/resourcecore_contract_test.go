@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package alias
+package dashboard
 
 import (
 	"context"
@@ -30,25 +30,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAliasResource_embedsResourceCore(t *testing.T) {
+func TestResource_embedsResourceCore(t *testing.T) {
 	t.Parallel()
-	rt := reflect.TypeFor[aliasResource]()
+	rt := reflect.TypeFor[Resource]()
 	field, ok := rt.FieldByName("Core")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
 	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
 }
 
-func TestAliasResource_importState_passthroughCompoundID(t *testing.T) {
+// Passthrough import keeps the full import identifier on the id attribute,
+// including when it contains a slash (unlike composite custom importers).
+func TestResource_importState_passthroughCompoundID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	r, ok := any(newAliasResource()).(resource.ResourceWithImportState)
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
 	require.True(t, ok)
 	st := providerfwtest.EmptyImportState(t, r)
 	resp := &resource.ImportStateResponse{State: st}
 
-	const importID = "cluster/uuid/alias/name"
+	const importID = "space1/dashboard-uuid-2"
 	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 

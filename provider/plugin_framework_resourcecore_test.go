@@ -30,16 +30,14 @@ import (
 func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 	t.Parallel()
 
-	p := &Provider{version: "test"}
+	// Match the real registration path in (*Provider).Resources, including
+	// experimental resources (same branch as acceptance tests via AccTestVersion).
+	p := &Provider{version: AccTestVersion}
 	ctx := context.Background()
-
-	factories := make([]func() resource.Resource, 0, len(p.resources(ctx))+len(p.experimentalResources(ctx)))
-	factories = append(factories, p.resources(ctx)...)
-	factories = append(factories, p.experimentalResources(ctx)...)
 
 	corePtrType := reflect.TypeFor[*resourcecore.Core]()
 
-	for i, newRes := range factories {
+	for i, newRes := range p.Resources(ctx) {
 		r := newRes()
 		if _, ok := r.(*apikey.Resource); ok {
 			// Out of scope for the resourcecore rollout: Configure mutates package state.
@@ -49,7 +47,28 @@ func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 		if !typeEmbedsCorePtr(rt, corePtrType) {
 			t.Fatalf("resource %d (%s) does not embed *resourcecore.Core", i, rt.String())
 		}
+		if !resourceConstructedWithNonNilCore(r, corePtrType) {
+			t.Fatalf("resource %d (%s) has nil or missing *resourcecore.Core on the constructed value", i, rt.String())
+		}
 	}
+}
+
+func resourceConstructedWithNonNilCore(r resource.Resource, corePtrType reflect.Type) bool {
+	v := reflect.ValueOf(r)
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	f := v.FieldByName("Core")
+	if !f.IsValid() || f.Type() != corePtrType {
+		return false
+	}
+	return !f.IsNil()
 }
 
 func typeEmbedsCorePtr(rt reflect.Type, corePtr reflect.Type) bool {
@@ -60,7 +79,6 @@ func typeEmbedsCorePtr(rt reflect.Type, corePtr reflect.Type) bool {
 		return false
 	}
 	for f := range rt.Fields() {
-		f := f
 		if f.Anonymous && f.Type == corePtr {
 			return true
 		}
