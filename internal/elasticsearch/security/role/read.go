@@ -48,7 +48,7 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(req.State.Set(ctx, readData)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 
 func (r *roleResource) read(ctx context.Context, data Data) (*Data, diag.Diagnostics) {
