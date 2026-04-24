@@ -185,10 +185,21 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 	})
 }
 
+// TestAccResourceIntegration_ExternalChange asserts that out-of-band version
+// changes to an installed Fleet integration package are detected on the next
+// refresh, and that terraform plan surfaces the drift.
+//
+// Regression test for https://github.com/elastic/terraform-provider-elasticstack/issues/1585:
+// Fleet's GET /epm/packages/{name}/{version} returns status "installed"
+// whenever the package is installed at *any* version, so the provider
+// previously did not notice out-of-band upgrades. Read now consults
+// InstallationInfo.Version and records the actually-installed version in
+// state, so plan sees a diff between state and config.
 func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
+			// Step 1: apply tcp@1.16.0 via terraform.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
@@ -198,6 +209,11 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 				),
 			},
+			// Step 2: upgrade tcp to 1.17.0 via the Fleet API (out-of-band).
+			// The next refresh must record the *actually installed* version
+			// (1.17.0) in state, and the resulting plan must be non-empty
+			// because the configured version (1.16.0) no longer matches
+			// state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
@@ -205,8 +221,6 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
 					require.NoError(t, err)
-
-					// Skip the pre-config if the version is not supported
 					if notSupported {
 						return
 					}
@@ -222,36 +236,11 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 					})
 					require.Empty(t, diags)
 				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				PreConfig: func() {
-					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
-					require.NoError(t, err)
-
-					// Skip the pre-config if the version is not supported
-					if notSupported {
-						return
-					}
-
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-
-					fleetClient, err := client.GetFleetClient()
-					require.NoError(t, err)
-
-					diags := fleet.Uninstall(t.Context(), fleetClient, "tcp", "1.16.0", "", true)
-					require.Empty(t, diags)
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
 				),
 			},
 		},
