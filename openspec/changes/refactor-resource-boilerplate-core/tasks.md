@@ -1,9 +1,9 @@
 ## 1. Shared Core
 
-- [ ] 1.1 Add a new provider-wide `internal/resourcecore` package for Plugin Framework resource wiring.
-- [ ] 1.2 Define the typed `Component` constants for `elasticsearch`, `kibana`, `fleet`, and `apm`.
-- [ ] 1.3 Implement the resource core constructor, canonical `Configure`, `Metadata`, and `Client()` accessor.
-- [ ] 1.4 Document in package comments that `Component` is a type-name namespace and that `resourceName` is a literal suffix segment with no normalization.
+- [x] 1.1 Add a new provider-wide `internal/resourcecore` package for Plugin Framework resource wiring.
+- [x] 1.2 Define the typed `Component` constants for `elasticsearch`, `kibana`, `fleet`, and `apm`.
+- [x] 1.3 Implement the resource core constructor, canonical `Configure`, `Metadata`, and `Client()` accessor.
+- [x] 1.4 Document in package comments that `Component` is a type-name namespace and that `resourceName` is a literal suffix segment with no normalization.
 
 ## 2. Safety Coverage
 
