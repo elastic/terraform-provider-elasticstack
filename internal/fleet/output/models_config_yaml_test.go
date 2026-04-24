@@ -20,7 +20,6 @@ package output
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -156,12 +155,10 @@ func TestToAPICreate_OmitConfigYamlWhenNull(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			body := tc.call(t)
-			// Assert the serialized body does not carry config_yaml at all.
-			// Using a string match first for a readable failure; a parsed
-			// check follows to catch escape-sequence surprises.
-			require.NotContains(t, string(body), "config_yaml",
-				"request body unexpectedly contains config_yaml: %s", string(body))
-
+			// Parse the body so the assertion is keyed on the literal
+			// "config_yaml" top-level attribute, not any substring (e.g.
+			// `otel_exporter_config_yaml` would false-trigger a raw-string
+			// Contains check).
 			var parsed map[string]any
 			require.NoError(t, json.Unmarshal(body, &parsed),
 				"body should be valid JSON: %s", string(body))
@@ -184,7 +181,13 @@ func TestToAPICreate_OmitConfigYamlWhenNull(t *testing.T) {
 		require.False(t, diags.HasError())
 		b, err := union.MarshalJSON()
 		require.NoError(t, err)
-		require.True(t, strings.Contains(string(b), "config_yaml"),
-			"config_yaml should be present when set, got: %s", string(b))
+
+		var parsed map[string]any
+		require.NoError(t, json.Unmarshal(b, &parsed),
+			"body should be valid JSON: %s", string(b))
+		got, present := parsed["config_yaml"]
+		require.True(t, present,
+			"config_yaml key should be present when set, got: %s", string(b))
+		assert.Equal(t, "bulk_max_size: 100\n", got)
 	})
 }
