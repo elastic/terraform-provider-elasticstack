@@ -308,6 +308,19 @@ func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
 // req.State (discarded) instead of resp.State (persisted), silently hiding
 // all drift on description, metadata, and other role attributes.
 func TestAccResourceSecurityRoleDetectsOutOfBandDrift(t *testing.T) {
+	// Skip the entire test on stacks that don't support the `description`
+	// role attribute. The step-level SkipFuncs already cover the apply/plan
+	// phases, but the out-of-band PreConfig PUT sends `description` in the
+	// body and would fail with "unexpected field [description]" on older
+	// stacks because PreConfig runs regardless of SkipFunc.
+	notSupported, err := versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion)()
+	if err != nil {
+		t.Fatalf("could not determine server version: %v", err)
+	}
+	if notSupported {
+		t.Skipf("skipping: TestAccResourceSecurityRoleDetectsOutOfBandDrift requires Elastic Stack >= %s (role description support)", role.MinSupportedDescriptionVersion)
+	}
+
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
