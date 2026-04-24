@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"testing"
 
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -39,10 +38,6 @@ func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 
 	for _, newRes := range p.Resources(ctx) {
 		r := newRes()
-		if _, ok := r.(*apikey.Resource); ok {
-			// Out of scope for the resourcecore rollout: Configure mutates package state.
-			continue
-		}
 		rt := reflect.TypeOf(r)
 		if !typeEmbedsCorePtr(rt, corePtrType) {
 			t.Fatalf("resource %T does not embed *resourcecore.Core", r)

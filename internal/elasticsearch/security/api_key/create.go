@@ -100,7 +100,7 @@ func (r Resource) buildAPIModel(ctx context.Context, model tfModel) (models.APIK
 }
 
 func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
-	client, diags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -115,7 +115,7 @@ func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Conte
 }
 
 func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
-	client, diags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -130,7 +130,7 @@ func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Contex
 }
 
 func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}
@@ -182,7 +182,7 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfMo
 }
 
 func (r *Resource) createAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}

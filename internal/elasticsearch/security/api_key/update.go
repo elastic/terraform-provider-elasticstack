@@ -54,7 +54,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 }
 
 func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}
@@ -71,7 +71,7 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 }
 
 func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	if diags.HasError() {
 		return diags
 	}

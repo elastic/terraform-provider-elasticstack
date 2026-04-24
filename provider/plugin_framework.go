@@ -172,7 +172,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		privatelocation.NewResource,
 		index.NewResource,
 		monitor.NewResource,
-		func() resource.Resource { return &apikey.Resource{} },
+		apikey.NewResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
 		connectors.NewResource,
