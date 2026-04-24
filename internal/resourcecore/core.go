@@ -53,13 +53,14 @@ func New(component Component, resourceName string) *Core {
 }
 
 // Configure implements [resource.ResourceWithConfigure], converting provider
-// data with [clients.ConvertProviderDataToFactory], appending diagnostics, and
-// storing the factory only when conversion succeeds with no error diagnostics.
+// data with [clients.ConvertProviderDataToFactory] and appending diagnostics. If
+// the response has error diagnostics, it returns without assigning a new factory,
+// leaving any prior successful client unchanged (same pattern as resources such
+// as fleet integration and kibana agent builder tool).
 func (c *Core) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		c.client = nil
 		return
 	}
 	c.client = factory
@@ -71,9 +72,8 @@ func (c *Core) Metadata(_ context.Context, req resource.MetadataRequest, resp *r
 	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, c.component, c.resourceName)
 }
 
-// Client returns the client factory from the last successful [Core.Configure], or
-// nil if not yet configured, if configuration failed, or if a later reconfigure
-// failed (the stored factory is cleared when Configure reports error diagnostics).
+// Client returns the client factory from the last successful [Core.Configure]
+// assignment, or nil if none has been stored yet.
 func (c *Core) Client() *clients.ProviderClientFactory {
 	return c.client
 }
