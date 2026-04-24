@@ -37,7 +37,7 @@ func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 
 	corePtrType := reflect.TypeFor[*resourcecore.Core]()
 
-	for i, newRes := range p.Resources(ctx) {
+	for _, newRes := range p.Resources(ctx) {
 		r := newRes()
 		if _, ok := r.(*apikey.Resource); ok {
 			// Out of scope for the resourcecore rollout: Configure mutates package state.
@@ -45,10 +45,10 @@ func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 		}
 		rt := reflect.TypeOf(r)
 		if !typeEmbedsCorePtr(rt, corePtrType) {
-			t.Fatalf("resource %d (%s) does not embed *resourcecore.Core", i, rt.String())
+			t.Fatalf("resource %T does not embed *resourcecore.Core", r)
 		}
 		if !resourceConstructedWithNonNilCore(r, corePtrType) {
-			t.Fatalf("resource %d (%s) has nil or missing *resourcecore.Core on the constructed value", i, rt.String())
+			t.Fatalf("resource %T has nil or missing *resourcecore.Core on the constructed value", r)
 		}
 	}
 }
