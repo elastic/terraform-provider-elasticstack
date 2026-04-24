@@ -46,7 +46,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
 	respDiags.Append(apiClientDiags...)
 	if respDiags.HasError() {
 		return

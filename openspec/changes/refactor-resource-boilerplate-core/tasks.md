@@ -13,10 +13,10 @@
 
 ## 3. Trial Rollout
 
-- [ ] 3.1 Convert `internal/elasticsearch/ml/jobstate` to embed the shared core while preserving its existing import behavior and type name.
-- [ ] 3.2 Convert `internal/kibana/agentbuildertool` to embed the shared core while preserving its current `kibana_agentbuilder_tool` type-name suffix.
-- [ ] 3.3 Convert `internal/fleet/integration` to embed the shared core without adding import support or altering upgrade-state behavior.
-- [ ] 3.4 Convert `internal/apm/agent_configuration` to embed the shared core using the new `apm` component while preserving its Kibana-backed API logic.
+- [x] 3.1 Convert `internal/elasticsearch/ml/jobstate` to embed the shared core while preserving its existing import behavior and type name.
+- [x] 3.2 Convert `internal/kibana/agentbuildertool` to embed the shared core while preserving its current `kibana_agentbuilder_tool` type-name suffix.
+- [x] 3.3 Convert `internal/fleet/integration` to embed the shared core without adding import support or altering upgrade-state behavior.
+- [x] 3.4 Convert `internal/apm/agent_configuration` to embed the shared core using the new `apm` component while preserving its Kibana-backed API logic.
 
 ## 4. Verification
 
