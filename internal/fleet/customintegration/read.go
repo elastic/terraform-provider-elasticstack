@@ -41,7 +41,7 @@ func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

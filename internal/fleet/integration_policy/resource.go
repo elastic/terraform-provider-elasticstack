@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -46,24 +47,13 @@ var (
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &integrationPolicyResource{}
+	return &integrationPolicyResource{
+		Core: resourcecore.New(resourcecore.ComponentFleet, "integration_policy"),
+	}
 }
 
 type integrationPolicyResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *integrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *integrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_integration_policy")
+	*resourcecore.Core
 }
 
 func (r *integrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

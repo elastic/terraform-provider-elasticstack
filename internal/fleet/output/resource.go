@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -40,24 +40,13 @@ var MinVersionOutputKafka = version.Must(version.NewVersion("8.13.0"))
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &outputResource{}
+	return &outputResource{
+		Core: resourcecore.New(resourcecore.ComponentFleet, "output"),
+	}
 }
 
 type outputResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *outputResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_output")
+	*resourcecore.Core
 }
 
 func (r *outputResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

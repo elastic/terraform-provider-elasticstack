@@ -19,9 +19,8 @@ package serverhost
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -34,24 +33,13 @@ var (
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &serverHostResource{}
+	return &serverHostResource{
+		Core: resourcecore.New(resourcecore.ComponentFleet, "server_host"),
+	}
 }
 
 type serverHostResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *serverHostResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *serverHostResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_server_host")
+	*resourcecore.Core
 }
 
 func (r *serverHostResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

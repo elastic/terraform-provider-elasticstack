@@ -42,7 +42,7 @@ func (r *customIntegrationResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

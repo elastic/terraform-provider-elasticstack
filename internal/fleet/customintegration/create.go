@@ -49,7 +49,7 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

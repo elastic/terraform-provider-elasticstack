@@ -34,7 +34,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
 	resp.Diagnostics.Append(apiClientDiags...)
 	if resp.Diagnostics.HasError() {
 		return

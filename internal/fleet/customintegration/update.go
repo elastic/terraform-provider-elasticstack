@@ -55,7 +55,7 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	apiClient, diags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

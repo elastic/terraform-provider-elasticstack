@@ -19,10 +19,10 @@ package agentpolicy
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -49,24 +49,13 @@ var (
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &agentPolicyResource{}
+	return &agentPolicyResource{
+		Core: resourcecore.New(resourcecore.ComponentFleet, "agent_policy"),
+	}
 }
 
 type agentPolicyResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *agentPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *agentPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_agent_policy")
+	*resourcecore.Core
 }
 
 func (r *agentPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
