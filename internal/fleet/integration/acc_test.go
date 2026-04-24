@@ -38,6 +38,11 @@ import (
 var (
 	minVersionIntegration       = version.Must(version.NewVersion("8.6.0"))
 	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+	// minVersionInstallationInfo is the first Fleet release that populates
+	// PackageInfo.InstallationInfo on GET /epm/packages/{name}/{version}.
+	// Tests that rely on the actually-installed version (as opposed to the
+	// version echoed back from the request path) require this floor.
+	minVersionInstallationInfo = version.Must(version.NewVersion("8.9.0"))
 )
 
 //go:embed testdata/TestAccResourceIntegrationFromSDK/main.tf
@@ -202,7 +207,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 			// Step 1: apply tcp@1.16.0 via terraform.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionInstallationInfo),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
@@ -213,10 +218,15 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 			// The next refresh must record the *actually installed* version
 			// (1.17.0) in state, and the resulting plan must be non-empty
 			// because the configured version (1.16.0) no longer matches
-			// state.
+			// state. Relies on PackageInfo.InstallationInfo being populated
+			// by Fleet, which is why the step is gated on
+			// minVersionInstallationInfo rather than the broader
+			// minVersionIntegration — on pre-8.9 servers the Read fallback
+			// returns the requested (state) version and no drift is
+			// observable through the integration GET alone.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionInstallationInfo),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
