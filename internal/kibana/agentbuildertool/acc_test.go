@@ -42,6 +42,9 @@ var (
 // testAccAgentBuilderEsqlResourceName is the address of the ESQL tool used in acc configs.
 const testAccAgentBuilderEsqlResourceName = "elasticstack_kibana_agentbuilder_tool.test_esql"
 
+// testAccAgentBuilderWorkflowResourceName is the address of the workflow tool used in acc configs.
+const testAccAgentBuilderWorkflowResourceName = "elasticstack_kibana_agentbuilder_tool.test_workflow"
+
 func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
@@ -255,7 +258,7 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 
 func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
-	resourceID := "elasticstack_kibana_agentbuilder_tool.test_workflow"
+	resourceID := testAccAgentBuilderWorkflowResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
@@ -314,6 +317,75 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 				ResourceName:      resourceID,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderToolWorkflowKibanaConnection mirrors
+// TestAccResourceAgentBuilderToolWorkflow with entity-local kibana_connection
+// (9.4+ workflow tool API) and the ESQL kibana_connection import pattern.
+func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
+	toolID := "test-wf-kb-conn-" + uuid.New().String()[:8]
+	resourceID := testAccAgentBuilderWorkflowResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "type", "workflow"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "description", "Updated workflow tool (kibana_connection)"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "4"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "tags.*", "updated"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
