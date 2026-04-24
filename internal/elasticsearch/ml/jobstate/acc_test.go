@@ -137,8 +137,9 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 	})
 }
 
-// TestAccResourceMLJobStateImportWithOptions import-verifies a non-default force and job_timeout
-// after the shared-core rollout (scoped client from Configure is exercised on read).
+// TestAccResourceMLJobStateImportWithOptions applies non-default force and job_timeout, then
+// imports: Read only backfills null force/timeout to schema defaults, so import verify ignores
+// those (same pattern as ml data feed state import tests).
 func TestAccResourceMLJobStateImportWithOptions(t *testing.T) {
 	jobID := fmt.Sprintf("test-ml-job-state-import-opts-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	resourceName := "elasticstack_elasticsearch_ml_job_state.test"
@@ -170,9 +171,10 @@ func TestAccResourceMLJobStateImportWithOptions(t *testing.T) {
 					"force":       config.BoolVariable(true),
 					"job_timeout": config.StringVariable("1m"),
 				},
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "job_timeout", "timeouts"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[resourceName]
 					return rs.Primary.ID, nil
