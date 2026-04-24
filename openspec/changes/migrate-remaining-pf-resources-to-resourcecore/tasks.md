@@ -5,9 +5,9 @@
 
 ## 2. Migrate compatible resources
 
-- [ ] 2.1 Convert the compatible Fleet resources to embed `*resourcecore.Core`, initialize the core in their constructors, and replace direct client-field access with `Client()`.
-- [ ] 2.2 Convert the compatible Kibana resources to embed `*resourcecore.Core`, initialize the core in their constructors, and replace direct client-field access with `Client()`.
-- [ ] 2.3 Convert any additional audited compatible Plugin Framework resources outside Fleet and Kibana, or explicitly leave audited outliers for follow-up if they still differ from canonical `resourcecore` behavior.
+- [x] 2.1 Convert the compatible Fleet resources to embed `*resourcecore.Core`, initialize the core in their constructors, and replace direct client-field access with `Client()`.
+- [x] 2.2 Convert the compatible Kibana resources to embed `*resourcecore.Core`, initialize the core in their constructors, and replace direct client-field access with `Client()`.
+- [x] 2.3 Convert any additional audited compatible Plugin Framework resources outside Fleet and Kibana, or explicitly leave audited outliers for follow-up if they still differ from canonical `resourcecore` behavior.
 
 ## 3. Verify the rollout
 
