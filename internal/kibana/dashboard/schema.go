@@ -1948,7 +1948,7 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
-	attrs["axes"] = schema.SingleNestedAttribute{
+	attrs["axis"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Axis configuration for X and Y axes.",
 		Required:            true,
 		Attributes:          getHeatmapAxesSchema(),

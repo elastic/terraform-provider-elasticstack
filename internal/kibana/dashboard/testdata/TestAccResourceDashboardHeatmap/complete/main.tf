@@ -77,7 +77,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
         ]
       })
-      axes = {
+      axis = {
         x = {
           labels = {
             orientation = "vertical"

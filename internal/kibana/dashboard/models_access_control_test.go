@@ -29,7 +29,7 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
 		var m *AccessControlValue
 		apiModel := m.toCreateAPI()
-		assert.Nil(t, apiModel)
+		assert.Nil(t, apiModel.AccessMode)
 	})
 
 	t.Run("empty values", func(t *testing.T) {
@@ -37,17 +37,15 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 		}
 		apiModel := m.toCreateAPI()
-		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
 	})
 
 	t.Run("filled values", func(t *testing.T) {
 		m := &AccessControlValue{
-			AccessMode: types.StringValue("private"),
+			AccessMode: types.StringValue("write_restricted"),
 		}
 		apiModel := m.toCreateAPI()
-		assert.NotNil(t, apiModel)
-		mode := kbapi.KbnDashboardDataAccessControlAccessMode("private")
+		mode := kbapi.KbnDashboardAccessControlAccessMode("write_restricted")
 		assert.Equal(t, &mode, apiModel.AccessMode)
 	})
 }
@@ -59,9 +57,9 @@ func TestNewAccessControlFromAPI(t *testing.T) {
 	})
 
 	t.Run("filled input", func(t *testing.T) {
-		accessMode := "private"
+		accessMode := "write_restricted"
 		val := newAccessControlFromAPI(&accessMode)
 		assert.NotNil(t, val)
-		assert.Equal(t, types.StringValue("private"), val.AccessMode)
+		assert.Equal(t, types.StringValue("write_restricted"), val.AccessMode)
 	})
 }

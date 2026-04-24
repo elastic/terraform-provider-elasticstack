@@ -76,7 +76,7 @@ type heatmapConfigModel struct {
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
-	Axes                *heatmapAxesModel                                 `tfsdk:"axes"`
+	Axis                *heatmapAxesModel                                 `tfsdk:"axis"`
 	Styling             *heatmapStylingModel                              `tfsdk:"styling"`
 	Legend              *heatmapLegendModel                               `tfsdk:"legend"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
@@ -128,7 +128,7 @@ func (m *heatmapConfigModel) populateCommonFields(
 	datasetBytes []byte,
 	datasetErr error,
 	filters []kbapi.LensPanelFilters_Item,
-	axes kbapi.HeatmapAxes,
+	axis kbapi.HeatmapAxes,
 	styling kbapi.HeatmapStyling,
 	legend kbapi.HeatmapLegend,
 	diags *diag.Diagnostics,
@@ -147,9 +147,9 @@ func (m *heatmapConfigModel) populateCommonFields(
 	}
 	m.DataSourceJSON = dv
 	m.Filters = populateFiltersFromAPI(filters, diags)
-	m.Axes = &heatmapAxesModel{}
-	axesDiags := m.Axes.fromAPI(axes)
-	diags.Append(axesDiags...)
+	m.Axis = &heatmapAxesModel{}
+	axisDiags := m.Axis.fromAPI(axis)
+	diags.Append(axisDiags...)
 	m.Styling = &heatmapStylingModel{}
 	m.Styling.fromAPI(styling)
 	m.Legend = &heatmapLegendModel{}
@@ -162,7 +162,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axes, api.Styling, api.Legend, &diags) {
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, &diags) {
 		return diags
 	}
 
@@ -202,7 +202,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axes, api.Styling, api.Legend, &diags) {
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, &diags) {
 		return diags
 	}
 
@@ -332,14 +332,14 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 		api.Y = &yAxis
 	}
 
-	if m.Axes == nil {
-		diags.AddError("Missing axes", "heatmap_config.axes must be provided")
+	if m.Axis == nil {
+		diags.AddError("Missing axis", "heatmap_config.axis must be provided")
 		return api, diags
 	}
-	axes, axesDiags := m.Axes.toAPI()
-	diags.Append(axesDiags...)
-	axes.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
-	api.Axes = axes
+	axis, axisDiags := m.Axis.toAPI()
+	diags.Append(axisDiags...)
+	axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
+	api.Axis = axis
 
 	if m.Styling == nil || m.Styling.Cells == nil {
 		diags.AddError("Missing styling.cells", "heatmap_config.styling.cells must be provided")
@@ -436,14 +436,14 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		}
 	}
 
-	if m.Axes == nil {
-		diags.AddError("Missing axes", "heatmap_config.axes must be provided")
+	if m.Axis == nil {
+		diags.AddError("Missing axis", "heatmap_config.axis must be provided")
 		return api, diags
 	}
-	axes, axesDiags := m.Axes.toAPI()
-	diags.Append(axesDiags...)
-	axes.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
-	api.Axes = axes
+	axis, axisDiags := m.Axis.toAPI()
+	diags.Append(axisDiags...)
+	axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
+	api.Axis = axis
 
 	if m.Styling == nil || m.Styling.Cells == nil {
 		diags.AddError("Missing styling.cells", "heatmap_config.styling.cells must be provided")
@@ -483,21 +483,21 @@ func (m *heatmapAxesModel) fromAPI(api kbapi.HeatmapAxes) diag.Diagnostics {
 
 func (m *heatmapAxesModel) toAPI() (kbapi.HeatmapAxes, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	axes := kbapi.HeatmapAxes{}
+	axis := kbapi.HeatmapAxes{}
 
 	if m == nil {
-		diags.AddError("Missing axes", "heatmap_config.axes must be provided")
-		return axes, diags
+		diags.AddError("Missing axis", "heatmap_config.axis must be provided")
+		return axis, diags
 	}
 
 	if m.X != nil {
-		axes.X = m.X.toAPI()
+		axis.X = m.X.toAPI()
 	}
 	if m.Y != nil {
-		axes.Y = m.Y.toAPI()
+		axis.Y = m.Y.toAPI()
 	}
 
-	return axes, diags
+	return axis, diags
 }
 
 type heatmapXAxisModel struct {

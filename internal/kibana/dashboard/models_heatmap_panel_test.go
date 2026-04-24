@@ -48,7 +48,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &lang
 			}(),
 		},
-		Axes: kbapi.HeatmapAxes{
+		Axis: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{
 				Labels: &struct {
 					Orientation kbapi.VisApiOrientation `json:"orientation"`
@@ -126,7 +126,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.False(t, model.MetricJSON.IsNull())
 	assert.False(t, model.XAxisJSON.IsNull())
 	assert.False(t, model.YAxisJSON.IsNull())
-	require.NotNil(t, model.Axes)
+	require.NotNil(t, model.Axis)
 	require.NotNil(t, model.Styling)
 	require.NotNil(t, model.Styling.Cells)
 	require.NotNil(t, model.Legend)
@@ -169,7 +169,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		"description": "ESQL heatmap description",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axes": {
+		"axis": {
 			"x": { "labels": { "orientation": "angled", "visible": true } },
 			"y": { "labels": { "visible": true } }
 		},
@@ -217,7 +217,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			Expression: "status:200",
 			Language:   new(kbapi.FilterSimpleLanguage("kql")),
 		},
-		Axes: kbapi.HeatmapAxes{
+		Axis: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{},
 			Y: kbapi.HeatmapYAxis{},
 		},
@@ -259,7 +259,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"description": "Converter test",
 		"ignore_global_filters": false,
 		"sampling": 1,
-		"axes": { "x": {}, "y": {} },
+		"axis": { "x": {}, "y": {} },
 		"styling": { "cells": {} },
 		"legend": { "size": "m" },
 		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
