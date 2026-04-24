@@ -153,6 +153,32 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "description", "Updated ES|QL tool (kibana_connection)"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "tags.*", "updated"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          testAccKibanaBuilderToolKibanaConnectionVariables(toolID),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
 		},
 	})
 }
