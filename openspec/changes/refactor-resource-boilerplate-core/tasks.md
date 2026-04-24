@@ -20,6 +20,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run targeted tests for `internal/resourcecore` and each pilot resource package after conversion.
-- [ ] 4.2 Confirm the pilot resources retain their existing Terraform type names and import support boundaries.
-- [ ] 4.3 Reassess readability after the four-resource pilot and decide whether to continue embedded rollout, stop at the pilot, or revert to helper-only usage.
+- [x] 4.1 Run targeted tests for `internal/resourcecore` and each pilot resource package after conversion.
+- [x] 4.2 Confirm the pilot resources retain their existing Terraform type names and import support boundaries.
+- [x] 4.3 Reassess readability after the four-resource pilot and decide whether to continue embedded rollout, stop at the pilot, or revert to helper-only usage.

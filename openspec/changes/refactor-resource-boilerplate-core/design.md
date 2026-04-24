@@ -101,6 +101,21 @@ The change will include a small conformance test surface that asserts the intend
 
 Rollback is straightforward because the change is internal to resource wiring: each pilot resource can be reverted to explicit `client`, `Configure`, and `Metadata` methods without user state migration.
 
+## Pilot verification (task 4)
+
+**4.1 Targeted tests.** `go test` was run for `./internal/resourcecore/...` and the four pilot packages (`./internal/elasticsearch/ml/jobstate/...`, `.../kibana/agentbuildertool/...`, `.../fleet/integration/...`, `.../apm/agent_configuration/...`) using a plain `go` binary (unwrapped). `resourcecore` reported passing unit tests; pilot packages compile and, where acceptance tests are not enabled, exit successfully with any `TestAcc*` tests skipped as usual. `make build` also succeeded. Full `TF_ACC=1` runs require a local Elastic stack and were exercised in prior implementation passes on this change.
+
+**4.2 Type names and import boundaries.** Unchanged and consistent with the pre-refactor contract:
+
+| Resource | `Metadata` / type-name segments | Import support |
+| --- | --- | --- |
+| ML job state | `elasticsearch` + `ml_job_state` | Passthrough `ImportState` (explicit) |
+| Agent Builder tool | `kibana` + `agentbuilder_tool` (legacy spelling) | Passthrough `ImportState` (explicit) |
+| Fleet integration | `fleet` + `integration` | None (`ResourceWithImportState` not implemented) |
+| APM agent configuration | `apm` + `agent_configuration` | Passthrough `ImportState` (explicit) |
+
+**4.3 Readability decision.** **Continue the embedded core rollout** beyond the pilot, subject to the usual per-resource review. Rationale: the four pilots cover the intended matrix (ES, Kibana with legacy suffix, no-import plus upgrade state, APM+Kibana API); concrete `resource.go` files stay small; explicit interface assertions and the conformance tests keep import behavior and method promotion visible. Stopping at the pilot or reverting to helper-only is unnecessary given no material readability regression, while helper-only would forfeit the embed goal without new evidence.
+
 ## Open Questions
 
 - Whether a sibling abstraction for data sources should be proposed later, after the resource pilot has proven readable.
