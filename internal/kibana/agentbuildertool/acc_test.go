@@ -264,6 +264,34 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 				},
 				ImportStateVerify: true,
 			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "description", "Updated workflow tool"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
+				),
+			},
+			{
+				// Import after update (same pattern as TestAccResourceAgentBuilderToolEsql)
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
 		},
 	})
 }
