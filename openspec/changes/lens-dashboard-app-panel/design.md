@@ -108,6 +108,8 @@ On read-back, the provider classifies the API `config` **JSON object from its ra
 
 **By-value practitioner preservation:** When Kibana’s stored `config` is a **value-superset** of the practitioner’s planned `by_value.config_json` (same values on every path the practitioner set, with extra keys/defaults on read), the implementation preserves the original Terraform string in state so apply/refresh stays stable (see REQ-035 and `preservePriorLensByValueConfigJSON` in `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`).
 
+**Arrays (intentional limit):** JSON arrays are matched by index. The API may have **trailing** elements the practitioner did not author (length `len(current) > len(prior)` with a matching prefix) or, for an empty practitioner array, the API may fill in new items, which **fails** subset match so state follows the read-back and avoids wiping API-only metrics. The logic does **not** treat **reordered** or **prepended** array entries as the same as the practitioner’s array—only prefix alignment at indices `0..len(prior)-1`.
+
 ## Risks and Trade-offs
 
 | Risk | Mitigation |

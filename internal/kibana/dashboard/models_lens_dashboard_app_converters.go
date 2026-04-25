@@ -555,7 +555,7 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 			return len(c) == 0
 		}
 		// Trailing elements in `current` beyond `len(prior)` are allowed (API may append);
-		// index positions that exist in `prior` must match `current` at the same indices.
+		// indices 0..len(p)-1 must match. Reordering or prepending is not a subset match.
 		if len(p) > len(c) {
 			return false
 		}

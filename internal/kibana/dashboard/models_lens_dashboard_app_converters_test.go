@@ -99,6 +99,16 @@ func TestJsonValuePriorEmbedded_defaultKqlQueryOmittedOnRead(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestJsonValuePriorEmbedded_nonEmptyArrayWhenPriorEmptyRejects(t *testing.T) {
+	t.Parallel()
+	// User-authored `metrics: []` vs API with metrics — not a value-subset; must not preserve an empty list that would strip API data.
+	prior := `{"type":"metric","title":"t","metrics":[]}`
+	current := `{"type":"metric","title":"t","metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}]}`
+	ok, err := jsonValuePriorEmbeddedInExpandedCurrent(prior, current)
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
 func TestIsOmissibleDefaultKqlQuery(t *testing.T) {
 	t.Parallel()
 	require.True(t, isOmissibleDefaultKqlQuery(nil))
@@ -356,15 +366,19 @@ func TestPopulateLensDashboardAppFromAPI_ambiguousPreservesPriorByReference(t *t
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(`{"ref_id":"only"}`)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	pm := &panelModel{}
 	prior := &lensDashboardAppConfigModel{
 		ByReference: &lensDashboardAppByReferenceModel{RefID: types.StringValue("kept")},
 	}
 	tf := &panelModel{LensDashboardAppConfig: prior}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, tf, api)
+	// Match `mapPanelFromAPI`: seed `pm` from the prior plan/state panel before converters run.
+	pm := *tf
+	diags := populateLensDashboardAppFromAPI(ctx, &pm, tf, api)
 	require.False(t, diags.HasError())
-	// No population on ambiguous + prior by_reference: pm stays without new ByValue/ByReference from API
-	require.Nil(t, pm.LensDashboardAppConfig)
+	// Ambiguous API + prior by_reference: no rewrite from API; prior block stays in the seeded panel (REQ-009).
+	require.NotNil(t, pm.LensDashboardAppConfig)
+	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
+	require.Equal(t, "kept", pm.LensDashboardAppConfig.ByReference.RefID.ValueString())
+	require.Nil(t, pm.LensDashboardAppConfig.ByValue)
 }
 
 func float32ptr(f float32) *float32 { return new(f) }
