@@ -55,6 +55,7 @@ type panelModel struct {
 	RangeSliderControlConfig      *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
 	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
+	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -220,7 +221,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.OptionsListControlConfig == nil &&
 		pm.RangeSliderControlConfig == nil &&
 		pm.SyntheticsStatsOverviewConfig == nil &&
-		pm.SyntheticsMonitorsConfig == nil
+		pm.SyntheticsMonitorsConfig == nil &&
+		pm.LensDashboardAppConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -532,6 +534,14 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	if pm.SloOverviewConfig != nil {
 		return sloOverviewToAPI(pm, grid, panelID)
+	}
+
+	if pm.Type.ValueString() == panelTypeLensDashboardApp {
+		diags.AddError(
+			"lens-dashboard-app panel is not yet supported",
+			"The `lens_dashboard_app_config` API write path is not implemented in this build.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
 	}
 
 	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {

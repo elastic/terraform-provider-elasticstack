@@ -7,13 +7,13 @@
 
 ## 2. Schema
 
-- [ ] 2.1 Add `lens_dashboard_app_config` schema block to `internal/kibana/dashboard/schema.go` with `by_value` and `by_reference` sub-blocks
-- [ ] 2.2 Add required `by_reference.time_range` nested block with required `from` / `to` and optional `mode`
-- [ ] 2.3 Add schema validators to enforce that exactly one of `by_value` or `by_reference` is set within `lens_dashboard_app_config`
-- [ ] 2.4 Add schema validation that `lens_dashboard_app_config` is only valid when `type = "lens-dashboard-app"` (REQ-006 extension)
-- [ ] 2.5 Add schema validation that `lens_dashboard_app_config` is mutually exclusive with all other panel config blocks (REQ-006 extension)
-- [ ] 2.6 Add `by_value.config_json` as a required normalized JSON string
-- [ ] 2.7 Add by-reference attributes: required `ref_id`, optional `references_json`, optional `title`, optional `description`, optional `hide_title`, optional `hide_border`, and optional `drilldowns_json`
+- [x] 2.1 Add `lens_dashboard_app_config` schema block to `internal/kibana/dashboard/schema.go` with `by_value` and `by_reference` sub-blocks
+- [x] 2.2 Add required `by_reference.time_range` nested block with required `from` / `to` and optional `mode`
+- [x] 2.3 Add schema validators to enforce that exactly one of `by_value` or `by_reference` is set within `lens_dashboard_app_config`
+- [x] 2.4 Add schema validation that `lens_dashboard_app_config` is only valid when `type = "lens-dashboard-app"` (REQ-006 extension)
+- [x] 2.5 Add schema validation that `lens_dashboard_app_config` is mutually exclusive with all other panel config blocks (REQ-006 extension)
+- [x] 2.6 Add `by_value.config_json` as a required normalized JSON string
+- [x] 2.7 Add by-reference attributes: required `ref_id`, optional `references_json`, optional `title`, optional `description`, optional `hide_title`, optional `hide_border`, and optional `drilldowns_json`
 
 ## 3. Models
 
