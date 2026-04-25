@@ -18,9 +18,7 @@
 package kibana_test
 
 import (
-	"os"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -112,7 +110,7 @@ func TestAccDataSourceKibanaConnector_kibanaConnection(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("kibana_connection"),
-				ConfigVariables:          testAccConnectorKibanaConnectionVariables(),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", "kbconn_connector"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".slack"),
@@ -124,30 +122,4 @@ func TestAccDataSourceKibanaConnector_kibanaConnection(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccConnectorKibanaConnectionVariables() config.Variables {
-	apiKey := os.Getenv("KIBANA_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
-	}
-
-	username := os.Getenv("KIBANA_USERNAME")
-	if username == "" {
-		username = os.Getenv("ELASTICSEARCH_USERNAME")
-	}
-
-	password := os.Getenv("KIBANA_PASSWORD")
-	if password == "" {
-		password = os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
-
-	endpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
-
-	return config.Variables{
-		"kibana_endpoint": config.StringVariable(endpoint),
-		"api_key":         config.StringVariable(apiKey),
-		"username":        config.StringVariable(username),
-		"password":        config.StringVariable(password),
-	}
 }

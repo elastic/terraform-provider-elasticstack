@@ -1,5 +1,5 @@
-variable "kibana_endpoint" {
-  type = string
+variable "kibana_endpoints" {
+  type = list(string)
 }
 
 variable "api_key" {
@@ -35,7 +35,7 @@ data "elasticstack_kibana_action_connector" "test" {
   name = elasticstack_kibana_action_connector.test.name
 
   kibana_connection {
-    endpoints = [var.kibana_endpoint]
+    endpoints = var.kibana_endpoints
     insecure  = false
     api_key   = var.api_key != "" ? var.api_key : null
     username  = var.api_key == "" && var.username != "" ? var.username : null
