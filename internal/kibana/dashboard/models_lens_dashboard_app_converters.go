@@ -408,6 +408,172 @@ func populateLensDashboardAppByReferenceFromAPI(
 	return diags
 }
 
+// preservePriorLensByValueConfigJSON returns practitioner `by_value.config_json` in state
+// when the API read would otherwise diverge (REQ-035): (1) full semantic JSON equality, or
+// (2) the API `config` is a strict value-expansion of the prior object — same value at
+// every key path the practitioner set, with extra keys/entries allowed in the response
+// (Kibana re-keying, defaults, ordering). (2) applies only when the prior object has a
+// non-empty string top-level `type` (the by-value chart discriminator) so we never
+// vacuously match `{}` against a full chart. Empty prior arrays with non-empty API arrays
+// are not treated as embedded (would risk wiping list-shaped fields on the next write).
+func preservePriorLensByValueConfigJSON(
+	ctx context.Context,
+	prior, fromAPI jsontypes.Normalized,
+	diags *diag.Diagnostics,
+) jsontypes.Normalized {
+	after := preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, fromAPI, defaultOpaqueRootJSON, diags)
+	embedded, err := jsonValuePriorEmbeddedInExpandedCurrent(prior.ValueString(), fromAPI.ValueString())
+	if err != nil {
+		return after
+	}
+	if embedded {
+		return prior
+	}
+	return after
+}
+
+// jsonValuePriorEmbeddedInExpandedCurrent is true when prior unmarshals to an object
+// with a by-value chart `type` and every value path in prior is equal in the current
+// object, allowing extra keys and trailing array elements in current.
+func jsonValuePriorEmbeddedInExpandedCurrent(priorJSON, currentJSON string) (bool, error) {
+	var priorObj map[string]any
+	if err := json.Unmarshal([]byte(priorJSON), &priorObj); err != nil {
+		return false, err
+	}
+	if !hasLensByValueChartTypeAtRoot(priorObj) {
+		return false, nil
+	}
+	var currentObj map[string]any
+	if err := json.Unmarshal([]byte(currentJSON), &currentObj); err != nil {
+		return false, err
+	}
+	return jsonValueSubsumedByCurrentObject(priorObj, currentObj, true), nil
+}
+
+// jsonValueSubsumedByCurrentObject returns whether every key path in prior exists in
+// current with a matching value, allowing extra keys in current. For the top-level
+// panel `config` object only (`isRoot`), the `styling` key is ignored: Kibana may
+// replace the full styling subtree (REQ-035).
+func isEmptyJSONSlice(prior any) bool {
+	if prior == nil {
+		return true
+	}
+	if pArr, ok := prior.([]any); ok && len(pArr) == 0 {
+		return true
+	}
+	return false
+}
+
+func isEmptyJSONMap(prior any) bool {
+	if prior == nil {
+		return true
+	}
+	if pMap, ok := prior.(map[string]any); ok && len(pMap) == 0 {
+		return true
+	}
+	return false
+}
+
+// isOmissibleDefaultKqlQuery reports whether the practitioner `query` object is the
+// usual Kibana default so that a missing `query` key on read can still match.
+func isOmissibleDefaultKqlQuery(m map[string]any) bool {
+	if len(m) == 0 {
+		return true
+	}
+	lang, hasLang := m["language"]
+	expr, hasExpr := m["expression"]
+	switch {
+	case hasLang && lang == "kql" && !hasExpr && len(m) == 1:
+		return true
+	case hasLang && lang == "kql" && hasExpr && expr == "" && len(m) == 2:
+		return true
+	default:
+		return false
+	}
+}
+
+func jsonValueSubsumedByCurrentObject(prior, current map[string]any, isRoot bool) bool {
+	for k, pv := range prior {
+		if isRoot && k == "styling" {
+			continue
+		}
+		cv, ok := current[k]
+		if !ok {
+			if isEmptyJSONSlice(pv) || isEmptyJSONMap(pv) {
+				continue
+			}
+			if s, y := pv.(string); y && s == "" {
+				// Kibana often omits optional empty string fields.
+				continue
+			}
+			if k == "query" {
+				if qm, y := pv.(map[string]any); y && isOmissibleDefaultKqlQuery(qm) {
+					continue
+				}
+			}
+			return false
+		}
+		// Kibana can omit a key but also return an empty list instead.
+		if isEmptyJSONSlice(pv) {
+			if isEmptyJSONSlice(cv) {
+				continue
+			}
+			return false
+		}
+		if !jsonValueSubsumedByCurrentAny(pv, cv) {
+			return false
+		}
+	}
+	return true
+}
+
+func jsonValueSubsumedByCurrentAny(prior, current any) bool {
+	switch p := prior.(type) {
+	case nil:
+		return current == nil
+	case bool:
+		c, ok := current.(bool)
+		return ok && c == p
+	case float64:
+		c, ok := current.(float64)
+		return ok && c == p
+	case string:
+		c, ok := current.(string)
+		return ok && c == p
+	case []any:
+		if isEmptyJSONSlice(prior) && (current == nil) {
+			// Kibana can serialize optional lists as `null` instead of omitting the key.
+			return true
+		}
+		c, ok := current.([]any)
+		if !ok {
+			return false
+		}
+		if len(p) == 0 {
+			// A non-empty list in the response when the user sent [] is not treated as
+			// an embed; the next write from preserved [] could strip API data.
+			return len(c) == 0
+		}
+		if len(p) > len(c) {
+			return false
+		}
+		for i := range p {
+			if !jsonValueSubsumedByCurrentAny(p[i], c[i]) {
+				return false
+			}
+		}
+		return true
+	case map[string]any:
+		c, ok := current.(map[string]any)
+		if !ok {
+			return false
+		}
+		return jsonValueSubsumedByCurrentObject(p, c, false)
+	default:
+		return false
+	}
+}
+
 // populateLensDashboardAppByValueFromAPI stores the full config JSON in by_value.config_json
 // (semantic normalization + prior preservation). Used for clearly inline chart config and
 // for ambiguous new imports where there is no prior by_reference to preserve.
@@ -419,8 +585,8 @@ func populateLensDashboardAppByValueFromAPI(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if norm, ok := marshalToNormalized(configBytes, nil, "by_value.config_json", &diags); ok {
-		if prior != nil && prior.ByValue != nil {
-			norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByValue.ConfigJSON, norm, defaultOpaqueRootJSON, &diags)
+		if prior != nil && prior.ByValue != nil && typeutils.IsKnown(prior.ByValue.ConfigJSON) {
+			norm = preservePriorLensByValueConfigJSON(ctx, prior.ByValue.ConfigJSON, norm, &diags)
 		}
 		pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
 			ByValue: &lensDashboardAppByValueModel{ConfigJSON: norm},

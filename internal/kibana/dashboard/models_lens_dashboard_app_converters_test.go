@@ -25,9 +25,55 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestJsonValuePriorEmbeddedInExpandedCurrent(t *testing.T) {
+	t.Parallel()
+	prior := `{"type":"metric","title":"t"}`
+	current := `{"type":"metric","title":"t","_k":["injected"]}`
+	ok, err := jsonValuePriorEmbeddedInExpandedCurrent(prior, current)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	changed := `{"type":"metric","title":"other"}`
+	ok, err = jsonValuePriorEmbeddedInExpandedCurrent(prior, changed)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	emptyType := `{"type":"","title":"x"}`
+	current2 := `{"type":"","title":"x","k":1}`
+	ok, err = jsonValuePriorEmbeddedInExpandedCurrent(emptyType, current2)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	emptyNoChart := `{"k":1}`
+	current3 := `{"k":1,"type":"x"}`
+	ok, err = jsonValuePriorEmbeddedInExpandedCurrent(emptyNoChart, current3)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	stylingA := `{"type":"metric","title":"t","styling":{"icon":{"name":"heart"}},"metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}]}`
+	stylingB := `{"type":"metric","title":"t","styling":{"primary":{}},"metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}]}`
+	ok, err = jsonValuePriorEmbeddedInExpandedCurrent(stylingA, stylingB)
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func TestPreservePriorLensByValueConfigJSON_enrichment(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := `{"type":"metric","a":1}`
+	enriched := `{"type":"metric","a":1,"b":2}`
+	priorN := jsontypes.NewNormalizedValue(prior)
+	fromAPI := jsontypes.NewNormalizedValue(enriched)
+	var diags diag.Diagnostics
+	out := preservePriorLensByValueConfigJSON(ctx, priorN, fromAPI, &diags)
+	require.False(t, diags.HasError())
+	require.Equal(t, prior, out.ValueString())
+}
 
 func TestClassifyLensDashboardAppConfigFromRoot(t *testing.T) {
 	t.Parallel()

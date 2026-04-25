@@ -28,11 +28,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// By-value: no `TestAcc_…` for `lens_dashboard_app_config.by_value` — even with a Kibana-like metric
-// fixture, the API response is re-keyed/expanded on read, so the first post-apply refresh can still
-// report drift on `by_value.config_json` vs plan. **Task 6.2 coverage** is the unit tests
-// `TestLensDashboardAppByValueToAPI_sendsConfigAsAPI` and `TestLensDashboardAppByValueToAPI_UnknownConfigJSON`
-// (write path + read population). See `tasks.md` 6.2.
+// **By-value:** `TestAccResourceDashboardLensDashboardAppByValue` — read-back may enrich the
+// stored Kibana `config` object. The provider keeps practitioner `by_value.config_json` in
+// state when the API value is a strict expansion of that JSON (REQ-035). If a stack changes
+// values the user set, or rewrites a field such as `type`, plan may still show drift. See
+// `models_lens_dashboard_app_converters.go` `preservePriorLensByValueConfigJSON` and
+// `tasks.md` 6.2.
+
+func TestAccResourceDashboardLensDashboardAppByValue(t *testing.T) {
+	dashboardTitle := "Acc lens app by-val " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{{
+			ProtoV6ProviderFactories: acctest.Providers,
+			SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+			ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+			Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
+				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"type"\s*:\s*"metric"`)),
+				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"title"\s*:\s*"Acc by-value"`)),
+				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)),
+			),
+		}},
+	})
+}
 
 func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 	dashboardTitle := "Acc lens app by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -95,17 +115,32 @@ func TestAccResourceDashboardLensDashboardAppByReferenceAbsoluteTimeMode(t *test
 	dashboardTitle := "Acc lens app abs " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{{
-			ProtoV6ProviderFactories: acctest.Providers,
-			SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-			ConfigDirectory:          acctest.NamedTestCaseDirectory("absolute_time_mode"),
-			ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
-			Check: resource.ComposeTestCheckFunc(
-				resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.from", "2024-06-01T00:00:00.000Z"),
-				resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.to", "2024-06-01T12:00:00.000Z"),
-				resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.mode", "absolute"),
-			),
-		}},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("absolute_time_mode"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.from", "2024-06-01T00:00:00.000Z"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.to", "2024-06-01T12:00:00.000Z"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.mode", "absolute"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("absolute_time_mode"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             "elasticstack_kibana_dashboard.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.lens_dashboard_app_config.by_reference.references_json",
+					"panels.0.id",
+				},
+			},
+		},
 	})
 }
 
