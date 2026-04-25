@@ -651,6 +651,16 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorContains: "Only markdown and vis panel types are currently supported",
 		},
 		{
+			name: "rejects panel-level config_json for lens-dashboard-app (REQ-025 write path)",
+			panel: panelModel{
+				Type:       types.StringValue("lens-dashboard-app"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"x":1}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "Panel-level `config_json` is not supported for `lens-dashboard-app`",
+		},
+		{
 			name: "rejects missing panel configuration",
 			panel: panelModel{
 				Type:       types.StringValue("markdown"),

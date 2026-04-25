@@ -1302,7 +1302,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
 						"Required when `type` is `lens-dashboard-app`. "+
-						"Exactly one of `by_value` (inline chart config) or `by_reference` (saved Lens object via `ref_id` and `references`) must be set.",
+						"Exactly one of `by_value` (inline chart config) or `by_reference` (saved Lens object via `ref_id` and `references_json`, mapping to the API `references` list) must be set.",
 					"lens_dashboard_app_config",
 					panelConfigNames,
 				),
@@ -1360,7 +1360,7 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
 				"ref_id": schema.StringAttribute{
-					MarkdownDescription: "Reference name in the API `ref_id` field; must match a `name` entry in `references_json` when references are provided.",
+					MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
 					Required:            true,
 				},
 				"references_json": schema.StringAttribute{

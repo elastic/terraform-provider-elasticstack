@@ -551,6 +551,14 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return lensDashboardAppToAPI(pm, lensGrid, panelID)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `lens-dashboard-app` panels. "+
+					"Use the `lens_dashboard_app_config` block with `by_value` or `by_reference` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
 		diags.AddError(
 			"Missing `lens_dashboard_app_config`",
 			"The `lens_dashboard_app_config` block is required for `lens-dashboard-app` panels.",

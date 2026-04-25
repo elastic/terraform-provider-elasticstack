@@ -54,4 +54,4 @@
 - [ ] 6.14 Add unit tests for the `by_reference` write converter ensuring `ref_id`, `references`, required `time_range`, display fields, and `drilldowns` map to API `config`
 - [ ] 6.15 Add unit tests for the read converter mode detection and field population (by-value path, including ambiguous fallback to `by_value` when there is no prior `by_reference`)
 - [ ] 6.16 Add unit tests for the read converter mode detection and field population (by-reference path, including ambiguous API response with prior `by_reference` preserved per REQ-009)
-- [ ] 6.17 Verify that setting `config_json` on a panel with `type = "lens-dashboard-app"` returns an error diagnostic
+- [ ] 6.17 Add coverage that practitioner-authored **panel-level** `config_json` with `type = "lens-dashboard-app"` is rejected: **apply/write-path** error (`Unsupported panel type for config_json` with REQ-025 message to use `lens_dashboard_app_config`) when `lens_dashboard_app_config` is absent; **plan-time** rejection remains via the `config_json` type allowlist + conflicts when applicable (distinguish from the write-path explicit diagnostic, which targets bypass/state edge cases)
