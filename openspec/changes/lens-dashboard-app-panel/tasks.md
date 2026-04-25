@@ -38,7 +38,7 @@
 
 ## 6. Testing
 
-- [ ] 6.1 Add acceptance tests for `lens-dashboard-app` panel creation in by-reference mode with required `ref_id`, `references_json`, and `time_range`
+- [ ] 6.1 Add acceptance tests for `lens-dashboard-app` panel creation in by-reference mode with required `ref_id` and `time_range`; include coverage that sets optional `references_json` for a typical saved-object reference-wiring case (see REQ-035)
 - [ ] 6.2 Add acceptance tests for `lens-dashboard-app` panel creation in by-value mode with required `config_json`
 - [ ] 6.3 Add acceptance tests for by-reference panel with optional `title`, `description`, `hide_title`, and `hide_border`
 - [ ] 6.4 Add acceptance or unit coverage for by-reference `drilldowns_json`
