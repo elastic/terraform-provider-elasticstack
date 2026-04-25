@@ -31,6 +31,90 @@ import (
 
 func defaultOpaqueRootJSON(v any) any { return v }
 
+// configPriorForLensRead returns the last known lens_dashboard_app_config from
+// plan/state. tfPanel is the panel at the same index from the prior model (nil on
+// import or when a panel is new); it is the authoritative source when present.
+func configPriorForLensRead(tfPanel, pm *panelModel) *lensDashboardAppConfigModel {
+	if tfPanel != nil && tfPanel.LensDashboardAppConfig != nil {
+		return tfPanel.LensDashboardAppConfig
+	}
+	if pm != nil {
+		return pm.LensDashboardAppConfig
+	}
+	return nil
+}
+
+// lensConfigClass identifies how a lens-dashboard-app panel `config` JSON should be
+// represented in Terraform after read, using raw shape before trusting the
+// generated union helper alone (see AsKbnDashboardPanelTypeLensDashboardAppConfig1,
+// which is json.Unmarshal, not a oneOf discriminant in the real wire payload).
+type lensConfigClass int
+
+const (
+	// The payload has a non-empty string at top-level "type" — by-value inline chart
+	// config from the Kibana Lens chart union. Such configs may also include
+	// time_range, references, and ref_id for chart needs; we still treat the panel
+	// as by_value (REQ-035 / design: chart discriminator wins over ref_id-only cues).
+	lensConfigClassByValueChart lensConfigClass = iota
+	// The payload is missing a chart "type" at the root, and has ref_id with a
+	// time_range object with non-empty from/to — the by-reference (Config1) shape.
+	lensConfigClassByReference
+	// Neither a chart payload nor a complete by-reference shape (e.g. incomplete
+	// or unexpected JSON). The caller may preserve prior by_reference state instead
+	// of falling back to by_value (see populateLensDashboardAppFromAPI).
+	lensConfigClassAmbiguous
+)
+
+// classifyLensDashboardAppConfigFromRoot classifies the raw API config object. It must
+// not be the only check for by-reference, because unmarshaling the generated Config1
+// struct alone would accept mixed keys from by-value and by-reference wire shapes.
+func classifyLensDashboardAppConfigFromRoot(root map[string]any) lensConfigClass {
+	if hasLensByValueChartTypeAtRoot(root) {
+		return lensConfigClassByValueChart
+	}
+	if hasLensByReferenceShapeAtRoot(root) {
+		return lensConfigClassByReference
+	}
+	return lensConfigClassAmbiguous
+}
+
+func hasLensByValueChartTypeAtRoot(m map[string]any) bool {
+	if m == nil {
+		return false
+	}
+	v, ok := m["type"]
+	if !ok {
+		return false
+	}
+	s, ok := v.(string)
+	return ok && s != ""
+}
+
+func hasLensByReferenceShapeAtRoot(m map[string]any) bool {
+	if m == nil {
+		return false
+	}
+	ref, ok := m["ref_id"]
+	if !ok {
+		return false
+	}
+	refS, ok := ref.(string)
+	if !ok || refS == "" {
+		return false
+	}
+	trAny, ok := m["time_range"]
+	if !ok {
+		return false
+	}
+	tr, ok := trAny.(map[string]any)
+	if !ok {
+		return false
+	}
+	from, fOK := tr["from"].(string)
+	to, tOK := tr["to"].(string)
+	return fOK && tOK && from != "" && to != ""
+}
+
 // lensDashboardAPIGrid is the wire shape used by dashboard panel toAPI.
 type lensDashboardAPIGrid struct {
 	H *float32 `json:"h,omitempty"`
@@ -64,6 +148,13 @@ func lensDashboardAppByValueToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	if !typeutils.IsKnown(byValue.ConfigJSON) {
+		diags.AddError(
+			"Invalid `by_value.config_json` for lens-dashboard-app",
+			"by_value.config_json is unknown. Ensure it is set to a non-null JSON value.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var config kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	if err := config.UnmarshalJSON([]byte(byValue.ConfigJSON.ValueString())); err != nil {
 		diags.AddError("Invalid `by_value.config_json` for lens-dashboard-app", err.Error())
@@ -195,89 +286,138 @@ func jsonBytesFromOptionalNormalizedArray(n jsontypes.Normalized, field string) 
 }
 
 // populateLensDashboardAppFromAPI maps an API lens-dashboard-app panel to the TF model in pm.
-// pm is seeded from the prior plan/state before this runs.
+// pm is seeded from the prior plan/state when tfPanel is set; tfPanel is the panel at
+// the same index from the prior model (used for prior lens mode and optional seeding).
 func populateLensDashboardAppFromAPI(
 	ctx context.Context,
 	pm *panelModel,
-	_ *panelModel,
+	tfPanel *panelModel,
 	api kbapi.KbnDashboardPanelTypeLensDashboardApp,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	prior := pm.LensDashboardAppConfig
+	prior := configPriorForLensRead(tfPanel, pm)
 
 	configBytes, err := api.Config.MarshalJSON()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	cfg1, err1 := api.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
-	byRef := err1 == nil && cfg1.RefId != "" && cfg1.TimeRange.From != "" && cfg1.TimeRange.To != ""
+	var root map[string]any
+	if err := json.Unmarshal(configBytes, &root); err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	// REQ-035: align read mode with the wire object: generated AsConfig1 is
+	// Unmarshal, not a real JSON oneOf, so we inspect the raw object first. Inline
+	// by-value chart configs from the Kibana union carry a string `type` at the root
+	// (e.g. metricNoESQL). By-reference Config1 has ref_id and time_range but not
+	// that chart discriminator; prefer by-reference only when the chart
+	// discriminator is absent and the ref_id + time_range shape is present.
+	//
+	// When classification is ambiguous and the practitioner previously used
+	// by_reference, we do not fall back to by_value: that would silently flip modes
+	// (REQ-009-style preservation). The stronger type/ref heuristic above makes
+	// ref_id+time_range without a root chart `type` resolve to by_reference; the
+	// ambiguous case is for incomplete/odd payloads where we keep prior by_reference.
+	switch classifyLensDashboardAppConfigFromRoot(root) {
+	case lensConfigClassByValueChart:
+		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+	case lensConfigClassByReference:
+		cfg1, err1 := api.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+		if err1 != nil {
+			diags.AddError("Invalid lens-dashboard-app config on read", err1.Error())
+			return diags
+		}
+		return populateLensDashboardAppByReferenceFromAPI(ctx, prior, pm, cfg1)
+	default: // lensConfigClassAmbiguous
+		if prior != nil && prior.ByReference != nil {
+			// Avoid silently switching a prior by_reference panel to by_value when
+			// the response is not clearly a by-value chart and not a full by-reference shape.
+			return diags
+		}
+		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+	}
+}
 
-	if byRef {
-		tr := lensDashboardAppTimeRangeModel{
-			From: types.StringValue(cfg1.TimeRange.From),
-			To:   types.StringValue(cfg1.TimeRange.To),
-		}
-		switch {
-		case cfg1.TimeRange.Mode != nil:
-			tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
-		case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.TimeRange.Mode):
-			tr.Mode = prior.ByReference.TimeRange.Mode
-		default:
-			tr.Mode = types.StringNull()
-		}
-		by := lensDashboardAppByReferenceModel{
-			RefID:     types.StringValue(cfg1.RefId),
-			TimeRange: tr,
-		}
-		by.Title = lensOptionalStringFromAPI(cfg1.Title, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
-		by.Description = lensOptionalStringFromAPI(cfg1.Description, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
-		by.HideTitle = lensOptionalBoolFromAPI(cfg1.HideTitle, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-		by.HideBorder = lensOptionalBoolFromAPI(cfg1.HideBorder, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
+func populateLensDashboardAppByReferenceFromAPI(
+	ctx context.Context,
+	prior *lensDashboardAppConfigModel,
+	pm *panelModel,
+	cfg1 kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+	tr := lensDashboardAppTimeRangeModel{
+		From: types.StringValue(cfg1.TimeRange.From),
+		To:   types.StringValue(cfg1.TimeRange.To),
+	}
+	switch {
+	case cfg1.TimeRange.Mode != nil:
+		tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
+	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.TimeRange.Mode):
+		tr.Mode = prior.ByReference.TimeRange.Mode
+	default:
+		tr.Mode = types.StringNull()
+	}
+	by := lensDashboardAppByReferenceModel{
+		RefID:     types.StringValue(cfg1.RefId),
+		TimeRange: tr,
+	}
+	by.Title = lensOptionalStringFromAPI(cfg1.Title, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
+	by.Description = lensOptionalStringFromAPI(cfg1.Description, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
+	by.HideTitle = lensOptionalBoolFromAPI(cfg1.HideTitle, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
+	by.HideBorder = lensOptionalBoolFromAPI(cfg1.HideBorder, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
-		switch {
-		case cfg1.References != nil:
-			b, err := json.Marshal(cfg1.References)
-			if err != nil {
-				return diagutil.FrameworkDiagFromError(err)
-			}
-			if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
-				if prior != nil && prior.ByReference != nil {
-					norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
-				}
-				by.ReferencesJSON = norm
-			}
-		case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.ReferencesJSON):
-			by.ReferencesJSON = prior.ByReference.ReferencesJSON
-		default:
-			by.ReferencesJSON = jsontypes.NewNormalizedNull()
+	switch {
+	case cfg1.References != nil:
+		b, err := json.Marshal(cfg1.References)
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
 		}
-
-		switch {
-		case cfg1.Drilldowns != nil:
-			b, err := json.Marshal(*cfg1.Drilldowns)
-			if err != nil {
-				return diagutil.FrameworkDiagFromError(err)
+		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
+			if prior != nil && prior.ByReference != nil {
+				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
 			}
-			if norm, ok := marshalToNormalized(b, err, "drilldowns_json", &diags); ok {
-				if prior != nil && prior.ByReference != nil {
-					norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.DrilldownsJSON, norm, defaultOpaqueRootJSON, &diags)
-				}
-				by.DrilldownsJSON = norm
-			}
-		case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.DrilldownsJSON):
-			by.DrilldownsJSON = prior.ByReference.DrilldownsJSON
-		default:
-			by.DrilldownsJSON = jsontypes.NewNormalizedNull()
+			by.ReferencesJSON = norm
 		}
-
-		pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
-			ByReference: &by,
-		}
-		return diags
+	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.ReferencesJSON):
+		by.ReferencesJSON = prior.ByReference.ReferencesJSON
+	default:
+		by.ReferencesJSON = jsontypes.NewNormalizedNull()
 	}
 
-	// by_value: full API config JSON, normalized, with prior preservation for semantic stability.
+	switch {
+	case cfg1.Drilldowns != nil:
+		b, err := json.Marshal(*cfg1.Drilldowns)
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		if norm, ok := marshalToNormalized(b, err, "drilldowns_json", &diags); ok {
+			if prior != nil && prior.ByReference != nil {
+				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.DrilldownsJSON, norm, defaultOpaqueRootJSON, &diags)
+			}
+			by.DrilldownsJSON = norm
+		}
+	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.DrilldownsJSON):
+		by.DrilldownsJSON = prior.ByReference.DrilldownsJSON
+	default:
+		by.DrilldownsJSON = jsontypes.NewNormalizedNull()
+	}
+
+	pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
+		ByReference: &by,
+	}
+	return diags
+}
+
+// populateLensDashboardAppByValueFromAPI stores the full config JSON in by_value.config_json
+// (semantic normalization + prior preservation). Used for clearly inline chart config and
+// for ambiguous new imports where there is no prior by_reference to preserve.
+func populateLensDashboardAppByValueFromAPI(
+	ctx context.Context,
+	prior *lensDashboardAppConfigModel,
+	configBytes []byte,
+	pm *panelModel,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 	if norm, ok := marshalToNormalized(configBytes, nil, "by_value.config_json", &diags); ok {
 		if prior != nil && prior.ByValue != nil {
 			norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByValue.ConfigJSON, norm, defaultOpaqueRootJSON, &diags)
