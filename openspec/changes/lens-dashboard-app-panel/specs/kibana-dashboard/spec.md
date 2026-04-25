@@ -1,8 +1,8 @@
 # Delta Spec: `lens-dashboard-app` Panel Support
 
-Base spec: `openspec/specs/kibana-dashboard/spec.md`
-Last requirement in base spec: REQ-025
-This delta introduces: REQ-035
+Base spec: `openspec/specs/kibana-dashboard/spec.md` (capability `kibana-dashboard`).
+
+This delta modifies requirements REQ-006 and REQ-025 and adds REQ-035 for `lens-dashboard-app` panel support. Keep this file aligned with `proposal.md` and `design.md` until the change is archived.
 
 ---
 
