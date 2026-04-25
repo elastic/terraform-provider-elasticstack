@@ -24,7 +24,7 @@
 
 - [x] 4.1 Implement write converter for `by_value` mode by decoding `by_value.config_json` and assigning it directly to `KbnDashboardPanelTypeLensDashboardApp.Config`
 - [x] 4.2 Implement write converter for `by_reference` mode using `KbnDashboardPanelTypeLensDashboardAppConfig1` (`ref_id`, required `time_range`, optional `references`, display fields, and `drilldowns`)
-- [x] 4.3 Implement read converter (API payload to Terraform model) with mode detection based on the generated `config` union, preferring by-reference only when `ref_id` and `time_range` are present
+- [x] 4.3 Implement read converter (API payload to Terraform model) with mode detection: a non-empty root chart `type` string (by-value discriminator) takes precedence, so by-value config that also includes `ref_id` and `time_range` stays `by_value`; `by_reference` is selected only when that discriminator is absent and the payload has non-empty `ref_id` and `time_range` with `from` and `to`; if the response is neither and prior plan/state had `by_reference`, preserve prior `by_reference` per REQ-009 (no silent flip to `by_value`)
 - [x] 4.4 Implement read converter population of by-reference optional fields (`references_json`, `title`, `description`, `hide_title`, `hide_border`, `drilldowns_json`)
 - [x] 4.5 Update the panel write-path dispatcher in `models_panels.go` to handle `lens-dashboard-app` type via `lens_dashboard_app_config`
 - [x] 4.6 Update the panel read-path dispatcher in `models_panels.go` to populate `lens_dashboard_app_config` on read-back
