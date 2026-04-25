@@ -41,6 +41,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- New `elasticstack_fleet_custom_integration` resource for uploading and managing locally-built Fleet integration packages via the EPM binary upload API ([#2387](https://github.com/elastic/terraform-provider-elasticstack/pull/2387))
 - Change `elasticstack_kibana_security_detection_rule.actions[].params` to a JSON string rather than a map of string values. This allows setting arbitrary, nested param values ([#2340](https://github.com/elastic/terraform-provider-elasticstack/pull/2340))
 - Add import support to the elasticstack_elasticsearch_enrich_policy resource ([#2427](https://github.com/elastic/terraform-provider-elasticstack/pull/2427))
 - Add ssl.verification_mode attribute to the elasticstack_fleet_output ssl block ([#2415](https://github.com/elastic/terraform-provider-elasticstack/pull/2415))
