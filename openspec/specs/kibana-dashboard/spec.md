@@ -1309,6 +1309,7 @@ The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens pan
 | Options / access control mapping | `internal/kibana/dashboard/models_options.go`, `internal/kibana/dashboard/models_access_control.go` |
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
+| `lens-dashboard-app` panel / REQ-035 | `internal/kibana/dashboard/models_lens_dashboard_app_panel.go`, `internal/kibana/dashboard/models_lens_dashboard_app_converters.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
 | Dashboard API status handling | `internal/clients/kibanaoapi/dashboards.go` |
