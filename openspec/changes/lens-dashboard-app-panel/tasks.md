@@ -38,12 +38,12 @@
 
 ## 6. Testing
 
-- [x] 6.1 Add acceptance tests for `lens-dashboard-app` panel creation in by-reference mode with required `ref_id` and `time_range`; include coverage that sets optional `references_json` for a typical saved-object reference-wiring case (see REQ-035)
+- [x] 6.1 Add acceptance tests for `lens-dashboard-app` panel creation in by-reference mode with required `ref_id` and `time_range`; include coverage that sets optional `references_json` for a typical saved-object reference-wiring case (see REQ-035). **Also:** `TestAccResourceDashboardLensDashboardAppByReference` includes a second apply (title / time range / flags) and a follow-up import with `ImportStateVerifyIgnore` for `references_json` / `panels.0.id` where read order can differ.
 - [x] 6.2 Add acceptance tests for `lens-dashboard-app` panel creation in by-value mode with required `config_json` — **Acceptance:** *deferred* (not a separate `TestAcc_…`). A trial `TestAcc` with a Kibana-shaped inline metric fixture still hit post-apply `config_json` drift: the stack reorders/enriches the stored object on read so plan and refreshed state strings do not match reliably across versions without provider-side semantic equality for normalized JSON. **Coverage instead:** unit tests `TestLensDashboardAppByValueToAPI_sendsConfigAsAPI` (write + read back `type`/`title` in `by_value.config_json`) and `TestLensDashboardAppByValueToAPI_UnknownConfigJSON`. Rationale: `acc_lens_dashboard_app_panels_test.go` file comment; optional future acceptance if read/plan alignment for this attribute is improved.
 - [x] 6.3 Add acceptance tests for by-reference panel with optional `title`, `description`, `hide_title`, and `hide_border`
 - [x] 6.4 Add acceptance or unit coverage for by-reference `drilldowns_json`
 - [x] 6.5 Add acceptance tests for by-reference `time_range.mode` (valid `absolute` / `relative` values)
-- [x] 6.6 Add acceptance or plan tests for REQ-006: reject `lens_dashboard_app_config` when panel `type` is not `lens-dashboard-app`
+- [x] 6.6 Add acceptance or plan tests for REQ-006: reject `lens_dashboard_app_config` when panel `type` is not `lens-dashboard-app` — plan fixtures: `wrong_type` (`type = markdown`), `wrong_type_vis` (`type = vis` with only `lens_dashboard_app_config` per delta spec scenario; diagnostic may be `Missing vis panel…` and/or `can only be set when…`)
 - [x] 6.7 Add acceptance or plan tests for REQ-006: reject `lens_dashboard_app_config` set together with any other panel config block on the same panel (e.g. `markdown_config`, `config_json` where disallowed, or a `vis` chart block)
 - [x] 6.8 Add acceptance or plan tests for REQ-006: reject `type = "lens-dashboard-app"` when `lens_dashboard_app_config` is missing (`RequiredIf` on the block)
 - [x] 6.9 Add acceptance or plan tests for plan-time rejection of invalid `by_reference.time_range.mode` (value other than `absolute` or `relative` when set)

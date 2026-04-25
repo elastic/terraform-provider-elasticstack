@@ -54,9 +54,9 @@ Schema validation SHALL extend base REQ-006 (without removing existing options l
 
 #### Scenario: lens_dashboard_app_config rejected for non-lens-dashboard-app panel (ADDED)
 
-- GIVEN a panel with `type = "vis"` and `lens_dashboard_app_config` set
+- GIVEN a panel with `type = "vis"` and `lens_dashboard_app_config` set (no other valid `vis` panel configuration, e.g. no `config_json` / typed `vis` chart block)
 - WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected before any dashboard API call
+- THEN the configuration SHALL be rejected before any dashboard API call (for example `Missing vis panel configuration` from the panel-type object validator and/or schema-level `Invalid Configuration` when `lens_dashboard_app_config` is not allowed for the current `type`)
 
 #### Scenario: Both sub-blocks set simultaneously (ADDED)
 

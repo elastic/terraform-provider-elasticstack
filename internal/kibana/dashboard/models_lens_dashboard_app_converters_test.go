@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -184,9 +185,42 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
 	br := pm.LensDashboardAppConfig.ByReference
 	require.Equal(t, "r1", br.RefID.ValueString())
+	require.Equal(t, "a", br.TimeRange.From.ValueString())
+	require.Equal(t, "b", br.TimeRange.To.ValueString())
 	require.Equal(t, "absolute", br.TimeRange.Mode.ValueString())
 	require.Equal(t, "T2", br.Title.ValueString())
 	require.Equal(t, "D2", br.Description.ValueString())
+}
+
+func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	wire := `{
+		"ref_id": "r1",
+		"time_range": {"from": "x1", "to": "x2"},
+		"drilldowns": [
+			{
+				"type": "dashboard_drilldown",
+				"trigger": "on_apply_filter",
+				"label": "Drill label",
+				"dashboard_id": "dddddddd-dddd-dddd-dddd-dddddddddddd"
+			}
+		]
+	}`
+	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(wire)))
+	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
+	pm := &panelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
+	dd := pm.LensDashboardAppConfig.ByReference.DrilldownsJSON
+	require.True(t, typeutils.IsKnown(dd))
+	s := dd.ValueString()
+	require.Contains(t, s, "dashboard_drilldown")
+	require.Contains(t, s, "on_apply_filter")
+	require.Contains(t, s, "Drill label")
+	require.Contains(t, s, "dddddddd-dddd-dddd-dddd-dddddddddddd")
 }
 
 func TestPopulateLensDashboardAppFromAPI_byValueOnAmbiguousNoPrior(t *testing.T) {
