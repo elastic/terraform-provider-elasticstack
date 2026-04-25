@@ -2,7 +2,7 @@
 
 Base spec: `openspec/specs/kibana-dashboard/spec.md` (capability `kibana-dashboard`).
 
-This delta modifies requirements REQ-006 and REQ-025 and adds REQ-035 for `lens-dashboard-app` panel support. Keep this file aligned with `proposal.md` and `design.md` until the change is archived.
+This delta modifies requirements REQ-006, REQ-010, and REQ-025 and adds REQ-035 for `lens-dashboard-app` panel support (including panel-level `config_json` allowlist/round-trip wording in REQ-010, coordinated with the REQ-025 rule below). Keep this file aligned with `proposal.md` and `design.md` until the change is archived.
 
 ---
 
@@ -15,7 +15,7 @@ lens_dashboard_app_config = <optional, object({
   # Exactly one of by_value or by_reference must be set
 
   by_value = <optional, object({
-    config_json = <required, json string, normalized>  # full API by-value Lens chart config object
+    config_json = <required, json string, normalized>  # full API by-value Lens chart config object; sent directly as panel config
   })>
 
   by_reference = <optional, object({
