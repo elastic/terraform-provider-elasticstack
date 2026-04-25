@@ -17,8 +17,8 @@
 
 ## 3. Models
 
-- [ ] 3.1 Extend `panelModel` struct in `models_panels.go` with a `LensDashboardAppConfig` field
-- [ ] 3.2 Create `models_lens_dashboard_app_panel.go` with model structs for `lensDashboardAppConfigModel`, `lensDashboardAppByValueModel`, `lensDashboardAppByReferenceModel`, and `lensDashboardAppTimeRangeModel`
+- [x] 3.1 Extend `panelModel` struct in `models_panels.go` with a `LensDashboardAppConfig` field
+- [x] 3.2 Create `models_lens_dashboard_app_panel.go` with model structs for `lensDashboardAppConfigModel`, `lensDashboardAppByValueModel`, `lensDashboardAppByReferenceModel`, and `lensDashboardAppTimeRangeModel`
 
 ## 4. Converters
 
@@ -32,8 +32,8 @@
 ## 5. Validation
 
 - [ ] 5.1 Update panel-level `config_json` write-path error message in `models_panels.go` to explicitly name `lens-dashboard-app` as unsupported (REQ-025 update)
-- [ ] 5.2 Add validator or plan modifier to enforce mutual exclusivity of `by_value` and `by_reference` sub-blocks at plan time
-- [ ] 5.3 Validate `by_reference.time_range.mode` accepts only `absolute` or `relative` when set
+- [x] 5.2 Add validator or plan modifier to enforce mutual exclusivity of `by_value` and `by_reference` sub-blocks at plan time (done in task 2.3: `lensDashboardAppConfigModeValidator` on `lens_dashboard_app_config`)
+- [x] 5.3 Validate `by_reference.time_range.mode` accepts only `absolute` or `relative` when set (done in task 2.2: `stringvalidator.OneOf` on `time_range.mode`)
 - [ ] 5.4 Update resource descriptions and documentation for the new block and its attributes
 
 ## 6. Testing
@@ -42,11 +42,16 @@
 - [ ] 6.2 Add acceptance tests for `lens-dashboard-app` panel creation in by-value mode with required `config_json`
 - [ ] 6.3 Add acceptance tests for by-reference panel with optional `title`, `description`, `hide_title`, and `hide_border`
 - [ ] 6.4 Add acceptance or unit coverage for by-reference `drilldowns_json`
-- [ ] 6.5 Add acceptance tests for by-reference `time_range.mode`
-- [ ] 6.6 Add acceptance tests for plan-time validation rejection when both `by_value` and `by_reference` are set simultaneously
-- [ ] 6.7 Add acceptance tests for plan-time validation rejection when neither `by_value` nor `by_reference` is set
-- [ ] 6.8 Add unit tests for the `by_value` write converter ensuring `config_json` is sent directly as API `config`
-- [ ] 6.9 Add unit tests for the `by_reference` write converter ensuring `ref_id`, `references`, required `time_range`, display fields, and `drilldowns` map to API `config`
-- [ ] 6.10 Add unit tests for the read converter mode detection and field population (by-value path)
-- [ ] 6.11 Add unit tests for the read converter mode detection and field population (by-reference path)
-- [ ] 6.12 Verify that setting `config_json` on a panel with `type = "lens-dashboard-app"` returns an error diagnostic
+- [ ] 6.5 Add acceptance tests for by-reference `time_range.mode` (valid `absolute` / `relative` values)
+- [ ] 6.6 Add acceptance or plan tests for REQ-006: reject `lens_dashboard_app_config` when panel `type` is not `lens-dashboard-app`
+- [ ] 6.7 Add acceptance or plan tests for REQ-006: reject `lens_dashboard_app_config` set together with any other panel config block on the same panel (e.g. `markdown_config`, `config_json` where disallowed, or a `vis` chart block)
+- [ ] 6.8 Add acceptance or plan tests for REQ-006: reject `type = "lens-dashboard-app"` when `lens_dashboard_app_config` is missing (`RequiredIf` on the block)
+- [ ] 6.9 Add acceptance or plan tests for plan-time rejection of invalid `by_reference.time_range.mode` (value other than `absolute` or `relative` when set)
+- [ ] 6.10 Add acceptance tests for plan-time validation rejection when both `by_value` and `by_reference` are set simultaneously
+- [ ] 6.11 Add acceptance tests for plan-time validation rejection when neither `by_value` nor `by_reference` is set
+- [ ] 6.12 Add optional unit tests for `lensDashboardAppConfigModeValidator` (both set, neither set, unknown branches)
+- [ ] 6.13 Add unit tests for the `by_value` write converter ensuring `config_json` is sent directly as API `config`
+- [ ] 6.14 Add unit tests for the `by_reference` write converter ensuring `ref_id`, `references`, required `time_range`, display fields, and `drilldowns` map to API `config`
+- [ ] 6.15 Add unit tests for the read converter mode detection and field population (by-value path)
+- [ ] 6.16 Add unit tests for the read converter mode detection and field population (by-reference path)
+- [ ] 6.17 Verify that setting `config_json` on a panel with `type = "lens-dashboard-app"` returns an error diagnostic
