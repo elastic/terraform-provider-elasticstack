@@ -87,7 +87,7 @@ The existing panel-level `config_json` write path is not extended to `lens-dashb
 2. By-value already has a raw JSON escape hatch inside `lens_dashboard_app_config.by_value.config_json`.
 3. Keeping `lens-dashboard-app` behind a dedicated typed block avoids ambiguity with the existing `config_json` support for other panel types.
 
-REQ-025 is updated to explicitly name `lens-dashboard-app` as unsupported by the panel-level `config_json` attribute.
+**OpenSpec traceability:** REQ-010 is updated for panel-level `config_json` allowlist and typed-only round-trip wording; REQ-025 is updated for the raw `config_json` authoring and write diagnostic. Both align with the proposal and delta (use `lens_dashboard_app_config` for `lens-dashboard-app`).
 
 ### Relationship to existing `vis` Lens panel type
 
