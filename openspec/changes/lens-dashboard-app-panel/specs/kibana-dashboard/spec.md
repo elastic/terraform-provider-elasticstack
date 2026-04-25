@@ -72,6 +72,18 @@ Schema validation SHALL extend base REQ-006 (without removing existing options l
 
 ---
 
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+The base spec SHALL include `lens-dashboard-app` in the panel-level `config_json` write restriction: on write, panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types, and the list of disallowed or typed-only types named alongside that rule SHALL include `lens-dashboard-app` as requiring the typed `lens_dashboard_app_config` block. Other REQ-010 content (panel ordering, `config_json`-only read preservation for allowed types, and other typed-only panel exclusions) remains unchanged by this change.
+
+#### Scenario: Panel-level `config_json` allowlist names `lens-dashboard-app` as typed-only (ADDED)
+
+- GIVEN a panel with `type = "lens-dashboard-app"` authored using panel-level `config_json` instead of `lens_dashboard_app_config`
+- WHEN the provider applies the REQ-010 rule for which panel types may use panel-level `config_json` on write
+- THEN the configuration SHALL be rejected; REQ-025 governs the same write path’s raw-`config_json` diagnostic detail for this case
+
+---
+
 ### Requirement: Raw `config_json` panel behavior (REQ-025)
 
 `config_json` SHALL NOT be supported for `lens-dashboard-app` panels; the `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
