@@ -396,6 +396,16 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(smPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSyntheticsMonitorsFromAPI(&pm, tfPanel, smPanel)
+	case panelTypeLensDashboardApp:
+		ldPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, ldPanel.Grid.X, ldPanel.Grid.Y, ldPanel.Grid.W, ldPanel.Grid.H)
+		pm.ID = types.StringPointerValue(ldPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		d := populateLensDashboardAppFromAPI(ctx, &pm, tfPanel, ldPanel)
+		diags.Append(d...)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.ID = types.StringNull()
@@ -536,10 +546,14 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return sloOverviewToAPI(pm, grid, panelID)
 	}
 
+	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
+	if pm.LensDashboardAppConfig != nil {
+		return lensDashboardAppToAPI(pm, lensGrid, panelID)
+	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		diags.AddError(
-			"lens-dashboard-app panel is not yet supported",
-			"The `lens_dashboard_app_config` API write path is not implemented in this build.",
+			"Missing `lens_dashboard_app_config`",
+			"The `lens_dashboard_app_config` block is required for `lens-dashboard-app` panels.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
