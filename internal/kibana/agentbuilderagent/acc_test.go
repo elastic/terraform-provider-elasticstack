@@ -20,6 +20,7 @@ package agentbuilderagent_test
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -208,7 +209,7 @@ func TestAccDataSourceKibanaAgentBuilderAgentKibanaConnection(t *testing.T) {
 		resource.TestCheckResourceAttr(dataSourceID, "name", "Test Agent (kibana_connection)"),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.#", "1"),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.endpoints.#", "1"),
-		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.endpoints.0", os.Getenv("KIBANA_ENDPOINT")),
+		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.endpoints.0", strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.insecure", "false"),
 	}
 	checks = append(checks, acctest.KibanaConnectionAuthChecks(dataSourceID)...)
