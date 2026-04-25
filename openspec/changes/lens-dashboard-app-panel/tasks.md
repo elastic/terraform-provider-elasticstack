@@ -39,7 +39,7 @@
 ## 6. Testing
 
 - [x] 6.1 Add acceptance tests for `lens-dashboard-app` panel creation in by-reference mode with required `ref_id` and `time_range`; include coverage that sets optional `references_json` for a typical saved-object reference-wiring case (see REQ-035)
-- [x] 6.2 Add acceptance tests for `lens-dashboard-app` panel creation in by-value mode with required `config_json` (covered in unit / API mapping tests: `TestLensDashboardAppByValueToAPI_sendsConfigAsAPI` — a full `TestAcc_…` apply is not included because Kibana enriches inline config on first read, causing post-apply state drift; see `acc_lens_dashboard_app_panels_test.go` note)
+- [x] 6.2 Add acceptance tests for `lens-dashboard-app` panel creation in by-value mode with required `config_json` — **Acceptance:** *deferred* (not a separate `TestAcc_…`). A trial `TestAcc` with a Kibana-shaped inline metric fixture still hit post-apply `config_json` drift: the stack reorders/enriches the stored object on read so plan and refreshed state strings do not match reliably across versions without provider-side semantic equality for normalized JSON. **Coverage instead:** unit tests `TestLensDashboardAppByValueToAPI_sendsConfigAsAPI` (write + read back `type`/`title` in `by_value.config_json`) and `TestLensDashboardAppByValueToAPI_UnknownConfigJSON`. Rationale: `acc_lens_dashboard_app_panels_test.go` file comment; optional future acceptance if read/plan alignment for this attribute is improved.
 - [x] 6.3 Add acceptance tests for by-reference panel with optional `title`, `description`, `hide_title`, and `hide_border`
 - [x] 6.4 Add acceptance or unit coverage for by-reference `drilldowns_json`
 - [x] 6.5 Add acceptance tests for by-reference `time_range.mode` (valid `absolute` / `relative` values)

@@ -90,7 +90,7 @@ func TestLensDashboardAppByValueToAPI_UnknownConfigJSON(t *testing.T) {
 	}
 }
 
-func TestLensDashboardAppByValueToAPI_sendsConfigAsAPIConfig(t *testing.T) {
+func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	raw := `{"type":"metric","title":"t",` +
@@ -113,6 +113,10 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPIConfig(t *testing.T) {
 	diags = populateLensDashboardAppFromAPI(ctx, pm, &panelModel{LensDashboardAppConfig: prior}, ld)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
+	var readRoot map[string]any
+	require.NoError(t, json.Unmarshal([]byte(pm.LensDashboardAppConfig.ByValue.ConfigJSON.ValueString()), &readRoot))
+	require.Equal(t, "metric", readRoot["type"])
+	require.Equal(t, "t", readRoot["title"])
 }
 
 func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
@@ -145,6 +149,14 @@ func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 	require.Equal(t, kbapi.KbnEsQueryServerTimeRangeSchemaModeRelative, *cfg1.TimeRange.Mode)
 	require.Len(t, *cfg1.References, 1)
 	require.Equal(t, "abc", (*cfg1.References)[0].Id)
+	require.NotNil(t, cfg1.Title)
+	require.Equal(t, "T", *cfg1.Title)
+	require.NotNil(t, cfg1.Description)
+	require.Equal(t, "D", *cfg1.Description)
+	require.NotNil(t, cfg1.HideTitle)
+	require.True(t, *cfg1.HideTitle)
+	require.NotNil(t, cfg1.HideBorder)
+	require.False(t, *cfg1.HideBorder)
 	require.NotNil(t, cfg1.Drilldowns)
 	require.Len(t, *cfg1.Drilldowns, 1)
 }
@@ -174,6 +186,7 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.Equal(t, "r1", br.RefID.ValueString())
 	require.Equal(t, "absolute", br.TimeRange.Mode.ValueString())
 	require.Equal(t, "T2", br.Title.ValueString())
+	require.Equal(t, "D2", br.Description.ValueString())
 }
 
 func TestPopulateLensDashboardAppFromAPI_byValueOnAmbiguousNoPrior(t *testing.T) {
