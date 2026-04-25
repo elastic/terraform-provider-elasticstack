@@ -75,6 +75,73 @@ func TestPreservePriorLensByValueConfigJSON_enrichment(t *testing.T) {
 	require.Equal(t, prior, out.ValueString())
 }
 
+func TestJsonValuePriorEmbedded_filtersOmittedOrNull(t *testing.T) {
+	t.Parallel()
+	base := `{"type":"metric","title":"x","metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}]`
+	priorEmpty := base + `,"filters":[]}`
+	currentOmit := base + `}`
+	currentNull := base + `,"filters":null}`
+	ok, err := jsonValuePriorEmbeddedInExpandedCurrent(priorEmpty, currentOmit)
+	require.NoError(t, err)
+	require.True(t, ok)
+	ok, err = jsonValuePriorEmbeddedInExpandedCurrent(priorEmpty, currentNull)
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func TestJsonValuePriorEmbedded_defaultKqlQueryOmittedOnRead(t *testing.T) {
+	t.Parallel()
+	prior := `{"type":"metric","title":"t","metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}],` +
+		`"query":{"language":"kql","expression":""}}`
+	current := `{"type":"metric","title":"t","metrics":[{"type":"primary","operation":"count","format":{"type":"number"}}]}`
+	ok, err := jsonValuePriorEmbeddedInExpandedCurrent(prior, current)
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func TestIsOmissibleDefaultKqlQuery(t *testing.T) {
+	t.Parallel()
+	require.True(t, isOmissibleDefaultKqlQuery(nil))
+	require.True(t, isOmissibleDefaultKqlQuery(map[string]any{}))
+	require.True(t, isOmissibleDefaultKqlQuery(map[string]any{"language": "kql"}))
+	require.True(t, isOmissibleDefaultKqlQuery(map[string]any{"language": "kql", "expression": ""}))
+	require.False(t, isOmissibleDefaultKqlQuery(map[string]any{"language": "lucene", "expression": ""}))
+	require.False(t, isOmissibleDefaultKqlQuery(map[string]any{"language": "kql", "expression": "host:*"}))
+}
+
+func TestPopulateLensDashboardAppFromAPI_byValuePreservesPractitionerEnriched(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	priorStr := `{"data_source":{"index_pattern":"metrics-*","time_field":"@timestamp","type":"data_view_spec"},` +
+		`"filters":[],"metrics":[{"format":{"type":"number"},"operation":"count","type":"primary"}],` +
+		`"query":{"expression":"","language":"kql"},"styling":{"icon":{"name":"heart"}},` +
+		`"time_range":{"from":"now-15m","to":"now"},"title":"Acc by-value","type":"metric"}`
+	apiStr := `{"time_range":{"from":"now-15m","to":"now"},"title":"Acc by-value",` +
+		`"data_source":{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"},` +
+		`"type":"metric","sampling":1,"ignore_global_filters":false,` +
+		`"metrics":[{"type":"primary","operation":"count","empty_as_null":false,` +
+		`"format":{"type":"number","decimals":2,"compact":false},"color":{"type":"auto"}}],` +
+		`"styling":{"primary":{"position":"bottom","labels":{"alignment":"left"},` +
+		`"value":{"sizing":"auto","alignment":"right"}}}}`
+	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(apiStr)))
+	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
+	tfPanel := &panelModel{
+		LensDashboardAppConfig: &lensDashboardAppConfigModel{
+			ByValue: &lensDashboardAppByValueModel{
+				ConfigJSON: jsontypes.NewNormalizedValue(priorStr),
+			},
+		},
+	}
+	pm := &panelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, pm, tfPanel, api)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.LensDashboardAppConfig)
+	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
+	require.True(t, typeutils.IsKnown(pm.LensDashboardAppConfig.ByValue.ConfigJSON))
+	require.Equal(t, priorStr, pm.LensDashboardAppConfig.ByValue.ConfigJSON.ValueString())
+}
+
 func TestClassifyLensDashboardAppConfigFromRoot(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

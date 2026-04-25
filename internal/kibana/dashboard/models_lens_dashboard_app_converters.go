@@ -554,6 +554,8 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 			// an embed; the next write from preserved [] could strip API data.
 			return len(c) == 0
 		}
+		// Trailing elements in `current` beyond `len(prior)` are allowed (API may append);
+		// index positions that exist in `prior` must match `current` at the same indices.
 		if len(p) > len(c) {
 			return false
 		}

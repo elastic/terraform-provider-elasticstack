@@ -106,6 +106,8 @@ On read-back, the provider classifies the API `config` **JSON object from its ra
 
 `by_value.config_json`, `by_reference.references_json`, and `by_reference.drilldowns_json` should use semantic JSON equality so API ordering changes do not create spurious plan diffs. For by-reference optional scalar fields, read-back should seed from prior practitioner intent where the API omits optional values, consistent with existing panel drift-prevention behavior.
 
+**By-value practitioner preservation:** When Kibana’s stored `config` is a **value-superset** of the practitioner’s planned `by_value.config_json` (same values on every path the practitioner set, with extra keys/defaults on read), the implementation preserves the original Terraform string in state so apply/refresh stays stable (see REQ-035 and `preservePriorLensByValueConfigJSON` in `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`).
+
 ## Risks and Trade-offs
 
 | Risk | Mitigation |

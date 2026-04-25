@@ -26,31 +26,46 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
-// **By-value:** `TestAccResourceDashboardLensDashboardAppByValue` — read-back may enrich the
-// stored Kibana `config` object. The provider keeps practitioner `by_value.config_json` in
-// state when the API value is a strict expansion of that JSON (REQ-035). If a stack changes
-// values the user set, or rewrites a field such as `type`, plan may still show drift. See
-// `models_lens_dashboard_app_converters.go` `preservePriorLensByValueConfigJSON` and
-// `tasks.md` 6.2.
+// **By-value:** `TestAccResourceDashboardLensDashboardAppByValue` applies the same config twice;
+// the second step uses `plancheck.ExpectEmptyPlan()` to assert no post-refresh drift. The
+// provider keeps practitioner `by_value.config_json` when the API read is a safe value-superset
+// (REQ-035). Residual drift is still possible if Kibana rewrites a user-set value. See
+// `preservePriorLensByValueConfigJSON` in `models_lens_dashboard_app_converters.go` and `tasks.md` 6.2.
 
 func TestAccResourceDashboardLensDashboardAppByValue(t *testing.T) {
 	dashboardTitle := "Acc lens app by-val " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{{
-			ProtoV6ProviderFactories: acctest.Providers,
-			SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-			ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
-			ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
-			Check: resource.ComposeTestCheckFunc(
-				resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
-				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"type"\s*:\s*"metric"`)),
-				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"title"\s*:\s*"Acc by-value"`)),
-				resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)),
-			),
-		}},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"type"\s*:\s*"metric"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"title"\s*:\s*"Acc by-value"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)),
+				),
+			},
+			// Same config again: require an empty pre-apply plan (no post-apply drift on refresh).
+			// PreApply cannot be combined with PlanOnly (framework limitation); a no-op apply is fine.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
 	})
 }
 
