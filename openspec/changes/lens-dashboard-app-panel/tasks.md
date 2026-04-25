@@ -31,10 +31,10 @@
 
 ## 5. Validation
 
-- [ ] 5.1 Update panel-level `config_json` write-path error message in `models_panels.go` to explicitly name `lens-dashboard-app` as unsupported (REQ-025 update)
+- [x] 5.1 Update panel-level `config_json` write-path error message in `models_panels.go` to explicitly name `lens-dashboard-app` as unsupported (REQ-025 update)
 - [x] 5.2 Add validator or plan modifier to enforce mutual exclusivity of `by_value` and `by_reference` sub-blocks at plan time (done in task 2.3: `lensDashboardAppConfigModeValidator` on `lens_dashboard_app_config`)
 - [x] 5.3 Validate `by_reference.time_range.mode` accepts only `absolute` or `relative` when set (done in task 2.2: `stringvalidator.OneOf` on `time_range.mode`)
-- [ ] 5.4 Update resource descriptions and documentation for the new block and its attributes
+- [x] 5.4 Update resource descriptions and documentation for the new block and its attributes
 
 ## 6. Testing
 

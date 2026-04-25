@@ -1300,7 +1300,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"lens_dashboard_app_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
-					"Configuration for a lens-dashboard-app panel. Exactly one of `by_value` or `by_reference` must be set.",
+					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
+						"Required when `type` is `lens-dashboard-app`. "+
+						"Exactly one of `by_value` (inline chart config) or `by_reference` (saved Lens object via `ref_id` and `references`) must be set.",
 					"lens_dashboard_app_config",
 					panelConfigNames,
 				),
@@ -1316,10 +1318,16 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
-				CustomType:          customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: panelConfigDescription(
+					"The configuration of the panel as a JSON string. "+
+						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
+						"`lens-dashboard-app` and other typed panel kinds use their dedicated blocks (for `lens-dashboard-app`, use `lens_dashboard_app_config`, not panel-level `config_json`).",
+					"config_json",
+					panelConfigNames,
+				),
+				CustomType: customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
+				Optional:   true,
+				Computed:   true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
@@ -1335,26 +1343,28 @@ func getPanelSchema() schema.NestedAttributeObject {
 func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"by_value": schema.SingleNestedAttribute{
-			MarkdownDescription: "Inline by-value `lens-dashboard-app` config. `config_json` is sent as the API panel `config` object.",
-			Optional:            true,
+			MarkdownDescription: "Inline by-value `lens-dashboard-app` configuration. " +
+				"The nested `config_json` value is sent as the Kibana API panel `config` object " +
+				"(distinct from panel-level `config_json` on the panel).",
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Panel `config` as a normalized JSON string object (a single Lens by-value chart shape such as an ES|QL or NoESQL variant).",
+					MarkdownDescription: "Required normalized JSON object for the by-value Lens chart `config` (for example an ES|QL or NoESQL chart shape).",
 					Required:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
-			MarkdownDescription: "By-reference `lens-dashboard-app` config linking a saved object via `ref_id` and `references`.",
+			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: link a saved Lens visualization using `ref_id`, optional `references_json`, and a required `time_range`.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
 				"ref_id": schema.StringAttribute{
-					MarkdownDescription: "Reference name used in the API `ref_id` field to resolve the linked Lens library item via `references`.",
+					MarkdownDescription: "Reference name in the API `ref_id` field; must match a `name` entry in `references_json` when references are provided.",
 					Required:            true,
 				},
 				"references_json": schema.StringAttribute{
-					MarkdownDescription: "Optional JSON array of `{ id, name, type }` reference objects, matching the API `references` list.",
+					MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).",
 					Optional:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
