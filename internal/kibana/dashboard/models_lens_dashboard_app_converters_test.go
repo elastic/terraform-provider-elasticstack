@@ -285,6 +285,54 @@ func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 	require.Len(t, *cfg1.Drilldowns, 1)
 }
 
+func TestLensDashboardAppByReferenceToAPI_emptyDrilldownsJSON_sendsEmptyArray(t *testing.T) {
+	t.Parallel()
+	byRef := lensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lensRef"),
+		TimeRange: lensDashboardAppTimeRangeModel{
+			From: types.StringValue("2024-01-01T00:00:00.000Z"),
+			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
+		},
+		DrilldownsJSON: jsontypes.NewNormalizedValue(`[]`),
+	}
+	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
+	require.False(t, diags.HasError())
+	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
+	require.NoError(t, err)
+	cfg1, err := ld.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+	require.NoError(t, err)
+	require.NotNil(t, cfg1.Drilldowns, "explicit [] must set Drilldowns so the API can clear prior drilldowns")
+	require.Empty(t, *cfg1.Drilldowns)
+	var wire map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
+	require.Contains(t, wire, "drilldowns")
+	require.Equal(t, []any{}, wire["drilldowns"])
+}
+
+func TestLensDashboardAppByReferenceToAPI_emptyReferencesJSON_sendsEmptyArray(t *testing.T) {
+	t.Parallel()
+	byRef := lensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lensRef"),
+		TimeRange: lensDashboardAppTimeRangeModel{
+			From: types.StringValue("2024-01-01T00:00:00.000Z"),
+			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
+		},
+		ReferencesJSON: jsontypes.NewNormalizedValue(`[]`),
+	}
+	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
+	require.False(t, diags.HasError())
+	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
+	require.NoError(t, err)
+	cfg1, err := ld.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+	require.NoError(t, err)
+	require.NotNil(t, cfg1.References)
+	require.Empty(t, *cfg1.References)
+	var wire map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
+	require.Contains(t, wire, "references")
+	require.Equal(t, []any{}, wire["references"])
+}
+
 func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

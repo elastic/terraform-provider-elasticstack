@@ -206,6 +206,9 @@ func lensDashboardAppByReferenceToAPI(
 				diags.AddError("Invalid `by_reference.references_json` for lens-dashboard-app", err.Error())
 				return kbapi.DashboardPanelItem{}, diags
 			}
+			if out == nil {
+				out = []kbapi.KbnContentManagementUtilsReferenceSchema{}
+			}
 			api1.References = &out
 		}
 	}
@@ -237,9 +240,10 @@ func lensDashboardAppByReferenceToAPI(
 				diags.AddError("Invalid `by_reference.drilldowns_json` for lens-dashboard-app", err.Error())
 				return kbapi.DashboardPanelItem{}, diags
 			}
-			if len(items) > 0 {
-				api1.Drilldowns = &items
+			if items == nil {
+				items = []kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item{}
 			}
+			api1.Drilldowns = &items
 		}
 	}
 	var config kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
