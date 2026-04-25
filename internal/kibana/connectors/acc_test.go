@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 //go:embed testdata/TestAccResourceKibanaConnectorFromSDK/main.tf
@@ -176,34 +175,16 @@ func testCommonAttributes(connectorName, connectorTypeID string) resource.TestCh
 	)
 }
 
-func checkResourceKibanaConnectorDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		return err
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_kibana_action_connector" {
-			continue
-		}
-		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-
-		connector, diags := kibanaoapi.GetConnector(context.Background(), oapiClient, compID.ResourceID, compID.ClusterID)
+var checkResourceKibanaConnectorDestroy = checks.KibanaResourceDestroyCheckCompositeID(
+	"elasticstack_kibana_action_connector",
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, connectorID string) (bool, error) {
+		connector, diags := kibanaoapi.GetConnector(ctx, client, connectorID, spaceID)
 		if diags.HasError() {
-			return fmt.Errorf("Failed to get connector: %v", diags)
+			return false, fmt.Errorf("Failed to get connector: %v", diags)
 		}
-
-		if connector != nil {
-			return fmt.Errorf("Action connector (%s) still exists", compID.ResourceID)
-		}
-	}
-	return nil
-}
+		return connector != nil, nil
+	},
+)
 
 func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))

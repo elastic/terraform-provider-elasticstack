@@ -23,14 +23,13 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
@@ -101,30 +100,13 @@ func TestAccResourceSpace(t *testing.T) {
 	})
 }
 
-func checkResourceSpaceDestroy(s *terraform.State) error {
-	scopedClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		return err
-	}
-
-	oapiClient, err := scopedClient.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_kibana_space" {
-			continue
-		}
-
-		space, diags := kibanaoapi.GetSpace(context.Background(), oapiClient, rs.Primary.ID)
+var checkResourceSpaceDestroy = checks.KibanaResourceDestroyCheck(
+	"elasticstack_kibana_space",
+	func(ctx context.Context, client *kibanaoapi.Client, id string) (bool, error) {
+		space, diags := kibanaoapi.GetSpace(ctx, client, id)
 		if diags.HasError() {
-			return fmt.Errorf("error checking space destroy: %s", diags[0].Detail())
+			return false, fmt.Errorf("error checking space destroy: %s", diags[0].Detail())
 		}
-
-		if space != nil {
-			return fmt.Errorf("Space (%s) still exists", rs.Primary.ID)
-		}
-	}
-	return nil
-}
+		return space != nil, nil
+	},
+)
