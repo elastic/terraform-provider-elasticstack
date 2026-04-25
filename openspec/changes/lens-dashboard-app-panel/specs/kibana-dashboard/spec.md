@@ -15,29 +15,27 @@ lens_dashboard_app_config = <optional, object({
   # Exactly one of by_value or by_reference must be set
 
   by_value = <optional, object({
-    attributes_json = <required, json string, normalized>  # full Lens chart attributes object
-    references_json = <optional, json string, normalized>  # array of { id: string, name: string, type: string }
+    config_json = <required, json string, normalized>  # full API by-value Lens chart config object
   })>
 
   by_reference = <optional, object({
-    saved_object_id = <required, string>  # ID of the saved Lens visualization saved object
-    overrides_json  = <optional, json string, normalized>  # JSON object for overrides to the saved Lens object
-  })>
-
-  # Shared optional fields
-  title       = <optional, string>
-  description = <optional, string>
-  hide_title  = <optional, bool>
-  hide_border = <optional, bool>
-
-  time_range = <optional, object({
-    from = <required, string>
-    to   = <required, string>
+    ref_id          = <required, string>  # API reference name for the linked library item
+    references_json = <optional, json string, normalized>  # array of { id: string, name: string, type: string }
+    title           = <optional, string>
+    description     = <optional, string>
+    hide_title      = <optional, bool>
+    hide_border     = <optional, bool>
+    drilldowns_json = <optional, json string, normalized>
+    time_range = <required, object({
+      from = <required, string>
+      to   = <required, string>
+      mode = <optional, string> # absolute | relative
+    })>
   })>
 })> # only with type = "lens-dashboard-app"; conflicts with all other config blocks; exactly one of by_value or by_reference must be set
 ```
 
-**Distinction from existing `lens` panel type**: The `lens_dashboard_app_config` block applies exclusively to panels with `type = "lens-dashboard-app"`. Panels with `type = "lens"` continue to use the existing typed config blocks (`xy_chart_config`, `metric_chart_config`, `waffle_config`, etc.) and `config_json`. The type string `lens-dashboard-app` must appear verbatim in the panel `type` attribute; it is not interchangeable with `lens`.
+**Distinction from existing `vis` Lens panel type**: The `lens_dashboard_app_config` block applies exclusively to panels with `type = "lens-dashboard-app"`. Panels with `type = "vis"` continue to use the existing typed Lens config blocks (`xy_chart_config`, `metric_chart_config`, `waffle_config`, etc.) and supported `config_json` behavior. The type string `lens-dashboard-app` must appear verbatim in the panel `type` attribute; it is not interchangeable with `vis`.
 
 ---
 
@@ -56,12 +54,13 @@ gains the following additions:
 - `lens_dashboard_app_config` SHALL be valid only for panels with `type = "lens-dashboard-app"`.
 - `lens_dashboard_app_config` SHALL be mutually exclusive with all other panel configuration blocks.
 - Within `lens_dashboard_app_config`, exactly one of `by_value` or `by_reference` SHALL be set; setting both or neither SHALL be rejected at plan time.
-- `by_value.attributes_json` SHALL be required when `by_value` is set.
-- `by_reference.saved_object_id` SHALL be required when `by_reference` is set.
+- `by_value.config_json` SHALL be required when `by_value` is set.
+- `by_reference.ref_id` and `by_reference.time_range` SHALL be required when `by_reference` is set.
+- `by_reference.time_range.mode` SHALL be restricted to `absolute` or `relative` when set.
 
 #### Scenario: lens_dashboard_app_config rejected for non-lens-dashboard-app panel (ADDED)
 
-- GIVEN a panel with `type = "lens"` and `lens_dashboard_app_config` set
+- GIVEN a panel with `type = "vis"` and `lens_dashboard_app_config` set
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
 
@@ -85,11 +84,11 @@ gains the following additions:
 
 The existing REQ-025 text:
 
-> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+> On write, `config_json` SHALL be supported only for `markdown` and `vis` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
 
 is updated to:
 
-> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, including `lens-dashboard-app`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
+> On write, panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using panel-level `config_json` with any other panel type, including `lens-dashboard-app`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
 
 #### Scenario: config_json rejected for lens-dashboard-app panel type (ADDED)
 
@@ -103,52 +102,55 @@ is updated to:
 
 ### Requirement: `lens-dashboard-app` panel behavior (REQ-035)
 
-For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, the `attributes_json` attribute is required. Within `by_reference`, the `saved_object_id` attribute is required. The optional shared attributes `title`, `description`, `hide_title`, `hide_border`, and `time_range` MAY be set in either mode.
+For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, the `config_json` attribute is required and SHALL contain a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns_json` MAY be set.
 
 **On write (create and update):**
 
-For by-value panels, the resource SHALL map `by_value.attributes_json` to the `attributes` field in the API payload, and SHALL include `references` from `by_value.references_json` when set. For by-reference panels, the resource SHALL set `saved_object_id` in the API payload from `by_reference.saved_object_id`, and SHALL include `overrides` from `by_reference.overrides_json` when set.
+For by-value panels, the resource SHALL map `by_value.config_json` directly to the panel `config` object without wrapping it in an `attributes` object and without splitting out references. The JSON object SHALL be expected to match one of the current generated by-value Lens chart schemas, including that schema's required fields such as chart `type` and `time_range` where applicable.
 
-In both modes, the resource SHALL include the shared optional fields (`title`, `description`, `hide_title`, `hide_border`, `time_range`) in the API payload only when they are set in Terraform state. Absent optional fields SHALL NOT be sent to the API.
+For by-reference panels, the resource SHALL set the API `config.ref_id` field from `by_reference.ref_id`, set the API `config.time_range` object from `by_reference.time_range`, and include `references`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` only when their corresponding Terraform attributes are set. `references_json` SHALL map to the API `references` array of `{ id, name, type }` objects. A saved Lens visualization reference SHALL be represented through `references_json`, typically with a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
 
 **On read:**
 
-The resource SHALL determine the panel mode by inspecting the API response: the presence of an `attributes` key indicates by-value mode; the presence of a `saved_object_id` key indicates by-reference mode. The resource SHALL populate the corresponding sub-block in state and leave the other sub-block as null. Fields absent from the API response SHALL not be forced into state.
+The resource SHALL determine the panel mode from the API `config` union. When the config decodes as the generated by-reference object with `ref_id` and `time_range`, the resource SHALL populate `by_reference` in state and leave `by_value` null. Otherwise, the resource SHALL preserve the API `config` JSON under `by_value.config_json` and leave `by_reference` null. Fields absent from the API response SHALL not be forced into state.
 
-`attributes_json`, `references_json`, and `overrides_json` SHALL use default-aware semantic JSON equality for plan comparison. API-injected field ordering or default field additions SHALL NOT create spurious plan diffs.
+`by_value.config_json`, `by_reference.references_json`, and `by_reference.drilldowns_json` SHALL use semantic JSON equality for plan comparison. API-injected field ordering SHALL NOT create spurious plan diffs.
 
-The `lens-dashboard-app` panel type is distinct from the `lens` panel type. None of the typed Lens panel converters (e.g. `xy_chart_config`, `metric_chart_config` converters), Lens time-range injection via `lensPanelTimeRange()`, or Lens metric default normalization SHALL apply to `lens-dashboard-app` panels. The `lens_dashboard_app_config` block uses its own read and write converters.
+The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens panel path. None of the typed Lens panel converters (e.g. `xy_chart_config`, `metric_chart_config` converters), Lens time-range injection via `lensPanelTimeRange()`, or Lens metric default normalization SHALL apply to `lens-dashboard-app` panels. The `lens_dashboard_app_config` block uses its own read and write converters.
 
 #### Scenario: Creation of a by-reference lens-dashboard-app panel
 
 - GIVEN a dashboard configuration containing a `lens-dashboard-app` panel with:
   - `type = "lens-dashboard-app"`
-  - `lens_dashboard_app_config.by_reference.saved_object_id = "abc-123"`
-  - `lens_dashboard_app_config.title = "My Shared Visualization"`
+  - `lens_dashboard_app_config.by_reference.ref_id = "panel_0"`
+  - `lens_dashboard_app_config.by_reference.references_json = "[{\"id\":\"abc-123\",\"name\":\"panel_0\",\"type\":\"lens\"}]"`
+  - `lens_dashboard_app_config.by_reference.time_range.from = "now-15m"`
+  - `lens_dashboard_app_config.by_reference.time_range.to = "now"`
+  - `lens_dashboard_app_config.by_reference.title = "My Shared Visualization"`
 - WHEN the resource is created
-- THEN the provider SHALL send a panel payload with `saved_object_id = "abc-123"` and `title = "My Shared Visualization"` to the Kibana dashboard API
-- AND the panel SHALL appear in state with `by_reference.saved_object_id = "abc-123"` and `by_value` as null
-- AND the provider SHALL NOT populate `config_json` for this panel in state
+- THEN the provider SHALL send a panel payload with `config.ref_id = "panel_0"`, the references array, the time range object, and `title = "My Shared Visualization"` to the Kibana dashboard API
+- AND the panel SHALL appear in state with `by_reference.ref_id = "panel_0"` and `by_value` as null
+- AND the provider SHALL NOT populate panel-level `config_json` for this panel in state
 
 #### Scenario: Creation of a by-value lens-dashboard-app panel
 
 - GIVEN a dashboard configuration containing a `lens-dashboard-app` panel with:
   - `type = "lens-dashboard-app"`
-  - `lens_dashboard_app_config.by_value.attributes_json = "<valid Lens chart JSON>"`
-  - `lens_dashboard_app_config.by_value.references_json = "[{\"id\": \"dv-1\", \"name\": \"indexpattern-datasource-layer-abc\", \"type\": \"index-pattern\"}]"`
+  - `lens_dashboard_app_config.by_value.config_json = "<valid generated API Lens chart config JSON>"`
 - WHEN the resource is created
-- THEN the provider SHALL send a panel payload with the `attributes` object and `references` array to the Kibana dashboard API
-- AND the panel SHALL appear in state with `by_value.attributes_json` and `by_value.references_json` populated and `by_reference` as null
+- THEN the provider SHALL send the decoded JSON object directly as the panel API `config`
+- AND the panel SHALL appear in state with `by_value.config_json` populated and `by_reference` as null
 
-#### Scenario: by-reference panel with time_range and overrides_json
+#### Scenario: by-reference panel with required time_range and optional drilldowns_json
 
 - GIVEN a `lens-dashboard-app` panel in by-reference mode with:
-  - `lens_dashboard_app_config.by_reference.saved_object_id = "xyz-456"`
-  - `lens_dashboard_app_config.by_reference.overrides_json = "{\"timeRange\": {\"from\": \"now-7d\", \"to\": \"now\"}}"`
-  - `lens_dashboard_app_config.time_range.from = "now-7d"`
-  - `lens_dashboard_app_config.time_range.to = "now"`
+  - `lens_dashboard_app_config.by_reference.ref_id = "panel_0"`
+  - `lens_dashboard_app_config.by_reference.time_range.from = "now-7d"`
+  - `lens_dashboard_app_config.by_reference.time_range.to = "now"`
+  - `lens_dashboard_app_config.by_reference.time_range.mode = "relative"`
+  - `lens_dashboard_app_config.by_reference.drilldowns_json = "[{\"type\":\"url_drilldown\",\"trigger\":\"on_click_value\",\"label\":\"Open\",\"url\":\"https://example.com\"}]"`
 - WHEN the resource is created or updated
-- THEN the provider SHALL include the `time_range` object and `overrides` object in the API payload
+- THEN the provider SHALL include the `time_range` object and `drilldowns` array in the API payload
 - AND on read-back the provider SHALL repopulate both from the API response
 
 #### Scenario: Invalid mixed configuration — both sub-blocks set
@@ -160,13 +162,13 @@ The `lens-dashboard-app` panel type is distinct from the `lens` panel type. None
 #### Scenario: Read-back detects by-reference mode from API response
 
 - GIVEN a managed `lens-dashboard-app` panel authored in by-reference mode
-- WHEN Kibana returns the panel with a `saved_object_id` field and no `attributes` field
+- WHEN Kibana returns the panel config with `ref_id` and `time_range`
 - THEN the provider SHALL populate `by_reference` in state and leave `by_value` as null
 - AND SHALL NOT create a spurious diff on the next plan
 
-#### Scenario: Read-back preserves absent optional shared fields
+#### Scenario: Read-back preserves absent optional by-reference fields
 
-- GIVEN a managed `lens-dashboard-app` panel in by-reference mode that omits `description` and `time_range`
+- GIVEN a managed `lens-dashboard-app` panel in by-reference mode that omits `description`, `hide_title`, and `hide_border`
 - WHEN Kibana returns the panel without those optional fields
-- THEN the provider SHALL keep `description` and `time_range` as null/unset in state
+- THEN the provider SHALL keep those optional fields null/unset in state
 - AND SHALL NOT create a spurious diff on the next plan
