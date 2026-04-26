@@ -8,12 +8,12 @@
 
 ## 2. Converter Adapter
 
-- [ ] 2.1 Add helper logic that identifies which typed by-value chart block is set on a `lensDashboardAppByValueModel`.
-- [ ] 2.2 Add a build adapter that creates a scratch `panelModel`, reuses the matching existing `lensVisualizationConverter.buildAttributes`, and bridges `KbnDashboardPanelTypeVisConfig0` JSON into `KbnDashboardPanelTypeLensDashboardAppConfig0`.
-- [ ] 2.3 Update `lensDashboardAppByValueToAPI` to use raw `config_json` when selected and the typed chart adapter when a typed by-value source is selected.
-- [ ] 2.4 Add a read adapter that bridges `lens-dashboard-app` by-value config JSON into `KbnDashboardPanelTypeVisConfig0`, detects the Lens chart type, and reuses the matching converter to populate the selected typed by-value chart block.
-- [ ] 2.5 Update `populateLensDashboardAppByValueFromAPI` so prior typed by-value state is preserved when read-back can be represented by the same typed chart block, otherwise falling back to `config_json`.
-- [ ] 2.6 Keep raw `by_value.config_json` preservation behavior unchanged for configurations that selected raw JSON.
+- [x] 2.1 Add helper logic that identifies which typed by-value chart block is set on a `lensDashboardAppByValueModel`.
+- [x] 2.2 Add a build adapter that creates a scratch `panelModel`, reuses the matching existing `lensVisualizationConverter.buildAttributes`, and bridges `KbnDashboardPanelTypeVisConfig0` JSON into `KbnDashboardPanelTypeLensDashboardAppConfig0`.
+- [x] 2.3 Update `lensDashboardAppByValueToAPI` to use raw `config_json` when selected and the typed chart adapter when a typed by-value source is selected.
+- [x] 2.4 Add a read adapter that bridges `lens-dashboard-app` by-value config JSON into `KbnDashboardPanelTypeVisConfig0`, detects the Lens chart type, and reuses the matching converter to populate the selected typed by-value chart block.
+- [x] 2.5 Update `populateLensDashboardAppByValueFromAPI` so prior typed by-value state is preserved when read-back can be represented by the same typed chart block, otherwise falling back to `config_json`.
+- [x] 2.6 Keep raw `by_value.config_json` preservation behavior unchanged for configurations that selected raw JSON.
 
 ## 3. Validation and Drift Behavior
 

@@ -148,10 +148,42 @@ func lensDashboardAppByValueToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	if scratch, ok := lensByValueToScratchVisPanel(byValue); ok {
+		conv, okConv := firstLensVizConverterForPanel(scratch)
+		if !okConv {
+			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		vis0, d := conv.buildAttributes(scratch)
+		diags.Append(d...)
+		if d.HasError() {
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		config, err := lensByValueConfigFromVisConfig0(vis0)
+		if err != nil {
+			diags.AddError("Invalid typed by-value config for lens-dashboard-app", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		ldPanel := kbapi.KbnDashboardPanelTypeLensDashboardApp{
+			Config: config,
+			Grid: kbapi.KbnDashboardPanelGrid{
+				H: grid.H,
+				W: grid.W,
+				X: grid.X,
+				Y: grid.Y,
+			},
+			Id: panelID,
+		}
+		var panelItem kbapi.DashboardPanelItem
+		if err := panelItem.FromKbnDashboardPanelTypeLensDashboardApp(ldPanel); err != nil {
+			diags.AddError("Failed to create lens-dashboard-app panel", err.Error())
+		}
+		return panelItem, diags
+	}
 	if !typeutils.IsKnown(byValue.ConfigJSON) {
 		diags.AddError(
 			"Invalid `by_value.config_json` for lens-dashboard-app",
-			"by_value.config_json is unknown. Ensure it is set to a non-null JSON value.",
+			"by_value.config_json is unknown. Ensure it is set to a non-null JSON value when using `config_json` as the by-value source.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -580,9 +612,11 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 	}
 }
 
-// populateLensDashboardAppByValueFromAPI stores the full config JSON in by_value.config_json
-// (semantic normalization + prior preservation). Used for clearly inline chart config and
-// for ambiguous new imports where there is no prior by_reference to preserve.
+// populateLensDashboardAppByValueFromAPI stores by_value from a by-value chart API read.
+// When prior state used raw `config_json`, preservation rules for that string are unchanged.
+// When prior state used a typed chart block, the same block is repopulated when the API
+// response decodes to that chart type via the vis converter; otherwise the read falls
+// back to `by_value.config_json`.
 func populateLensDashboardAppByValueFromAPI(
 	ctx context.Context,
 	prior *lensDashboardAppConfigModel,
@@ -590,7 +624,25 @@ func populateLensDashboardAppByValueFromAPI(
 	pm *panelModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if norm, ok := marshalToNormalized(configBytes, nil, "by_value.config_json", &diags); ok {
+	norm, okNorm := marshalToNormalized(configBytes, nil, "by_value.config_json", &diags)
+
+	if prior != nil && prior.ByValue != nil && !lensByValueModelHasAnyTypedChartBlock(prior.ByValue) {
+		if okNorm {
+			if typeutils.IsKnown(prior.ByValue.ConfigJSON) {
+				norm = preservePriorLensByValueConfigJSON(ctx, prior.ByValue.ConfigJSON, norm, &diags)
+			}
+			pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
+				ByValue: &lensDashboardAppByValueModel{ConfigJSON: norm},
+			}
+		}
+		return diags
+	}
+
+	if tryPopulateTypedLensByValueFromAPI(ctx, prior, configBytes, pm, &diags) {
+		return diags
+	}
+
+	if okNorm {
 		if prior != nil && prior.ByValue != nil && typeutils.IsKnown(prior.ByValue.ConfigJSON) {
 			norm = preservePriorLensByValueConfigJSON(ctx, prior.ByValue.ConfigJSON, norm, &diags)
 		}
