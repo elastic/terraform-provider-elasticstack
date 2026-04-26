@@ -107,7 +107,14 @@ safe-outputs:
     report-as-issue: false
 ---
 
-# Change Factory issue proposal worker (placeholder)
+# Change Factory issue proposal worker
+
+You author exactly one OpenSpec **change** (proposal pull request) for a GitHub issue labeled
+`change-factory`. The **issue title and body captured below are the sole authoritative source** for
+requested scope, capabilities, and acceptance expectations. Do not treat any other issue, pull
+request, comment thread, or external document as overriding that scope. If secondary details are
+missing but the core change is still identifiable, record assumptions and open questions in the
+OpenSpec artifacts rather than blocking on an exploration loop.
 
 Deterministic pre-activation has already validated this run. The agent job runs only when the issue
 event is eligible, the actor is trusted, and no open linked `change-factory` pull request exists for
@@ -120,8 +127,8 @@ this issue.
 - **Duplicate PR status** (`duplicate_pr_found`): `${{ needs.pre_activation.outputs.duplicate_pr_found }}`
 - **Duplicate PR URL**: `${{ needs.pre_activation.outputs.duplicate_pr_url }}`
 - **Issue number**: `${{ github.event.issue.number }}`
-- **Issue title** (captured): `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body** (captured):
+- **Issue title** (authoritative): `${{ needs.pre_activation.outputs.issue_title }}`
+- **Issue body** (authoritative):
 
   ```markdown
   ${{ needs.pre_activation.outputs.issue_body }}
@@ -131,11 +138,85 @@ this issue.
 - **Triggered by**: `@${{ github.actor }}`
 - **Required branch**: `change-factory/issue-${{ github.event.issue.number }}`
 
-## Task (stub)
+## OpenSpec tooling
 
-Follow-up work will define the full OpenSpec proposal contract. Until then:
+Node.js is configured and `npm ci` has run, so the repository-pinned OpenSpec CLI is available (for
+example `./node_modules/.bin/openspec`). Use it to validate what you author. Disable telemetry for
+CLI invocations: prefix commands with `OPENSPEC_TELEMETRY=0`.
 
-1. Work on branch `change-factory/issue-${{ github.event.issue.number }}`.
-2. Use at most one `create-pull-request` safe output with label `change-factory` and canonical issue
-   linkage (`Closes #${{ github.event.issue.number }}` in the PR body).
-3. If you cannot proceed safely, use at most one `noop` result instead of an extra pull request.
+## Task
+
+Work on branch `change-factory/issue-${{ github.event.issue.number }}` and produce **exactly one**
+active OpenSpec change directory:
+
+`openspec/changes/<change-id>/`
+
+Pick a single stable `<change-id>` (kebab-case, descriptive of the issue scope). **Do not** create a
+second change directory or split the issue across multiple change ids.
+
+Under that directory, create or refresh **all artifacts required for implementation readiness** for
+this repository’s active OpenSpec schema (spec-driven workflow), including:
+
+- `proposal.md`
+- `design.md`
+- `tasks.md`
+- **Delta specs** under `openspec/changes/<change-id>/specs/<capability>/spec.md` (one or more
+  capability folders as the issue requires)
+
+The change must be **apply-ready**: an implementer could start work from `tasks.md` and delta specs
+without guessing the main outcome.
+
+After the files exist, **validate the OpenSpec artifacts** before opening a pull request:
+
+1. Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate <change-id> --type change` and
+   fix every reported problem until the command succeeds.
+2. Optionally confirm readiness with
+   `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec status --change "<change-id>" --json` and
+   resolve any `blocked` state tied to missing artifacts.
+
+Open **exactly one** pull request for this branch using the `create-pull-request` safe output. The
+pull request must be labeled `change-factory` and include canonical issue linkage
+`Closes #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
+linked PR deterministically.
+
+## Pull request contract
+
+The linked pull request must:
+
+- use branch `change-factory/issue-${{ github.event.issue.number }}`
+- contain **only** the OpenSpec change under `openspec/changes/<change-id>/` (plus any
+  repository-authored workflow metadata explicitly required by a future extension of this workflow —
+  none is expected in v1)
+- be the only open `change-factory` pull request for this issue
+- include `Closes #${{ github.event.issue.number }}` in the PR body
+
+## Out of scope — do not do these in this run
+
+This workflow is **proposal-only**. Even if the issue reads like a feature request, **do not**:
+
+- implement or modify Terraform provider code, tests, generated clients, or docs outside the OpenSpec
+  change directory
+- run `make build`, `go test ./...`, or **Terraform acceptance tests** (do not set `TF_ACC`, do not
+  run `TestAcc…` packages)
+- start or assume an **Elastic Stack**, **Fleet**, Docker compose stack services, or **Elasticsearch
+  API key** creation flows
+- add CI steps that provision runtime Elastic services for this issue
+
+## No-op when the issue is too ambiguous
+
+If the title and body **do not** provide enough information to name the capability area and the
+core outcome safely, **do not** author speculative `openspec/changes/` files, **do not** open a pull
+request, **do not** start a GitHub comment or Discussion exploration loop, and **do not** open new
+issues. Instead emit **at most one** `noop` safe output with a **concise** explanation of the
+specific facts needed (for example: which product area, what behavior should change, or what
+“done” means).
+
+## Guardrails
+
+- Do not open GitHub comment threads, Discussions, or new GitHub issues from this workflow.
+- Do not re-check trigger eligibility, actor trust, or duplicate pull request state; deterministic
+  pre-activation already handled those checks.
+- Do not open a second pull request for the same issue.
+- Do not change the branch naming convention.
+- Do not open issues from this workflow.
+- Use at most one `create-pull-request` and at most one `noop` result across the whole run.

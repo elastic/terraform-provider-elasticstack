@@ -13,10 +13,10 @@
 
 ## 3. Agent Prompt and Tooling
 
-- [ ] 3.1 Write the agent prompt to treat the issue title/body as authoritative and create exactly one OpenSpec change under `openspec/changes/<change-id>/`.
-- [ ] 3.2 Instruct the agent to create all artifacts required for implementation readiness by the active OpenSpec schema: proposal, design, tasks, and delta specs.
-- [ ] 3.3 Instruct the agent to validate OpenSpec artifacts and avoid provider implementation, Elastic Stack setup, Fleet setup, API-key creation, and Terraform acceptance tests.
-- [ ] 3.4 Define the no-op behavior for issues that are too ambiguous to propose safely, including a concise clarification reason.
+- [x] 3.1 Write the agent prompt to treat the issue title/body as authoritative and create exactly one OpenSpec change under `openspec/changes/<change-id>/`.
+- [x] 3.2 Instruct the agent to create all artifacts required for implementation readiness by the active OpenSpec schema: proposal, design, tasks, and delta specs.
+- [x] 3.3 Instruct the agent to validate OpenSpec artifacts and avoid provider implementation, Elastic Stack setup, Fleet setup, API-key creation, and Terraform acceptance tests.
+- [x] 3.4 Define the no-op behavior for issues that are too ambiguous to propose safely, including a concise clarification reason.
 
 ## 4. Workflow Generation and Verification
 
