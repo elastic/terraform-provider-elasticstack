@@ -20,7 +20,7 @@
 
 ## 4. Workflow Generation and Verification
 
-- [ ] 4.1 Add the new workflow source to the workflow-source manifest so generated workflow artifacts are checked in.
-- [ ] 4.2 Generate the workflow markdown and compiled lock artifacts with the repository workflow tooling.
-- [ ] 4.3 Run focused workflow helper tests and workflow generation checks.
-- [ ] 4.4 Run OpenSpec validation for the new change.
+- [x] 4.1 Add the new workflow source to the workflow-source manifest so generated workflow artifacts are checked in.
+- [x] 4.2 Generate the workflow markdown and compiled lock artifacts with the repository workflow tooling.
+- [x] 4.3 Run focused workflow helper tests and workflow generation checks.
+- [x] 4.4 Run OpenSpec validation for the new change.
