@@ -17,11 +17,11 @@
 
 ## 3. Validation and Drift Behavior
 
-- [ ] 3.1 Add plan/unit coverage that rejects `by_value` with both `config_json` and a typed chart block.
-- [ ] 3.2 Add plan/unit coverage that rejects `by_value` with no source.
-- [ ] 3.3 Add unit coverage that raw `by_value.config_json` still maps directly to API config and preserves practitioner JSON subset behavior.
-- [ ] 3.4 Add unit coverage that typed by-value read-back keeps the typed representation when the returned chart can be decoded by the matching converter.
-- [ ] 3.5 Add unit coverage that typed by-value read-back falls back to `config_json` when the API response cannot be represented by the prior typed chart block.
+- [x] 3.1 Add plan/unit coverage that rejects `by_value` with both `config_json` and a typed chart block.
+- [x] 3.2 Add plan/unit coverage that rejects `by_value` with no source.
+- [x] 3.3 Add unit coverage that raw `by_value.config_json` still maps directly to API config and preserves practitioner JSON subset behavior.
+- [x] 3.4 Add unit coverage that typed by-value read-back keeps the typed representation when the returned chart can be decoded by the matching converter.
+- [x] 3.5 Add unit coverage that typed by-value read-back falls back to `config_json` when the API response cannot be represented by the prior typed chart block.
 
 ## 4. Chart Coverage
 
