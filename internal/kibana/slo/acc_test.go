@@ -26,6 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -640,7 +641,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable("tw-invalid"),
 				},
-				ExpectError: regexp.MustCompile(`not_a_valid_type`),
+				ExpectError: regexp.MustCompile(`(?s)time_window\[[0-9]\]\.type.*not_a_valid_type`),
 			},
 		},
 	})
@@ -649,15 +650,21 @@ func TestAccResourceSloValidation(t *testing.T) {
 // TestAccResourceSlo_kql_object_form_and_settings_enabled exercises:
 //   - plan-only: object-form filter_kql / good_kql and settings.sync_field parse (no Kibana create);
 //   - apply: string-form KQL with sync_field and toggling `enabled` (create path compatible with typical stacks).
+//
+// The apply path uses string KQL, not a full create with object-form *_kql only: some Kibana/Stack
+// versions respond with HTTP 400 for object-only indicator payloads (e.g. expecting a string
+// for /indicator/good). Plan-only still validates that *_kql attributes parse and plan. Full
+// object-form create+read is covered by unit tests in this package.
 func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	skipKqlSLOStack := versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				SkipFunc:                 skipKqlSLOStack,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("kql_object_form_planonly"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -667,7 +674,7 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				SkipFunc:                 skipKqlSLOStack,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(sloName),
@@ -679,11 +686,12 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field", "@timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "enabled", "false"),
+					checkSloAPIEnabled(false),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				SkipFunc:                 skipKqlSLOStack,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(sloName),
@@ -692,6 +700,7 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field", "@timestamp"),
+					checkSloAPIEnabled(true),
 				),
 			},
 		},
@@ -906,6 +915,40 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 			},
 		},
 	})
+}
+
+// checkSloAPIEnabled asserts the SLO get API reports the same enabled flag as Terraform state
+// (after the provider's enable/disable reconciliation).
+func checkSloAPIEnabled(want bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["elasticstack_kibana_slo.test_slo"]
+		if !ok {
+			return fmt.Errorf("resource elasticstack_kibana_slo.test_slo not found in state")
+		}
+		compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("parse composite id: %v", diags)
+		}
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		oapi, err := client.GetKibanaOapiClient()
+		if err != nil {
+			return err
+		}
+		apiSlo, _, getDiags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
+		if getDiags.HasError() {
+			return fmt.Errorf("get SLO: %v", getDiags)
+		}
+		if apiSlo == nil {
+			return fmt.Errorf("SLO %q not found in Kibana for API enabled check", compID.ResourceID)
+		}
+		if apiSlo.Enabled != want {
+			return fmt.Errorf("Kibana GetSLO enabled=%v, want %v (space=%q, sloId=%q)", apiSlo.Enabled, want, compID.ClusterID, compID.ResourceID)
+		}
+		return nil
+	}
 }
 
 // checkResourceSloDestroy verifies all SLO resources have been destroyed.

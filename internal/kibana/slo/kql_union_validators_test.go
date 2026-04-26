@@ -230,3 +230,82 @@ func TestKqlLegacyStringExclusiveWithObject_goodPair(t *testing.T) {
 		require.True(t, resp.Diagnostics.HasError())
 	})
 }
+
+// totalSiblingsTestSchema matches total + total_kql under a single parent object.
+func totalSiblingsTestSchema() schema.Schema {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"total": schema.StringAttribute{Optional: true},
+			"total_kql": schema.SingleNestedAttribute{
+				Optional: true,
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"kql_query": schema.StringAttribute{Optional: true, Computed: true},
+					"filters": schema.ListNestedAttribute{
+						Optional: true,
+						Computed: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"query": schema.StringAttribute{Optional: true, Computed: true, CustomType: jsontypes.NormalizedType{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func testConfigTotalAndTotalKql(t *testing.T, totalVal tftypes.Value, kqlObj types.Object) tfsdk.Config {
+	t.Helper()
+	ktf, err := kqlObj.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+	_ = totalSiblingsTestSchema()
+	raw := tftypes.NewValue(
+		tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"total":     tftypes.String,
+			"total_kql": ktf.Type(),
+		}},
+		map[string]tftypes.Value{
+			"total":     totalVal,
+			"total_kql": ktf,
+		},
+	)
+	return tfsdk.Config{Raw: raw, Schema: totalSiblingsTestSchema()}
+}
+
+func TestKqlLegacyStringExclusiveWithObject_totalPair(t *testing.T) {
+	t.Parallel()
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql", treatEmptyStringAsUnset: true}
+	kq := testKqlObject(t)
+
+	t.Run("conflict when string total and total_kql both set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigTotalAndTotalKql(t, tftypes.NewValue(tftypes.String, `*`), kq)
+		var resp validator.StringResponse
+		v.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("total"),
+			ConfigValue: types.StringValue(`*`),
+			Config:      cfg,
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
+}
+
+func TestKqlObjectFormExclusiveWithString_totalSiblings(t *testing.T) {
+	t.Parallel()
+	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "total", treatEmptyStringAsUnset: true}
+	kq := testKqlObject(t)
+
+	t.Run("conflict when total and total_kql both set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigTotalAndTotalKql(t, tftypes.NewValue(tftypes.String, "events:*"), kq)
+		var resp validator.ObjectResponse
+		v.ValidateObject(context.Background(), validator.ObjectRequest{
+			Path:        path.Root("total_kql"),
+			ConfigValue: kq,
+			Config:      cfg,
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
+}

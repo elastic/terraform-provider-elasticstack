@@ -22,3 +22,5 @@
 - [x] 3.2 Add or update acceptance tests covering `_kql` inputs, `enabled` behavior, `sync_field`, and validation failures for invalid SLO configurations
 - [x] 3.3 Regenerate `docs/resources/kibana_slo.md` and confirm the new `_kql`, `sync_field`, `artifacts`, and `enabled` fields are documented clearly
 - [x] 3.4 Run the relevant build and test commands for the touched SLO code paths and resolve any regressions
+
+**Acc coverage note (object vs string KQL on create):** full acceptance `apply` using only `*_kql` (no string arms) is not used: some Kibana/Stack versions return HTTP 400 when the create payload uses only the object KQL form. The suite uses a **plan-only** step to validate HCL, plus string-form **apply** for `sync_field` and `enabled`. Object serialization remains covered in unit tests.
