@@ -659,6 +659,22 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
     'expected PR contract: single open change-factory PR for the issue',
   );
 
+  assert.match(
+    prompt,
+    /\*\*do not\*\* open new\s+issues/,
+    'expected noop path to forbid opening new issues',
+  );
+  assert.match(
+    prompt,
+    /Docker compose stack services/,
+    'expected Docker compose stack services prohibition in agent prompt',
+  );
+  assert.match(
+    prompt,
+    /add CI steps that provision runtime Elastic services/,
+    'expected CI Elastic provisioning prohibition in agent prompt',
+  );
+
   assert.doesNotMatch(prompt, /\u2026|\u2014|\u2018|\u2019|\u201c|\u201d/, 'prompt must use ASCII punctuation');
 });
 
