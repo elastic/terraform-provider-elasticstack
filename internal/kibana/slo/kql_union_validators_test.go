@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -47,7 +48,7 @@ func kqlSiblingsTestSchema() schema.Schema {
 						Computed: true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"query": schema.StringAttribute{Optional: true, Computed: true},
+								"query": schema.StringAttribute{Optional: true, Computed: true, CustomType: jsontypes.NormalizedType{}},
 							},
 						},
 					},
@@ -59,18 +60,11 @@ func kqlSiblingsTestSchema() schema.Schema {
 
 func testKqlObject(t *testing.T) types.Object {
 	t.Helper()
-	flt := types.ObjectType{AttrTypes: map[string]attr.Type{"query": types.StringType}}
-	emptyFilters := types.ListValueMust(flt, nil)
-	return types.ObjectValueMust(
-		map[string]attr.Type{
-			"kql_query": types.StringType,
-			"filters":   types.ListType{ElemType: flt},
-		},
-		map[string]attr.Value{
-			"kql_query": types.StringValue("host.name:*"),
-			"filters":   emptyFilters,
-		},
-	)
+	emptyFilters := types.ListValueMust(tfKqlFilterRowObjectType, nil)
+	return types.ObjectValueMust(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+		"kql_query": types.StringValue("host.name:*"),
+		"filters":   emptyFilters,
+	})
 }
 
 func testConfigFilterAndKQL(t *testing.T, filterVal tftypes.Value, kqlObj types.Object) tfsdk.Config {
@@ -95,18 +89,11 @@ func TestKqlObjectFormMeaningful(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	filterRow := types.ObjectType{AttrTypes: map[string]attr.Type{"query": types.StringType}}
-	filtersType := types.ListType{ElemType: filterRow}
-	attrsType := map[string]attr.Type{
-		"kql_query": types.StringType,
-		"filters":   filtersType,
-	}
-
-	emptyList := types.ListValueMust(filterRow, []attr.Value{})
+	emptyList := types.ListValueMust(tfKqlFilterRowObjectType, nil)
 
 	t.Run("rejects known-empty object form", func(t *testing.T) {
 		t.Parallel()
-		obj := types.ObjectValueMust(attrsType, map[string]attr.Value{
+		obj := types.ObjectValueMust(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
 			"kql_query": types.StringValue(""),
 			"filters":   emptyList,
 		})
@@ -121,7 +108,7 @@ func TestKqlObjectFormMeaningful(t *testing.T) {
 
 	t.Run("allows non-blank kql_query", func(t *testing.T) {
 		t.Parallel()
-		obj := types.ObjectValueMust(attrsType, map[string]attr.Value{
+		obj := types.ObjectValueMust(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
 			"kql_query": types.StringValue("host.name:*"),
 			"filters":   emptyList,
 		})

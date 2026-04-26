@@ -471,6 +471,9 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUns
 		Description: "Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field.",
 		Optional:    true,
 		Computed:    true,
+		Default: objectdefault.StaticValue(
+			types.ObjectNull(tfKqlKqlObjectAttrTypes),
+		),
 		Attributes: map[string]schema.Attribute{
 			"kql_query": schema.StringAttribute{
 				Description: "KQL query string when using the object form.",

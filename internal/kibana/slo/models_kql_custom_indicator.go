@@ -21,31 +21,33 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// tfKqlFilterRow is one entry in a KQL object form `filters` list.
-type tfKqlFilterRow struct {
-	Query jsontypes.Normalized `tfsdk:"query"`
-}
-
-// tfKqlKqlObjectForm is the object arm of a KQL union (kqlQuery + filters).
-type tfKqlKqlObjectForm struct {
-	KqlQuery types.String     `tfsdk:"kql_query"`
-	Filters  []tfKqlFilterRow `tfsdk:"filters"`
-}
+// tfKqlKqlObjectAttrTypes matches the filter_kql / good_kql / total_kql SingleNestedAttribute schema
+// (kql_query + list of filter rows with JSON query). Using types.Object holds unknown/null safely.
+var (
+	tfKqlFilterRowObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
+		"query": jsontypes.NormalizedType{},
+	}}
+	tfKqlKqlObjectAttrTypes = map[string]attr.Type{
+		"kql_query": types.StringType,
+		"filters":   types.ListType{ElemType: tfKqlFilterRowObjectType},
+	}
+)
 
 type tfKqlCustomIndicator struct {
-	Index          types.String        `tfsdk:"index"`
-	DataViewID     types.String        `tfsdk:"data_view_id"`
-	Filter         types.String        `tfsdk:"filter"`
-	FilterKql      *tfKqlKqlObjectForm `tfsdk:"filter_kql"`
-	Good           types.String        `tfsdk:"good"`
-	GoodKql        *tfKqlKqlObjectForm `tfsdk:"good_kql"`
-	Total          types.String        `tfsdk:"total"`
-	TotalKql       *tfKqlKqlObjectForm `tfsdk:"total_kql"`
-	TimestampField types.String        `tfsdk:"timestamp_field"`
+	Index          types.String `tfsdk:"index"`
+	DataViewID     types.String `tfsdk:"data_view_id"`
+	Filter         types.String `tfsdk:"filter"`
+	FilterKql      types.Object `tfsdk:"filter_kql"`
+	Good           types.String `tfsdk:"good"`
+	GoodKql        types.Object `tfsdk:"good_kql"`
+	Total          types.String `tfsdk:"total"`
+	TotalKql       types.Object `tfsdk:"total_kql"`
+	TimestampField types.String `tfsdk:"timestamp_field"`
 }
 
 func (m tfModel) kqlCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryResponse_Indicator, diag.Diagnostics) {
@@ -123,11 +125,11 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator kbapi.SLOsIndicato
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
 		Filter:         types.StringNull(),
-		FilterKql:      nil,
+		FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
 		Good:           types.StringNull(),
-		GoodKql:        nil,
+		GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
 		Total:          types.StringNull(),
-		TotalKql:       nil,
+		TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
 		DataViewID:     types.StringNull(),
 	}
 

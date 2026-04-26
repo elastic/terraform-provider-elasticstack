@@ -39,8 +39,11 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 			Index:          types.StringValue("logs-*"),
 			DataViewID:     types.StringValue("dv-123"),
 			Filter:         types.StringValue("service.name:foo"),
+			FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Good:           types.StringValue("status:200"),
+			GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Total:          types.StringValue("*"),
+			TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			TimestampField: types.StringValue("@timestamp"),
 		}}}
 
@@ -73,8 +76,11 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 			Index:          types.StringValue("logs-*"),
 			DataViewID:     types.StringNull(),
 			Filter:         types.StringUnknown(),
+			FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Good:           types.StringUnknown(),
+			GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Total:          types.StringNull(),
+			TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			TimestampField: types.StringValue("@timestamp"),
 		}}}
 
@@ -102,8 +108,11 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 	t.Run("preserves empty strings when explicitly provided", func(t *testing.T) {
 		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
 			Index:          types.StringValue("logs-*"),
+			FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Good:           types.StringValue(""),
+			GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			Total:          types.StringValue(""),
+			TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
 			TimestampField: types.StringValue("@timestamp"),
 		}}}
 
@@ -163,6 +172,9 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		assert.Equal(t, "status:200", ind.Good.ValueString())
 		assert.Equal(t, "*", ind.Total.ValueString())
 		assert.Equal(t, "@timestamp", ind.TimestampField.ValueString())
+		assert.True(t, ind.FilterKql.IsNull())
+		assert.True(t, ind.GoodKql.IsNull())
+		assert.True(t, ind.TotalKql.IsNull())
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {
@@ -198,5 +210,8 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		// Empty unions will fail As* — so Good and Total will be null
 		assert.True(t, ind.Good.IsNull())
 		assert.True(t, ind.Total.IsNull())
+		assert.True(t, ind.FilterKql.IsNull())
+		assert.True(t, ind.GoodKql.IsNull())
+		assert.True(t, ind.TotalKql.IsNull())
 	})
 }
