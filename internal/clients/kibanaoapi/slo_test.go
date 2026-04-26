@@ -56,11 +56,13 @@ func Test_SloResponseToModel(t *testing.T) {
 		name          string
 		spaceID       string
 		sloResponse   *kbapi.SLOsSloWithSummaryResponse
+		artifacts     *kbapi.SLOsArtifacts
 		expectedModel *models.Slo
 	}{
 		{
 			name:    "should return a model with the correct values",
 			spaceID: "space-id",
+			artifacts: nil,
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
 				Name:            "slo-name",
@@ -87,6 +89,7 @@ func Test_SloResponseToModel(t *testing.T) {
 		{
 			name:    "should return tags if available",
 			spaceID: "space-id",
+			artifacts: nil,
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
 				Name:            "slo-name",
@@ -115,14 +118,45 @@ func Test_SloResponseToModel(t *testing.T) {
 		{
 			name:          "nil response should return a nil model",
 			spaceID:       "space-id",
+			artifacts:     nil,
 			sloResponse:   nil,
 			expectedModel: nil,
+		},
+		{
+			name:    "maps artifacts from get SLO",
+			spaceID: "space-id",
+			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
+				Id:              "slo-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
+				BudgetingMethod: "occurrences",
+				Settings:        kbapi.SLOsSettings{SyncDelay: &syncDelay},
+			},
+			artifacts: &kbapi.SLOsArtifacts{Dashboards: &[]struct {
+				Id string `json:"id"`
+			}{{Id: "dashboard-1"}}},
+			expectedModel: &models.Slo{
+				SloID:           "slo-id",
+				SpaceID:         "space-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
+				BudgetingMethod: "occurrences",
+				Settings:        &kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				Artifacts: &kbapi.SLOsArtifacts{Dashboards: &[]struct {
+					Id string `json:"id"`
+				}{{Id: "dashboard-1"}}},
+				GroupBy: nil,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := SloResponseToModel(tt.spaceID, tt.sloResponse)
+			model := SloResponseToModel(tt.spaceID, tt.sloResponse, tt.artifacts)
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}

@@ -844,7 +844,7 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 var checkResourceSloDestroy = checks.KibanaResourceDestroyCheckCompositeID(
 	"elasticstack_kibana_slo",
 	func(ctx context.Context, client *kibanaoapi.Client, spaceID, sloID string) (bool, error) {
-		res, diags := kibanaoapi.GetSlo(ctx, client, spaceID, sloID)
+		res, _, diags := kibanaoapi.GetSlo(ctx, client, spaceID, sloID)
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
 		}

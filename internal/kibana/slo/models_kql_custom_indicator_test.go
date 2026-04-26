@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,6 +132,42 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		require.NoError(t, terr)
 		assert.Empty(t, totalStr)
 	})
+
+	t.Run("serializes good_kql object form with filters", func(t *testing.T) {
+		q := jsontypes.NewNormalizedValue(`{"match_all":{}}`)
+		row, d := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{"query": q})
+		require.False(t, d.HasError())
+		list, d := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{row})
+		require.False(t, d.HasError())
+		kqlObj, d := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+			"kql_query": types.StringValue("event.outcome: success"),
+			"filters":   list,
+		})
+		require.False(t, d.HasError())
+
+		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs-*"),
+			FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			Good:           types.StringNull(),
+			GoodKql:        kqlObj,
+			Total:          types.StringValue("*"),
+			TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			TimestampField: types.StringValue("@timestamp"),
+		}}}
+
+		ok, ind, diags := m.kqlCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, diags.HasError())
+
+		apiInd, err := ind.AsSLOsIndicatorPropertiesCustomKql()
+		require.NoError(t, err)
+		g1, err := apiInd.Params.Good.AsSLOsKqlWithFiltersGood1()
+		require.NoError(t, err)
+		require.NotNil(t, g1.Filters)
+		require.Len(t, *g1.Filters, 1)
+		require.NotNil(t, g1.KqlQuery)
+		assert.Equal(t, "event.outcome: success", *g1.KqlQuery)
+	})
 }
 
 func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
@@ -214,4 +252,50 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		assert.True(t, ind.GoodKql.IsNull())
 		assert.True(t, ind.TotalKql.IsNull())
 	})
+
+	t.Run("maps good as object form when API returns filters", func(t *testing.T) {
+		var good kbapi.SLOsKqlWithFiltersGood
+		filters := []kbapi.SLOsFilter{{Query: func() *map[string]interface{} {
+			m := map[string]interface{}{"match_all": map[string]interface{}{}}
+			return &m
+		}()}}
+		require.NoError(t, good.FromSLOsKqlWithFiltersGood1(kbapi.SLOsKqlWithFiltersGood1{
+			KqlQuery: strPtr("event.outcome: success"),
+			Filters:  &filters,
+		}))
+
+		api := kbapi.SLOsIndicatorPropertiesCustomKql{
+			Params: struct {
+				DataViewId     *string                       `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+				Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+				Index          string                        `json:"index"`
+				TimestampField string                        `json:"timestampField"`
+				Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+			}{
+				Index:          "logs-*",
+				Good:           good,
+				Total:          mustKqlTotalFromString(t, "*"),
+				TimestampField: "@timestamp",
+			},
+		}
+
+		var m tfModel
+		diags := m.populateFromKqlCustomIndicator(api)
+		require.False(t, diags.HasError())
+		ind := m.KqlCustomIndicator[0]
+		assert.True(t, ind.Good.IsNull())
+		assert.False(t, ind.GoodKql.IsNull())
+		kqq := ind.GoodKql.Attributes()["kql_query"].(types.String)
+		assert.Equal(t, "event.outcome: success", kqq.ValueString())
+	})
+}
+
+func strPtr(s string) *string { return &s }
+
+func mustKqlTotalFromString(t *testing.T, s string) kbapi.SLOsKqlWithFiltersTotal {
+	t.Helper()
+	var total kbapi.SLOsKqlWithFiltersTotal
+	require.NoError(t, total.FromSLOsKqlWithFiltersTotal0(s))
+	return total
 }

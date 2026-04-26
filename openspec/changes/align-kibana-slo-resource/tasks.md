@@ -8,11 +8,13 @@
 
 ## 2. Model and client behavior
 
-- [ ] 2.1 Extend the SLO Terraform model types in `internal/kibana/slo/models.go` and `models_kql_custom_indicator.go` to serialize and read back both KQL union forms
-- [ ] 2.2 Extend settings and artifact mapping so `sync_field` and `artifacts.dashboards[].id` flow through create, update, and read
-- [ ] 2.3 Add `enabled` to the internal SLO model and read-path mapping from Kibana responses
-- [ ] 2.4 Extend `internal/clients/kibanaoapi/slo.go` with helper functions for enable and disable operations and wire them into SLO create and update reconciliation
-- [ ] 2.5 Verify whether additive schema changes require a state upgrader and implement one if needed
+- [x] 2.1 Extend the SLO Terraform model types in `internal/kibana/slo/models.go` and `models_kql_custom_indicator.go` to serialize and read back both KQL union forms
+- [x] 2.2 Extend settings and artifact mapping so `sync_field` and `artifacts.dashboards[].id` flow through create, update, and read
+- [x] 2.3 Add `enabled` to the internal SLO model and read-path mapping from Kibana responses
+- [x] 2.4 Extend `internal/clients/kibanaoapi/slo.go` with helper functions for enable and disable operations and wire them into SLO create and update reconciliation
+- [x] 2.5 Verify whether additive schema changes require a state upgrader and implement one if needed
+
+**2.5 conclusion:** No new state upgrader. Schema version remains `2`; additive optional/computed attributes (`filter_kql` / `good_kql` / `total_kql`, `settings.sync_field`, `artifacts`, `enabled`) are handled by the Plugin Framework without migrating existing stored state.
 
 ## 3. Verification and documentation
 

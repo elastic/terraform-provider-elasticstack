@@ -19,6 +19,7 @@ package kibanaoapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -27,10 +28,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// GetSlo retrieves a single SLO by space and ID. Returns (nil, nil) when
+// GetSlo retrieves a single SLO by space and ID. Returns (nil, nil, nil) when
 // the SLO is not found (HTTP 404), consistent with the resource layer's
 // "not found" contract.
-func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (*kbapi.SLOsSloWithSummaryResponse, diag.Diagnostics) {
+//
+// The second return value is any `artifacts` object present in the response JSON.
+// The generated `SLOsSloWithSummaryResponse` type omits this field, so it is
+// captured by unmarshalling the body into a small wrapper struct.
+func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (*kbapi.SLOsSloWithSummaryResponse, *kbapi.SLOsArtifacts, diag.Diagnostics) {
 	resp, err := client.API.GetSloOpWithResponse(
 		ctx,
 		spaceID,
@@ -38,22 +43,57 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		&kbapi.GetSloOpParams{},
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
+		return nil, nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+		if len(resp.Body) == 0 {
+			return nil, nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 				"Get SLO returned an empty response",
 				"Get SLO returned an empty response body with HTTP status 200.",
 			)}
 		}
-		return resp.JSON200, nil
+		var ext struct {
+			kbapi.SLOsSloWithSummaryResponse
+			Artifacts *kbapi.SLOsArtifacts `json:"artifacts,omitempty"`
+		}
+		if err := json.Unmarshal(resp.Body, &ext); err != nil {
+			return nil, nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to decode get SLO response", err.Error())}
+		}
+		return &ext.SLOsSloWithSummaryResponse, ext.Artifacts, nil
 	case http.StatusNotFound:
-		return nil, nil
+		return nil, nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// EnableSlo calls the Kibana API to enable an existing SLO.
+func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
+	resp, err := client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
+	}
+	switch resp.StatusCode() {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DisableSlo calls the Kibana API to disable an existing SLO.
+func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
+	resp, err := client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
+	}
+	switch resp.StatusCode() {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -156,7 +196,8 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 }
 
 // SloResponseToModel converts a kbapi SLO response into the internal models.Slo type.
-func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *models.Slo {
+// artifacts may be nil if the SLO was loaded from an API that does not return artifacts.
+func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse, artifacts *kbapi.SLOsArtifacts) *models.Slo {
 	if res == nil {
 		return nil
 	}
@@ -174,7 +215,7 @@ func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *
 		GroupBy:         TransformGroupByFromResponse(res.GroupBy),
 		Tags:            res.Tags,
 		Enabled:         res.Enabled,
-		Artifacts:       nil,
+		Artifacts:       artifacts,
 	}
 }
 

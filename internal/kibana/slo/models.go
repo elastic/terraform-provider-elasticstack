@@ -178,6 +178,12 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		}
 	}
 
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		if art := tfArtifactsToAPIModel(m.Artifacts); art != nil {
+			apiModel.Artifacts = art
+		}
+	}
+
 	return apiModel, diags
 }
 
@@ -376,6 +382,38 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 		SyncField:              syncFieldVal,
 		PreventInitialBackfill: preventInitialBackfillVal,
 	}, diags
+}
+
+func tfArtifactsToAPIModel(obj types.Object) *kbapi.SLOsArtifacts {
+	attrs := obj.Attributes()
+	dl, ok := attrs["dashboards"].(types.List)
+	if !ok || !typeutils.IsKnown(dl) || dl.IsNull() {
+		return nil
+	}
+	elems := dl.Elements()
+	dashboards := make([]struct {
+		Id string `json:"id"`
+	}, 0, len(elems))
+	for _, e := range elems {
+		rowObj, ok := e.(types.Object)
+		if !ok {
+			return nil
+		}
+		idVal, ok := rowObj.Attributes()["id"].(types.String)
+		if !ok || !typeutils.IsKnown(idVal) {
+			return nil
+		}
+		dashboards = append(dashboards, struct {
+			Id string `json:"id"`
+		}{Id: idVal.ValueString()})
+	}
+	if len(dashboards) == 0 {
+		empty := []struct {
+			Id string `json:"id"`
+		}{}
+		return &kbapi.SLOsArtifacts{Dashboards: &empty}
+	}
+	return &kbapi.SLOsArtifacts{Dashboards: &dashboards}
 }
 
 func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
