@@ -22,6 +22,8 @@ const {
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
 const workflowTemplatePath = path.resolve(__dirname, '../change-factory-issue/workflow.md.tmpl');
+const workflowCompiledPath = path.resolve(__dirname, '../../workflows/change-factory-issue.md');
+const lockCompiledPath = path.resolve(__dirname, '../../workflows/change-factory-issue.lock.yml');
 const inlineScripts = [
   'qualify_trigger.inline.js',
   'check_actor_trust.inline.js',
@@ -434,6 +436,20 @@ test('computeGateReason returns the success reason when all gates pass', () => {
     result.gate_reason,
     'All deterministic gates passed: event eligible, actor trusted, and no linked change-factory PR found.',
   );
+});
+
+test('change-factory-issue workflow is compiled and exists', () => {
+  const source = readFileSync(workflowCompiledPath, 'utf8');
+  assert.match(source, /change-factory/);
+  assert.match(source, /issues/);
+  assert.match(source, /compile-workflow-sources/);
+});
+
+test('change-factory-issue lock file is compiled and exists', () => {
+  const lock = readFileSync(lockCompiledPath, 'utf8');
+  assert.ok(lock.length > 0);
+  assert.match(lock, /# gh-aw-metadata:/);
+  assert.match(lock, /DO NOT EDIT/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {

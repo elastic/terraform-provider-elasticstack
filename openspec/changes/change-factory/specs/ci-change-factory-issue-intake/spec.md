@@ -1,6 +1,6 @@
 # `ci-change-factory-issue-intake` — Issue-labeled OpenSpec proposal factory
 
-Workflow implementation: authored source under `.github/workflows-src/change-factory-issue/`, compiled to `.github/workflows/change-factory-issue.md`.
+Workflow implementation: authored source under `.github/workflows-src/change-factory-issue/`, generating checked-in `.github/workflows/change-factory-issue.md` (via `scripts/compile-workflow-sources`) and `.github/workflows/change-factory-issue.lock.yml` (via `gh aw compile` as part of `make workflow-generate`).
 
 ## Purpose
 
@@ -9,12 +9,12 @@ Define requirements for a GitHub Agentic Workflow that reacts to trusted GitHub 
 ## ADDED Requirements
 
 ### Requirement: Workflow source is repository-authored and generated
-The repository SHALL define the `change-factory` issue-intake automation as a repository-authored GitHub Agentic Workflow source under `.github/workflows-src/` that generates checked-in workflow artifacts under `.github/workflows/`. Deterministic GitHub-script logic used for trigger qualification, trust checks, or duplicate detection SHALL be factored into repository-local helper code that can be tested independently of the compiled workflow.
+The repository SHALL define the `change-factory` issue-intake automation as a repository-authored GitHub Agentic Workflow source under `.github/workflows-src/` that generates checked-in workflow artifacts under `.github/workflows/`: the compiled markdown `.github/workflows/change-factory-issue.md` and the compiled `.github/workflows/change-factory-issue.lock.yml` from `gh aw compile`. Contributors SHALL NOT hand-edit those generated files; they SHALL be regenerated with repository workflow tooling (`make workflow-generate`). Deterministic GitHub-script logic used for trigger qualification, trust checks, or duplicate detection SHALL be factored into repository-local helper code that can be tested independently of the compiled workflow.
 
 #### Scenario: Maintainer updates the workflow source
 - **WHEN** maintainers modify the `change-factory` issue-intake workflow
 - **THEN** the authored source SHALL live under `.github/workflows-src/`
-- **AND** the generated workflow artifacts SHALL be checked in under `.github/workflows/`
+- **AND** the generated `.github/workflows/change-factory-issue.md` and `.github/workflows/change-factory-issue.lock.yml` SHALL be checked in and SHALL match output from the repository generation commands
 
 #### Scenario: Deterministic gating logic is tested outside the workflow wrapper
 - **WHEN** maintainers validate trigger qualification, trust policy, or duplicate detection
