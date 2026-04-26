@@ -10,9 +10,12 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
   qualifyTriggerEvent,
+  actorTrustWhenSenderMissing,
   checkActorTrust,
   checkDuplicatePR,
   computeGateReason,
+  parseOptionalTriStateFromEnv,
+  parseFinalizeGateEnv,
 } = require('./change-factory-issue.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
@@ -59,6 +62,18 @@ test('qualifyTriggerEvent rejects issues.labeled with a different label', () => 
   assert.match(result.event_eligible_reason, /not 'change-factory'/);
 });
 
+test('qualifyTriggerEvent rejects issues.labeled when the applied label name is empty', () => {
+  const result = qualifyTriggerEvent({
+    eventName: 'issues',
+    eventAction: 'labeled',
+    labelName: '',
+    issueLabels: [],
+  });
+
+  assert.equal(result.event_eligible, false);
+  assert.match(result.event_eligible_reason, /applied label is '\(empty\)'/);
+});
+
 test('qualifyTriggerEvent accepts issues.opened when change-factory is in initial labels', () => {
   const result = qualifyTriggerEvent({
     eventName: 'issues',
@@ -81,6 +96,29 @@ test('qualifyTriggerEvent rejects issues.opened without change-factory in initia
 
   assert.equal(result.event_eligible, false);
   assert.match(result.event_eligible_reason, /created without the change-factory label/);
+});
+
+test('qualifyTriggerEvent rejects issues.opened when issue labels are null', () => {
+  const result = qualifyTriggerEvent({
+    eventName: 'issues',
+    eventAction: 'opened',
+    labelName: '',
+    issueLabels: null,
+  });
+
+  assert.equal(result.event_eligible, false);
+  assert.match(result.event_eligible_reason, /missing/);
+});
+
+test('qualifyTriggerEvent rejects issues.opened when issue labels are undefined', () => {
+  const result = qualifyTriggerEvent({
+    eventName: 'issues',
+    eventAction: 'opened',
+    labelName: '',
+  });
+
+  assert.equal(result.event_eligible, false);
+  assert.match(result.event_eligible_reason, /missing/);
 });
 
 test('qualifyTriggerEvent rejects non-issues events', () => {
@@ -163,6 +201,13 @@ test('checkActorTrust rejects human senders with null permission', () => {
   assert.match(result.actor_trusted_reason, /permission '\(none\)'/);
 });
 
+test('actorTrustWhenSenderMissing matches check_actor_trust inline missing-sender path', () => {
+  const result = actorTrustWhenSenderMissing();
+
+  assert.equal(result.actor_trusted, false);
+  assert.match(result.actor_trusted_reason, /sender login is missing/);
+});
+
 test('checkDuplicatePR reports no duplicate when there are no open PRs', () => {
   const result = checkDuplicatePR({ issueNumber: 42, pullRequests: [] });
 
@@ -178,6 +223,15 @@ test('checkDuplicatePR finds a duplicate when one PR matches all four criteria',
   assert.equal(result.duplicate_pr_found, true);
   assert.equal(result.duplicate_pr_url, pr.html_url);
   assert.match(result.gate_reason, /Found existing linked change-factory PR #101/);
+});
+
+test('checkDuplicatePR treats missing PR html_url as unknown in gate_reason and duplicate_pr_url', () => {
+  const pr = makePullRequest({ html_url: undefined });
+  const result = checkDuplicatePR({ issueNumber: 42, pullRequests: [pr] });
+
+  assert.equal(result.duplicate_pr_found, true);
+  assert.equal(result.duplicate_pr_url, null);
+  assert.match(result.gate_reason, /\(unknown URL\)/);
 });
 
 test('checkDuplicatePR ignores PRs missing the change-factory label', () => {
@@ -198,13 +252,37 @@ test('checkDuplicatePR ignores PRs on the wrong branch name', () => {
   assert.equal(result.duplicate_pr_found, false);
 });
 
-test('checkDuplicatePR ignores PRs missing canonical Closes issue linkage', () => {
+test('checkDuplicatePR ignores PRs missing issue-closing reference', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
     pullRequests: [makePullRequest({ body: 'Proposes the change without canonical metadata.' })],
   });
 
   assert.equal(result.duplicate_pr_found, false);
+});
+
+test('checkDuplicatePR matches lowercase closes keyword', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses #42' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, true);
+});
+
+test('checkDuplicatePR matches alternate GitHub closing keywords case-insensitively', () => {
+  for (const body of [
+    'FIXES #42',
+    'Fixed #42',
+    'Resolve #42',
+    'RESOLVED #42',
+  ]) {
+    const result = checkDuplicatePR({
+      issueNumber: 42,
+      pullRequests: [makePullRequest({ body })],
+    });
+    assert.equal(result.duplicate_pr_found, true, `expected match for body: ${body}`);
+  }
 });
 
 test('checkDuplicatePR does not match a PR whose body has Closes issue linkage followed by more digits', () => {
@@ -296,6 +374,20 @@ test('computeGateReason returns the actor trust failure when the event is eligib
   assert.equal(result.gate_reason, 'Actor is not trusted.');
 });
 
+test('computeGateReason uses generic untrusted text when actorTrusted is false with a falsy reason', () => {
+  const result = computeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: false,
+    actorTrustedReason: '',
+    duplicatePrFound: false,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  });
+
+  assert.equal(result.gate_reason, 'Trigger actor is not trusted.');
+});
+
 test('computeGateReason mentions the duplicate PR URL when a duplicate is found', () => {
   const result = computeGateReason({
     eventEligible: true,
@@ -308,6 +400,20 @@ test('computeGateReason mentions the duplicate PR URL when a duplicate is found'
   });
 
   assert.match(result.gate_reason, /https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/pull\/303/);
+});
+
+test('computeGateReason falls back to unknown URL when duplicate is found without URL or override reason', () => {
+  const result = computeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: true,
+    actorTrustedReason: 'Actor is trusted.',
+    duplicatePrFound: true,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  });
+
+  assert.match(result.gate_reason, /\(unknown URL\)/);
 });
 
 test('computeGateReason returns the success reason when all gates pass', () => {
@@ -360,4 +466,66 @@ test('change-factory-issue inline scripts include the deterministic helper libra
     const source = readFileSync(path.join(scriptsDir, name), 'utf8');
     assert.match(source, /^\/\/include: \.\.\/\.\.\/lib\/change-factory-issue\.js\n/);
   }
+});
+
+test('parseOptionalTriStateFromEnv treats missing and empty as null', () => {
+  assert.equal(parseOptionalTriStateFromEnv(undefined), null);
+  assert.equal(parseOptionalTriStateFromEnv(''), null);
+});
+
+test('parseOptionalTriStateFromEnv parses true only for exact true string', () => {
+  assert.equal(parseOptionalTriStateFromEnv('true'), true);
+  assert.equal(parseOptionalTriStateFromEnv('false'), false);
+  assert.equal(parseOptionalTriStateFromEnv('TRUE'), false);
+});
+
+test('parseFinalizeGateEnv matches finalize_gate env semantics', () => {
+  assert.deepEqual(
+    parseFinalizeGateEnv({}),
+    {
+      eventEligible: false,
+      eventEligibleReason: '',
+      actorTrusted: null,
+      actorTrustedReason: null,
+      duplicatePrFound: null,
+      duplicatePrUrl: null,
+      noDuplicateReason: null,
+    },
+  );
+
+  assert.deepEqual(
+    parseFinalizeGateEnv({
+      EVENT_ELIGIBLE: 'true',
+      EVENT_ELIGIBLE_REASON: 'ok',
+      ACTOR_TRUSTED: 'true',
+      ACTOR_TRUSTED_REASON: '',
+      DUPLICATE_PR_FOUND: 'false',
+      DUPLICATE_PR_URL: '',
+      DUPLICATE_GATE_REASON: 'x',
+    }),
+    {
+      eventEligible: true,
+      eventEligibleReason: 'ok',
+      actorTrusted: true,
+      actorTrustedReason: '',
+      duplicatePrFound: false,
+      duplicatePrUrl: null,
+      noDuplicateReason: 'x',
+    },
+  );
+});
+
+test('parseFinalizeGateEnv feeds computeGateReason for an all-pass path', () => {
+  const parsed = parseFinalizeGateEnv({
+    EVENT_ELIGIBLE: 'true',
+    EVENT_ELIGIBLE_REASON: 'eligible',
+    ACTOR_TRUSTED: 'true',
+    ACTOR_TRUSTED_REASON: 'trusted',
+    DUPLICATE_PR_FOUND: 'false',
+    DUPLICATE_PR_URL: 'https://example.com/pr/1',
+    DUPLICATE_GATE_REASON: null,
+  });
+  const result = computeGateReason(parsed);
+
+  assert.match(result.gate_reason, /All deterministic gates passed/);
 });

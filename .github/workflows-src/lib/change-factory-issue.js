@@ -35,7 +35,7 @@ function qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels })
 
     return {
       event_eligible: false,
-      event_eligible_reason: 'Issue opened event does not qualify because the issue was created without the change-factory label.',
+      event_eligible_reason: 'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.',
     };
   }
 
@@ -50,6 +50,17 @@ function qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels })
  * @param {{ sender: string, permission: string | null }} params
  * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
  */
+/**
+ * Result when the workflow cannot read a sender login (mirrors check_actor_trust.inline.js).
+ * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+ */
+function actorTrustWhenSenderMissing() {
+  return {
+    actor_trusted: false,
+    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
+  };
+}
+
 function checkActorTrust({ sender, permission }) {
   if (sender === 'github-actions[bot]') {
     return {
@@ -71,6 +82,20 @@ function checkActorTrust({ sender, permission }) {
   };
 }
 
+/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
+const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
+
+/**
+ * @param {number} issueNumber
+ * @returns {RegExp}
+ */
+function issueClosingReferencePattern(issueNumber) {
+  return new RegExp(
+    `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+    'i',
+  );
+}
+
 /**
  * Checks for an existing open linked change-factory PR for the given issue.
  * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }> }} params
@@ -78,27 +103,28 @@ function checkActorTrust({ sender, permission }) {
  */
 function checkDuplicatePR({ issueNumber, pullRequests }) {
   const expectedBranch = `change-factory/issue-${issueNumber}`;
-  const expectedLink = `Closes #${issueNumber}`;
-  const closesPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+  const closingExample = `Closes #${issueNumber}`;
+  const closingPattern = issueClosingReferencePattern(issueNumber);
   const duplicate = (pullRequests || []).find(pr => (
     pr.state === 'open' &&
     Array.isArray(pr.labels) && pr.labels.includes('change-factory') &&
     pr.head_branch === expectedBranch &&
-    closesPattern.test(String(pr.body || ''))
+    closingPattern.test(String(pr.body || ''))
   ));
 
   if (duplicate) {
+    const url = duplicate.html_url ?? null;
     return {
       duplicate_pr_found: true,
-      duplicate_pr_url: duplicate.html_url,
-      gate_reason: `Found existing linked change-factory PR #${duplicate.number} (${duplicate.html_url}) for issue #${issueNumber} on branch '${expectedBranch}' with canonical linkage '${expectedLink}'.`,
+      duplicate_pr_url: url,
+      gate_reason: `Found existing linked change-factory PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with issue-closing reference such as '${closingExample}'.`,
     };
   }
 
   return {
     duplicate_pr_found: false,
     duplicate_pr_url: null,
-    gate_reason: `No open linked change-factory PR found for issue #${issueNumber}; expected label 'change-factory', branch '${expectedBranch}', and canonical linkage '${expectedLink}'.`,
+    gate_reason: `No open linked change-factory PR found for issue #${issueNumber}; expected label 'change-factory', branch '${expectedBranch}', and issue-closing reference such as '${closingExample}'.`,
   };
 }
 
@@ -135,11 +161,43 @@ function computeGateReason({ eventEligible, eventEligibleReason, actorTrusted, a
   };
 }
 
+/**
+ * Parses optional tri-state booleans from workflow env (finalize_gate.inline.js).
+ * @param {string | undefined} raw
+ * @returns {boolean | null}
+ */
+function parseOptionalTriStateFromEnv(raw) {
+  if (raw == null || raw === '') {
+    return null;
+  }
+  return raw === 'true';
+}
+
+/**
+ * @param {Record<string, string | undefined>} env
+ */
+function parseFinalizeGateEnv(env) {
+  const e = env || {};
+  return {
+    eventEligible: e.EVENT_ELIGIBLE === 'true',
+    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
+    actorTrusted: parseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
+    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
+    duplicatePrFound: parseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
+    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
+    noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+  };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     qualifyTriggerEvent,
+    actorTrustWhenSenderMissing,
     checkActorTrust,
     checkDuplicatePR,
     computeGateReason,
+    issueClosingReferencePattern,
+    parseOptionalTriStateFromEnv,
+    parseFinalizeGateEnv,
   };
 }

@@ -4,8 +4,9 @@ const { owner, repo } = context.repo;
 const sender = context.payload.sender?.login ?? '';
 
 if (!sender) {
+  const missing = actorTrustWhenSenderMissing();
   core.setOutput('actor_trusted', 'false');
-  core.setOutput('actor_trusted_reason', 'Trigger actor could not be identified; sender login is missing from the event payload.');
+  core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);
   core.info('Actor not trusted: sender login is missing from the event payload.');
 } else {
   let permission = null;
