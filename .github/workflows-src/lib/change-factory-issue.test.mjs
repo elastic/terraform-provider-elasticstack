@@ -588,31 +588,50 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
 test('change-factory-issue agent prompt matches stable OpenSpec proposal contract', () => {
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
-  const requiredPhrases = [
-    'sole authoritative source',
-    'openspec/changes/<change-id>/',
-    'proposal.md',
-    'design.md',
-    'tasks.md',
-    'specs/<capability>/spec.md',
-    'OPENSPEC_TELEMETRY=0',
-    'openspec validate <change-id> --type change',
-    'openspec status --change',
-    'Terraform acceptance tests',
-    'TF_ACC',
-    'Elastic Stack',
-    'Fleet',
-    'API key',
-    'noop',
-    'exploration loop',
-    'Do not open GitHub comment',
-  ];
-  for (const phrase of requiredPhrases) {
-    assert.ok(
-      workflowTmpl.includes(phrase),
-      `workflow.md.tmpl agent prompt must include contract phrase: ${phrase}`,
-    );
-  }
+  const promptMarker = '# Change Factory issue proposal worker';
+  const promptStart = workflowTmpl.indexOf(promptMarker);
+  assert.ok(promptStart >= 0, `expected ${promptMarker} in workflow.md.tmpl`);
+  const prompt = workflowTmpl.slice(promptStart);
+
+  assert.match(
+    prompt,
+    /Closes #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
+    'expected canonical PR Closes linkage expression',
+  );
+  assert.match(prompt, /exactly one/, 'expected exactly-one change / PR guidance');
+  assert.match(prompt, /second change directory/, 'expected no second change directory');
+  assert.match(prompt, /split the issue across multiple change ids/, 'expected no split across ids');
+  assert.match(prompt, /\.openspec\.yaml/, 'expected change metadata file');
+  assert.match(prompt, /openspec new change/, 'expected scaffold command');
+  assert.match(prompt, /make build/, 'expected make build prohibition');
+  assert.match(prompt, /`go test`/, 'expected go test prohibition');
+  assert.match(prompt, /TestAcc/, 'expected TestAcc prohibition');
+  assert.match(prompt, /TF_ACC/, 'expected TF_ACC prohibition');
+  assert.match(
+    prompt,
+    /outside `openspec\/changes\/<change-id>\//,
+    'expected provider edits confined to OpenSpec change tree wording',
+  );
+  assert.match(
+    prompt,
+    /speculative `openspec\/changes\/` files/,
+    'expected no speculative change files on noop path',
+  );
+  assert.match(prompt, /\*\*concise\*\*/, 'expected concise noop clarification');
+  assert.match(
+    prompt,
+    /contain \*\*only\*\* the OpenSpec change tree under `openspec\/changes\/<change-id>\/` for v1/,
+    'expected v1 PR scope limited to OpenSpec change tree',
+  );
+  assert.match(prompt, /sole authoritative source/);
+  assert.match(prompt, /proposal\.md/);
+  assert.match(prompt, /design\.md/);
+  assert.match(prompt, /tasks\.md/);
+  assert.match(prompt, /specs\/<capability>\/spec\.md/);
+  assert.match(prompt, /openspec validate <change-id> --type change/);
+  assert.match(prompt, /OPENSPEC_TELEMETRY=0/);
+
+  assert.doesNotMatch(prompt, /\u2026|\u2014|\u2018|\u2019|\u201c|\u201d/, 'prompt must use ASCII punctuation');
 });
 
 test('check_duplicate_pr.inline.js resolves expected branch via changeFactoryIssueBranchName', () => {

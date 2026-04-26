@@ -155,11 +155,17 @@ Pick a single stable `<change-id>` (kebab-case, descriptive of the issue scope).
 second change directory or split the issue across multiple change ids.
 
 Under that directory, create or refresh **all artifacts required for implementation readiness** for
-this repository’s active OpenSpec schema (spec-driven workflow), including:
+this repository's active OpenSpec schema (spec-driven workflow), including:
 
 - `proposal.md`
 - `design.md`
 - `tasks.md`
+- `.openspec.yaml` at `openspec/changes/<change-id>/.openspec.yaml` (required OpenSpec change
+  metadata for the active schema). Prefer
+  `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec new change "<change-id>"` when creating the
+  directory so the scaffold includes `.openspec.yaml` and the expected layout; if you extend an
+  existing `openspec/changes/<change-id>/` on this branch, keep `.openspec.yaml` aligned with what
+  `openspec validate <change-id> --type change` expects.
 - **Delta specs** under `openspec/changes/<change-id>/specs/<capability>/spec.md` (one or more
   capability folders as the issue requires)
 
@@ -184,20 +190,23 @@ linked PR deterministically.
 The linked pull request must:
 
 - use branch `change-factory/issue-${{ github.event.issue.number }}`
-- contain **only** the OpenSpec change under `openspec/changes/<change-id>/` (plus any
-  repository-authored workflow metadata explicitly required by a future extension of this workflow —
-  none is expected in v1)
+- contain **only** the OpenSpec change tree under `openspec/changes/<change-id>/` for v1 (plus any
+  repository-authored workflow metadata explicitly required by a future extension of this workflow -
+  none is expected in v1). Do not commit Terraform provider source, provider tests, generated
+  clients, or docs outside that directory in this pull request.
 - be the only open `change-factory` pull request for this issue
 - include `Closes #${{ github.event.issue.number }}` in the PR body
 
-## Out of scope — do not do these in this run
+## Out of scope - do not do these in this run
 
 This workflow is **proposal-only**. Even if the issue reads like a feature request, **do not**:
 
-- implement or modify Terraform provider code, tests, generated clients, or docs outside the OpenSpec
-  change directory
-- run `make build`, `go test ./...`, or **Terraform acceptance tests** (do not set `TF_ACC`, do not
-  run `TestAcc…` packages)
+- implement or modify Terraform provider code, **provider Go tests**, generated clients, or docs
+  outside `openspec/changes/<change-id>/`
+- run **`make build`**
+- run **`go test`** against provider or internal packages (including **`go test ./...`**)
+- run **Terraform acceptance tests** (do not set **`TF_ACC`**, do not run tests whose names start with
+  **`TestAcc`**)
 - start or assume an **Elastic Stack**, **Fleet**, Docker compose stack services, or **Elasticsearch
   API key** creation flows
 - add CI steps that provision runtime Elastic services for this issue
@@ -209,7 +218,7 @@ core outcome safely, **do not** author speculative `openspec/changes/` files, **
 request, **do not** start a GitHub comment or Discussion exploration loop, and **do not** open new
 issues. Instead emit **at most one** `noop` safe output with a **concise** explanation of the
 specific facts needed (for example: which product area, what behavior should change, or what
-“done” means).
+"done" means).
 
 ## Guardrails
 
