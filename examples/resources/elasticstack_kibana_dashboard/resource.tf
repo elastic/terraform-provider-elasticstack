@@ -13,7 +13,7 @@ resource "elasticstack_kibana_dashboard" "my_dashboard" {
   }
 
   query = {
-    language = "kuery"
+    language = "kql"
     text     = "status:success"
   }
 
@@ -37,7 +37,7 @@ resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
   }
 
   query = {
-    language = "kuery"
+    language = "kql"
     json = jsonencode({
       bool = {
         must = [
