@@ -83,6 +83,8 @@ func getSchema() schema.Schema {
 				Description: "Links to related assets (for example dashboards) returned and managed with the SLO.",
 				Optional:    true,
 				Computed:    true,
+				// Default null normalizes an omitted `artifacts` to null; a successful read
+				// still maps API dashboard references into state (REQ-020/REQ-039).
 				Default: objectdefault.StaticValue(
 					types.ObjectNull(tfArtifactsAttrTypes),
 				),
@@ -471,6 +473,8 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUns
 		Description: "Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field.",
 		Optional:    true,
 		Computed:    true,
+		// ObjectNull default keeps a stable placeholder for the nested _kql block; a read
+		// may still set object-form KQL from the API.
 		Default: objectdefault.StaticValue(
 			types.ObjectNull(tfKqlKqlObjectAttrTypes),
 		),

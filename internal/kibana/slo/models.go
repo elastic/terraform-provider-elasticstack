@@ -279,38 +279,46 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
 	}
 
-	// When `artifacts` is not configured, keep a null `artifacts` object in state
-	// (do not materialize the API's empty `dashboards: []` into state).
-	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
-		if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
-			rows := make([]attr.Value, 0, len(*apiModel.Artifacts.Dashboards))
-			for _, row := range *apiModel.Artifacts.Dashboards {
-				rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
-					"id": types.StringValue(row.Id),
-				})
-				diags.Append(rowDiags...)
-				rows = append(rows, rowObj)
-			}
-			if diags.HasError() {
-				return diags
-			}
-			listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
-			diags.Append(listDiags...)
-			artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
-				"dashboards": listVal,
+	// Artifacts (REQ-020 / REQ-039): when the API returns at least one dashboard
+	// reference, always write `artifacts` into state (including import) even if
+	// the block was not in the practitioner file. If the block exists in state
+	// and the API has no references, use an empty dashboards list. If nothing
+	// was stored and the API has no references, keep null to avoid
+	// `{ dashboards = [] }` drift for omitted `artifacts`.
+	artifactRowCount := 0
+	if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
+		artifactRowCount = len(*apiModel.Artifacts.Dashboards)
+	}
+	priorHasArtifacts := typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull()
+	switch {
+	case artifactRowCount > 0:
+		rows := make([]attr.Value, 0, artifactRowCount)
+		for _, row := range *apiModel.Artifacts.Dashboards {
+			rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+				"id": types.StringValue(row.Id),
 			})
-			diags.Append(artDiags...)
-			m.Artifacts = artObj
-		} else {
-			emptyBoards, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{})
-			diags.Append(listDiags...)
-			artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
-				"dashboards": emptyBoards,
-			})
-			diags.Append(artDiags...)
-			m.Artifacts = artObj
+			diags.Append(rowDiags...)
+			rows = append(rows, rowObj)
 		}
-	} else {
+		if diags.HasError() {
+			return diags
+		}
+		listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
+		diags.Append(listDiags...)
+		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": listVal,
+		})
+		diags.Append(artDiags...)
+		m.Artifacts = artObj
+	case priorHasArtifacts:
+		emptyBoards, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{})
+		diags.Append(listDiags...)
+		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": emptyBoards,
+		})
+		diags.Append(artDiags...)
+		m.Artifacts = artObj
+	default:
 		m.Artifacts = types.ObjectNull(tfArtifactsAttrTypes)
 	}
 

@@ -258,12 +258,14 @@ func kqlTFFormToAPI1(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilte
 					diags.AddError("Invalid configuration", errPrefix+fmt.Sprintf(".filters[%d]", i)+": query is not JSON")
 					continue
 				}
-				if !typeutils.IsKnown(n) {
+				// A known null filter query is not the same as unknown: IsKnown is false for
+				// both, so we must inspect null/unknown on the value directly.
+				if n.IsUnknown() {
 					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d].query: value is not yet known", errPrefix, i))
 					continue
 				}
 				if n.IsNull() {
-					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d].query: a JSON object is required for a filter row in this list", errPrefix, i))
+					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d].query: a JSON object is required for a filter row in this list (null is not valid)", errPrefix, i))
 					continue
 				}
 				qm := make(map[string]any)

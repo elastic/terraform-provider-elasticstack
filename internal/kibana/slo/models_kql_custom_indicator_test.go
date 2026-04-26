@@ -18,6 +18,7 @@
 package slo
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -379,7 +380,52 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		assert.Equal(t, `@timestamp: *`, out.FilterKql.Attributes()["kql_query"].(types.String).ValueString())
 		assert.Equal(t, `*`, out.TotalKql.Attributes()["kql_query"].(types.String).ValueString())
 		assert.Equal(t, "g", out.Good.ValueString())
+
+		fltList := out.FilterKql.Attributes()["filters"].(types.List)
+		require.Len(t, fltList.Elements(), 1)
+		totList := out.TotalKql.Attributes()["filters"].(types.List)
+		require.Len(t, totList.Elements(), 1)
+		for i, l := range []types.List{fltList, totList} {
+			row := l.Elements()[0].(types.Object)
+			qn := row.Attributes()["query"].(jsontypes.Normalized)
+			var m map[string]any
+			require.NoError(t, json.Unmarshal([]byte(qn.ValueString()), &m), "filter row %d", i)
+			_, has := m["match_all"]
+			assert.True(t, has, "expected match_all in nested filters[%d] query", i)
+		}
 	})
+}
+
+func TestKqlTFFormToAPI1_filterQueryDiagnostics(t *testing.T) {
+	unknownQueryRow, d := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{
+		"query": jsontypes.NewNormalizedUnknown(),
+	})
+	require.False(t, d.HasError())
+	list, d := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{unknownQueryRow})
+	require.False(t, d.HasError())
+	obj, d := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+		"kql_query": types.StringValue("a:b"),
+		"filters":   list,
+	})
+	require.False(t, d.HasError())
+	_, diags := kqlTFFormToAPI1(obj, "kql_test")
+	require.True(t, diags.HasError(), "expected error for unknown filter query")
+	assert.Contains(t, diags[0].Detail(), "is not yet known", "%s", diags[0].Detail())
+
+	nullQueryRow, d := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{
+		"query": jsontypes.NewNormalizedNull(),
+	})
+	require.False(t, d.HasError())
+	list2, d := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{nullQueryRow})
+	require.False(t, d.HasError())
+	obj2, d := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+		"kql_query": types.StringValue("a:b"),
+		"filters":   list2,
+	})
+	require.False(t, d.HasError())
+	_, diags2 := kqlTFFormToAPI1(obj2, "kql_test2")
+	require.True(t, diags2.HasError(), "expected error for null filter query")
+	assert.Contains(t, diags2[0].Detail(), "null is not valid", "%s", diags2[0].Detail())
 }
 
 func mustKqlTotalFromString(t *testing.T, s string) kbapi.SLOsKqlWithFiltersTotal {
