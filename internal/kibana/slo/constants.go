@@ -61,3 +61,9 @@ var timesliceMetricAggregationsWithField = slices.Concat(
 	timesliceMetricAggregationsBasic,
 	[]string{timesliceMetricAggregationPercentile},
 )
+
+// Aggregations for which the optional `percentile` attribute must not be set (all except percentile).
+var timesliceMetricAggregationsWithoutPercentile = slices.Concat(
+	timesliceMetricAggregationsBasic,
+	[]string{timesliceMetricAggregationDocCount},
+)

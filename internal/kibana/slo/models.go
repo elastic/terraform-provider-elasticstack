@@ -31,6 +31,7 @@ import (
 var tfSettingsAttrTypes = map[string]attr.Type{
 	"sync_delay":               types.StringType,
 	"frequency":                types.StringType,
+	"sync_field":               types.StringType,
 	"prevent_initial_backfill": types.BoolType,
 }
 
@@ -43,6 +44,7 @@ type tfModel struct {
 	Description  types.String `tfsdk:"description"`
 	SpaceID      types.String `tfsdk:"space_id"`
 	BudgetMethod types.String `tfsdk:"budgeting_method"`
+	Enabled      types.Bool   `tfsdk:"enabled"`
 
 	TimeWindow []tfTimeWindow `tfsdk:"time_window"`
 	Objective  []tfObjective  `tfsdk:"objective"`
@@ -50,6 +52,8 @@ type tfModel struct {
 
 	GroupBy GroupByValue   `tfsdk:"group_by"`
 	Tags    []types.String `tfsdk:"tags"`
+
+	Artifacts *tfSloArtifacts `tfsdk:"artifacts"`
 
 	MetricCustomIndicator    []tfMetricCustomIndicator    `tfsdk:"metric_custom_indicator"`
 	HistogramCustomIndicator []tfHistogramCustomIndicator `tfsdk:"histogram_custom_indicator"`
@@ -70,9 +74,18 @@ type tfObjective struct {
 	TimesliceWindow types.String  `tfsdk:"timeslice_window"`
 }
 
+type tfSloArtifactDashboard struct {
+	ID types.String `tfsdk:"id"`
+}
+
+type tfSloArtifacts struct {
+	Dashboards []tfSloArtifactDashboard `tfsdk:"dashboards"`
+}
+
 type tfSettings struct {
 	SyncDelay              types.String `tfsdk:"sync_delay"`
 	Frequency              types.String `tfsdk:"frequency"`
+	SyncField              types.String `tfsdk:"sync_field"`
 	PreventInitialBackfill types.Bool   `tfsdk:"prevent_initial_backfill"`
 }
 
@@ -217,6 +230,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.Name = types.StringValue(apiModel.Name)
 	m.Description = types.StringValue(apiModel.Description)
 	m.BudgetMethod = types.StringValue(string(apiModel.BudgetingMethod))
+	m.Enabled = types.BoolValue(apiModel.Enabled)
 
 	m.TimeWindow = []tfTimeWindow{{
 		Duration: types.StringValue(apiModel.TimeWindow.Duration),
@@ -242,6 +256,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		attrValues := map[string]attr.Value{
 			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
 			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),
+			"sync_field":               types.StringPointerValue(apiModel.Settings.SyncField),
 			"prevent_initial_backfill": types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
 		}
 		settingsObj, objDiags := types.ObjectValue(tfSettingsAttrTypes, attrValues)
@@ -249,6 +264,16 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		m.Settings = settingsObj
 	} else {
 		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
+	}
+
+	if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
+		d := make([]tfSloArtifactDashboard, 0, len(*apiModel.Artifacts.Dashboards))
+		for _, row := range *apiModel.Artifacts.Dashboards {
+			d = append(d, tfSloArtifactDashboard{ID: types.StringValue(row.Id)})
+		}
+		m.Artifacts = &tfSloArtifacts{Dashboards: d}
+	} else {
+		m.Artifacts = nil
 	}
 
 	if apiModel.GroupBy != nil {
@@ -318,6 +343,12 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 		return tfSettings{}, diags
 	}
 
+	syncFieldVal, ok := attrs["sync_field"].(types.String)
+	if !ok {
+		diags.AddError("Invalid configuration", "settings.sync_field is not a string")
+		return tfSettings{}, diags
+	}
+
 	preventInitialBackfillVal, ok := attrs["prevent_initial_backfill"].(types.Bool)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.prevent_initial_backfill is not a bool")
@@ -327,6 +358,7 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 	return tfSettings{
 		SyncDelay:              syncDelayVal,
 		Frequency:              frequencyVal,
+		SyncField:              syncFieldVal,
 		PreventInitialBackfill: preventInitialBackfillVal,
 	}, diags
 }
@@ -348,6 +380,11 @@ func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
 	if typeutils.IsKnown(s.PreventInitialBackfill) {
 		v := s.PreventInitialBackfill.ValueBool()
 		settings.PreventInitialBackfill = &v
+		hasAny = true
+	}
+	if typeutils.IsKnown(s.SyncField) {
+		v := s.SyncField.ValueString()
+		settings.SyncField = &v
 		hasAny = true
 	}
 

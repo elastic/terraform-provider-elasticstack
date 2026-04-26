@@ -33,4 +33,6 @@ type Slo struct {
 	SpaceID         string
 	GroupBy         []string
 	Tags            []string
+	Enabled         bool
+	Artifacts       *kbapi.SLOsArtifacts
 }

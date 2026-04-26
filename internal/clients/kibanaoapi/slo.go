@@ -173,6 +173,8 @@ func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *
 		Settings:        &res.Settings,
 		GroupBy:         TransformGroupByFromResponse(res.GroupBy),
 		Tags:            res.Tags,
+		Enabled:         res.Enabled,
+		Artifacts:       nil,
 	}
 }
 
