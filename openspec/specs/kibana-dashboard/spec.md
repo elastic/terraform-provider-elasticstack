@@ -437,13 +437,13 @@ REQ-006 is extended to include:
 #### Scenario: Both sub-blocks set simultaneously
 
 - GIVEN a `lens_dashboard_app_config` block with both `by_value` and `by_reference` set
-- WHEN Terraform validates the resource schema
+- WHEN Terraform validates the configuration
 - THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `by_value` and `by_reference` are mutually exclusive
 
 #### Scenario: Neither sub-block set
 
 - GIVEN a `lens_dashboard_app_config` block with neither `by_value` nor `by_reference` set
-- WHEN Terraform validates the resource schema
+- WHEN Terraform validates the configuration
 - THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one of `by_value` or `by_reference` must be set
 
 #### Scenario: Multiple by-value sources set simultaneously
