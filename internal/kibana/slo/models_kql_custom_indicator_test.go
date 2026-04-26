@@ -255,12 +255,13 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 
 	t.Run("maps good as object form when API returns filters", func(t *testing.T) {
 		var good kbapi.SLOsKqlWithFiltersGood
-		filters := []kbapi.SLOsFilter{{Query: func() *map[string]interface{} {
-			m := map[string]interface{}{"match_all": map[string]interface{}{}}
+		filters := []kbapi.SLOsFilter{{Query: func() *map[string]any {
+			m := map[string]any{"match_all": map[string]any{}}
 			return &m
 		}()}}
+		kq := "event.outcome: success"
 		require.NoError(t, good.FromSLOsKqlWithFiltersGood1(kbapi.SLOsKqlWithFiltersGood1{
-			KqlQuery: strPtr("event.outcome: success"),
+			KqlQuery: &kq,
 			Filters:  &filters,
 		}))
 
@@ -289,9 +290,97 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		kqq := ind.GoodKql.Attributes()["kql_query"].(types.String)
 		assert.Equal(t, "event.outcome: success", kqq.ValueString())
 	})
-}
 
-func strPtr(s string) *string { return &s }
+	t.Run("maps filter and total as object form when API returns filters", func(t *testing.T) {
+		var f kbapi.SLOsKqlWithFilters
+		fKq := "host.name: *"
+		rowFilters := []kbapi.SLOsFilter{{
+			Query: func() *map[string]any { m := map[string]any{"match_all": map[string]any{}}; return &m }(),
+		}}
+		require.NoError(t, f.FromSLOsKqlWithFilters1(kbapi.SLOsKqlWithFilters1{KqlQuery: &fKq, Filters: &rowFilters}))
+		tot := kbapi.SLOsKqlWithFiltersTotal{}
+		tKq := "event.category: *"
+		t1 := kbapi.SLOsKqlWithFiltersTotal1{
+			KqlQuery: &tKq,
+			Filters: &[]kbapi.SLOsFilter{{
+				Query: func() *map[string]any { m := map[string]any{"bool": map[string]any{}}; return &m }(),
+			}},
+		}
+		require.NoError(t, tot.FromSLOsKqlWithFiltersTotal1(t1))
+		var g kbapi.SLOsKqlWithFiltersGood
+		require.NoError(t, g.FromSLOsKqlWithFiltersGood0("ok"))
+
+		api := kbapi.SLOsIndicatorPropertiesCustomKql{
+			Params: struct {
+				DataViewId     *string                       `json:"dataViewId,omitempty"` //nolint:revive // var-naming: API struct field
+				Filter         *kbapi.SLOsKqlWithFilters     `json:"filter,omitempty"`
+				Good           kbapi.SLOsKqlWithFiltersGood  `json:"good"`
+				Index          string                        `json:"index"`
+				TimestampField string                        `json:"timestampField"`
+				Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
+			}{
+				Index:          "logs-*",
+				Filter:         &f,
+				Good:           g,
+				Total:          tot,
+				TimestampField: "@timestamp",
+			},
+		}
+
+		var m tfModel
+		require.False(t, m.populateFromKqlCustomIndicator(api).HasError())
+		ind := m.KqlCustomIndicator[0]
+		assert.True(t, ind.Filter.IsNull())
+		assert.False(t, ind.FilterKql.IsNull())
+		assert.True(t, ind.Total.IsNull())
+		assert.False(t, ind.TotalKql.IsNull())
+		fkq := ind.FilterKql.Attributes()["kql_query"].(types.String)
+		assert.Equal(t, "host.name: *", fkq.ValueString())
+		tkq := ind.TotalKql.Attributes()["kql_query"].(types.String)
+		assert.Equal(t, "event.category: *", tkq.ValueString())
+	})
+
+	t.Run("round_trip object form filter and total to API and back", func(t *testing.T) {
+		q := jsontypes.NewNormalizedValue(`{"match_all":{}}`)
+		row, d := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{"query": q})
+		require.False(t, d.HasError())
+		list, d := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{row})
+		require.False(t, d.HasError())
+		filterKql, d := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+			"kql_query": types.StringValue(`@timestamp: *`),
+			"filters":   list,
+		})
+		require.False(t, d.HasError())
+		totKql, d := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
+			"kql_query": types.StringValue(`*`),
+			"filters":   list,
+		})
+		require.False(t, d.HasError())
+
+		m1 := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs-*"),
+			Filter:         types.StringNull(),
+			FilterKql:      filterKql,
+			Good:           types.StringValue("g"),
+			GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			Total:          types.StringNull(),
+			TotalKql:       totKql,
+			TimestampField: types.StringValue("@timestamp"),
+		}}}
+
+		ok, indUnion, di := m1.kqlCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, di.HasError(), "%+v", di)
+		kind, err := indUnion.AsSLOsIndicatorPropertiesCustomKql()
+		require.NoError(t, err)
+		var m2 tfModel
+		require.False(t, m2.populateFromKqlCustomIndicator(kind).HasError())
+		out := m2.KqlCustomIndicator[0]
+		assert.Equal(t, `@timestamp: *`, out.FilterKql.Attributes()["kql_query"].(types.String).ValueString())
+		assert.Equal(t, `*`, out.TotalKql.Attributes()["kql_query"].(types.String).ValueString())
+		assert.Equal(t, "g", out.Good.ValueString())
+	})
+}
 
 func mustKqlTotalFromString(t *testing.T, s string) kbapi.SLOsKqlWithFiltersTotal {
 	t.Helper()

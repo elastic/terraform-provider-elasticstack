@@ -179,7 +179,12 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
-		if art := tfArtifactsToAPIModel(m.Artifacts); art != nil {
+		art, artDiags := tfArtifactsToAPIModel(m.Artifacts)
+		diags.Append(artDiags...)
+		if diags.HasError() {
+			return models.Slo{}, diags
+		}
+		if art != nil {
 			apiModel.Artifacts = art
 		}
 	}
@@ -274,25 +279,37 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
 	}
 
-	if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
-		rows := make([]attr.Value, 0, len(*apiModel.Artifacts.Dashboards))
-		for _, row := range *apiModel.Artifacts.Dashboards {
-			rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
-				"id": types.StringValue(row.Id),
+	// When `artifacts` is not configured, keep a null `artifacts` object in state
+	// (do not materialize the API's empty `dashboards: []` into state).
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
+			rows := make([]attr.Value, 0, len(*apiModel.Artifacts.Dashboards))
+			for _, row := range *apiModel.Artifacts.Dashboards {
+				rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+					"id": types.StringValue(row.Id),
+				})
+				diags.Append(rowDiags...)
+				rows = append(rows, rowObj)
+			}
+			if diags.HasError() {
+				return diags
+			}
+			listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
+			diags.Append(listDiags...)
+			artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+				"dashboards": listVal,
 			})
-			diags.Append(rowDiags...)
-			rows = append(rows, rowObj)
+			diags.Append(artDiags...)
+			m.Artifacts = artObj
+		} else {
+			emptyBoards, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{})
+			diags.Append(listDiags...)
+			artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+				"dashboards": emptyBoards,
+			})
+			diags.Append(artDiags...)
+			m.Artifacts = artObj
 		}
-		if diags.HasError() {
-			return diags
-		}
-		listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
-		diags.Append(listDiags...)
-		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
-			"dashboards": listVal,
-		})
-		diags.Append(artDiags...)
-		m.Artifacts = artObj
 	} else {
 		m.Artifacts = types.ObjectNull(tfArtifactsAttrTypes)
 	}
@@ -384,36 +401,89 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 	}, diags
 }
 
-func tfArtifactsToAPIModel(obj types.Object) *kbapi.SLOsArtifacts {
+// sloArtifactDashboardRef is the provider-side shape for a dashboard reference (`id` in JSON).
+type sloArtifactDashboardRef struct {
+	ID string `json:"id"`
+}
+
+// tfArtifactsToAPIModel maps Terraform `artifacts` to the create/update payload.
+// It returns an error diagnostic when the block is set but a dashboard row is invalid
+// (wrong type, unknown id) instead of dropping values silently.
+func tfArtifactsToAPIModel(obj types.Object) (*kbapi.SLOsArtifacts, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	attrs := obj.Attributes()
 	dl, ok := attrs["dashboards"].(types.List)
-	if !ok || !typeutils.IsKnown(dl) || dl.IsNull() {
-		return nil
+	if !ok {
+		diags.AddError("Invalid configuration", "artifacts: dashboards is not a list")
+		return nil, diags
+	}
+	if !typeutils.IsKnown(dl) {
+		diags.AddError("Invalid configuration", "artifacts: dashboards is unknown; the value must be known to send artifacts to Kibana")
+		return nil, diags
+	}
+	if dl.IsNull() {
+		return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(nil)}, diags
 	}
 	elems := dl.Elements()
-	dashboards := make([]struct {
-		Id string `json:"id"`
-	}, 0, len(elems))
-	for _, e := range elems {
+	refs := make([]sloArtifactDashboardRef, 0, len(elems))
+	for i, e := range elems {
 		rowObj, ok := e.(types.Object)
 		if !ok {
-			return nil
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d] must be an object", i))
+			return nil, diags
 		}
 		idVal, ok := rowObj.Attributes()["id"].(types.String)
-		if !ok || !typeutils.IsKnown(idVal) {
-			return nil
+		if !ok {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d] has no id attribute", i))
+			return nil, diags
 		}
-		dashboards = append(dashboards, struct {
-			Id string `json:"id"`
-		}{Id: idVal.ValueString()})
+		if !typeutils.IsKnown(idVal) {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is unknown", i))
+			return nil, diags
+		}
+		if idVal.IsNull() {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is null", i))
+			return nil, diags
+		}
+		refs = append(refs, sloArtifactDashboardRef{ID: idVal.ValueString()})
 	}
-	if len(dashboards) == 0 {
+	if len(refs) == 0 {
+		empty := []sloArtifactDashboardRef{}
+		return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(&empty)}, diags
+	}
+	return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(&refs)}, diags
+}
+
+// asKbapiArtifactDashboards converts provider refs to the generated kbapi slice type (field name Id in OpenAPI).
+func asKbapiArtifactDashboards(refs *[]sloArtifactDashboardRef) *[]struct {
+	//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+	Id string `json:"id"`
+} {
+	if refs == nil {
 		empty := []struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
 			Id string `json:"id"`
 		}{}
-		return &kbapi.SLOsArtifacts{Dashboards: &empty}
+		return &empty
 	}
-	return &kbapi.SLOsArtifacts{Dashboards: &dashboards}
+	if len(*refs) == 0 {
+		empty := []struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+			Id string `json:"id"`
+		}{}
+		return &empty
+	}
+	out := make([]struct {
+		//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+		Id string `json:"id"`
+	}, 0, len(*refs))
+	for _, ref := range *refs {
+		out = append(out, struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+			Id string `json:"id"`
+		}{Id: ref.ID})
+	}
+	return &out
 }
 
 func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {

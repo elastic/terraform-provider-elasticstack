@@ -203,7 +203,7 @@ func kqlTFFormToKqlWithFiltersGoodUnion(obj types.Object, errPrefix string) (kba
 	if diags.HasError() {
 		return kbapi.SLOsKqlWithFiltersGood{}, diags
 	}
-	g1 := kbapi.SLOsKqlWithFiltersGood1{KqlQuery: one.KqlQuery, Filters: one.Filters}
+	g1 := kbapi.SLOsKqlWithFiltersGood1(one)
 	var out kbapi.SLOsKqlWithFiltersGood
 	if err := out.FromSLOsKqlWithFiltersGood1(g1); err != nil {
 		diags.AddError("Invalid configuration", errPrefix+": "+err.Error())
@@ -218,7 +218,7 @@ func kqlTFFormToKqlWithFiltersTotalUnion(obj types.Object, errPrefix string) (kb
 	if diags.HasError() {
 		return kbapi.SLOsKqlWithFiltersTotal{}, diags
 	}
-	t1 := kbapi.SLOsKqlWithFiltersTotal1{KqlQuery: one.KqlQuery, Filters: one.Filters}
+	t1 := kbapi.SLOsKqlWithFiltersTotal1(one)
 	var out kbapi.SLOsKqlWithFiltersTotal
 	if err := out.FromSLOsKqlWithFiltersTotal1(t1); err != nil {
 		diags.AddError("Invalid configuration", errPrefix+": "+err.Error())
@@ -258,10 +258,15 @@ func kqlTFFormToAPI1(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilte
 					diags.AddError("Invalid configuration", errPrefix+fmt.Sprintf(".filters[%d]", i)+": query is not JSON")
 					continue
 				}
-				if !typeutils.IsKnown(n) || n.IsNull() {
+				if !typeutils.IsKnown(n) {
+					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d].query: value is not yet known", errPrefix, i))
 					continue
 				}
-				var qm map[string]interface{}
+				if n.IsNull() {
+					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d].query: a JSON object is required for a filter row in this list", errPrefix, i))
+					continue
+				}
+				qm := make(map[string]any)
 				if err := json.Unmarshal([]byte(n.ValueString()), &qm); err != nil {
 					diags.AddError("Invalid configuration", fmt.Sprintf("%s.filters[%d]: query JSON: %s", errPrefix, i, err))
 					continue
@@ -370,7 +375,7 @@ func kqlWithFiltersAPIToTFFormFilter(union *kbapi.SLOsKqlWithFilters) (types.Str
 
 func kqlWithFiltersAPIToTFFormGood(union kbapi.SLOsKqlWithFiltersGood) (types.String, types.Object, diag.Diagnostics) {
 	if o, err := union.AsSLOsKqlWithFiltersGood1(); err == nil {
-		return kqlObjectAPIToTFFormIfRich(kbapi.SLOsKqlWithFilters1{KqlQuery: o.KqlQuery, Filters: o.Filters})
+		return kqlObjectAPIToTFFormIfRich(kbapi.SLOsKqlWithFilters1(o))
 	}
 	if s, err := union.AsSLOsKqlWithFiltersGood0(); err == nil {
 		return types.StringValue(s), types.ObjectNull(tfKqlKqlObjectAttrTypes), diag.Diagnostics{}
@@ -380,7 +385,7 @@ func kqlWithFiltersAPIToTFFormGood(union kbapi.SLOsKqlWithFiltersGood) (types.St
 
 func kqlWithFiltersAPIToTFFormTotal(union kbapi.SLOsKqlWithFiltersTotal) (types.String, types.Object, diag.Diagnostics) {
 	if o, err := union.AsSLOsKqlWithFiltersTotal1(); err == nil {
-		return kqlObjectAPIToTFFormIfRich(kbapi.SLOsKqlWithFilters1{KqlQuery: o.KqlQuery, Filters: o.Filters})
+		return kqlObjectAPIToTFFormIfRich(kbapi.SLOsKqlWithFilters1(o))
 	}
 	if s, err := union.AsSLOsKqlWithFiltersTotal0(); err == nil {
 		return types.StringValue(s), types.ObjectNull(tfKqlKqlObjectAttrTypes), diag.Diagnostics{}

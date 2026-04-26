@@ -27,11 +27,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// sloPlannedEnabledExplicitlySet reports whether the practitioner set a known
+// `enabled` value in the plan (as opposed to omitting it or leaving it unknown).
+func sloPlannedEnabledExplicitlySet(plan types.Bool) bool {
+	return !plan.IsNull() && typeutils.IsKnown(plan)
+}
+
 // reconcileSloEnabledAfterWrite reconciles the SLO enabled flag using dedicated
 // Kibana enable/disable APIs when `enabled` is set in the Terraform
 // configuration and differs from the value returned by the most recent read.
-// When `enabled` is omitted (null in plan), the function is a no-op and does
-// not call the enable or disable APIs.
+// When `enabled` is omitted (null in plan) or the planned value is still unknown
+// (e.g. mid-plan for a new dependency), the function is a no-op and does not
+// call the enable or disable APIs.
 func (r *Resource) reconcileSloEnabledAfterWrite(
 	ctx context.Context,
 	apiClient *clients.KibanaScopedClient,
@@ -41,7 +48,7 @@ func (r *Resource) reconcileSloEnabledAfterWrite(
 	m *tfModel,
 	diags *diag.Diagnostics,
 ) {
-	if planEnabled.IsNull() {
+	if !sloPlannedEnabledExplicitlySet(planEnabled) {
 		return
 	}
 	if !typeutils.IsKnown(m.Enabled) {

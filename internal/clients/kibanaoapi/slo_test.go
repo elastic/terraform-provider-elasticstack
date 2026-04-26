@@ -25,6 +25,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// kbapiTestArtifacts is a test helper; nested field name matches generated kbapi.
+//
+//nolint:revive // var-naming: `Id` matches kbapi SLOsArtifacts OpenAPI
+func kbapiTestArtifacts(dashboardID string) *kbapi.SLOsArtifacts {
+	return &kbapi.SLOsArtifacts{Dashboards: &[]struct {
+		Id string `json:"id"`
+	}{{Id: dashboardID}}}
+}
+
 func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
 	t.Helper()
 	ind := kbapi.SLOsIndicatorPropertiesApmAvailability{
@@ -60,8 +69,8 @@ func Test_SloResponseToModel(t *testing.T) {
 		expectedModel *models.Slo
 	}{
 		{
-			name:    "should return a model with the correct values",
-			spaceID: "space-id",
+			name:      "should return a model with the correct values",
+			spaceID:   "space-id",
 			artifacts: nil,
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
@@ -87,8 +96,8 @@ func Test_SloResponseToModel(t *testing.T) {
 			},
 		},
 		{
-			name:    "should return tags if available",
-			spaceID: "space-id",
+			name:      "should return tags if available",
+			spaceID:   "space-id",
 			artifacts: nil,
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
@@ -134,9 +143,7 @@ func Test_SloResponseToModel(t *testing.T) {
 				BudgetingMethod: "occurrences",
 				Settings:        kbapi.SLOsSettings{SyncDelay: &syncDelay},
 			},
-			artifacts: &kbapi.SLOsArtifacts{Dashboards: &[]struct {
-				Id string `json:"id"`
-			}{{Id: "dashboard-1"}}},
+			artifacts: kbapiTestArtifacts("dashboard-1"),
 			expectedModel: &models.Slo{
 				SloID:           "slo-id",
 				SpaceID:         "space-id",
@@ -146,10 +153,8 @@ func Test_SloResponseToModel(t *testing.T) {
 				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
 				Settings:        &kbapi.SLOsSettings{SyncDelay: &syncDelay},
-				Artifacts: &kbapi.SLOsArtifacts{Dashboards: &[]struct {
-					Id string `json:"id"`
-				}{{Id: "dashboard-1"}}},
-				GroupBy: nil,
+				Artifacts:       kbapiTestArtifacts("dashboard-1"),
+				GroupBy:         nil,
 			},
 		},
 	}
