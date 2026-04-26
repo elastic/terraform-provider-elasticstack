@@ -163,7 +163,7 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 	body := kbapi.PostAgentBuilderToolsJSONRequestBody{
 		Id:            model.ToolID.ValueString(),
 		Type:          kbapi.PostAgentBuilderToolsJSONBodyType(model.Type.ValueString()),
-		Configuration: pointerInterfaceMapFromAnyMap(configuration),
+		Configuration: clients.PointerInterfaceMapFromAnyMap(configuration),
 	}
 
 	if !model.Description.IsNull() {
@@ -195,7 +195,7 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		}
 	}
 
-	apiConfiguration := pointerInterfaceMapFromAnyMap(configuration)
+	apiConfiguration := clients.PointerInterfaceMapFromAnyMap(configuration)
 	body := kbapi.PutAgentBuilderToolsToolidJSONRequestBody{
 		Configuration: &apiConfiguration,
 	}
@@ -215,14 +215,4 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 	}
 
 	return body, diags
-}
-
-func pointerInterfaceMapFromAnyMap(input map[string]any) map[string]*any {
-	output := make(map[string]*any, len(input))
-	for k, v := range input {
-		value := v
-		output[k] = &value
-	}
-
-	return output
 }

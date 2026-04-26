@@ -388,7 +388,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 	}
 
 	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams(pointerInterfaceMapFromAnyMap(rule.Params))
+		params := kbapi.AlertingRuleAPIParams(PointerInterfaceMapFromAnyMap(rule.Params))
 		body.Params = &params
 	}
 
@@ -464,7 +464,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 				actions[i].Group = &group
 			}
 			if action.Params != nil {
-				params := pointerInterfaceMapFromAnyMap(action.Params)
+				params := PointerInterfaceMapFromAnyMap(action.Params)
 				actions[i].Params = &params
 			}
 
@@ -573,7 +573,7 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	if rule.Params != nil {
-		params := pointerInterfaceMapFromAnyMap(rule.Params)
+		params := PointerInterfaceMapFromAnyMap(rule.Params)
 		body.Params = &params
 	}
 
@@ -642,7 +642,7 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 			actions[i].Group = &action.Group
 			actions[i].Id = action.ID
 			if action.Params != nil {
-				params := pointerInterfaceMapFromAnyMap(action.Params)
+				params := PointerInterfaceMapFromAnyMap(action.Params)
 				actions[i].Params = &params
 			}
 
@@ -736,16 +736,6 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	return body
-}
-
-func pointerInterfaceMapFromAnyMap(input map[string]any) map[string]*any {
-	output := make(map[string]*any, len(input))
-	for k, v := range input {
-		value := v
-		output[k] = &value
-	}
-
-	return output
 }
 
 // flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
