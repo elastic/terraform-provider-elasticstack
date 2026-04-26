@@ -368,6 +368,7 @@ func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
 		require.True(t, resp.Diagnostics.HasError())
 		d := resp.Diagnostics.Errors()[0]
 		require.Equal(t, "Invalid lens_dashboard_app_config.by_value", d.Summary())
+		require.Contains(t, d.Detail(), "exactly one")
 		require.Contains(t, d.Detail(), "more than one by-value source is set")
 	})
 }
