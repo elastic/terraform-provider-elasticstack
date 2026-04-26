@@ -483,6 +483,42 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(
     workflowTmpl,
+    /event_eligible: \$\{\{ steps\.qualify_trigger\.outputs\.event_eligible \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /event_eligible_reason: \$\{\{ steps\.qualify_trigger\.outputs\.event_eligible_reason \}\}/,
+  );
+
+  assert.match(
+    workflowTmpl,
+    /- name: Check actor trust\n      id: check_actor_trust\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
+  );
+  assert.match(
+    workflowTmpl,
+    /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true'/,
+  );
+
+  const scriptIncludes = [
+    'x-script-include: scripts/qualify_trigger.inline.js',
+    'x-script-include: scripts/check_actor_trust.inline.js',
+    'x-script-include: scripts/check_duplicate_pr.inline.js',
+    'x-script-include: scripts/finalize_gate.inline.js',
+  ];
+  let lastIdx = -1;
+  for (const line of scriptIncludes) {
+    const idx = workflowTmpl.indexOf(line, lastIdx + 1);
+    assert.ok(idx > lastIdx, `expected ordered script include: ${line}`);
+    lastIdx = idx;
+  }
+
+  assert.match(
+    workflowTmpl,
+    /DUPLICATE_GATE_REASON: \$\{\{ steps\.check_duplicate_pr\.outputs\.gate_reason \}\}/,
+  );
+
+  assert.match(
+    workflowTmpl,
     /issue_title: \$\{\{ steps\.capture_issue_context\.outputs\.issue_title \}\}/,
   );
   assert.match(
