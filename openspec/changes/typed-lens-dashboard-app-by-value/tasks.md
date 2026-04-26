@@ -1,10 +1,10 @@
 ## 1. Schema and Models
 
-- [ ] 1.1 Extend `lensDashboardAppByValueModel` with optional fields for each supported typed by-value Lens chart block.
-- [ ] 1.2 Extend `getLensDashboardAppConfigSchema()` so `by_value` includes `config_json` plus supported typed Lens chart blocks using the existing chart schema helper functions where possible.
-- [ ] 1.3 Add or update validators so `lens_dashboard_app_config` still requires exactly one of `by_value` or `by_reference`.
-- [ ] 1.4 Add a by-value source validator so `lens_dashboard_app_config.by_value` requires exactly one source: `config_json` or one typed chart block.
-- [ ] 1.5 Update schema descriptions to explain that typed by-value chart blocks send `lens-dashboard-app` API config directly and do not create `type = "vis"` panels.
+- [x] 1.1 Extend `lensDashboardAppByValueModel` with optional fields for each supported typed by-value Lens chart block.
+- [x] 1.2 Extend `getLensDashboardAppConfigSchema()` so `by_value` includes `config_json` plus supported typed Lens chart blocks using the existing chart schema helper functions where possible.
+- [x] 1.3 Add or update validators so `lens_dashboard_app_config` still requires exactly one of `by_value` or `by_reference`.
+- [x] 1.4 Add a by-value source validator so `lens_dashboard_app_config.by_value` requires exactly one source: `config_json` or one typed chart block.
+- [x] 1.5 Update schema descriptions to explain that typed by-value chart blocks send `lens-dashboard-app` API config directly and do not create `type = "vis"` panels.
 
 ## 2. Converter Adapter
 

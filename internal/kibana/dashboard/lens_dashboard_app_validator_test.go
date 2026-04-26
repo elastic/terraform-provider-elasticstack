@@ -189,3 +189,93 @@ func Test_lensDashboardAppByReferenceTimeRangeModeStringValidators(t *testing.T)
 	}
 	require.True(t, resp.Diagnostics.HasError())
 }
+
+func lensByValueAttributeTypes(t *testing.T) map[string]attr.Type {
+	t.Helper()
+	lda := getLensDashboardAppConfigSchema()
+	bv, ok := lda["by_value"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	return bv.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func lensByValueObjectAllNull(t *testing.T) types.Object {
+	t.Helper()
+	typesMap := lensByValueAttributeTypes(t)
+	vals := make(map[string]attr.Value, len(typesMap))
+	for k, at := range typesMap {
+		switch k {
+		case "config_json":
+			vals[k] = jsontypes.NewNormalizedNull()
+		default:
+			ot, ok := at.(types.ObjectType)
+			require.True(t, ok, "expected types.ObjectType for %s, got %T", k, at)
+			vals[k] = types.ObjectNull(ot.AttrTypes)
+		}
+	}
+	return types.ObjectValueMust(typesMap, vals)
+}
+
+func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	v := lensDashboardAppByValueSourceValidator{}
+
+	lda := getLensDashboardAppConfigSchema()
+	bv, ok := lda["by_value"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	var found bool
+	for _, val := range bv.Validators {
+		if _, ok := val.(lensDashboardAppByValueSourceValidator); ok {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "by_value should include lensDashboardAppByValueSourceValidator")
+
+	t.Run("rejects no source", func(t *testing.T) {
+		t.Parallel()
+		ov := lensByValueObjectAllNull(t)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "exactly one")
+	})
+
+	t.Run("accepts config_json only", func(t *testing.T) {
+		t.Parallel()
+		typesMap := lensByValueAttributeTypes(t)
+		vals := make(map[string]attr.Value, len(typesMap))
+		for k, at := range typesMap {
+			switch k {
+			case "config_json":
+				vals[k] = jsontypes.NewNormalizedValue(`{"type":"metric"}`)
+			default:
+				ot := at.(types.ObjectType)
+				vals[k] = types.ObjectNull(ot.AttrTypes)
+			}
+		}
+		ov := types.ObjectValueMust(typesMap, vals)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	})
+
+	t.Run("defers when a source is unknown", func(t *testing.T) {
+		t.Parallel()
+		typesMap := lensByValueAttributeTypes(t)
+		vals := make(map[string]attr.Value, len(typesMap))
+		for k, at := range typesMap {
+			switch k {
+			case "config_json":
+				vals[k] = jsontypes.NewNormalizedUnknown()
+			default:
+				ot := at.(types.ObjectType)
+				vals[k] = types.ObjectNull(ot.AttrTypes)
+			}
+		}
+		ov := types.ObjectValueMust(typesMap, vals)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+}

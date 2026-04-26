@@ -696,54 +696,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"xy_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for an XY chart panel. Use this for line, area, and bar charts.", "xy_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"title": schema.StringAttribute{
-						MarkdownDescription: "The title of the chart displayed in the panel.",
-						Optional:            true,
-					},
-					"description": schema.StringAttribute{
-						MarkdownDescription: "The description of the chart.",
-						Optional:            true,
-					},
-					"axis": schema.SingleNestedAttribute{
-						MarkdownDescription: "Axis configuration for X, Y, and secondary Y axes.",
-						Required:            true,
-						Attributes:          getXYAxisSchema(),
-					},
-					"decorations": schema.SingleNestedAttribute{
-						MarkdownDescription: "Visual enhancements and styling options for the chart.",
-						Required:            true,
-						Attributes:          getXYDecorationsSchema(),
-					},
-					"fitting": schema.SingleNestedAttribute{
-						MarkdownDescription: "Missing data interpolation configuration. Only valid fitting types are applied per chart type.",
-						Required:            true,
-						Attributes:          getXYFittingSchema(),
-					},
-					"layers": schema.ListNestedAttribute{
-						MarkdownDescription: "Chart layers configuration. Minimum 1 layer required. Each layer can be a data layer or reference line layer.",
-						Required:            true,
-						NestedObject:        getXYLayerSchema(),
-						Validators: []validator.List{
-							listvalidator.SizeAtLeast(1),
-						},
-					},
-					"legend": schema.SingleNestedAttribute{
-						MarkdownDescription: "Legend configuration for the XY chart.",
-						Required:            true,
-						Attributes:          getXYLegendSchema(),
-					},
-					"query": schema.SingleNestedAttribute{
-						MarkdownDescription: "Query configuration for filtering data.",
-						Required:            true,
-						Attributes:          getFilterSimple(),
-					},
-					"filters": schema.ListNestedAttribute{
-						MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
-						Optional:            true,
-						NestedObject:        getChartFilter(),
-					},
-				},
+				Attributes:          getXYChartConfigAttributes(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
@@ -1302,7 +1255,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
 						"Required when `type` is `lens-dashboard-app`. "+
-						"Exactly one of `by_value` (inline chart config) or `by_reference` (saved Lens object via `ref_id` and `references_json`, mapping to the API `references` list) must be set.",
+						"Exactly one of `by_value` (inline `config_json` and/or a supported typed Lens chart block) or `by_reference` (saved Lens object via `ref_id` and `references_json`, mapping to the API `references` list) must be set. "+
+						"Typed by-value chart blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = \"vis\"` panels.",
 					"lens_dashboard_app_config",
 					panelConfigNames,
 				),
@@ -1339,20 +1293,117 @@ func getPanelSchema() schema.NestedAttributeObject {
 	}
 }
 
+// lensByValueVisMirrorDescription documents a typed by-value block that mirrors a vis `*_chart_config` / `*_config` block.
+func lensByValueVisMirrorDescription(visBlockName string) string {
+	return "Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = \"vis\"` panel. " +
+		"Reuses the same attribute shape as the `type = \"vis\"` panel block `" + visBlockName + "`."
+}
+
+// lensDashboardAppByValueSourceAttrNames lists mutually exclusive by-value content attributes.
+// Keep in sync with getLensDashboardAppByValueAttributes.
+var lensDashboardAppByValueSourceAttrNames = []string{
+	"config_json",
+	"xy_chart_config",
+	"treemap_config",
+	"mosaic_config",
+	"datatable_config",
+	"tagcloud_config",
+	"heatmap_config",
+	"waffle_config",
+	"region_map_config",
+	"gauge_config",
+	"metric_chart_config",
+	"pie_chart_config",
+	"legacy_metric_config",
+}
+
+// getLensDashboardAppByValueAttributes returns attributes for `lens_dashboard_app_config.by_value`.
+func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"config_json": schema.StringAttribute{
+			MarkdownDescription: "Optional raw normalized JSON for the by-value Lens chart `config` (full API shape, including chart `type` and `time_range` where the API requires them). " +
+				"Set exactly one of `config_json` or a typed chart block. Distinct from panel-level `config_json` on the panel.",
+			Optional:   true,
+			CustomType: jsontypes.NormalizedType{},
+		},
+		"xy_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("xy_chart_config"),
+			Optional:            true,
+			Attributes:          getXYChartConfigAttributes(),
+		},
+		"treemap_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("treemap_config"),
+			Optional:            true,
+			Attributes:          getTreemapSchema(),
+		},
+		"mosaic_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("mosaic_config"),
+			Optional:            true,
+			Attributes:          getMosaicSchema(),
+		},
+		"datatable_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("datatable_config"),
+			Optional:            true,
+			Attributes:          getDatatableSchema(),
+		},
+		"tagcloud_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("tagcloud_config"),
+			Optional:            true,
+			Attributes:          getTagcloudSchema(),
+		},
+		"heatmap_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("heatmap_config"),
+			Optional:            true,
+			Attributes:          getHeatmapSchema(),
+		},
+		"waffle_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("waffle_config"),
+			Optional:            true,
+			Attributes:          getWaffleSchema(),
+			Validators: []validator.Object{
+				waffleConfigModeValidator{},
+			},
+		},
+		"region_map_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("region_map_config"),
+			Optional:            true,
+			Attributes:          getRegionMapSchema(),
+		},
+		"gauge_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("gauge_config"),
+			Optional:            true,
+			Attributes:          getGaugeSchema(),
+		},
+		"metric_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("metric_chart_config"),
+			Optional:            true,
+			Attributes:          getMetricChart(),
+		},
+		"pie_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("pie_chart_config"),
+			Optional:            true,
+			Attributes:          getPieChart(),
+		},
+		"legacy_metric_config": schema.SingleNestedAttribute{
+			MarkdownDescription: lensByValueVisMirrorDescription("legacy_metric_config"),
+			Optional:            true,
+			Attributes:          getLegacyMetricSchema(),
+		},
+	}
+}
+
 // getLensDashboardAppConfigSchema returns attributes for the lens_dashboard_app_config block.
 func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"by_value": schema.SingleNestedAttribute{
 			MarkdownDescription: "Inline by-value `lens-dashboard-app` configuration. " +
-				"The nested `config_json` value is sent as the Kibana API panel `config` object " +
-				"(distinct from panel-level `config_json` on the panel).",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Required normalized JSON object for the by-value Lens chart `config` (for example an ES|QL or NoESQL chart shape).",
-					Required:            true,
-					CustomType:          jsontypes.NormalizedType{},
-				},
+				"Set exactly one of `config_json` (raw JSON) or a supported typed Lens chart block. " +
+				"Typed by-value blocks send the chart as the Kibana `lens-dashboard-app` API `config` and do not create a `type = \"vis\"` panel. " +
+				"Distinct from panel-level `config_json` on the panel.",
+			Optional:   true,
+			Attributes: getLensDashboardAppByValueAttributes(),
+			Validators: []validator.Object{
+				lensDashboardAppByValueSourceValidator{},
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
@@ -1451,6 +1502,55 @@ func (v lensDashboardAppConfigModeValidator) ValidateObject(_ context.Context, r
 			return
 		}
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.")
+	}
+}
+
+// lensDashboardAppByValueSourceValidator enforces exactly one of config_json or a typed chart block inside by_value.
+var _ validator.Object = lensDashboardAppByValueSourceValidator{}
+
+type lensDashboardAppByValueSourceValidator struct{}
+
+func (lensDashboardAppByValueSourceValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `config_json` or a typed Lens chart block is set inside `by_value`."
+}
+
+func (v lensDashboardAppByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	var count int
+	var hasUnknown bool
+	for _, name := range lensDashboardAppByValueSourceAttrNames {
+		av, ok := attrs[name]
+		if !ok {
+			continue
+		}
+		if av == nil {
+			continue
+		}
+		if av.IsUnknown() {
+			hasUnknown = true
+			continue
+		}
+		if av.IsNull() {
+			continue
+		}
+		count++
+	}
+	if hasUnknown {
+		return
+	}
+	if count == 0 {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Inside `by_value`, set exactly one of `config_json` or a supported typed Lens chart block.")
+		return
+	}
+	if count > 1 {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Inside `by_value`, set exactly one of `config_json` or a typed Lens chart block, not more than one.")
 	}
 }
 
@@ -1836,6 +1936,58 @@ func getXYLegendSchema() map[string]schema.Attribute {
 			Validators: []validator.String{
 				stringvalidator.OneOf("top_right", "bottom_right", "top_left", "bottom_left"),
 			},
+		},
+	}
+}
+
+// getXYChartConfigAttributes returns attributes for an `xy_chart_config` block (vis panels and lens-dashboard-app by_value).
+func getXYChartConfigAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"axis": schema.SingleNestedAttribute{
+			MarkdownDescription: "Axis configuration for X, Y, and secondary Y axes.",
+			Required:            true,
+			Attributes:          getXYAxisSchema(),
+		},
+		"decorations": schema.SingleNestedAttribute{
+			MarkdownDescription: "Visual enhancements and styling options for the chart.",
+			Required:            true,
+			Attributes:          getXYDecorationsSchema(),
+		},
+		"fitting": schema.SingleNestedAttribute{
+			MarkdownDescription: "Missing data interpolation configuration. Only valid fitting types are applied per chart type.",
+			Required:            true,
+			Attributes:          getXYFittingSchema(),
+		},
+		"layers": schema.ListNestedAttribute{
+			MarkdownDescription: "Chart layers configuration. Minimum 1 layer required. Each layer can be a data layer or reference line layer.",
+			Required:            true,
+			NestedObject:        getXYLayerSchema(),
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+			},
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the XY chart.",
+			Required:            true,
+			Attributes:          getXYLegendSchema(),
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data.",
+			Required:            true,
+			Attributes:          getFilterSimple(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getChartFilter(),
 		},
 	}
 }
