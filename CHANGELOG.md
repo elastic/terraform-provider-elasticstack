@@ -3,6 +3,8 @@
 ### Breaking changes
 
 
+#### `elasticstack_kibana_security_detection_rule` action `params` format change
+
 Previously `elasticstack_kibana_security_detection_rule` used a map of strings for action parameters. This caused issues with actions requiring non-string based parameters (see https://github.com/elastic/terraform-provider-elasticstack/issues/2339 for an example). This has been changed to a single JSON string value which supports arbitrary param values. 
 
 Previously
