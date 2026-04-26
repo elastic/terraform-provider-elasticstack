@@ -36,7 +36,7 @@ test('factoryParseFinalizeGateEnv matches finalize_gate env semantics', () => {
       actorTrustedReason: null,
       duplicatePrFound: null,
       duplicatePrUrl: null,
-      noDuplicateReason: null,
+      duplicateCheckGateReason: null,
     },
   );
 
@@ -57,7 +57,7 @@ test('factoryParseFinalizeGateEnv matches finalize_gate env semantics', () => {
       actorTrustedReason: '',
       duplicatePrFound: false,
       duplicatePrUrl: null,
-      noDuplicateReason: 'x',
+      duplicateCheckGateReason: 'x',
     },
   );
 });
@@ -85,7 +85,7 @@ test('factoryComputeGateReason uses generic untrusted text when actorTrusted is 
     actorTrustedReason: '',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   }, 'change-factory');
 
   assert.equal(result.gate_reason, 'Trigger actor is not trusted.');
@@ -99,7 +99,7 @@ test('factoryComputeGateReason falls back to unknown URL when duplicate found wi
     actorTrustedReason: 'trusted',
     duplicatePrFound: true,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   }, 'change-factory');
 
   assert.match(result.gate_reason, /Found existing linked change-factory PR: \(unknown URL\)\./);
@@ -128,6 +128,13 @@ test('issueClosingReferencePattern matches GitHub closing keywords but not longe
   const p = issueClosingReferencePattern(42);
   assert.equal(p.test('See fixes #42\n'), true);
   assert.equal(p.test('fixes #420'), false);
+});
+
+test('issueClosingReferencePattern does not match whitespace between # and the issue number', () => {
+  const p = issueClosingReferencePattern(123);
+  assert.equal(p.test('closes #123'), true);
+  assert.equal(p.test('closes # 123'), false);
+  assert.equal(p.test('Closes # 123'), false);
 });
 
 test('factoryActorTrustWhenSenderMissing matches stable contract', () => {

@@ -300,6 +300,15 @@ test('checkDuplicatePR matches lowercase closes keyword', () => {
   assert.equal(result.duplicate_pr_found, true);
 });
 
+test('checkDuplicatePR ignores issue linkage with whitespace between # and the issue number', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses # 42' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, false);
+});
+
 test('checkDuplicatePR matches alternate GitHub closing keywords case-insensitively', () => {
   for (const body of [
     'FIXES #42',
@@ -384,7 +393,7 @@ test('computeGateReason returns the event eligibility failure reason first', () 
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: 'No duplicate PR found.',
+    duplicateCheckGateReason: 'No duplicate PR found.',
   });
 
   assert.equal(result.gate_reason, 'Event is not eligible.');
@@ -398,7 +407,7 @@ test('computeGateReason returns the actor trust failure when the event is eligib
     actorTrustedReason: 'Actor is not trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: 'No duplicate PR found.',
+    duplicateCheckGateReason: 'No duplicate PR found.',
   });
 
   assert.equal(result.gate_reason, 'Actor is not trusted.');
@@ -412,7 +421,7 @@ test('computeGateReason mentions the duplicate PR URL when a duplicate is found'
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: true,
     duplicatePrUrl: 'https://github.com/elastic/terraform-provider-elasticstack/pull/303',
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/pull\/303/);
@@ -426,7 +435,7 @@ test('computeGateReason returns the success reason when all gates pass', () => {
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.equal(
@@ -457,7 +466,7 @@ test('computeGateReason returns unknown reason when actorTrusted is null (step s
     actorTrustedReason: null,
     duplicatePrFound: null,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /Actor trust could not be determined/);
@@ -471,7 +480,7 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: null,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /Duplicate PR check did not complete/);
@@ -577,7 +586,11 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(
     workflowTmpl,
-    /create-pull-request:\s*\n\s*labels: \[change-factory\]\s*\n\s*max: 1/,
+    /create-pull-request:\s*\n\s*labels: \[change-factory, no-changelog\]\s*\n\s*max: 1/,
+  );
+  assert.match(
+    workflowTmpl,
+    /add-comment:\s*\n\s*max: 1\s*\n\s*target: triggering/,
   );
   assert.match(workflowTmpl, /noop:\s*\n\s*max: 1\s*\n\s*report-as-issue: false/);
 
@@ -630,7 +643,17 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
     /speculative `openspec\/changes\/` files/,
     'expected no speculative change files on noop path',
   );
-  assert.match(prompt, /\*\*concise\*\*/, 'expected concise noop clarification');
+  assert.match(
+    prompt,
+    /\*\*must\*\* post \*\*exactly one\*\* `add-comment`[\s\S]*\*\*before\*\* any\s*`noop`/,
+    'expected mandatory add-comment before noop on ambiguous path',
+  );
+  assert.match(
+    prompt,
+    /\*\*only\*\* `noop`[\s\S]*\*\*not\*\* allowed/,
+    'expected noop-only completion forbidden when issue is ambiguous',
+  );
+  assert.match(prompt, /\*\*concise\*\*/, 'expected concise list of required facts in add-comment');
   assert.match(
     prompt,
     /contain \*\*only\*\* the OpenSpec change tree under `openspec\/changes\/<change-id>\/` for v1/,
@@ -662,9 +685,16 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
   );
   assert.match(
     prompt,
-    /GitHub comment or Discussion exploration loop/,
-    'expected noop path to forbid comment/Discussion exploration loops',
+    /back-and-forth comment thread/,
+    'expected ambiguous path to forbid multi-reply comment threads',
   );
+  assert.match(
+    prompt,
+    /exploration loop/,
+    'expected guardrail against interactive comment exploration',
+  );
+  assert.match(prompt, /`add-comment`/, 'expected add-comment safe output for ambiguous issues');
+  assert.match(prompt, /`no-changelog`/, 'expected no-changelog label in agent prompt');
 
   assert.match(
     prompt,
@@ -674,8 +704,8 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
 
   assert.match(
     prompt,
-    /\*\*do not\*\* open new\s+issues/,
-    'expected noop path to forbid opening new issues',
+    /open new issues/,
+    'expected prompt to forbid opening new issues',
   );
   assert.match(
     prompt,

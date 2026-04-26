@@ -7,18 +7,21 @@
 const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
 
 /**
+ * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+ * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+ *
  * @param {number} issueNumber
  * @returns {RegExp}
  */
 function issueClosingReferencePattern(issueNumber) {
   return new RegExp(
-    `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+    `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
     'i',
   );
 }
 
 /**
- * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+ * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
  * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
  */
 function factoryQualifyTriggerEvent({
@@ -157,7 +160,7 @@ function factoryCheckDuplicatePR({
 }
 
 /**
- * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+ * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
  * @param {string} factoryLabel
  * @returns {{ gate_reason: string }}
  */
@@ -168,7 +171,7 @@ function factoryComputeGateReason({
   actorTrustedReason,
   duplicatePrFound,
   duplicatePrUrl,
-  noDuplicateReason,
+  duplicateCheckGateReason,
 }, factoryLabel) {
   if (!eventEligible) {
     return { gate_reason: eventEligibleReason };
@@ -184,7 +187,7 @@ function factoryComputeGateReason({
 
   if (duplicatePrFound === true) {
     return {
-      gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
     };
   }
 
@@ -193,7 +196,7 @@ function factoryComputeGateReason({
   }
 
   return {
-    gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
   };
 }
 
@@ -220,7 +223,7 @@ function factoryParseFinalizeGateEnv(env) {
     actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
     duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
     duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-    noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
   };
 }
 
@@ -244,6 +247,9 @@ function createFactoryIssueIntake(config) {
     return `${branchPrefix}${issueNumber}`;
   }
 
+  /**
+   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+   */
   function qualifyTriggerEvent(params) {
     return factoryQualifyTriggerEvent({
       ...params,

@@ -60,7 +60,7 @@ Alternatives considered:
 
 ### Defer exploration loops
 
-If issue context is too ambiguous to produce a coherent proposal, the v1 workflow should use `noop` with a concise clarification request. Interactive exploration through issue comments or GitHub Discussions should be a later, separately specified workflow/state.
+If issue context is too ambiguous to produce a coherent proposal, the v1 workflow should require exactly one `add-comment` on the triggering issue listing missing facts, then `noop` with a brief completion note — not `noop` alone. Interactive exploration through further issue comments or GitHub Discussions should be a later, separately specified workflow/state.
 
 Alternatives considered:
 
@@ -68,7 +68,7 @@ Alternatives considered:
 
 ## Risks / Trade-offs
 
-- Ambiguous issues may produce weak proposals → Prefer `noop` over speculative artifacts when core scope is unclear.
+- Ambiguous issues may produce weak proposals → Prefer one clarifying `add-comment` plus `noop` over speculative artifacts or `noop`-only completion when core scope is unclear.
 - Proposal quality depends on issue context → The prompt should require preserving assumptions and open questions in the generated artifacts.
 - Duplicate detection can miss manually created PRs without canonical metadata → Require deterministic branch, label, and explicit issue linkage in the PR body.
 - Omitting Go setup may break workflow-generation validation if the implementation uses `make check-workflows` → Choose validation commands during implementation based on the final workflow source path, and include Go only when needed.

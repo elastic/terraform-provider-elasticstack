@@ -62,12 +62,12 @@ Before agent activation, the workflow SHALL detect whether an open linked `chang
 - **THEN** the workflow SHALL NOT treat that pull request as the canonical linked PR for duplicate suppression
 
 ### Requirement: Agent creates exactly one linked OpenSpec proposal pull request
-When the deterministic gate passes, the workflow agent SHALL treat the triggering issue title and body as the authoritative source for requested proposal scope, SHALL work on the deterministic branch `change-factory/issue-<issue-number>`, and SHALL create or update exactly one linked pull request labeled `change-factory`. The pull request SHALL contain one active OpenSpec change under `openspec/changes/<change-id>/` with the artifacts required for implementation readiness by the active OpenSpec schema.
+When the deterministic gate passes, the workflow agent SHALL treat the triggering issue title and body as the authoritative source for requested proposal scope, SHALL work on the deterministic branch `change-factory/issue-<issue-number>`, and SHALL create or update exactly one linked pull request labeled `change-factory` and `no-changelog`. The pull request SHALL contain one active OpenSpec change under `openspec/changes/<change-id>/` with the artifacts required for implementation readiness by the active OpenSpec schema.
 
 #### Scenario: Eligible issue creates a linked proposal PR
 - **WHEN** the workflow runs for a trusted eligible issue event and no open linked `change-factory` pull request already exists
 - **THEN** the agent SHALL create an OpenSpec change proposal on branch `change-factory/issue-<issue-number>`
-- **AND** it SHALL open one linked pull request carrying the `change-factory` label
+- **AND** it SHALL open one linked pull request carrying the `change-factory` and `no-changelog` labels
 
 #### Scenario: Pull request metadata preserves deterministic linkage
 - **WHEN** the agent creates the `change-factory` pull request
@@ -104,12 +104,13 @@ Before the proposal agent runs OpenSpec commands, the workflow SHALL provision t
 - **WHEN** the proposal agent validates its work
 - **THEN** it SHALL validate OpenSpec structure rather than running Terraform acceptance tests
 
-### Requirement: Unclear issues result in noop rather than an exploration loop
-If the triggering issue lacks enough context for the agent to create a coherent OpenSpec proposal, the workflow SHALL emit a single no-op result with a concise clarification reason instead of opening an exploratory comment thread, creating a GitHub Discussion, or producing speculative proposal artifacts.
+### Requirement: Unclear issues request facts on the source issue without an exploration loop
+If the triggering issue lacks enough context for the agent to create a coherent OpenSpec proposal, the workflow SHALL post exactly one `add-comment` on the triggering issue listing the specific facts still needed before emitting `noop`, then emit at most one `noop` with a brief completion note. It SHALL NOT complete that outcome using only `noop` without the required `add-comment`. It SHALL NOT open a back-and-forth comment thread, create a GitHub Discussion, open new issues, or produce speculative proposal artifacts.
 
 #### Scenario: Core scope is unclear
 - **WHEN** the issue title and body do not provide enough information to determine the proposed change scope
-- **THEN** the agent SHALL use `noop` with a concise explanation of what clarification is needed
+- **THEN** the agent SHALL use `add-comment` on the triggering issue with a concise list of required facts
+- **AND** it SHALL use `noop` with a brief completion note only after that comment
 
 #### Scenario: Issue is clear enough for a proposal
 - **WHEN** the issue title and body provide enough context to identify the change scope and capability area

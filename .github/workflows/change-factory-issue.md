@@ -48,18 +48,21 @@ on:
           const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
           
           /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
            * @param {number} issueNumber
            * @returns {RegExp}
            */
           function issueClosingReferencePattern(issueNumber) {
             return new RegExp(
-              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
               'i',
             );
           }
           
           /**
-           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
            * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
            */
           function factoryQualifyTriggerEvent({
@@ -198,7 +201,7 @@ on:
           }
           
           /**
-           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
            * @param {string} factoryLabel
            * @returns {{ gate_reason: string }}
            */
@@ -209,7 +212,7 @@ on:
             actorTrustedReason,
             duplicatePrFound,
             duplicatePrUrl,
-            noDuplicateReason,
+            duplicateCheckGateReason,
           }, factoryLabel) {
             if (!eventEligible) {
               return { gate_reason: eventEligibleReason };
@@ -225,7 +228,7 @@ on:
           
             if (duplicatePrFound === true) {
               return {
-                gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
               };
             }
           
@@ -234,7 +237,7 @@ on:
             }
           
             return {
-              gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
             };
           }
           
@@ -261,7 +264,7 @@ on:
               actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
               duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
               duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-              noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
             };
           }
           
@@ -285,6 +288,9 @@ on:
               return `${branchPrefix}${issueNumber}`;
             }
           
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
             function qualifyTriggerEvent(params) {
               return factoryQualifyTriggerEvent({
                 ...params,
@@ -413,18 +419,21 @@ on:
           const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
           
           /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
            * @param {number} issueNumber
            * @returns {RegExp}
            */
           function issueClosingReferencePattern(issueNumber) {
             return new RegExp(
-              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
               'i',
             );
           }
           
           /**
-           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
            * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
            */
           function factoryQualifyTriggerEvent({
@@ -563,7 +572,7 @@ on:
           }
           
           /**
-           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
            * @param {string} factoryLabel
            * @returns {{ gate_reason: string }}
            */
@@ -574,7 +583,7 @@ on:
             actorTrustedReason,
             duplicatePrFound,
             duplicatePrUrl,
-            noDuplicateReason,
+            duplicateCheckGateReason,
           }, factoryLabel) {
             if (!eventEligible) {
               return { gate_reason: eventEligibleReason };
@@ -590,7 +599,7 @@ on:
           
             if (duplicatePrFound === true) {
               return {
-                gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
               };
             }
           
@@ -599,7 +608,7 @@ on:
             }
           
             return {
-              gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
             };
           }
           
@@ -626,7 +635,7 @@ on:
               actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
               duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
               duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-              noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
             };
           }
           
@@ -650,6 +659,9 @@ on:
               return `${branchPrefix}${issueNumber}`;
             }
           
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
             function qualifyTriggerEvent(params) {
               return factoryQualifyTriggerEvent({
                 ...params,
@@ -787,18 +799,21 @@ on:
           const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
           
           /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
            * @param {number} issueNumber
            * @returns {RegExp}
            */
           function issueClosingReferencePattern(issueNumber) {
             return new RegExp(
-              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
               'i',
             );
           }
           
           /**
-           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
            * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
            */
           function factoryQualifyTriggerEvent({
@@ -937,7 +952,7 @@ on:
           }
           
           /**
-           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
            * @param {string} factoryLabel
            * @returns {{ gate_reason: string }}
            */
@@ -948,7 +963,7 @@ on:
             actorTrustedReason,
             duplicatePrFound,
             duplicatePrUrl,
-            noDuplicateReason,
+            duplicateCheckGateReason,
           }, factoryLabel) {
             if (!eventEligible) {
               return { gate_reason: eventEligibleReason };
@@ -964,7 +979,7 @@ on:
           
             if (duplicatePrFound === true) {
               return {
-                gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
               };
             }
           
@@ -973,7 +988,7 @@ on:
             }
           
             return {
-              gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
             };
           }
           
@@ -1000,7 +1015,7 @@ on:
               actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
               duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
               duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-              noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
             };
           }
           
@@ -1024,6 +1039,9 @@ on:
               return `${branchPrefix}${issueNumber}`;
             }
           
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
             function qualifyTriggerEvent(params) {
               return factoryQualifyTriggerEvent({
                 ...params,
@@ -1169,18 +1187,21 @@ on:
           const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
           
           /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
            * @param {number} issueNumber
            * @returns {RegExp}
            */
           function issueClosingReferencePattern(issueNumber) {
             return new RegExp(
-              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
               'i',
             );
           }
           
           /**
-           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
            * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
            */
           function factoryQualifyTriggerEvent({
@@ -1319,7 +1340,7 @@ on:
           }
           
           /**
-           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
            * @param {string} factoryLabel
            * @returns {{ gate_reason: string }}
            */
@@ -1330,7 +1351,7 @@ on:
             actorTrustedReason,
             duplicatePrFound,
             duplicatePrUrl,
-            noDuplicateReason,
+            duplicateCheckGateReason,
           }, factoryLabel) {
             if (!eventEligible) {
               return { gate_reason: eventEligibleReason };
@@ -1346,7 +1367,7 @@ on:
           
             if (duplicatePrFound === true) {
               return {
-                gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
               };
             }
           
@@ -1355,7 +1376,7 @@ on:
             }
           
             return {
-              gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
             };
           }
           
@@ -1382,7 +1403,7 @@ on:
               actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
               duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
               duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-              noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
             };
           }
           
@@ -1406,6 +1427,9 @@ on:
               return `${branchPrefix}${issueNumber}`;
             }
           
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
             function qualifyTriggerEvent(params) {
               return factoryQualifyTriggerEvent({
                 ...params,
@@ -1522,8 +1546,11 @@ checkout:
   fetch-depth: 0
 safe-outputs:
   create-pull-request:
-    labels: [change-factory]
+    labels: [change-factory, no-changelog]
     max: 1
+  add-comment:
+    max: 1
+    target: triggering
   noop:
     max: 1
     report-as-issue: false
@@ -1603,7 +1630,7 @@ After the files exist, **validate the OpenSpec artifacts** before opening a pull
    resolve any `blocked` state tied to missing artifacts.
 
 Open **exactly one** pull request for this branch using the `create-pull-request` safe output. The
-pull request must be labeled `change-factory` and include canonical issue linkage
+pull request must be labeled `change-factory` and `no-changelog` and include canonical issue linkage
 `Closes #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
 linked PR deterministically.
 
@@ -1617,6 +1644,7 @@ The linked pull request must:
   none is expected in v1). Do not commit Terraform provider source, provider tests, generated
   clients, or docs outside that directory in this pull request.
 - be the only open `change-factory` pull request for this issue
+- carry the `change-factory` and `no-changelog` labels
 - include `Closes #${{ github.event.issue.number }}` in the PR body
 
 ## Out of scope - do not do these in this run
@@ -1633,21 +1661,27 @@ This workflow is **proposal-only**. Even if the issue reads like a feature reque
   API key** creation flows
 - add CI steps that provision runtime Elastic services for this issue
 
-## No-op when the issue is too ambiguous
+## When the issue is too ambiguous
 
 If the title and body **do not** provide enough information to name the capability area and the
-core outcome safely, **do not** author speculative `openspec/changes/` files, **do not** open a pull
-request, **do not** start a GitHub comment or Discussion exploration loop, and **do not** open new
-issues. Instead emit **at most one** `noop` safe output with a **concise** explanation of the
-specific facts needed (for example: which product area, what behavior should change, or what
-"done" means).
+core outcome safely, **do not** author speculative `openspec/changes/` files and **do not** open a pull
+request. You **must** post **exactly one** `add-comment` on **this** triggering issue **before** any
+`noop`, with a **concise** list of the specific facts still needed (for example: which product area,
+what behavior should change, or what "done" means). Completing the run with **only** `noop` and **no**
+prior `add-comment` on this issue is **not** allowed. After that comment, emit **at most one** `noop`
+with a brief completion note. **Do not** start a back-and-forth comment thread, open a GitHub
+Discussion, or open new issues.
 
 ## Guardrails
 
-- Do not open GitHub comment threads, Discussions, or new GitHub issues from this workflow.
+- Do not open GitHub Discussions or new GitHub issues from this workflow.
+- For an ambiguous scope, the single clarifying `add-comment` on this issue is mandatory; outside that
+  one comment, do not use GitHub comments to run an exploration loop or gather requirements
+  interactively.
 - Do not re-check trigger eligibility, actor trust, or duplicate pull request state; deterministic
   pre-activation already handled those checks.
 - Do not open a second pull request for the same issue.
 - Do not change the branch naming convention.
 - Do not open issues from this workflow.
-- Use at most one `create-pull-request` and at most one `noop` result across the whole run.
+- Use at most one `create-pull-request`, at most one `add-comment`, and at most one `noop` result
+  across the whole run.

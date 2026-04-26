@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"812fa624da0245fe574dc48b527f5a0ef8db5b0f115663d994629c902c575509","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"3fb787393b4a0ef396c82640088940c7c642ba43d80c41ae95ad053a23999e73","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6.3.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0"},{"image":"node:lts-alpine"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -92,18 +92,21 @@ name: "Change Factory Issue Intake"
         # const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
         # 
         # /**
+         # * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+         # * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+         # *
          # * @param {number} issueNumber
          # * @returns {RegExp}
          # */
         # function issueClosingReferencePattern(issueNumber) {
           # return new RegExp(
-            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
             # 'i',
           # );
         # }
         # 
         # /**
-         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
          # * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
          # */
         # function factoryQualifyTriggerEvent({
@@ -242,7 +245,7 @@ name: "Change Factory Issue Intake"
         # }
         # 
         # /**
-         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
          # * @param {string} factoryLabel
          # * @returns {{ gate_reason: string }}
          # */
@@ -253,7 +256,7 @@ name: "Change Factory Issue Intake"
           # actorTrustedReason,
           # duplicatePrFound,
           # duplicatePrUrl,
-          # noDuplicateReason,
+          # duplicateCheckGateReason,
         # }, factoryLabel) {
           # if (!eventEligible) {
             # return { gate_reason: eventEligibleReason };
@@ -269,7 +272,7 @@ name: "Change Factory Issue Intake"
         # 
           # if (duplicatePrFound === true) {
             # return {
-              # gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              # gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
             # };
           # }
         # 
@@ -278,7 +281,7 @@ name: "Change Factory Issue Intake"
           # }
         # 
           # return {
-            # gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            # gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
           # };
         # }
         # 
@@ -305,7 +308,7 @@ name: "Change Factory Issue Intake"
             # actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
             # duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
             # duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-            # noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+            # duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
           # };
         # }
         # 
@@ -329,6 +332,9 @@ name: "Change Factory Issue Intake"
             # return `${branchPrefix}${issueNumber}`;
           # }
         # 
+          # /**
+           # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+           # */
           # function qualifyTriggerEvent(params) {
             # return factoryQualifyTriggerEvent({
               # ...params,
@@ -456,18 +462,21 @@ name: "Change Factory Issue Intake"
         # const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
         # 
         # /**
+         # * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+         # * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+         # *
          # * @param {number} issueNumber
          # * @returns {RegExp}
          # */
         # function issueClosingReferencePattern(issueNumber) {
           # return new RegExp(
-            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
             # 'i',
           # );
         # }
         # 
         # /**
-         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
          # * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
          # */
         # function factoryQualifyTriggerEvent({
@@ -606,7 +615,7 @@ name: "Change Factory Issue Intake"
         # }
         # 
         # /**
-         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
          # * @param {string} factoryLabel
          # * @returns {{ gate_reason: string }}
          # */
@@ -617,7 +626,7 @@ name: "Change Factory Issue Intake"
           # actorTrustedReason,
           # duplicatePrFound,
           # duplicatePrUrl,
-          # noDuplicateReason,
+          # duplicateCheckGateReason,
         # }, factoryLabel) {
           # if (!eventEligible) {
             # return { gate_reason: eventEligibleReason };
@@ -633,7 +642,7 @@ name: "Change Factory Issue Intake"
         # 
           # if (duplicatePrFound === true) {
             # return {
-              # gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              # gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
             # };
           # }
         # 
@@ -642,7 +651,7 @@ name: "Change Factory Issue Intake"
           # }
         # 
           # return {
-            # gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            # gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
           # };
         # }
         # 
@@ -669,7 +678,7 @@ name: "Change Factory Issue Intake"
             # actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
             # duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
             # duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-            # noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+            # duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
           # };
         # }
         # 
@@ -693,6 +702,9 @@ name: "Change Factory Issue Intake"
             # return `${branchPrefix}${issueNumber}`;
           # }
         # 
+          # /**
+           # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+           # */
           # function qualifyTriggerEvent(params) {
             # return factoryQualifyTriggerEvent({
               # ...params,
@@ -827,18 +839,21 @@ name: "Change Factory Issue Intake"
         # const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
         # 
         # /**
+         # * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+         # * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+         # *
          # * @param {number} issueNumber
          # * @returns {RegExp}
          # */
         # function issueClosingReferencePattern(issueNumber) {
           # return new RegExp(
-            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
             # 'i',
           # );
         # }
         # 
         # /**
-         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
          # * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
          # */
         # function factoryQualifyTriggerEvent({
@@ -977,7 +992,7 @@ name: "Change Factory Issue Intake"
         # }
         # 
         # /**
-         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
          # * @param {string} factoryLabel
          # * @returns {{ gate_reason: string }}
          # */
@@ -988,7 +1003,7 @@ name: "Change Factory Issue Intake"
           # actorTrustedReason,
           # duplicatePrFound,
           # duplicatePrUrl,
-          # noDuplicateReason,
+          # duplicateCheckGateReason,
         # }, factoryLabel) {
           # if (!eventEligible) {
             # return { gate_reason: eventEligibleReason };
@@ -1004,7 +1019,7 @@ name: "Change Factory Issue Intake"
         # 
           # if (duplicatePrFound === true) {
             # return {
-              # gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              # gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
             # };
           # }
         # 
@@ -1013,7 +1028,7 @@ name: "Change Factory Issue Intake"
           # }
         # 
           # return {
-            # gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            # gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
           # };
         # }
         # 
@@ -1040,7 +1055,7 @@ name: "Change Factory Issue Intake"
             # actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
             # duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
             # duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-            # noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+            # duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
           # };
         # }
         # 
@@ -1064,6 +1079,9 @@ name: "Change Factory Issue Intake"
             # return `${branchPrefix}${issueNumber}`;
           # }
         # 
+          # /**
+           # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+           # */
           # function qualifyTriggerEvent(params) {
             # return factoryQualifyTriggerEvent({
               # ...params,
@@ -1208,18 +1226,21 @@ name: "Change Factory Issue Intake"
         # const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
         # 
         # /**
+         # * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+         # * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+         # *
          # * @param {number} issueNumber
          # * @returns {RegExp}
          # */
         # function issueClosingReferencePattern(issueNumber) {
           # return new RegExp(
-            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+            # `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
             # 'i',
           # );
         # }
         # 
         # /**
-         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+         # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
          # * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
          # */
         # function factoryQualifyTriggerEvent({
@@ -1358,7 +1379,7 @@ name: "Change Factory Issue Intake"
         # }
         # 
         # /**
-         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+         # * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
          # * @param {string} factoryLabel
          # * @returns {{ gate_reason: string }}
          # */
@@ -1369,7 +1390,7 @@ name: "Change Factory Issue Intake"
           # actorTrustedReason,
           # duplicatePrFound,
           # duplicatePrUrl,
-          # noDuplicateReason,
+          # duplicateCheckGateReason,
         # }, factoryLabel) {
           # if (!eventEligible) {
             # return { gate_reason: eventEligibleReason };
@@ -1385,7 +1406,7 @@ name: "Change Factory Issue Intake"
         # 
           # if (duplicatePrFound === true) {
             # return {
-              # gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              # gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
             # };
           # }
         # 
@@ -1394,7 +1415,7 @@ name: "Change Factory Issue Intake"
           # }
         # 
           # return {
-            # gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            # gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
           # };
         # }
         # 
@@ -1421,7 +1442,7 @@ name: "Change Factory Issue Intake"
             # actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
             # duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
             # duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-            # noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+            # duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
           # };
         # }
         # 
@@ -1445,6 +1466,9 @@ name: "Change Factory Issue Intake"
             # return `${branchPrefix}${issueNumber}`;
           # }
         # 
+          # /**
+           # * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+           # */
           # function qualifyTriggerEvent(params) {
             # return factoryQualifyTriggerEvent({
               # ...params,
@@ -1648,19 +1672,19 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_b66c28d7fda5f9f3_EOF'
+          cat << 'GH_AW_PROMPT_b5c50ef1370b3703_EOF'
           <system>
-          GH_AW_PROMPT_b66c28d7fda5f9f3_EOF
+          GH_AW_PROMPT_b5c50ef1370b3703_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_b66c28d7fda5f9f3_EOF'
+          cat << 'GH_AW_PROMPT_b5c50ef1370b3703_EOF'
           <safe-output-tools>
-          Tools: create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_b66c28d7fda5f9f3_EOF
+          Tools: add_comment, create_pull_request, missing_tool, missing_data, noop
+          GH_AW_PROMPT_b5c50ef1370b3703_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_b66c28d7fda5f9f3_EOF'
+          cat << 'GH_AW_PROMPT_b5c50ef1370b3703_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -1693,12 +1717,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_b66c28d7fda5f9f3_EOF
+          GH_AW_PROMPT_b5c50ef1370b3703_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_b66c28d7fda5f9f3_EOF'
+          cat << 'GH_AW_PROMPT_b5c50ef1370b3703_EOF'
           </system>
           {{#runtime-import .github/workflows/change-factory-issue.md}}
-          GH_AW_PROMPT_b66c28d7fda5f9f3_EOF
+          GH_AW_PROMPT_b5c50ef1370b3703_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
@@ -1899,21 +1923,44 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_6f678827f34b620a_EOF'
-          {"create_pull_request":{"labels":["change-factory"],"max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_6f678827f34b620a_EOF
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_3d9a36ac32ae2bcc_EOF'
+          {"add_comment":{"max":1,"target":"triggering"},"create_pull_request":{"labels":["change-factory","no-changelog"],"max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_3d9a36ac32ae2bcc_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
             {
               "description_suffixes": {
-                "create_pull_request": " CONSTRAINTS: Maximum 1 pull request(s) can be created. Labels [\"change-factory\"] will be automatically added."
+                "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added. Target: triggering. Supports reply_to_id for discussion threading.",
+                "create_pull_request": " CONSTRAINTS: Maximum 1 pull request(s) can be created. Labels [\"change-factory\" \"no-changelog\"] will be automatically added."
               },
               "repo_params": {},
               "dynamic_tools": []
             }
           GH_AW_VALIDATION_JSON: |
             {
+              "add_comment": {
+                "defaultMax": 1,
+                "fields": {
+                  "body": {
+                    "required": true,
+                    "type": "string",
+                    "sanitize": true,
+                    "maxLength": 65000
+                  },
+                  "item_number": {
+                    "issueOrPRNumber": true
+                  },
+                  "reply_to_id": {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "repo": {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                }
+              },
               "create_pull_request": {
                 "defaultMax": 1,
                 "fields": {
@@ -2098,7 +2145,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_bde0198fe3cedea3_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_dacf7fc34126adff_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -2138,7 +2185,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_bde0198fe3cedea3_EOF
+          GH_AW_MCP_CONFIG_dacf7fc34126adff_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -2395,6 +2442,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: write
+      discussions: write
       issues: write
       pull-requests: write
     concurrency:
@@ -2766,18 +2814,21 @@ jobs:
             const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
 
             /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
              * @param {number} issueNumber
              * @returns {RegExp}
              */
             function issueClosingReferencePattern(issueNumber) {
               return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
                 'i',
               );
             }
 
             /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
              * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
              */
             function factoryQualifyTriggerEvent({
@@ -2916,7 +2967,7 @@ jobs:
             }
 
             /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
              * @param {string} factoryLabel
              * @returns {{ gate_reason: string }}
              */
@@ -2927,7 +2978,7 @@ jobs:
               actorTrustedReason,
               duplicatePrFound,
               duplicatePrUrl,
-              noDuplicateReason,
+              duplicateCheckGateReason,
             }, factoryLabel) {
               if (!eventEligible) {
                 return { gate_reason: eventEligibleReason };
@@ -2943,7 +2994,7 @@ jobs:
 
               if (duplicatePrFound === true) {
                 return {
-                  gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
                 };
               }
 
@@ -2952,7 +3003,7 @@ jobs:
               }
 
               return {
-                gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
               };
             }
 
@@ -2979,7 +3030,7 @@ jobs:
                 actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
                 duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
                 duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
               };
             }
 
@@ -3003,6 +3054,9 @@ jobs:
                 return `${branchPrefix}${issueNumber}`;
               }
 
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
               function qualifyTriggerEvent(params) {
                 return factoryQualifyTriggerEvent({
                   ...params,
@@ -3130,18 +3184,21 @@ jobs:
             const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
 
             /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
              * @param {number} issueNumber
              * @returns {RegExp}
              */
             function issueClosingReferencePattern(issueNumber) {
               return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
                 'i',
               );
             }
 
             /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
              * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
              */
             function factoryQualifyTriggerEvent({
@@ -3280,7 +3337,7 @@ jobs:
             }
 
             /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
              * @param {string} factoryLabel
              * @returns {{ gate_reason: string }}
              */
@@ -3291,7 +3348,7 @@ jobs:
               actorTrustedReason,
               duplicatePrFound,
               duplicatePrUrl,
-              noDuplicateReason,
+              duplicateCheckGateReason,
             }, factoryLabel) {
               if (!eventEligible) {
                 return { gate_reason: eventEligibleReason };
@@ -3307,7 +3364,7 @@ jobs:
 
               if (duplicatePrFound === true) {
                 return {
-                  gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
                 };
               }
 
@@ -3316,7 +3373,7 @@ jobs:
               }
 
               return {
-                gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
               };
             }
 
@@ -3343,7 +3400,7 @@ jobs:
                 actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
                 duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
                 duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
               };
             }
 
@@ -3367,6 +3424,9 @@ jobs:
                 return `${branchPrefix}${issueNumber}`;
               }
 
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
               function qualifyTriggerEvent(params) {
                 return factoryQualifyTriggerEvent({
                   ...params,
@@ -3501,18 +3561,21 @@ jobs:
             const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
 
             /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
              * @param {number} issueNumber
              * @returns {RegExp}
              */
             function issueClosingReferencePattern(issueNumber) {
               return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
                 'i',
               );
             }
 
             /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
              * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
              */
             function factoryQualifyTriggerEvent({
@@ -3651,7 +3714,7 @@ jobs:
             }
 
             /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
              * @param {string} factoryLabel
              * @returns {{ gate_reason: string }}
              */
@@ -3662,7 +3725,7 @@ jobs:
               actorTrustedReason,
               duplicatePrFound,
               duplicatePrUrl,
-              noDuplicateReason,
+              duplicateCheckGateReason,
             }, factoryLabel) {
               if (!eventEligible) {
                 return { gate_reason: eventEligibleReason };
@@ -3678,7 +3741,7 @@ jobs:
 
               if (duplicatePrFound === true) {
                 return {
-                  gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
                 };
               }
 
@@ -3687,7 +3750,7 @@ jobs:
               }
 
               return {
-                gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
               };
             }
 
@@ -3714,7 +3777,7 @@ jobs:
                 actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
                 duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
                 duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
               };
             }
 
@@ -3738,6 +3801,9 @@ jobs:
                 return `${branchPrefix}${issueNumber}`;
               }
 
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
               function qualifyTriggerEvent(params) {
                 return factoryQualifyTriggerEvent({
                   ...params,
@@ -3882,18 +3948,21 @@ jobs:
             const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
 
             /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
              * @param {number} issueNumber
              * @returns {RegExp}
              */
             function issueClosingReferencePattern(issueNumber) {
               return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#\\s*${issueNumber}(?![0-9])`,
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
                 'i',
               );
             }
 
             /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[], factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
              * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
              */
             function factoryQualifyTriggerEvent({
@@ -4032,7 +4101,7 @@ jobs:
             }
 
             /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, noDuplicateReason: string | null }} params
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
              * @param {string} factoryLabel
              * @returns {{ gate_reason: string }}
              */
@@ -4043,7 +4112,7 @@ jobs:
               actorTrustedReason,
               duplicatePrFound,
               duplicatePrUrl,
-              noDuplicateReason,
+              duplicateCheckGateReason,
             }, factoryLabel) {
               if (!eventEligible) {
                 return { gate_reason: eventEligibleReason };
@@ -4059,7 +4128,7 @@ jobs:
 
               if (duplicatePrFound === true) {
                 return {
-                  gate_reason: noDuplicateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
                 };
               }
 
@@ -4068,7 +4137,7 @@ jobs:
               }
 
               return {
-                gate_reason: noDuplicateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
               };
             }
 
@@ -4095,7 +4164,7 @@ jobs:
                 actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
                 duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
                 duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                noDuplicateReason: e.DUPLICATE_GATE_REASON ?? null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
               };
             }
 
@@ -4119,6 +4188,9 @@ jobs:
                 return `${branchPrefix}${issueNumber}`;
               }
 
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
               function qualifyTriggerEvent(params) {
                 return factoryQualifyTriggerEvent({
                   ...params,
@@ -4202,6 +4274,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: write
+      discussions: write
       issues: write
       pull-requests: write
     timeout-minutes: 15
@@ -4217,6 +4290,8 @@ jobs:
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
+      comment_id: ${{ steps.process_safe_outputs.outputs.comment_id }}
+      comment_url: ${{ steps.process_safe_outputs.outputs.comment_url }}
       create_discussion_error_count: ${{ steps.process_safe_outputs.outputs.create_discussion_error_count }}
       create_discussion_errors: ${{ steps.process_safe_outputs.outputs.create_discussion_errors }}
       created_pr_number: ${{ steps.process_safe_outputs.outputs.created_pr_number }}
@@ -4290,7 +4365,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "*.githubusercontent.com,anthropic.com,api.anthropic.com,api.github.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,cdn.playwright.dev,codeload.github.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,elastic.litellm-prod.ai,esm.sh,files.pythonhosted.org,get.pnpm.io,ghcr.io,github-cloud.githubusercontent.com,github-cloud.s3.amazonaws.com,github.com,googleapis.deno.dev,googlechromelabs.github.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,lfs.github.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,objects.githubusercontent.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,playwright.download.prss.microsoft.com,ppa.launchpad.net,pypi.org,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,sentry.io,skimdb.npmjs.com,statsig.anthropic.com,storage.googleapis.com,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_pull_request\":{\"labels\":[\"change-factory\"],\"max\":1,\"max_patch_size\":1024,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"CLAUDE.md\"],\"protected_path_prefixes\":[\".github/\",\".agents/\",\".claude/\"]},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"report_incomplete\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1,\"target\":\"triggering\"},\"create_pull_request\":{\"labels\":[\"change-factory\",\"no-changelog\"],\"max\":1,\"max_patch_size\":1024,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"CLAUDE.md\"],\"protected_path_prefixes\":[\".github/\",\".agents/\",\".claude/\"]},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"report_incomplete\":{}}"
           GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}

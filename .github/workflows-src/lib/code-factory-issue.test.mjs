@@ -307,7 +307,7 @@ test('computeGateReason returns the event eligibility failure reason first', () 
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: 'No duplicate PR found.',
+    duplicateCheckGateReason: 'No duplicate PR found.',
   });
 
   assert.equal(result.gate_reason, 'Event is not eligible.');
@@ -321,7 +321,7 @@ test('computeGateReason returns the actor trust failure when the event is eligib
     actorTrustedReason: 'Actor is not trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: 'No duplicate PR found.',
+    duplicateCheckGateReason: 'No duplicate PR found.',
   });
 
   assert.equal(result.gate_reason, 'Actor is not trusted.');
@@ -335,7 +335,7 @@ test('computeGateReason mentions the duplicate PR URL when a duplicate is found'
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: true,
     duplicatePrUrl: 'https://github.com/elastic/terraform-provider-elasticstack/pull/303',
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/pull\/303/);
@@ -349,7 +349,7 @@ test('computeGateReason returns the success reason when all gates pass', () => {
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: false,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.equal(
@@ -380,7 +380,7 @@ test('computeGateReason returns unknown reason when actorTrusted is null (step s
     actorTrustedReason: null,
     duplicatePrFound: null,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /Actor trust could not be determined/);
@@ -394,7 +394,7 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
     actorTrustedReason: 'Actor is trusted.',
     duplicatePrFound: null,
     duplicatePrUrl: null,
-    noDuplicateReason: null,
+    duplicateCheckGateReason: null,
   });
 
   assert.match(result.gate_reason, /Duplicate PR check did not complete/);

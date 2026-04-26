@@ -9,14 +9,14 @@
 - [x] 2.1 Add an authored `.github/workflows-src/change-factory-issue/` workflow template that triggers on issue `opened` and `labeled` events.
 - [x] 2.2 Configure pre-activation outputs for issue context, gate reason, trust status, duplicate PR status, and duplicate PR URL.
 - [x] 2.3 Configure the agent job to run only after deterministic gates pass and to use branch `change-factory/issue-<issue-number>`.
-- [x] 2.4 Configure safe outputs so the agent can create at most one linked pull request labeled `change-factory` and at most one no-op result.
+- [x] 2.4 Configure safe outputs so the agent can create at most one linked pull request labeled `change-factory` and `no-changelog`, at most one `add-comment` on the triggering issue, and at most one no-op result.
 
 ## 3. Agent Prompt and Tooling
 
 - [x] 3.1 Write the agent prompt to treat the issue title/body as authoritative and create exactly one OpenSpec change under `openspec/changes/<change-id>/`.
 - [x] 3.2 Instruct the agent to create all artifacts required for implementation readiness by the active OpenSpec schema: proposal, design, tasks, and delta specs.
 - [x] 3.3 Instruct the agent to validate OpenSpec artifacts and avoid provider implementation, Elastic Stack setup, Fleet setup, API-key creation, and Terraform acceptance tests.
-- [x] 3.4 Define the no-op behavior for issues that are too ambiguous to propose safely, including a concise clarification reason.
+- [x] 3.4 Define the ambiguous-issue path: a single `add-comment` on the triggering issue listing required facts (mandatory before `noop`), then `noop`, without speculative proposals, `noop`-only completion, or interactive exploration.
 
 ## 4. Workflow Generation and Verification
 
