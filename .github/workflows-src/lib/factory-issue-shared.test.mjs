@@ -4,6 +4,9 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
+  issueClosingReferencePattern,
+  factoryQualifyTriggerEvent,
+  factoryCheckActorTrust,
   factoryParseOptionalTriStateFromEnv,
   factoryParseFinalizeGateEnv,
   factoryActorTrustWhenSenderMissing,
@@ -72,6 +75,59 @@ test('factoryParseFinalizeGateEnv feeds factoryComputeGateReason for an all-pass
   const result = factoryComputeGateReason(parsed, 'code-factory');
 
   assert.match(result.gate_reason, /All deterministic gates passed/);
+});
+
+test('factoryComputeGateReason uses generic untrusted text when actorTrusted is false with falsy reason', () => {
+  const result = factoryComputeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: false,
+    actorTrustedReason: '',
+    duplicatePrFound: false,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  }, 'change-factory');
+
+  assert.equal(result.gate_reason, 'Trigger actor is not trusted.');
+});
+
+test('factoryComputeGateReason falls back to unknown URL when duplicate found without URL or override', () => {
+  const result = factoryComputeGateReason({
+    eventEligible: true,
+    eventEligibleReason: 'Event is eligible.',
+    actorTrusted: true,
+    actorTrustedReason: 'trusted',
+    duplicatePrFound: true,
+    duplicatePrUrl: null,
+    noDuplicateReason: null,
+  }, 'change-factory');
+
+  assert.match(result.gate_reason, /Found existing linked change-factory PR: \(unknown URL\)\./);
+});
+
+test('factoryQualifyTriggerEvent rejects non-issues events', () => {
+  const result = factoryQualifyTriggerEvent({
+    eventName: 'pull_request',
+    eventAction: 'opened',
+    labelName: '',
+    issueLabels: [],
+    factoryLabel: 'demo-factory',
+    issueOpenedNotEligibleReason: 'n/a',
+  });
+  assert.equal(result.event_eligible, false);
+  assert.match(result.event_eligible_reason, /expected 'issues'/);
+});
+
+test('factoryCheckActorTrust trusts write permission', () => {
+  const result = factoryCheckActorTrust({ sender: 'alice', permission: 'write' });
+  assert.equal(result.actor_trusted, true);
+  assert.match(result.actor_trusted_reason, /permission 'write'/);
+});
+
+test('issueClosingReferencePattern matches GitHub closing keywords but not longer issue numbers', () => {
+  const p = issueClosingReferencePattern(42);
+  assert.equal(p.test('See fixes #42\n'), true);
+  assert.equal(p.test('fixes #420'), false);
 });
 
 test('factoryActorTrustWhenSenderMissing matches stable contract', () => {

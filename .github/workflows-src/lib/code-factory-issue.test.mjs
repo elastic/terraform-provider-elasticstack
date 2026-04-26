@@ -362,11 +362,14 @@ test('code-factory-issue workflow is compiled and exists', () => {
   const source = readFileSync(workflowPath, 'utf8');
   assert.match(source, /code-factory/);
   assert.match(source, /issues/);
+  assert.match(source, /compile-workflow-sources/);
 });
 
 test('code-factory-issue lock file is compiled and exists', () => {
   const lock = readFileSync(lockPath, 'utf8');
   assert.ok(lock.length > 0);
+  assert.match(lock, /# gh-aw-metadata:/);
+  assert.match(lock, /DO NOT EDIT/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
@@ -416,6 +419,14 @@ test('code-factory-issue exports align with shared createFactoryIssueIntake bind
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
+  assert.deepEqual(
+    checkActorTrust({ sender: 'alice', permission: 'write' }),
+    bound.checkActorTrust({ sender: 'alice', permission: 'write' }),
+  );
+  assert.deepEqual(
+    checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
+    bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
+  );
 });
 
 test('code-factory intake constants stay aligned with workflow template branch prefix', () => {

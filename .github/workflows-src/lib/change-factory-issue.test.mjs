@@ -58,6 +58,14 @@ test('change-factory-issue exports align with shared createFactoryIssueIntake bi
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
+  assert.deepEqual(
+    checkActorTrust({ sender: 'alice', permission: 'write' }),
+    bound.checkActorTrust({ sender: 'alice', permission: 'write' }),
+  );
+  assert.deepEqual(
+    checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
+    bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
+  );
 });
 
 test('qualifyTriggerEvent accepts issues.labeled with the change-factory label', () => {
@@ -396,20 +404,6 @@ test('computeGateReason returns the actor trust failure when the event is eligib
   assert.equal(result.gate_reason, 'Actor is not trusted.');
 });
 
-test('computeGateReason uses generic untrusted text when actorTrusted is false with a falsy reason', () => {
-  const result = computeGateReason({
-    eventEligible: true,
-    eventEligibleReason: 'Event is eligible.',
-    actorTrusted: false,
-    actorTrustedReason: '',
-    duplicatePrFound: false,
-    duplicatePrUrl: null,
-    noDuplicateReason: null,
-  });
-
-  assert.equal(result.gate_reason, 'Trigger actor is not trusted.');
-});
-
 test('computeGateReason mentions the duplicate PR URL when a duplicate is found', () => {
   const result = computeGateReason({
     eventEligible: true,
@@ -422,20 +416,6 @@ test('computeGateReason mentions the duplicate PR URL when a duplicate is found'
   });
 
   assert.match(result.gate_reason, /https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/pull\/303/);
-});
-
-test('computeGateReason falls back to unknown URL when duplicate is found without URL or override reason', () => {
-  const result = computeGateReason({
-    eventEligible: true,
-    eventEligibleReason: 'Event is eligible.',
-    actorTrusted: true,
-    actorTrustedReason: 'Actor is trusted.',
-    duplicatePrFound: true,
-    duplicatePrUrl: null,
-    noDuplicateReason: null,
-  });
-
-  assert.match(result.gate_reason, /\(unknown URL\)/);
 });
 
 test('computeGateReason returns the success reason when all gates pass', () => {
