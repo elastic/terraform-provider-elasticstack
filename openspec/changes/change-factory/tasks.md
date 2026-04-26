@@ -1,8 +1,8 @@
 ## 1. Deterministic Intake
 
-- [ ] 1.1 Add repository-local helper logic for `change-factory` trigger qualification, actor trust, duplicate linked pull request detection, and consolidated gate reasons.
-- [ ] 1.2 Add focused tests for the deterministic helper logic, covering eligible issue events, ignored labels/events, trusted and untrusted actors, linked PR detection, and unrelated PRs.
-- [ ] 1.3 Reuse or adapt existing `code-factory` script include patterns so the workflow source can call the deterministic helpers from pre-activation steps.
+- [x] 1.1 Add repository-local helper logic for `change-factory` trigger qualification, actor trust, duplicate linked pull request detection, and consolidated gate reasons.
+- [x] 1.2 Add focused tests for the deterministic helper logic, covering eligible issue events, ignored labels/events, trusted and untrusted actors, linked PR detection, and unrelated PRs.
+- [x] 1.3 Reuse or adapt existing `code-factory` script include patterns so the workflow source can call the deterministic helpers from pre-activation steps.
 
 ## 2. Workflow Source
 
