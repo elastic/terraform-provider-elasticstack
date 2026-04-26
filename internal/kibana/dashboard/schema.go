@@ -1255,8 +1255,10 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
 						"Required when `type` is `lens-dashboard-app`. "+
-						"Exactly one of `by_value` (inline `config_json` and/or a supported typed Lens chart block) or `by_reference` (saved Lens object via `ref_id` and `references_json`, mapping to the API `references` list) must be set. "+
-						"Typed by-value chart blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = \"vis\"` panels.",
+						"Set exactly one of `by_value` or `by_reference`. "+
+						"With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. "+
+						"With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. "+
+						"Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = \"vis\"` panels.",
 					"lens_dashboard_app_config",
 					panelConfigNames,
 				),
@@ -1322,7 +1324,8 @@ func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"config_json": schema.StringAttribute{
 			MarkdownDescription: "Optional raw normalized JSON for the by-value Lens chart `config` (full API shape, including chart `type` and `time_range` where the API requires them). " +
-				"Set exactly one of `config_json` or a typed chart block. Distinct from panel-level `config_json` on the panel.",
+				"Use as the single `by_value` source, or use one supported typed chart block instead (not both). " +
+				"Distinct from panel-level `config_json` on the panel.",
 			Optional:   true,
 			CustomType: jsontypes.NormalizedType{},
 		},
@@ -1397,7 +1400,7 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"by_value": schema.SingleNestedAttribute{
 			MarkdownDescription: "Inline by-value `lens-dashboard-app` configuration. " +
-				"Set exactly one of `config_json` (raw JSON) or a supported typed Lens chart block. " +
+				"Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. " +
 				"Typed by-value blocks send the chart as the Kibana `lens-dashboard-app` API `config` and do not create a `type = \"vis\"` panel. " +
 				"Distinct from panel-level `config_json` on the panel.",
 			Optional:   true,
@@ -1511,7 +1514,7 @@ var _ validator.Object = lensDashboardAppByValueSourceValidator{}
 type lensDashboardAppByValueSourceValidator struct{}
 
 func (lensDashboardAppByValueSourceValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `config_json` or a typed Lens chart block is set inside `by_value`."
+	return "Ensures exactly one of `config_json` or one supported typed Lens chart block is set inside `by_value`."
 }
 
 func (v lensDashboardAppByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
@@ -1546,11 +1549,19 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 		return
 	}
 	if count == 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Inside `by_value`, set exactly one of `config_json` or a supported typed Lens chart block.")
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid lens_dashboard_app_config.by_value",
+			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
+		)
 		return
 	}
 	if count > 1 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Inside `by_value`, set exactly one of `config_json` or a typed Lens chart block, not more than one.")
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid lens_dashboard_app_config.by_value",
+			"Set at most one of `config_json` or one supported typed Lens chart block inside `by_value` (do not set multiple sources).",
+		)
 	}
 }
 

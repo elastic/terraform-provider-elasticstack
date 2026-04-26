@@ -27,8 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/require"
 )
+
+// testLensByValueConfigJSONAttr is the attribute name for raw JSON in by_value (avoids goconst on repeated literals).
+const testLensByValueConfigJSONAttr = "config_json"
 
 func Test_lensDashboardAppConfigModeValidator(t *testing.T) {
 	t.Parallel()
@@ -201,18 +205,49 @@ func lensByValueAttributeTypes(t *testing.T) map[string]attr.Type {
 func lensByValueObjectAllNull(t *testing.T) types.Object {
 	t.Helper()
 	typesMap := lensByValueAttributeTypes(t)
+	return types.ObjectValueMust(typesMap, byValueAllNullAttributeValues(t, typesMap))
+}
+
+func byValueAllNullAttributeValues(t *testing.T, typesMap map[string]attr.Type) map[string]attr.Value {
+	t.Helper()
 	vals := make(map[string]attr.Value, len(typesMap))
 	for k, at := range typesMap {
-		switch k {
-		case "config_json":
+		if k == testLensByValueConfigJSONAttr {
 			vals[k] = jsontypes.NewNormalizedNull()
-		default:
-			ot, ok := at.(types.ObjectType)
-			require.True(t, ok, "expected types.ObjectType for %s, got %T", k, at)
-			vals[k] = types.ObjectNull(ot.AttrTypes)
+			continue
 		}
+		ot, ok := at.(types.ObjectType)
+		require.True(t, ok, "expected types.ObjectType for %s, got %T", k, at)
+		vals[k] = types.ObjectNull(ot.AttrTypes)
 	}
-	return types.ObjectValueMust(typesMap, vals)
+	return vals
+}
+
+// nullAttrValue is the Terraform null value for a given attr.Type.
+func nullAttrValue(ctx context.Context, at attr.Type) (attr.Value, error) {
+	return at.ValueFromTerraform(ctx, tftypes.NewValue(at.TerraformType(ctx), nil))
+}
+
+// knownNullableObjectAllFieldsNull returns a non-null object whose attributes are null or nested known-nullish objects.
+func knownNullableObjectAllFieldsNull(ctx context.Context, t *testing.T, ot types.ObjectType) (attr.Value, error) {
+	t.Helper()
+	vals := make(map[string]attr.Value, len(ot.AttrTypes))
+	for k, sub := range ot.AttrTypes {
+		if subOT, ok := sub.(types.ObjectType); ok {
+			inner, err := knownNullableObjectAllFieldsNull(ctx, t, subOT)
+			if err != nil {
+				return nil, err
+			}
+			vals[k] = inner
+			continue
+		}
+		v, err := nullAttrValue(ctx, sub)
+		if err != nil {
+			return nil, err
+		}
+		vals[k] = v
+	}
+	return types.ObjectValueMust(ot.AttrTypes, vals), nil
 }
 
 func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
@@ -247,7 +282,7 @@ func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
 		vals := make(map[string]attr.Value, len(typesMap))
 		for k, at := range typesMap {
 			switch k {
-			case "config_json":
+			case testLensByValueConfigJSONAttr:
 				vals[k] = jsontypes.NewNormalizedValue(`{"type":"metric"}`)
 			default:
 				ot := at.(types.ObjectType)
@@ -266,7 +301,7 @@ func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
 		vals := make(map[string]attr.Value, len(typesMap))
 		for k, at := range typesMap {
 			switch k {
-			case "config_json":
+			case testLensByValueConfigJSONAttr:
 				vals[k] = jsontypes.NewNormalizedUnknown()
 			default:
 				ot := at.(types.ObjectType)
@@ -277,5 +312,61 @@ func Test_lensDashboardAppByValueSourceValidator(t *testing.T) {
 		var resp validator.ObjectResponse
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("rejects config_json and one typed chart block", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		typesMap := lensByValueAttributeTypes(t)
+		vals := byValueAllNullAttributeValues(t, typesMap)
+		vals[testLensByValueConfigJSONAttr] = jsontypes.NewNormalizedValue(`{"type":"metric"}`)
+		metricOT := typesMap["metric_chart_config"].(types.ObjectType)
+		mv, err := knownNullableObjectAllFieldsNull(ctx, t, metricOT)
+		require.NoError(t, err)
+		vals["metric_chart_config"] = mv
+		ov := types.ObjectValueMust(typesMap, vals)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+		d := resp.Diagnostics.Errors()[0]
+		require.Equal(t, "Invalid lens_dashboard_app_config.by_value", d.Summary())
+		require.Contains(t, d.Detail(), "at most one")
+	})
+
+	t.Run("accepts one typed chart block only", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		typesMap := lensByValueAttributeTypes(t)
+		vals := byValueAllNullAttributeValues(t, typesMap)
+		metricOT := typesMap["metric_chart_config"].(types.ObjectType)
+		mv, err := knownNullableObjectAllFieldsNull(ctx, t, metricOT)
+		require.NoError(t, err)
+		vals["metric_chart_config"] = mv
+		ov := types.ObjectValueMust(typesMap, vals)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	})
+
+	t.Run("rejects two typed chart blocks", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		typesMap := lensByValueAttributeTypes(t)
+		vals := byValueAllNullAttributeValues(t, typesMap)
+		mOT := typesMap["metric_chart_config"].(types.ObjectType)
+		pOT := typesMap["pie_chart_config"].(types.ObjectType)
+		mv, err := knownNullableObjectAllFieldsNull(ctx, t, mOT)
+		require.NoError(t, err)
+		pv, err := knownNullableObjectAllFieldsNull(ctx, t, pOT)
+		require.NoError(t, err)
+		vals["metric_chart_config"] = mv
+		vals["pie_chart_config"] = pv
+		ov := types.ObjectValueMust(typesMap, vals)
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("by_value")}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+		d := resp.Diagnostics.Errors()[0]
+		require.Equal(t, "Invalid lens_dashboard_app_config.by_value", d.Summary())
+		require.Contains(t, d.Detail(), "multiple")
 	})
 }
