@@ -183,7 +183,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]any{
+	vars := packageInfoVarsFromAnyMaps([]map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -192,7 +192,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 			"name":  "var2",
 			"multi": true,
 		},
-	}
+	})
 	pkg := kbapi.PackageInfo{
 		Vars: &vars,
 	}
@@ -265,7 +265,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]any{
+	vars := packageInfoVarsFromAnyMaps([]map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -278,7 +278,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 			"name": "var3",
 			// no default
 		},
-	}
+	})
 	pkg := kbapi.PackageInfo{
 		Vars: &vars,
 	}
@@ -357,4 +357,17 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 			}
 		})
 	}
+}
+
+func packageInfoVarsFromAnyMaps(input []map[string]any) []map[string]*any {
+	output := make([]map[string]*any, len(input))
+	for i, vars := range input {
+		output[i] = make(map[string]*any, len(vars))
+		for k, v := range vars {
+			value := v
+			output[i][k] = &value
+		}
+	}
+
+	return output
 }

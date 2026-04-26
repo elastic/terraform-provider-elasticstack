@@ -388,7 +388,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 	}
 
 	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams(rule.Params)
+		params := kbapi.AlertingRuleAPIParams(pointerInterfaceMapFromAnyMap(rule.Params))
 		body.Params = &params
 	}
 
@@ -431,8 +431,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 						State *struct {
 							Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 						} `json:"$state,omitempty"`
-						Meta  map[string]any  `json:"meta"`
-						Query *map[string]any `json:"query,omitempty"`
+						Meta  map[string]*any  `json:"meta"`
+						Query *map[string]*any `json:"query,omitempty"`
 					} `json:"filters"`
 					Kql string `json:"kql"`
 				} `json:"query,omitempty"`
@@ -450,11 +450,11 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 				Summary    bool                                                       `json:"summary"`
 				Throttle   *string                                                    `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
-			Group                   *string         `json:"group,omitempty"`
-			Id                      string          `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool           `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string         `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
+			Group                   *string          `json:"group,omitempty"`
+			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
+			Params                  *map[string]*any `json:"params,omitempty"`
+			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
+			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
 		}, len(rule.Actions))
 
 		for i, action := range rule.Actions {
@@ -464,7 +464,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 				actions[i].Group = &group
 			}
 			if action.Params != nil {
-				actions[i].Params = &action.Params
+				params := pointerInterfaceMapFromAnyMap(action.Params)
+				actions[i].Params = &params
 			}
 
 			if action.Frequency != nil {
@@ -487,8 +488,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 							State *struct {
 								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						} `json:"filters"`
 						Kql string `json:"kql"`
 					} `json:"query,omitempty"`
@@ -509,8 +510,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 							State *struct {
 								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						} `json:"filters"`
 						Kql string `json:"kql"`
 					}{
@@ -519,8 +520,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 							State *struct {
 								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						}{},
 					}
 				}
@@ -572,7 +573,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	if rule.Params != nil {
-		body.Params = &rule.Params
+		params := pointerInterfaceMapFromAnyMap(rule.Params)
+		body.Params = &params
 	}
 
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
@@ -610,8 +612,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 						State *struct {
 							Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 						} `json:"$state,omitempty"`
-						Meta  map[string]any  `json:"meta"`
-						Query *map[string]any `json:"query,omitempty"`
+						Meta  map[string]*any  `json:"meta"`
+						Query *map[string]*any `json:"query,omitempty"`
 					} `json:"filters"`
 					Kql string `json:"kql"`
 				} `json:"query,omitempty"`
@@ -629,18 +631,19 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 				Summary    bool                                                      `json:"summary"`
 				Throttle   *string                                                   `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
-			Group                   *string         `json:"group,omitempty"`
-			Id                      string          `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool           `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string         `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
+			Group                   *string          `json:"group,omitempty"`
+			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
+			Params                  *map[string]*any `json:"params,omitempty"`
+			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
+			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
 		}, len(rule.Actions))
 
 		for i, action := range rule.Actions {
 			actions[i].Group = &action.Group
 			actions[i].Id = action.ID
 			if action.Params != nil {
-				actions[i].Params = &action.Params
+				params := pointerInterfaceMapFromAnyMap(action.Params)
+				actions[i].Params = &params
 			}
 
 			if action.Frequency != nil {
@@ -663,8 +666,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 							State *struct {
 								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						} `json:"filters"`
 						Kql string `json:"kql"`
 					} `json:"query,omitempty"`
@@ -685,8 +688,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 							State *struct {
 								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						} `json:"filters"`
 						Kql string `json:"kql"`
 					}{
@@ -695,8 +698,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 							State *struct {
 								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 							} `json:"$state,omitempty"`
-							Meta  map[string]any  `json:"meta"`
-							Query *map[string]any `json:"query,omitempty"`
+							Meta  map[string]*any  `json:"meta"`
+							Query *map[string]*any `json:"query,omitempty"`
 						}{},
 					}
 				}
@@ -733,6 +736,16 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	return body
+}
+
+func pointerInterfaceMapFromAnyMap(input map[string]any) map[string]*any {
+	output := make(map[string]*any, len(input))
+	for k, v := range input {
+		value := v
+		output[k] = &value
+	}
+
+	return output
 }
 
 // flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.

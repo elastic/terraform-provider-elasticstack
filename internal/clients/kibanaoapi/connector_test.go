@@ -58,8 +58,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 				IsPreconfigured:  false,
 				IsDeprecated:     false,
 				IsMissingSecrets: func() *bool { b := false; return &b }(),
-				Config: func() *map[string]any {
-					m := map[string]any{"webhookUrl": "https://hooks.slack.com/services/xxx"}
+				Config: func() *map[string]*any {
+					webhookURL := any("https://hooks.slack.com/services/xxx")
+					m := map[string]*any{"webhookUrl": &webhookURL}
 					return &m
 				}(),
 			},
@@ -129,8 +130,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 				IsPreconfigured:  true,
 				IsDeprecated:     true,
 				IsMissingSecrets: func() *bool { b := true; return &b }(),
-				Config: func() *map[string]any {
-					m := map[string]any{"url": "https://example.com"}
+				Config: func() *map[string]*any {
+					url := any("https://example.com")
+					m := map[string]*any{"url": &url}
 					return &m
 				}(),
 			},
