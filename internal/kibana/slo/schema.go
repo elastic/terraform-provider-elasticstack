@@ -320,8 +320,32 @@ func histogramCustomIndicatorSchema() schema.Block {
 							"aggregation": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("value_count", "range")}},
 							"field":       schema.StringAttribute{Required: true},
 							"filter":      schema.StringAttribute{Optional: true},
-							"from":        schema.Float64Attribute{Optional: true},
-							"to":          schema.Float64Attribute{Optional: true},
+							"from": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
+							"to": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
 						},
 					},
 				},
@@ -332,8 +356,32 @@ func histogramCustomIndicatorSchema() schema.Block {
 							"aggregation": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("value_count", "range")}},
 							"field":       schema.StringAttribute{Required: true},
 							"filter":      schema.StringAttribute{Optional: true},
-							"from":        schema.Float64Attribute{Optional: true},
-							"to":          schema.Float64Attribute{Optional: true},
+							"from": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
+							"to": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
 						},
 					},
 				},
@@ -385,10 +433,10 @@ func kqlCustomIndicatorSchema() schema.Block {
 				"filter": schema.StringAttribute{
 					Optional: true,
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql", treatEmptyStringAsUnset: false},
+						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql", treatEmptyStringAsUnset: true},
 					},
 				},
-				"filter_kql": kqlWithFiltersObjectSchema("filter", false),
+				"filter_kql": kqlWithFiltersObjectSchema("filter", true),
 				"good": schema.StringAttribute{
 					Optional: true,
 					Computed: true,
@@ -446,6 +494,7 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUns
 				parallelStringAttr:      parallelStringAttr,
 				treatEmptyStringAsUnset: treatEmptyStringAsUnset,
 			},
+			kqlObjectFormMeaningful{},
 		},
 		PlanModifiers: []planmodifier.Object{
 			objectplanmodifier.UseStateForUnknown(),

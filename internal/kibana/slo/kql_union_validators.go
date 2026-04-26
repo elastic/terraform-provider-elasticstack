@@ -20,6 +20,7 @@ package slo
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -117,5 +118,44 @@ func (v kqlObjectFormExclusiveWithString) ValidateObject(ctx context.Context, re
 		req.Path,
 		"Invalid Configuration",
 		fmt.Sprintf("Cannot set both %s and this block. Remove one of them.", v.parallelStringAttr),
+	)
+}
+
+// kqlObjectFormMeaningful requires that a configured (known) KQL object form includes a non-blank
+// kql_query and/or a non-empty filters list. Unknown attribute values are accepted so read/computed
+// refresh does not spuriously fail.
+type kqlObjectFormMeaningful struct{}
+
+func (kqlObjectFormMeaningful) Description(_ context.Context) string {
+	return "when set, the object form must include kql_query and/or a non-empty filters list"
+}
+
+func (kqlObjectFormMeaningful) MarkdownDescription(ctx context.Context) string {
+	return kqlObjectFormMeaningful{}.Description(ctx)
+}
+
+func (kqlObjectFormMeaningful) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	o := req.ConfigValue
+	if o.IsNull() || o.IsUnknown() {
+		return
+	}
+	attrs := o.Attributes()
+	kq, hasKq := attrs["kql_query"].(types.String)
+	filters, hasFilters := attrs["filters"].(types.List)
+	if hasKq && kq.IsUnknown() {
+		return
+	}
+	if hasFilters && filters.IsUnknown() {
+		return
+	}
+	kqlNonBlank := hasKq && !kq.IsNull() && !kq.IsUnknown() && strings.TrimSpace(kq.ValueString()) != ""
+	filtersNonEmpty := hasFilters && !filters.IsNull() && !filters.IsUnknown() && len(filters.Elements()) > 0
+	if kqlNonBlank || filtersNonEmpty {
+		return
+	}
+	resp.Diagnostics.AddAttributeError(
+		req.Path,
+		"Invalid Configuration",
+		"When using the KQL object form, set a non-blank kql_query and/or a non-empty filters list.",
 	)
 }
