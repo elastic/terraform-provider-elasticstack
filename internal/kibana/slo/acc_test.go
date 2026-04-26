@@ -707,15 +707,18 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 	})
 }
 
+// TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (no timeslice indicator).
+// Skip with SLOKqlAccTestConstraints (8.9+, excluding 8.11.x), not timeslice 8.12.
 func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	skipKqlSLO := versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				SkipFunc:                 skipKqlSLO,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -729,7 +732,7 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				SkipFunc:                 skipKqlSLO,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("fleetctl_test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
