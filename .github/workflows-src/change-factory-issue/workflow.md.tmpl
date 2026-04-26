@@ -1,0 +1,141 @@
+---
+name: Change Factory Issue Intake
+timeout-minutes: 30
+description: >-
+  Reacts to trusted qualifying `change-factory` issue events, suppresses duplicate linked pull
+  requests, and delegates OpenSpec proposal authoring to an agent that creates exactly one linked PR
+  per issue.
+on:
+  issues:
+    types: [opened, labeled]
+  permissions:
+    contents: read
+    issues: read
+    pull-requests: read
+  steps:
+    - name: Qualify trigger event
+      id: qualify_trigger
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/qualify_trigger.inline.js
+    - name: Capture issue context
+      id: capture_issue_context
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          core.setOutput('issue_title', context.payload.issue?.title ?? '');
+          core.setOutput('issue_body', context.payload.issue?.body ?? '');
+    - name: Check actor trust
+      id: check_actor_trust
+      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_actor_trust.inline.js
+    - name: Check duplicate PR
+      id: check_duplicate_pr
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Finalize gate reason
+      id: finalize_gate
+      if: always()
+      uses: actions/github-script@v9
+      env:
+        EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/finalize_gate.inline.js
+if: >-
+  needs.pre_activation.outputs.event_eligible == 'true' &&
+  needs.pre_activation.outputs.actor_trusted == 'true' &&
+  needs.pre_activation.outputs.duplicate_pr_found != 'true'
+steps:
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Install npm dependencies
+    run: npm ci
+engine:
+  id: claude
+  model: "llm-gateway/claude-sonnet-4-6"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+jobs:
+  pre-activation:
+    outputs:
+      event_eligible: ${{ steps.qualify_trigger.outputs.event_eligible }}
+      event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+      issue_title: ${{ steps.capture_issue_context.outputs.issue_title }}
+      issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
+      actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+      actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+      duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
+tools:
+  github:
+    toolsets: [issues, pull_requests, repos]
+network:
+  allowed: [defaults, node, elastic.litellm-prod.ai]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  create-pull-request:
+    labels: [change-factory]
+    max: 1
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Change Factory issue proposal worker (placeholder)
+
+Deterministic pre-activation has already validated this run. The agent job runs only when the issue
+event is eligible, the actor is trusted, and no open linked `change-factory` pull request exists for
+this issue.
+
+## Pre-activation context
+
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+- **Trust status** (`actor_trusted`): `${{ needs.pre_activation.outputs.actor_trusted }}`
+- **Duplicate PR status** (`duplicate_pr_found`): `${{ needs.pre_activation.outputs.duplicate_pr_found }}`
+- **Duplicate PR URL**: `${{ needs.pre_activation.outputs.duplicate_pr_url }}`
+- **Issue number**: `${{ github.event.issue.number }}`
+- **Issue title** (captured): `${{ needs.pre_activation.outputs.issue_title }}`
+- **Issue body** (captured):
+
+  ```markdown
+  ${{ needs.pre_activation.outputs.issue_body }}
+  ```
+
+- **Repository**: `${{ github.repository }}`
+- **Triggered by**: `@${{ github.actor }}`
+- **Required branch**: `change-factory/issue-${{ github.event.issue.number }}`
+
+## Task (stub)
+
+Follow-up work will define the full OpenSpec proposal contract. Until then:
+
+1. Work on branch `change-factory/issue-${{ github.event.issue.number }}`.
+2. Use at most one `create-pull-request` safe output with label `change-factory` and canonical issue
+   linkage (`Closes #${{ github.event.issue.number }}` in the PR body).
+3. If you cannot proceed safely, use at most one `noop` result instead of an extra pull request.

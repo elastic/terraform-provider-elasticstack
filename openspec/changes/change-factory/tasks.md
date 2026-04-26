@@ -6,10 +6,10 @@
 
 ## 2. Workflow Source
 
-- [ ] 2.1 Add an authored `.github/workflows-src/change-factory-issue/` workflow template that triggers on issue `opened` and `labeled` events.
-- [ ] 2.2 Configure pre-activation outputs for issue context, gate reason, trust status, duplicate PR status, and duplicate PR URL.
-- [ ] 2.3 Configure the agent job to run only after deterministic gates pass and to use branch `change-factory/issue-<issue-number>`.
-- [ ] 2.4 Configure safe outputs so the agent can create at most one linked pull request labeled `change-factory` and at most one no-op result.
+- [x] 2.1 Add an authored `.github/workflows-src/change-factory-issue/` workflow template that triggers on issue `opened` and `labeled` events.
+- [x] 2.2 Configure pre-activation outputs for issue context, gate reason, trust status, duplicate PR status, and duplicate PR URL.
+- [x] 2.3 Configure the agent job to run only after deterministic gates pass and to use branch `change-factory/issue-<issue-number>`.
+- [x] 2.4 Configure safe outputs so the agent can create at most one linked pull request labeled `change-factory` and at most one no-op result.
 
 ## 3. Agent Prompt and Tooling
 
