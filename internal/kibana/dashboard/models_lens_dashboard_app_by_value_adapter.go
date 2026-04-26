@@ -216,6 +216,8 @@ func tryPopulateTypedLensByValueFromAPI(
 	}
 	d := conv.populateFromAttributes(ctx, &scratchPM, vis0)
 	if d.HasError() {
+		// Intentional: no error diagnostic here; caller falls back to by_value.config_json
+		// (REQ-035) without treating typed read as a user failure.
 		return false
 	}
 	if diags != nil {
