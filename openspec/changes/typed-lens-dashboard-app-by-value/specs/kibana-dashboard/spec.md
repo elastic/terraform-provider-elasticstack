@@ -174,6 +174,13 @@ The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens pan
 - THEN the provider SHALL populate that typed chart block in state
 - AND the provider SHALL NOT replace it with `by_value.config_json`
 
+#### Scenario: Read-back falls back to by_value config_json when prior typed by-value block cannot be preserved
+
+- GIVEN a managed `lens-dashboard-app` panel with prior state that selected a supported typed Lens chart block under `by_value` (and not `by_value.config_json`)
+- WHEN Kibana returns a by-value chart `config` that cannot be represented in that same typed chart block
+- THEN the provider SHALL populate `by_value.config_json` from the API read
+- AND the provider SHALL NOT keep the prior typed chart block in state when the response cannot be round-tripped to it
+
 #### Scenario: Read-back preserves raw by-value representation
 
 - GIVEN a managed `lens-dashboard-app` panel authored with `by_value.config_json`

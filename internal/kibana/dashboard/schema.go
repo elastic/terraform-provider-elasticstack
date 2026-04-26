@@ -1402,6 +1402,8 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Inline by-value `lens-dashboard-app` configuration. " +
 				"Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. " +
 				"Typed by-value blocks send the chart as the Kibana `lens-dashboard-app` API `config` and do not create a `type = \"vis\"` panel. " +
+				"On read, when state used a typed chart block and the API `config` can be round-tripped into that same block, the provider repopulates the typed block; " +
+				"otherwise the response is reflected in `config_json` instead. " +
 				"Distinct from panel-level `config_json` on the panel.",
 			Optional:   true,
 			Attributes: getLensDashboardAppByValueAttributes(),

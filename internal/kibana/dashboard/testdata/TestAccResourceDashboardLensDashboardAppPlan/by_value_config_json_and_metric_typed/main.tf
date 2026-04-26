@@ -14,7 +14,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         config_json = jsonencode({ type = "metric" })
         metric_chart_config = {
           data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
-          query              = { expression = "" }
+          query            = { expression = "" }
           metrics = [{
             config_json = jsonencode({
               type      = "primary"

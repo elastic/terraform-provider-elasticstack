@@ -32,8 +32,8 @@
 
 ## 5. Documentation and Spec Alignment
 
-- [ ] 5.1 Update generated/resource documentation for `lens_dashboard_app_config.by_value` typed chart sources.
-- [ ] 5.2 Update examples or acceptance fixtures to show a typed by-value `lens-dashboard-app` chart.
-- [ ] 5.3 Run OpenSpec validation for `typed-lens-dashboard-app-by-value`.
-- [ ] 5.4 Run targeted dashboard unit tests for schema validators and lens-dashboard-app converters.
-- [ ] 5.5 Run targeted dashboard acceptance tests if a Kibana test stack is available; otherwise document that acceptance tests were not run.
+- [x] 5.1 Update generated/resource documentation for `lens_dashboard_app_config.by_value` typed chart sources.
+- [x] 5.2 Update examples or acceptance fixtures to show a typed by-value `lens-dashboard-app` chart.
+- [x] 5.3 Run OpenSpec validation for `typed-lens-dashboard-app-by-value`.
+- [x] 5.4 Run targeted dashboard unit tests for schema validators and lens-dashboard-app converters.
+- [x] 5.5 Run targeted dashboard acceptance tests if a Kibana test stack is available; otherwise document that acceptance tests were not run.
