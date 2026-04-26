@@ -25,10 +25,10 @@
 
 ## 4. Chart Coverage
 
-- [ ] 4.1 Add adapter unit tests for representative no-ESQL and ES|QL chart families, at minimum metric, XY, pie, and waffle.
-- [ ] 4.2 Verify each exposed typed by-value chart block is backed by a chart struct present in both `KbnDashboardPanelTypeVisConfig0` and `KbnDashboardPanelTypeLensDashboardAppConfig0`.
-- [ ] 4.3 Add acceptance coverage for at least one typed by-value `lens-dashboard-app` chart and require a second apply with an empty plan.
-- [ ] 4.4 Add import or read-back coverage confirming typed by-value state does not populate panel-level `config_json`.
+- [x] 4.1 Add adapter unit tests for representative no-ESQL and ES|QL chart families, at minimum metric, XY, pie, and waffle.
+- [x] 4.2 Verify each exposed typed by-value chart block is backed by a chart struct present in both `KbnDashboardPanelTypeVisConfig0` and `KbnDashboardPanelTypeLensDashboardAppConfig0`.
+- [x] 4.3 Add acceptance coverage for at least one typed by-value `lens-dashboard-app` chart and require a second apply with an empty plan.
+- [x] 4.4 Add import or read-back coverage confirming typed by-value state does not populate panel-level `config_json`.
 
 ## 5. Documentation and Spec Alignment
 
