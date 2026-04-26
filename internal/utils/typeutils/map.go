@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package kibanaoapi
+package typeutils
 
 // PointerInterfaceMapFromAnyMap converts a map[string]any to map[string]*any by
 // taking pointers to each value. This is needed when constructing API request bodies
