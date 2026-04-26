@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -82,6 +83,9 @@ func getSchema() schema.Schema {
 				Description: "Links to related assets (for example dashboards) returned and managed with the SLO.",
 				Optional:    true,
 				Computed:    true,
+				Default: objectdefault.StaticValue(
+					types.ObjectNull(tfArtifactsAttrTypes),
+				),
 				Attributes: map[string]schema.Attribute{
 					"dashboards": schema.ListNestedAttribute{
 						Description: "Dashboard references attached to the SLO.",
@@ -535,9 +539,12 @@ func timesliceMetricIndicatorSchema() schema.Block {
 											},
 										},
 										"aggregation": schema.StringAttribute{
-											Required:    true,
-											Description: fmt.Sprintf("The aggregation type for this metric. One of: %s. Determines which other fields are required.", strings.Join(timesliceMetricAggregations, ", ")),
-											Validators:  []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
+											Required: true,
+											Description: fmt.Sprintf(
+												"The aggregation type for this metric (kbapi timeslice metric union: no value_count). One of: %s. Determines which other fields are required.",
+												strings.Join(timesliceMetricAggregations, ", "),
+											),
+											Validators: []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
 										},
 										"field": schema.StringAttribute{
 											Optional:    true,
@@ -568,7 +575,11 @@ func timesliceMetricIndicatorSchema() schema.Block {
 												float64validator.Between(0, 100),
 											},
 										},
-										"filter": schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
+										"filter": schema.StringAttribute{
+											Optional: true,
+											Description: "Optional KQL filter for this metric. Supported for all timeslice metric aggregation " +
+												"kinds, including doc_count, per the Kibana SLO API.",
+										},
 									},
 								},
 							},

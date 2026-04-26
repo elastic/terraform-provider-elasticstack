@@ -126,15 +126,17 @@ func (v kqlObjectFormExclusiveWithString) ValidateObject(ctx context.Context, re
 // refresh does not spuriously fail.
 type kqlObjectFormMeaningful struct{}
 
+const kqlObjectFormMeaningfulDescription = "when set, the object form must include kql_query and/or a non-empty filters list"
+
 func (kqlObjectFormMeaningful) Description(_ context.Context) string {
-	return "when set, the object form must include kql_query and/or a non-empty filters list"
+	return kqlObjectFormMeaningfulDescription
 }
 
-func (kqlObjectFormMeaningful) MarkdownDescription(ctx context.Context) string {
-	return kqlObjectFormMeaningful{}.Description(ctx)
+func (kqlObjectFormMeaningful) MarkdownDescription(_ context.Context) string {
+	return kqlObjectFormMeaningfulDescription
 }
 
-func (kqlObjectFormMeaningful) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (kqlObjectFormMeaningful) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	o := req.ConfigValue
 	if o.IsNull() || o.IsUnknown() {
 		return

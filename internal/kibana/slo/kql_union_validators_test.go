@@ -23,11 +23,73 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/require"
 )
+
+// kqlSiblingsTestSchema models filter + filter_kql as root siblings so path expressions match
+// kql_custom_indicator (same parent/child path layout for MatchRelative().AtParent().AtName).
+func kqlSiblingsTestSchema() schema.Schema {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"filter": schema.StringAttribute{Optional: true},
+			"filter_kql": schema.SingleNestedAttribute{
+				Optional: true,
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"kql_query": schema.StringAttribute{Optional: true, Computed: true},
+					"filters": schema.ListNestedAttribute{
+						Optional: true,
+						Computed: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"query": schema.StringAttribute{Optional: true, Computed: true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func testKqlObject(t *testing.T) types.Object {
+	t.Helper()
+	flt := types.ObjectType{AttrTypes: map[string]attr.Type{"query": types.StringType}}
+	emptyFilters := types.ListValueMust(flt, nil)
+	return types.ObjectValueMust(
+		map[string]attr.Type{
+			"kql_query": types.StringType,
+			"filters":   types.ListType{ElemType: flt},
+		},
+		map[string]attr.Value{
+			"kql_query": types.StringValue("host.name:*"),
+			"filters":   emptyFilters,
+		},
+	)
+}
+
+func testConfigFilterAndKQL(t *testing.T, filterVal tftypes.Value, kqlObj types.Object) tfsdk.Config {
+	t.Helper()
+	ktf, err := kqlObj.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+	sch := kqlSiblingsTestSchema()
+	raw := tftypes.NewValue(
+		tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"filter":     tftypes.String,
+			"filter_kql": ktf.Type(),
+		}},
+		map[string]tftypes.Value{
+			"filter":     filterVal,
+			"filter_kql": ktf,
+		},
+	)
+	return tfsdk.Config{Raw: raw, Schema: sch}
+}
 
 func TestKqlObjectFormMeaningful(t *testing.T) {
 	t.Parallel()
@@ -70,5 +132,53 @@ func TestKqlObjectFormMeaningful(t *testing.T) {
 			ConfigValue: obj,
 		}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
+	})
+}
+
+func TestKqlLegacyStringExclusiveWithObject_siblings(t *testing.T) {
+	t.Parallel()
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql", treatEmptyStringAsUnset: true}
+	kq := testKqlObject(t)
+
+	t.Run("conflict when both string and object set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigFilterAndKQL(t, tftypes.NewValue(tftypes.String, "host:*"), kq)
+		var resp validator.StringResponse
+		v.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("filter"),
+			ConfigValue: types.StringValue("host:*"),
+			Config:      cfg,
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("no conflict when filter is empty and object is set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigFilterAndKQL(t, tftypes.NewValue(tftypes.String, ""), kq)
+		var resp validator.StringResponse
+		v.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("filter"),
+			ConfigValue: types.StringValue(""),
+			Config:      cfg,
+		}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+}
+
+func TestKqlObjectFormExclusiveWithString_siblings(t *testing.T) {
+	t.Parallel()
+	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "filter", treatEmptyStringAsUnset: true}
+	kq := testKqlObject(t)
+
+	t.Run("conflict when both meaningfully set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigFilterAndKQL(t, tftypes.NewValue(tftypes.String, "a"), kq)
+		var resp validator.ObjectResponse
+		v.ValidateObject(context.Background(), validator.ObjectRequest{
+			Path:        path.Root("filter_kql"),
+			ConfigValue: kq,
+			Config:      cfg,
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
 	})
 }

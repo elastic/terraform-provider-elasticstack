@@ -35,6 +35,16 @@ var tfSettingsAttrTypes = map[string]attr.Type{
 	"prevent_initial_backfill": types.BoolType,
 }
 
+// tfSloArtifactDashboardObjectType and tfArtifactsAttrTypes match the `artifacts` SingleNestedAttribute schema.
+var (
+	tfSloArtifactDashboardObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
+		"id": types.StringType,
+	}}
+	tfArtifactsAttrTypes = map[string]attr.Type{
+		"dashboards": types.ListType{ElemType: tfSloArtifactDashboardObjectType},
+	}
+)
+
 type tfModel struct {
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
@@ -53,7 +63,7 @@ type tfModel struct {
 	GroupBy GroupByValue   `tfsdk:"group_by"`
 	Tags    []types.String `tfsdk:"tags"`
 
-	Artifacts *tfSloArtifacts `tfsdk:"artifacts"`
+	Artifacts types.Object `tfsdk:"artifacts"`
 
 	MetricCustomIndicator    []tfMetricCustomIndicator    `tfsdk:"metric_custom_indicator"`
 	HistogramCustomIndicator []tfHistogramCustomIndicator `tfsdk:"histogram_custom_indicator"`
@@ -72,14 +82,6 @@ type tfObjective struct {
 	Target          types.Float64 `tfsdk:"target"`
 	TimesliceTarget types.Float64 `tfsdk:"timeslice_target"`
 	TimesliceWindow types.String  `tfsdk:"timeslice_window"`
-}
-
-type tfSloArtifactDashboard struct {
-	ID types.String `tfsdk:"id"`
-}
-
-type tfSloArtifacts struct {
-	Dashboards []tfSloArtifactDashboard `tfsdk:"dashboards"`
 }
 
 type tfSettings struct {
@@ -267,13 +269,26 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	}
 
 	if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
-		d := make([]tfSloArtifactDashboard, 0, len(*apiModel.Artifacts.Dashboards))
+		rows := make([]attr.Value, 0, len(*apiModel.Artifacts.Dashboards))
 		for _, row := range *apiModel.Artifacts.Dashboards {
-			d = append(d, tfSloArtifactDashboard{ID: types.StringValue(row.Id)})
+			rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+				"id": types.StringValue(row.Id),
+			})
+			diags.Append(rowDiags...)
+			rows = append(rows, rowObj)
 		}
-		m.Artifacts = &tfSloArtifacts{Dashboards: d}
+		if diags.HasError() {
+			return diags
+		}
+		listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
+		diags.Append(listDiags...)
+		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": listVal,
+		})
+		diags.Append(artDiags...)
+		m.Artifacts = artObj
 	} else {
-		m.Artifacts = nil
+		m.Artifacts = types.ObjectNull(tfArtifactsAttrTypes)
 	}
 
 	if apiModel.GroupBy != nil {
