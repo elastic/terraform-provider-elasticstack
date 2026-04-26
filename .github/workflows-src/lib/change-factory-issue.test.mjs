@@ -573,7 +573,6 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     'create-es-api-key',
     'setup-kibana-fleet',
     'set-kibana-password',
-    'TF_ACC',
     'Setup Elastic Stack',
     'Setup Fleet',
     'hashicorp/setup-terraform',
@@ -583,6 +582,35 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     assert.ok(
       !workflowTmpl.includes(fragment),
       `workflow template must not include ${fragment}`,
+    );
+  }
+});
+
+test('change-factory-issue agent prompt matches stable OpenSpec proposal contract', () => {
+  const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
+  const requiredPhrases = [
+    'sole authoritative source',
+    'openspec/changes/<change-id>/',
+    'proposal.md',
+    'design.md',
+    'tasks.md',
+    'specs/<capability>/spec.md',
+    'OPENSPEC_TELEMETRY=0',
+    'openspec validate <change-id> --type change',
+    'openspec status --change',
+    'Terraform acceptance tests',
+    'TF_ACC',
+    'Elastic Stack',
+    'Fleet',
+    'API key',
+    'noop',
+    'exploration loop',
+    'Do not open GitHub comment',
+  ];
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      workflowTmpl.includes(phrase),
+      `workflow.md.tmpl agent prompt must include contract phrase: ${phrase}`,
     );
   }
 });
