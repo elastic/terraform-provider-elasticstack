@@ -519,6 +519,11 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(
     workflowTmpl,
+    /- name: Finalize gate reason\n      id: finalize_gate\n      if: always\(\)/,
+  );
+
+  assert.match(
+    workflowTmpl,
     /issue_title: \$\{\{ steps\.capture_issue_context\.outputs\.issue_title \}\}/,
   );
   assert.match(
@@ -550,6 +555,12 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     workflowTmpl,
     /if: >-\s*\n\s*needs\.pre_activation\.outputs\.event_eligible == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.actor_trusted == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.duplicate_pr_found != 'true'/,
   );
+
+  assert.match(
+    workflowTmpl,
+    /- name: Setup Node\.js\n    uses: actions\/setup-node@v6\n    with:\n      node-version-file: package\.json/,
+  );
+  assert.match(workflowTmpl, /- name: Install npm dependencies\n    run: npm ci/);
 
   assert.match(
     workflowTmpl,
