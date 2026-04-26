@@ -60,7 +60,7 @@ The repo currently shows a mismatch between the Terraform `slo_id` validator (`8
 
 The same principle applies to other simple validators:
 - custom metric `aggregation` will be restricted to `sum` and `doc_count`
-- metric names will be validated against `^[A-Z]$`
+- metric variable names used in SLO equations will be validated against `^[A-Z]$`, matching the generated API contract that documents valid options as `A-Z`
 - `time_window.type` will be restricted to `rolling` and `calendarAligned`
 
 ### 5. Manage `enabled` through dedicated APIs, not update payloads
