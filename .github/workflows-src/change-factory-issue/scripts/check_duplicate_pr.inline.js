@@ -1,4 +1,6 @@
-//include: ../../lib/change-factory-issue.js
+//include: ../intake-constants.js
+//include: ../../lib/factory-issue-shared.js
+//include: ../../lib/change-factory-issue.gh.js
 
 const { owner, repo } = context.repo;
 const issueNumber = context.payload.issue?.number;

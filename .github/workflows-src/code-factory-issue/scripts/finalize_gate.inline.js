@@ -1,4 +1,5 @@
-//include: ../../lib/code-factory-issue.js
+//include: ../../lib/factory-issue-shared.js
+//include: ../../lib/code-factory-issue.gh.js
 
 const eventEligible = process.env.EVENT_ELIGIBLE === 'true';
 const eventEligibleReason = process.env.EVENT_ELIGIBLE_REASON ?? '';

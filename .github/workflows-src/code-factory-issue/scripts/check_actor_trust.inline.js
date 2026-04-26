@@ -1,4 +1,5 @@
-//include: ../../lib/code-factory-issue.js
+//include: ../../lib/factory-issue-shared.js
+//include: ../../lib/code-factory-issue.gh.js
 
 const { owner, repo } = context.repo;
 const sender = context.payload.sender?.login ?? '';

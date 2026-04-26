@@ -9,7 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
-  CHANGE_FACTORY_ISSUE_BRANCH_PREFIX,
   changeFactoryIssueBranchName,
   qualifyTriggerEvent,
   actorTrustWhenSenderMissing,
@@ -19,6 +18,7 @@ const {
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./change-factory-issue.js');
+const { ISSUE_BRANCH_PREFIX } = require('../change-factory-issue/intake-constants.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
 const workflowTemplatePath = path.resolve(__dirname, '../change-factory-issue/workflow.md.tmpl');
@@ -42,6 +42,24 @@ function makePullRequest(overrides = {}) {
     ...overrides,
   };
 }
+
+test('change-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
+  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+  const {
+    ISSUE_BRANCH_PREFIX: prefix,
+    FACTORY_LABEL: label,
+    ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
+  } = require('../change-factory-issue/intake-constants.js');
+  const bound = createFactoryIssueIntake({
+    branchPrefix: prefix,
+    factoryLabel: label,
+    issueOpenedNotEligibleReason: openedReason,
+    duplicateLinkageMode: 'github-keywords',
+    duplicatePrUrlCoalesceNull: true,
+  });
+  const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
+  assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
+});
 
 test('qualifyTriggerEvent accepts issues.labeled with the change-factory label', () => {
   const result = qualifyTriggerEvent({
@@ -481,14 +499,14 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 });
 
 test('changeFactoryIssueBranchName stays aligned with workflow template prefix', () => {
-  assert.equal(CHANGE_FACTORY_ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
+  assert.equal(ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
   assert.equal(changeFactoryIssueBranchName(42), 'change-factory/issue-42');
 
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
-  const branchExpr = `${CHANGE_FACTORY_ISSUE_BRANCH_PREFIX}\${{ github.event.issue.number }}`;
+  const branchExpr = `${ISSUE_BRANCH_PREFIX}\${{ github.event.issue.number }}`;
   assert.ok(
     workflowTmpl.includes(branchExpr),
-    'workflow.md.tmpl must express branches with CHANGE_FACTORY_ISSUE_BRANCH_PREFIX + ${{ github.event.issue.number }}',
+    'workflow.md.tmpl must express branches with ISSUE_BRANCH_PREFIX + ${{ github.event.issue.number }}',
   );
 });
 
@@ -699,10 +717,21 @@ test('check_duplicate_pr.inline.js resolves expected branch via changeFactoryIss
   assert.match(source, /const expectedBranch = changeFactoryIssueBranchName\(issueNumber\);/);
 });
 
-test('change-factory-issue inline scripts include the deterministic helper library', () => {
+test('change-factory-issue inline scripts include shared intake helpers in dependency order', () => {
+  const expectedHeader = [
+    /^\/\/include: \.\.\/intake-constants\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/change-factory-issue\.gh\.js\n/,
+  ];
   for (const name of inlineScripts) {
     const source = readFileSync(path.join(scriptsDir, name), 'utf8');
-    assert.match(source, /^\/\/include: \.\.\/\.\.\/lib\/change-factory-issue\.js\n/);
+    let offset = 0;
+    for (const pat of expectedHeader) {
+      const slice = source.slice(offset);
+      const m = pat.exec(slice);
+      assert.ok(m, `expected include line matching ${pat} in ${name} at offset ${offset}`);
+      offset += m.index + m[0].length;
+    }
   }
 });
 

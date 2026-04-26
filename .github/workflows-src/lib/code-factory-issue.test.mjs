@@ -13,10 +13,12 @@ const {
   checkActorTrust,
   checkDuplicatePR,
   computeGateReason,
+  issueBranchName,
 } = require('./code-factory-issue.js');
 
 const workflowPath = path.resolve(__dirname, '../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../workflows/code-factory-issue.lock.yml');
+const codeFactoryScriptsDir = path.resolve(__dirname, '../code-factory-issue/scripts');
 
 function makePullRequest(overrides = {}) {
   return {
@@ -359,4 +361,36 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
   });
 
   assert.match(result.gate_reason, /Duplicate PR check did not complete/);
+});
+
+test('issueBranchName matches deterministic branch naming', () => {
+  assert.equal(issueBranchName(42), 'code-factory/issue-42');
+});
+
+test('code-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
+  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+  const bound = createFactoryIssueIntake({
+    branchPrefix: 'code-factory/issue-',
+    factoryLabel: 'code-factory',
+    issueOpenedNotEligibleReason:
+      'Issue opened event does not qualify because the issue was created without the code-factory label.',
+    duplicateLinkageMode: 'closes-literal',
+    duplicatePrUrlCoalesceNull: false,
+  });
+  const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
+  assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
+});
+
+test('code-factory-issue inline scripts bundle shared helpers before workflow bindings', () => {
+  const expectedHeader =
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n\/\/include: \.\.\/\.\.\/lib\/code-factory-issue\.gh\.js\n/;
+  for (const name of [
+    'qualify_trigger.inline.js',
+    'check_actor_trust.inline.js',
+    'check_duplicate_pr.inline.js',
+    'finalize_gate.inline.js',
+  ]) {
+    const source = readFileSync(path.join(codeFactoryScriptsDir, name), 'utf8');
+    assert.match(source, expectedHeader);
+  }
 });
