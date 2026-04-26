@@ -1,6 +1,6 @@
 ## Context
 
-The current `elasticstack_kibana_slo` resource only supports the string arm of the Kibana KQL union fields used by `kql_custom_indicator.filter`, `good`, and `total`, even though the generated API models also allow an object form with `kqlQuery` and `filters`. The resource also relies on a mix of runtime validation and schema validation, which leaves several indicator-specific errors until apply time. In addition, the resource does not yet expose `settings.sync_field`, does not manage `artifacts`, and reads but does not manage SLO enabled state.
+The current `elasticstack_kibana_slo` resource only supports the string arm of the Kibana KQL union fields used by `kql_custom_indicator.filter`, `good`, and `total`, even though the generated API models also allow an object form with `kqlQuery` and `filters`. The resource also relies on a mix of runtime validation and schema validation, which leaves several indicator-specific errors until apply time. In addition, the resource does not yet expose `settings.sync_field`, does not manage `artifacts`, and does not yet expose `enabled`, so enabled state is not currently represented in Terraform state.
 
 This change spans the Terraform schema, SLO model conversion, shared conditional validators, the Kibana SLO client helpers, acceptance tests, and the canonical OpenSpec requirements. It is therefore worth documenting the design choices before implementation.
 

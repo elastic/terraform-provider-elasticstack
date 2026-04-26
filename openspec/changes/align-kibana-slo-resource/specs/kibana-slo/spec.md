@@ -1,9 +1,21 @@
+# Delta Spec: `elasticstack_kibana_slo` Alignment
+
+Base spec: `openspec/specs/kibana-slo/spec.md`
+Last requirement in base spec: REQ-035
+This delta introduces: REQ-036 to REQ-040
+
+---
+
+This delta defines the target behavior introduced by change `align-kibana-slo-resource`. It describes the requirements the implementation will satisfy once the change is applied; it is not intended to claim that the current implementation already meets these behaviors.
+
 ## ADDED Requirements
 
-### Requirement: Mapping — `kql_custom_indicator` string and object-form KQL inputs
+### Requirement: Mapping — `kql_custom_indicator` string and object-form KQL inputs (REQ-036)
 The `kql_custom_indicator` block SHALL support both the existing string form and an additive object form for `filter`, `good`, and `total`. The object-form attributes SHALL use the names `filter_kql`, `good_kql`, and `total_kql`, and each SHALL model the Kibana KQL object variant with `kql_query` and `filters`. For each logical field, the provider SHALL allow exactly one representation to be configured: either the existing string attribute or the new `_kql` attribute.
 
 On write, when a string form is configured, the provider SHALL serialize the string arm of the generated kbapi union. When a `_kql` object form is configured, the provider SHALL serialize the object arm of the generated kbapi union, including both `kqlQuery` and `filters` when provided. On read, the provider SHALL round-trip object-form responses without discarding `filters`.
+
+Mutual exclusivity SHALL apply to practitioner-configured values. The `_kql` attributes SHALL support computed state so the provider can retain a richer object-form API response when it cannot be represented losslessly by the legacy string attribute alone.
 
 #### Scenario: String-form KQL input remains supported
 - **WHEN** `kql_custom_indicator.good` is configured as a string and `good_kql` is unset
@@ -21,7 +33,15 @@ On write, when a string form is configured, the provider SHALL serialize the str
 - **WHEN** the Kibana API returns object-form `filter`, `good`, or `total` values containing `filters`
 - **THEN** the provider SHALL preserve that object-form information in state rather than degrading it to the string-only representation
 
-### Requirement: Validation — indicator-specific conditional fields
+#### Scenario: Richer response upgrades state representation
+- **WHEN** configuration uses the legacy string form for a KQL field and the API response includes an object-form value with `filters`
+- **THEN** the provider SHALL retain the `_kql` state representation for that field and SHALL treat the legacy string attribute as unset in state for that field
+
+#### Scenario: Configured representation is preserved when lossless
+- **WHEN** configuration uses the legacy string form for a KQL field and the API response is representable losslessly as the same string form
+- **THEN** the provider SHALL keep the string representation in state for that field and SHALL leave the corresponding `_kql` attribute unset
+
+### Requirement: Validation — indicator-specific conditional fields (REQ-037)
 The provider SHALL validate indicator-specific required and forbidden fields at plan time where the Terraform Plugin Framework can express the rule. This SHALL include nested indicator blocks that are currently only rejected during model conversion and conditional field rules driven by sibling `aggregation` values.
 
 At minimum, plan-time validation SHALL cover:
@@ -46,7 +66,7 @@ At minimum, plan-time validation SHALL cover:
 - **WHEN** a `timeslice_metric_indicator.metric.metrics` entry has `aggregation = "percentile"` and `percentile` is unset
 - **THEN** the provider SHALL return a plan-time validation error
 
-### Requirement: Validation — simple schema constraints aligned with the API
+### Requirement: Validation — simple schema constraints aligned with the API (REQ-038)
 The provider SHALL validate simple SLO schema constraints at plan time to match the current generated SLO API contract and generated union types. The resource SHALL:
 - restrict `slo_id` to 8 through 36 characters and `[a-zA-Z0-9_-]+`
 - restrict `metric_custom_indicator.{good,total}.metrics[].aggregation` to `sum` or `doc_count`
@@ -69,7 +89,7 @@ The provider SHALL validate simple SLO schema constraints at plan time to match 
 - **WHEN** `time_window.type` is set to a value other than `rolling` or `calendarAligned`
 - **THEN** the provider SHALL return a plan-time validation error
 
-### Requirement: Mapping — `artifacts` field
+### Requirement: Mapping — `artifacts` field (REQ-039)
 The resource SHALL expose the SLO `artifacts` field using the shape currently modeled by the filtered Kibana spec. The provider SHALL support `artifacts.dashboards[].id` on create and update, and SHALL round-trip the same structure from read responses.
 
 #### Scenario: Artifacts are sent on create
@@ -80,8 +100,10 @@ The resource SHALL expose the SLO `artifacts` field using the shape currently mo
 - **WHEN** the Kibana API returns dashboard references under `artifacts`
 - **THEN** the provider SHALL populate the Terraform `artifacts` state with those references
 
-### Requirement: Management — `enabled` state
+### Requirement: Management — `enabled` state (REQ-040)
 The resource SHALL expose SLO enabled state as a managed Terraform attribute. Because the generated update request model does not include `enabled`, the provider SHALL manage write reconciliation through the dedicated Kibana enable and disable SLO APIs rather than by extending the update request body.
+
+If `enabled` is omitted from configuration, the provider SHALL preserve server behavior rather than forcing a value. In that case, it SHALL read the returned enabled state into Terraform state and SHALL NOT call the enable or disable APIs solely to normalize the value.
 
 #### Scenario: Disabled SLO is disabled after create
 - **WHEN** configuration sets `enabled = false` and the created SLO is initially enabled
@@ -90,6 +112,10 @@ The resource SHALL expose SLO enabled state as a managed Terraform attribute. Be
 #### Scenario: Enabled SLO is re-enabled on update
 - **WHEN** configuration sets `enabled = true` for an existing disabled SLO
 - **THEN** the provider SHALL call the Kibana enable SLO API and SHALL read the SLO again before writing final state
+
+#### Scenario: Enabled unset preserves server behavior
+- **WHEN** `enabled` is omitted from configuration
+- **THEN** the provider SHALL record the server-returned enabled value in state and SHALL NOT issue enable or disable API calls only to force a default
 
 ## MODIFIED Requirements
 
