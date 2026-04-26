@@ -115,8 +115,8 @@
     "elasticstack_kibana_action_connector": "2026-04-24T10:51:04Z",
     "elasticstack_kibana_agentbuilder_agent": "2026-04-25T10:35:47Z",
     "elasticstack_kibana_agentbuilder_tool": "2026-04-25T10:35:47Z",
-    "elasticstack_kibana_agentbuilder_workflow": null,
-    "elasticstack_kibana_export_saved_objects": null,
+    "elasticstack_kibana_agentbuilder_workflow": "2026-04-26T10:36:18Z",
+    "elasticstack_kibana_export_saved_objects": "2026-04-26T10:36:18Z",
     "elasticstack_kibana_security_role": null,
     "elasticstack_kibana_spaces": null
   }
