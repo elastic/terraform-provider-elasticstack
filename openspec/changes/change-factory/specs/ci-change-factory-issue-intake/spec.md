@@ -1,3 +1,11 @@
+# `ci-change-factory-issue-intake` — Issue-labeled OpenSpec proposal factory
+
+Workflow implementation: authored source under `.github/workflows-src/change-factory-issue/`, compiled to `.github/workflows/change-factory-issue.md`.
+
+## Purpose
+
+Define requirements for a GitHub Agentic Workflow that reacts to trusted GitHub issues labeled `change-factory` and creates exactly one linked OpenSpec change proposal pull request, without implementing provider behavior or provisioning the Elastic Stack.
+
 ## ADDED Requirements
 
 ### Requirement: Workflow source is repository-authored and generated
