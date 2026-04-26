@@ -631,6 +631,34 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
   assert.match(prompt, /openspec validate <change-id> --type change/);
   assert.match(prompt, /OPENSPEC_TELEMETRY=0/);
 
+  assert.match(
+    prompt,
+    /assume an \*\*Elastic Stack\*\*, \*\*Fleet\*\*/,
+    'expected Elastic Stack and Fleet prohibitions in agent prompt',
+  );
+  assert.match(
+    prompt,
+    /\*\*Elasticsearch\s+API key\*\* creation flows/,
+    'expected API key prohibition in agent prompt',
+  );
+
+  assert.match(
+    prompt,
+    /\*\*do not\*\* open a pull\s+request/,
+    'expected noop path to forbid opening a PR',
+  );
+  assert.match(
+    prompt,
+    /GitHub comment or Discussion exploration loop/,
+    'expected noop path to forbid comment/Discussion exploration loops',
+  );
+
+  assert.match(
+    prompt,
+    /be the only open `change-factory` pull request for this issue/,
+    'expected PR contract: single open change-factory PR for the issue',
+  );
+
   assert.doesNotMatch(prompt, /\u2026|\u2014|\u2018|\u2019|\u201c|\u201d/, 'prompt must use ASCII punctuation');
 });
 
