@@ -1560,7 +1560,7 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid lens_dashboard_app_config.by_value",
-			"Set at most one of `config_json` or one supported typed Lens chart block inside `by_value` (do not set multiple sources).",
+			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
 		)
 	}
 }
