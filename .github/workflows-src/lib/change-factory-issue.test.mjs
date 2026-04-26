@@ -9,6 +9,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
+  CHANGE_FACTORY_ISSUE_BRANCH_PREFIX,
+  changeFactoryIssueBranchName,
   qualifyTriggerEvent,
   actorTrustWhenSenderMissing,
   checkActorTrust,
@@ -19,6 +21,7 @@ const {
 } = require('./change-factory-issue.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
+const workflowTemplatePath = path.resolve(__dirname, '../change-factory-issue/workflow.md.tmpl');
 const inlineScripts = [
   'qualify_trigger.inline.js',
   'check_actor_trust.inline.js',
@@ -30,7 +33,7 @@ function makePullRequest(overrides = {}) {
   return {
     number: 101,
     state: 'open',
-    head_branch: 'change-factory/issue-42',
+    head_branch: changeFactoryIssueBranchName(42),
     labels: ['change-factory'],
     body: 'Proposes the OpenSpec change.\n\nCloses #42',
     html_url: 'https://github.com/elastic/terraform-provider-elasticstack/pull/101',
@@ -459,6 +462,87 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
   });
 
   assert.match(result.gate_reason, /Duplicate PR check did not complete/);
+});
+
+test('changeFactoryIssueBranchName stays aligned with workflow template prefix', () => {
+  assert.equal(CHANGE_FACTORY_ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
+  assert.equal(changeFactoryIssueBranchName(42), 'change-factory/issue-42');
+
+  const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
+  const branchExpr = `${CHANGE_FACTORY_ISSUE_BRANCH_PREFIX}\${{ github.event.issue.number }}`;
+  assert.ok(
+    workflowTmpl.includes(branchExpr),
+    'workflow.md.tmpl must express branches with CHANGE_FACTORY_ISSUE_BRANCH_PREFIX + ${{ github.event.issue.number }}',
+  );
+});
+
+test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () => {
+  const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
+
+  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[opened, labeled\]/);
+
+  assert.match(
+    workflowTmpl,
+    /issue_title: \$\{\{ steps\.capture_issue_context\.outputs\.issue_title \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /issue_body: \$\{\{ steps\.capture_issue_context\.outputs\.issue_body \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /gate_reason: \$\{\{ steps\.finalize_gate\.outputs\.gate_reason \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /actor_trusted: \$\{\{ steps\.check_actor_trust\.outputs\.actor_trusted \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /actor_trusted_reason: \$\{\{ steps\.check_actor_trust\.outputs\.actor_trusted_reason \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /duplicate_pr_found: \$\{\{ steps\.check_duplicate_pr\.outputs\.duplicate_pr_found \}\}/,
+  );
+  assert.match(
+    workflowTmpl,
+    /duplicate_pr_url: \$\{\{ steps\.check_duplicate_pr\.outputs\.duplicate_pr_url \}\}/,
+  );
+
+  assert.match(
+    workflowTmpl,
+    /if: >-\s*\n\s*needs\.pre_activation\.outputs\.event_eligible == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.actor_trusted == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.duplicate_pr_found != 'true'/,
+  );
+
+  assert.match(
+    workflowTmpl,
+    /create-pull-request:\s*\n\s*labels: \[change-factory\]\s*\n\s*max: 1/,
+  );
+  assert.match(workflowTmpl, /noop:\s*\n\s*max: 1\s*\n\s*report-as-issue: false/);
+
+  const forbiddenFragments = [
+    'docker-fleet',
+    'create-es-api-key',
+    'setup-kibana-fleet',
+    'set-kibana-password',
+    'TF_ACC',
+    'Setup Elastic Stack',
+    'Setup Fleet',
+    'hashicorp/setup-terraform',
+    'actions/setup-go@v',
+  ];
+  for (const fragment of forbiddenFragments) {
+    assert.ok(
+      !workflowTmpl.includes(fragment),
+      `workflow template must not include ${fragment}`,
+    );
+  }
+});
+
+test('check_duplicate_pr.inline.js resolves expected branch via changeFactoryIssueBranchName', () => {
+  const source = readFileSync(path.join(scriptsDir, 'check_duplicate_pr.inline.js'), 'utf8');
+  assert.match(source, /const expectedBranch = changeFactoryIssueBranchName\(issueNumber\);/);
 });
 
 test('change-factory-issue inline scripts include the deterministic helper library', () => {

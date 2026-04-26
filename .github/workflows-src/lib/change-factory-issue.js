@@ -1,4 +1,18 @@
 /**
+ * Prefix for proposal branches (`change-factory/issue-<n>`). Keep in sync with
+ * `.github/workflows-src/change-factory-issue/workflow.md.tmpl` branch expressions.
+ */
+const CHANGE_FACTORY_ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
+
+/**
+ * @param {number} issueNumber
+ * @returns {string}
+ */
+function changeFactoryIssueBranchName(issueNumber) {
+  return `${CHANGE_FACTORY_ISSUE_BRANCH_PREFIX}${issueNumber}`;
+}
+
+/**
  * Qualifies a GitHub issues event for change-factory intake.
  * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] }} params
  * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
@@ -102,7 +116,7 @@ function issueClosingReferencePattern(issueNumber) {
  * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
  */
 function checkDuplicatePR({ issueNumber, pullRequests }) {
-  const expectedBranch = `change-factory/issue-${issueNumber}`;
+  const expectedBranch = changeFactoryIssueBranchName(issueNumber);
   const closingExample = `Closes #${issueNumber}`;
   const closingPattern = issueClosingReferencePattern(issueNumber);
   const duplicate = (pullRequests || []).find(pr => (
@@ -191,6 +205,8 @@ function parseFinalizeGateEnv(env) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
+    CHANGE_FACTORY_ISSUE_BRANCH_PREFIX,
+    changeFactoryIssueBranchName,
     qualifyTriggerEvent,
     actorTrustWhenSenderMissing,
     checkActorTrust,
