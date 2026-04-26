@@ -243,8 +243,9 @@ func Test_lensByValueAdapter_schemaTypedBlocksHaveScratchMapping(t *testing.T) {
 			want++
 		}
 	}
-	require.Equal(t, want, len(cases), "add a cases entry and a lensByValueToScratchVisPanel arm when adding a by_value chart to schema")
+	require.Len(t, cases, want, "add a cases entry and a lensByValueToScratchVisPanel arm when adding a by_value chart to schema")
 	for i := range cases {
+		require.Truef(t, lensByValueModelHasAnyTypedChartBlock(&cases[i]), "case %d should be recognized as a typed by-value source", i)
 		pm, ok := lensByValueToScratchVisPanel(cases[i])
 		require.Truef(t, ok, "case %d should map to a scratch vis panel", i)
 		_, cok := firstLensVizConverterForPanel(pm)
