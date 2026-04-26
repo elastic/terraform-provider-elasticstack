@@ -147,7 +147,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -156,7 +156,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -272,7 +271,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -281,7 +279,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -306,7 +303,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -342,7 +338,6 @@ on:
             factoryLabel: FACTORY_LABEL,
             issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'github-keywords',
-            duplicatePrUrlCoalesceNull: true,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -517,7 +512,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -526,7 +521,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -642,7 +636,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -651,7 +644,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -676,7 +668,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -712,7 +703,6 @@ on:
             factoryLabel: FACTORY_LABEL,
             issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'github-keywords',
-            duplicatePrUrlCoalesceNull: true,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -896,7 +886,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -905,7 +895,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -1021,7 +1010,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1030,7 +1018,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -1055,7 +1042,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -1091,7 +1077,6 @@ on:
             factoryLabel: FACTORY_LABEL,
             issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'github-keywords',
-            duplicatePrUrlCoalesceNull: true,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -1283,7 +1268,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -1292,7 +1277,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -1408,7 +1392,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1417,7 +1400,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -1442,7 +1424,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -1478,7 +1459,6 @@ on:
             factoryLabel: FACTORY_LABEL,
             issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'github-keywords',
-            duplicatePrUrlCoalesceNull: true,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;

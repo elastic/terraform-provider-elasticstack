@@ -1,15 +1,30 @@
 'use strict';
 
-const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+const { createFactoryIssueIntake, factoryActorTrustWhenSenderMissing, factoryParseOptionalTriStateFromEnv, factoryParseFinalizeGateEnv } = require('./factory-issue-shared.js');
+const {
+  ISSUE_BRANCH_PREFIX,
+  FACTORY_LABEL,
+  ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+} = require('../code-factory-issue/intake-constants.js');
 
 const intake = createFactoryIssueIntake({
-  branchPrefix: 'code-factory/issue-',
-  factoryLabel: 'code-factory',
-  issueOpenedNotEligibleReason:
-    'Issue opened event does not qualify because the issue was created without the code-factory label.',
+  branchPrefix: ISSUE_BRANCH_PREFIX,
+  factoryLabel: FACTORY_LABEL,
+  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
   duplicateLinkageMode: 'closes-literal',
-  duplicatePrUrlCoalesceNull: false,
 });
+
+function actorTrustWhenSenderMissing() {
+  return factoryActorTrustWhenSenderMissing();
+}
+
+function parseOptionalTriStateFromEnv(raw) {
+  return factoryParseOptionalTriStateFromEnv(raw);
+}
+
+function parseFinalizeGateEnv(env) {
+  return factoryParseFinalizeGateEnv(env);
+}
 
 module.exports = {
   qualifyTriggerEvent: intake.qualifyTriggerEvent,
@@ -17,4 +32,7 @@ module.exports = {
   checkDuplicatePR: intake.checkDuplicatePR,
   computeGateReason: intake.computeGateReason,
   issueBranchName: intake.issueBranchName,
+  actorTrustWhenSenderMissing,
+  parseOptionalTriStateFromEnv,
+  parseFinalizeGateEnv,
 };

@@ -20,6 +20,25 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           /**
+           * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
+          const FACTORY_LABEL = 'code-factory';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the code-factory label.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
            * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
            * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
            */
@@ -127,7 +146,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -136,7 +155,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -252,7 +270,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -261,7 +278,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -286,7 +302,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -318,12 +333,10 @@ on:
           }
           
           const intake = createFactoryIssueIntake({
-            branchPrefix: 'code-factory/issue-',
-            factoryLabel: 'code-factory',
-            issueOpenedNotEligibleReason:
-              'Issue opened event does not qualify because the issue was created without the code-factory label.',
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'closes-literal',
-            duplicatePrUrlCoalesceNull: false,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -331,6 +344,14 @@ on:
           const checkDuplicatePR = intake.checkDuplicatePR;
           const computeGateReason = intake.computeGateReason;
           const issueBranchName = intake.issueBranchName;
+          
+          function actorTrustWhenSenderMissing() {
+            return factoryActorTrustWhenSenderMissing();
+          }
+          
+          function parseFinalizeGateEnv(env) {
+            return factoryParseFinalizeGateEnv(env);
+          }
           
           const eventName = context.eventName;
           const eventAction = context.payload.action;
@@ -363,6 +384,25 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           /**
+           * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
+          const FACTORY_LABEL = 'code-factory';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the code-factory label.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
            * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
            * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
            */
@@ -470,7 +510,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -479,7 +519,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -595,7 +634,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -604,7 +642,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -629,7 +666,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -661,12 +697,10 @@ on:
           }
           
           const intake = createFactoryIssueIntake({
-            branchPrefix: 'code-factory/issue-',
-            factoryLabel: 'code-factory',
-            issueOpenedNotEligibleReason:
-              'Issue opened event does not qualify because the issue was created without the code-factory label.',
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'closes-literal',
-            duplicatePrUrlCoalesceNull: false,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -675,12 +709,21 @@ on:
           const computeGateReason = intake.computeGateReason;
           const issueBranchName = intake.issueBranchName;
           
+          function actorTrustWhenSenderMissing() {
+            return factoryActorTrustWhenSenderMissing();
+          }
+          
+          function parseFinalizeGateEnv(env) {
+            return factoryParseFinalizeGateEnv(env);
+          }
+          
           const { owner, repo } = context.repo;
           const sender = context.payload.sender?.login ?? '';
           
           if (!sender) {
+            const missing = actorTrustWhenSenderMissing();
             core.setOutput('actor_trusted', 'false');
-            core.setOutput('actor_trusted_reason', 'Trigger actor could not be identified; sender login is missing from the event payload.');
+            core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);
             core.info('Actor not trusted: sender login is missing from the event payload.');
           } else {
             let permission = null;
@@ -715,6 +758,25 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           /**
+           * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
+          const FACTORY_LABEL = 'code-factory';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the code-factory label.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
            * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
            * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
            */
@@ -822,7 +884,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -831,7 +893,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -947,7 +1008,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -956,7 +1016,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -981,7 +1040,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -1013,12 +1071,10 @@ on:
           }
           
           const intake = createFactoryIssueIntake({
-            branchPrefix: 'code-factory/issue-',
-            factoryLabel: 'code-factory',
-            issueOpenedNotEligibleReason:
-              'Issue opened event does not qualify because the issue was created without the code-factory label.',
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'closes-literal',
-            duplicatePrUrlCoalesceNull: false,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -1026,6 +1082,14 @@ on:
           const checkDuplicatePR = intake.checkDuplicatePR;
           const computeGateReason = intake.computeGateReason;
           const issueBranchName = intake.issueBranchName;
+          
+          function actorTrustWhenSenderMissing() {
+            return factoryActorTrustWhenSenderMissing();
+          }
+          
+          function parseFinalizeGateEnv(env) {
+            return factoryParseFinalizeGateEnv(env);
+          }
           
           const { owner, repo } = context.repo;
           const issueNumber = context.payload.issue?.number;
@@ -1076,6 +1140,25 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           /**
+           * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
+          const FACTORY_LABEL = 'code-factory';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the code-factory label.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
            * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
            * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
            */
@@ -1183,7 +1266,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -1192,7 +1275,6 @@ on:
             branchPrefix,
             prLabel,
             duplicateLinkageMode,
-            duplicatePrUrlCoalesceNull,
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
@@ -1308,7 +1390,6 @@ on:
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
            *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
-           *   duplicatePrUrlCoalesceNull: boolean,
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1317,7 +1398,6 @@ on:
               factoryLabel,
               issueOpenedNotEligibleReason,
               duplicateLinkageMode,
-              duplicatePrUrlCoalesceNull,
             } = config;
           
             function issueBranchName(issueNumber) {
@@ -1342,7 +1422,6 @@ on:
                 branchPrefix,
                 prLabel: factoryLabel,
                 duplicateLinkageMode,
-                duplicatePrUrlCoalesceNull,
               });
             }
           
@@ -1374,12 +1453,10 @@ on:
           }
           
           const intake = createFactoryIssueIntake({
-            branchPrefix: 'code-factory/issue-',
-            factoryLabel: 'code-factory',
-            issueOpenedNotEligibleReason:
-              'Issue opened event does not qualify because the issue was created without the code-factory label.',
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
             duplicateLinkageMode: 'closes-literal',
-            duplicatePrUrlCoalesceNull: false,
           });
           
           const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -1388,23 +1465,15 @@ on:
           const computeGateReason = intake.computeGateReason;
           const issueBranchName = intake.issueBranchName;
           
-          const eventEligible = process.env.EVENT_ELIGIBLE === 'true';
-          const eventEligibleReason = process.env.EVENT_ELIGIBLE_REASON ?? '';
-          const actorTrustedRaw = process.env.ACTOR_TRUSTED;
-          const actorTrustedReason = process.env.ACTOR_TRUSTED_REASON ?? null;
-          const duplicatePrFoundRaw = process.env.DUPLICATE_PR_FOUND;
-          const duplicatePrUrl = process.env.DUPLICATE_PR_URL || null;
-          const noDuplicateReason = process.env.DUPLICATE_GATE_REASON ?? null;
+          function actorTrustWhenSenderMissing() {
+            return factoryActorTrustWhenSenderMissing();
+          }
           
-          const result = computeGateReason({
-            eventEligible,
-            eventEligibleReason,
-            actorTrusted: actorTrustedRaw != null && actorTrustedRaw !== '' ? actorTrustedRaw === 'true' : null,
-            actorTrustedReason,
-            duplicatePrFound: duplicatePrFoundRaw != null && duplicatePrFoundRaw !== '' ? duplicatePrFoundRaw === 'true' : null,
-            duplicatePrUrl,
-            noDuplicateReason,
-          });
+          function parseFinalizeGateEnv(env) {
+            return factoryParseFinalizeGateEnv(env);
+          }
+          
+          const result = computeGateReason(parseFinalizeGateEnv(process.env));
           
           core.setOutput('gate_reason', result.gate_reason);
           core.info(`Gate reason: ${result.gate_reason}`);

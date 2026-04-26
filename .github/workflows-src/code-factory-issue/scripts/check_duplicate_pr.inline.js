@@ -1,3 +1,4 @@
+//include: ../intake-constants.js
 //include: ../../lib/factory-issue-shared.js
 //include: ../../lib/code-factory-issue.gh.js
 

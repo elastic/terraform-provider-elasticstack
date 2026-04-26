@@ -12,7 +12,6 @@ const intake = createFactoryIssueIntake({
   factoryLabel: FACTORY_LABEL,
   issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
   duplicateLinkageMode: 'github-keywords',
-  duplicatePrUrlCoalesceNull: true,
 });
 
 function changeFactoryIssueBranchName(issueNumber) {

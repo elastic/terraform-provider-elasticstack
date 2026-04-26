@@ -1,10 +1,8 @@
 const intake = createFactoryIssueIntake({
-  branchPrefix: 'code-factory/issue-',
-  factoryLabel: 'code-factory',
-  issueOpenedNotEligibleReason:
-    'Issue opened event does not qualify because the issue was created without the code-factory label.',
+  branchPrefix: ISSUE_BRANCH_PREFIX,
+  factoryLabel: FACTORY_LABEL,
+  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
   duplicateLinkageMode: 'closes-literal',
-  duplicatePrUrlCoalesceNull: false,
 });
 
 const qualifyTriggerEvent = intake.qualifyTriggerEvent;
@@ -12,3 +10,11 @@ const checkActorTrust = intake.checkActorTrust;
 const checkDuplicatePR = intake.checkDuplicatePR;
 const computeGateReason = intake.computeGateReason;
 const issueBranchName = intake.issueBranchName;
+
+function actorTrustWhenSenderMissing() {
+  return factoryActorTrustWhenSenderMissing();
+}
+
+function parseFinalizeGateEnv(env) {
+  return factoryParseFinalizeGateEnv(env);
+}

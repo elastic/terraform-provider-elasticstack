@@ -14,18 +14,23 @@ const {
   checkDuplicatePR,
   computeGateReason,
   issueBranchName,
+  actorTrustWhenSenderMissing,
+  parseOptionalTriStateFromEnv,
+  parseFinalizeGateEnv,
 } = require('./code-factory-issue.js');
+const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL } = require('../code-factory-issue/intake-constants.js');
 
 const workflowPath = path.resolve(__dirname, '../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../workflows/code-factory-issue.lock.yml');
 const codeFactoryScriptsDir = path.resolve(__dirname, '../code-factory-issue/scripts');
+const codeFactoryWorkflowTmplPath = path.resolve(__dirname, '../code-factory-issue/workflow.md.tmpl');
 
 function makePullRequest(overrides = {}) {
   return {
     number: 101,
     state: 'open',
-    head_branch: 'code-factory/issue-42',
-    labels: ['code-factory'],
+    head_branch: `${ISSUE_BRANCH_PREFIX}42`,
+    labels: [FACTORY_LABEL],
     body: 'Implements the requested change.\n\nCloses #42',
     html_url: 'https://github.com/elastic/terraform-provider-elasticstack/pull/101',
     ...overrides,
@@ -158,6 +163,35 @@ test('checkActorTrust rejects human senders with null permission', () => {
 
   assert.equal(result.actor_trusted, false);
   assert.match(result.actor_trusted_reason, /permission '\(none\)'/);
+});
+
+test('actorTrustWhenSenderMissing matches shared helper', () => {
+  const { factoryActorTrustWhenSenderMissing } = require('./factory-issue-shared.js');
+  assert.deepEqual(actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
+});
+
+test('code-factory parseFinalizeGateEnv and tri-state parser match shared implementation', () => {
+  const {
+    factoryParseFinalizeGateEnv,
+    factoryParseOptionalTriStateFromEnv,
+  } = require('./factory-issue-shared.js');
+  assert.deepEqual(parseFinalizeGateEnv({}), factoryParseFinalizeGateEnv({}));
+  assert.equal(parseOptionalTriStateFromEnv('true'), factoryParseOptionalTriStateFromEnv('true'));
+});
+
+test('parseFinalizeGateEnv feeds computeGateReason for an all-pass path', () => {
+  const parsed = parseFinalizeGateEnv({
+    EVENT_ELIGIBLE: 'true',
+    EVENT_ELIGIBLE_REASON: 'eligible',
+    ACTOR_TRUSTED: 'true',
+    ACTOR_TRUSTED_REASON: 'trusted',
+    DUPLICATE_PR_FOUND: 'false',
+    DUPLICATE_PR_URL: 'https://example.com/pr/1',
+    DUPLICATE_GATE_REASON: null,
+  });
+  const result = computeGateReason(parsed);
+
+  assert.match(result.gate_reason, /All deterministic gates passed/);
 });
 
 test('checkDuplicatePR reports no duplicate when there are no open PRs', () => {
@@ -369,21 +403,36 @@ test('issueBranchName matches deterministic branch naming', () => {
 
 test('code-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
   const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+  const {
+    ISSUE_BRANCH_PREFIX: prefix,
+    FACTORY_LABEL: label,
+    ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
+  } = require('../code-factory-issue/intake-constants.js');
   const bound = createFactoryIssueIntake({
-    branchPrefix: 'code-factory/issue-',
-    factoryLabel: 'code-factory',
-    issueOpenedNotEligibleReason:
-      'Issue opened event does not qualify because the issue was created without the code-factory label.',
+    branchPrefix: prefix,
+    factoryLabel: label,
+    issueOpenedNotEligibleReason: openedReason,
     duplicateLinkageMode: 'closes-literal',
-    duplicatePrUrlCoalesceNull: false,
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
 });
 
-test('code-factory-issue inline scripts bundle shared helpers before workflow bindings', () => {
-  const expectedHeader =
-    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n\/\/include: \.\.\/\.\.\/lib\/code-factory-issue\.gh\.js\n/;
+test('code-factory intake constants stay aligned with workflow template branch prefix', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  const branchExpr = `${ISSUE_BRANCH_PREFIX}\${{ github.event.issue.number }}`;
+  assert.ok(
+    workflowTmpl.includes(branchExpr),
+    'workflow.md.tmpl must express branches with ISSUE_BRANCH_PREFIX + ${{ github.event.issue.number }}',
+  );
+});
+
+test('code-factory-issue inline scripts include intake constants before shared helpers', () => {
+  const expectedHeader = [
+    /^\/\/include: \.\.\/intake-constants\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/code-factory-issue\.gh\.js\n/,
+  ];
   for (const name of [
     'qualify_trigger.inline.js',
     'check_actor_trust.inline.js',
@@ -391,6 +440,22 @@ test('code-factory-issue inline scripts bundle shared helpers before workflow bi
     'finalize_gate.inline.js',
   ]) {
     const source = readFileSync(path.join(codeFactoryScriptsDir, name), 'utf8');
-    assert.match(source, expectedHeader);
+    let offset = 0;
+    for (const pat of expectedHeader) {
+      const slice = source.slice(offset);
+      const m = pat.exec(slice);
+      assert.ok(m, `expected include line matching ${pat} in ${name} at offset ${offset}`);
+      offset += m.index + m[0].length;
+    }
   }
+});
+
+test('code-factory-issue finalize_gate.inline.js uses shared parseFinalizeGateEnv path', () => {
+  const source = readFileSync(path.join(codeFactoryScriptsDir, 'finalize_gate.inline.js'), 'utf8');
+  assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
+});
+
+test('code-factory-issue check_actor_trust.inline.js uses actorTrustWhenSenderMissing', () => {
+  const source = readFileSync(path.join(codeFactoryScriptsDir, 'check_actor_trust.inline.js'), 'utf8');
+  assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });

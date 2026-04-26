@@ -106,7 +106,7 @@ function factoryActorTrustWhenSenderMissing() {
 }
 
 /**
- * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords', duplicatePrUrlCoalesceNull: boolean }} params
+ * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
  * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
  */
 function factoryCheckDuplicatePR({
@@ -115,7 +115,6 @@ function factoryCheckDuplicatePR({
   branchPrefix,
   prLabel,
   duplicateLinkageMode,
-  duplicatePrUrlCoalesceNull,
 }) {
   const expectedBranch = `${branchPrefix}${issueNumber}`;
   const expectedClosesExample = `Closes #${issueNumber}`;
@@ -231,7 +230,6 @@ function factoryParseFinalizeGateEnv(env) {
  *   factoryLabel: string,
  *   issueOpenedNotEligibleReason: string,
  *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
- *   duplicatePrUrlCoalesceNull: boolean,
  * }} config
  */
 function createFactoryIssueIntake(config) {
@@ -240,7 +238,6 @@ function createFactoryIssueIntake(config) {
     factoryLabel,
     issueOpenedNotEligibleReason,
     duplicateLinkageMode,
-    duplicatePrUrlCoalesceNull,
   } = config;
 
   function issueBranchName(issueNumber) {
@@ -265,7 +262,6 @@ function createFactoryIssueIntake(config) {
       branchPrefix,
       prLabel: factoryLabel,
       duplicateLinkageMode,
-      duplicatePrUrlCoalesceNull,
     });
   }
 

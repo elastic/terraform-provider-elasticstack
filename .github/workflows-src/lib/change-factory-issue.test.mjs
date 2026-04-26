@@ -55,7 +55,6 @@ test('change-factory-issue exports align with shared createFactoryIssueIntake bi
     factoryLabel: label,
     issueOpenedNotEligibleReason: openedReason,
     duplicateLinkageMode: 'github-keywords',
-    duplicatePrUrlCoalesceNull: true,
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
@@ -735,51 +734,25 @@ test('change-factory-issue inline scripts include shared intake helpers in depen
   }
 });
 
-test('parseOptionalTriStateFromEnv treats missing and empty as null', () => {
-  assert.equal(parseOptionalTriStateFromEnv(undefined), null);
-  assert.equal(parseOptionalTriStateFromEnv(''), null);
+test('change-factory-issue finalize_gate.inline.js uses shared parseFinalizeGateEnv path', () => {
+  const source = readFileSync(path.join(scriptsDir, 'finalize_gate.inline.js'), 'utf8');
+  assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
 });
 
-test('parseOptionalTriStateFromEnv parses true only for exact true string', () => {
-  assert.equal(parseOptionalTriStateFromEnv('true'), true);
-  assert.equal(parseOptionalTriStateFromEnv('false'), false);
-  assert.equal(parseOptionalTriStateFromEnv('TRUE'), false);
+test('change-factory-issue check_actor_trust.inline.js uses actorTrustWhenSenderMissing', () => {
+  const source = readFileSync(path.join(scriptsDir, 'check_actor_trust.inline.js'), 'utf8');
+  assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });
 
-test('parseFinalizeGateEnv matches finalize_gate env semantics', () => {
-  assert.deepEqual(
-    parseFinalizeGateEnv({}),
-    {
-      eventEligible: false,
-      eventEligibleReason: '',
-      actorTrusted: null,
-      actorTrustedReason: null,
-      duplicatePrFound: null,
-      duplicatePrUrl: null,
-      noDuplicateReason: null,
-    },
-  );
-
-  assert.deepEqual(
-    parseFinalizeGateEnv({
-      EVENT_ELIGIBLE: 'true',
-      EVENT_ELIGIBLE_REASON: 'ok',
-      ACTOR_TRUSTED: 'true',
-      ACTOR_TRUSTED_REASON: '',
-      DUPLICATE_PR_FOUND: 'false',
-      DUPLICATE_PR_URL: '',
-      DUPLICATE_GATE_REASON: 'x',
-    }),
-    {
-      eventEligible: true,
-      eventEligibleReason: 'ok',
-      actorTrusted: true,
-      actorTrustedReason: '',
-      duplicatePrFound: false,
-      duplicatePrUrl: null,
-      noDuplicateReason: 'x',
-    },
-  );
+test('change-factory-issue finalize helpers match shared implementation', () => {
+  const {
+    factoryParseFinalizeGateEnv,
+    factoryParseOptionalTriStateFromEnv,
+    factoryActorTrustWhenSenderMissing,
+  } = require('./factory-issue-shared.js');
+  assert.deepEqual(parseFinalizeGateEnv({}), factoryParseFinalizeGateEnv({}));
+  assert.equal(parseOptionalTriStateFromEnv('true'), factoryParseOptionalTriStateFromEnv('true'));
+  assert.deepEqual(actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
 });
 
 test('parseFinalizeGateEnv feeds computeGateReason for an all-pass path', () => {
