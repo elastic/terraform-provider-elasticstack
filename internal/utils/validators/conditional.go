@@ -164,6 +164,10 @@ func (v Condition) ValidateInt64(ctx context.Context, request validator.Int64Req
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
+func (v Condition) ValidateFloat64(ctx context.Context, request validator.Float64Request, response *validator.Float64Response) {
+	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
+}
+
 func (v Condition) ValidateBool(ctx context.Context, request validator.BoolRequest, response *validator.BoolResponse) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
