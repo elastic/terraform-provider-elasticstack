@@ -169,3 +169,64 @@ func TestKqlObjectFormExclusiveWithString_siblings(t *testing.T) {
 		require.True(t, resp.Diagnostics.HasError())
 	})
 }
+
+// goodSiblingsTestSchema matches good + good_kql layout under a single parent object.
+func goodSiblingsTestSchema() schema.Schema {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"good": schema.StringAttribute{Optional: true},
+			"good_kql": schema.SingleNestedAttribute{
+				Optional: true,
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"kql_query": schema.StringAttribute{Optional: true, Computed: true},
+					"filters": schema.ListNestedAttribute{
+						Optional: true,
+						Computed: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"query": schema.StringAttribute{Optional: true, Computed: true, CustomType: jsontypes.NormalizedType{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func testConfigGoodAndGoodKql(t *testing.T, goodVal tftypes.Value, kqlObj types.Object) tfsdk.Config {
+	t.Helper()
+	ktf, err := kqlObj.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+	sch := goodSiblingsTestSchema()
+	raw := tftypes.NewValue(
+		tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"good":     tftypes.String,
+			"good_kql": ktf.Type(),
+		}},
+		map[string]tftypes.Value{
+			"good":     goodVal,
+			"good_kql": ktf,
+		},
+	)
+	return tfsdk.Config{Raw: raw, Schema: sch}
+}
+
+func TestKqlLegacyStringExclusiveWithObject_goodPair(t *testing.T) {
+	t.Parallel()
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql", treatEmptyStringAsUnset: true}
+	kq := testKqlObject(t)
+
+	t.Run("conflict when string good and good_kql both set", func(t *testing.T) {
+		t.Parallel()
+		cfg := testConfigGoodAndGoodKql(t, tftypes.NewValue(tftypes.String, "status:ok"), kq)
+		var resp validator.StringResponse
+		v.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root("good"),
+			ConfigValue: types.StringValue("status:ok"),
+			Config:      cfg,
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
+}

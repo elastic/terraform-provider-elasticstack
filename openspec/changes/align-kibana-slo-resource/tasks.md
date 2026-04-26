@@ -18,7 +18,7 @@
 
 ## 3. Verification and documentation
 
-- [ ] 3.1 Add or update unit tests for KQL union conversion, settings mapping, artifact mapping, enabled handling, and tightened validation
-- [ ] 3.2 Add or update acceptance tests covering `_kql` inputs, `enabled` behavior, `sync_field`, and validation failures for invalid SLO configurations
-- [ ] 3.3 Regenerate `docs/resources/kibana_slo.md` and confirm the new `_kql`, `sync_field`, `artifacts`, and `enabled` fields are documented clearly
-- [ ] 3.4 Run the relevant build and test commands for the touched SLO code paths and resolve any regressions
+- [x] 3.1 Add or update unit tests for KQL union conversion, settings mapping, artifact mapping, enabled handling, and tightened validation
+- [x] 3.2 Add or update acceptance tests covering `_kql` inputs, `enabled` behavior, `sync_field`, and validation failures for invalid SLO configurations
+- [x] 3.3 Regenerate `docs/resources/kibana_slo.md` and confirm the new `_kql`, `sync_field`, `artifacts`, and `enabled` fields are documented clearly
+- [x] 3.4 Run the relevant build and test commands for the touched SLO code paths and resolve any regressions

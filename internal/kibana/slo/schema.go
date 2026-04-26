@@ -470,9 +470,13 @@ func kqlCustomIndicatorSchema() schema.Block {
 // kqlWithFiltersObjectSchema defines the object-form KQL union (kqlQuery + filters) used for filter, good, and total.
 func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUnset bool) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		Description: "Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field.",
-		Optional:    true,
-		Computed:    true,
+		Description: fmt.Sprintf(
+			"Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. "+
+				"Use the attribute form in Terraform (e.g. `%[1]s = { kql_query = \"...\" }`), not a nested `%[1]s { ... }` block.",
+			parallelStringAttr+"_kql",
+		),
+		Optional: true,
+		Computed: true,
 		// ObjectNull default keeps a stable placeholder for the nested _kql block; a read
 		// may still set object-form KQL from the API.
 		Default: objectdefault.StaticValue(

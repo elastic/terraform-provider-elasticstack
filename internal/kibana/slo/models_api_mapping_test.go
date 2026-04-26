@@ -189,3 +189,80 @@ func stringOrEmpty(s string) types.String {
 	}
 	return types.StringValue(s)
 }
+
+func TestTfSettings_toAPIModel(t *testing.T) {
+	t.Run("includes sync_field when set", func(t *testing.T) {
+		s := tfSettings{
+			SyncDelay:              types.StringValue("1m"),
+			Frequency:              types.StringNull(),
+			SyncField:              types.StringValue("@timestamp"),
+			PreventInitialBackfill: types.BoolNull(),
+		}
+		api := s.toAPIModel()
+		require.NotNil(t, api)
+		require.NotNil(t, api.SyncField)
+		assert.Equal(t, "@timestamp", *api.SyncField)
+	})
+	t.Run("returns nil when no known settings attributes", func(t *testing.T) {
+		s := tfSettings{
+			SyncDelay:              types.StringNull(),
+			Frequency:              types.StringNull(),
+			SyncField:              types.StringNull(),
+			PreventInitialBackfill: types.BoolNull(),
+		}
+		assert.Nil(t, s.toAPIModel())
+	})
+}
+
+func TestTfModel_toAPIModel_kqlWithSettingsAndArtifacts(t *testing.T) {
+	art := mustArtifactObject(t, "dash-acc-test")
+	m := tfModel{
+		Name:         types.StringValue("n"),
+		Description:  types.StringValue("d"),
+		SpaceID:      types.StringValue("default"),
+		BudgetMethod: types.StringValue("timeslices"),
+		TimeWindow: []tfTimeWindow{{
+			Duration: types.StringValue("7d"),
+			Type:     types.StringValue("rolling"),
+		}},
+		Objective: []tfObjective{{
+			Target:          types.Float64Value(0.95),
+			TimesliceTarget: types.Float64Value(0.95),
+			TimesliceWindow: types.StringValue("5m"),
+		}},
+		Settings:  mustSettingsObject(t, "2m", "1m", "event.ingested", nil),
+		Artifacts: art,
+		KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs"),
+			FilterKql:      types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			Filter:         types.StringValue("a:b"),
+			Good:           types.StringValue("c:d"),
+			GoodKql:        types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			Total:          types.StringValue("*"),
+			TotalKql:       types.ObjectNull(tfKqlKqlObjectAttrTypes),
+			TimestampField: types.StringValue("@timestamp"),
+		}},
+	}
+	api, di := m.toAPIModel()
+	require.False(t, di.HasError())
+	require.NotNil(t, api.Settings)
+	require.NotNil(t, api.Settings.SyncField)
+	assert.Equal(t, "event.ingested", *api.Settings.SyncField)
+	require.NotNil(t, api.Artifacts)
+	require.NotNil(t, api.Artifacts.Dashboards)
+	require.Len(t, *api.Artifacts.Dashboards, 1)
+	assert.Equal(t, "dash-acc-test", (*api.Artifacts.Dashboards)[0].Id)
+}
+
+func mustArtifactObject(t *testing.T, dashboardID string) types.Object {
+	t.Helper()
+	row, odi := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+		"id": types.StringValue(dashboardID),
+	})
+	require.False(t, odi.HasError())
+	lv, ldi := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{row})
+	require.False(t, ldi.HasError())
+	art, d := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{"dashboards": lv})
+	require.False(t, d.HasError())
+	return art
+}

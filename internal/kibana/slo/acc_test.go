@@ -625,6 +625,75 @@ func TestAccResourceSloValidation(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(regexp.QuoteMeta(`Attribute slo_id must contain only letters, numbers, hyphens, and`) + "\\s+" + regexp.QuoteMeta(`underscores, got: invalid@id$`)),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kql_good_and_good_kql"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("kql-dup"),
+				},
+				// Fires on either the string or object arm of the KQL exclusive pair.
+				ExpectError: regexp.MustCompile(`(?s)Invalid Configuration.*Cannot set both.*good`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("time_window_invalid_type"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("tw-invalid"),
+				},
+				ExpectError: regexp.MustCompile(`not_a_valid_type`),
+			},
+		},
+	})
+}
+
+// TestAccResourceSlo_kql_object_form_and_settings_enabled exercises:
+//   - plan-only: object-form filter_kql / good_kql and settings.sync_field parse (no Kibana create);
+//   - apply: string-form KQL with sync_field and toggling `enabled` (create path compatible with typical stacks).
+func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kql_object_form_planonly"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(sloName),
+					"enabled": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.filter", "service.name: test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(sloName),
+					"enabled": config.BoolVariable(true),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field", "@timestamp"),
+				),
+			},
 		},
 	})
 }
