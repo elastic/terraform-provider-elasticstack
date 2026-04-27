@@ -595,18 +595,15 @@ func flattenTemplateData(template *models.Template, preservedAliasRouting map[st
 		tmpl["lifecycle"] = lifecycle
 	}
 
-	if template.DataStreamOptions != nil {
-		dso := make(map[string]any)
-		if template.DataStreamOptions.FailureStore != nil {
-			fs := make(map[string]any)
-			fs["enabled"] = template.DataStreamOptions.FailureStore.Enabled
-			if template.DataStreamOptions.FailureStore.Lifecycle != nil {
-				lc := make(map[string]any)
-				lc["data_retention"] = template.DataStreamOptions.FailureStore.Lifecycle.DataRetention
-				fs["lifecycle"] = []any{lc}
-			}
-			dso["failure_store"] = []any{fs}
+	if template.DataStreamOptions != nil && template.DataStreamOptions.FailureStore != nil {
+		fs := make(map[string]any)
+		fs["enabled"] = template.DataStreamOptions.FailureStore.Enabled
+		if template.DataStreamOptions.FailureStore.Lifecycle != nil {
+			lc := make(map[string]any)
+			lc["data_retention"] = template.DataStreamOptions.FailureStore.Lifecycle.DataRetention
+			fs["lifecycle"] = []any{lc}
 		}
+		dso := map[string]any{"failure_store": []any{fs}}
 		tmpl["data_stream_options"] = []any{dso}
 	}
 
