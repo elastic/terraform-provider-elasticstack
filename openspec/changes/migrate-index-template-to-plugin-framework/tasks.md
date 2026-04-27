@@ -77,10 +77,10 @@
 
 ## 12. Verification
 
-- [ ] 12.1 `make build`.
-- [ ] 12.2 `go test ./internal/elasticsearch/index/template/... -v`.
-- [ ] 12.3 `go test ./internal/utils/customtypes/... -v`.
-- [ ] 12.4 Acceptance tests: `go test ./internal/elasticsearch/index/template/... -v -count=1 -run TestAcc` against a live stack (see `dev-docs/high-level/testing.md`).
-- [ ] 12.5 Regression: `go test ./internal/elasticsearch/index/templateilmattachment/... -v -count=1 -run TestAcc` to exercise the downstream resource that references index templates.
-- [ ] 12.6 `make check-openspec`.
-- [ ] 12.7 Regenerate documentation if affected (`make docs-generate`); confirm the new resource and data source pages render correctly.
+- [x] 12.1 `make build`.
+- [x] 12.2 `go test ./internal/elasticsearch/index/template/... -v`.
+- [x] 12.3 `go test ./internal/utils/customtypes/... -v`.
+- [x] 12.4 Acceptance tests: `go test ./internal/elasticsearch/index/template/... -v -count=1 -run TestAcc` against a live stack (see `dev-docs/high-level/testing.md`).
+- [x] 12.5 Regression: `go test ./internal/elasticsearch/index/templateilmattachment/... -v -count=1 -run TestAcc` to exercise the downstream resource that references index templates.
+- [x] 12.6 `make check-openspec`.
+- [x] 12.7 Regenerate documentation if affected (`make docs-generate`); confirm the new resource and data source pages render correctly.
