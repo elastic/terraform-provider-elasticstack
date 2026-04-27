@@ -33,7 +33,7 @@ import (
 var sdkIndexTemplateFromSDKStep1Compat string
 
 // TestAccResourceIndexTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
-// (REQ-042). Step 1 uses registry provider 0.14.3; step 2 uses the in-tree Plugin Framework
+// (REQ-042). Step 1 uses registry provider 0.14.5; step 2 uses the in-tree Plugin Framework
 // implementation and asserts a no-op plan after state migration.
 //
 // The external pin does not implement template.data_stream_options (that block exists only on the
@@ -51,12 +51,12 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 			{
 				// template.lifecycle (data stream lifecycle) requires Elasticsearch >= 8.11.
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				// 0.14.3 is the last registry release where this resource was still on Plugin SDK v2
-				// (same pin as TestAccResourceILMFromSDK). The in-tree provider is Plugin Framework.
+				// 0.14.5 is the latest registry release at the time of this pin; the resource was still
+				// on Plugin SDK v2 through that line. The in-tree provider is Plugin Framework.
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.14.3",
+						VersionConstraint: "0.14.5",
 					},
 				},
 				Config: sdkIndexTemplateFromSDKStep1Compat,
