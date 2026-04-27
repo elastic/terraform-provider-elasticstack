@@ -16,7 +16,7 @@
 
 ## 3. Acceptance tests
 
-- [ ] 3.1 In `internal/fleet/integration_policy/acc_test.go`, add a test
+- [x] 3.1 In `internal/fleet/integration_policy/acc_test.go`, add a test
   `TestAccResourceIntegrationPolicy_importFromSpace` that:
   - Creates an integration policy in a named Kibana space.
   - Removes the resource from Terraform state (`ImportStateVerifyIgnore` or a destroy step
@@ -25,7 +25,7 @@
   - Runs `terraform import` with the composite ID `<space_id>/<policy_id>`.
   - Asserts that after the subsequent read, `policy_id` matches the original and `space_ids`
     contains the named space.
-- [ ] 3.2 Confirm that the existing `TestAccResourceIntegrationPolicy_*` import test (if
+- [x] 3.2 Confirm that the existing `TestAccResourceIntegrationPolicy_*` import test (if
   present) continues to pass against a plain policy ID without `space_ids` set.
 
 ## 4. Verification
