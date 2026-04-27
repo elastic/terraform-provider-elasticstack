@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -33,24 +33,21 @@ import (
 var sdkIndexTemplateFromSDKStep1Compat string
 
 // TestAccResourceIndexTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
-// (REQ-042). Step 1 uses registry provider 0.14.5; step 2 uses the in-tree Plugin Framework
-// implementation and asserts a no-op plan after state migration.
-//
-// The external pin does not implement template.data_stream_options (that block exists only on the
-// Plugin Framework schema), so step 1 cannot use a configuration containing data_stream_options.
-// template.data_stream_options lifecycle is covered by TestAccResourceIndexTemplateDataStreamOptions.
+// (REQ-042). Step 1 uses registry provider 0.14.5 without template.data_stream_options (not in the
+// SDK schema); step 2 applies the Plugin Framework configuration that adds data_stream_options; step 3
+// asserts a no-op plan. Requires Elasticsearch >= 9.1.0 for data_stream_options.
 func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 	acctest.PreCheck(t)
 
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	skipBelowDSO := versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				// template.lifecycle (data stream lifecycle) requires Elasticsearch >= 8.11.
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				SkipFunc: skipBelowDSO,
 				// 0.14.5 is the latest registry release at the time of this pin; the resource was still
 				// on Plugin SDK v2 through that line. The in-tree provider is Plugin Framework.
 				ExternalProviders: map[string]resource.ExternalProvider{
@@ -89,14 +86,12 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				SkipFunc:                 skipBelowDSO,
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf_no_dso"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "priority", "100"),
@@ -116,7 +111,19 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 						},
 					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.lifecycle.data_retention", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.data_stream_options.failure_store.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.data_stream_options.failure_store.lifecycle.data_retention", "30d"),
 				),
+			},
+			{
+				SkipFunc:                 skipBelowDSO,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
