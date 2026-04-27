@@ -35,30 +35,14 @@ import (
 	semver "github.com/Masterminds/semver/v3"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// buildSpaceAwarePath constructs an API path with space awareness.
-// If spaceID is empty or "default", returns the basePath unchanged.
-// Otherwise, prepends "/s/{spaceID}" to the basePath.
-func buildSpaceAwarePath(spaceID, basePath string) string {
-	if spaceID != "" && spaceID != "default" {
-		return fmt.Sprintf("/s/%s%s", spaceID, basePath)
-	}
-	return basePath
-}
-
-func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
-	return func(_ context.Context, req *http.Request) error {
-		req.URL.Path = buildSpaceAwarePath(spaceID, req.URL.Path)
-		return nil
-	}
-}
-
 // GetEnrollmentTokens reads all enrollment tokens from the API.
 func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
-	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -93,7 +77,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 // GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.
 func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys?kuery=policy_id:"+policyID)
+	path := kibanautil.BuildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys?kuery=policy_id:"+policyID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
@@ -123,7 +107,7 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 
 // GetAgentPolicy reads a specific agent policy from the API.
 func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -144,7 +128,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 		SysMonitoring: new(sysMonitoring),
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -159,7 +143,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 
 // UpdateAgentPolicy updates an existing agent policy.
 func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -178,7 +162,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 		AgentPolicyId: id,
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -195,7 +179,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 
 // GetOutputs reads all outputs from the API.
 func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.GetFleetOutputsWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetOutputsWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -212,7 +196,7 @@ func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.Ou
 
 // GetOutput reads a specific output from the API.
 func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -229,7 +213,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 
 // CreateOutput creates a new output.
 func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -244,7 +228,7 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 
 // UpdateOutput updates an existing output.
 func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -259,7 +243,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 
 // DeleteOutput deletes an existing output.
 func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -276,7 +260,7 @@ func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string
 
 // GetFleetServerHost reads a specific fleet server host from the API.
 func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -293,7 +277,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 
 // CreateFleetServerHost creates a new fleet server host.
 func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -308,7 +292,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 
 // UpdateFleetServerHost updates an existing fleet server host.
 func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -323,7 +307,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 
 // DeleteFleetServerHost deletes an existing fleet server host.
 func DeleteFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -344,7 +328,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 		Format: new(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -364,7 +348,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 // typed input shape, input config payloads, and the top-level version token
 // required for subsequent update operations.
 func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -385,7 +369,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 		Format: new(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -407,7 +391,7 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -426,7 +410,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 		Format: new(kbapi.Simplified),
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -449,7 +433,7 @@ func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -468,7 +452,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 		Force: &force,
 	}
 
-	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -485,7 +469,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 
 // GetAgentDownloadSource reads a specific agent binary download source from the API.
 func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
-	resp, err := client.API.GetFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -507,7 +491,7 @@ func CreateAgentDownloadSource(
 	spaceID string,
 	req kbapi.PostFleetAgentDownloadSourcesJSONRequestBody,
 ) (*kbapi.PostFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
-	resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -528,7 +512,7 @@ func UpdateAgentDownloadSource(
 	spaceID string,
 	req kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody,
 ) (*kbapi.PutFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -543,7 +527,7 @@ func UpdateAgentDownloadSource(
 
 // DeleteAgentDownloadSource deletes an existing agent binary download source.
 func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -560,7 +544,7 @@ func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, s
 
 // ListAgentDownloadSources reads all agent binary download sources from the API.
 func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
-	resp, err := client.API.GetFleetAgentDownloadSourcesWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetAgentDownloadSourcesWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -577,7 +561,7 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
-	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -614,7 +598,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 		IgnoreConstraints: &opts.IgnoreConstraints,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(opts.SpaceID))
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -629,7 +613,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 
 // Uninstall uninstalls a package.
 func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -657,7 +641,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 		Prerelease: &prerelease,
 	}
 
-	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -671,7 +655,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 		// Retry without the parameter so we remain compatible.
 		if strings.Contains(string(resp.Body), "prerelease") {
 			retryParams := kbapi.GetFleetEpmPackagesParams{}
-			retryResp, retryErr := client.API.GetFleetEpmPackagesWithResponse(ctx, &retryParams, spaceAwarePathRequestEditor(spaceID))
+			retryResp, retryErr := client.API.GetFleetEpmPackagesWithResponse(ctx, &retryParams, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 			if retryErr != nil {
 				return nil, diagutil.FrameworkDiagFromError(retryErr)
 			}
@@ -730,7 +714,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		SkipDataStreamRollover:    &opts.SkipDataStreamRollover,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, spaceAwarePathRequestEditor(opts.SpaceID))
+	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -753,7 +737,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
 			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("rewinding package file for retry after rate limit: %w", seekErr))
 		}
-		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, spaceAwarePathRequestEditor(opts.SpaceID))
+		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, readOnlyReader{f}, kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 		if err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -173,7 +174,7 @@ type StreamUpsertRequest struct {
 func GetStream(ctx context.Context, client *Client, spaceID string, name string) (*StreamResponse, diag.Diagnostics) {
 	resp, err := client.API.GetStreamsNameWithResponse(
 		ctx, name, kbapi.GetStreamsNameJSONRequestBody{},
-		spaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -210,7 +211,7 @@ func UpsertStream(ctx context.Context, client *Client, spaceID string, name stri
 	return streamsLockRetry(ctx, 5, func() (*StreamResponse, int, diag.Diagnostics) {
 		resp, err := client.API.PutStreamsNameWithBodyWithResponse(
 			ctx, name, "application/json", bytes.NewReader(body),
-			spaceAwarePathRequestEditor(spaceID),
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
 		)
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
@@ -235,7 +236,7 @@ func DeleteStream(ctx context.Context, client *Client, spaceID string, name stri
 	_, diags := streamsLockRetry(ctx, 5, func() (struct{}, int, diag.Diagnostics) {
 		resp, err := client.API.DeleteStreamsNameWithResponse(
 			ctx, name, kbapi.DeleteStreamsNameJSONRequestBody{},
-			spaceAwarePathRequestEditor(spaceID),
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
 		)
 		if err != nil {
 			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
