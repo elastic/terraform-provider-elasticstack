@@ -70,33 +70,81 @@ test('classifyPullRequest disallows archive/push when both headRepoId and baseRe
 // remove-trigger-label.js — removeTriggerLabel
 // ---------------------------------------------------------------------------
 
-test('removeTriggerLabel returns trigger_label_removed false when prNumber is undefined', async () => {
+test('removeTriggerLabel returns trigger_label_removed false when issueNumber is undefined', async () => {
   const result = await removeTriggerLabel({
     github: {},
     context: { repo: { owner: 'owner', repo: 'repo' } },
-    prNumber: undefined,
+    issueNumber: undefined,
+    labelName: 'verify-openspec',
   });
   assert.equal(result.trigger_label_removed, false);
   assert.ok(
-    result.trigger_label_removed_reason.includes('No pull request number'),
-    `expected "No pull request number" in reason, got: ${result.trigger_label_removed_reason}`
+    result.trigger_label_removed_reason.includes('No issue number'),
+    `expected "No issue number" in reason, got: ${result.trigger_label_removed_reason}`
+  );
+});
+
+test('removeTriggerLabel returns trigger_label_removed false when labelName is empty', async () => {
+  const result = await removeTriggerLabel({
+    github: {},
+    context: { repo: { owner: 'owner', repo: 'repo' } },
+    issueNumber: 42,
+    labelName: '   ',
+  });
+  assert.equal(result.trigger_label_removed, false);
+  assert.ok(
+    result.trigger_label_removed_reason.includes('No label name'),
+    `expected "No label name" in reason, got: ${result.trigger_label_removed_reason}`
   );
 });
 
 test('removeTriggerLabel returns trigger_label_removed true on successful API call', async () => {
+  let removedName;
   const mockGithub = {
     rest: {
       issues: {
-        removeLabel: async () => ({}),
+        removeLabel: async (args) => {
+          removedName = args.name;
+          return {};
+        },
       },
     },
   };
   const result = await removeTriggerLabel({
     github: mockGithub,
     context: { repo: { owner: 'owner', repo: 'repo' } },
-    prNumber: 42,
+    issueNumber: 42,
+    labelName: 'verify-openspec',
   });
   assert.equal(result.trigger_label_removed, true);
+  assert.equal(removedName, 'verify-openspec');
+});
+
+test('removeTriggerLabel removes a factory label from an issue when API succeeds', async () => {
+  let captured;
+  const mockGithub = {
+    rest: {
+      issues: {
+        removeLabel: async (args) => {
+          captured = args;
+          return {};
+        },
+      },
+    },
+  };
+  const result = await removeTriggerLabel({
+    github: mockGithub,
+    context: { repo: { owner: 'acme', repo: 'demo' } },
+    issueNumber: 99,
+    labelName: 'code-factory',
+  });
+  assert.equal(result.trigger_label_removed, true);
+  assert.deepEqual(captured, {
+    owner: 'acme',
+    repo: 'demo',
+    issue_number: 99,
+    name: 'code-factory',
+  });
 });
 
 test('removeTriggerLabel returns trigger_label_removed true on 404 (idempotent — label already removed)', async () => {
@@ -114,9 +162,11 @@ test('removeTriggerLabel returns trigger_label_removed true on 404 (idempotent �
   const result = await removeTriggerLabel({
     github: mockGithub,
     context: { repo: { owner: 'owner', repo: 'repo' } },
-    prNumber: 42,
+    issueNumber: 42,
+    labelName: 'change-factory',
   });
   assert.equal(result.trigger_label_removed, true);
+  assert.match(result.trigger_label_removed_reason, /change-factory/);
 });
 
 test('removeTriggerLabel returns trigger_label_removed false on non-404 API error', async () => {
@@ -134,7 +184,8 @@ test('removeTriggerLabel returns trigger_label_removed false on non-404 API erro
   const result = await removeTriggerLabel({
     github: mockGithub,
     context: { repo: { owner: 'owner', repo: 'repo' } },
-    prNumber: 42,
+    issueNumber: 42,
+    labelName: 'verify-openspec',
   });
   assert.equal(result.trigger_label_removed, false);
   assert.ok(

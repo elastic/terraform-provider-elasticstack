@@ -8,9 +8,10 @@ description: >-
 on:
   issues:
     types: [opened, labeled]
+  status-comment: true
   permissions:
     contents: read
-    issues: read
+    issues: write
     pull-requests: read
   steps:
     - name: Qualify trigger event
@@ -1142,6 +1143,88 @@ on:
             core.info(`No duplicate PR: ${result.gate_reason}`);
           }
           
+    - name: Remove trigger label
+      id: remove_trigger_label
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /** Label removed by OpenSpec verify (label) pre-activation; exported for callers and tests. */
+          const TRIGGER_LABEL = 'verify-openspec';
+          
+          /**
+           * Removes a single label from an issue or pull request (GitHub issue API).
+           * @param {{ github: object, context: object, issueNumber: number|undefined, labelName: string|undefined }} opts
+           * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}
+           */
+          async function removeTriggerLabel({ github, context, issueNumber, labelName }) {
+            if (issueNumber === undefined || issueNumber === null) {
+              return {
+                trigger_label_removed: false,
+                trigger_label_removed_reason: 'No issue number in event payload',
+              };
+            }
+          
+            const label =
+              typeof labelName === 'string' && labelName.trim() !== '' ? labelName.trim() : null;
+            if (!label) {
+              return {
+                trigger_label_removed: false,
+                trigger_label_removed_reason: 'No label name provided',
+              };
+            }
+          
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                name: label,
+              });
+              return {
+                trigger_label_removed: true,
+                trigger_label_removed_reason: `Removed label: ${label}`,
+              };
+            } catch (err) {
+              // GitHub returns 404 when the label does not exist on the issue; treat as success
+              if (err.status === 404) {
+                return {
+                  trigger_label_removed: true,
+                  trigger_label_removed_reason: `Label ${label} was not present (already removed or never applied)`,
+                };
+              }
+              return {
+                trigger_label_removed: false,
+                trigger_label_removed_reason: `Failed to remove label: ${err.message}`,
+              };
+            }
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = { TRIGGER_LABEL, removeTriggerLabel };
+          }
+          
+          const issueNumber = context.payload.issue?.number;
+          const result = await removeTriggerLabel({
+            github,
+            context,
+            issueNumber,
+            labelName: 'code-factory',
+          });
+          
+          core.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');
+          core.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);
+          
+          if (result.trigger_label_removed) {
+            core.info(`Removed trigger label code-factory from issue #${issueNumber}`);
+          } else {
+            core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
+          }
+          
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -1564,6 +1647,8 @@ jobs:
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:

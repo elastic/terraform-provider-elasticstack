@@ -502,6 +502,8 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
 
   assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[opened, labeled\]/);
+  assert.match(workflowTmpl, /status-comment:\s*true/);
+  assert.match(workflowTmpl, /issues:\s*write/);
 
   assert.match(
     workflowTmpl,
@@ -525,6 +527,7 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     'x-script-include: scripts/qualify_trigger.inline.js',
     'x-script-include: scripts/check_actor_trust.inline.js',
     'x-script-include: scripts/check_duplicate_pr.inline.js',
+    'x-script-include: scripts/remove_trigger_label.inline.js',
     'x-script-include: scripts/finalize_gate.inline.js',
   ];
   let lastIdx = -1;
@@ -541,8 +544,16 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(
     workflowTmpl,
+    /- name: Remove trigger label\n      id: remove_trigger_label\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found != 'true'/,
+  );
+
+  assert.match(
+    workflowTmpl,
     /- name: Finalize gate reason\n      id: finalize_gate\n      if: always\(\)/,
   );
+
+  assert.match(workflowTmpl, /trigger_label_removed:/);
+  assert.match(workflowTmpl, /trigger_label_removed_reason:/);
 
   assert.match(
     workflowTmpl,

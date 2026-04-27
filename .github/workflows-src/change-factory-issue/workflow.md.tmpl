@@ -8,9 +8,10 @@ description: >-
 on:
   issues:
     types: [opened, labeled]
+  status-comment: true
   permissions:
     contents: read
-    issues: read
+    issues: write
     pull-requests: read
   steps:
     - name: Qualify trigger event
@@ -43,6 +44,16 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Remove trigger label
+      id: remove_trigger_label
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/remove_trigger_label.inline.js
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -90,6 +101,8 @@ jobs:
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:

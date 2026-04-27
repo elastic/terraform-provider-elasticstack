@@ -438,6 +438,15 @@ test('code-factory intake constants stay aligned with workflow template branch p
   );
 });
 
+test('code-factory-issue workflow template enables status comments and remove-label pre-activation', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /status-comment:\s*true/);
+  assert.match(workflowTmpl, /name: Remove trigger label/);
+  assert.match(workflowTmpl, /x-script-include: scripts\/remove_trigger_label\.inline\.js/);
+  assert.match(workflowTmpl, /issues:\s*write/);
+  assert.match(workflowTmpl, /trigger_label_removed:/);
+});
+
 test('code-factory-issue inline scripts include intake constants before shared helpers', () => {
   const expectedHeader = [
     /^\/\/include: \.\.\/intake-constants\.js\n/,
