@@ -31,49 +31,49 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// expandTemplate converts the Terraform model into an API index template body.
-// allow_custom_routing is sent only when true; the 8.x update workaround is applied in update.go (task 6).
-func expandTemplate(ctx context.Context, model Model) (*models.IndexTemplate, diag.Diagnostics) {
+// toAPIModel converts the Terraform model into an API index template body.
+// allow_custom_routing is sent only when true; the 8.x update workaround is applied in update.go.
+func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &models.IndexTemplate{
-		Name: model.Name.ValueString(),
+		Name: m.Name.ValueString(),
 	}
 
 	comps := make([]string, 0)
-	if !model.ComposedOf.IsNull() && !model.ComposedOf.IsUnknown() {
-		diags.Append(model.ComposedOf.ElementsAs(ctx, &comps, false)...)
+	if !m.ComposedOf.IsNull() && !m.ComposedOf.IsUnknown() {
+		diags.Append(m.ComposedOf.ElementsAs(ctx, &comps, false)...)
 		if diags.HasError() {
 			return nil, diags
 		}
 	}
 	out.ComposedOf = comps
 
-	if !model.IgnoreMissingComponentTemplates.IsNull() && !model.IgnoreMissingComponentTemplates.IsUnknown() {
+	if !m.IgnoreMissingComponentTemplates.IsNull() && !m.IgnoreMissingComponentTemplates.IsUnknown() {
 		var ignore []string
-		diags.Append(model.IgnoreMissingComponentTemplates.ElementsAs(ctx, &ignore, false)...)
+		diags.Append(m.IgnoreMissingComponentTemplates.ElementsAs(ctx, &ignore, false)...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		out.IgnoreMissingComponentTemplates = ignore
 	}
 
-	if !model.DataStream.IsNull() && !model.DataStream.IsUnknown() {
-		out.DataStream = expandDataStreamBlock(model.DataStream)
+	if !m.DataStream.IsNull() && !m.DataStream.IsUnknown() {
+		out.DataStream = expandDataStreamBlock(m.DataStream)
 	}
 
-	if model.IndexPatterns.IsNull() || model.IndexPatterns.IsUnknown() {
+	if m.IndexPatterns.IsNull() || m.IndexPatterns.IsUnknown() {
 		diags.AddError("Configuration error", "index_patterns must be set")
 		return nil, diags
 	}
 	var patterns []string
-	diags.Append(model.IndexPatterns.ElementsAs(ctx, &patterns, false)...)
+	diags.Append(m.IndexPatterns.ElementsAs(ctx, &patterns, false)...)
 	if diags.HasError() {
 		return nil, diags
 	}
 	out.IndexPatterns = patterns
 
-	if !model.Metadata.IsNull() && !model.Metadata.IsUnknown() {
-		s := strings.TrimSpace(model.Metadata.ValueString())
+	if !m.Metadata.IsNull() && !m.Metadata.IsUnknown() {
+		s := strings.TrimSpace(m.Metadata.ValueString())
 		if s != "" {
 			meta := make(map[string]any)
 			if err := json.Unmarshal([]byte(s), &meta); err != nil {
@@ -84,13 +84,13 @@ func expandTemplate(ctx context.Context, model Model) (*models.IndexTemplate, di
 		}
 	}
 
-	if !model.Priority.IsNull() && !model.Priority.IsUnknown() {
-		p := int(model.Priority.ValueInt64())
+	if !m.Priority.IsNull() && !m.Priority.IsUnknown() {
+		p := int(m.Priority.ValueInt64())
 		out.Priority = &p
 	}
 
-	if !model.Template.IsNull() && !model.Template.IsUnknown() {
-		tpl, d := expandTemplateBlock(ctx, model.Template)
+	if !m.Template.IsNull() && !m.Template.IsUnknown() {
+		tpl, d := expandTemplateBlock(ctx, m.Template)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -98,8 +98,8 @@ func expandTemplate(ctx context.Context, model Model) (*models.IndexTemplate, di
 		out.Template = tpl
 	}
 
-	if !model.Version.IsNull() && !model.Version.IsUnknown() {
-		v := int(model.Version.ValueInt64())
+	if !m.Version.IsNull() && !m.Version.IsUnknown() {
+		v := int(m.Version.ValueInt64())
 		out.Version = &v
 	}
 

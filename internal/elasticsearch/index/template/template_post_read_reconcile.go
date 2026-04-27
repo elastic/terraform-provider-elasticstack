@@ -31,7 +31,7 @@ import (
 // planned or prior Terraform model when values are semantically equivalent to the API response.
 // Terraform correlates nested set elements using strict attr.Value equality; alias routing echoes
 // from Elasticsearch are normalized first by enrichTemplateAliasesRoutingFromReference, then
-// substituted with the planned object here when aliasObjectValuesSemanticallyEqual agrees. Settings are rewritten
+// substituted with the planned object here when AliasObjectValue.ObjectSemanticEquals agrees. Settings are rewritten
 // to canonical Elasticsearch JSON when semantically equal to the plan, matching legacy SDK state.
 func aliasIsRoutingOnlyHCLShape(planM AliasElementModel) bool {
 	if planM.Routing.IsNull() || planM.Routing.ValueString() == "" {
@@ -144,17 +144,12 @@ func reconcileTemplateAliasesStrictFromPlan(ctx context.Context, read *Model, pl
 				return diags
 			}
 			if aliasIsRoutingOnlyHCLShape(planM) {
-				eq1, d := aliasObjectValuesSemanticallyEqual(ctx, readAv, planAv)
+				eq, d := readAv.ObjectSemanticEquals(ctx, planAv)
 				diags.Append(d...)
-				eq2 := false
-				if !eq1 && !diags.HasError() {
-					eq2, d = aliasObjectValuesSemanticallyEqual(ctx, planAv, readAv)
-					diags.Append(d...)
-				}
 				if diags.HasError() {
 					return diags
 				}
-				if eq1 || eq2 {
+				if eq {
 					readAttrs = read.Template.Attributes()
 					readAttrs["alias"] = planAliasVal
 					tplObj, d := types.ObjectValue(TemplateAttrTypes(), readAttrs)
@@ -212,21 +207,12 @@ func reconcileTemplateAliasesStrictFromPlan(ctx context.Context, read *Model, pl
 			newElems = append(newElems, readAv)
 			continue
 		}
-		eq1, d := aliasObjectValuesSemanticallyEqual(ctx, readAv, planAv)
+		eq, d := readAv.ObjectSemanticEquals(ctx, planAv)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags
 		}
-		eq2 := false
-		if !eq1 {
-			var d2 diag.Diagnostics
-			eq2, d2 = aliasObjectValuesSemanticallyEqual(ctx, planAv, readAv)
-			diags.Append(d2...)
-			if diags.HasError() {
-				return diags
-			}
-		}
-		if eq1 || eq2 {
+		if eq {
 			var planM AliasElementModel
 			diags.Append(planAv.As(ctx, &planM, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 			if diags.HasError() {

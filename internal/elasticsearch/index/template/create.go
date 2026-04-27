@@ -57,7 +57,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	indexTemplate, diags := expandTemplate(ctx, plan)
+	indexTemplate, diags := plan.toAPIModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

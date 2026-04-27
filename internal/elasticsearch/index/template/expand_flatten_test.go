@@ -48,7 +48,7 @@ func TestExpandTemplate_minimal(t *testing.T) {
 		DataStream:                      types.ObjectNull(DataStreamAttrTypes()),
 		Template:                        types.ObjectNull(TemplateAttrTypes()),
 	}
-	out, diags := expandTemplate(ctx, m)
+	out, diags := m.toAPIModel(ctx)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -76,14 +76,15 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 		Priority:                        &pr,
 		Version:                         &ver,
 	}
-	m, diags := flattenIndexTemplate(ctx, "tname", tpl)
+	var m Model
+	diags := m.fromAPIModel(ctx, "tname", tpl)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
 	if m.Name.ValueString() != "tname" {
 		t.Fatalf("name %q", m.Name.ValueString())
 	}
-	api, diags := expandTemplate(ctx, m)
+	api, diags := m.toAPIModel(ctx)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -137,7 +138,7 @@ func TestExpandTemplate_dataStreamAllowCustomRoutingOnlyWhenTrue(t *testing.T) {
 		DataStream:                      dsObj,
 		Template:                        types.ObjectNull(TemplateAttrTypes()),
 	}
-	out, diags := expandTemplate(ctx, m)
+	out, diags := m.toAPIModel(ctx)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}

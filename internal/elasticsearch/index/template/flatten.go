@@ -30,18 +30,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// flattenIndexTemplate maps an API index template into the Terraform model.
+// fromAPIModel maps an API index template into this model.
 // It does not set id or elasticsearch_connection; the caller merges those as needed.
-func flattenIndexTemplate(ctx context.Context, name string, tpl *models.IndexTemplate) (Model, diag.Diagnostics) {
+func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
-	out := Model{
+	*m = Model{
 		Name: types.StringValue(name),
 	}
-	if tpl == nil {
-		return out, diags
+	if in == nil {
+		return diags
 	}
 
-	composedOf := tpl.ComposedOf
+	composedOf := in.ComposedOf
 	if composedOf == nil {
 		composedOf = []string{}
 	}
@@ -49,10 +49,10 @@ func flattenIndexTemplate(ctx context.Context, name string, tpl *models.IndexTem
 		vals := stringSliceToAttrValues(composedOf)
 		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
 		diags.Append(d...)
-		out.ComposedOf = lv
+		m.ComposedOf = lv
 	}
 
-	ignoreMissing := tpl.IgnoreMissingComponentTemplates
+	ignoreMissing := in.IgnoreMissingComponentTemplates
 	if ignoreMissing == nil {
 		ignoreMissing = []string{}
 	}
@@ -60,10 +60,10 @@ func flattenIndexTemplate(ctx context.Context, name string, tpl *models.IndexTem
 		vals := stringSliceToAttrValues(ignoreMissing)
 		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
 		diags.Append(d...)
-		out.IgnoreMissingComponentTemplates = lv
+		m.IgnoreMissingComponentTemplates = lv
 	}
 
-	indexPatterns := tpl.IndexPatterns
+	indexPatterns := in.IndexPatterns
 	if indexPatterns == nil {
 		indexPatterns = []string{}
 	}
@@ -71,31 +71,31 @@ func flattenIndexTemplate(ctx context.Context, name string, tpl *models.IndexTem
 		vals := stringSliceToAttrValues(indexPatterns)
 		sv, d := types.SetValueFrom(ctx, types.StringType, vals)
 		diags.Append(d...)
-		out.IndexPatterns = sv
+		m.IndexPatterns = sv
 	}
 
-	if tpl.Meta != nil {
-		b, err := json.Marshal(tpl.Meta)
+	if in.Meta != nil {
+		b, err := json.Marshal(in.Meta)
 		if err != nil {
 			diags.AddError("Failed to marshal metadata", err.Error())
-			return Model{}, diags
+			return diags
 		}
-		out.Metadata = jsontypes.NewNormalizedValue(string(b))
+		m.Metadata = jsontypes.NewNormalizedValue(string(b))
 	} else {
-		out.Metadata = jsontypes.NewNormalizedNull()
+		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	out.Priority = int64FromIntPtr(tpl.Priority)
-	out.Version = int64FromIntPtr(tpl.Version)
+	m.Priority = int64FromIntPtr(in.Priority)
+	m.Version = int64FromIntPtr(in.Version)
 
 	var d diag.Diagnostics
-	out.DataStream, d = flattenDataStream(tpl.DataStream)
+	m.DataStream, d = flattenDataStream(in.DataStream)
 	diags.Append(d...)
 
-	out.Template, d = flattenTemplateBody(ctx, tpl.Template)
+	m.Template, d = flattenTemplateBody(ctx, in.Template)
 	diags.Append(d...)
 
-	return out, diags
+	return diags
 }
 
 func stringSliceToAttrValues(elems []string) []attr.Value {

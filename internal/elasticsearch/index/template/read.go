@@ -39,8 +39,8 @@ func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedC
 		return Model{}, false, diags
 	}
 
-	out, flatDiags := flattenIndexTemplate(ctx, tpl.Name, &tpl.IndexTemplate)
-	diags.Append(flatDiags...)
+	var out Model
+	diags.Append(out.fromAPIModel(ctx, tpl.Name, &tpl.IndexTemplate)...)
 	if diags.HasError() {
 		return Model{}, false, diags
 	}

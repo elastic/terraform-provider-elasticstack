@@ -141,7 +141,7 @@ func enrichTemplateAliasesRoutingFromReference(ctx context.Context, read *Model,
 			continue
 		}
 		// Do not inject routing when ES echoed generic routing into index_routing and omitted routing;
-		// copying routing here would break aliasObjectValuesSemanticallyEqual (see aliasEsIndexRoutingEchoesPriorMainRouting).
+		// copying routing here would break AliasObjectValue.ObjectSemanticEquals (see aliasEsIndexRoutingEchoesPriorMainRouting).
 		if aliasEsIndexRoutingEchoesPriorMainRouting(refM, readM) {
 			newElems = append(newElems, readAv)
 			continue
