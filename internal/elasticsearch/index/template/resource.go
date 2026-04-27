@@ -21,10 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 type Resource struct {
@@ -45,11 +43,6 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// implemented in task 4
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{}
-}
-
 // implemented in task 6
 func (r *Resource) Create(_ context.Context, _ resource.CreateRequest, _ *resource.CreateResponse) {
 }
@@ -66,10 +59,6 @@ func (r *Resource) Update(_ context.Context, _ resource.UpdateRequest, _ *resour
 func (r *Resource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 }
 
-// implemented in task 4
-func (r *Resource) ValidateConfig(_ context.Context, _ resource.ValidateConfigRequest, _ *resource.ValidateConfigResponse) {
-}
-
 // implemented in task 7
 func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
@@ -81,6 +70,4 @@ var (
 	_ resource.ResourceWithImportState    = &Resource{}
 	_ resource.ResourceWithValidateConfig = &Resource{}
 	_ resource.ResourceWithUpgradeState   = &Resource{}
-	_ datasource.DataSource               = &DataSource{}
-	_ datasource.DataSourceWithConfigure  = &DataSource{}
 )
