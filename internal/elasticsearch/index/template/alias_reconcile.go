@@ -231,6 +231,113 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 	return newSet, true, diags
 }
 
+// projectConfigAliasMatchesOntoPlan walks the plan's alias elements and, for each one, looks up
+// the same-named config alias and the same-named state alias. When the config encoding semantically
+// equals the state encoding, the plan element is replaced with the state encoding (so the planned
+// value matches stored state under Optional+Computed+Default nested sets, even when the plan
+// element carries unknowns). Plan elements with no config counterpart are preserved unchanged.
+func projectConfigAliasMatchesOntoPlan(ctx context.Context, planAliases, configAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	pSet, ok := planAliases.(basetypes.SetValue)
+	if !ok {
+		return planAliases, false, diags
+	}
+	cSet, ok := configAliases.(basetypes.SetValue)
+	if !ok {
+		return planAliases, false, diags
+	}
+	sSet, ok := stateAliases.(basetypes.SetValue)
+	if !ok {
+		return planAliases, false, diags
+	}
+	if pSet.IsNull() || pSet.IsUnknown() || cSet.IsNull() || cSet.IsUnknown() || sSet.IsNull() || sSet.IsUnknown() {
+		return planAliases, false, diags
+	}
+
+	configByName, d := aliasObjectsByName(ctx, cSet)
+	diags.Append(d...)
+	if diags.HasError() {
+		return planAliases, false, diags
+	}
+	stateByName, d := aliasObjectsByName(ctx, sSet)
+	diags.Append(d...)
+	if diags.HasError() {
+		return planAliases, false, diags
+	}
+
+	planElems := pSet.Elements()
+	newElems := make([]attr.Value, len(planElems))
+	changed := false
+	for i, pe := range planElems {
+		pAlias, pOK, d := aliasObjectFromAttr(ctx, pe)
+		diags.Append(d...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		if !pOK || pAlias.IsNull() || pAlias.IsUnknown() {
+			newElems[i] = pe
+			continue
+		}
+		var pm AliasElementModel
+		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		name := pm.Name.ValueString()
+		cAlias, cFound := configByName[name]
+		sAlias, sFound := stateByName[name]
+		if !cFound || !sFound {
+			newElems[i] = pe
+			continue
+		}
+		eq, d := cAlias.ObjectSemanticEquals(ctx, sAlias)
+		diags.Append(d...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		if eq && !pAlias.Equal(sAlias) {
+			newElems[i] = sAlias
+			changed = true
+			continue
+		}
+		newElems[i] = pe
+	}
+
+	if !changed {
+		return planAliases, false, diags
+	}
+
+	newSet, d := types.SetValue(NewAliasObjectType(), newElems)
+	diags.Append(d...)
+	if diags.HasError() {
+		return planAliases, false, diags
+	}
+	return newSet, true, diags
+}
+
+func aliasObjectsByName(ctx context.Context, set basetypes.SetValue) (map[string]AliasObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	out := make(map[string]AliasObjectValue)
+	for _, e := range set.Elements() {
+		av, ok, d := aliasObjectFromAttr(ctx, e)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if !ok || av.IsNull() || av.IsUnknown() {
+			continue
+		}
+		var m AliasElementModel
+		diags.Append(av.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		out[m.Name.ValueString()] = av
+	}
+	return out, diags
+}
+
 func aliasObjectFromAttr(ctx context.Context, v attr.Value) (AliasObjectValue, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if v == nil || v.IsNull() || v.IsUnknown() {

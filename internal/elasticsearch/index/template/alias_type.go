@@ -111,7 +111,7 @@ type AliasObjectValue struct {
 }
 
 // ObjectSemanticEquals compares this value to newValuable using the alias routing predicate
-// (design.md §2). The framework calls proposedNew.ObjectSemanticEquals(ctx, prior) during
+// (design.md §2). The framework calls priorValue.ObjectSemanticEquals(ctx, newValue) during
 // post-create/update/read semantic normalization; see terraform-plugin-framework fwschemadata.
 func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -128,8 +128,9 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	// For framework calls, v is proposedNew and newValue is prior state; comparison is symmetric
-	// (forward and reverse) via aliasElementModelsSemanticallyEqual.
+	// For framework calls, v is the prior value and newValue is the new (proposed/refreshed) value.
+	// The asymmetric helpers in aliasElementModelsSemanticallyEqual encode "prior == config side,
+	// incoming == API/refreshed side", so we run forward and reverse to cover both directions.
 	if v.IsNull() {
 		return newValue.IsNull(), diags
 	}
@@ -269,6 +270,24 @@ func aliasOptionalBoolSemanticEqual(a, b types.Bool) bool {
 	return aFalse && bFalse
 }
 
+// aliasRoutingFieldStringsSemanticallyEqual treats null and "" as equivalent (matching how routing
+// fields are compared elsewhere in this file). Unknown values are not semantically equal here because
+// callers handle unknown precedence at the model level.
+func aliasRoutingFieldStringsSemanticallyEqual(a, b types.String) bool {
+	if a.IsUnknown() || b.IsUnknown() {
+		return a.Equal(b)
+	}
+	aEmpty := a.IsNull() || a.ValueString() == ""
+	bEmpty := b.IsNull() || b.ValueString() == ""
+	if aEmpty != bEmpty {
+		return false
+	}
+	if aEmpty {
+		return true
+	}
+	return a.ValueString() == b.ValueString()
+}
+
 // aliasEsIndexRoutingEchoesPriorMainRouting handles GET responses where Elasticsearch omits routing and
 // sets index_routing to the configured generic routing value even when index_routing was distinct in the template.
 func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasElementModel) bool {
@@ -289,7 +308,7 @@ func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasElementModel
 	if incIdx != pr {
 		return false
 	}
-	if !incoming.SearchRouting.Equal(prior.SearchRouting) {
+	if !aliasRoutingFieldStringsSemanticallyEqual(prior.SearchRouting, incoming.SearchRouting) {
 		return false
 	}
 	pi := ""

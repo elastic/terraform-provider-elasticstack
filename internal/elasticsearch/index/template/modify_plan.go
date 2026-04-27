@@ -99,7 +99,11 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 			if !aliasChanged && !config.Template.IsNull() && !config.Template.IsUnknown() {
 				cfgAttrs := config.Template.Attributes()
 				if ca, ok := cfgAttrs["alias"]; ok && !ca.IsNull() && !ca.IsUnknown() {
-					newAlias, aliasChanged, d = mergePlanAliasSetWithPriorState(ctx, ca, sa)
+					// Use config encodings to match state (handles plan unknowns), but project
+					// the result back onto the plan's element set so plan-only aliases are
+					// preserved. mergePlanAliasSetWithPriorState alone would build the result
+					// from its first argument and drop any aliases present in plan but not config.
+					newAlias, aliasChanged, d = projectConfigAliasMatchesOntoPlan(ctx, pa, ca, sa)
 					diags.Append(d...)
 					if diags.HasError() {
 						return nil, diags
