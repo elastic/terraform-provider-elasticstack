@@ -1153,9 +1153,6 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          /** Label removed by OpenSpec verify (label) pre-activation; exported for callers and tests. */
-          const TRIGGER_LABEL = 'verify-openspec';
-          
           /**
            * Removes a single label from an issue or pull request (GitHub issue API).
            * @param {{ github: object, context: object, issueNumber: number|undefined, labelName: string|undefined }} opts
@@ -1205,7 +1202,7 @@ on:
           }
           
           if (typeof module !== 'undefined') {
-            module.exports = { TRIGGER_LABEL, removeTriggerLabel };
+            module.exports = { removeTriggerLabel };
           }
           
           const issueNumber = context.payload.issue?.number;
