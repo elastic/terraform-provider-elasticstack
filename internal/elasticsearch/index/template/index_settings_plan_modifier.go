@@ -19,6 +19,8 @@ package template
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -55,7 +57,17 @@ func (m indexSettingsCanonicalModifier) PlanModifyString(_ context.Context, req 
 		resp.PlanValue = basetypes.NewStringValue("")
 		return
 	}
-	canonical, err := customtypes.CanonicalIndexSettingsJSON(raw)
+	trimmed := strings.TrimSpace(raw)
+	var probe any
+	if err := json.Unmarshal([]byte(trimmed), &probe); err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid template.settings JSON", err.Error())
+		return
+	}
+	if probe == nil {
+		resp.PlanValue = basetypes.NewStringNull()
+		return
+	}
+	canonical, err := customtypes.CanonicalIndexSettingsJSON(trimmed)
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid template.settings JSON", err.Error())
 		return

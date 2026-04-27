@@ -65,13 +65,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	indexTemplate, diags := expandTemplate(ctx, plan)
+	indexTemplate, diags := plan.toAPIModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	applyAllowCustomRouting8xWorkaround(ctx, prior, plan, indexTemplate)
+	applyAllowCustomRouting8xWorkaround(ctx, prior, config, indexTemplate)
 
 	resp.Diagnostics.Append(elasticsearch.PutIndexTemplate(ctx, client, indexTemplate)...)
 	if resp.Diagnostics.HasError() {
@@ -104,25 +104,15 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }
 
-// applyAllowCustomRouting8xWorkaround mirrors resourceIndexTemplatePut in the SDK: when the data_stream
-// block changes and prior state had allow_custom_routing=true, re-send allow_custom_routing in the PUT body
-// even if the planned value is false or omitted (expandTemplate only emits the field when true).
-func applyAllowCustomRouting8xWorkaround(ctx context.Context, prior, plan Model, indexTemplate *models.IndexTemplate) {
-	if plan.DataStream.IsNull() || plan.DataStream.IsUnknown() {
-		return
-	}
-	if prior.DataStream.Equal(plan.DataStream) {
-		return
-	}
+// applyAllowCustomRouting8xWorkaround mirrors resourceIndexTemplatePut in the SDK: when prior state had
+// allow_custom_routing=true and configuration does not explicitly set that attribute to true, re-send
+// allow_custom_routing=false in the PUT body. toAPIModel only emits the field when true, so without this
+// pass Elasticsearch 8.x can keep the old true value when practitioners remove the attribute from HCL.
+func applyAllowCustomRouting8xWorkaround(ctx context.Context, prior, config Model, indexTemplate *models.IndexTemplate) {
 	if !dataStreamAllowCustomRoutingWasTrue(ctx, prior.DataStream) {
 		return
 	}
-	set, val := planAllowCustomRoutingAttr(plan.DataStream)
-	if set && val {
-		return
-	}
-	if !set {
-		// Omitted in configuration: SDK only emits allow_custom_routing when the new data_stream map has the key.
+	if configSetsAllowCustomRoutingTrue(config.DataStream) {
 		return
 	}
 	f := false
@@ -130,6 +120,21 @@ func applyAllowCustomRouting8xWorkaround(ctx context.Context, prior, plan Model,
 		indexTemplate.DataStream = &models.DataStreamSettings{}
 	}
 	indexTemplate.DataStream.AllowCustomRouting = &f
+}
+
+func configSetsAllowCustomRoutingTrue(configDataStream types.Object) bool {
+	if configDataStream.IsNull() || configDataStream.IsUnknown() {
+		return false
+	}
+	v, ok := configDataStream.Attributes()["allow_custom_routing"]
+	if !ok || v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	b, ok := v.(types.Bool)
+	if !ok {
+		return false
+	}
+	return b.ValueBool()
 }
 
 func dataStreamAllowCustomRoutingWasTrue(ctx context.Context, ds types.Object) bool {
@@ -142,19 +147,4 @@ func dataStreamAllowCustomRoutingWasTrue(ctx context.Context, ds types.Object) b
 		return false
 	}
 	return !m.AllowCustomRouting.IsNull() && !m.AllowCustomRouting.IsUnknown() && m.AllowCustomRouting.ValueBool()
-}
-
-func planAllowCustomRoutingAttr(planDataStream types.Object) (set bool, value bool) {
-	if planDataStream.IsNull() || planDataStream.IsUnknown() {
-		return false, false
-	}
-	v, ok := planDataStream.Attributes()["allow_custom_routing"]
-	if !ok || v.IsNull() || v.IsUnknown() {
-		return false, false
-	}
-	b, ok := v.(types.Bool)
-	if !ok {
-		return false, false
-	}
-	return true, b.ValueBool()
 }

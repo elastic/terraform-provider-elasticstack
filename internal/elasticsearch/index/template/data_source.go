@@ -38,9 +38,20 @@ func NewDataSource() datasource.DataSource {
 	return &DataSource{}
 }
 
-func (d *DataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+// Configure adds the provider-configured client factory to the data source.
+func (d *DataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	_ = ctx
+	// Add a nil check when handling ProviderData because Terraform sets that data after it calls the ConfigureProvider RPC.
+	if req.ProviderData == nil {
+		return
+	}
+
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	d.client = factory
 }
 
