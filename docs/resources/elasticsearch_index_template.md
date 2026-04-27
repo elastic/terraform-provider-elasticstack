@@ -56,12 +56,12 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 ### Optional
 
 - `composed_of` (List of String) An ordered list of component template names.
-- `data_stream` (Block List, Max: 1) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `data_stream` (Block, Optional) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `ignore_missing_component_templates` (List of String) A list of component template names that are ignored if missing.
 - `metadata` (String) Optional user metadata about the index template.
 - `priority` (Number) Priority to determine index template precedence when a new data stream or index is created.
-- `template` (Block List, Max: 1) Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration. (see [below for nested schema](#nestedblock--template))
+- `template` (Block, Optional) Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration. (see [below for nested schema](#nestedblock--template))
 - `version` (Number) Version number used to manage index templates externally.
 
 ### Read-Only
@@ -104,8 +104,8 @@ Optional:
 Optional:
 
 - `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
-- `data_stream_options` (Block List, Max: 1) Options for data streams created by this template. Applied once at data stream creation time. Available only for Elasticsearch 9.1.0 and above. (see [below for nested schema](#nestedblock--template--data_stream_options))
-- `lifecycle` (Block Set, Max: 1) Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html (see [below for nested schema](#nestedblock--template--lifecycle))
+- `data_stream_options` (Block, Optional) Options for data streams created by this template. Applied once at data stream creation time. Available only for Elasticsearch 9.1.0 and above. (see [below for nested schema](#nestedblock--template--data_stream_options))
+- `lifecycle` (Block, Optional) Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html (see [below for nested schema](#nestedblock--template--lifecycle))
 - `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
 - `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
@@ -129,25 +129,22 @@ Optional:
 <a id="nestedblock--template--data_stream_options"></a>
 ### Nested Schema for `template.data_stream_options`
 
-Required:
+Optional:
 
-- `failure_store` (Block List, Min: 1, Max: 1) Failure store configuration. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store))
+- `failure_store` (Block, Optional) Failure store configuration. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store))
 
 <a id="nestedblock--template--data_stream_options--failure_store"></a>
 ### Nested Schema for `template.data_stream_options.failure_store`
 
-Required:
-
-- `enabled` (Boolean) If true, document redirection to the failure store is enabled for new matching data streams.
-
 Optional:
 
-- `lifecycle` (Block List, Max: 1) Lifecycle configuration for the failure store. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store--lifecycle))
+- `enabled` (Boolean) If true, document redirection to the failure store is enabled for new matching data streams.
+- `lifecycle` (Block, Optional) Lifecycle configuration for the failure store. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store--lifecycle))
 
 <a id="nestedblock--template--data_stream_options--failure_store--lifecycle"></a>
 ### Nested Schema for `template.data_stream_options.failure_store.lifecycle`
 
-Required:
+Optional:
 
 - `data_retention` (String) The retention period for failure store documents (e.g. "30d").
 
@@ -157,7 +154,7 @@ Required:
 <a id="nestedblock--template--lifecycle"></a>
 ### Nested Schema for `template.lifecycle`
 
-Required:
+Optional:
 
 - `data_retention` (String) The retention period of the data indexed in this data stream.
 

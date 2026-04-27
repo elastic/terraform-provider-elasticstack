@@ -35,18 +35,18 @@ output "template" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
 - `composed_of` (List of String) An ordered list of component template names.
-- `data_stream` (List of Object) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedatt--data_stream))
+- `data_stream` (Block, Read-only) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
 - `id` (String) Internal identifier of the resource
 - `ignore_missing_component_templates` (List of String) A list of component template names that are ignored if missing.
 - `index_patterns` (Set of String) Array of wildcard (*) expressions used to match the names of data streams and indices during creation.
 - `metadata` (String) Optional user metadata about the index template.
 - `priority` (Number) Priority to determine index template precedence when a new data stream or index is created.
-- `template` (List of Object) Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration. (see [below for nested schema](#nestedatt--template))
+- `template` (Block, Read-only) Template to be applied. It may optionally include an aliases, mappings, lifecycle, or settings configuration. (see [below for nested schema](#nestedblock--template))
 - `version` (Number) Version number used to manage index templates externally.
 
 <a id="nestedblock--elasticsearch_connection"></a>
@@ -70,68 +70,68 @@ Optional:
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
-<a id="nestedatt--data_stream"></a>
+<a id="nestedblock--data_stream"></a>
 ### Nested Schema for `data_stream`
 
 Read-Only:
 
-- `allow_custom_routing` (Boolean)
-- `hidden` (Boolean)
+- `allow_custom_routing` (Boolean) If `true`, the data stream supports custom routing. Defaults to `false`. Available only in **8.x**
+- `hidden` (Boolean) If true, the data stream is hidden.
 
 
-<a id="nestedatt--template"></a>
+<a id="nestedblock--template"></a>
 ### Nested Schema for `template`
 
 Read-Only:
 
-- `alias` (Set of Object) (see [below for nested schema](#nestedobjatt--template--alias))
-- `data_stream_options` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options))
-- `lifecycle` (Set of Object) (see [below for nested schema](#nestedobjatt--template--lifecycle))
-- `mappings` (String)
-- `settings` (String)
+- `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
+- `data_stream_options` (Block, Read-only) Options for data streams created by this template. Available only for Elasticsearch 9.1.0 and above. (see [below for nested schema](#nestedblock--template--data_stream_options))
+- `lifecycle` (Block, Read-only) Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html (see [below for nested schema](#nestedblock--template--lifecycle))
+- `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
+- `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
 
-<a id="nestedobjatt--template--alias"></a>
+<a id="nestedblock--template--alias"></a>
 ### Nested Schema for `template.alias`
 
 Read-Only:
 
-- `filter` (String)
-- `index_routing` (String)
-- `is_hidden` (Boolean)
-- `is_write_index` (Boolean)
-- `name` (String)
-- `routing` (String)
-- `search_routing` (String)
+- `filter` (String) Query used to limit documents the alias can access.
+- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
+- `is_hidden` (Boolean) If true, the alias is hidden.
+- `is_write_index` (Boolean) If true, the index is the write index for the alias.
+- `name` (String) The alias name.
+- `routing` (String) Value used to route indexing and search operations to a specific shard.
+- `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
 
 
-<a id="nestedobjatt--template--data_stream_options"></a>
+<a id="nestedblock--template--data_stream_options"></a>
 ### Nested Schema for `template.data_stream_options`
 
 Read-Only:
 
-- `failure_store` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options--failure_store))
+- `failure_store` (Block, Read-only) Failure store configuration. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store))
 
-<a id="nestedobjatt--template--data_stream_options--failure_store"></a>
+<a id="nestedblock--template--data_stream_options--failure_store"></a>
 ### Nested Schema for `template.data_stream_options.failure_store`
 
 Read-Only:
 
-- `enabled` (Boolean)
-- `lifecycle` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options--failure_store--lifecycle))
+- `enabled` (Boolean) If true, document redirection to the failure store is enabled for new matching data streams.
+- `lifecycle` (Block, Read-only) Lifecycle configuration for the failure store. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store--lifecycle))
 
-<a id="nestedobjatt--template--data_stream_options--failure_store--lifecycle"></a>
+<a id="nestedblock--template--data_stream_options--failure_store--lifecycle"></a>
 ### Nested Schema for `template.data_stream_options.failure_store.lifecycle`
 
 Read-Only:
 
-- `data_retention` (String)
+- `data_retention` (String) The retention period for failure store documents (e.g. "30d").
 
 
 
 
-<a id="nestedobjatt--template--lifecycle"></a>
+<a id="nestedblock--template--lifecycle"></a>
 ### Nested Schema for `template.lifecycle`
 
 Read-Only:
 
-- `data_retention` (String)
+- `data_retention` (String) The retention period of the data indexed in this data stream.
