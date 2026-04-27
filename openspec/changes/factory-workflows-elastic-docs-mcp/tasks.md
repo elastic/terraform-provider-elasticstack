@@ -12,10 +12,10 @@
 
 ## 3. Regenerate compiled workflow artifacts
 
-- [ ] 3.1 Run `make workflow-generate` to recompile both templates and regenerate the four files: `change-factory-issue.md`, `change-factory-issue.lock.yml`, `code-factory-issue.md`, `code-factory-issue.lock.yml`
-- [ ] 3.2 Verify the compiled `change-factory-issue.md` frontmatter contains `mcp-servers.elastic-docs` and `www.elastic.co` in `network.allowed`
-- [ ] 3.3 Verify the compiled `code-factory-issue.md` frontmatter contains `mcp-servers.elastic-docs` and `www.elastic.co` in `network.allowed`
-- [ ] 3.4 Verify the `change-factory-issue.lock.yml` manifest JSON references the MCP gateway configuration (check the `mcpServers` block in the generated `start_mcp_gateway` step)
+- [x] 3.1 Run `make workflow-generate` to recompile both templates and regenerate the four files: `change-factory-issue.md`, `change-factory-issue.lock.yml`, `code-factory-issue.md`, `code-factory-issue.lock.yml`
+- [x] 3.2 Verify the compiled `change-factory-issue.md` frontmatter contains `mcp-servers.elastic-docs` and `www.elastic.co` in `network.allowed`
+- [x] 3.3 Verify the compiled `code-factory-issue.md` frontmatter contains `mcp-servers.elastic-docs` and `www.elastic.co` in `network.allowed`
+- [x] 3.4 Verify the `change-factory-issue.lock.yml` manifest JSON references the MCP gateway configuration (check the `mcpServers` block in the generated `start_mcp_gateway` step)
 
 ## 4. Validate OpenSpec artifacts
 
