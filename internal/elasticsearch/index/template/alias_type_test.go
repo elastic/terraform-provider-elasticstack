@@ -293,3 +293,42 @@ func TestAliasObjectValue_ObjectSemanticEquals_unknownNestedAttribute(t *testing
 	// Unknown on plan/config is filled from the other operand (refreshed state) before semantic rules.
 	require.True(t, eq)
 }
+
+// Framework invokes proposedNew.ObjectSemanticEquals(ctx, priorState) (see terraform-plugin-framework fwschemadata).
+func TestAliasObjectValue_ObjectSemanticEquals_frameworkOrder_routingOnlyCombinedInPlanSplitInState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	planNullFields := mustAlias(t, aliasAttrMap("routing_only_alias", strNull(), strAttr("shard_1"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	planEmptyFields := mustAlias(t, aliasAttrMap("routing_only_alias", strAttr(""), strAttr("shard_1"), strAttr(""), jsontypes.NewNormalizedNull(), false, false))
+	state := mustAlias(t, aliasAttrMap("routing_only_alias", strAttr("shard_1"), strAttr(""), strAttr("shard_1"), jsontypes.NewNormalizedNull(), false, false))
+
+	eq1, d1 := planNullFields.ObjectSemanticEquals(ctx, state)
+	require.False(t, d1.HasError(), "%v", d1)
+	require.True(t, eq1)
+
+	eq2, d2 := planEmptyFields.ObjectSemanticEquals(ctx, state)
+	require.False(t, d2.HasError(), "%v", d2)
+	require.True(t, eq2)
+}
+
+func TestAliasObjectValue_ObjectSemanticEquals_explicitIndexSearch_planEmptyRouting_stateEchoesRouting(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	filter := jsontypes.NewNormalizedValue(`{"term":{"status":"active"}}`)
+	plan := mustAlias(t, aliasAttrMap("my_alias", strAttr("shard_1"), strAttr(""), strAttr("shard_1"), filter, false, true))
+	state := mustAlias(t, aliasAttrMap("my_alias", strAttr("shard_1"), strAttr("shard_1"), strAttr("shard_1"), filter, false, true))
+	eq, diags := plan.ObjectSemanticEquals(ctx, state)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, eq)
+}
+
+// Some Elasticsearch versions echo only index_routing for routing-only template aliases (search_routing empty).
+func TestAliasObjectValue_ObjectSemanticEquals_routingOnly_plan_vs_stateIndexOnlyEcho(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	plan := mustAlias(t, aliasAttrMap("routing_only_alias", strNull(), strAttr("shard_1"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	state := mustAlias(t, aliasAttrMap("routing_only_alias", strAttr("shard_1"), strAttr(""), strAttr(""), jsontypes.NewNormalizedNull(), false, false))
+	eq, diags := plan.ObjectSemanticEquals(ctx, state)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, eq)
+}

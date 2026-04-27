@@ -111,7 +111,8 @@ type AliasObjectValue struct {
 }
 
 // ObjectSemanticEquals compares this value to newValuable using the alias routing predicate
-// (design.md §2). The receiver is the prior/state side; newValuable is the plan or refreshed value.
+// (design.md §2). The framework calls proposedNew.ObjectSemanticEquals(ctx, prior) during
+// post-create/update/read semantic normalization; see terraform-plugin-framework fwschemadata.
 func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -127,7 +128,8 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	// Receiver is prior/state (e.g. API echo); newValue is plan or refreshed config (design.md §2).
+	// For framework calls, v is proposedNew and newValue is prior state; comparison is symmetric
+	// (forward and reverse) via aliasElementModelsSemanticallyEqual.
 	if v.IsNull() {
 		return newValue.IsNull(), diags
 	}
@@ -180,6 +182,10 @@ func (v AliasObjectValue) Type(_ context.Context) attr.Type {
 }
 
 // Equal returns true if the given value is equivalent (strict object equality).
+//
+// Do not delegate to ObjectSemanticEquals here: Terraform correlates planned vs actual set
+// elements using Equal during apply consistency checks; semantic equality would hide real
+// mismatches and trigger "planned set element not correlate with any element in actual".
 func (v AliasObjectValue) Equal(o attr.Value) bool {
 	other, ok := o.(AliasObjectValue)
 	if !ok {
