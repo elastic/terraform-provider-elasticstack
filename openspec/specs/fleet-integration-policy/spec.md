@@ -45,9 +45,7 @@ resource "elasticstack_fleet_integration_policy" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Fleet package policy CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Kibana Fleet create package policy API to create integration policies. The resource SHALL use the Kibana Fleet update package policy API to update integration policies. The resource SHALL use the Kibana Fleet get package policy API to read integration policies. The resource SHALL use the Kibana Fleet delete package policy API to delete integration policies. When the Fleet API returns a non-success response for any of these operations (other than not found on read), the resource SHALL surface the API error to Terraform diagnostics.
@@ -305,3 +303,4 @@ The resource SHALL support state upgrade from schema version 1 to version 2 dire
 - GIVEN v1 state with an `input` list block containing one entry
 - WHEN state upgrade to v2 runs directly (v1→v2 path)
 - THEN `inputs` in v2 state SHALL be a map keyed by the entry's `input_id` and all scalar fields SHALL be unchanged
+
