@@ -40,6 +40,11 @@ var (
 // known Kibana SLO bugs. Use with versionutils.CheckIfVersionMeetsConstraints.
 var SLOKqlAccTestConstraints = mustKqlAccConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 
+// SLOKqlFleetAccTestConstraints is for KQL SLO acc steps that also use group_by (e.g. Fleet-style
+// configs in TestAccResourceSlo_kql_custom_indicator_basic). group_by is rejected below 8.10.0;
+// 8.11.x exclusions match SLOKqlAccTestConstraints.
+var SLOKqlFleetAccTestConstraints = mustKqlAccConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+
 func mustKqlAccConstraint(s string) version.Constraints {
 	c, err := version.NewConstraint(s)
 	if err != nil {
