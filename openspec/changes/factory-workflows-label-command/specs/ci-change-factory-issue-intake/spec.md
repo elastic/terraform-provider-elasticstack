@@ -18,7 +18,7 @@ The workflow SHALL include a deterministic pre-activation step that removes the 
 
 #### Scenario: Remove step mirrors verify workflow pattern
 - **WHEN** maintainers inspect the authored `change-factory` issue-intake workflow `on.steps`
-- **THEN** it SHALL include a remove-label step structurally equivalent to OpenSpec verify (label) (`workflow.md.tmpl` lines 24–30: `Remove trigger label` / `github-script` / `x-script-include`)
+- **THEN** it SHALL include a remove-label step structurally equivalent to OpenSpec verify (label), with the `Remove trigger label` step using `actions/github-script@v9` and `x-script-include` to include the shared trigger-label removal script/helper path
 - **AND** the included script SHALL reuse the generalized `remove-trigger-label` library (not a forked copy of the GitHub API logic)
 
 #### Scenario: Label removed only when agent gate passes
