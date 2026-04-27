@@ -70,10 +70,10 @@
 
 ## 11. Cleanup
 
-- [ ] 11.1 Delete `internal/elasticsearch/index/template.go`.
-- [ ] 11.2 Delete `internal/elasticsearch/index/template_data_source.go`.
-- [ ] 11.3 Verify `internal/elasticsearch/index/component_template.go` still compiles unchanged. Confirm that the SDK helpers (`expandTemplate`, `flattenTemplateData`, `extractAliasRoutingFromTemplateState`, `preserveAliasRoutingInFlattenedAliases`, `hashAliasByName`, `stringIsJSONObject`) remain referenced exclusively by component template; do not delete them.
-- [ ] 11.4 Move `MinSupportedIgnoreMissingComponentTemplateVersion` and `MinSupportedDataStreamOptionsVersion` from `internal/elasticsearch/index/template.go` into the new package; if `templateilmattachment` references them, expose via a small constants file.
+- [x] 11.1 Delete `internal/elasticsearch/index/template.go`.
+- [x] 11.2 Delete `internal/elasticsearch/index/template_data_source.go`.
+- [x] 11.3 Verify `internal/elasticsearch/index/component_template.go` still compiles unchanged. Confirm that the SDK helpers (`expandTemplate`, `flattenTemplateData`, `extractAliasRoutingFromTemplateState`, `preserveAliasRoutingInFlattenedAliases`, `hashAliasByName`, `stringIsJSONObject`) remain referenced exclusively by component template; do not delete them.
+- [x] 11.4 Move `MinSupportedIgnoreMissingComponentTemplateVersion` and `MinSupportedDataStreamOptionsVersion` from `internal/elasticsearch/index/template.go` into the new package; if `templateilmattachment` references them, expose via a small constants file.
 
 ## 12. Verification
 
