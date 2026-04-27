@@ -43,6 +43,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- elasticstack_fleet_integration now detects out-of-band package upgrades and downgrades during refresh by consulting InstallationInfo.Version; terraform plan surfaces the drift instead of reporting "No changes". ([#2447](https://github.com/elastic/terraform-provider-elasticstack/pull/2447))
+- elasticstack_elasticsearch_security_role now detects out-of-band drift on description, metadata, and other attributes during refresh; terraform plan no longer silently returns "No changes" when a role is modified outside Terraform. ([#2446](https://github.com/elastic/terraform-provider-elasticstack/pull/2446))
 - New `elasticstack_fleet_custom_integration` resource for uploading and managing locally-built Fleet integration packages via the EPM binary upload API ([#2387](https://github.com/elastic/terraform-provider-elasticstack/pull/2387))
 - Change `elasticstack_kibana_security_detection_rule.actions[].params` to a JSON string rather than a map of string values. This allows setting arbitrary, nested param values ([#2340](https://github.com/elastic/terraform-provider-elasticstack/pull/2340))
 - Add import support to the elasticstack_elasticsearch_enrich_policy resource ([#2427](https://github.com/elastic/terraform-provider-elasticstack/pull/2427))
