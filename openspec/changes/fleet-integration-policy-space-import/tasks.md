@@ -10,7 +10,7 @@
 
 ## 2. Update spec
 
-- [ ] 2.1 In `openspec/specs/fleet-integration-policy/spec.md`, replace REQ-006 with the
+- [x] 2.1 In `openspec/specs/fleet-integration-policy/spec.md`, replace REQ-006 with the
   corrected import requirement as defined in the delta spec at
   `openspec/changes/fleet-integration-policy-space-import/specs/fleet-integration-policy/spec.md`.
 
