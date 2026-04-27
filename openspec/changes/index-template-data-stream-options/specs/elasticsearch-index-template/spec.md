@@ -12,7 +12,7 @@ This delta defines the target behavior introduced by change `index-template-data
 
 ### Requirement: Schema — `template.data_stream_options` block (REQ-032)
 
-The `template` block SHALL support an optional `data_stream_options` sub-block. The `data_stream_options` block SHALL contain exactly one optional `failure_store` sub-block. The `failure_store` block SHALL contain:
+The `template` block SHALL support an optional `data_stream_options` sub-block. The `data_stream_options` block SHALL contain at most one optional `failure_store` sub-block. If `data_stream_options` is configured without a `failure_store` sub-block, the provider SHALL reject the configuration at plan time with an error diagnostic. The `failure_store` block SHALL contain:
 
 - `enabled` — required boolean; activates or deactivates document redirection to the failure store on newly created matching data streams.
 - `lifecycle` — optional sub-block containing `data_retention`, a required string specifying how long failure store documents are retained (e.g. `"30d"`).
@@ -164,6 +164,8 @@ Acceptance tests for `elasticstack_elasticsearch_index_template` SHALL include c
 
 These tests SHALL only run against Elasticsearch >= 9.1.0 and SHALL be skipped or guarded appropriately when a lower version is detected.
 
+A unit test (not an acceptance test) SHALL verify the version-gate logic for the error path: when `data_stream_options` is configured and the detected Elasticsearch version is below `9.1.0`, the provider function under test SHALL return an error diagnostic without invoking the Put index template API.
+
 #### Scenario: Acceptance test create with failure store enabled
 
 - **GIVEN** an acceptance test configuration with `failure_store.enabled = true`
@@ -181,3 +183,10 @@ These tests SHALL only run against Elasticsearch >= 9.1.0 and SHALL be skipped o
 - **GIVEN** an acceptance test configuration with `failure_store.lifecycle.data_retention = "14d"`
 - **WHEN** the test creates the template and refreshes state
 - **THEN** the acceptance test SHALL assert `template.0.data_stream_options.0.failure_store.0.lifecycle.0.data_retention` equals `"14d"` in state
+
+#### Scenario: Unit test — version-gate error path
+
+- **GIVEN** a unit test that simulates `data_stream_options` configured with Elasticsearch version `9.0.0`
+- **WHEN** the create or update function is invoked
+- **THEN** the function SHALL return an error diagnostic containing the minimum version requirement
+- **AND** the Put index template API SHALL NOT be called
