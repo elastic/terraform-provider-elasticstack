@@ -61,7 +61,22 @@ func NewResource() resource.Resource {
 }
 
 func (r *integrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("policy_id"), req, resp)
+	var spaceID string
+	var policyID string
+
+	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	if diags.HasError() {
+		policyID = req.ID
+	} else {
+		spaceID = compID.ClusterID
+		policyID = compID.ResourceID
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("policy_id"), policyID)...)
+
+	if spaceID != "" {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_ids"), []string{spaceID})...)
+	}
 }
 
 func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {

@@ -1,12 +1,12 @@
 ## 1. Update ImportState implementation
 
-- [ ] 1.1 In `internal/fleet/integration_policy/resource.go`, replace
+- [x] 1.1 In `internal/fleet/integration_policy/resource.go`, replace
   `resource.ImportStatePassthroughID(ctx, path.Root("policy_id"), req, resp)` with the
   composite-ID aware pattern that mirrors `agentpolicy.ImportState` (see design.md §Changes
   Required for the exact replacement).
-- [ ] 1.2 Add `"github.com/elastic/terraform-provider-elasticstack/internal/clients"` to
+- [x] 1.2 Add `"github.com/elastic/terraform-provider-elasticstack/internal/clients"` to
   the imports in `resource.go`.
-- [ ] 1.3 Verify the build: `make build`.
+- [x] 1.3 Verify the build: `make build`.
 
 ## 2. Update spec
 
