@@ -1623,7 +1623,11 @@ tools:
   github:
     toolsets: [issues, pull_requests, repos]
 network:
-  allowed: [defaults, node, elastic.litellm-prod.ai]
+  allowed: [defaults, node, elastic.litellm-prod.ai, www.elastic.co]
+mcp-servers:
+  elastic-docs:
+    url: "https://www.elastic.co/docs/_mcp/"
+    allowed: ["*"]
 checkout:
   fetch-depth: 0
 safe-outputs:
@@ -1674,6 +1678,16 @@ this issue.
 Node.js is configured and `npm ci` has run, so the repository-pinned OpenSpec CLI is available (for
 example `./node_modules/.bin/openspec`). Use it to validate what you author. Disable telemetry for
 CLI invocations: prefix commands with `OPENSPEC_TELEMETRY=0`.
+
+## Elastic documentation
+
+An `elastic-docs` MCP server is available with three tools: `search_docs`, `find_related_docs`, and
+`get_document_by_url`. Before authoring proposal artifacts, use `search_docs` to look up API
+behaviour, parameters, and constraints for the feature described in the issue. This grounding step
+helps produce accurate delta specs and avoids speculative assumptions about API shape.
+
+If the MCP tools are unavailable or return no useful results, proceed with authoring from the issue
+content alone — do not block the run waiting for documentation.
 
 ## Task
 
