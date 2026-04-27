@@ -81,14 +81,5 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	out.ElasticsearchConnection = prior.ElasticsearchConnection
 	out.ID = prior.ID
 
-	resp.Diagnostics.Append(enrichTemplateAliasesRoutingFromReference(ctx, &out, prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(postReadReconcileTemplateWithPlan(ctx, &out, prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }

@@ -92,15 +92,6 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
 	refreshed.ID = prior.ID
 
-	resp.Diagnostics.Append(enrichTemplateAliasesRoutingFromReference(ctx, &refreshed, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(postReadReconcileTemplateWithPlan(ctx, &refreshed, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }
 

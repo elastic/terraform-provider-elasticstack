@@ -88,14 +88,5 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
 	refreshed.ID = types.StringValue(id.String())
 
-	resp.Diagnostics.Append(enrichTemplateAliasesRoutingFromReference(ctx, &refreshed, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(postReadReconcileTemplateWithPlan(ctx, &refreshed, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }

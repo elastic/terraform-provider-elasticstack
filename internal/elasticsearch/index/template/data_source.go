@@ -98,11 +98,6 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	out.Name = types.StringValue(name)
 	out.ID = types.StringValue(id.String())
 
-	resp.Diagnostics.Append(finalizeTemplateAliasAfterRead(ctx, &out, Model{}, Model{})...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
