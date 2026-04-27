@@ -29,186 +29,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAliasSetsSemanticallyEqual_routingOnlyPlanVsIndexEchoState(t *testing.T) {
+func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedState(t *testing.T) {
 	ctx := context.Background()
-	planEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringValue(""),
-		"search_routing": types.StringValue(""),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	// Flatten uses StringValue("") for empty API strings, routing omitted from GET.
-	stateEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue(""),
-		"index_routing":  types.StringValue("shard_1"),
-		"search_routing": types.StringValue(""),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	planSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{planEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	stateSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{stateEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	if !ok {
-		t.Fatal("expected semantic equality for routing-only plan vs index_routing echo state")
-	}
-}
+	planSettings := customtypes.NewIndexSettingsValue(`{"index":{"number_of_shards":1}}`)
+	stateSettings := customtypes.NewIndexSettingsValue(`{"index.number_of_shards":"1"}`)
 
-func TestAliasSetsSemanticallyEqual_routingOnlyPlanNullRoutingStrings_stateEmptyStrings(t *testing.T) {
-	ctx := context.Background()
-	planEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringNull(),
-		"search_routing": types.StringNull(),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	stateEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringValue(""),
-		"search_routing": types.StringValue(""),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	planSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{planEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	stateSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{stateEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	if !ok {
-		t.Fatal("expected semantic equality when plan uses null for omitted routing fields and state uses empty strings")
-	}
-}
+	emptyAlias, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{})
+	require.False(t, diags.HasError(), "%v", diags)
 
-func TestAliasSetsSemanticallyEqual_planNullBools_stateFalseBools(t *testing.T) {
-	ctx := context.Background()
-	planEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringNull(),
-		"search_routing": types.StringNull(),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolNull(),
-		"is_write_index": types.BoolNull(),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	stateEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringValue(""),
-		"search_routing": types.StringValue(""),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	planSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{planEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	stateSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{stateEl})
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
-	if diags.HasError() {
-		t.Fatal(diags)
-	}
-	if !ok {
-		t.Fatal("expected semantic equality when plan omits bools (null) and state has explicit false")
-	}
-}
-
-func TestReconcilePlanWithPriorStateForSemanticDrift_routingOnlyNullBoolPlan(t *testing.T) {
-	ctx := context.Background()
-	planEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringNull(),
-		"search_routing": types.StringNull(),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolNull(),
-		"is_write_index": types.BoolNull(),
-	})
-	require.False(t, diags.HasError(), "%v", diags)
-	stateEl, diags := NewAliasObjectValue(map[string]attr.Value{
-		"name":           types.StringValue("routing_only_alias"),
-		"routing":        types.StringValue("shard_1"),
-		"index_routing":  types.StringValue(""),
-		"search_routing": types.StringValue(""),
-		"filter":         jsontypes.NewNormalizedNull(),
-		"is_hidden":      types.BoolValue(false),
-		"is_write_index": types.BoolValue(false),
-	})
-	require.False(t, diags.HasError(), "%v", diags)
-	planSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{planEl})
-	require.False(t, diags.HasError(), "%v", diags)
-	stateSet, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{stateEl})
-	require.False(t, diags.HasError(), "%v", diags)
-	emptyTpl := map[string]attr.Value{
-		"alias":               planSet,
+	planTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
+		"alias":               emptyAlias,
 		"mappings":            jsontypes.NewNormalizedNull(),
-		"settings":            customtypes.NewIndexSettingsNull(),
+		"settings":            planSettings,
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
 		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
-	}
-	planTpl, diags := types.ObjectValue(TemplateAttrTypes(), emptyTpl)
+	})
 	require.False(t, diags.HasError(), "%v", diags)
 	stateTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
-		"alias":               stateSet,
+		"alias":               emptyAlias,
 		"mappings":            jsontypes.NewNormalizedNull(),
-		"settings":            customtypes.NewIndexSettingsNull(),
+		"settings":            stateSettings,
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
 		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
 	})
 	require.False(t, diags.HasError(), "%v", diags)
+
 	var plan, state Model
 	plan.Template = planTpl
 	state.Template = stateTpl
 	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state)
 	require.False(t, diags.HasError(), "%v", diags)
-	require.NotNil(t, merged, "expected alias merge when plan null-bools match state false semantically")
+	require.NotNil(t, merged)
 	var mt TemplateBlockModel
 	require.False(t, merged.Template.As(ctx, &mt, basetypes.ObjectAsOptions{}).HasError())
-	require.True(t, mt.Alias.Equal(stateSet), "merged plan should adopt state alias encoding")
+	require.True(t, mt.Settings.Equal(stateSettings), "plan should adopt state settings encoding when semantically equal")
 }

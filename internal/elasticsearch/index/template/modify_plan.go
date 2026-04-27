@@ -21,11 +21,9 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -33,7 +31,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	var plan, state, config Model
+	var plan, state Model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,36 +40,21 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	patchedPlan, patchCh, d := patchPlanAliasFromConfig(ctx, plan, config)
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	plan = patchedPlan
 
 	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if merged == nil && !patchCh {
+	if merged == nil {
 		return
 	}
-	out := plan
-	if merged != nil {
-		out = *merged
-	}
-	resp.Diagnostics.Append(resp.Plan.Set(ctx, &out)...)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, merged)...)
 }
 
-// reconcilePlanWithPriorStateForSemanticDrift aligns the planned template block with prior state
-// when Terraform would show a spurious diff: strict inequality but semantic equality (alias routing
-// echoes, index settings canonical form in state vs user JSON in config).
+// reconcilePlanWithPriorStateForSemanticDrift aligns planned template.settings with prior state when
+// Terraform would show a spurious diff: strict inequality but semantic equality (index settings
+// canonical form in state vs practitioner JSON in configuration).
 func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state Model) (*Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if plan.Template.IsNull() || plan.Template.IsUnknown() || state.Template.IsNull() || state.Template.IsUnknown() {
@@ -102,26 +85,6 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 		}
 	}
 
-	pa, okP := planAttrs["alias"]
-	sa, okS := stateAttrs["alias"]
-	if okP && okS && !pa.IsNull() && !pa.IsUnknown() && !sa.IsNull() && !sa.IsUnknown() {
-		if !pa.Equal(sa) {
-			pSet, ok1 := pa.(types.Set)
-			sSet, ok2 := sa.(types.Set)
-			if ok1 && ok2 {
-				eq, d := aliasPlanAndStateSetsSemanticallyEqual(ctx, pSet, sSet)
-				diags.Append(d...)
-				if diags.HasError() {
-					return nil, diags
-				}
-				if eq {
-					planAttrs["alias"] = sa
-					changed = true
-				}
-			}
-		}
-	}
-
 	if !changed {
 		return nil, diags
 	}
@@ -134,70 +97,4 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 	out := plan
 	out.Template = newTpl
 	return &out, diags
-}
-
-// aliasPlanAndStateSetsSemanticallyEqual pairs aliases by name and delegates element comparison to
-// [AliasObjectValue.ObjectSemanticEquals] with state as the receiver (prior/API) and plan as newValuable (design.md §2).
-func aliasPlanAndStateSetsSemanticallyEqual(ctx context.Context, planSet, stateSet basetypes.SetValue) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	pe := planSet.Elements()
-	se := stateSet.Elements()
-	if len(pe) != len(se) {
-		return false, diags
-	}
-
-	stateByName := make(map[string]attr.Value, len(se))
-	for _, el := range se {
-		sAv, ok, d := coerceAliasObjectValue(ctx, el)
-		diags.Append(d...)
-		if diags.HasError() {
-			return false, diags
-		}
-		if !ok {
-			return false, diags
-		}
-		var sm AliasElementModel
-		diags.Append(sAv.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-		if diags.HasError() {
-			return false, diags
-		}
-		stateByName[sm.Name.ValueString()] = el
-	}
-
-	for _, el := range pe {
-		pAv, ok, d := coerceAliasObjectValue(ctx, el)
-		diags.Append(d...)
-		if diags.HasError() {
-			return false, diags
-		}
-		if !ok {
-			return false, diags
-		}
-		var pm AliasElementModel
-		diags.Append(pAv.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-		if diags.HasError() {
-			return false, diags
-		}
-		sEl, found := stateByName[pm.Name.ValueString()]
-		if !found {
-			return false, diags
-		}
-		sAv, ok2, d := coerceAliasObjectValue(ctx, sEl)
-		diags.Append(d...)
-		if diags.HasError() {
-			return false, diags
-		}
-		if !ok2 {
-			return false, diags
-		}
-		eq, d := sAv.ObjectSemanticEquals(ctx, pAv)
-		diags.Append(d...)
-		if diags.HasError() {
-			return false, diags
-		}
-		if !eq {
-			return false, diags
-		}
-	}
-	return true, diags
 }
