@@ -26,7 +26,7 @@ resource "elasticstack_elasticsearch_index_template" "upgrade" {
     })
 
     # Modern Elasticsearch echoes generic routing into index_routing/search_routing on read.
-    # SDKv2 0.14.3 stores those echoes in state; omitting them here causes a non-empty refresh
+    # SDKv2 0.14.5 stores those echoes in state; omitting them here causes a non-empty refresh
     # plan (TypeSet replace) before we switch to the Plugin Framework implementation.
     # Match SDK readback on modern ES: echoed index/search routing without a separate top-level routing field.
     alias {
