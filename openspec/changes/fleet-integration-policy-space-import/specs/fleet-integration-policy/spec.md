@@ -9,7 +9,7 @@ Modifies: `openspec/specs/fleet-integration-policy/spec.md`
 The resource SHALL support import with both plain and composite import IDs.
 
 When the import ID is a composite string in the format `<space_id>/<policy_id>` (as
-produced by `clients.CompositeIDFromStrFw`), the resource SHALL set `policy_id` to the
+parsed by `clients.CompositeIDFromStrFw`), the resource SHALL set `policy_id` to the
 parsed resource-ID segment and SHALL set `space_ids` to a single-element set containing the
 space-ID segment. The subsequent read SHALL query the package-policy API in the named space,
 so that policies created in non-default Kibana spaces can be imported successfully.

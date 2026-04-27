@@ -925,7 +925,8 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 				return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
 			}
 		case "elasticstack_fleet_integration_policy":
-			policy, diags := fleet.GetPackagePolicy(context.Background(), fleetClient, rs.Primary.ID, "")
+			spaceID := rs.Primary.Attributes["space_ids.0"]
+			policy, diags := fleet.GetPackagePolicy(context.Background(), fleetClient, rs.Primary.ID, spaceID)
 			if diags.HasError() {
 				return diagutil.FwDiagsAsError(diags)
 			}
