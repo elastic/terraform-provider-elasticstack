@@ -276,6 +276,15 @@ func ResourceTemplate() *schema.Resource {
 	}
 }
 
+// validateDataStreamOptionsVersion returns an error diagnostic if data_stream_options
+// is configured and the server version does not meet the minimum requirement.
+func validateDataStreamOptionsVersion(serverVersion *version.Version, templ *models.Template) diag.Diagnostics {
+	if templ != nil && templ.DataStreamOptions != nil && serverVersion.LessThan(MinSupportedDataStreamOptionsVersion) {
+		return diag.FromErr(fmt.Errorf("'data_stream_options' is supported only for Elasticsearch v%s and above", MinSupportedDataStreamOptionsVersion.String()))
+	}
+	return nil
+}
+
 func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	factory, diags := clients.ConvertMetaToFactory(meta)
 	if diags.HasError() {
@@ -384,10 +393,8 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	if indexTemplate.Template != nil && indexTemplate.Template.DataStreamOptions != nil {
-		if serverVersion.LessThan(MinSupportedDataStreamOptionsVersion) {
-			return diag.FromErr(fmt.Errorf("'data_stream_options' is supported only for Elasticsearch v%s and above", MinSupportedDataStreamOptionsVersion.String()))
-		}
+	if diags := validateDataStreamOptionsVersion(serverVersion, indexTemplate.Template); diags.HasError() {
+		return diags
 	}
 
 	if v, ok := d.GetOk("version"); ok {

@@ -13,8 +13,8 @@
 
 ## 3. Acceptance tests
 
-- [ ] 3.1 Add test data fixtures under `internal/elasticsearch/index/testdata/` for a new acceptance test covering `data_stream_options` (at minimum: create with `failure_store.enabled = true`, read-back, and update)
-- [ ] 3.2 Add the acceptance test function(s) to `internal/elasticsearch/index/template_test.go` that exercise `data_stream_options` behavior end-to-end
+- [x] 3.1 Add test data fixtures under `internal/elasticsearch/index/testdata/` for a new acceptance test covering `data_stream_options` (at minimum: create with `failure_store.enabled = true`, read-back, and update)
+- [x] 3.2 Add the acceptance test function(s) to `internal/elasticsearch/index/template_test.go` that exercise `data_stream_options` behavior end-to-end
 
 ## 4. Documentation
 

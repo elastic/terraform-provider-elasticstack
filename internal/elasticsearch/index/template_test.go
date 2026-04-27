@@ -415,6 +415,66 @@ func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexTemplateDataStreamOptions(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.0.failure_store.0.enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.0.failure_store.0.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.0.failure_store.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.0.failure_store.0.lifecycle.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.data_stream_options.0.failure_store.0.lifecycle.0.data_retention", "14d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_elasticsearch_index_template.test",
+			},
+		},
+	})
+}
+
 func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
