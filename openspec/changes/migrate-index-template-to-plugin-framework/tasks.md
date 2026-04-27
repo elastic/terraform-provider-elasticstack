@@ -28,10 +28,10 @@
 
 ## 5. Models, expand, flatten
 
-- [ ] 5.1 Add `internal/elasticsearch/index/template/models.go` with typed plan/state structs for the resource and the alias custom type.
-- [ ] 5.2 Add `expand.go` translating typed models into `models.IndexTemplate` (metadata JSON parse, mappings/settings JSON parse, alias map keyed by name, lifecycle, data_stream, data_stream_options).
-- [ ] 5.3 Add `flatten.go` translating Get response into the typed model. Drop the `extractAliasRoutingFromTemplateState`/`preserveAliasRoutingInFlattenedAliases` workarounds — semantic equality replaces them.
-- [ ] 5.4 Add `version_gating.go` with `validateIgnoreMissingComponentTemplatesVersion` and `validateDataStreamOptionsVersion` returning `fwdiag.Diagnostics`.
+- [x] 5.1 Add `internal/elasticsearch/index/template/models.go` with typed plan/state structs for the resource and the alias custom type.
+- [x] 5.2 Add `expand.go` translating typed models into `models.IndexTemplate` (metadata JSON parse, mappings/settings JSON parse, alias map keyed by name, lifecycle, data_stream, data_stream_options).
+- [x] 5.3 Add `flatten.go` translating Get response into the typed model. Drop the `extractAliasRoutingFromTemplateState`/`preserveAliasRoutingInFlattenedAliases` workarounds — semantic equality replaces them.
+- [x] 5.4 Add `version_gating.go` with `validateIgnoreMissingComponentTemplatesVersion` and `validateDataStreamOptionsVersion` returning `fwdiag.Diagnostics`.
 
 ## 6. CRUD
 
