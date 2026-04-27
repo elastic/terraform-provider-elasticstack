@@ -23,7 +23,6 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -115,11 +114,14 @@ func dataStreamBlock() schema.SingleNestedBlock {
 			"hidden": schema.BoolAttribute{
 				MarkdownDescription: descDataStreamHidden,
 				Optional:            true,
+				Computed:            true,
 				Default:             booldefault.StaticBool(false),
 			},
 			"allow_custom_routing": schema.BoolAttribute{
 				MarkdownDescription: descDataStreamAllowCustomRouting,
 				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 		},
 	}
@@ -141,12 +143,15 @@ func templateBlock() schema.SingleNestedBlock {
 				MarkdownDescription: descTemplateSettings,
 				Optional:            true,
 				CustomType:          customtypes.IndexSettingsType{},
+				PlanModifiers: []planmodifier.String{
+					indexSettingsCanonicalPlanModifier(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"alias":                 templateAliasBlock(),
-			"lifecycle":             templateLifecycleBlock(),
-			"data_stream_options":   templateDataStreamOptionsBlock(),
+			"alias":               templateAliasBlock(),
+			"lifecycle":           templateLifecycleBlock(),
+			"data_stream_options": templateDataStreamOptionsBlock(),
 		},
 	}
 }
@@ -170,34 +175,31 @@ func templateAliasBlock() schema.SetNestedBlock {
 					MarkdownDescription: descAliasIndexRouting,
 					Optional:            true,
 					Computed:            true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.UseStateForUnknown(),
-						planmodifiers.StringUseDefaultIfUnknown(""),
-					},
+					Default:             stringdefault.StaticString(""),
 				},
 				"is_hidden": schema.BoolAttribute{
 					MarkdownDescription: descAliasIsHidden,
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(false),
 				},
 				"is_write_index": schema.BoolAttribute{
 					MarkdownDescription: descAliasIsWriteIndex,
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(false),
 				},
 				"routing": schema.StringAttribute{
 					MarkdownDescription: descAliasRouting,
 					Optional:            true,
+					Computed:            true,
 					Default:             stringdefault.StaticString(""),
 				},
 				"search_routing": schema.StringAttribute{
 					MarkdownDescription: descAliasSearchRouting,
 					Optional:            true,
 					Computed:            true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.UseStateForUnknown(),
-						planmodifiers.StringUseDefaultIfUnknown(""),
-					},
+					Default:             stringdefault.StaticString(""),
 				},
 			},
 		},
@@ -210,7 +212,7 @@ func templateLifecycleBlock() schema.SingleNestedBlock {
 		Attributes: map[string]schema.Attribute{
 			"data_retention": schema.StringAttribute{
 				MarkdownDescription: descLifecycleDataRetention,
-				Required:            true,
+				Optional:            true,
 			},
 		},
 	}
@@ -231,7 +233,7 @@ func templateFailureStoreBlock() schema.SingleNestedBlock {
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: descFailureStoreEnabled,
-				Required:            true,
+				Optional:            true,
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -246,7 +248,7 @@ func templateFailureStoreLifecycleBlock() schema.SingleNestedBlock {
 		Attributes: map[string]schema.Attribute{
 			"data_retention": schema.StringAttribute{
 				MarkdownDescription: descFailureStoreDataRetention,
-				Required:            true,
+				Optional:            true,
 			},
 		},
 	}

@@ -124,7 +124,10 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 }
 
 // StringSemanticEquals compares normalized flattened index settings (dotted keys, index. prefix, stringified values).
-func (v IndexSettingsValue) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+// It shadows jsontypes.Normalized.StringSemanticEquals on the embedded field so index-setting semantics apply for
+// Terraform drift and apply consistency. The index template resource also applies a plan modifier that rewrites
+// planned settings to CanonicalIndexSettingsJSON so state matches Elasticsearch's nested {"index":{...}} shape.
+func (v IndexSettingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	newValue, ok := newValuable.(IndexSettingsValue)
@@ -139,15 +142,23 @@ func (v IndexSettingsValue) StringSemanticEquals(_ context.Context, newValuable 
 		return false, diags
 	}
 
+	return v.SemanticallyEqual(ctx, newValue)
+}
+
+// SemanticallyEqual is the same comparison as StringSemanticEquals for explicit IndexSettingsValue pairs
+// (plan reconciliation helpers).
+func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSettingsValue) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	if v.IsNull() {
-		return newValue.IsNull(), diags
+		return other.IsNull(), diags
 	}
 
 	if v.IsUnknown() {
-		return newValue.IsUnknown(), diags
+		return other.IsUnknown(), diags
 	}
 
-	if newValue.IsNull() || newValue.IsUnknown() {
+	if other.IsNull() || other.IsUnknown() {
 		return false, diags
 	}
 
@@ -155,7 +166,7 @@ func (v IndexSettingsValue) StringSemanticEquals(_ context.Context, newValuable 
 	if err := json.Unmarshal([]byte(v.ValueString()), &o); err != nil {
 		return false, diags
 	}
-	if err := json.Unmarshal([]byte(newValue.ValueString()), &n); err != nil {
+	if err := json.Unmarshal([]byte(other.ValueString()), &n); err != nil {
 		return false, diags
 	}
 
@@ -175,6 +186,54 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 		out[fmt.Sprintf("index.%s", k)] = fmt.Sprintf("%v", val)
 	}
 	return out
+}
+
+// CanonicalIndexSettingsJSON returns compact JSON for the same effective index settings as raw,
+// in the nested shape Elasticsearch uses (e.g. {"index":{"number_of_shards":"3"}}).
+// It applies the same flattening, index.-prefix normalization, and stringification as semantic equality.
+func CanonicalIndexSettingsJSON(raw string) (string, error) {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return "", fmt.Errorf("unmarshal settings JSON: %w", err)
+	}
+	flatNorm := normalizeIndexSettings(flattenMap(m))
+	nested := unflattenDottedMap(flatNorm)
+	b, err := json.Marshal(nested)
+	if err != nil {
+		return "", fmt.Errorf("marshal canonical settings: %w", err)
+	}
+	return string(b), nil
+}
+
+// unflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)
+// into a nested map for JSON matching Elasticsearch's index settings object shape.
+func unflattenDottedMap(flat map[string]any) map[string]any {
+	root := make(map[string]any)
+	for k, v := range flat {
+		parts := strings.Split(k, ".")
+		cur := root
+		for i := range parts {
+			p := parts[i]
+			if i == len(parts)-1 {
+				cur[p] = v
+				break
+			}
+			existing, ok := cur[p]
+			if !ok {
+				nm := make(map[string]any)
+				cur[p] = nm
+				cur = nm
+				continue
+			}
+			nm, ok := existing.(map[string]any)
+			if !ok {
+				nm = make(map[string]any)
+				cur[p] = nm
+			}
+			cur = nm
+		}
+	}
+	return root
 }
 
 // flattenMap flattens nested maps into dotted keys (port of tfsdkutils.flattenMap).
