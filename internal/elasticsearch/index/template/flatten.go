@@ -118,9 +118,12 @@ func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagno
 	if ds == nil {
 		return types.ObjectNull(DataStreamAttrTypes()), diags
 	}
+	// Both attributes carry a schema-level default of false, so when ES does not
+	// echo them back (e.g. older versions or omitted fields), state must mirror
+	// the planned default rather than null to satisfy the Computed contract.
 	attrs := map[string]attr.Value{
-		"hidden":               types.BoolNull(),
-		"allow_custom_routing": types.BoolNull(),
+		"hidden":               types.BoolValue(false),
+		"allow_custom_routing": types.BoolValue(false),
 	}
 	if ds.Hidden != nil {
 		attrs["hidden"] = types.BoolValue(*ds.Hidden)

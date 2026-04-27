@@ -32,7 +32,9 @@ import (
 )
 
 // toAPIModel converts the Terraform model into an API index template body.
-// allow_custom_routing is sent only when true; the 8.x update workaround is applied in update.go.
+// allow_custom_routing is always sent when the user (or the schema default) provides a value;
+// the 8.x update workaround in update.go handles the case where a previously-true value must be
+// explicitly reset to false on the existing template.
 func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &models.IndexTemplate{
@@ -119,9 +121,9 @@ func expandDataStreamBlock(obj types.Object) *models.DataStreamSettings {
 		}
 	}
 	if acr, ok := attrs["allow_custom_routing"]; ok && !acr.IsNull() && !acr.IsUnknown() {
-		if av, ok := acr.(types.Bool); ok && av.ValueBool() {
-			t := true
-			dSettings.AllowCustomRouting = &t
+		if av, ok := acr.(types.Bool); ok {
+			v := av.ValueBool()
+			dSettings.AllowCustomRouting = &v
 		}
 	}
 	return dSettings
