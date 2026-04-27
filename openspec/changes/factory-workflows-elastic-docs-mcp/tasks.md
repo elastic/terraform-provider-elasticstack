@@ -2,13 +2,13 @@
 
 - [ ] 1.1 In `.github/workflows-src/change-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `elastic.litellm-prod.ai`)
 - [ ] 1.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
-- [ ] 1.3 In the same template, add a prompt section instructing the agent to use the elastic-docs MCP tools (`search_docs`, `find_related_docs`, `get_document_by_url`) during issue investigation before authoring proposal artifacts, and to proceed gracefully if the MCP is unavailable
+- [ ] 1.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## OpenSpec tooling` (around line 148) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before authoring proposal artifacts; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
 
 ## 2. Update code-factory workflow template
 
 - [ ] 2.1 In `.github/workflows-src/code-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `go`, `elastic.litellm-prod.ai`)
 - [ ] 2.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
-- [ ] 2.3 In the same template, add a prompt section instructing the agent to use the elastic-docs MCP tools during issue investigation before implementing provider code, and to proceed gracefully if the MCP is unavailable
+- [ ] 2.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## Test environment` and before `## Task` (around line 172) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before writing implementation code; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
 
 ## 3. Regenerate compiled workflow artifacts
 
