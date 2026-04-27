@@ -98,6 +98,31 @@ func TestTfArtifactsToAPIModel(t *testing.T) {
 		_, diags := tfArtifactsToAPIModel(art)
 		require.True(t, diags.HasError(), "expected diagnostics for unknown id")
 	})
+	t.Run("null dashboards list clears artifacts", func(t *testing.T) {
+		art, d := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": types.ListNull(tfSloArtifactDashboardObjectType),
+		})
+		require.False(t, d.HasError())
+		api, diags := tfArtifactsToAPIModel(art)
+		require.False(t, diags.HasError())
+		require.NotNil(t, api)
+		require.NotNil(t, api.Dashboards)
+		assert.Empty(t, *api.Dashboards)
+	})
+	t.Run("error when id null", func(t *testing.T) {
+		obj, odi := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+			"id": types.StringNull(),
+		})
+		require.False(t, odi.HasError())
+		lv, ldi := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{obj})
+		require.False(t, ldi.HasError())
+		art, d := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": lv,
+		})
+		require.False(t, d.HasError())
+		_, diags := tfArtifactsToAPIModel(art)
+		require.True(t, diags.HasError(), "expected diagnostics for null id")
+	})
 }
 
 func TestPopulateFromAPI_settingsAndEnabled(t *testing.T) {

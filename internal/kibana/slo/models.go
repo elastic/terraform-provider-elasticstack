@@ -425,12 +425,12 @@ func tfArtifactsToAPIModel(obj types.Object) (*kbapi.SLOsArtifacts, diag.Diagnos
 		diags.AddError("Invalid configuration", "artifacts: dashboards is not a list")
 		return nil, diags
 	}
-	if !typeutils.IsKnown(dl) {
-		diags.AddError("Invalid configuration", "artifacts: dashboards is unknown; the value must be known to send artifacts to Kibana")
-		return nil, diags
-	}
 	if dl.IsNull() {
 		return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(nil)}, diags
+	}
+	if dl.IsUnknown() {
+		diags.AddError("Invalid configuration", "artifacts: dashboards is unknown; the value must be known to send artifacts to Kibana")
+		return nil, diags
 	}
 	elems := dl.Elements()
 	refs := make([]sloArtifactDashboardRef, 0, len(elems))
@@ -445,12 +445,12 @@ func tfArtifactsToAPIModel(obj types.Object) (*kbapi.SLOsArtifacts, diag.Diagnos
 			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d] has no id attribute", i))
 			return nil, diags
 		}
-		if !typeutils.IsKnown(idVal) {
-			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is unknown", i))
-			return nil, diags
-		}
 		if idVal.IsNull() {
 			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is null", i))
+			return nil, diags
+		}
+		if idVal.IsUnknown() {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is unknown", i))
 			return nil, diags
 		}
 		refs = append(refs, sloArtifactDashboardRef{ID: idVal.ValueString()})
