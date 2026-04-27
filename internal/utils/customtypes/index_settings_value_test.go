@@ -62,6 +62,41 @@ func TestCanonicalIndexSettingsJSON(t *testing.T) {
 	}
 }
 
+func TestCanonicalIndexSettingsJSON_rejectsNull(t *testing.T) {
+	t.Parallel()
+	_, err := CanonicalIndexSettingsJSON("null")
+	require.Error(t, err)
+}
+
+func TestCanonicalIndexSettingsJSON_nestedFormWinsOverFlatSibling(t *testing.T) {
+	t.Parallel()
+	got, err := CanonicalIndexSettingsJSON(`{"number_of_shards":"3","index":{"number_of_shards":"5"}}`)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"index":{"number_of_shards":"5"}}`, got)
+}
+
+func TestCanonicalIndexSettingsJSON_byteIdenticalAcrossCalls(t *testing.T) {
+	t.Parallel()
+	in := `{"index":{"zebra":"1","alpha":"2"},"other":"3"}`
+	first, err := CanonicalIndexSettingsJSON(in)
+	require.NoError(t, err)
+	for range 30 {
+		got, err := CanonicalIndexSettingsJSON(in)
+		require.NoError(t, err)
+		require.Equal(t, first, got)
+	}
+}
+
+func TestIndexSettingsValue_StringSemanticEquals_nestedWinsConflict(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a := NewIndexSettingsValue(`{"number_of_shards":"3","index":{"number_of_shards":"5"}}`)
+	b := NewIndexSettingsValue(`{"index":{"number_of_shards":"5"},"number_of_shards":"3"}`)
+	eq, diags := a.StringSemanticEquals(ctx, b)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, eq)
+}
+
 func TestIndexSettingsValue_Type(t *testing.T) {
 	require.Equal(t, IndexSettingsType{}, IndexSettingsValue{}.Type(context.Background()))
 }

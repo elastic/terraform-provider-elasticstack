@@ -18,10 +18,12 @@
 package customtypes
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -176,14 +178,50 @@ func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSett
 	), diags
 }
 
+// normalizeIndexSettings stringifies values and ensures every key uses an index.* prefix for comparison.
+//
+// Merge rule when flattening produces the same canonical key from a top-level setting and a nested
+// "index": {...} path (e.g. number_of_shards vs index.number_of_shards): the nested form wins. We
+// apply flat keys first, then keys whose pre-prefix path contains a dot (nested/dotted sources), so
+// the latter overwrite deterministically. Remaining ties use sorted (canonical key, flat key) order.
 func normalizeIndexSettings(m map[string]any) map[string]any {
-	out := make(map[string]any, len(m))
+	type entry struct {
+		flatKey string
+		nk      string
+		val     string
+	}
+	flat := make([]entry, 0)
+	dotted := make([]entry, 0)
 	for k, val := range m {
-		if strings.HasPrefix(k, "index.") {
-			out[k] = fmt.Sprintf("%v", val)
-			continue
+		nk := k
+		if !strings.HasPrefix(k, "index.") {
+			nk = "index." + k
 		}
-		out[fmt.Sprintf("index.%s", k)] = fmt.Sprintf("%v", val)
+		e := entry{k, nk, fmt.Sprintf("%v", val)}
+		if strings.Contains(k, ".") {
+			dotted = append(dotted, e)
+		} else {
+			flat = append(flat, e)
+		}
+	}
+	sort.Slice(flat, func(i, j int) bool {
+		if flat[i].nk != flat[j].nk {
+			return flat[i].nk < flat[j].nk
+		}
+		return flat[i].flatKey < flat[j].flatKey
+	})
+	sort.Slice(dotted, func(i, j int) bool {
+		if dotted[i].nk != dotted[j].nk {
+			return dotted[i].nk < dotted[j].nk
+		}
+		return dotted[i].flatKey < dotted[j].flatKey
+	})
+	out := make(map[string]any, len(m))
+	for _, e := range flat {
+		out[e.nk] = e.val
+	}
+	for _, e := range dotted {
+		out[e.nk] = e.val
 	}
 	return out
 }
@@ -191,18 +229,66 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 // CanonicalIndexSettingsJSON returns compact JSON for the same effective index settings as raw,
 // in the nested shape Elasticsearch uses (e.g. {"index":{"number_of_shards":"3"}}).
 // It applies the same flattening, index.-prefix normalization, and stringification as semantic equality.
+//
+// When the same logical setting appears as both a top-level key and under a nested path (e.g.
+// number_of_shards alongside index.number_of_shards), normalizeIndexSettings applies a deterministic
+// merge: values whose original flat key contained a dot (nested/dotted source) overwrite values
+// from single-segment keys sharing the same canonical index.* key. Object keys in the output are
+// sorted recursively so repeated calls return an identical byte string.
 func CanonicalIndexSettingsJSON(raw string) (string, error) {
-	var m map[string]any
-	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+	var top any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &top); err != nil {
 		return "", fmt.Errorf("unmarshal settings JSON: %w", err)
+	}
+	if top == nil {
+		return "", fmt.Errorf("settings must be a JSON object, not null")
+	}
+	m, ok := top.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("settings must be a JSON object")
 	}
 	flatNorm := normalizeIndexSettings(flattenMap(m))
 	nested := unflattenDottedMap(flatNorm)
-	b, err := json.Marshal(nested)
+	b, err := marshalSettingsJSONSorted(nested)
 	if err != nil {
 		return "", fmt.Errorf("marshal canonical settings: %w", err)
 	}
 	return string(b), nil
+}
+
+// marshalSettingsJSONSorted marshals maps with sorted keys at every object level so canonical
+// settings strings are stable across Go releases and map iteration order.
+func marshalSettingsJSONSorted(v any) ([]byte, error) {
+	switch t := v.(type) {
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		var buf bytes.Buffer
+		buf.WriteByte('{')
+		for i, k := range keys {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+			keyBytes, err := json.Marshal(k)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(keyBytes)
+			buf.WriteByte(':')
+			valBytes, err := marshalSettingsJSONSorted(t[k])
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(valBytes)
+		}
+		buf.WriteByte('}')
+		return buf.Bytes(), nil
+	default:
+		return json.Marshal(t)
+	}
 }
 
 // unflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)
@@ -237,6 +323,8 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 }
 
 // flattenMap flattens nested maps into dotted keys (port of tfsdkutils.flattenMap).
+// Map iteration order is undefined; conflicting keys are resolved deterministically later in
+// normalizeIndexSettings (nested / dotted sources win over flat siblings — see comment there).
 func flattenMap(m map[string]any) map[string]any {
 	out := make(map[string]any)
 
