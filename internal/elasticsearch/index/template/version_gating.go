@@ -20,15 +20,10 @@ package template
 import (
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-)
-
-// Local copies of SDK constants (see internal/elasticsearch/index/template.go); task 11 moves the canonical definitions.
-var (
-	minIgnoreMissingComponentTemplateVersion = version.Must(version.NewVersion("8.7.0"))
-	minDataStreamOptionsVersion              = version.Must(version.NewVersion("9.1.0"))
 )
 
 // validateIgnoreMissingComponentTemplatesVersion returns an error if ignore_missing_component_templates is non-empty
@@ -44,10 +39,10 @@ func validateIgnoreMissingComponentTemplatesVersion(plan Model, serverVersion *v
 	if len(plan.IgnoreMissingComponentTemplates.Elements()) == 0 {
 		return diags
 	}
-	if serverVersion.LessThan(minIgnoreMissingComponentTemplateVersion) {
+	if serverVersion.LessThan(index.MinSupportedIgnoreMissingComponentTemplateVersion) {
 		diags.AddError(
 			"Unsupported Elasticsearch version",
-			fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", minIgnoreMissingComponentTemplateVersion.String()),
+			fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
 		)
 	}
 	return diags
@@ -74,10 +69,10 @@ func validateDataStreamOptionsVersion(plan Model, serverVersion *version.Version
 	if _, ok := dsoVal.(types.Object); !ok {
 		return diags
 	}
-	if serverVersion.LessThan(minDataStreamOptionsVersion) {
+	if serverVersion.LessThan(index.MinSupportedDataStreamOptionsVersion) {
 		diags.AddError(
 			"Unsupported Elasticsearch version",
-			fmt.Sprintf("'data_stream_options' is supported only for Elasticsearch v%s and above", minDataStreamOptionsVersion.String()),
+			fmt.Sprintf("'data_stream_options' is supported only for Elasticsearch v%s and above", index.MinSupportedDataStreamOptionsVersion.String()),
 		)
 	}
 	return diags
