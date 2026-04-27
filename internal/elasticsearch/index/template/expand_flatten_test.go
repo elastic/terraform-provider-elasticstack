@@ -111,7 +111,7 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	}
 }
 
-func TestExpandTemplate_dataStreamAllowCustomRoutingOnlyWhenTrue(t *testing.T) {
+func TestExpandTemplate_dataStreamAllowCustomRoutingPropagatesFalse(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	patterns, diags := types.SetValueFrom(ctx, types.StringType, []attr.Value{types.StringValue("p")})
@@ -145,8 +145,8 @@ func TestExpandTemplate_dataStreamAllowCustomRoutingOnlyWhenTrue(t *testing.T) {
 	if out.DataStream == nil || out.DataStream.Hidden == nil || !*out.DataStream.Hidden {
 		t.Fatalf("hidden not set: %#v", out.DataStream)
 	}
-	if out.DataStream.AllowCustomRouting != nil {
-		t.Fatalf("allow_custom_routing should be omitted when false, got %#v", out.DataStream.AllowCustomRouting)
+	if out.DataStream.AllowCustomRouting == nil || *out.DataStream.AllowCustomRouting {
+		t.Fatalf("allow_custom_routing should be sent as false when explicitly set, got %#v", out.DataStream.AllowCustomRouting)
 	}
 }
 
