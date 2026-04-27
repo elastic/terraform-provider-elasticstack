@@ -75,17 +75,12 @@ func (t IndexSettingsType) ValueFromTerraform(ctx context.Context, in tftypes.Va
 		return nil, err
 	}
 
-	stringValue, ok := attrValue.(basetypes.StringValue)
+	norm, ok := attrValue.(jsontypes.Normalized)
 	if !ok {
 		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
 	}
 
-	stringValuable, diags := t.ValueFromString(ctx, stringValue)
-	if diags.HasError() {
-		return nil, fmt.Errorf("unexpected error converting StringValue to StringValuable: %v", diags)
-	}
-
-	return stringValuable, nil
+	return IndexSettingsValue{Normalized: norm}, nil
 }
 
 // IndexSettingsValue holds a JSON object string for index template settings with semantic equality matching DiffIndexSettingSuppress.
