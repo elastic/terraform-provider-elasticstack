@@ -22,125 +22,40 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-//go:embed testdata/TestAccResourceIndexTemplateFromSDK/step1_sdk/main.tf
-var sdkIndexTemplateFromSDKStep1Full string
-
 //go:embed testdata/TestAccResourceIndexTemplateFromSDK/step1_sdk_no_dso/main.tf
 var sdkIndexTemplateFromSDKStep1Compat string
 
 // TestAccResourceIndexTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
-// (REQ-042). Step 1 uses a published provider pin; step 2 uses the in-tree Plugin Framework
+// (REQ-042). Step 1 uses registry provider 0.14.3; step 2 uses the in-tree Plugin Framework
 // implementation and asserts a no-op plan after state migration.
 //
-// On Elasticsearch >= 9.1.0 the configuration includes template.data_stream_options (full collapsed-block
-// coverage). On older clusters the same test runs without data_stream_options so upgrade coverage still
-// applies where the API allows.
+// The external pin does not implement template.data_stream_options (that block exists only on the
+// Plugin Framework schema), so step 1 cannot use a configuration containing data_stream_options.
+// template.data_stream_options lifecycle is covered by TestAccResourceIndexTemplateDataStreamOptions.
 func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 	acctest.PreCheck(t)
-	dsoUnsupported, err := versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion)()
-	if err != nil {
-		t.Fatalf("failed to read Elasticsearch version: %v", err)
-	}
 
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-
-	if dsoUnsupported {
-		resource.Test(t, resource.TestCase{
-			PreCheck:     func() { acctest.PreCheck(t) },
-			CheckDestroy: checkResourceIndexTemplateDestroy,
-			Steps: []resource.TestStep{
-				{
-					// 0.14.3 is the last registry release where this resource was still on Plugin SDK v2
-					// (same pin as TestAccResourceILMFromSDK). The in-tree provider is Plugin Framework.
-					ExternalProviders: map[string]resource.ExternalProvider{
-						"elasticstack": {
-							Source:            "elastic/elasticstack",
-							VersionConstraint: "0.14.3",
-						},
-					},
-					Config: sdkIndexTemplateFromSDKStep1Compat,
-					ConfigVariables: config.Variables{
-						"template_name": config.StringVariable(templateName),
-					},
-					Check: resource.ComposeTestCheckFunc(
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "name", templateName),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "priority", "100"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.0.hidden", "true"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.0.allow_custom_routing", "true"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.mappings", `{"properties":{"from_sdk":{"type":"keyword"}}}`),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.settings", `{"index":{"number_of_shards":"1"}}`),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.alias.#", "1"),
-						resource.TestCheckTypeSetElemNestedAttrs(
-							"elasticstack_elasticsearch_index_template.upgrade",
-							"template.0.alias.*",
-							map[string]string{
-								"name":           "routing_only_alias",
-								"routing":        "shard-a",
-								"search_routing": "shard-a",
-								"index_routing":  "shard-a",
-							},
-						),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.lifecycle.#", "1"),
-						resource.TestCheckTypeSetElemNestedAttrs(
-							"elasticstack_elasticsearch_index_template.upgrade",
-							"template.0.lifecycle.*",
-							map[string]string{"data_retention": "7d"},
-						),
-					),
-				},
-				{
-					ProtoV6ProviderFactories: acctest.Providers,
-					ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf_no_dso"),
-					ConfigVariables: config.Variables{
-						"template_name": config.StringVariable(templateName),
-					},
-					PlanOnly:           true,
-					ExpectNonEmptyPlan: false,
-					Check: resource.ComposeTestCheckFunc(
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "name", templateName),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "priority", "100"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.hidden", "true"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.allow_custom_routing", "true"),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.mappings", `{"properties":{"from_sdk":{"type":"keyword"}}}`),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.settings", `{"index":{"number_of_shards":"1"}}`),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.alias.#", "1"),
-						resource.TestCheckTypeSetElemNestedAttrs(
-							"elasticstack_elasticsearch_index_template.upgrade",
-							"template.alias.*",
-							map[string]string{
-								"name":           "routing_only_alias",
-								"routing":        "shard-a",
-								"search_routing": "shard-a",
-								"index_routing":  "shard-a",
-							},
-						),
-						resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.lifecycle.data_retention", "7d"),
-					),
-				},
-			},
-		})
-		return
-	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
+				// 0.14.3 is the last registry release where this resource was still on Plugin SDK v2
+				// (same pin as TestAccResourceILMFromSDK). The in-tree provider is Plugin Framework.
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
 						VersionConstraint: "0.14.3",
 					},
 				},
-				Config: sdkIndexTemplateFromSDKStep1Full,
+				Config: sdkIndexTemplateFromSDKStep1Compat,
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
@@ -157,9 +72,8 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 						"template.0.alias.*",
 						map[string]string{
 							"name":           "routing_only_alias",
-							"routing":        "shard-a",
-							"search_routing": "shard-a",
 							"index_routing":  "shard-a",
+							"search_routing": "shard-a",
 						},
 					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.lifecycle.#", "1"),
@@ -168,15 +82,11 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 						"template.0.lifecycle.*",
 						map[string]string{"data_retention": "7d"},
 					),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.data_stream_options.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.data_stream_options.0.failure_store.0.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.data_stream_options.0.failure_store.0.lifecycle.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.0.data_stream_options.0.failure_store.0.lifecycle.0.data_retention", "30d"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf_no_dso"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
@@ -188,7 +98,7 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.hidden", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "data_stream.allow_custom_routing", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.mappings", `{"properties":{"from_sdk":{"type":"keyword"}}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.settings", `{"index":{"number_of_shards":"1"}}`),
+					testAccCheckResourceAttrIndexSettingsSemantic("elasticstack_elasticsearch_index_template.upgrade", `{"index":{"number_of_shards":"1"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"elasticstack_elasticsearch_index_template.upgrade",
@@ -201,8 +111,6 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 						},
 					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.lifecycle.data_retention", "7d"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.data_stream_options.failure_store.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.data_stream_options.failure_store.lifecycle.data_retention", "30d"),
 				),
 			},
 		},

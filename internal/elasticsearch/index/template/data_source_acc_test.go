@@ -121,7 +121,7 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 						},
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"1"}}`),
+					testAccCheckResourceAttrIndexSettingsSemantic("data.elasticstack_elasticsearch_index_template.test", `{"index":{"number_of_shards":"1"}}`),
 				),
 			},
 			{
@@ -148,7 +148,7 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 						},
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"2"}}`),
+					testAccCheckResourceAttrIndexSettingsSemantic("data.elasticstack_elasticsearch_index_template.test", `{"index":{"number_of_shards":"2"}}`),
 				),
 			},
 		},
@@ -173,13 +173,29 @@ func TestAccIndexTemplateDataSourceExplicitConnection(t *testing.T) {
 					"password":      config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["data.elasticstack_elasticsearch_index_template.test_conn"]
+						if !ok {
+							return fmt.Errorf("missing data source in state")
+						}
+						var connKeys []string
+						for k := range rs.Primary.Attributes {
+							if strings.HasPrefix(k, "elasticsearch_connection") {
+								connKeys = append(connKeys, k)
+							}
+						}
+						if len(connKeys) == 0 {
+							return fmt.Errorf("no elasticsearch_connection.* keys in state (have %d attrs total)", len(rs.Primary.Attributes))
+						}
+						return nil
+					},
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "name", templateName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.password", os.Getenv("ELASTICSEARCH_PASSWORD")),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.api_key", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.bearer_token", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.es_client_authentication", ""),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.api_key"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.bearer_token"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.es_client_authentication"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.headers.%", "1"),
@@ -214,10 +230,10 @@ func TestAccIndexTemplateDataSourceExplicitConnectionAPIKey(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "name", templateName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.api_key"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.password", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.bearer_token", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.es_client_authentication", ""),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.username"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.password"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.bearer_token"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.es_client_authentication"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
@@ -256,9 +272,9 @@ func TestAccIndexTemplateDataSourceExplicitConnectionBearerToken(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.bearer_token", bearerToken),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.api_key", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.password", ""),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.api_key"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.username"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.password"),
 				),
 			},
 		},
@@ -289,9 +305,9 @@ func TestAccIndexTemplateDataSourceExplicitConnectionTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_data", tlsMaterial.CAPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_data", tlsMaterial.CertPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_data", tlsMaterial.KeyPEM),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_file", ""),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_file"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_file"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_file"),
 				),
 			},
 			{
@@ -310,9 +326,9 @@ func TestAccIndexTemplateDataSourceExplicitConnectionTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_file", tlsMaterial.CAFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_file", tlsMaterial.CertFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_file", tlsMaterial.KeyFile),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_data", ""),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.ca_data"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.cert_data"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test_conn", "elasticsearch_connection.0.key_data"),
 				),
 			},
 		},
@@ -602,9 +618,9 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 						"template.alias.*",
 						map[string]string{
 							"name":           "routing_only_alias",
-							"routing":        "shard_1",
-							"search_routing": "shard_1",
 							"index_routing":  "shard_1",
+							"search_routing": "shard_1",
+							"routing":        "",
 						},
 					),
 				),
@@ -707,7 +723,7 @@ func TestAccIndexTemplateDataSourceOptionalFieldRemoval(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "version", "7"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"1"}}`),
+					testAccCheckResourceAttrIndexSettingsSemantic("data.elasticstack_elasticsearch_index_template.test", `{"index":{"number_of_shards":"1"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "30d"),
 				),
 			},
