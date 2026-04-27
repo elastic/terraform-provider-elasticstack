@@ -107,6 +107,10 @@ func applyAllowCustomRouting8xWorkaround(ctx context.Context, prior, plan Model,
 	if set && val {
 		return
 	}
+	if !set {
+		// Omitted in configuration: SDK only emits allow_custom_routing when the new data_stream map has the key.
+		return
+	}
 	f := false
 	if indexTemplate.DataStream == nil {
 		indexTemplate.DataStream = &models.DataStreamSettings{}
