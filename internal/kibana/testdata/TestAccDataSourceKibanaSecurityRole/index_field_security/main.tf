@@ -9,7 +9,7 @@ resource "elasticstack_kibana_security_role" "test" {
     cluster = ["monitor"]
     indices {
       field_security {
-        grant  = ["field1", "field2"]
+        grant  = ["field1", "field2", "restricted"]
         except = ["restricted"]
       }
       query      = jsonencode({ match_all = {} })
