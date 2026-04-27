@@ -35,11 +35,11 @@
 
 ## 6. CRUD
 
-- [ ] 6.1 `create.go`: load plan, fetch server version, run version gating, expand, call `PutIndexTemplate`, set `id` (`<cluster_uuid>/<name>`), call shared read to refresh state.
-- [ ] 6.2 `read.go`: extract a package-private `readIndexTemplate(ctx, client, name) (Model, fwdiag.Diagnostics)` used by the resource Read and the data source Read. Remove from state when not found (resource path) / leave defaulted (data source path, matching today's SDK behavior).
-- [ ] 6.3 `update.go`: load prior state and plan, fetch server version, run version gating, apply the 8.x `allow_custom_routing` workaround by inspecting prior state, expand, call `PutIndexTemplate`, refresh.
-- [ ] 6.4 `delete.go`: parse composite ID, call `DeleteIndexTemplate`.
-- [ ] 6.5 `data_source.go`: implement Read by calling `readIndexTemplate` with the configured `name` and setting `id`.
+- [x] 6.1 `create.go`: load plan, fetch server version, run version gating, expand, call `PutIndexTemplate`, set `id` (`<cluster_uuid>/<name>`), call shared read to refresh state.
+- [x] 6.2 `read.go`: extract a package-private `readIndexTemplate(ctx, client, name) (Model, fwdiag.Diagnostics)` used by the resource Read and the data source Read. Remove from state when not found (resource path) / leave defaulted (data source path, matching today's SDK behavior).
+- [x] 6.3 `update.go`: load prior state and plan, fetch server version, run version gating, apply the 8.x `allow_custom_routing` workaround by inspecting prior state, expand, call `PutIndexTemplate`, refresh.
+- [x] 6.4 `delete.go`: parse composite ID, call `DeleteIndexTemplate`.
+- [x] 6.5 `data_source.go`: implement Read by calling `readIndexTemplate` with the configured `name` and setting `id`.
 
 ## 7. State upgrade (v0 → v1)
 
