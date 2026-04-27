@@ -48,7 +48,6 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_index_template":                     index.DataSourceTemplate(),
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
 			"elasticstack_elasticsearch_ingest_processor_bytes":             ingest.DataSourceProcessorBytes(),
 			"elasticstack_elasticsearch_ingest_processor_circle":            ingest.DataSourceProcessorCircle(),
@@ -101,7 +100,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
 			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":         index.ResourceDataStream(),
-			"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
 			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),

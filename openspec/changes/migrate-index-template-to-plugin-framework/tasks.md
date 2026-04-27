@@ -51,9 +51,9 @@
 
 ## 8. Provider wiring
 
-- [ ] 8.1 Register `template.NewResource` in `provider/plugin_framework.go` `resources()`.
-- [ ] 8.2 Register `template.NewDataSource` in `provider/plugin_framework.go` `dataSources()`.
-- [ ] 8.3 Remove `"elasticstack_elasticsearch_index_template"` entries from both `ResourcesMap` and `DataSourcesMap` in `provider/provider.go`.
+- [x] 8.1 Register `template.NewResource` in `provider/plugin_framework.go` `resources()`.
+- [x] 8.2 Register `template.NewDataSource` in `provider/plugin_framework.go` `dataSources()`.
+- [x] 8.3 Remove `"elasticstack_elasticsearch_index_template"` entries from both `ResourcesMap` and `DataSourcesMap` in `provider/provider.go`.
 
 ## 9. Acceptance tests
 

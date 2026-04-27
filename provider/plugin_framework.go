@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
@@ -175,6 +176,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		apikey.NewResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
+		template.NewResource,
 		connectors.NewResource,
 		agentpolicy.NewResource,
 		agentbuilderagent.NewResource,
@@ -224,6 +226,7 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
+		template.NewDataSource,
 		spaces.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuildertool.NewDataSource,
