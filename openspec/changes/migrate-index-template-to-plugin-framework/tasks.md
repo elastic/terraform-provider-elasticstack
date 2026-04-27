@@ -18,13 +18,13 @@
 
 ## 4. Schema
 
-- [ ] 4.1 Add `internal/elasticsearch/index/template/schema.go` with the full resource schema mirroring `internal/elasticsearch/index/template.go`. Use `providerschema.GetEsFWConnectionBlock()` for the connection block. Set `Version: 1` on the resource schema.
-- [ ] 4.2 Declare each of the six single-item containers as `schema.SingleNestedBlock`: `data_stream`, `template`, `template.lifecycle`, `template.data_stream_options`, `template.data_stream_options.failure_store`, `template.data_stream_options.failure_store.lifecycle`. The `template.alias` collection remains a `SetNestedBlock`.
-- [ ] 4.3 Use `jsontypes.Normalized` for `metadata`, `template.mappings`, and `template.alias.filter`.
-- [ ] 4.4 Use `customtypes.IndexSettingsType` for `template.settings`.
-- [ ] 4.5 Use the alias `CustomType` on the `SetNestedBlock` `NestedBlockObject` for `template.alias`.
-- [ ] 4.6 Implement `ValidateConfig` enforcing the existing REQ-032 rule that `data_stream_options` configured without `failure_store` is rejected at plan time (replaces the SDK `Required: true` flag, which `SingleNestedBlock` does not expose).
-- [ ] 4.7 Add `data_source_schema.go` returning a Computed-only mirror schema (mirror the same `SingleNestedBlock` shape on the data source); share descriptions via constants in `descriptions.go`.
+- [x] 4.1 Add `internal/elasticsearch/index/template/schema.go` with the full resource schema mirroring `internal/elasticsearch/index/template.go`. Use `providerschema.GetEsFWConnectionBlock()` for the connection block. Set `Version: 1` on the resource schema.
+- [x] 4.2 Declare each of the six single-item containers as `schema.SingleNestedBlock`: `data_stream`, `template`, `template.lifecycle`, `template.data_stream_options`, `template.data_stream_options.failure_store`, `template.data_stream_options.failure_store.lifecycle`. The `template.alias` collection remains a `SetNestedBlock`.
+- [x] 4.3 Use `jsontypes.Normalized` for `metadata`, `template.mappings`, and `template.alias.filter`.
+- [x] 4.4 Use `customtypes.IndexSettingsType` for `template.settings`.
+- [x] 4.5 Use the alias `CustomType` on the `SetNestedBlock` `NestedBlockObject` for `template.alias`.
+- [x] 4.6 Implement `ValidateConfig` enforcing the existing REQ-032 rule that `data_stream_options` configured without `failure_store` is rejected at plan time (replaces the SDK `Required: true` flag, which `SingleNestedBlock` does not expose).
+- [x] 4.7 Add `data_source_schema.go` returning a Computed-only mirror schema (mirror the same `SingleNestedBlock` shape on the data source); share descriptions via constants in `descriptions.go`.
 
 ## 5. Models, expand, flatten
 
