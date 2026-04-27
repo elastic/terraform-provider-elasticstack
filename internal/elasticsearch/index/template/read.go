@@ -78,6 +78,11 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
+	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &out, &prior)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	out.ElasticsearchConnection = prior.ElasticsearchConnection
 	out.ID = prior.ID
 

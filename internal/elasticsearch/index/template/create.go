@@ -85,6 +85,11 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
 	refreshed.ID = types.StringValue(id.String())
 
