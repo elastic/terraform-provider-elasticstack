@@ -28,10 +28,74 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // testImageURL is a minimal 1×1 PNG data-URL used to verify image_url round-trip.
 const testImageURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+// testCheckSpaceAttrByID returns a TestCheckFunc that scans the "spaces" list
+// in state to find the element whose id equals spaceID, then asserts that attr
+// equals value. This avoids hard-coding list indices, which can shift when the
+// Kibana API returns spaces in a different order.
+func testCheckSpaceAttrByID(resourceName, spaceID, attr, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+		attrs := rs.Primary.Attributes
+		countStr, ok := attrs["spaces.#"]
+		if !ok {
+			return fmt.Errorf("%q: spaces.# not found in state", resourceName)
+		}
+		count, err := strconv.Atoi(countStr)
+		if err != nil {
+			return fmt.Errorf("%q: spaces.# is not a number: %w", resourceName, err)
+		}
+		for i := 0; i < count; i++ {
+			if attrs[fmt.Sprintf("spaces.%d.id", i)] == spaceID {
+				got := attrs[fmt.Sprintf("spaces.%d.%s", i, attr)]
+				if got != value {
+					return fmt.Errorf("%q spaces[id=%q].%s: expected %q, got %q", resourceName, spaceID, attr, value, got)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("%q: no space with id %q found in state", resourceName, spaceID)
+	}
+}
+
+// testCheckSpaceAttrSetByID returns a TestCheckFunc that scans the "spaces"
+// list in state to find the element whose id equals spaceID, then asserts that
+// attr is set to a non-empty value.
+func testCheckSpaceAttrSetByID(resourceName, spaceID, attr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+		attrs := rs.Primary.Attributes
+		countStr, ok := attrs["spaces.#"]
+		if !ok {
+			return fmt.Errorf("%q: spaces.# not found in state", resourceName)
+		}
+		count, err := strconv.Atoi(countStr)
+		if err != nil {
+			return fmt.Errorf("%q: spaces.# is not a number: %w", resourceName, err)
+		}
+		for i := 0; i < count; i++ {
+			if attrs[fmt.Sprintf("spaces.%d.id", i)] == spaceID {
+				got := attrs[fmt.Sprintf("spaces.%d.%s", i, attr)]
+				if got == "" {
+					return fmt.Errorf("%q spaces[id=%q].%s: expected a non-empty value, got empty string", resourceName, spaceID, attr)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("%q: no space with id %q found in state", resourceName, spaceID)
+	}
+}
 
 // TestAccSpacesDataSource verifies the data source returns all expected fields
 // for the pre-existing default space.
@@ -94,13 +158,12 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 							return nil
 						},
 					),
-					// Custom space (sorts after "default") is at index 1.
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.id", spaceID),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.name", "Test Coverage Space"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.description", "Test space for data source coverage"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.disabled_features.#", "0"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.initials"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.color"),
+					// Custom space — looked up by ID to avoid index-ordering fragility.
+					testCheckSpaceAttrByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "name", "Test Coverage Space"),
+					testCheckSpaceAttrByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "description", "Test space for data source coverage"),
+					testCheckSpaceAttrByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "disabled_features.#", "0"),
+					testCheckSpaceAttrSetByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "initials"),
+					testCheckSpaceAttrSetByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "color"),
 				),
 			},
 		},
@@ -123,8 +186,7 @@ func TestAccSpacesDataSource_noDescription(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.0.id", "default"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.id", spaceID),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.description", ""),
+					testCheckSpaceAttrByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "description", ""),
 				),
 			},
 		},
@@ -147,8 +209,7 @@ func TestAccSpacesDataSource_withImageURL(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.0.id", "default"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.id", spaceID),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.1.image_url", testImageURL),
+					testCheckSpaceAttrByID("data.elasticstack_kibana_spaces.all_spaces", spaceID, "image_url", testImageURL),
 				),
 			},
 		},

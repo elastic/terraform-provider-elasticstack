@@ -19,6 +19,7 @@ variable "password" {
 }
 
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 
