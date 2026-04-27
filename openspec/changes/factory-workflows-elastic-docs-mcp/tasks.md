@@ -1,8 +1,8 @@
 ## 1. Update change-factory workflow template
 
-- [ ] 1.1 In `.github/workflows-src/change-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `elastic.litellm-prod.ai`)
-- [ ] 1.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
-- [ ] 1.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## OpenSpec tooling` (around line 148) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before authoring proposal artifacts; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
+- [x] 1.1 In `.github/workflows-src/change-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `elastic.litellm-prod.ai`)
+- [x] 1.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
+- [x] 1.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## OpenSpec tooling` (around line 148) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before authoring proposal artifacts; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
 
 ## 2. Update code-factory workflow template
 
