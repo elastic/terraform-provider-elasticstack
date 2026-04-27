@@ -183,7 +183,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var prior aliasObjectModel
+	var prior AliasElementModel
 	d := v.As(ctx, &prior, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -192,7 +192,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var incoming aliasObjectModel
+	var incoming AliasElementModel
 	d = newValue.As(ctx, &incoming, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -228,7 +228,8 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 	return true, diags
 }
 
-type aliasObjectModel struct {
+// AliasElementModel is the Terraform struct for one template alias (expand/flatten and semantic equality).
+type AliasElementModel struct {
 	Name          types.String         `tfsdk:"name"`
 	IndexRouting  types.String         `tfsdk:"index_routing"`
 	Routing       types.String         `tfsdk:"routing"`
