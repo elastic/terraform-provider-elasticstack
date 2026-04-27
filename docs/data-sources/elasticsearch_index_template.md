@@ -85,6 +85,7 @@ Read-Only:
 Read-Only:
 
 - `alias` (Set of Object) (see [below for nested schema](#nestedobjatt--template--alias))
+- `data_stream_options` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options))
 - `lifecycle` (Set of Object) (see [below for nested schema](#nestedobjatt--template--lifecycle))
 - `mappings` (String)
 - `settings` (String)
@@ -101,6 +102,31 @@ Read-Only:
 - `name` (String)
 - `routing` (String)
 - `search_routing` (String)
+
+
+<a id="nestedobjatt--template--data_stream_options"></a>
+### Nested Schema for `template.data_stream_options`
+
+Read-Only:
+
+- `failure_store` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options--failure_store))
+
+<a id="nestedobjatt--template--data_stream_options--failure_store"></a>
+### Nested Schema for `template.data_stream_options.failure_store`
+
+Read-Only:
+
+- `enabled` (Boolean)
+- `lifecycle` (List of Object) (see [below for nested schema](#nestedobjatt--template--data_stream_options--failure_store--lifecycle))
+
+<a id="nestedobjatt--template--data_stream_options--failure_store--lifecycle"></a>
+### Nested Schema for `template.data_stream_options.failure_store.lifecycle`
+
+Read-Only:
+
+- `data_retention` (String)
+
+
 
 
 <a id="nestedobjatt--template--lifecycle"></a>

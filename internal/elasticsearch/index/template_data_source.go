@@ -165,6 +165,43 @@ func DataSourceTemplate() *schema.Resource {
 							},
 						},
 					},
+					"data_stream_options": {
+						Description: "Options for data streams created by this template. Available only for Elasticsearch 9.1.0 and above.",
+						Type:        schema.TypeList,
+						Computed:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"failure_store": {
+									Description: "Failure store configuration.",
+									Type:        schema.TypeList,
+									Computed:    true,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"enabled": {
+												Description: "If true, document redirection to the failure store is enabled for new matching data streams.",
+												Type:        schema.TypeBool,
+												Computed:    true,
+											},
+											"lifecycle": {
+												Description: "Lifecycle configuration for the failure store.",
+												Type:        schema.TypeList,
+												Computed:    true,
+												Elem: &schema.Resource{
+													Schema: map[string]*schema.Schema{
+														"data_retention": {
+															Description: "The retention period for failure store documents (e.g. \"30d\").",
+															Type:        schema.TypeString,
+															Computed:    true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
