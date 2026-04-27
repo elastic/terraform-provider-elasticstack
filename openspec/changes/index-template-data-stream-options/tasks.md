@@ -18,4 +18,4 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Regenerate `docs/resources/elasticsearch_index_template.md` using `make generate-docs` (or equivalent) to reflect the new `data_stream_options` block and its attributes
+- [x] 4.1 Regenerate `docs/resources/elasticsearch_index_template.md` using `make generate-docs` (or equivalent) to reflect the new `data_stream_options` block and its attributes
