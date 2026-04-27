@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -47,6 +49,8 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
+				// template.lifecycle (data stream lifecycle) requires Elasticsearch >= 8.11.
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				// 0.14.3 is the last registry release where this resource was still on Plugin SDK v2
 				// (same pin as TestAccResourceILMFromSDK). The in-tree provider is Plugin Framework.
 				ExternalProviders: map[string]resource.ExternalProvider{
@@ -85,6 +89,7 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 				),
 			},
 			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf_no_dso"),
 				ConfigVariables: config.Variables{

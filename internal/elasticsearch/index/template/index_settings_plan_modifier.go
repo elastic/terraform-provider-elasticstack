@@ -43,11 +43,16 @@ func (m indexSettingsCanonicalModifier) MarkdownDescription(ctx context.Context)
 }
 
 func (m indexSettingsCanonicalModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
+	if req.ConfigValue.IsNull() {
+		resp.PlanValue = basetypes.NewStringNull()
 		return
 	}
-	raw := req.PlanValue.ValueString()
+	if req.ConfigValue.IsUnknown() {
+		return
+	}
+	raw := req.ConfigValue.ValueString()
 	if raw == "" {
+		resp.PlanValue = basetypes.NewStringValue("")
 		return
 	}
 	canonical, err := customtypes.CanonicalIndexSettingsJSON(raw)

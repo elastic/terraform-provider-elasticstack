@@ -142,6 +142,7 @@ func templateBlock() schema.SingleNestedBlock {
 			"settings": schema.StringAttribute{
 				MarkdownDescription: descTemplateSettings,
 				Optional:            true,
+				Computed:            true,
 				CustomType:          customtypes.IndexSettingsType{},
 				PlanModifiers: []planmodifier.String{
 					indexSettingsCanonicalPlanModifier(),
