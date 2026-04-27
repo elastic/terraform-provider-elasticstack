@@ -6,9 +6,9 @@
 
 ## 2. Update code-factory workflow template
 
-- [ ] 2.1 In `.github/workflows-src/code-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `go`, `elastic.litellm-prod.ai`)
-- [ ] 2.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
-- [ ] 2.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## Test environment` and before `## Task` (around line 172) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before writing implementation code; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
+- [x] 2.1 In `.github/workflows-src/code-factory-issue/workflow.md.tmpl`, add `www.elastic.co` to the `network.allowed` list (alongside `defaults`, `node`, `go`, `elastic.litellm-prod.ai`)
+- [x] 2.2 In the same template, add an `mcp-servers` frontmatter block with an `elastic-docs` entry: `url: "https://www.elastic.co/docs/_mcp/"` and `allowed: ["*"]`
+- [x] 2.3 In the same template, add an `## Elastic documentation` prompt section immediately after `## Test environment` and before `## Task` (around line 172) that: (a) tells the agent an `elastic-docs` MCP server is available with tools `search_docs`, `find_related_docs`, and `get_document_by_url`; (b) instructs it to use `search_docs` to look up API behaviour, parameters, and constraints for the feature described in the issue before writing implementation code; and (c) instructs it to proceed without docs if the MCP tools are unavailable rather than blocking the run
 
 ## 3. Regenerate compiled workflow artifacts
 
