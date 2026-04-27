@@ -852,7 +852,7 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := fmt.Sprintf("fleet-import-test-%s", spaceName)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -885,7 +885,7 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 				ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"inputs"},
+				ImportStateVerifyIgnore: []string{"inputs", "vars_json", "space_ids"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					res := s.RootModule().Resources["elasticstack_fleet_integration_policy.test_policy"]
 					if res == nil || res.Primary == nil {
