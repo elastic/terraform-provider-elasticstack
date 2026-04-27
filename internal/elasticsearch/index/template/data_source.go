@@ -19,9 +19,13 @@ package template
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // DataSource holds the provider client factory from Configure; Elasticsearch
@@ -44,8 +48,46 @@ func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest,
 	resp.TypeName = req.ProviderTypeName + "_elasticsearch_index_template"
 }
 
-// implemented in task 6
-func (d *DataSource) Read(_ context.Context, _ datasource.ReadRequest, _ *datasource.ReadResponse) {
+func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var cfg Model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, diags := d.client.GetElasticsearchClient(ctx, cfg.ElasticsearchConnection)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	name := cfg.Name.ValueString()
+	out, found, diags := readIndexTemplate(ctx, client, name)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		tflog.Info(ctx, fmt.Sprintf(`Index template "%s" not found; leaving data source attributes unset (legacy SDK behavior)`, name))
+		empty := Model{
+			ElasticsearchConnection: cfg.ElasticsearchConnection,
+			Name:                    cfg.Name,
+		}
+		resp.Diagnostics.Append(resp.State.Set(ctx, &empty)...)
+		return
+	}
+
+	id, sdkDiags := client.ID(ctx, name)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	out.ElasticsearchConnection = cfg.ElasticsearchConnection
+	out.Name = types.StringValue(name)
+	out.ID = types.StringValue(id.String())
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
 var (

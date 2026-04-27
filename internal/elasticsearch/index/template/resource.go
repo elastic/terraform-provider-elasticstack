@@ -43,22 +43,6 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// implemented in task 6
-func (r *Resource) Create(_ context.Context, _ resource.CreateRequest, _ *resource.CreateResponse) {
-}
-
-// implemented in task 6
-func (r *Resource) Read(_ context.Context, _ resource.ReadRequest, _ *resource.ReadResponse) {
-}
-
-// implemented in task 6
-func (r *Resource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
-}
-
-// implemented in task 6
-func (r *Resource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-}
-
 // implemented in task 7
 func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
