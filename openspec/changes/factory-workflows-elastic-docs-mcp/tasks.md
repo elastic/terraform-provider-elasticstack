@@ -19,4 +19,4 @@
 
 ## 4. Validate OpenSpec artifacts
 
-- [ ] 4.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate factory-workflows-elastic-docs-mcp --type change` and fix any reported problems
+- [x] 4.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate factory-workflows-elastic-docs-mcp --type change` and fix any reported problems
