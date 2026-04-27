@@ -70,6 +70,17 @@ func TestAliasObjectValue_ObjectSemanticEquals_identical(t *testing.T) {
 	require.True(t, eq)
 }
 
+func TestAliasObjectValue_ObjectSemanticEquals_identical_hiddenAndWriteIndexTrue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	attrs := aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), true, true)
+	prior := mustAlias(t, attrs)
+	incoming := mustAlias(t, attrs)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, eq)
+}
+
 func TestAliasObjectValue_ObjectSemanticEquals_differingName(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -85,6 +96,26 @@ func TestAliasObjectValue_ObjectSemanticEquals_differingRouting(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("y"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, eq)
+}
+
+func TestAliasObjectValue_ObjectSemanticEquals_differingIsHidden(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), true, false))
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, eq)
+}
+
+func TestAliasObjectValue_ObjectSemanticEquals_differingIsWriteIndex(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, true))
 	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
@@ -180,4 +211,16 @@ func TestAliasObjectValue_ObjectSemanticEquals_wrongType(t *testing.T) {
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	_, diags := prior.ObjectSemanticEquals(ctx, types.ObjectNull(AliasAttributeTypes()))
 	require.True(t, diags.HasError())
+}
+
+func TestAliasObjectValue_ObjectSemanticEquals_unknownNestedAttribute(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	attrs := aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false)
+	attrs["routing"] = types.StringUnknown()
+	prior := mustAlias(t, attrs)
+	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, eq)
 }

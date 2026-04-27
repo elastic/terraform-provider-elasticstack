@@ -35,6 +35,34 @@ var (
 	_ basetypes.ObjectValuableWithSemanticEquals = (*AliasObjectValue)(nil)
 )
 
+// aliasSemanticCompareAttrKeys lists object attributes consulted by ObjectSemanticEquals.
+var aliasSemanticCompareAttrKeys = []string{
+	"name",
+	"index_routing",
+	"routing",
+	"search_routing",
+	"filter",
+	"is_hidden",
+	"is_write_index",
+}
+
+func aliasObjectHasUnknownSemanticField(o basetypes.ObjectValue) bool {
+	if o.IsNull() || o.IsUnknown() {
+		return false
+	}
+	attrs := o.Attributes()
+	for _, k := range aliasSemanticCompareAttrKeys {
+		av, ok := attrs[k]
+		if !ok {
+			continue
+		}
+		if av.IsUnknown() {
+			return true
+		}
+	}
+	return false
+}
+
 // AliasAttributeTypes returns attribute types for a single template alias block element.
 func AliasAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
@@ -109,7 +137,7 @@ type AliasObjectValue struct {
 }
 
 // Type returns an AliasObjectType.
-func (v AliasObjectValue) Type(ctx context.Context) attr.Type {
+func (v AliasObjectValue) Type(_ context.Context) attr.Type {
 	return NewAliasObjectType()
 }
 
@@ -151,10 +179,13 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
+	if aliasObjectHasUnknownSemanticField(v.ObjectValue) || aliasObjectHasUnknownSemanticField(newValue.ObjectValue) {
+		return false, diags
+	}
+
 	var prior aliasObjectModel
 	d := v.As(ctx, &prior, basetypes.ObjectAsOptions{
-		UnhandledNullAsEmpty:    true,
-		UnhandledUnknownAsEmpty: true,
+		UnhandledNullAsEmpty: true,
 	})
 	diags.Append(d...)
 	if diags.HasError() {
@@ -163,8 +194,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 
 	var incoming aliasObjectModel
 	d = newValue.As(ctx, &incoming, basetypes.ObjectAsOptions{
-		UnhandledNullAsEmpty:    true,
-		UnhandledUnknownAsEmpty: true,
+		UnhandledNullAsEmpty: true,
 	})
 	diags.Append(d...)
 	if diags.HasError() {
