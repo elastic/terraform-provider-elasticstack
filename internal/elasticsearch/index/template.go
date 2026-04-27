@@ -37,6 +37,7 @@ import (
 
 var (
 	MinSupportedIgnoreMissingComponentTemplateVersion = version.Must(version.NewVersion("8.7.0"))
+	MinSupportedDataStreamOptionsVersion              = version.Must(version.NewVersion("9.1.0"))
 )
 
 func ResourceTemplate() *schema.Resource {
@@ -207,6 +208,46 @@ func ResourceTemplate() *schema.Resource {
 							},
 						},
 					},
+					"data_stream_options": {
+						Description: "Options for data streams created by this template. Applied once at data stream creation time. Available only for Elasticsearch 9.1.0 and above.",
+						Type:        schema.TypeList,
+						Optional:    true,
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"failure_store": {
+									Description: "Failure store configuration.",
+									Type:        schema.TypeList,
+									Required:    true,
+									MaxItems:    1,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"enabled": {
+												Description: "If true, document redirection to the failure store is enabled for new matching data streams.",
+												Type:        schema.TypeBool,
+												Required:    true,
+											},
+											"lifecycle": {
+												Description: "Lifecycle configuration for the failure store.",
+												Type:        schema.TypeList,
+												Optional:    true,
+												MaxItems:    1,
+												Elem: &schema.Resource{
+													Schema: map[string]*schema.Schema{
+														"data_retention": {
+															Description: "The retention period for failure store documents (e.g. \"30d\").",
+															Type:        schema.TypeString,
+															Required:    true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -343,6 +384,12 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
+	if indexTemplate.Template != nil && indexTemplate.Template.DataStreamOptions != nil {
+		if serverVersion.LessThan(MinSupportedDataStreamOptionsVersion) {
+			return diag.FromErr(fmt.Errorf("'data_stream_options' is supported only for Elasticsearch v%s and above", MinSupportedDataStreamOptionsVersion.String()))
+		}
+	}
+
 	if v, ok := d.GetOk("version"); ok {
 		definedVer := v.(int)
 		indexTemplate.Version = &definedVer
@@ -394,6 +441,37 @@ func expandTemplate(config any) (models.Template, bool, diag.Diagnostics) {
 				return templ, false, diag.FromErr(err)
 			}
 			templ.Settings = sets
+		}
+	}
+
+	if dso, ok := definedTempl["data_stream_options"]; ok {
+		dsoList, ok := dso.([]any)
+		if ok && len(dsoList) > 0 && dsoList[0] != nil {
+			dsoMap := dsoList[0].(map[string]any)
+			dataStreamOptions := &models.DataStreamOptions{}
+			if fs, ok := dsoMap["failure_store"]; ok {
+				fsList, ok := fs.([]any)
+				if ok && len(fsList) > 0 && fsList[0] != nil {
+					fsMap := fsList[0].(map[string]any)
+					failureStore := &models.FailureStoreOptions{}
+					if enabled, ok := fsMap["enabled"]; ok {
+						failureStore.Enabled = enabled.(bool)
+					}
+					if lc, ok := fsMap["lifecycle"]; ok {
+						lcList, ok := lc.([]any)
+						if ok && len(lcList) > 0 && lcList[0] != nil {
+							lcMap := lcList[0].(map[string]any)
+							lifecycle := &models.FailureStoreLifecycle{}
+							if dr, ok := lcMap["data_retention"]; ok {
+								lifecycle.DataRetention = dr.(string)
+							}
+							failureStore.Lifecycle = lifecycle
+						}
+					}
+					dataStreamOptions.FailureStore = failureStore
+				}
+			}
+			templ.DataStreamOptions = dataStreamOptions
 		}
 	}
 
@@ -515,6 +593,21 @@ func flattenTemplateData(template *models.Template, preservedAliasRouting map[st
 	if template.Lifecycle != nil {
 		lifecycle := FlattenLifecycle(template.Lifecycle)
 		tmpl["lifecycle"] = lifecycle
+	}
+
+	if template.DataStreamOptions != nil {
+		dso := make(map[string]any)
+		if template.DataStreamOptions.FailureStore != nil {
+			fs := make(map[string]any)
+			fs["enabled"] = template.DataStreamOptions.FailureStore.Enabled
+			if template.DataStreamOptions.FailureStore.Lifecycle != nil {
+				lc := make(map[string]any)
+				lc["data_retention"] = template.DataStreamOptions.FailureStore.Lifecycle.DataRetention
+				fs["lifecycle"] = []any{lc}
+			}
+			dso["failure_store"] = []any{fs}
+		}
+		tmpl["data_stream_options"] = []any{dso}
 	}
 
 	return []any{tmpl}, diags

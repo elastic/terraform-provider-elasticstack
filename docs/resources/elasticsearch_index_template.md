@@ -104,6 +104,7 @@ Optional:
 Optional:
 
 - `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
+- `data_stream_options` (Block List, Max: 1) Options for data streams created by this template. Applied once at data stream creation time. Available only for Elasticsearch 9.1.0 and above. (see [below for nested schema](#nestedblock--template--data_stream_options))
 - `lifecycle` (Block Set, Max: 1) Lifecycle of data stream. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-lifecycle.html (see [below for nested schema](#nestedblock--template--lifecycle))
 - `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
 - `settings` (String) Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings
@@ -123,6 +124,34 @@ Optional:
 - `is_write_index` (Boolean) If true, the index is the write index for the alias.
 - `routing` (String) Value used to route indexing and search operations to a specific shard.
 - `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
+
+
+<a id="nestedblock--template--data_stream_options"></a>
+### Nested Schema for `template.data_stream_options`
+
+Required:
+
+- `failure_store` (Block List, Min: 1, Max: 1) Failure store configuration. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store))
+
+<a id="nestedblock--template--data_stream_options--failure_store"></a>
+### Nested Schema for `template.data_stream_options.failure_store`
+
+Required:
+
+- `enabled` (Boolean) If true, document redirection to the failure store is enabled for new matching data streams.
+
+Optional:
+
+- `lifecycle` (Block List, Max: 1) Lifecycle configuration for the failure store. (see [below for nested schema](#nestedblock--template--data_stream_options--failure_store--lifecycle))
+
+<a id="nestedblock--template--data_stream_options--failure_store--lifecycle"></a>
+### Nested Schema for `template.data_stream_options.failure_store.lifecycle`
+
+Required:
+
+- `data_retention` (String) The retention period for failure store documents (e.g. "30d").
+
+
 
 
 <a id="nestedblock--template--lifecycle"></a>

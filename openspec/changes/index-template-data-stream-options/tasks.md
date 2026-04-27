@@ -5,11 +5,11 @@
 
 ## 2. Schema and expand/flatten
 
-- [ ] 2.1 Add `data_stream_options` block to the `template` schema in `internal/elasticsearch/index/template.go`, with a nested `failure_store` block containing `enabled` (required bool) and an optional `lifecycle` block containing `data_retention` (required string)
-- [ ] 2.2 Add a minimum server version constant `MinSupportedDataStreamOptionsVersion = "9.1.0"` (following the pattern of `MinSupportedIgnoreMissingComponentTemplateVersion`)
-- [ ] 2.3 Update `resourceIndexTemplatePut` to version-gate `data_stream_options`: if the attribute is configured and the server version is below `9.1.0`, return an error diagnostic without calling the Put API
-- [ ] 2.4 Update `expandTemplate` to read `data_stream_options` from the Terraform config map and populate `templ.DataStreamOptions` accordingly
-- [ ] 2.5 Update `flattenTemplateData` to convert a non-nil `template.DataStreamOptions` into the nested HCL block representation in state
+- [x] 2.1 Add `data_stream_options` block to the `template` schema in `internal/elasticsearch/index/template.go`, with a nested `failure_store` block containing `enabled` (required bool) and an optional `lifecycle` block containing `data_retention` (required string)
+- [x] 2.2 Add a minimum server version constant `MinSupportedDataStreamOptionsVersion = "9.1.0"` (following the pattern of `MinSupportedIgnoreMissingComponentTemplateVersion`)
+- [x] 2.3 Update `resourceIndexTemplatePut` to version-gate `data_stream_options`: if the attribute is configured and the server version is below `9.1.0`, return an error diagnostic without calling the Put API
+- [x] 2.4 Update `expandTemplate` to read `data_stream_options` from the Terraform config map and populate `templ.DataStreamOptions` accordingly
+- [x] 2.5 Update `flattenTemplateData` to convert a non-nil `template.DataStreamOptions` into the nested HCL block representation in state
 
 ## 3. Acceptance tests
 
