@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
 // DataSource holds the provider client factory from Configure; Elasticsearch
@@ -49,7 +48,7 @@ func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest,
 func (d *DataSource) Read(_ context.Context, _ datasource.ReadRequest, _ *datasource.ReadResponse) {
 }
 
-// implemented in task 4
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{}
-}
+var (
+	_ datasource.DataSource              = &DataSource{}
+	_ datasource.DataSourceWithConfigure = &DataSource{}
+)
