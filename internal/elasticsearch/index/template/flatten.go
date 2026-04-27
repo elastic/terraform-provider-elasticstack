@@ -194,8 +194,12 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 
 	var lcObj types.Object
 	if t.Lifecycle != nil {
+		dataRetention := types.StringNull()
+		if t.Lifecycle.DataRetention != "" {
+			dataRetention = types.StringValue(t.Lifecycle.DataRetention)
+		}
 		lcAttrs := map[string]attr.Value{
-			"data_retention": types.StringValue(t.Lifecycle.DataRetention),
+			"data_retention": dataRetention,
 		}
 		var d diag.Diagnostics
 		lcObj, d = types.ObjectValue(LifecycleAttrTypes(), lcAttrs)

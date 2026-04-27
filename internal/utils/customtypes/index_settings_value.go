@@ -127,8 +127,8 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 
 // StringSemanticEquals compares normalized flattened index settings (dotted keys, index. prefix, stringified values).
 // It shadows jsontypes.Normalized.StringSemanticEquals on the embedded field so index-setting semantics apply for
-// Terraform drift and apply consistency. The index template resource also applies a plan modifier that rewrites
-// planned settings to CanonicalIndexSettingsJSON so state matches Elasticsearch's nested {"index":{...}} shape.
+// Terraform drift and apply consistency between the user's input form and the canonical
+// {"index":{...}} shape Elasticsearch returns.
 func (v IndexSettingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -166,9 +166,17 @@ func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSett
 
 	var o, n map[string]any
 	if err := json.Unmarshal([]byte(v.ValueString()), &o); err != nil {
+		diags.AddError(
+			"Invalid index settings JSON",
+			fmt.Sprintf("Failed to parse prior index settings as JSON during semantic comparison: %s", err.Error()),
+		)
 		return false, diags
 	}
 	if err := json.Unmarshal([]byte(other.ValueString()), &n); err != nil {
+		diags.AddError(
+			"Invalid index settings JSON",
+			fmt.Sprintf("Failed to parse new index settings as JSON during semantic comparison: %s", err.Error()),
+		)
 		return false, diags
 	}
 
