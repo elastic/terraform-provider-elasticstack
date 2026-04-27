@@ -15,9 +15,9 @@ resource "elasticstack_elasticsearch_index_template" "test" {
       name           = "detailed_alias_v2"
       is_hidden      = true
       is_write_index = true
-      routing        = "shard_2"
-      search_routing = "shard_2"
-      index_routing  = "shard_2"
+      routing        = "route_common_v2"
+      search_routing = "search_explicit_v2"
+      index_routing  = "index_explicit_v2"
     }
   }
 }

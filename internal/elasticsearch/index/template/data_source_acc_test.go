@@ -602,6 +602,7 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 						"template.alias.*",
 						map[string]string{
 							"name":           "routing_only_alias",
+							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"index_routing":  "shard_1",
 						},
