@@ -65,8 +65,8 @@
 
 ## 10. Schema coverage
 
-- [ ] 10.1 Run the `schema-coverage` skill against the new package and add tests for any attribute/block lacking coverage. Pay particular attention to `data_stream_options.failure_store.lifecycle.data_retention`, `composed_of`, `ignore_missing_component_templates`, `priority`, `version`, and the alias derived-routing edge cases.
-- [ ] 10.2 Add an explicit `TestAccResourceIndexTemplate_importState` if not already present.
+- [x] 10.1 Run the `schema-coverage` skill against the new package and add tests for any attribute/block lacking coverage. Pay particular attention to `data_stream_options.failure_store.lifecycle.data_retention`, `composed_of`, `ignore_missing_component_templates`, `priority`, `version`, and the alias derived-routing edge cases.
+- [x] 10.2 Add an explicit `TestAccResourceIndexTemplate_importState` if not already present.
 
 ## 11. Cleanup
 
