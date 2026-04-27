@@ -12,9 +12,9 @@
 
 ## 3. Plugin Framework package skeleton
 
-- [ ] 3.1 Create `internal/elasticsearch/index/template/` and add `resource.go` defining `Resource{*resourcecore.Core}` with `newResource()` / `NewResource()` / `ImportState` (passthrough on `id`).
-- [ ] 3.2 Add `data_source.go` with explicit `Configure` / `Metadata` / `Read`, registered as `<provider>_elasticsearch_index_template`.
-- [ ] 3.3 Wire interface assertions for `resource.ResourceWithConfigure`, `ResourceWithImportState`, `ResourceWithValidateConfig` (used for plan-time predicates that don't need the server version), `ResourceWithUpgradeState`, and `datasource.DataSourceWithConfigure`.
+- [x] 3.1 Create `internal/elasticsearch/index/template/` and add `resource.go` defining `Resource{*resourcecore.Core}` with `newResource()` / `NewResource()` / `ImportState` (passthrough on `id`).
+- [x] 3.2 Add `data_source.go` with explicit `Configure` / `Metadata` / `Read`, registered as `<provider>_elasticsearch_index_template`.
+- [x] 3.3 Wire interface assertions for `resource.ResourceWithConfigure`, `ResourceWithImportState`, `ResourceWithValidateConfig` (used for plan-time predicates that don't need the server version), `ResourceWithUpgradeState`, and `datasource.DataSourceWithConfigure`.
 
 ## 4. Schema
 
