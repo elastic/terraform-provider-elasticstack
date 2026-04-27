@@ -45,6 +45,7 @@ var (
 	minVersionOutputID             = version.Must(version.NewVersion("8.16.0"))
 	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
+	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
 )
 
 const (
@@ -858,7 +859,7 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -875,7 +876,7 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
