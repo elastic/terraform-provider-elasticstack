@@ -109,7 +109,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 			pSet, ok1 := pa.(types.Set)
 			sSet, ok2 := sa.(types.Set)
 			if ok1 && ok2 {
-				eq, d := aliasSetsSemanticallyEqual(ctx, pSet, sSet)
+				eq, d := aliasPlanAndStateSetsSemanticallyEqual(ctx, pSet, sSet)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -136,7 +136,9 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 	return &out, diags
 }
 
-func aliasSetsSemanticallyEqual(ctx context.Context, planSet, stateSet basetypes.SetValue) (bool, diag.Diagnostics) {
+// aliasPlanAndStateSetsSemanticallyEqual pairs aliases by name and delegates element comparison to
+// [AliasObjectValue.ObjectSemanticEquals] with state as the receiver (prior/API) and plan as newValuable (design.md §2).
+func aliasPlanAndStateSetsSemanticallyEqual(ctx context.Context, planSet, stateSet basetypes.SetValue) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pe := planSet.Elements()
 	se := stateSet.Elements()
@@ -188,20 +190,12 @@ func aliasSetsSemanticallyEqual(ctx context.Context, planSet, stateSet basetypes
 		if !ok2 {
 			return false, diags
 		}
-		eq1, d := aliasObjectValuesSemanticallyEqual(ctx, pAv, sAv)
+		eq, d := sAv.ObjectSemanticEquals(ctx, pAv)
 		diags.Append(d...)
 		if diags.HasError() {
 			return false, diags
 		}
-		eq2 := false
-		if !eq1 {
-			eq2, d = aliasObjectValuesSemanticallyEqual(ctx, sAv, pAv)
-			diags.Append(d...)
-			if diags.HasError() {
-				return false, diags
-			}
-		}
-		if !eq1 && !eq2 {
+		if !eq {
 			return false, diags
 		}
 	}

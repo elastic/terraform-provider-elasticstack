@@ -64,7 +64,7 @@ func TestAliasSetsSemanticallyEqual_routingOnlyPlanVsIndexEchoState(t *testing.T
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	ok, diags := aliasSetsSemanticallyEqual(ctx, planSet, stateSet)
+	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -107,7 +107,7 @@ func TestAliasSetsSemanticallyEqual_routingOnlyPlanNullRoutingStrings_stateEmpty
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	ok, diags := aliasSetsSemanticallyEqual(ctx, planSet, stateSet)
+	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -150,7 +150,7 @@ func TestAliasSetsSemanticallyEqual_planNullBools_stateFalseBools(t *testing.T) 
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	ok, diags := aliasSetsSemanticallyEqual(ctx, planSet, stateSet)
+	ok, diags := aliasPlanAndStateSetsSemanticallyEqual(ctx, planSet, stateSet)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}

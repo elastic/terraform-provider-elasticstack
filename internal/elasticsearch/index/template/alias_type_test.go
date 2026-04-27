@@ -65,7 +65,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_identical(t *testing.T) {
 	attrs := aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false)
 	prior := mustAlias(t, attrs)
 	incoming := mustAlias(t, attrs)
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -76,7 +76,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_identical_hiddenAndWriteIndexTrue
 	attrs := aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), true, true)
 	prior := mustAlias(t, attrs)
 	incoming := mustAlias(t, attrs)
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -86,7 +86,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_differingName(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("b", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -96,7 +96,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_differingRouting(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("y"), strNull(), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -106,7 +106,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_differingIsHidden(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), true, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -116,7 +116,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_differingIsWriteIndex(t *testing.
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, true))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -126,7 +126,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_routingOnlyEcho(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -137,7 +137,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_routingOnly_planNullRoutingFields
 	ctx := context.Background()
 	plan := mustAlias(t, aliasAttrMap("routing_only_alias", strNull(), strAttr("shard_1"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	state := mustAlias(t, aliasAttrMap("routing_only_alias", strAttr(""), strAttr("shard_1"), strAttr(""), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, plan, state)
+	eq, diags := plan.ObjectSemanticEquals(ctx, state)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -148,7 +148,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_apiEchoRead_vs_routingOnlyPlan(t 
 	// GET: generic routing omitted, index_routing echoes shard_1, search_routing empty.
 	read := mustAlias(t, aliasAttrMap("routing_only_alias", strAttr("shard_1"), strAttr(""), strAttr(""), jsontypes.NewNormalizedNull(), false, false))
 	plan := mustAlias(t, aliasAttrMap("routing_only_alias", strNull(), strAttr("shard_1"), strNull(), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, read, plan)
+	eq, diags := read.ObjectSemanticEquals(ctx, plan)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -158,7 +158,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_explicitIndexRouting(t *testing.T
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strAttr("y"), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strAttr("y"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -176,7 +176,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_esDropsTopLevelRoutingWithSplitRo
 		strAttr(""),
 		strAttr("search_explicit_v1"),
 		jsontypes.NewNormalizedNull(), true, true))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, plan, api)
+	eq, diags := plan.ObjectSemanticEquals(ctx, api)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -194,7 +194,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_esEchoesMainRoutingIntoIndexRouti
 		strAttr(""),
 		strAttr("search_explicit_v1"),
 		jsontypes.NewNormalizedNull(), true, true))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, api, plan)
+	eq, diags := api.ObjectSemanticEquals(ctx, plan)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -212,8 +212,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_frameworkCallOrder_refreshVsPlan(
 		strAttr(""),
 		strAttr("search_explicit_v1"),
 		jsontypes.NewNormalizedNull(), true, true))
-	// Historical note: with framework semantic equality removed, compare API vs plan as (api, plan).
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, api, plan)
+	eq, diags := api.ObjectSemanticEquals(ctx, plan)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -223,7 +222,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_filterWhitespace(t *testing.T) {
 	ctx := context.Background()
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedValue(`{"match": {"a": 1}}`), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedValue(`{"match":{"a":1}}`), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, eq)
 }
@@ -235,11 +234,11 @@ func TestAliasObjectValue_ObjectSemanticEquals_priorEmptyStringVsNullDerived(t *
 	priorEmpty := mustAlias(t, aliasAttrMap("a", strAttr(""), strAttr("x"), strAttr(""), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false))
 
-	eq1, d1 := aliasObjectValuesSemanticallyEqual(ctx, priorNull, incoming)
+	eq1, d1 := priorNull.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, d1.HasError(), "%v", d1)
 	require.True(t, eq1)
 
-	eq2, d2 := aliasObjectValuesSemanticallyEqual(ctx, priorEmpty, incoming)
+	eq2, d2 := priorEmpty.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, d2.HasError(), "%v", d2)
 	require.True(t, eq2)
 }
@@ -250,7 +249,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_asymmetricExplicitPriorVsDerivedN
 	// Prior keeps an explicit index_routing; refreshed value echoes only generic routing.
 	prior := mustAlias(t, aliasAttrMap("a", strAttr("y"), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strAttr("x"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -261,7 +260,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_asymmetricDerivedPriorVsExplicitN
 	// Prior had unset/empty index_routing matching routing echo; new side shows an explicit different index_routing.
 	prior := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
 	incoming := mustAlias(t, aliasAttrMap("a", strAttr("y"), strAttr("x"), strAttr("x"), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, eq)
 }
@@ -269,15 +268,15 @@ func TestAliasObjectValue_ObjectSemanticEquals_asymmetricDerivedPriorVsExplicitN
 func TestAliasObjectValue_ObjectSemanticEquals_nullAndUnknownObject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	eq1, d1 := aliasObjectValuesSemanticallyEqual(ctx, NewAliasObjectNull(), NewAliasObjectNull())
+	eq1, d1 := NewAliasObjectNull().ObjectSemanticEquals(ctx, NewAliasObjectNull())
 	require.False(t, d1.HasError())
 	require.True(t, eq1)
 
-	eq2, d2 := aliasObjectValuesSemanticallyEqual(ctx, NewAliasObjectUnknown(), NewAliasObjectUnknown())
+	eq2, d2 := NewAliasObjectUnknown().ObjectSemanticEquals(ctx, NewAliasObjectUnknown())
 	require.False(t, d2.HasError())
 	require.True(t, eq2)
 
-	eq3, d3 := aliasObjectValuesSemanticallyEqual(ctx, NewAliasObjectNull(), NewAliasObjectUnknown())
+	eq3, d3 := NewAliasObjectNull().ObjectSemanticEquals(ctx, NewAliasObjectUnknown())
 	require.False(t, d3.HasError())
 	require.False(t, eq3)
 }
@@ -289,7 +288,7 @@ func TestAliasObjectValue_ObjectSemanticEquals_unknownNestedAttribute(t *testing
 	attrs["routing"] = types.StringUnknown()
 	prior := mustAlias(t, attrs)
 	incoming := mustAlias(t, aliasAttrMap("a", strNull(), strAttr("x"), strNull(), jsontypes.NewNormalizedNull(), false, false))
-	eq, diags := aliasObjectValuesSemanticallyEqual(ctx, prior, incoming)
+	eq, diags := prior.ObjectSemanticEquals(ctx, incoming)
 	require.False(t, diags.HasError(), "%v", diags)
 	// Unknown on plan/config is filled from the other operand (refreshed state) before semantic rules.
 	require.True(t, eq)

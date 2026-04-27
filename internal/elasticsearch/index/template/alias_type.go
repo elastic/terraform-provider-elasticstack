@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	_ basetypes.ObjectTypable  = (*AliasObjectType)(nil)
-	_ basetypes.ObjectValuable = (*AliasObjectValue)(nil)
+	_ basetypes.ObjectTypable                    = (*AliasObjectType)(nil)
+	_ basetypes.ObjectValuable                   = (*AliasObjectValue)(nil)
+	_ basetypes.ObjectValuableWithSemanticEquals = (*AliasObjectValue)(nil)
 )
 
 // AliasAttributeTypes returns attribute types for a single template alias block element.
@@ -102,33 +103,31 @@ func (t AliasObjectType) ValueFromTerraform(ctx context.Context, in tftypes.Valu
 	return AliasObjectValue{ObjectValue: objectValue}, nil
 }
 
-// AliasObjectValue is the value type for a template alias (routing-aware comparison via
-// [aliasObjectValuesSemanticallyEqual] for provider reconciliation only).
+// AliasObjectValue is the value type for a template alias. It implements
+// [basetypes.ObjectValuableWithSemanticEquals] so routing-only and API echo shapes match
+// design.md §2 during plan, refresh, and post-apply checks.
 type AliasObjectValue struct {
 	basetypes.ObjectValue
 }
 
-// Type returns an AliasObjectType.
-func (v AliasObjectValue) Type(_ context.Context) attr.Type {
-	return NewAliasObjectType()
-}
-
-// Equal returns true if the given value is equivalent (strict object equality).
-func (v AliasObjectValue) Equal(o attr.Value) bool {
-	other, ok := o.(AliasObjectValue)
-	if !ok {
-		return false
-	}
-	return v.ObjectValue.Equal(other.ObjectValue)
-}
-
-// aliasObjectValuesSemanticallyEqual applies the alias routing predicate from design.md §2 for
-// provider-side reconciliation (read/post-read, ModifyPlan). It intentionally does not implement
-// [basetypes.ObjectValuableWithSemanticEquals]: framework semantic equality would rewrite state
-// after apply using planned defaults (e.g. false) where configuration omitted nulls.
-func aliasObjectValuesSemanticallyEqual(ctx context.Context, v, newValue AliasObjectValue) (bool, diag.Diagnostics) {
+// ObjectSemanticEquals compares this value to newValuable using the alias routing predicate
+// (design.md §2). The receiver is the prior/state side; newValuable is the plan or refreshed value.
+func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	newValue, ok := newValuable.(AliasObjectValue)
+	if !ok {
+		diags.AddError(
+			"Semantic equality check error",
+			"An unexpected value type was received while comparing template alias values. "+
+				"Please report this to the provider developers.\n\n"+
+				"Expected type: AliasObjectValue\n"+
+				"Got type: "+fmt.Sprintf("%T", newValuable),
+		)
+		return false, diags
+	}
+
+	// Receiver is prior/state (e.g. API echo); newValue is plan or refreshed config (design.md §2).
 	if v.IsNull() {
 		return newValue.IsNull(), diags
 	}
@@ -159,8 +158,6 @@ func aliasObjectValuesSemanticallyEqual(ctx context.Context, v, newValue AliasOb
 		return false, diags
 	}
 
-	// Optional+Computed+Default nested attributes can be Unknown in plan while state is known after read.
-	// Fill Unknown from the other operand so routing / bool null-vs-false rules still apply.
 	aFilled := fillUnknownAliasModelFieldsFromOther(a, b)
 	okForward, d := aliasElementModelsSemanticallyEqual(ctx, aFilled, b)
 	diags.Append(d...)
@@ -175,6 +172,20 @@ func aliasObjectValuesSemanticallyEqual(ctx context.Context, v, newValue AliasOb
 	okReverse, d := aliasElementModelsSemanticallyEqual(ctx, bFilled, a)
 	diags.Append(d...)
 	return okReverse, diags
+}
+
+// Type returns an AliasObjectType.
+func (v AliasObjectValue) Type(_ context.Context) attr.Type {
+	return NewAliasObjectType()
+}
+
+// Equal returns true if the given value is equivalent (strict object equality).
+func (v AliasObjectValue) Equal(o attr.Value) bool {
+	other, ok := o.(AliasObjectValue)
+	if !ok {
+		return false
+	}
+	return v.ObjectValue.Equal(other.ObjectValue)
 }
 
 func fillUnknownAliasModelFieldsFromOther(m, other AliasElementModel) AliasElementModel {
