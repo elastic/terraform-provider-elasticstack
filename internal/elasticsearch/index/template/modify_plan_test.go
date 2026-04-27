@@ -54,10 +54,11 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var plan, state Model
+	var plan, state, config Model
 	plan.Template = planTpl
 	state.Template = stateTpl
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state)
+	config.Template = planTpl
+	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, merged)
 	var mt TemplateBlockModel

@@ -82,6 +82,10 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &out)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	out.ElasticsearchConnection = prior.ElasticsearchConnection
 	out.ID = prior.ID

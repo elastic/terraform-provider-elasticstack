@@ -32,6 +32,8 @@ import (
 
 // fromAPIModel maps an API index template into this model.
 // It does not set id or elasticsearch_connection; the caller merges those as needed.
+// Alias routing echo shapes vs practitioner config are aligned in applyTemplateAliasReconciliationFromReference
+// after read (managed resource only); the data source preserves the API shape.
 func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	*m = Model{

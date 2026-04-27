@@ -28,9 +28,8 @@ import (
 )
 
 // applyTemplateAliasReconciliationFromReference replaces template.alias elements read from the API
-// with the reference encoding (plan on create/update, prior state on read) when ObjectSemanticEquals
-// says they match. Set plan comparison uses strict Equal only, so this keeps stored state aligned with
-// practitioner shape after refresh when Elasticsearch echoes routing fields differently.
+// with the reference encoding when ObjectSemanticEquals matches. Use configuration on Create and
+// Update (req.Plan can leave Optional+Computed nested attributes unknown); use prior state on Read.
 func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Model, ref *Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if out.Template.IsNull() || out.Template.IsUnknown() {
@@ -67,8 +66,90 @@ func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Mod
 	return diags
 }
 
-// mergeAliasSetPreferReferenceEncoding walks API-shaped alias set elements; when a same-named element
-// exists in ref and ref.ObjectSemanticEquals(api) is true, the ref element is used (practitioner shape).
+// mergePlanAliasSetWithPriorState walks planned alias elements; when prior state has the same name and
+// planElt.ObjectSemanticEquals(stateElt), replace the plan element with the state's encoding so planned
+// values match stored state under Optional+Computed+Default nested sets.
+func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	pSet, ok := planAliases.(basetypes.SetValue)
+	if !ok {
+		return planAliases, false, diags
+	}
+	sSet, ok := stateAliases.(basetypes.SetValue)
+	if !ok {
+		return planAliases, false, diags
+	}
+	if pSet.IsNull() || pSet.IsUnknown() || sSet.IsNull() || sSet.IsUnknown() {
+		return planAliases, false, diags
+	}
+
+	stateByName := make(map[string]AliasObjectValue)
+	for _, se := range sSet.Elements() {
+		sAlias, sOK, d := aliasObjectFromAttr(ctx, se)
+		diags.Append(d...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		if !sOK || sAlias.IsNull() || sAlias.IsUnknown() {
+			continue
+		}
+		var sm AliasElementModel
+		diags.Append(sAlias.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		stateByName[sm.Name.ValueString()] = sAlias
+	}
+
+	planElems := pSet.Elements()
+	newElems := make([]attr.Value, len(planElems))
+	changed := false
+	for i, pe := range planElems {
+		pAlias, pOK, d := aliasObjectFromAttr(ctx, pe)
+		diags.Append(d...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		if !pOK || pAlias.IsNull() || pAlias.IsUnknown() {
+			newElems[i] = pe
+			continue
+		}
+		var pm AliasElementModel
+		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		sAlias, ok := stateByName[pm.Name.ValueString()]
+		if !ok {
+			newElems[i] = pe
+			continue
+		}
+		eq, d := pAlias.ObjectSemanticEquals(ctx, sAlias)
+		diags.Append(d...)
+		if diags.HasError() {
+			return planAliases, false, diags
+		}
+		if eq && !pAlias.Equal(sAlias) {
+			newElems[i] = sAlias
+			changed = true
+			continue
+		}
+		newElems[i] = pe
+	}
+
+	if !changed {
+		return planAliases, false, diags
+	}
+
+	newSet, d := types.SetValue(NewAliasObjectType(), newElems)
+	diags.Append(d...)
+	if diags.HasError() {
+		return planAliases, false, diags
+	}
+	return newSet, true, diags
+}
+
 func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet attr.Value) (attr.Value, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 

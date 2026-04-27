@@ -31,7 +31,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	var plan, state Model
+	var plan, state, config Model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -40,8 +40,12 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state)
+	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -55,7 +59,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 // reconcilePlanWithPriorStateForSemanticDrift aligns planned template.settings with prior state when
 // Terraform would show a spurious diff: strict inequality but semantic equality (index settings
 // canonical form in state vs practitioner JSON in configuration).
-func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state Model) (*Model, diag.Diagnostics) {
+func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state, config Model) (*Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if plan.Template.IsNull() || plan.Template.IsUnknown() || state.Template.IsNull() || state.Template.IsUnknown() {
 		return nil, diags
@@ -81,6 +85,35 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 						changed = true
 					}
 				}
+			}
+		}
+	}
+
+	if pa, ok := planAttrs["alias"]; ok && !pa.IsNull() && !pa.IsUnknown() {
+		if sa, ok := stateAttrs["alias"]; ok && !sa.IsNull() && !sa.IsUnknown() {
+			newAlias, aliasChanged, d := mergePlanAliasSetWithPriorState(ctx, pa, sa)
+			diags.Append(d...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			if !aliasChanged && !config.Template.IsNull() && !config.Template.IsUnknown() {
+				cfgAttrs := config.Template.Attributes()
+				if ca, ok := cfgAttrs["alias"]; ok && !ca.IsNull() && !ca.IsUnknown() {
+					newAlias, aliasChanged, d = mergePlanAliasSetWithPriorState(ctx, ca, sa)
+					diags.Append(d...)
+					if diags.HasError() {
+						return nil, diags
+					}
+				}
+			}
+			if aliasChanged {
+				canonAlias, d := canonicalizeAliasSetElements(ctx, newAlias)
+				diags.Append(d...)
+				if diags.HasError() {
+					return nil, diags
+				}
+				planAttrs["alias"] = canonAlias
+				changed = true
 			}
 		}
 	}

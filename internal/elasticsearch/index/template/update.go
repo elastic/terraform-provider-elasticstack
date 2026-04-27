@@ -89,7 +89,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &plan)...)
+	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &refreshed)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

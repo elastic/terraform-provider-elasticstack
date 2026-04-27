@@ -104,10 +104,8 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 						"elasticstack_elasticsearch_index_template.upgrade",
 						"template.alias.*",
 						map[string]string{
-							"name":           "routing_only_alias",
-							"routing":        "shard-a",
-							"search_routing": "shard-a",
-							"index_routing":  "shard-a",
+							"name":    "routing_only_alias",
+							"routing": "shard-a",
 						},
 					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.upgrade", "template.lifecycle.data_retention", "7d"),

@@ -85,7 +85,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &plan)...)
+	// Use configuration (not plan): plan can carry unknown/Computed placeholders in nested set elements that
+	// then differ from non-refresh planning, which compares against config-shaped defaults.
+	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &refreshed)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
