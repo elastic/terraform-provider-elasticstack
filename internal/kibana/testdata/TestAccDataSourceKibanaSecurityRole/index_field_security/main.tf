@@ -12,7 +12,7 @@ resource "elasticstack_kibana_security_role" "test" {
         grant  = ["field1", "field2"]
         except = ["restricted"]
       }
-      query      = "{\"match_all\":{}}"
+      query      = jsonencode({ match_all = {} })
       names      = ["sample-index"]
       privileges = ["read"]
     }
