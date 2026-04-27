@@ -27,6 +27,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCanonicalIndexSettingsJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "top-level keys get index wrapper",
+			in:   `{"number_of_shards":"3"}`,
+			want: `{"index":{"number_of_shards":"3"}}`,
+		},
+		{
+			name: "already nested unchanged shape",
+			in:   `{"index":{"number_of_shards":"3"}}`,
+			want: `{"index":{"number_of_shards":"3"}}`,
+		},
+		{
+			name: "empty object",
+			in:   `{}`,
+			want: `{}`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := CanonicalIndexSettingsJSON(tc.in)
+			require.NoError(t, err)
+			require.JSONEq(t, tc.want, got)
+		})
+	}
+}
+
 func TestIndexSettingsValue_Type(t *testing.T) {
 	require.Equal(t, IndexSettingsType{}, IndexSettingsValue{}.Type(context.Background()))
 }

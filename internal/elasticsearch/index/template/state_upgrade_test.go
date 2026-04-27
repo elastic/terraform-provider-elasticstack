@@ -418,6 +418,50 @@ func TestIndexTemplateUpgradeState_per_path_table(t *testing.T) {
 	}
 }
 
+func TestIndexTemplateUpgradeState_drops_version_zero(t *testing.T) {
+	t.Parallel()
+	raw := baseIndexTemplateState()
+	raw["version"] = float64(0)
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	_, ok := got["version"]
+	require.False(t, ok)
+	requireUpgradedStateDecodes(t, resp)
+}
+
+func TestIndexTemplateUpgradeState_normalizes_alias_routing_echo(t *testing.T) {
+	t.Parallel()
+	raw := baseIndexTemplateState()
+	raw["template"] = []any{
+		map[string]any{
+			"alias": []any{
+				map[string]any{
+					"name":           "routing_only_alias",
+					"routing":        "",
+					"index_routing":  "shard-a",
+					"search_routing": "shard-a",
+					"is_hidden":      false,
+					"is_write_index": false,
+					"filter":         nil,
+				},
+			},
+		},
+	}
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	tmpl := got["template"].(map[string]any)
+	aliases := tmpl["alias"].([]any)
+	am := aliases[0].(map[string]any)
+	require.Equal(t, "shard-a", am["routing"])
+	require.Empty(t, am["index_routing"])
+	require.Empty(t, am["search_routing"])
+	requireUpgradedStateDecodes(t, resp)
+}
+
 func TestIndexTemplateUpgradeState_preserves_non_collapsed_bytes(t *testing.T) {
 	t.Parallel()
 

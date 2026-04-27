@@ -24,8 +24,10 @@ resource "elasticstack_elasticsearch_index_template" "test" {
     }
 
     settings = jsonencode({
-      number_of_replicas = "0"
-      number_of_shards   = "1"
+      index = {
+        number_of_replicas = "0"
+        number_of_shards   = "1"
+      }
     })
   }
 }

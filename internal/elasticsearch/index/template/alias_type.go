@@ -30,38 +30,9 @@ import (
 )
 
 var (
-	_ basetypes.ObjectTypable                    = (*AliasObjectType)(nil)
-	_ basetypes.ObjectValuable                   = (*AliasObjectValue)(nil)
-	_ basetypes.ObjectValuableWithSemanticEquals = (*AliasObjectValue)(nil)
+	_ basetypes.ObjectTypable  = (*AliasObjectType)(nil)
+	_ basetypes.ObjectValuable = (*AliasObjectValue)(nil)
 )
-
-// aliasSemanticCompareAttrKeys lists object attributes consulted by ObjectSemanticEquals.
-var aliasSemanticCompareAttrKeys = []string{
-	"name",
-	"index_routing",
-	"routing",
-	"search_routing",
-	"filter",
-	"is_hidden",
-	"is_write_index",
-}
-
-func aliasObjectHasUnknownSemanticField(o basetypes.ObjectValue) bool {
-	if o.IsNull() || o.IsUnknown() {
-		return false
-	}
-	attrs := o.Attributes()
-	for _, k := range aliasSemanticCompareAttrKeys {
-		av, ok := attrs[k]
-		if !ok {
-			continue
-		}
-		if av.IsUnknown() {
-			return true
-		}
-	}
-	return false
-}
 
 // AliasAttributeTypes returns attribute types for a single template alias block element.
 func AliasAttributeTypes() map[string]attr.Type {
@@ -131,7 +102,8 @@ func (t AliasObjectType) ValueFromTerraform(ctx context.Context, in tftypes.Valu
 	return AliasObjectValue{ObjectValue: objectValue}, nil
 }
 
-// AliasObjectValue is the value type for a template alias with routing-aware semantic equality.
+// AliasObjectValue is the value type for a template alias (routing-aware comparison via
+// [aliasObjectValuesSemanticallyEqual] for provider reconciliation only).
 type AliasObjectValue struct {
 	basetypes.ObjectValue
 }
@@ -150,22 +122,12 @@ func (v AliasObjectValue) Equal(o attr.Value) bool {
 	return v.ObjectValue.Equal(other.ObjectValue)
 }
 
-// ObjectSemanticEquals applies the strict alias routing predicate from design.md §2.
-// Receiver v is the prior/state value; newValuable is the new value (plan or refreshed).
-func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
+// aliasObjectValuesSemanticallyEqual applies the alias routing predicate from design.md §2 for
+// provider-side reconciliation (read/post-read, ModifyPlan). It intentionally does not implement
+// [basetypes.ObjectValuableWithSemanticEquals]: framework semantic equality would rewrite state
+// after apply using planned defaults (e.g. false) where configuration omitted nulls.
+func aliasObjectValuesSemanticallyEqual(ctx context.Context, v, newValue AliasObjectValue) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(AliasObjectValue)
-	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-		return false, diags
-	}
 
 	if v.IsNull() {
 		return newValue.IsNull(), diags
@@ -179,12 +141,8 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	if aliasObjectHasUnknownSemanticField(v.ObjectValue) || aliasObjectHasUnknownSemanticField(newValue.ObjectValue) {
-		return false, diags
-	}
-
-	var prior AliasElementModel
-	d := v.As(ctx, &prior, basetypes.ObjectAsOptions{
+	var a AliasElementModel
+	d := v.As(ctx, &a, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
 	diags.Append(d...)
@@ -192,19 +150,68 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var incoming AliasElementModel
-	d = newValue.As(ctx, &incoming, basetypes.ObjectAsOptions{
+	var b AliasElementModel
+	d = newValue.As(ctx, &b, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
 	diags.Append(d...)
 	if diags.HasError() {
 		return false, diags
 	}
+
+	// Optional+Computed+Default nested attributes can be Unknown in plan while state is known after read.
+	// Fill Unknown from the other operand so routing / bool null-vs-false rules still apply.
+	aFilled := fillUnknownAliasModelFieldsFromOther(a, b)
+	okForward, d := aliasElementModelsSemanticallyEqual(ctx, aFilled, b)
+	diags.Append(d...)
+	if diags.HasError() {
+		return false, diags
+	}
+	if okForward {
+		return true, diags
+	}
+
+	bFilled := fillUnknownAliasModelFieldsFromOther(b, a)
+	okReverse, d := aliasElementModelsSemanticallyEqual(ctx, bFilled, a)
+	diags.Append(d...)
+	return okReverse, diags
+}
+
+func fillUnknownAliasModelFieldsFromOther(m, other AliasElementModel) AliasElementModel {
+	out := m
+	if m.IndexRouting.IsUnknown() {
+		out.IndexRouting = other.IndexRouting
+	}
+	if m.SearchRouting.IsUnknown() {
+		out.SearchRouting = other.SearchRouting
+	}
+	if m.Routing.IsUnknown() {
+		out.Routing = other.Routing
+	}
+	if m.IsHidden.IsUnknown() {
+		out.IsHidden = other.IsHidden
+	}
+	if m.IsWriteIndex.IsUnknown() {
+		out.IsWriteIndex = other.IsWriteIndex
+	}
+	if m.Filter.IsUnknown() {
+		out.Filter = other.Filter
+	}
+	return out
+}
+
+// aliasElementModelsSemanticallyEqual is the directed comparison: prior is the configuration or older
+// state side; incoming is the API/refreshed side for the rules in design.md §2.
+func aliasElementModelsSemanticallyEqual(ctx context.Context, prior, incoming AliasElementModel) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	if !prior.Name.Equal(incoming.Name) ||
-		!prior.Routing.Equal(incoming.Routing) ||
-		!prior.IsHidden.Equal(incoming.IsHidden) ||
-		!prior.IsWriteIndex.Equal(incoming.IsWriteIndex) {
+		!aliasMainRoutingSemanticallyEqual(
+			prior.Routing, prior.IndexRouting, prior.SearchRouting,
+			incoming.Routing, incoming.IndexRouting, incoming.SearchRouting,
+		) ||
+		!aliasOptionalBoolSemanticEqual(prior.IsHidden, incoming.IsHidden) ||
+		!aliasOptionalBoolSemanticEqual(prior.IsWriteIndex, incoming.IsWriteIndex) {
 		return false, diags
 	}
 
@@ -217,7 +224,8 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	if !routingFieldSemanticallyEqual(prior.IndexRouting, incoming.IndexRouting, incoming.Routing) {
+	if !routingFieldSemanticallyEqual(prior.IndexRouting, incoming.IndexRouting, incoming.Routing) &&
+		!aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming) {
 		return false, diags
 	}
 
@@ -226,6 +234,55 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 	}
 
 	return true, diags
+}
+
+// aliasOptionalBoolSemanticEqual mirrors SDKv2 Optional+Default(false): null, unknown, and explicit false
+// are equivalent for template.alias booleans; both must agree when either side is explicitly true.
+func aliasOptionalBoolSemanticEqual(a, b types.Bool) bool {
+	if a.Equal(b) {
+		return true
+	}
+	aUnset := a.IsNull() || a.IsUnknown()
+	bUnset := b.IsNull() || b.IsUnknown()
+	if aUnset && bUnset {
+		return true
+	}
+	aFalse := aUnset || (!a.IsNull() && !a.IsUnknown() && !a.ValueBool())
+	bFalse := bUnset || (!b.IsNull() && !b.IsUnknown() && !b.ValueBool())
+	return aFalse && bFalse
+}
+
+// aliasEsIndexRoutingEchoesPriorMainRouting handles GET responses where Elasticsearch omits routing and
+// sets index_routing to the configured generic routing value even when index_routing was distinct in the template.
+func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasElementModel) bool {
+	if !incoming.Routing.IsNull() && incoming.Routing.ValueString() != "" {
+		return false
+	}
+	pr := ""
+	if !prior.Routing.IsNull() && !prior.Routing.IsUnknown() {
+		pr = prior.Routing.ValueString()
+	}
+	if pr == "" {
+		return false
+	}
+	incIdx := ""
+	if !incoming.IndexRouting.IsNull() && !incoming.IndexRouting.IsUnknown() {
+		incIdx = incoming.IndexRouting.ValueString()
+	}
+	if incIdx != pr {
+		return false
+	}
+	if !incoming.SearchRouting.Equal(prior.SearchRouting) {
+		return false
+	}
+	pi := ""
+	if !prior.IndexRouting.IsNull() && !prior.IndexRouting.IsUnknown() {
+		pi = prior.IndexRouting.ValueString()
+	}
+	if pi == incIdx {
+		return false
+	}
+	return true
 }
 
 // AliasElementModel is the Terraform struct for one template alias (expand/flatten and semantic equality).
@@ -257,10 +314,99 @@ func aliasFiltersSemanticallyEqual(ctx context.Context, a, b jsontypes.Normalize
 	return eq, diags
 }
 
+// aliasMainRoutingSemanticallyEqual compares the top-level routing field. Elasticsearch often
+// omits `routing` on GET when index_routing/search_routing are set; it may drop `routing` entirely
+// when those two differ (only index_routing and search_routing are returned).
+func aliasMainRoutingSemanticallyEqual(
+	priorRouting, priorIndex, priorSearch,
+	incomingRouting, incomingIndex, incomingSearch types.String,
+) bool {
+	if priorRouting.Equal(incomingRouting) {
+		return true
+	}
+	incomingREmpty := incomingRouting.IsNull() || incomingRouting.ValueString() == ""
+	if !incomingREmpty {
+		return false
+	}
+	// Elasticsearch may echo the generic routing value into index_routing on GET and omit routing
+	// when all three routing fields were set in the template (observed on 8.x).
+	prStr := ""
+	if !priorRouting.IsNull() && !priorRouting.IsUnknown() {
+		prStr = priorRouting.ValueString()
+	}
+	if prStr != "" && incomingSearch.Equal(priorSearch) {
+		incIdx := ""
+		if !incomingIndex.IsNull() && !incomingIndex.IsUnknown() {
+			incIdx = incomingIndex.ValueString()
+		}
+		if incIdx == prStr {
+			piStr := ""
+			if !priorIndex.IsNull() && !priorIndex.IsUnknown() {
+				piStr = priorIndex.ValueString()
+			}
+			if piStr != incIdx {
+				return true
+			}
+		}
+	}
+	// API omitted routing: index/search unchanged from prior.
+	if incomingIndex.Equal(priorIndex) && incomingSearch.Equal(priorSearch) {
+		if !priorIndex.Equal(priorSearch) {
+			return true
+		}
+		// index_routing == search_routing on prior (including both empty): echo of main routing
+		if priorRouting.IsNull() || priorRouting.ValueString() == "" {
+			return true
+		}
+		pr := priorRouting.ValueString()
+		if incomingIndex.IsNull() || incomingSearch.IsNull() {
+			return false
+		}
+		return incomingIndex.ValueString() == pr && incomingSearch.ValueString() == pr
+	}
+	// Routing-only config: prior left index/search at default ""; API echoes into index/search.
+	priorIRUnset := priorIndex.IsNull() || priorIndex.ValueString() == ""
+	priorSRUnset := priorSearch.IsNull() || priorSearch.ValueString() == ""
+	if !priorIRUnset || !priorSRUnset {
+		return false
+	}
+	if priorRouting.IsNull() || priorRouting.ValueString() == "" {
+		return true
+	}
+	pr := priorRouting.ValueString()
+	incIdx := ""
+	if !incomingIndex.IsNull() && !incomingIndex.IsUnknown() {
+		incIdx = incomingIndex.ValueString()
+	}
+	incSrch := ""
+	if !incomingSearch.IsNull() && !incomingSearch.IsUnknown() {
+		incSrch = incomingSearch.ValueString()
+	}
+	if incIdx == "" && incSrch == "" {
+		return false
+	}
+	idxEq := incIdx == pr
+	srchEq := incSrch == pr
+	if idxEq && srchEq {
+		return true
+	}
+	// Echo into index_routing only or search_routing only; the other field still matches prior (typically "").
+	if idxEq && (incSrch == "" || incomingSearch.Equal(priorSearch)) {
+		return true
+	}
+	if srchEq && (incIdx == "" || incomingIndex.Equal(priorIndex)) {
+		return true
+	}
+	return false
+}
+
 // routingFieldSemanticallyEqual encodes:
 //
 //	v.field ≡ new.field  ⇔  v.field == new.field
-//	  OR (v.field is null/empty AND new.field == new.routing AND new.routing != "")
+//	  OR (v.field is null/empty AND new.field == effectiveNewRouting AND effectiveNewRouting != "")
+//
+// effectiveNewRouting prefers new.routing; when the API leaves routing empty, it falls back to
+// newField so index_routing/search_routing echoes still match routing-only configuration.
 func routingFieldSemanticallyEqual(priorField, newField, newRouting types.String) bool {
 	if priorField.IsUnknown() || newField.IsUnknown() || newRouting.IsUnknown() {
 		return false
@@ -275,17 +421,22 @@ func routingFieldSemanticallyEqual(priorField, newField, newRouting types.String
 		return false
 	}
 
-	if newRouting.IsNull() {
-		return false
+	newR := ""
+	if !newRouting.IsNull() {
+		newR = newRouting.ValueString()
+	}
+	if newR == "" && !newField.IsNull() {
+		newR = newField.ValueString()
 	}
 
-	newR := newRouting.ValueString()
+	newEmpty := newField.IsNull() || newField.ValueString() == ""
 	if newR == "" {
-		return false
+		return newEmpty
 	}
-
-	if newField.IsNull() {
-		return false
+	if newEmpty {
+		// Configuration omitted index_routing/search_routing (null in plan); state may use "" or echo
+		// the generic routing value only on routing — treat as equivalent to the echo case.
+		return true
 	}
 
 	return newField.ValueString() == newR

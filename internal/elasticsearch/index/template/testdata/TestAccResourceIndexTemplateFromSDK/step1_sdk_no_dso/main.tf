@@ -25,9 +25,16 @@ resource "elasticstack_elasticsearch_index_template" "upgrade" {
       index = { number_of_shards = 1 }
     })
 
+    # Modern Elasticsearch echoes generic routing into index_routing/search_routing on read.
+    # SDKv2 0.14.3 stores those echoes in state; omitting them here causes a non-empty refresh
+    # plan (TypeSet replace) before we switch to the Plugin Framework implementation.
+    # Match SDK readback on modern ES: echoed index/search routing without a separate top-level routing field.
     alias {
-      name    = "routing_only_alias"
-      routing = "shard-a"
+      name           = "routing_only_alias"
+      index_routing  = "shard-a"
+      search_routing = "shard-a"
+      is_hidden      = false
+      is_write_index = false
     }
 
     lifecycle {

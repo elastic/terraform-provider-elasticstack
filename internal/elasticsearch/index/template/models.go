@@ -26,17 +26,17 @@ import (
 
 // Model is the Terraform plan/state shape for the index template resource and data source.
 type Model struct {
-	ElasticsearchConnection           types.List           `tfsdk:"elasticsearch_connection"`
-	ID                                types.String         `tfsdk:"id"`
-	Name                              types.String         `tfsdk:"name"`
-	ComposedOf                        types.List           `tfsdk:"composed_of"`
-	IgnoreMissingComponentTemplates   types.List           `tfsdk:"ignore_missing_component_templates"`
-	IndexPatterns                     types.Set            `tfsdk:"index_patterns"`
-	Metadata                          jsontypes.Normalized `tfsdk:"metadata"`
-	Priority                          types.Int64          `tfsdk:"priority"`
-	Version                           types.Int64          `tfsdk:"version"`
-	DataStream                        types.Object         `tfsdk:"data_stream"`
-	Template                          types.Object         `tfsdk:"template"`
+	ElasticsearchConnection         types.List           `tfsdk:"elasticsearch_connection"`
+	ID                              types.String         `tfsdk:"id"`
+	Name                            types.String         `tfsdk:"name"`
+	ComposedOf                      types.List           `tfsdk:"composed_of"`
+	IgnoreMissingComponentTemplates types.List           `tfsdk:"ignore_missing_component_templates"`
+	IndexPatterns                   types.Set            `tfsdk:"index_patterns"`
+	Metadata                        jsontypes.Normalized `tfsdk:"metadata"`
+	Priority                        types.Int64          `tfsdk:"priority"`
+	Version                         types.Int64          `tfsdk:"version"`
+	DataStream                      types.Object         `tfsdk:"data_stream"`
+	Template                        types.Object         `tfsdk:"template"`
 }
 
 // DataStreamModel is the inner shape of the data_stream block (for Object.As).

@@ -39,14 +39,14 @@ func expandTemplate(ctx context.Context, model Model) (*models.IndexTemplate, di
 		Name: model.Name.ValueString(),
 	}
 
+	comps := make([]string, 0)
 	if !model.ComposedOf.IsNull() && !model.ComposedOf.IsUnknown() {
-		var comps []string
 		diags.Append(model.ComposedOf.ElementsAs(ctx, &comps, false)...)
 		if diags.HasError() {
 			return nil, diags
 		}
-		out.ComposedOf = comps
 	}
+	out.ComposedOf = comps
 
 	if !model.IgnoreMissingComponentTemplates.IsNull() && !model.IgnoreMissingComponentTemplates.IsUnknown() {
 		var ignore []string

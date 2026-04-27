@@ -39,7 +39,9 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 
   template {
     settings = jsonencode({
-      number_of_shards = "1"
+      index = {
+        number_of_shards = "1"
+      }
     })
   }
 }

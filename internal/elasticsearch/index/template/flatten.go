@@ -269,7 +269,7 @@ func flattenAliasElement(name string, a models.IndexAlias) (attr.Value, diag.Dia
 		"is_hidden":      types.BoolValue(a.IsHidden),
 		"is_write_index": types.BoolValue(a.IsWriteIndex),
 	}
-	if a.Filter != nil {
+	if len(a.Filter) > 0 {
 		b, err := json.Marshal(a.Filter)
 		if err != nil {
 			diags.AddError("Failed to marshal alias filter", err.Error())

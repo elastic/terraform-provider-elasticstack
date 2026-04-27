@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func TestExpandTemplate_minimal(t *testing.T) {
@@ -219,5 +220,31 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	planNo := Model{Template: noDsoTpl}
 	if diags := validateDataStreamOptionsVersion(planNo, old); diags.HasError() {
 		t.Fatal(diags)
+	}
+}
+
+func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	av, diags := flattenAliasElement("a", models.IndexAlias{
+		Filter:        map[string]any{},
+		IndexRouting:  "ir",
+		Routing:       "r",
+		SearchRouting: "sr",
+	})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	alias, ok := av.(AliasObjectValue)
+	if !ok {
+		t.Fatalf("got %T", av)
+	}
+	var am AliasElementModel
+	diags = alias.As(ctx, &am, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if !am.Filter.IsNull() {
+		t.Fatalf("expected null filter for empty API map, got %#v", am.Filter)
 	}
 }

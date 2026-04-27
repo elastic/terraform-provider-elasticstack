@@ -41,6 +41,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	var config Model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
@@ -86,6 +91,15 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
 	refreshed.ID = prior.ID
+
+	resp.Diagnostics.Append(enrichTemplateAliasesRoutingFromReference(ctx, &refreshed, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(postReadReconcileTemplateWithPlan(ctx, &refreshed, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }
