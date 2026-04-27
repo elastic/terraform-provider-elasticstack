@@ -18,6 +18,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
 
   kql_custom_indicator {
     index           = "my-index-${var.name}"
+    filter          = "*"
     good            = "latency < 300"
     total           = "*"
     timestamp_field = "custom_timestamp"
