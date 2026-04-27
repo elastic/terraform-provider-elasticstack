@@ -124,7 +124,7 @@ func TestKqlObjectFormMeaningful(t *testing.T) {
 
 func TestKqlLegacyStringExclusiveWithObject_siblings(t *testing.T) {
 	t.Parallel()
-	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql", treatEmptyStringAsUnset: true}
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql"}
 	kq := testKqlObject(t)
 
 	t.Run("conflict when both string and object set", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestKqlLegacyStringExclusiveWithObject_siblings(t *testing.T) {
 
 func TestKqlObjectFormExclusiveWithString_siblings(t *testing.T) {
 	t.Parallel()
-	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "filter", treatEmptyStringAsUnset: true}
+	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "filter"}
 	kq := testKqlObject(t)
 
 	t.Run("conflict when both meaningfully set", func(t *testing.T) {
@@ -215,7 +215,7 @@ func testConfigGoodAndGoodKql(t *testing.T, goodVal tftypes.Value, kqlObj types.
 
 func TestKqlLegacyStringExclusiveWithObject_goodPair(t *testing.T) {
 	t.Parallel()
-	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql", treatEmptyStringAsUnset: true}
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql"}
 	kq := testKqlObject(t)
 
 	t.Run("conflict when string good and good_kql both set", func(t *testing.T) {
@@ -276,7 +276,7 @@ func testConfigTotalAndTotalKql(t *testing.T, totalVal tftypes.Value, kqlObj typ
 
 func TestKqlLegacyStringExclusiveWithObject_totalPair(t *testing.T) {
 	t.Parallel()
-	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql", treatEmptyStringAsUnset: true}
+	v := kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql"}
 	kq := testKqlObject(t)
 
 	t.Run("conflict when string total and total_kql both set", func(t *testing.T) {
@@ -294,7 +294,7 @@ func TestKqlLegacyStringExclusiveWithObject_totalPair(t *testing.T) {
 
 func TestKqlObjectFormExclusiveWithString_totalSiblings(t *testing.T) {
 	t.Parallel()
-	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "total", treatEmptyStringAsUnset: true}
+	v := kqlObjectFormExclusiveWithString{parallelStringAttr: "total"}
 	kq := testKqlObject(t)
 
 	t.Run("conflict when total and total_kql both set", func(t *testing.T) {

@@ -30,8 +30,7 @@ import (
 // kqlLegacyStringExclusiveWithObject enforces that the string arm of a KQL union and the
 // parallel *_kql object form are not both configured.
 type kqlLegacyStringExclusiveWithObject struct {
-	parallelObjectAttr      string
-	treatEmptyStringAsUnset bool
+	parallelObjectAttr string
 }
 
 func (v kqlLegacyStringExclusiveWithObject) Description(_ context.Context) string {
@@ -47,11 +46,7 @@ func (v kqlLegacyStringExclusiveWithObject) ValidateString(ctx context.Context, 
 		return
 	}
 	s := req.ConfigValue.ValueString()
-	if v.treatEmptyStringAsUnset {
-		if s == "" {
-			return
-		}
-	} else if s == "" {
+	if s == "" {
 		return
 	}
 
@@ -78,8 +73,7 @@ func (v kqlLegacyStringExclusiveWithObject) ValidateString(ctx context.Context, 
 
 // kqlObjectFormExclusiveWithString enforces the same rule from the object-form attribute.
 type kqlObjectFormExclusiveWithString struct {
-	parallelStringAttr      string
-	treatEmptyStringAsUnset bool
+	parallelStringAttr string
 }
 
 func (v kqlObjectFormExclusiveWithString) Description(_ context.Context) string {
@@ -108,10 +102,7 @@ func (v kqlObjectFormExclusiveWithString) ValidateObject(ctx context.Context, re
 	if s.IsNull() || s.IsUnknown() {
 		return
 	}
-	if v.treatEmptyStringAsUnset && s.ValueString() == "" {
-		return
-	}
-	if !v.treatEmptyStringAsUnset && s.ValueString() == "" {
+	if s.ValueString() == "" {
 		return
 	}
 	resp.Diagnostics.AddAttributeError(

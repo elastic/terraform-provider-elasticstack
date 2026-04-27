@@ -439,28 +439,28 @@ func kqlCustomIndicatorSchema() schema.Block {
 				"filter": schema.StringAttribute{
 					Optional: true,
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql", treatEmptyStringAsUnset: true},
+						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql"},
 					},
 				},
-				"filter_kql": kqlWithFiltersObjectSchema("filter", true),
+				"filter_kql": kqlWithFiltersObjectSchema("filter"),
 				"good": schema.StringAttribute{
 					Optional: true,
 					Computed: true,
 					Default:  stringdefault.StaticString(""),
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql", treatEmptyStringAsUnset: true},
+						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql"},
 					},
 				},
-				"good_kql": kqlWithFiltersObjectSchema("good", true),
+				"good_kql": kqlWithFiltersObjectSchema("good"),
 				"total": schema.StringAttribute{
 					Optional: true,
 					Computed: true,
 					Default:  stringdefault.StaticString(""),
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql", treatEmptyStringAsUnset: true},
+						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql"},
 					},
 				},
-				"total_kql":       kqlWithFiltersObjectSchema("total", true),
+				"total_kql":       kqlWithFiltersObjectSchema("total"),
 				"timestamp_field": schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("@timestamp")},
 			},
 		},
@@ -468,7 +468,7 @@ func kqlCustomIndicatorSchema() schema.Block {
 }
 
 // kqlWithFiltersObjectSchema defines the object-form KQL union (kqlQuery + filters) used for filter, good, and total.
-func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUnset bool) schema.SingleNestedAttribute {
+func kqlWithFiltersObjectSchema(parallelStringAttr string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		Description: fmt.Sprintf(
 			"Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. "+
@@ -505,10 +505,7 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string, treatEmptyStringAsUns
 			},
 		},
 		Validators: []validator.Object{
-			kqlObjectFormExclusiveWithString{
-				parallelStringAttr:      parallelStringAttr,
-				treatEmptyStringAsUnset: treatEmptyStringAsUnset,
-			},
+			kqlObjectFormExclusiveWithString{parallelStringAttr: parallelStringAttr},
 			kqlObjectFormMeaningful{},
 		},
 		PlanModifiers: []planmodifier.Object{

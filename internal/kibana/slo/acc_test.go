@@ -41,6 +41,17 @@ import (
 
 var sloTimesliceMetricsMinVersion = version.Must(version.NewVersion("8.12.0"))
 
+// skipKqlSLOOrSettingsSyncFieldUnsupported gates acceptance steps that apply settings.sync_field
+// (and the enabled field exercised together with it). Kibana <8.18 rejects that key with HTTP 400
+// (excess keys: body.settings.syncField). Plan-only and tests that omit sync_field use
+// CheckIfVersionMeetsConstraints(SLOKqlAccTestConstraints) only.
+func skipKqlSLOOrSettingsSyncFieldUnsupported() (bool, error) {
+	if skip, err := versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)(); err != nil || skip {
+		return skip, err
+	}
+	return versionutils.CheckIfVersionIsUnsupported(slo.SLOSettingsSyncFieldMinVersion)()
+}
+
 func TestAccResourceSlo(t *testing.T) {
 	// This test exposes a bug in Kibana present in 8.11.x
 	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
@@ -649,7 +660,8 @@ func TestAccResourceSloValidation(t *testing.T) {
 
 // TestAccResourceSlo_kql_object_form_and_settings_enabled exercises:
 //   - plan-only: object-form filter_kql / good_kql and settings.sync_field parse (no Kibana create);
-//   - apply: string-form KQL with sync_field and toggling `enabled` (create path compatible with typical stacks).
+//   - apply (>=8.18 only): string-form KQL with sync_field and toggling `enabled` (Kibana accepts
+//     body.settings.syncField from 8.18+; older stacks 400 on apply).
 //
 // The apply path uses string KQL, not a full create with object-form *_kql only: some Kibana/Stack
 // versions respond with HTTP 400 for object-only indicator payloads (e.g. expecting a string
@@ -674,7 +686,7 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipKqlSLOStack,
+				SkipFunc:                 skipKqlSLOOrSettingsSyncFieldUnsupported,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(sloName),
@@ -691,7 +703,7 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipKqlSLOStack,
+				SkipFunc:                 skipKqlSLOOrSettingsSyncFieldUnsupported,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_sync_string_kql"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(sloName),

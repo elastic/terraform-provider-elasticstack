@@ -29,6 +29,9 @@ var (
 	SLOSupportsMultipleGroupByMinVersion        = version.Must(version.NewVersion("8.14.0"))
 	SLOSupportsPreventInitialBackfillMinVersion = version.Must(version.NewVersion("8.15.0"))
 	SLOSupportsDataViewIDMinVersion             = version.Must(version.NewVersion("8.15.0"))
+	// SLOSettingsSyncFieldMinVersion is the first stack where the Kibana SLO API accepts
+	// body.settings.syncField. Older Kibana returns HTTP 400: excess keys (syncField).
+	SLOSettingsSyncFieldMinVersion = version.Must(version.NewVersion("8.18.0"))
 )
 
 // SLOKqlAccTestConstraints is the supported stack version range for acceptance tests
