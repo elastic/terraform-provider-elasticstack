@@ -43,11 +43,11 @@
 
 ## 7. State upgrade (v0 → v1)
 
-- [ ] 7.1 Add `state_upgrade.go` registering an `UpgradeState` map with version `0` mapped to a `StateUpgrader` that uses `RawState` JSON.
-- [ ] 7.2 Implement a JSON-tree walk that collapses each of the six `MaxItems: 1` paths from `[]`/`[obj]` to `null`/`obj`, applied top-down: `data_stream`, `template`, `template.lifecycle`, `template.data_stream_options`, `template.data_stream_options.failure_store`, `template.data_stream_options.failure_store.lifecycle`. The walker must collapse a parent before descending into it.
-- [ ] 7.3 Return an error diagnostic with the offending path if any of these paths is found with more than one element (defensive against corrupt prior state).
-- [ ] 7.4 Use a fresh PF state encode for the v1 schema (set the resulting `RawState` via the response so the framework re-decodes against the v1 schema).
-- [ ] 7.5 Add unit tests in `state_upgrade_test.go` covering, for each path: missing/null, empty list `[]`, single-element list `[obj]`, multi-element list (error), and round-trip encode→upgrade→decode against the v1 schema. Use the `ilm` package's `state_upgrade_test.go` as a structural reference.
+- [x] 7.1 Add `state_upgrade.go` registering an `UpgradeState` map with version `0` mapped to a `StateUpgrader` that uses `RawState` JSON.
+- [x] 7.2 Implement a JSON-tree walk that collapses each of the six `MaxItems: 1` paths from `[]`/`[obj]` to `null`/`obj`, applied top-down: `data_stream`, `template`, `template.lifecycle`, `template.data_stream_options`, `template.data_stream_options.failure_store`, `template.data_stream_options.failure_store.lifecycle`. The walker must collapse a parent before descending into it.
+- [x] 7.3 Return an error diagnostic with the offending path if any of these paths is found with more than one element (defensive against corrupt prior state).
+- [x] 7.4 Use a fresh PF state encode for the v1 schema (set the resulting `RawState` via the response so the framework re-decodes against the v1 schema).
+- [x] 7.5 Add unit tests in `state_upgrade_test.go` covering, for each path: missing/null, empty list `[]`, single-element list `[obj]`, multi-element list (error), and round-trip encode→upgrade→decode against the v1 schema. Use the `ilm` package's `state_upgrade_test.go` as a structural reference.
 
 ## 8. Provider wiring
 

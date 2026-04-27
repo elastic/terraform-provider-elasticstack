@@ -43,9 +43,10 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// implemented in task 7
 func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+	return map[int64]resource.StateUpgrader{
+		0: upgradeStateV0ToV1(),
+	}
 }
 
 var (
