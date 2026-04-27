@@ -83,6 +83,11 @@ that `clients.CompositeIDFromStrFw` recognises as a composite ID — the resourc
 the entire string as `policy_id` and SHALL NOT set `space_ids` from the import ID. This
 preserves existing behaviour for default-space imports.
 
+When the import ID contains a `/` separator but either the space-ID segment or the
+policy-ID segment is empty (e.g. `"/policy-id"` or `"space-id/"`), the resource SHALL
+return an error diagnostic describing the expected format and SHALL NOT partially populate
+`policy_id` or `space_ids`.
+
 On the subsequent read after import (regardless of ID form), the resource SHALL populate all
 attributes from the Fleet API response, including inputs.
 

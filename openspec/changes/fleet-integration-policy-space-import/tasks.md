@@ -32,6 +32,6 @@
 
 - [x] 4.1 `make build` — provider compiles without errors.
 - [x] 4.2 `go test ./internal/fleet/integration_policy/... -v` — unit tests pass.
-- [ ] 4.3 Acceptance tests (requires live Kibana with spaces enabled):
+- [x] 4.3 Acceptance tests (requires live Kibana with spaces enabled):
   `go test ./internal/fleet/integration_policy/... -v -count=1 -run TestAccResourceIntegrationPolicy_importFromSpace`.
 - [x] 4.4 `make check-openspec` — spec validation passes.
