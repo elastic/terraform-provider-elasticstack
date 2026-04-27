@@ -1,7 +1,7 @@
 ## 1. Model layer
 
-- [ ] 1.1 Add `DataStreamOptions`, `FailureStoreOptions`, and `FailureStoreLifecycle` struct types to `internal/models/models.go`
-- [ ] 1.2 Add `DataStreamOptions *DataStreamOptions` field tagged `json:"data_stream_options,omitempty"` to the `models.Template` struct
+- [x] 1.1 Add `DataStreamOptions`, `FailureStoreOptions`, and `FailureStoreLifecycle` struct types to `internal/models/models.go`
+- [x] 1.2 Add `DataStreamOptions *DataStreamOptions` field tagged `json:"data_stream_options,omitempty"` to the `models.Template` struct
 
 ## 2. Schema and expand/flatten
 
