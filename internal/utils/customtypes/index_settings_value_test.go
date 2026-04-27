@@ -210,7 +210,11 @@ func TestIndexSettingsValue_ValidateAttribute(t *testing.T) {
 		{name: "null skips validation", val: NewIndexSettingsNull()},
 		{name: "unknown skips validation", val: NewIndexSettingsUnknown()},
 		{name: "empty object", val: NewIndexSettingsValue(`{}`)},
-		{name: "json null literal allowed", val: NewIndexSettingsValue(`null`)},
+		{
+			name:       "json null literal rejected",
+			val:        NewIndexSettingsValue(`null`),
+			wantErrors: 1,
+		},
 		{
 			name:       "array rejected",
 			val:        NewIndexSettingsValue(`[]`),

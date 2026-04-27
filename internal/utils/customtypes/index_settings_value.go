@@ -122,6 +122,14 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 			"expected value to be a JSON object",
 			fmt.Sprintf("This value must be an object, not a simple type or array. Check the documentation for the expected format. %s", err),
 		)
+		return
+	}
+	if m == nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"expected value to be a JSON object",
+			"This value must be an object, not the JSON null literal. Check the documentation for the expected format.",
+		)
 	}
 }
 
