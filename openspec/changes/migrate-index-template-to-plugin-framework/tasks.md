@@ -7,8 +7,8 @@
 
 ## 2. Client layer
 
-- [ ] 2.1 Change `internal/clients/elasticsearch.PutIndexTemplate`, `GetIndexTemplate`, and `DeleteIndexTemplate` to return `fwdiag.Diagnostics`. Use `diagutil.CheckErrorFromFW()` for HTTP responses and `diagutil.FrameworkDiagFromError()` for other errors.
-- [ ] 2.2 Confirm via grep that the only callers are `internal/elasticsearch/index/template.go` and `internal/elasticsearch/index/template_test.go`; both move in this change so no `SDKDiagsFromFramework` shim is needed.
+- [x] 2.1 Change `internal/clients/elasticsearch.PutIndexTemplate`, `GetIndexTemplate`, and `DeleteIndexTemplate` to return `fwdiag.Diagnostics`. Use `diagutil.CheckErrorFromFW()` for HTTP responses and `diagutil.FrameworkDiagFromError()` for other errors.
+- [x] 2.2 Confirm via grep: direct callers are only `internal/elasticsearch/index/template.go` (`template_data_source.go` delegates to `resourceIndexTemplateRead`; `template_test.go` uses the raw ES client, not these helpers). `component_template` does not call them. SDK callers bridge with `diagutil.SDKDiagsFromFramework()` until task 11 removes them.
 
 ## 3. Plugin Framework package skeleton
 

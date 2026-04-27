@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -402,8 +403,8 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		indexTemplate.Version = &definedVer
 	}
 
-	if diags := elasticsearch.PutIndexTemplate(ctx, client, &indexTemplate); diags.HasError() {
-		return diags
+	if fwDiags := elasticsearch.PutIndexTemplate(ctx, client, &indexTemplate); fwDiags.HasError() {
+		return diagutil.SDKDiagsFromFramework(fwDiags)
 	}
 
 	d.SetId(id.String())
@@ -500,14 +501,14 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateID)
-	if tpl == nil && diags == nil {
+	tpl, fwDiags := elasticsearch.GetIndexTemplate(ctx, client, templateID)
+	if tpl == nil && !fwDiags.HasError() {
 		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
-		return diags
+		return diagutil.SDKDiagsFromFramework(fwDiags)
 	}
-	if diags.HasError() {
-		return diags
+	if fwDiags.HasError() {
+		return diagutil.SDKDiagsFromFramework(fwDiags)
 	}
 
 	// set the fields
@@ -738,8 +739,6 @@ func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, me
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compID.ResourceID); diags.HasError() {
-		return diags
-	}
-	return diags
+	fwDiags := elasticsearch.DeleteIndexTemplate(ctx, client, compID.ResourceID)
+	return diagutil.SDKDiagsFromFramework(fwDiags)
 }
