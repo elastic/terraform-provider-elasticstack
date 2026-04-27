@@ -1,9 +1,9 @@
 ## 1. Custom types
 
-- [ ] 1.1 Add `internal/utils/customtypes/index_settings_value.go` implementing `IndexSettingsType` / `IndexSettingsValue` with `StringValuableWithSemanticEquals` (port `flattenMap` + `normalizeIndexSettings` from `internal/tfsdkutils/diffs.go`) and `xattr.ValidateableAttribute` for JSON-object validation.
-- [ ] 1.2 Add unit tests in `internal/utils/customtypes/index_settings_value_test.go`, lifting the cases from `internal/utils/utils_test.go` covering dotted-vs-nested keys, `index.` prefixing, and stringified value comparison.
-- [ ] 1.3 Implement the alias element custom type (`AliasObjectType` / `AliasObjectValue`) inside the new template package, satisfying `basetypes.ObjectValuable` and `basetypes.ObjectValuableWithSemanticEquals`. The `ObjectSemanticEquals` rule MUST match the strict predicate in design.md §2.
-- [ ] 1.4 Add unit tests for the alias element semantic equality covering: identical values, differing `name`, differing `routing`, derived `index_routing`/`search_routing` echoes, differing `filter` JSON whitespace, null vs empty string equivalence, and the asymmetric prior-vs-new direction.
+- [x] 1.1 Add `internal/utils/customtypes/index_settings_value.go` implementing `IndexSettingsType` / `IndexSettingsValue` with `StringValuableWithSemanticEquals` (port `flattenMap` + `normalizeIndexSettings` from `internal/tfsdkutils/diffs.go`) and `xattr.ValidateableAttribute` for JSON-object validation.
+- [x] 1.2 Add unit tests in `internal/utils/customtypes/index_settings_value_test.go`, lifting the cases from `internal/utils/utils_test.go` covering dotted-vs-nested keys, `index.` prefixing, and stringified value comparison.
+- [x] 1.3 Implement the alias element custom type (`AliasObjectType` / `AliasObjectValue`) inside the new template package, satisfying `basetypes.ObjectValuable` and `basetypes.ObjectValuableWithSemanticEquals`. The `ObjectSemanticEquals` rule MUST match the strict predicate in design.md §2.
+- [x] 1.4 Add unit tests for the alias element semantic equality covering: identical values, differing `name`, differing `routing`, derived `index_routing`/`search_routing` echoes, differing `filter` JSON whitespace, null vs empty string equivalence, and the asymmetric prior-vs-new direction.
 
 ## 2. Client layer
 
