@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index_test
+package template_test
 
 import (
 	"fmt"
@@ -107,11 +107,10 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name":           "my_alias",
 							"filter":         `{"term":{"status":"active"}}`,
@@ -121,8 +120,8 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 							"is_write_index": "true",
 						},
 					),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.settings", `{"index":{"number_of_shards":"1"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"1"}}`),
 				),
 			},
 			{
@@ -135,11 +134,10 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name":           "my_alias_v2",
 							"filter":         `{"bool":{"must":[{"term":{"service.name":"api"}},{"term":{"status":"active"}}]}}`,
@@ -149,8 +147,8 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 							"is_write_index": "false",
 						},
 					),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings", `{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.settings", `{"index":{"number_of_shards":"2"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"2"}}`),
 				),
 			},
 		},
@@ -321,7 +319,7 @@ func TestAccIndexTemplateDataSourceExplicitConnectionTLSInputs(t *testing.T) {
 	})
 }
 
-// TestAccIndexTemplateDataSourceDataStream covers data_stream.0.hidden and data_stream.0.allow_custom_routing.
+// TestAccIndexTemplateDataSourceDataStream covers data_stream.hidden and data_stream.allow_custom_routing.
 func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 	templateName := "test-ds-stream-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -337,8 +335,7 @@ func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.hidden", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.hidden", "true"),
 				),
 			},
 			{
@@ -349,9 +346,8 @@ func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 					"template_name": config.StringVariable(templateName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.hidden", "false"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.allow_custom_routing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.hidden", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.allow_custom_routing", "true"),
 				),
 			},
 		},
@@ -434,7 +430,7 @@ func TestAccIndexTemplateDataSourceCountAssertions(t *testing.T) {
 	})
 }
 
-// TestAccIndexTemplateDataSourceLifecycle covers template.0.lifecycle.*.data_retention.
+// TestAccIndexTemplateDataSourceLifecycle covers template.lifecycle.*.data_retention.
 func TestAccIndexTemplateDataSourceLifecycle(t *testing.T) {
 	templateName := "test-ds-lifecycle-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -450,14 +446,7 @@ func TestAccIndexTemplateDataSourceLifecycle(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#", "1"),
-					resource.TestCheckTypeSetElemNestedAttrs(
-						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.lifecycle.*",
-						map[string]string{
-							"data_retention": "30d",
-						},
-					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "30d"),
 				),
 			},
 			{
@@ -470,14 +459,7 @@ func TestAccIndexTemplateDataSourceLifecycle(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#", "1"),
-					resource.TestCheckTypeSetElemNestedAttrs(
-						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.lifecycle.*",
-						map[string]string{
-							"data_retention": "60d",
-						},
-					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "60d"),
 				),
 			},
 		},
@@ -554,10 +536,10 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name":           "detailed_alias_initial",
 							"filter":         `{"term":{"status":"active"}}`,
@@ -567,14 +549,7 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 							"is_write_index": "true",
 						},
 					),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#", "1"),
-					resource.TestCheckTypeSetElemNestedAttrs(
-						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.lifecycle.*",
-						map[string]string{
-							"data_retention": "30d",
-						},
-					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "30d"),
 				),
 			},
 			{
@@ -586,10 +561,10 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name": "detailed_alias_reset",
 						},
@@ -599,7 +574,7 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "filter"),
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "search_routing"),
 					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "index_routing"),
-					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention"),
 					testCheckDataSourceTemplateLifecycleAttrCleared("data.elasticstack_elasticsearch_index_template.test", "data_retention"),
 				),
 			},
@@ -621,10 +596,10 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name":           "routing_only_alias",
 							"search_routing": "shard_1",
@@ -693,9 +668,8 @@ func TestAccIndexTemplateDataSourceDataStreamEmptyObject(t *testing.T) {
 					"template_name": config.StringVariable(templateName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.hidden", "true"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.allow_custom_routing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.hidden", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.allow_custom_routing", "true"),
 				),
 			},
 			{
@@ -706,8 +680,7 @@ func TestAccIndexTemplateDataSourceDataStreamEmptyObject(t *testing.T) {
 					"template_name": config.StringVariable(templateName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.0.hidden", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.hidden", "false"),
 					testCheckDataStreamAttrFalseOrAbsent("data.elasticstack_elasticsearch_index_template.test", "allow_custom_routing"),
 				),
 			},
@@ -731,18 +704,10 @@ func TestAccIndexTemplateDataSourceOptionalFieldRemoval(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "metadata", `{"description":"initial","owner":"team-a"}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "version", "7"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.settings", `{"index":{"number_of_shards":"1"}}`),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#", "1"),
-					resource.TestCheckTypeSetElemNestedAttrs(
-						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.lifecycle.*",
-						map[string]string{
-							"data_retention": "30d",
-						},
-					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.settings", `{"index":{"number_of_shards":"1"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "30d"),
 				),
 			},
 			{
@@ -753,12 +718,11 @@ func TestAccIndexTemplateDataSourceOptionalFieldRemoval(t *testing.T) {
 					"template_name": config.StringVariable(templateName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
 					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test", "metadata"),
 					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "version"),
-					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings"),
-					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.0.settings"),
-					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.0.lifecycle.#"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.mappings"),
+					testCheckDataSourceAttrEmptyOrAbsent("data.elasticstack_elasticsearch_index_template.test", "template.settings"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention"),
 					testCheckDataSourceTemplateLifecycleAttrCleared("data.elasticstack_elasticsearch_index_template.test", "data_retention"),
 					testCheckNoTemplateAliases("data.elasticstack_elasticsearch_index_template.test"),
 				),
@@ -827,7 +791,7 @@ func testCheckDataSourceTemplateLifecycleAttrCleared(resourceName, attrName stri
 		}
 
 		for key, value := range rs.Primary.Attributes {
-			if strings.HasPrefix(key, "template.0.lifecycle.") && strings.HasSuffix(key, "."+attrName) && value != "" {
+			if strings.HasPrefix(key, "template.lifecycle.") && strings.HasSuffix(key, "."+attrName) && value != "" {
 				return fmt.Errorf("expected lifecycle attribute %s to be cleared, got %q", key, value)
 			}
 		}
