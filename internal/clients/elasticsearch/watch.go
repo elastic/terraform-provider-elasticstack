@@ -53,9 +53,9 @@ func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 		return diags
 	}
 
-	body := esClient.Watcher.PutWatch.WithBody(bytes.NewReader(watchBodyBytes))
-	putActive := esClient.Watcher.PutWatch.WithActive(active)
-	res, err := esClient.Watcher.PutWatch(watchID, putActive, body, esClient.Watcher.PutWatch.WithContext(ctx))
+	res, err := esClient.Watcher.PutWatch(watchID, bytes.NewReader(watchBodyBytes),
+		esClient.Watcher.PutWatch.WithActive(active),
+		esClient.Watcher.PutWatch.WithContext(ctx))
 	if err != nil {
 		diags.AddError("Unable to create or update watch", err.Error())
 		return diags
