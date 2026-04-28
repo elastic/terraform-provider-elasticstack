@@ -35,7 +35,7 @@ import (
 // (REQ-035). Residual drift is still possible if Kibana rewrites a user-set value. See
 // `preservePriorLensByValueConfigJSON` in `models_lens_dashboard_app_converters.go` and `tasks.md` 6.2.
 
-func TestAccResourceDashboardLensDashboardAppByValue(t *testing.T) {
+func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app by-val " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -74,7 +74,7 @@ func TestAccResourceDashboardLensDashboardAppByValue(t *testing.T) {
 // ensures after apply+read, panel-level `config_json` and by_value `config_json` are not set
 // (4.3/4.4). Import has no prior typed selection, so read-back may populate by_value
 // `config_json`; the import step only asserts panel `config_json` is still absent.
-func TestAccResourceDashboardLensDashboardAppByValueTypedMetric(t *testing.T) {
+func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app typed m " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dataSourceRe := regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)
 	resource.ParallelTest(t, resource.TestCase{
