@@ -1,0 +1,45 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+variable "template_name" {
+  type = string
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name = var.template_name
+
+  index_patterns = [
+    "${var.template_name}-logs-*",
+    "${var.template_name}-metrics-*",
+    "${var.template_name}-traces-*",
+  ]
+
+  template {
+    alias {
+      name = "my_template_test"
+    }
+    alias {
+      name = "alias2"
+    }
+
+    settings = jsonencode({
+      index = {
+        number_of_replicas = "0"
+        number_of_shards   = "1"
+      }
+    })
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template" "test2" {
+  name = "${var.template_name}-stream"
+
+  index_patterns = ["index-pattern-streams*"]
+
+  data_stream {
+    hidden = false
+  }
+
+  template {}
+}

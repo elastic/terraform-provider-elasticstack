@@ -56,7 +56,7 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 	}
 
 	policyName := data.Name.ValueString()
-	client, connDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags

@@ -1,8 +1,10 @@
-//include: ../../lib/code-factory-issue.js
+//include: ../intake-constants.js
+//include: ../../lib/factory-issue-shared.js
+//include: ../../lib/code-factory-issue.gh.js
 
 const { owner, repo } = context.repo;
 const issueNumber = context.payload.issue?.number;
-const expectedBranch = `code-factory/issue-${issueNumber}`;
+const expectedBranch = issueBranchName(issueNumber);
 
 const pulls = await github.paginate(github.rest.pulls.list, {
   owner,

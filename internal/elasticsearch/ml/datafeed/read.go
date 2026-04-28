@@ -37,7 +37,7 @@ func (r *datafeedResource) read(ctx context.Context, model *Datafeed) (bool, fwd
 		return false, diags
 	}
 
-	client, connDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return false, diags

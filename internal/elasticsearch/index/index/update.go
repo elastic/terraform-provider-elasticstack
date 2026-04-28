@@ -42,7 +42,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return

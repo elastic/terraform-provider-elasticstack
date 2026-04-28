@@ -20,31 +20,33 @@ package datastreamlifecycle
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
 var (
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
+
 	MinVersion = version.Must(version.NewVersion("8.11.0"))
 )
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	r.client = client
+func newResource() *Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "data_stream_lifecycle"),
+	}
 }
 
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_elasticsearch_data_stream_lifecycle"
+// NewResource returns a data stream lifecycle resource with shared bootstrap wiring.
+func NewResource() resource.Resource {
+	return newResource()
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

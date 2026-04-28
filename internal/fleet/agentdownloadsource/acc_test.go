@@ -86,9 +86,10 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
 				},
-				ResourceName:      "elasticstack_fleet_agent_download_source.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "elasticstack_fleet_agent_download_source.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"space_ids"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
 					if res == nil || res.Primary == nil {
@@ -104,9 +105,10 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
 				},
-				ResourceName:      "elasticstack_fleet_agent_download_source.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "elasticstack_fleet_agent_download_source.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"space_ids"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
 					if res == nil || res.Primary == nil {

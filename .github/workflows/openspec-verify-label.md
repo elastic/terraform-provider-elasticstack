@@ -65,19 +65,25 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const TRIGGER_LABEL = 'verify-openspec';
-          
           /**
-           * Removes only the verify-openspec trigger label from the triggering pull request.
-           * Does not remove any other labels.
-           * @param {{ github: object, context: object, prNumber: number|undefined }} opts
+           * Removes a single label from an issue or pull request (GitHub issue API).
+           * @param {{ github: object, context: object, issueNumber: number|undefined, labelName: string|undefined }} opts
            * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}
            */
-          async function removeTriggerLabel({ github, context, prNumber }) {
-            if (!prNumber) {
+          async function removeTriggerLabel({ github, context, issueNumber, labelName }) {
+            if (issueNumber === undefined || issueNumber === null) {
               return {
                 trigger_label_removed: false,
-                trigger_label_removed_reason: 'No pull request number in event payload',
+                trigger_label_removed_reason: 'No issue number in event payload',
+              };
+            }
+          
+            const label =
+              typeof labelName === 'string' && labelName.trim() !== '' ? labelName.trim() : null;
+            if (!label) {
+              return {
+                trigger_label_removed: false,
+                trigger_label_removed_reason: 'No label name provided',
               };
             }
           
@@ -85,19 +91,19 @@ on:
               await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: prNumber,
-                name: TRIGGER_LABEL,
+                issue_number: issueNumber,
+                name: label,
               });
               return {
                 trigger_label_removed: true,
-                trigger_label_removed_reason: `Removed label: ${TRIGGER_LABEL}`,
+                trigger_label_removed_reason: `Removed label: ${label}`,
               };
             } catch (err) {
               // GitHub returns 404 when the label does not exist on the issue; treat as success
               if (err.status === 404) {
                 return {
                   trigger_label_removed: true,
-                  trigger_label_removed_reason: `Label ${TRIGGER_LABEL} was not present (already removed or never applied)`,
+                  trigger_label_removed_reason: `Label ${label} was not present (already removed or never applied)`,
                 };
               }
               return {
@@ -108,17 +114,23 @@ on:
           }
           
           if (typeof module !== 'undefined') {
-            module.exports = { TRIGGER_LABEL, removeTriggerLabel };
+            module.exports = { removeTriggerLabel };
           }
           
-          const prNumber = context.payload.pull_request?.number;
-          const result = await removeTriggerLabel({ github, context, prNumber });
+          const verifyTriggerLabel = 'verify-openspec';
+          const issueNumber = context.payload.pull_request?.number;
+          const result = await removeTriggerLabel({
+            github,
+            context,
+            issueNumber,
+            labelName: verifyTriggerLabel,
+          });
           
           core.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');
           core.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);
           
           if (result.trigger_label_removed) {
-            core.info(`Removed trigger label verify-openspec from PR #${prNumber}`);
+            core.info(`Removed trigger label ${verifyTriggerLabel} from PR #${issueNumber}`);
           } else {
             core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
           }

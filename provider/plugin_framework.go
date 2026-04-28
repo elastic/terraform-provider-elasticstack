@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
@@ -45,6 +46,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/customintegration"
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
@@ -167,20 +169,22 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		alertingrule.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
-		func() resource.Resource { return &parameter.Resource{} },
-		func() resource.Resource { return &privatelocation.Resource{} },
-		func() resource.Resource { return &index.Resource{} },
+		parameter.NewResource,
+		privatelocation.NewResource,
+		index.NewResource,
 		monitor.NewResource,
-		func() resource.Resource { return &apikey.Resource{} },
-		func() resource.Resource { return &datastreamlifecycle.Resource{} },
+		apikey.NewResource,
+		datastreamlifecycle.NewResource,
 		ilm.NewResource,
-		func() resource.Resource { return &connectors.Resource{} },
+		template.NewResource,
+		connectors.NewResource,
 		agentpolicy.NewResource,
 		agentbuilderagent.NewResource,
 		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
+		customintegration.NewResource,
 		elasticdefendintegrationpolicy.NewResource,
 		output.NewResource,
 		agentdownloadsource.NewResource,
@@ -222,6 +226,7 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
+		template.NewDataSource,
 		spaces.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuildertool.NewDataSource,

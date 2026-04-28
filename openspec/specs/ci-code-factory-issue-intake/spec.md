@@ -15,7 +15,7 @@ The repository SHALL define the `code-factory` issue-intake automation as a repo
 - **THEN** the repository SHALL support focused tests for the extracted helper logic without requiring execution of the compiled workflow
 
 ### Requirement: Workflow frontmatter allows required agent ecosystems
-The `code-factory` issue-intake workflow SHALL declare an authored AWF network policy that allows the default allowlist plus the Node and Go ecosystems, and SHALL allow `elastic.litellm-prod.ai` for the Claude engine's Anthropic-compatible proxy access.
+The `code-factory` issue-intake workflow SHALL declare an authored AWF network policy that allows the default allowlist plus the Node and Go ecosystems, allows `elastic.litellm-prod.ai` for the Claude engine's Anthropic-compatible proxy access, and allows `www.elastic.co` for the Elastic docs MCP server.
 
 #### Scenario: Maintainer inspects workflow frontmatter
 - **WHEN** maintainers inspect the authored `code-factory` issue-intake workflow frontmatter
@@ -23,6 +23,7 @@ The `code-factory` issue-intake workflow SHALL declare an authored AWF network p
 - **AND** `network.allowed` SHALL include `node`
 - **AND** `network.allowed` SHALL include `go`
 - **AND** `network.allowed` SHALL include `elastic.litellm-prod.ai`
+- **AND** `network.allowed` SHALL include `www.elastic.co`
 
 ### Requirement: Workflow activates the implementation agent only for qualifying `code-factory` issue events
 The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events, but it SHALL activate the implementation agent only for eligible `code-factory` issue triggers. Eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `code-factory`, and `issues.opened` when the issue already includes the `code-factory` label at creation time.
@@ -75,4 +76,47 @@ When the deterministic gate passes, the workflow agent SHALL treat the triggerin
 #### Scenario: Pull request metadata preserves deterministic linkage
 - **WHEN** the agent creates the `code-factory` pull request
 - **THEN** the pull request SHALL include explicit issue linkage metadata so later workflow runs can identify it as the canonical PR for the issue
+
+### Requirement: Workflow status comments on the issue include the run link
+The workflow SHALL set `status-comment: true` in the top-level `on:` configuration (see GitHub Agentic Workflows [status comments](https://github.github.com/gh-aw/reference/triggers/#status-comments-status-comment)) so the activation job posts a status comment on the triggering issue when the run starts and updates it when the run completes, including a link to the workflow run as provided by the framework.
+
+#### Scenario: Status comment enabled
+- **WHEN** maintainers inspect the authored `code-factory` issue-intake workflow `on:` frontmatter
+- **THEN** it SHALL include `status-comment: true` (or an object form that enables status comments for issues)
+
+#### Scenario: No custom comment step for run linkage
+- **WHEN** the workflow is authored for `code-factory` issue intake
+- **THEN** the repository SHALL NOT rely on a custom implementation-job step solely to post the workflow run URL to the issue; run visibility SHALL be covered by `status-comment` as above
+
+### Requirement: Workflow removes the factory trigger label in pre-activation when the agent proceeds
+The workflow SHALL include a deterministic pre-activation step that removes the `code-factory` label from the triggering issue **using the same mechanism as** OpenSpec verify (label): `actions/github-script@v9` with `x-script-include` to an inline script that delegates to the shared `.github/workflows-src/lib/remove-trigger-label.js` helper (generalized to accept the factory label name and issue number). The step SHALL run only when the workflow would proceed to the implementation agent (eligible qualifying issue event, trusted actor, and no open linked `code-factory` pull request per existing duplicate suppression). The workflow SHALL grant `issues: write` to pre-activation where required for label removal.
+
+#### Scenario: Remove step mirrors verify workflow pattern
+- **WHEN** maintainers inspect the authored `code-factory` issue-intake workflow `on.steps`
+- **THEN** it SHALL include a remove-label step structurally equivalent to OpenSpec verify (label), including step name `Remove trigger label`, `uses: actions/github-script@v9`, and an `x-script-include` reference for the inline script
+- **AND** the included script SHALL reuse the generalized `remove-trigger-label` library (not a forked copy of the GitHub API logic)
+
+#### Scenario: Label removed only when agent gate passes
+- **WHEN** pre-activation determines the implementation agent SHALL run for the issue
+- **THEN** the remove-label step SHALL run and SHALL attempt to remove `code-factory` from that issue
+
+#### Scenario: Label retained when agent does not run
+- **WHEN** pre-activation suppresses the agent (ineligible event, untrusted actor, or duplicate linked PR)
+- **THEN** the workflow SHALL NOT remove `code-factory` solely as a side effect of this intake run
+
+### Requirement: Implementation agent has structured access to Elastic documentation
+The `code-factory` workflow SHALL configure the Elastic docs MCP server as an HTTP MCP server in the workflow frontmatter so that the implementation agent can query Elastic documentation during issue investigation and implementation. The workflow frontmatter SHALL declare an `mcp-servers.elastic-docs` entry pointing to `https://www.elastic.co/docs/_mcp/`. The agent prompt SHALL instruct the agent to use the docs MCP tools (`search_docs`, `find_related_docs`, `get_document_by_url`) when investigating the API behavior, parameters, or constraints required to implement a `code-factory` issue.
+
+#### Scenario: Agent investigates API behavior before implementing a resource
+- **WHEN** a `code-factory` issue involves an Elastic API endpoint or feature whose full parameter set is not evident from the existing codebase
+- **THEN** the agent SHALL use the elastic-docs MCP `search_docs` tool to retrieve authoritative API documentation before writing implementation code
+
+#### Scenario: Elastic docs MCP server is unavailable
+- **WHEN** the elastic-docs MCP tools return an error or are unreachable during a `code-factory` run
+- **THEN** the agent SHALL proceed with implementation using the information available in the issue and the repository codebase
+- **AND** it SHALL NOT block the run solely because the docs MCP is unavailable
+
+#### Scenario: Maintainer inspects compiled workflow for docs MCP configuration
+- **WHEN** maintainers inspect the compiled `code-factory-issue.md` workflow
+- **THEN** the workflow frontmatter SHALL include `mcp-servers.elastic-docs` with `url: https://www.elastic.co/docs/_mcp/`
 

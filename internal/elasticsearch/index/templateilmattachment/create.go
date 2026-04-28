@@ -36,7 +36,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, fwDiags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	client, fwDiags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -20,32 +20,30 @@ package rolemapping
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &roleMappingResource{}
-var _ resource.ResourceWithConfigure = &roleMappingResource{}
-var _ resource.ResourceWithImportState = &roleMappingResource{}
-
-func NewRoleMappingResource() resource.Resource {
-	return &roleMappingResource{}
-}
+var (
+	_ resource.Resource                = newRoleMappingResource()
+	_ resource.ResourceWithConfigure   = newRoleMappingResource()
+	_ resource.ResourceWithImportState = newRoleMappingResource()
+)
 
 type roleMappingResource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *roleMappingResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_security_role_mapping"
+func newRoleMappingResource() *roleMappingResource {
+	return &roleMappingResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role_mapping"),
+	}
 }
 
-func (r *roleMappingResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewRoleMappingResource() resource.Resource {
+	return newRoleMappingResource()
 }
 
 func (r *roleMappingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

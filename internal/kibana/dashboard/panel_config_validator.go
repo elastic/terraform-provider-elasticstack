@@ -55,6 +55,9 @@ func (panelConfigValidator) Description(_ context.Context) string {
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
 		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
+		"`lens-dashboard-app` is validated by per-attribute validators on `lens_dashboard_app_config` " +
+		"(e.g. type allowlist, required block, and conflicts with other panel config attributes); " +
+		"this panel-level check does not duplicate those rules. " +
 		"Practitioner-authored `config_json` for `time_slider_control` is rejected only by the `config_json` " +
 		"attribute validator (type allowlist) to avoid duplicate diagnostics."
 }

@@ -19,44 +19,36 @@ package agentbuildertool
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_                                       resource.Resource                = &ToolResource{}
-	_                                       resource.ResourceWithConfigure   = &ToolResource{}
-	_                                       resource.ResourceWithImportState = &ToolResource{}
+	_                                       resource.Resource                = newToolResource()
+	_                                       resource.ResourceWithConfigure   = newToolResource()
+	_                                       resource.ResourceWithImportState = newToolResource()
 	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
 	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 	defaultSpaceID = "default"
 )
 
+type ToolResource struct {
+	*resourcecore.Core
+}
+
+func newToolResource() *ToolResource {
+	return &ToolResource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_tool"),
+	}
+}
+
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &ToolResource{}
-}
-
-type ToolResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *ToolResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *ToolResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_tool")
+	return newToolResource()
 }
 
 func (r *ToolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

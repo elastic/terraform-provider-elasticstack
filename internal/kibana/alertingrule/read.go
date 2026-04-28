@@ -61,12 +61,12 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	if r.client == nil {
+	if r.Client() == nil {
 		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

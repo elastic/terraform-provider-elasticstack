@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -31,11 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithConfigValidators = &Resource{}
 
 func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
@@ -176,25 +171,25 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
+
+func newResource() *Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "import_saved_objects"),
+	}
+}
+
+// Ensure provider defined types fully satisfy framework interfaces
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+)
 
 // NewResource returns a new Resource instance for provider registration and tests.
 func NewResource() resource.Resource {
-	return &Resource{}
-}
-
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_kibana_import_saved_objects"
+	return newResource()
 }
 
 type modelV0 struct {

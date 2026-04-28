@@ -24,14 +24,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccResourceKibanaSecurityRole(t *testing.T) {
@@ -125,27 +123,13 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 	})
 }
 
-func checkResourceSecurityRoleDestroy(s *terraform.State) error {
-	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		return err
-	}
-
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_kibana_security_role" {
-			continue
+var checkResourceSecurityRoleDestroy = checks.KibanaResourceDestroyCheck(
+	"elasticstack_kibana_security_role",
+	func(ctx context.Context, client *kibanaoapi.Client, id string) (bool, error) {
+		role, diags := kibanaoapi.GetSecurityRole(ctx, client, id)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to get security role %s: %v", id, diags)
 		}
-		compID := rs.Primary.ID
-
-		role, diags := kibanaoapi.GetSecurityRole(context.Background(), oapiClient, compID)
-		if diags.HasError() || role != nil {
-			return fmt.Errorf("Role (%s) still exists", compID)
-		}
-	}
-	return nil
-}
+		return role != nil, nil
+	},
+)

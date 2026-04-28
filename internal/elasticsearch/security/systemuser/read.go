@@ -43,7 +43,7 @@ func (r *systemUserResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	usernameID := compID.ResourceID
 
-	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

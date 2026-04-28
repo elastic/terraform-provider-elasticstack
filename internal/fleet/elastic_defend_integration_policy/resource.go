@@ -19,57 +19,36 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                = &elasticDefendIntegrationPolicyResource{}
-	_ resource.ResourceWithConfigure   = &elasticDefendIntegrationPolicyResource{}
-	_ resource.ResourceWithImportState = &elasticDefendIntegrationPolicyResource{}
+	_ resource.Resource                = newElasticDefendIntegrationPolicyResource()
+	_ resource.ResourceWithConfigure   = newElasticDefendIntegrationPolicyResource()
+	_ resource.ResourceWithImportState = newElasticDefendIntegrationPolicyResource()
 )
+
+type elasticDefendIntegrationPolicyResource struct {
+	*resourcecore.Core
+	*fleet.SpaceImporter
+}
+
+func newElasticDefendIntegrationPolicyResource() *elasticDefendIntegrationPolicyResource {
+	return &elasticDefendIntegrationPolicyResource{
+		Core:          resourcecore.New(resourcecore.ComponentFleet, "elastic_defend_integration_policy"),
+		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
+	}
+}
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &elasticDefendIntegrationPolicyResource{}
-}
-
-type elasticDefendIntegrationPolicyResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *elasticDefendIntegrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *elasticDefendIntegrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_elastic_defend_integration_policy")
+	return newElasticDefendIntegrationPolicyResource()
 }
 
 func (r *elasticDefendIntegrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resourceSchema()
-}
-
-func (r *elasticDefendIntegrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Accept both "<space_id>/<policy_id>" and plain "<policy_id>" import IDs.
-	// Pass the raw import ID through to the "id" attribute.
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-
-	// Parse the composite ID to seed policy_id and, if present, space_ids.
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
-	if diags.HasError() {
-		// Plain policy_id: no space prefix
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("policy_id"), req.ID)...)
-	} else {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("policy_id"), compID.ResourceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_ids"), []string{compID.ClusterID})...)
-	}
 }

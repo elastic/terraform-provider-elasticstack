@@ -33,7 +33,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

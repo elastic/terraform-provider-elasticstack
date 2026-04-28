@@ -1,4 +1,6 @@
-//include: ../../lib/code-factory-issue.js
+//include: ../intake-constants.js
+//include: ../../lib/factory-issue-shared.js
+//include: ../../lib/code-factory-issue.gh.js
 
 const eventName = context.eventName;
 const eventAction = context.payload.action;

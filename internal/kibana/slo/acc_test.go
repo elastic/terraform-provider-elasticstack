@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -839,32 +839,15 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 	})
 }
 
-func checkResourceSloDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		return err
-	}
-
-	oapi, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_kibana_slo" {
-			continue
-		}
-		// CompositeID stores spaceID as ClusterID and sloID as ResourceID.
-		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-
-		res, diags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
+// checkResourceSloDestroy verifies all SLO resources have been destroyed.
+// The composite ID stores spaceID as ClusterID and sloID as ResourceID.
+var checkResourceSloDestroy = checks.KibanaResourceDestroyCheckCompositeID(
+	"elasticstack_kibana_slo",
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, sloID string) (bool, error) {
+		res, diags := kibanaoapi.GetSlo(ctx, client, spaceID, sloID)
 		if diags.HasError() {
-			return fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
+			return false, fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
 		}
-
-		if res != nil {
-			return fmt.Errorf("SLO (%s) still exists", compID.ResourceID)
-		}
-	}
-	return nil
-}
+		return res != nil, nil
+	},
+)

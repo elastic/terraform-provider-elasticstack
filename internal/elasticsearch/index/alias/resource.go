@@ -20,33 +20,31 @@ package alias
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &aliasResource{}
-var _ resource.ResourceWithConfigure = &aliasResource{}
-var _ resource.ResourceWithImportState = &aliasResource{}
-var _ resource.ResourceWithValidateConfig = &aliasResource{}
-
-func NewAliasResource() resource.Resource {
-	return &aliasResource{}
-}
+var (
+	_ resource.Resource                   = newAliasResource()
+	_ resource.ResourceWithConfigure      = newAliasResource()
+	_ resource.ResourceWithImportState    = newAliasResource()
+	_ resource.ResourceWithValidateConfig = newAliasResource()
+)
 
 type aliasResource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *aliasResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_index_alias"
+func newAliasResource() *aliasResource {
+	return &aliasResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "index_alias"),
+	}
 }
 
-func (r *aliasResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewAliasResource() resource.Resource {
+	return newAliasResource()
 }
 
 func (r *aliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

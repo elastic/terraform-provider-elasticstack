@@ -33,7 +33,7 @@ func (r *securityListItemResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -245,8 +245,6 @@ For each distinct duplication pattern found, create a separate issue using this 
 
 *Analysis of commit ${{ github.event.head_commit.id }}*
 
-**Assignee**: @copilot
-
 ## Summary
 
 [Brief overview of this specific duplication pattern]

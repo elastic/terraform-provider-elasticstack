@@ -69,12 +69,12 @@ func buildTestPackagePolicy(id, name, pkgName, pkgVersion string, enabled bool, 
 func buildConfigEntry(value any) struct {
 	Frozen *bool   `json:"frozen,omitempty"`
 	Type   *string `json:"type,omitempty"`
-	Value  any     `json:"value"`
+	Value  any     `json:"value,omitempty"`
 } {
 	return struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{Value: value}
 }
 
@@ -106,7 +106,7 @@ func TestPopulateModelFromAPIEndpointPackage(t *testing.T) {
 	icConfig := map[string]struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{
 		"integration_config": buildConfigEntry(map[string]any{
 			"endpointConfig": map[string]any{
@@ -360,7 +360,7 @@ func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 	endpointConfig := map[string]struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{
 		"integration_config": buildConfigEntry(map[string]any{
 			"endpointConfig": map[string]any{
@@ -451,14 +451,14 @@ func TestExtractPrivateStateFromResponseNonEndpointFirst(t *testing.T) {
 	otherConfig := map[string]struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{
 		"artifact_manifest": buildConfigEntry(wrongAmValue),
 	}
 	endpointConfig := map[string]struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{
 		"artifact_manifest": buildConfigEntry(amValue),
 	}
@@ -512,7 +512,7 @@ func TestExtractPrivateStateFromResponse(t *testing.T) {
 	endpointConfig := map[string]struct {
 		Frozen *bool   `json:"frozen,omitempty"`
 		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value"`
+		Value  any     `json:"value,omitempty"`
 	}{
 		"artifact_manifest": buildConfigEntry(amValue),
 	}

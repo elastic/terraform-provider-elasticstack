@@ -32,7 +32,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

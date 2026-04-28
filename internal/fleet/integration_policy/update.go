@@ -43,7 +43,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, planModel.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

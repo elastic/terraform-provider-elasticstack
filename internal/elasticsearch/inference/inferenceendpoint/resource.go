@@ -20,33 +20,29 @@ package inferenceendpoint
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                = &inferenceEndpointResource{}
-	_ resource.ResourceWithConfigure   = &inferenceEndpointResource{}
-	_ resource.ResourceWithImportState = &inferenceEndpointResource{}
+	_ resource.Resource                = newInferenceEndpointResource()
+	_ resource.ResourceWithConfigure   = newInferenceEndpointResource()
+	_ resource.ResourceWithImportState = newInferenceEndpointResource()
 )
 
-func NewInferenceEndpointResource() resource.Resource {
-	return &inferenceEndpointResource{}
-}
-
 type inferenceEndpointResource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *inferenceEndpointResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_inference_endpoint"
+func newInferenceEndpointResource() *inferenceEndpointResource {
+	return &inferenceEndpointResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "inference_endpoint"),
+	}
 }
 
-func (r *inferenceEndpointResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewInferenceEndpointResource() resource.Resource {
+	return newInferenceEndpointResource()
 }
 
 func (r *inferenceEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

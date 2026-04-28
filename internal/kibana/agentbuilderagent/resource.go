@@ -19,41 +19,33 @@ package agentbuilderagent
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_                               resource.Resource                = &AgentResource{}
-	_                               resource.ResourceWithConfigure   = &AgentResource{}
-	_                               resource.ResourceWithImportState = &AgentResource{}
+	_                               resource.Resource                = newAgentResource()
+	_                               resource.ResourceWithConfigure   = newAgentResource()
+	_                               resource.ResourceWithImportState = newAgentResource()
 	minKibanaAgentBuilderAPIVersion                                  = version.Must(version.NewVersion("9.3.0"))
 )
 
+type AgentResource struct {
+	*resourcecore.Core
+}
+
+func newAgentResource() *AgentResource {
+	return &AgentResource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_agent"),
+	}
+}
+
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &AgentResource{}
-}
-
-type AgentResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *AgentResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *AgentResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_agent")
+	return newAgentResource()
 }
 
 func (r *AgentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

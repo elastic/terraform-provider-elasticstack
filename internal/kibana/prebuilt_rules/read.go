@@ -34,7 +34,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	apiClient, clientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	apiClient, clientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(clientDiags...)
 	if resp.Diagnostics.HasError() {
 		return

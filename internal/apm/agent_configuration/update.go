@@ -34,7 +34,7 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	scoped, fwDiags := r.client.GetKibanaClient(ctx, plan.KibanaConnection)
+	scoped, fwDiags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return

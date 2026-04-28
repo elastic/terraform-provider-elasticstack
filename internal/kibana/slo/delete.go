@@ -33,12 +33,12 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	if r.client == nil {
+	if r.Client() == nil {
 		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
 		return
 	}
 
-	apiClient, diags := r.client.GetKibanaClient(ctx, state.KibanaConnection)
+	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

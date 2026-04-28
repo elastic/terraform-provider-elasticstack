@@ -39,7 +39,7 @@ func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.Stat
 		return diags
 	}
 
-	client, d := r.client.GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	client, d := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags

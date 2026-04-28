@@ -18,18 +18,15 @@
 package integration
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                 = &integrationResource{}
-	_ resource.ResourceWithConfigure    = &integrationResource{}
-	_ resource.ResourceWithUpgradeState = &integrationResource{}
+	_ resource.Resource                 = newIntegrationResource()
+	_ resource.ResourceWithConfigure    = newIntegrationResource()
+	_ resource.ResourceWithUpgradeState = newIntegrationResource()
 
 	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
 	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
@@ -37,24 +34,17 @@ var (
 	MinVersionSkipDataStreamRollover = MinVersionIgnoreMappingUpdateErrors
 )
 
+type integrationResource struct {
+	*resourcecore.Core
+}
+
+func newIntegrationResource() *integrationResource {
+	return &integrationResource{
+		Core: resourcecore.New(resourcecore.ComponentFleet, "integration"),
+	}
+}
+
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &integrationResource{}
-}
-
-type integrationResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *integrationResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *integrationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_integration")
+	return newIntegrationResource()
 }

@@ -20,6 +20,8 @@ package role_test
 import (
 	_ "embed"
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -294,6 +296,96 @@ func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccResourceSecurityRoleDetectsOutOfBandDrift asserts that changes made
+// to a role outside Terraform (e.g. via Kibana UI or a direct Elasticsearch
+// API call) produce a non-empty plan after refresh, and that state is updated
+// to reflect the drifted values.
+//
+// Regression coverage for https://github.com/elastic/terraform-provider-elasticstack/issues/1693:
+// the Plugin Framework Read implementation previously wrote its result to
+// req.State (discarded) instead of resp.State (persisted), silently hiding
+// all drift on description, metadata, and other role attributes.
+func TestAccResourceSecurityRoleDetectsOutOfBandDrift(t *testing.T) {
+	// Skip the entire test on stacks that don't support the `description`
+	// role attribute. The step-level SkipFuncs already cover the apply/plan
+	// phases, but the out-of-band PreConfig PUT sends `description` in the
+	// body and would fail with "unexpected field [description]" on older
+	// stacks because PreConfig runs regardless of SkipFunc.
+	notSupported, err := versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion)()
+	if err != nil {
+		t.Fatalf("could not determine server version: %v", err)
+	}
+	if notSupported {
+		t.Skipf("skipping: TestAccResourceSecurityRoleDetectsOutOfBandDrift requires Elastic Stack >= %s (role description support)", role.MinSupportedDescriptionVersion)
+	}
+
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "initial description"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"source":"terraform"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				PreConfig: func() {
+					mutateRoleOutOfBand(t, roleName, `{
+  "cluster": ["monitor"],
+  "indices": [{"names":["logs-*"],"privileges":["read"]}],
+  "applications": [],
+  "run_as": [],
+  "metadata": {"source":"console"},
+  "description": "drifted description"
+}`)
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "drifted description"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"source":"console"}`),
+				),
+			},
+		},
+	})
+}
+
+func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance testing client: %v", err)
+	}
+	esClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("failed to get Elasticsearch client: %v", err)
+	}
+	res, err := esClient.Security.PutRole(
+		roleName,
+		strings.NewReader(body),
+		esClient.Security.PutRole.WithContext(t.Context()),
+	)
+	if err != nil {
+		t.Fatalf("out-of-band PutRole failed: %v", err)
+	}
+	defer res.Body.Close()
+	if res.IsError() {
+		b, _ := io.ReadAll(res.Body)
+		t.Fatalf("out-of-band PutRole error: status %d: %s", res.StatusCode, b)
+	}
 }
 
 func checkResourceSecurityRoleDestroy(s *terraform.State) error {

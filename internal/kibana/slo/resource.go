@@ -21,40 +21,35 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &Resource{}
-var _ resource.ResourceWithConfigure = &Resource{}
-var _ resource.ResourceWithImportState = &Resource{}
-var _ resource.ResourceWithConfigValidators = &Resource{}
-var _ resource.ResourceWithUpgradeState = &Resource{}
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithImportState      = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+	_ resource.ResourceWithUpgradeState     = newResource()
+)
 
 //go:embed resource-description.md
 var sloResourceDescription string
 
 type Resource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
+}
+
+func newResource() *Resource {
+	return &Resource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "slo"),
+	}
 }
 
 func NewResource() resource.Resource {
-	return &Resource{}
-}
-
-func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(request.ProviderData)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_kibana_slo"
+	return newResource()
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {

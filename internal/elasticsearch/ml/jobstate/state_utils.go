@@ -31,7 +31,7 @@ var errJobNotFound = fmt.Errorf("ML job not found")
 
 // getJobState returns the current state of a job
 func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateData, jobID string) (*string, diag.Diagnostics) {
-	client, diags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -45,6 +45,7 @@ var (
 	minVersionOutputID             = version.Must(version.NewVersion("8.16.0"))
 	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
+	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
 )
 
 const (
@@ -847,6 +848,62 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := fmt.Sprintf("fleet-import-test-%s", spaceName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"space_id":    config.StringVariable(spaceID),
+					"space_name":  config.StringVariable(fmt.Sprintf("Fleet Import Test Space %s", spaceName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Integration Policy in Space"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "system"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.*", spaceID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"space_id":    config.StringVariable(spaceID),
+					"space_name":  config.StringVariable(fmt.Sprintf("Fleet Import Test Space %s", spaceName)),
+				},
+				ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"inputs", "vars_json", "space_ids"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					res := s.RootModule().Resources["elasticstack_fleet_integration_policy.test_policy"]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource elasticstack_fleet_integration_policy.test_policy not found in state")
+					}
+					return fmt.Sprintf("%s/%s", spaceID, res.Primary.Attributes["policy_id"]), nil
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "system"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.*", spaceID),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
@@ -869,7 +926,8 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 				return fmt.Errorf("agent policy id=%v still exists, but it should have been removed", rs.Primary.ID)
 			}
 		case "elasticstack_fleet_integration_policy":
-			policy, diags := fleet.GetPackagePolicy(context.Background(), fleetClient, rs.Primary.ID, "")
+			spaceID := rs.Primary.Attributes["space_ids.0"]
+			policy, diags := fleet.GetPackagePolicy(context.Background(), fleetClient, rs.Primary.ID, spaceID)
 			if diags.HasError() {
 				return diagutil.FwDiagsAsError(diags)
 			}

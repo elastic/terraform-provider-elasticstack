@@ -38,7 +38,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, state.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

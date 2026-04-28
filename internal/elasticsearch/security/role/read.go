@@ -48,7 +48,7 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(req.State.Set(ctx, readData)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 
 func (r *roleResource) read(ctx context.Context, data Data) (*Data, diag.Diagnostics) {
@@ -58,7 +58,7 @@ func (r *roleResource) read(ctx context.Context, data Data) (*Data, diag.Diagnos
 	}
 	roleID := compID.ResourceID
 
-	client, clientDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return nil, diags

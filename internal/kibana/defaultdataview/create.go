@@ -39,7 +39,7 @@ func (r *Resource) setDefaultDataView(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	apiClient, apiClientDiags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	diags.Append(apiClientDiags...)
 	if diags.HasError() {
 		return diags

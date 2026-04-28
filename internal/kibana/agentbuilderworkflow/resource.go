@@ -19,42 +19,34 @@ package agentbuilderworkflow
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                = &WorkflowResource{}
-	_ resource.ResourceWithConfigure   = &WorkflowResource{}
-	_ resource.ResourceWithImportState = &WorkflowResource{}
+	_ resource.Resource                = newWorkflowResource()
+	_ resource.ResourceWithConfigure   = newWorkflowResource()
+	_ resource.ResourceWithImportState = newWorkflowResource()
 	// Workflow API is GA from 9.4.x onwards
 	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
+type WorkflowResource struct {
+	*resourcecore.Core
+}
+
+func newWorkflowResource() *WorkflowResource {
+	return &WorkflowResource{
+		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_workflow"),
+	}
+}
+
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &WorkflowResource{}
-}
-
-type WorkflowResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *WorkflowResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *WorkflowResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_agentbuilder_workflow")
+	return newWorkflowResource()
 }
 
 func (r *WorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

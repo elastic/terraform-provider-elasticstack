@@ -25,7 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/mitchellh/mapstructure"
 )
 
 type inputDefaultsModel struct {
@@ -192,7 +191,7 @@ func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {
 	var vars apiVars
 
 	if pkg.Vars != nil && len(*pkg.Vars) > 0 {
-		err := mapstructure.Decode(pkg.Vars, &vars)
+		err := decodePackageInfoValue(pkg.Vars, &vars)
 		if err != nil {
 			diags.AddError("Failed to decode package vars", err.Error())
 			return nil, diags
@@ -213,7 +212,7 @@ func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPol
 	var dataStreams apiDatastreams
 
 	if pkg.PolicyTemplates != nil {
-		err := mapstructure.Decode(pkg.PolicyTemplates, &policyTemplates)
+		err := decodePackageInfoValue(pkg.PolicyTemplates, &policyTemplates)
 		if err != nil {
 			diags.AddError("Failed to decode package policy templates", err.Error())
 			return nil, nil, diags
@@ -221,7 +220,7 @@ func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPol
 	}
 
 	if pkg.DataStreams != nil {
-		err := mapstructure.Decode(pkg.DataStreams, &dataStreams)
+		err := decodePackageInfoValue(pkg.DataStreams, &dataStreams)
 		if err != nil {
 			diags.AddError("Failed to decode package data streams", err.Error())
 			return nil, nil, diags
@@ -229,4 +228,13 @@ func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPol
 	}
 
 	return policyTemplates, dataStreams, nil
+}
+
+func decodePackageInfoValue(input any, target any) error {
+	data, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, target)
 }

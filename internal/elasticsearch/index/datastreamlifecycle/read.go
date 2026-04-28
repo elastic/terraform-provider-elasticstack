@@ -53,7 +53,7 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 		return nil, diags
 	}
 
-	client, fwDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
+	client, fwDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return nil, diags

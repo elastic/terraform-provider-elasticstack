@@ -20,6 +20,8 @@ package index
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,6 +64,68 @@ func Test_stringIsJSONObject(t *testing.T) {
 			require.Len(t, errors, len(tt.expectedErrsToContain))
 			for i, err := range errors {
 				require.ErrorContains(t, err, tt.expectedErrsToContain[i])
+			}
+		})
+	}
+}
+
+func Test_validateDataStreamOptionsVersion(t *testing.T) {
+	dso := &models.Template{
+		DataStreamOptions: &models.DataStreamOptions{
+			FailureStore: &models.FailureStoreOptions{Enabled: true},
+		},
+	}
+	noOpts := &models.Template{}
+
+	tests := []struct {
+		name        string
+		serverVer   string
+		templ       *models.Template
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:        "below minimum version with data_stream_options configured",
+			serverVer:   "9.0.0",
+			templ:       dso,
+			wantErr:     true,
+			errContains: "9.1.0",
+		},
+		{
+			name:      "at minimum version",
+			serverVer: "9.1.0",
+			templ:     dso,
+			wantErr:   false,
+		},
+		{
+			name:      "above minimum version",
+			serverVer: "9.2.0",
+			templ:     dso,
+			wantErr:   false,
+		},
+		{
+			name:      "below minimum version but no data_stream_options",
+			serverVer: "9.0.0",
+			templ:     noOpts,
+			wantErr:   false,
+		},
+		{
+			name:      "nil template",
+			serverVer: "9.0.0",
+			templ:     nil,
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := version.Must(version.NewVersion(tt.serverVer))
+			diags := validateDataStreamOptionsVersion(v, tt.templ)
+			if tt.wantErr {
+				require.True(t, diags.HasError(), "expected error diagnostic")
+				require.Contains(t, diags[0].Summary, tt.errContains)
+			} else {
+				require.False(t, diags.HasError(), "unexpected error: %v", diags)
 			}
 		})
 	}

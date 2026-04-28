@@ -35,7 +35,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	client, diags := r.client.GetKibanaClient(ctx, model.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

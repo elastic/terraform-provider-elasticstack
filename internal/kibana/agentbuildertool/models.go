@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -163,7 +164,7 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 	body := kbapi.PostAgentBuilderToolsJSONRequestBody{
 		Id:            model.ToolID.ValueString(),
 		Type:          kbapi.PostAgentBuilderToolsJSONBodyType(model.Type.ValueString()),
-		Configuration: configuration,
+		Configuration: typeutils.PointerInterfaceMapFromAnyMap(configuration),
 	}
 
 	if !model.Description.IsNull() {
@@ -195,8 +196,9 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		}
 	}
 
+	apiConfiguration := typeutils.PointerInterfaceMapFromAnyMap(configuration)
 	body := kbapi.PutAgentBuilderToolsToolidJSONRequestBody{
-		Configuration: &configuration,
+		Configuration: &apiConfiguration,
 	}
 
 	if !model.Description.IsNull() {

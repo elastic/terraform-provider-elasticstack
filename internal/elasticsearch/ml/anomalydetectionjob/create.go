@@ -52,7 +52,7 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML anomaly detection job: %s", jobID))
 
-	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

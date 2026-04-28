@@ -69,14 +69,14 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	// Only proceed with update if there are changes
 	if !hasChanges {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
-		diags.AddWarning("No changed detected to updateble fields during an update operation", `
+		resp.Diagnostics.AddWarning("No changed detected to updateble fields during an update operation", `
 Changes to non-updateable fields should force a recreation of the anomaly detection job. 
 Please report this warning to the provider developers.`)
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}
 
-	client, diags := r.client.GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
+	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

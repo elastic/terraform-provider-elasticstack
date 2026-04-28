@@ -21,27 +21,30 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func NewAnomalyDetectionJobResource() resource.Resource {
-	return &anomalyDetectionJobResource{}
-}
+var (
+	_ resource.Resource                = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithConfigure   = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithImportState = newAnomalyDetectionJobResource()
+)
 
 type anomalyDetectionJobResource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *anomalyDetectionJobResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_anomaly_detection_job"
+func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
+	return &anomalyDetectionJobResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_anomaly_detection_job"),
+	}
 }
 
-func (r *anomalyDetectionJobResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewAnomalyDetectionJobResource() resource.Resource {
+	return newAnomalyDetectionJobResource()
 }
 
 func (r *anomalyDetectionJobResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -80,7 +83,7 @@ func (r *anomalyDetectionJobResource) Delete(ctx context.Context, req resource.D
 
 // resourceReady checks if the client is ready for API calls
 func (r *anomalyDetectionJobResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.client == nil {
+	if r.Client() == nil {
 		diags.AddError("Client not configured", "Provider client is not configured")
 		return false
 	}

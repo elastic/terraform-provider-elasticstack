@@ -1,0 +1,268 @@
+---
+name: Change Factory Issue Intake
+timeout-minutes: 30
+description: >-
+  Reacts to trusted qualifying `change-factory` issue events, suppresses duplicate linked pull
+  requests, and delegates OpenSpec proposal authoring to an agent that creates exactly one linked PR
+  per issue.
+on:
+  issues:
+    types: [opened, labeled]
+  status-comment: true
+  permissions:
+    contents: read
+    issues: write
+    pull-requests: read
+  steps:
+    - name: Qualify trigger event
+      id: qualify_trigger
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/qualify_trigger.inline.js
+    - name: Capture issue context
+      id: capture_issue_context
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          core.setOutput('issue_title', context.payload.issue?.title ?? '');
+          core.setOutput('issue_body', context.payload.issue?.body ?? '');
+    - name: Check actor trust
+      id: check_actor_trust
+      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_actor_trust.inline.js
+    - name: Check duplicate PR
+      id: check_duplicate_pr
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Remove trigger label
+      id: remove_trigger_label
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/remove_trigger_label.inline.js
+    - name: Finalize gate reason
+      id: finalize_gate
+      if: always()
+      uses: actions/github-script@v9
+      env:
+        EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/finalize_gate.inline.js
+if: >-
+  needs.pre_activation.outputs.event_eligible == 'true' &&
+  needs.pre_activation.outputs.actor_trusted == 'true' &&
+  needs.pre_activation.outputs.duplicate_pr_found != 'true'
+steps:
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Install npm dependencies
+    run: npm ci
+engine:
+  id: claude
+  model: "llm-gateway/claude-sonnet-4-6"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+jobs:
+  pre-activation:
+    outputs:
+      event_eligible: ${{ steps.qualify_trigger.outputs.event_eligible }}
+      event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+      issue_title: ${{ steps.capture_issue_context.outputs.issue_title }}
+      issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
+      actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+      actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+      duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
+tools:
+  github:
+    toolsets: [issues, pull_requests, repos]
+network:
+  allowed: [defaults, node, elastic.litellm-prod.ai, www.elastic.co]
+mcp-servers:
+  elastic-docs:
+    url: "https://www.elastic.co/docs/_mcp/"
+    allowed: ["*"]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  create-pull-request:
+    labels: [change-factory, no-changelog]
+    max: 1
+  add-comment:
+    max: 1
+    target: triggering
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Change Factory issue proposal worker
+
+You author exactly one OpenSpec **change** (proposal pull request) for a GitHub issue labeled
+`change-factory`. The **issue title and body captured below are the sole authoritative source** for
+requested scope, capabilities, and acceptance expectations. Do not treat any other issue, pull
+request, comment thread, or external document as overriding that scope. If secondary details are
+missing but the core change is still identifiable, record assumptions and open questions in the
+OpenSpec artifacts rather than blocking on an exploration loop.
+
+Deterministic pre-activation has already validated this run. The agent job runs only when the issue
+event is eligible, the actor is trusted, and no open linked `change-factory` pull request exists for
+this issue.
+
+## Pre-activation context
+
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+- **Trust status** (`actor_trusted`): `${{ needs.pre_activation.outputs.actor_trusted }}`
+- **Duplicate PR status** (`duplicate_pr_found`): `${{ needs.pre_activation.outputs.duplicate_pr_found }}`
+- **Duplicate PR URL**: `${{ needs.pre_activation.outputs.duplicate_pr_url }}`
+- **Issue number**: `${{ github.event.issue.number }}`
+- **Issue title** (authoritative): `${{ needs.pre_activation.outputs.issue_title }}`
+- **Issue body** (authoritative):
+
+  ```markdown
+  ${{ needs.pre_activation.outputs.issue_body }}
+  ```
+
+- **Repository**: `${{ github.repository }}`
+- **Triggered by**: `@${{ github.actor }}`
+- **Required branch**: `change-factory/issue-${{ github.event.issue.number }}`
+
+## OpenSpec tooling
+
+Node.js is configured and `npm ci` has run, so the repository-pinned OpenSpec CLI is available (for
+example `./node_modules/.bin/openspec`). Use it to validate what you author. Disable telemetry for
+CLI invocations: prefix commands with `OPENSPEC_TELEMETRY=0`.
+
+## Elastic documentation
+
+An `elastic-docs` MCP server is available with three tools: `search_docs`, `find_related_docs`, and
+`get_document_by_url`. Before authoring proposal artifacts, use `search_docs` to look up API
+behavior, parameters, and constraints for the feature described in the issue. This grounding step
+helps produce accurate delta specs and avoids speculative assumptions about API shape.
+
+If the MCP tools are unavailable or return no useful results, proceed with authoring from the issue
+content alone - do not block the run waiting for documentation.
+
+## Task
+
+Work on branch `change-factory/issue-${{ github.event.issue.number }}` and produce **exactly one**
+active OpenSpec change directory:
+
+`openspec/changes/<change-id>/`
+
+Pick a single stable `<change-id>` (kebab-case, descriptive of the issue scope). **Do not** create a
+second change directory or split the issue across multiple change ids.
+
+Under that directory, create or refresh **all artifacts required for implementation readiness** for
+this repository's active OpenSpec schema (spec-driven workflow), including:
+
+- `proposal.md`
+- `design.md`
+- `tasks.md`
+- `.openspec.yaml` at `openspec/changes/<change-id>/.openspec.yaml` (required OpenSpec change
+  metadata for the active schema). Prefer
+  `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec new change "<change-id>"` when creating the
+  directory so the scaffold includes `.openspec.yaml` and the expected layout; if you extend an
+  existing `openspec/changes/<change-id>/` on this branch, keep `.openspec.yaml` aligned with what
+  `openspec validate <change-id> --type change` expects.
+- **Delta specs** under `openspec/changes/<change-id>/specs/<capability>/spec.md` (one or more
+  capability folders as the issue requires)
+
+The change must be **apply-ready**: an implementer could start work from `tasks.md` and delta specs
+without guessing the main outcome.
+
+After the files exist, **validate the OpenSpec artifacts** before opening a pull request:
+
+1. Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate <change-id> --type change` and
+   fix every reported problem until the command succeeds.
+2. Optionally confirm readiness with
+   `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec status --change "<change-id>" --json` and
+   resolve any `blocked` state tied to missing artifacts.
+
+Open **exactly one** pull request for this branch using the `create-pull-request` safe output. The
+pull request must be labeled `change-factory` and `no-changelog` and include canonical issue linkage
+`Closes #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
+linked PR deterministically.
+
+## Pull request contract
+
+The linked pull request must:
+
+- use branch `change-factory/issue-${{ github.event.issue.number }}`
+- contain **only** the OpenSpec change tree under `openspec/changes/<change-id>/` for v1 (plus any
+  repository-authored workflow metadata explicitly required by a future extension of this workflow -
+  none is expected in v1). Do not commit Terraform provider source, provider tests, generated
+  clients, or docs outside that directory in this pull request.
+- be the only open `change-factory` pull request for this issue
+- carry the `change-factory` and `no-changelog` labels
+- include `Closes #${{ github.event.issue.number }}` in the PR body
+
+## Out of scope - do not do these in this run
+
+This workflow is **proposal-only**. Even if the issue reads like a feature request, **do not**:
+
+- implement or modify Terraform provider code, **provider Go tests**, generated clients, or docs
+  outside `openspec/changes/<change-id>/`
+- run **`make build`**
+- run **`go test`** against provider or internal packages (including **`go test ./...`**)
+- run **Terraform acceptance tests** (do not set **`TF_ACC`**, do not run tests whose names start with
+  **`TestAcc`**)
+- start or assume an **Elastic Stack**, **Fleet**, Docker compose stack services, or **Elasticsearch
+  API key** creation flows
+- add CI steps that provision runtime Elastic services for this issue
+
+## When the issue is too ambiguous
+
+If the title and body **do not** provide enough information to name the capability area and the
+core outcome safely, **do not** author speculative `openspec/changes/` files and **do not** open a pull
+request. You **must** post **exactly one** `add-comment` on **this** triggering issue **before** any
+`noop`, with a **concise** list of the specific facts still needed (for example: which product area,
+what behavior should change, or what "done" means). Completing the run with **only** `noop` and **no**
+prior `add-comment` on this issue is **not** allowed. After that comment, emit **at most one** `noop`
+with a brief completion note. **Do not** start a back-and-forth comment thread, open a GitHub
+Discussion, or open new issues.
+
+## Guardrails
+
+- Do not open GitHub Discussions or new GitHub issues from this workflow.
+- For an ambiguous scope, the single clarifying `add-comment` on this issue is mandatory; outside that
+  one comment, do not use GitHub comments to run an exploration loop or gather requirements
+  interactively.
+- Do not re-check trigger eligibility, actor trust, or duplicate pull request state; deterministic
+  pre-activation already handled those checks.
+- Do not open a second pull request for the same issue.
+- Do not change the branch naming convention.
+- Do not open issues from this workflow.
+- Use at most one `create-pull-request`, at most one `add-comment`, and at most one `noop` result
+  across the whole run.

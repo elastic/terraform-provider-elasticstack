@@ -21,34 +21,32 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &roleResource{}
-var _ resource.ResourceWithConfigure = &roleResource{}
-var _ resource.ResourceWithImportState = &roleResource{}
-var _ resource.ResourceWithUpgradeState = &roleResource{}
-
-func NewRoleResource() resource.Resource {
-	return &roleResource{}
-}
+var (
+	_ resource.Resource                 = newRoleResource()
+	_ resource.ResourceWithConfigure    = newRoleResource()
+	_ resource.ResourceWithImportState  = newRoleResource()
+	_ resource.ResourceWithUpgradeState = newRoleResource()
+)
 
 type roleResource struct {
-	client *clients.ProviderClientFactory
+	*resourcecore.Core
 }
 
-func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_security_role"
+func newRoleResource() *roleResource {
+	return &roleResource{
+		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role"),
+	}
 }
 
-func (r *roleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewRoleResource() resource.Resource {
+	return newRoleResource()
 }
 
 func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

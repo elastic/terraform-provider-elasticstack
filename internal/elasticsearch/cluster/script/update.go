@@ -40,7 +40,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 	}
 
 	scriptID := data.ScriptID.ValueString()
-	client, connDiags := r.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags

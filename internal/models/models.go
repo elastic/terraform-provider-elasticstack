@@ -224,11 +224,25 @@ type DataStreamSettings struct {
 	AllowCustomRouting *bool `json:"allow_custom_routing,omitempty"`
 }
 
+type DataStreamOptions struct {
+	FailureStore *FailureStoreOptions `json:"failure_store,omitempty"`
+}
+
+type FailureStoreOptions struct {
+	Enabled   bool                   `json:"enabled"`
+	Lifecycle *FailureStoreLifecycle `json:"lifecycle,omitempty"`
+}
+
+type FailureStoreLifecycle struct {
+	DataRetention string `json:"data_retention,omitempty"`
+}
+
 type Template struct {
-	Aliases   map[string]IndexAlias `json:"aliases,omitempty"`
-	Mappings  map[string]any        `json:"mappings,omitempty"`
-	Settings  map[string]any        `json:"settings,omitempty"`
-	Lifecycle *LifecycleSettings    `json:"lifecycle,omitempty"`
+	Aliases           map[string]IndexAlias `json:"aliases,omitempty"`
+	Mappings          map[string]any        `json:"mappings,omitempty"`
+	Settings          map[string]any        `json:"settings,omitempty"`
+	Lifecycle         *LifecycleSettings    `json:"lifecycle,omitempty"`
+	DataStreamOptions *DataStreamOptions    `json:"data_stream_options,omitempty"`
 }
 
 type IndexTemplatesResponse struct {

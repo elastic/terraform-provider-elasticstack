@@ -22,7 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -30,38 +31,29 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &outputResource{}
-	_ resource.ResourceWithConfigure    = &outputResource{}
-	_ resource.ResourceWithImportState  = &outputResource{}
-	_ resource.ResourceWithUpgradeState = &outputResource{}
+	_ resource.Resource                 = newOutputResource()
+	_ resource.ResourceWithConfigure    = newOutputResource()
+	_ resource.ResourceWithImportState  = newOutputResource()
+	_ resource.ResourceWithUpgradeState = newOutputResource()
 )
 
 var MinVersionOutputKafka = version.Must(version.NewVersion("8.13.0"))
 
+type outputResource struct {
+	*resourcecore.Core
+	*fleet.SpaceImporter
+}
+
+func newOutputResource() *outputResource {
+	return &outputResource{
+		Core:          resourcecore.New(resourcecore.ComponentFleet, "output"),
+		SpaceImporter: fleet.NewSpaceImporter(path.Root("output_id")),
+	}
+}
+
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &outputResource{}
-}
-
-type outputResource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *outputResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_output")
-}
-
-func (r *outputResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("output_id"), req, resp)
+	return newOutputResource()
 }
 
 func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
