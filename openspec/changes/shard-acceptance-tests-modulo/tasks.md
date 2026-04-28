@@ -16,5 +16,5 @@
 
 ## 3. Verify and document
 
-- [ ] 3.1 Open the PR. Record in the PR description: (a) the estimated wall-clock for each shard derived from the timing data in `speed-up-dashboard-acceptance-tests` PR #2539; (b) the modulo split of the two known-flaky fleet packages (`integration` → shard 0, `integration_policy` → shard 1).
-- [ ] 3.2 Capture the actual wall-clock for both shards from the first successful CI run and update the PR description with the before/after comparison.
+- [x] 3.1 Open the PR. Record in the PR description: (a) the estimated wall-clock for each shard derived from the timing data in `speed-up-dashboard-acceptance-tests` PR #2539; (b) the modulo split of the two known-flaky fleet packages (`integration` → shard 0, `integration_policy` → shard 1).
+- [x] 3.2 Capture the actual wall-clock for both shards from the first successful CI run and update the PR description with the before/after comparison.
