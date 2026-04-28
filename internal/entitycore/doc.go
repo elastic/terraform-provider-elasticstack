@@ -15,17 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package resourcecore provides a shared embedded core for Plugin Framework resources:
-// [Core] centralizes [resource.ResourceWithConfigure] Configure wiring, the Metadata method
+// Package entitycore provides a shared embedded core for Plugin Framework entities:
+// [ResourceBase] centralizes [resource.ResourceWithConfigure] Configure wiring, the Metadata method
 // required by [resource.Resource], and stores the configured [*clients.ProviderClientFactory]
-// for use via [Core.Client].
+// for use via [ResourceBase.Client]. Data sources are covered by [DataSourceBase].
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
 // can use different component strings for Terraform naming, such as APM resources
 // using the "apm" segment while calling Kibana APIs.
 //
-// The resourceName argument to [New] is the final literal suffix segment in the
+// The resourceName argument to [NewResourceBase] is the final literal suffix segment in the
 // Terraform type name, joined without normalization. Callers must preserve existing
 // spellings for compatibility (for example "agentbuilder_tool" versus "agent_builder_tool").
-package resourcecore
+package entitycore

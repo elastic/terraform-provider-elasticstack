@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package resourcecore
+package entitycore
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 
 const testProviderTypeName = "elasticstack"
 
-func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
+func TestResourceBase_Metadata_typeNamesPerComponent(t *testing.T) {
 	cases := []struct {
 		name         string
 		component    Component
@@ -69,7 +69,7 @@ func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c := New(tc.component, tc.resourceName)
+			c := NewResourceBase(tc.component, tc.resourceName)
 			var resp resource.MetadataResponse
 			c.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: testProviderTypeName}, &resp)
 			require.Equal(t, tc.want, resp.TypeName)
@@ -77,94 +77,94 @@ func TestCore_Metadata_typeNamesPerComponent(t *testing.T) {
 	}
 }
 
-func TestCore_Client_nilSafe(t *testing.T) {
+func TestResourceBase_Client_nilSafe(t *testing.T) {
 	t.Run("nil_receiver", func(t *testing.T) {
 		t.Parallel()
-		var c *Core
+		var c *ResourceBase
 		require.Nil(t, c.Client())
 	})
 
 	t.Run("non_nil_before_configure", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentFleet, "integration")
+		c := NewResourceBase(ComponentFleet, "integration")
 		require.Nil(t, c.Client())
 	})
 }
 
-// embedCoreTestResource is a minimal [resource.Resource] that embeds [Core] as
+// embedResourceBaseTestResource is a minimal [resource.Resource] that embeds [ResourceBase] as
 // pilot resources will. The [resource.Resource] and [resource.ResourceWithConfigure]
 // assignments are compile-time interface checks. The no-import case (embedding
-// [Core] does not satisfy [resource.ResourceWithImportState]) is checked at
-// runtime in TestEmbedCore_importStateAndConfigure (see subtest
+// [ResourceBase] does not satisfy [resource.ResourceWithImportState]) is checked at
+// runtime in TestEmbedResourceBase_importStateAndConfigure (see subtest
 // "no_explicit_import" below in this file), not here.
-type embedCoreTestResource struct {
-	*Core
+type embedResourceBaseTestResource struct {
+	*ResourceBase
 }
 
 var (
-	_ resource.Resource              = (*embedCoreTestResource)(nil)
-	_ resource.ResourceWithConfigure = (*embedCoreTestResource)(nil)
-	// [resource.ResourceWithImportState] is not asserted here; see TestEmbedCore_importStateAndConfigure.
+	_ resource.Resource              = (*embedResourceBaseTestResource)(nil)
+	_ resource.ResourceWithConfigure = (*embedResourceBaseTestResource)(nil)
+	// [resource.ResourceWithImportState] is not asserted here; see TestEmbedResourceBase_importStateAndConfigure.
 )
 
-// embedCoreWithImport is the same shape as a pilot resource that defines its own import.
-type embedCoreWithImport struct {
-	*Core
+// embedResourceBaseWithImport is the same shape as a pilot resource that defines its own import.
+type embedResourceBaseWithImport struct {
+	*ResourceBase
 }
 
 var (
-	_ resource.Resource                = (*embedCoreWithImport)(nil)
-	_ resource.ResourceWithConfigure   = (*embedCoreWithImport)(nil)
-	_ resource.ResourceWithImportState = (*embedCoreWithImport)(nil)
+	_ resource.Resource                = (*embedResourceBaseWithImport)(nil)
+	_ resource.ResourceWithConfigure   = (*embedResourceBaseWithImport)(nil)
+	_ resource.ResourceWithImportState = (*embedResourceBaseWithImport)(nil)
 )
 
-func (r *embedCoreTestResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *embedResourceBaseTestResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{}}
 }
 
-func (r *embedCoreTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+func (r *embedResourceBaseTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 }
-func (r *embedCoreTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
-func (r *embedCoreTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+func (r *embedResourceBaseTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedResourceBaseTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 }
-func (r *embedCoreTestResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+func (r *embedResourceBaseTestResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
 }
 
-func (r *embedCoreWithImport) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *embedResourceBaseWithImport) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Attributes: map[string]schema.Attribute{}}
 }
 
-func (r *embedCoreWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+func (r *embedResourceBaseWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 }
-func (r *embedCoreWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
-func (r *embedCoreWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+func (r *embedResourceBaseWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedResourceBaseWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 }
-func (r *embedCoreWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
-}
-
-func (r *embedCoreWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+func (r *embedResourceBaseWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
 }
 
-func TestEmbedCore_importStateAndConfigure(t *testing.T) {
+func (r *embedResourceBaseWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+}
+
+func TestEmbedResourceBase_importStateAndConfigure(t *testing.T) {
 	t.Run("no_explicit_import", func(t *testing.T) {
 		t.Parallel()
-		r := &embedCoreTestResource{Core: New(ComponentElasticsearch, "x")}
+		r := &embedResourceBaseTestResource{ResourceBase: NewResourceBase(ComponentElasticsearch, "x")}
 		anyR := any(r)
 
 		_, okCfg := anyR.(resource.ResourceWithConfigure)
-		require.True(t, okCfg, "embedded Core should allow ResourceWithConfigure via promoted Configure")
+		require.True(t, okCfg, "embedded ResourceBase should allow ResourceWithConfigure via promoted Configure")
 
 		_, okImp := anyR.(resource.ResourceWithImportState)
-		require.False(t, okImp, "Core must not promote ImportState (accidental importability)")
+		require.False(t, okImp, "ResourceBase must not promote ImportState (accidental importability)")
 	})
 
 	t.Run("explicit_custom_import", func(t *testing.T) {
 		t.Parallel()
-		r := &embedCoreWithImport{Core: New(ComponentKibana, "agentbuilder_tool")}
+		r := &embedResourceBaseWithImport{ResourceBase: NewResourceBase(ComponentKibana, "agentbuilder_tool")}
 		anyR := any(r)
 
 		_, okImp := anyR.(resource.ResourceWithImportState)
-		require.True(t, okImp, "ImportState on the concrete type must still satisfy ResourceWithImportState when Core has none")
+		require.True(t, okImp, "ImportState on the concrete type must still satisfy ResourceWithImportState when ResourceBase has none")
 
 		_, okCfg := anyR.(resource.ResourceWithConfigure)
 		require.True(t, okCfg, "concrete type with import should still implement ResourceWithConfigure")

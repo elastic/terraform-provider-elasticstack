@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package resourcecore
+package entitycore
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 // the full resource type name. See package documentation.
 type Component string
 
-// Well-known Terraform type-name namespace segments for [Core.Metadata].
+// Well-known Terraform type-name namespace segments for [ResourceBase.Metadata].
 const (
 	ComponentElasticsearch Component = "elasticsearch"
 	ComponentKibana        Component = "kibana"
@@ -37,19 +37,19 @@ const (
 	ComponentAPM           Component = "apm"
 )
 
-// Core holds shared Plugin Framework resource wiring: typed naming parts and
-// the provider client factory from Configure. Embed *Core in concrete resources
+// ResourceBase holds shared Plugin Framework resource wiring: typed naming parts and
+// the provider client factory from Configure. Embed *ResourceBase in concrete resources
 // to reuse Configure, Metadata, and Client.
-type Core struct {
+type ResourceBase struct {
 	component    Component
 	resourceName string
 	client       *clients.ProviderClientFactory
 }
 
-// New returns a [Core] for the given namespace segment and literal resource name
+// NewResourceBase returns a [ResourceBase] for the given namespace segment and literal resource name
 // suffix. resourceName is not normalized; see package documentation.
-func New(component Component, resourceName string) *Core {
-	return &Core{component: component, resourceName: resourceName}
+func NewResourceBase(component Component, resourceName string) *ResourceBase {
+	return &ResourceBase{component: component, resourceName: resourceName}
 }
 
 // Configure implements [resource.ResourceWithConfigure], converting provider
@@ -57,7 +57,7 @@ func New(component Component, resourceName string) *Core {
 // the response has error diagnostics, it returns without assigning a new factory,
 // leaving any prior successful client unchanged (same pattern as resources such
 // as fleet integration and kibana agent builder tool).
-func (c *Core) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (c *ResourceBase) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -68,15 +68,15 @@ func (c *Core) Configure(_ context.Context, req resource.ConfigureRequest, resp 
 
 // Metadata implements the Metadata method of [resource.Resource], setting the Terraform type name to
 // "<providerTypeName>_<component>_<resourceName>".
-func (c *Core) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (c *ResourceBase) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, c.component, c.resourceName)
 }
 
-// Client returns the client factory from the last successful [Core.Configure]
-// assignment, or nil if none has been stored yet. A nil *Core (e.g. a partially
+// Client returns the client factory from the last successful [ResourceBase.Configure]
+// assignment, or nil if none has been stored yet. A nil *ResourceBase (e.g. a partially
 // constructed embed) returns nil so callers can surface diagnostics instead of
 // panicking.
-func (c *Core) Client() *clients.ProviderClientFactory {
+func (c *ResourceBase) Client() *clients.ProviderClientFactory {
 	if c == nil {
 		return nil
 	}

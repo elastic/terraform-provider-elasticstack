@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package resourcecore
+package entitycore
 
 import (
 	"context"
@@ -27,19 +27,19 @@ import (
 )
 
 // nonNilTestFactory returns a distinct, zero-valued *ProviderClientFactory. This is
-// enough for [Core.Configure] / [Core.Client] semantics tests; resolution methods
+// enough for [ResourceBase.Configure] / [ResourceBase.Client] semantics tests; resolution methods
 // on the factory are not invoked.
 func nonNilTestFactory() *clients.ProviderClientFactory {
 	return new(clients.ProviderClientFactory)
 }
 
-func TestCore_Configure(t *testing.T) {
+func TestResourceBase_Configure(t *testing.T) {
 	ctx := context.Background()
 
 	// ProviderData is an untyped nil interface: conversion succeeds and assigns nil.
 	t.Run("nil_provider_data_stores_nil_client", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentElasticsearch, "x")
+		c := NewResourceBase(ComponentElasticsearch, "x")
 		var resp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -48,7 +48,7 @@ func TestCore_Configure(t *testing.T) {
 
 	t.Run("valid_factory_stores_that_pointer", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentElasticsearch, "x")
+		c := NewResourceBase(ComponentElasticsearch, "x")
 		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
@@ -60,7 +60,7 @@ func TestCore_Configure(t *testing.T) {
 	// replaces it: untyped nil succeeds and clears the stored factory (delta spec).
 	t.Run("success_then_untyped_nil_provider_data_replaces_with_nil_client", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentElasticsearch, "x")
+		c := NewResourceBase(ComponentElasticsearch, "x")
 		f := nonNilTestFactory()
 		var first resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &first)
@@ -75,7 +75,7 @@ func TestCore_Configure(t *testing.T) {
 
 	t.Run("invalid_provider_data_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentElasticsearch, "x")
+		c := NewResourceBase(ComponentElasticsearch, "x")
 		f := nonNilTestFactory()
 		var okResp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &okResp)
@@ -94,7 +94,7 @@ func TestCore_Configure(t *testing.T) {
 	// and success_then_untyped_nil_provider_data_replaces_with_nil_client.
 	t.Run("typed_nil_factory_pointer_leaves_prior_client", func(t *testing.T) {
 		t.Parallel()
-		c := New(ComponentElasticsearch, "x")
+		c := NewResourceBase(ComponentElasticsearch, "x")
 		f := nonNilTestFactory()
 		var okResp resource.ConfigureResponse
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &okResp)
