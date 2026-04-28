@@ -43,6 +43,9 @@ const testAccAgentBuilderEsqlResourceName = "elasticstack_kibana_agentbuilder_to
 // testAccAgentBuilderWorkflowResourceName is the address of the workflow tool used in acc configs.
 const testAccAgentBuilderWorkflowResourceName = "elasticstack_kibana_agentbuilder_tool.test_workflow"
 
+// testAccAgentBuilderToolDataSourceName is the address of the data source used in acc configs.
+const testAccAgentBuilderToolDataSourceName = "data.elasticstack_kibana_agentbuilder_tool.test"
+
 func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
@@ -384,6 +387,7 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 
 func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 	toolID := "test-tool-" + uuid.New().String()[:8]
+	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
@@ -396,13 +400,24 @@ func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 					"tool_id": config.StringVariable(toolID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "tool_id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "type"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "configuration"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "tool_id", toolID),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "type", "esql"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "space_id", "default"),
+					// id round-trip: exported composite ID must match the backing resource
+					resource.TestCheckResourceAttrPair(dsID, "id",
+						"elasticstack_kibana_agentbuilder_tool.test", "id"),
+					// exact tool_id and type/space assertions
+					resource.TestCheckResourceAttr(dsID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(dsID, "type", "esql"),
+					resource.TestCheckResourceAttr(dsID, "space_id", "default"),
+					// computed fields from the backing resource
+					resource.TestCheckResourceAttr(dsID, "description", "Test ESQL tool"),
+					resource.TestCheckResourceAttr(dsID, "tags.#", "1"),
+					resource.TestCheckTypeSetElemAttr(dsID, "tags.*", "test"),
+					resource.TestCheckResourceAttr(dsID, "readonly", "false"),
+					// configuration contains the expected ESQL query fragment
+					resource.TestMatchResourceAttr(dsID, "configuration",
+						regexp.MustCompile(`FROM logs \| LIMIT 10`)),
+					// workflow-only fields must be absent when include_workflow is not set
+					resource.TestCheckNoResourceAttr(dsID, "workflow_id"),
+					resource.TestCheckNoResourceAttr(dsID, "workflow_configuration_yaml"),
 				),
 			},
 		},
@@ -411,6 +426,7 @@ func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 
 func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
+	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
@@ -423,10 +439,22 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
 					"tool_id": config.StringVariable(toolID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "id"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "type", "workflow"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "workflow_id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "workflow_configuration_yaml"),
+					// id round-trip: composite ID must match the backing resource
+					resource.TestCheckResourceAttrPair(dsID, "id",
+						"elasticstack_kibana_agentbuilder_tool.test", "id"),
+					// exact tool_id, type, space_id assertions
+					resource.TestCheckResourceAttr(dsID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(dsID, "type", "workflow"),
+					resource.TestCheckResourceAttr(dsID, "space_id", "default"),
+					resource.TestCheckResourceAttr(dsID, "description", "Workflow tool"),
+					// workflow_id must equal the backing workflow resource's workflow_id
+					resource.TestCheckResourceAttrPair(dsID, "workflow_id",
+						"elasticstack_kibana_agentbuilder_workflow.test", "workflow_id"),
+					// workflow YAML is populated when include_workflow = true
+					resource.TestCheckResourceAttrSet(dsID, "workflow_configuration_yaml"),
+					// configuration contains a workflow_id JSON key
+					resource.TestMatchResourceAttr(dsID, "configuration",
+						regexp.MustCompile(`"workflow_id"`)),
 				),
 			},
 		},
@@ -455,6 +483,7 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflowUnsupportedVersion(t *testin
 func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
@@ -468,11 +497,53 @@ func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "tool_id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_tool.test", "configuration"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "tool_id", toolID),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_tool.test", "space_id", spaceID),
+					// id round-trip: composite ID must match the backing resource
+					resource.TestCheckResourceAttrPair(dsID, "id",
+						"elasticstack_kibana_agentbuilder_tool.test", "id"),
+					// exact tool_id and space_id
+					resource.TestCheckResourceAttr(dsID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(dsID, "space_id", spaceID),
+					// computed type/readonly
+					resource.TestCheckResourceAttr(dsID, "type", "esql"),
+					resource.TestCheckResourceAttr(dsID, "readonly", "false"),
+					// configuration is populated
+					resource.TestCheckResourceAttrSet(dsID, "configuration"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAgentBuilderToolKibanaConnection exercises the data source
+// with an entity-local kibana_connection block, mirroring the resource-level connection tests.
+func TestAccDataSourceKibanaAgentBuilderToolKibanaConnection(t *testing.T) {
+	toolID := "test-tool-ds-conn-" + uuid.New().String()[:8]
+	dsID := testAccAgentBuilderToolDataSourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(dsID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(dsID, "space_id", "default"),
+					resource.TestCheckResourceAttr(dsID, "type", "esql"),
+					resource.TestCheckResourceAttr(dsID, "description", "Test ESQL tool (DS kibana_connection)"),
+					resource.TestCheckResourceAttr(dsID, "tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr(dsID, "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr(dsID, "tags.*", "ds-conn"),
+					resource.TestCheckResourceAttr(dsID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttrSet(dsID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttrSet(dsID, "configuration"),
 				),
 			},
 		},
