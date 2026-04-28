@@ -11,7 +11,7 @@ There are also two pure duplicate-work test functions whose body could be a sing
 
 ## What Changes
 
-- Set an explicit package parallelism (`-p 8`) for the `testacc` Make target so the dashboard package starts in the first parallel batch on 4‑vCPU GitHub-hosted runners instead of queueing behind alphabetical predecessors. Document the value via a `?=`-style Makefile variable so contributors can override it locally without editing the recipe.
+- Set an explicit package parallelism (`-p 6`) for the `testacc` Make target so the dashboard package starts in the first parallel batch on 4‑vCPU GitHub-hosted runners instead of queueing behind alphabetical predecessors. Document the value via a `?=`-style Makefile variable so contributors can override it locally without editing the recipe.
 - Split the longest monolithic `resource.ParallelTest` functions in `internal/kibana/dashboard/` into per-facet `TestAcc*` functions so each test exercises a single configuration shape rather than 4–10 sequential, independent shapes. Initial scope:
   - `TestAccResourceDashboardXYChart` → 1 function per facet (basic, axis, decorations, filters, fitting, legend_outside, legend_inside, layers, layers_reference, ImportState).
   - `TestAccResourceDashboardPanels` → 1 function per facet (basic, multiple_panels, with_sections, multi_sections_*, panels_and_sections).
@@ -32,7 +32,7 @@ This change is purely test- and tooling-side; the `kibana-dashboard` resource im
 
 ## Impact
 
-- `Makefile`: new `ACCTEST_PACKAGE_PARALLELISM` variable (defaulting to `8`), threaded into `go tool gotestsum -- ... -p $(ACCTEST_PACKAGE_PARALLELISM)`.
+- `Makefile`: new `ACCTEST_PACKAGE_PARALLELISM` variable (defaulting to `6`), threaded into `go tool gotestsum -- ... -p $(ACCTEST_PACKAGE_PARALLELISM)`.
 - `internal/kibana/dashboard/`: net more test functions, fewer steps per function. No new `testdata/` config directories are added; existing ones are re-targeted from sequential steps to parallel functions.
 - CI wall-clock for the snapshot matrix entry: expected reduction of ~10 minutes from the `-p` change alone, with a further ~5–8 minutes once the longest dashboard tests are split. Other matrix entries skip dashboard tests via `minDashboardAPISupport` and are not affected.
-- Risk: peak in-flight tests rise from `4 × 10 = 40` to `8 × 10 = 80`, increasing load on the colocated single Kibana + Elasticsearch instance. Mitigated by leaving `-parallel` at 10 and watching the existing `--rerun-fails` budget. No spec contract change for any resource.
+- Risk: peak in-flight tests rise from `4 × 10 = 40` to `6 × 10 = 60`, increasing load on the colocated single Kibana + Elasticsearch instance. Mitigated by leaving `-parallel` at 10 and watching the existing `--rerun-fails` budget. No spec contract change for any resource.

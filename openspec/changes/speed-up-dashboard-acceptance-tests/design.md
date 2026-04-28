@@ -35,17 +35,19 @@ Inside the dashboard package, every `TestAcc*` function uses `resource.ParallelT
 
 ## Decisions
 
-### 1. Use `-p 8` rather than `-p 4` (default), `-p 12`, or "as high as possible"
+### 1. Use `-p 6` rather than `-p 4` (default), `-p 8`, `-p 12`, or "as high as possible"
 
-Three options were considered:
+Three options were considered initially:
 
 - `-p 4` (status quo): preserves the head-of-line stall; we already know its wall-clock cost.
 - `-p 8`: enough to ensure `internal/kibana/dashboard` is in the first parallel batch alongside the other long packages (`security_detection_rule` 990 s serial, `ingest` 732 s, `index/template` 467 s, `agentpolicy` 293 s). Peak in-flight tests rise from 40 → 80, sharing one Kibana + ES instance on 4 vCPUs.
 - `-p 12` or higher: head-of-line is solved at `-p 8`; adding more slots beyond the long-package count only increases Kibana contention without scheduling benefit.
 
-We choose `-p 8` because it is the smallest value that resolves the observed scheduling problem.
+`-p 8` was implemented first but produced fleet `internal/fleet/` HTTP 400 failures on multiple matrix versions (8.15.5, 9.2.3) in CI, consistent with elevated Kibana contention at 80 peak in-flight tests. Reducing to `-p 6` (peak 60 in-flight) resolved those failures while still placing `kibana/dashboard` in the first parallel batch alongside the 4 other long packages.
 
-The value is exposed as a new Make variable `ACCTEST_PACKAGE_PARALLELISM ?= 8`, parallel to `ACCTEST_PARALLELISM` (which controls in-package `-parallel`). Contributors and CI may override it without editing the recipe.
+We choose `-p 6` as the value that resolves the scheduling problem without overloading the shared Kibana + ES instance.
+
+The value is exposed as a new Make variable `ACCTEST_PACKAGE_PARALLELISM ?= 6`, parallel to `ACCTEST_PARALLELISM` (which controls in-package `-parallel`). Contributors and CI may override it without editing the recipe.
 
 ### 2. Do not change `GOMAXPROCS`
 
@@ -95,14 +97,14 @@ This audit MAY surface zero foldable duplicates — that is an acceptable outcom
 
 ## Risks / Trade-offs
 
-- **Kibana saturation at `-p 8`** — Mitigation: keep `-parallel 10` (no increase in per-package concurrency); rely on the existing `--rerun-fails=5 --rerun-fails-max-failures=20` budget to absorb transient failures during rollout; revert to `-p 4` is a one-line change.
+- **Kibana saturation at `-p 6`** — Mitigation: keep `-parallel 10` (no increase in per-package concurrency); rely on the existing `--rerun-fails=5 --rerun-fails-max-failures=20` budget to absorb transient failures during rollout; revert to `-p 4` is a one-line change. (Initial value of `-p 8` was reduced to `-p 6` after observing fleet HTTP 400 failures on multiple matrix versions in CI.)
 - **More test functions to maintain** — Mitigation: splits sit next to their parents in the same `acc_*_panels_test.go` file; helper-extracting common preamble (`PreCheck`, `SkipFunc`, `ProtoV6ProviderFactories`, `ConfigVariables`) is a follow-up if duplication becomes painful, but is out of scope for this change to keep diffs reviewable.
 - **`testdata/` directory churn** — None expected. Existing directories continue to be referenced from the new function names.
 - **Merging the duplicate-deletion and split-monolith work in one change** — Reviewers will see a large diff in `acc_xy_panels_test.go`, `acc_panels_test.go`, `acc_esql_control_panels_test.go`, `acc_slo_burn_rate_panels_test.go`, `acc_slo_error_budget_panels_test.go`, and `acc_lens_dashboard_app_panels_test.go`. We accept that because the wins compound (one CI run validates both buckets).
 
 ## Migration Plan
 
-1. Land the Makefile change (`ACCTEST_PACKAGE_PARALLELISM`, default `8`) and the `makefile-workflows` spec update first; this can be exercised on its own and produces an immediate ~10‑minute saving on the snapshot matrix entry.
+1. Land the Makefile change (`ACCTEST_PACKAGE_PARALLELISM`, default `6`) and the `makefile-workflows` spec update first; this can be exercised on its own and produces an immediate ~10‑minute saving on the snapshot matrix entry.
 2. Split `TestAccResourceDashboardXYChart` and the next two heaviest tests in a single follow-up commit; verify locally with `make testacc-vs-docker TESTARGS='-run ^TestAccResourceDashboardXY...'`.
 3. Apply the duplicate-deletion fixes for `*SloInstanceIDNullPreservation`.
 4. Run the lens audit and apply its findings.
@@ -110,5 +112,5 @@ This audit MAY surface zero foldable duplicates — that is an acceptable outcom
 
 ## Open Questions
 
-- **Is `-p 8` enough or should we go to `-p 6`?** The 6‑slot configuration would cover the four long packages (`dashboard`, `security_detection_rule`, `ingest`, `index/template`) plus two more, with peak in-flight = 60. Worth measuring after the split lands; out of scope for this change.
+- **Is `-p 6` the right value?** Validated in CI: `-p 8` produced fleet HTTP 400 failures on multiple matrix versions; `-p 6` (peak in-flight = 60) resolved those failures while still placing `kibana/dashboard` in the first parallel batch. Further tuning (e.g. `-p 8` after the split reduces per-test load) is deferred to a follow-up.
 - **Should `-parallel` rise from 10 once the longest dashboard test is below ~120 s?** Possibly to `16`; deferred to a follow-up because tuning that knob is independent of this change's correctness story.

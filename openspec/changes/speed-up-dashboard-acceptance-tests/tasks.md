@@ -1,6 +1,6 @@
 ## 1. Make `testacc` package-parallelism explicit
 
-- [x] 1.1 Add `ACCTEST_PACKAGE_PARALLELISM ?= 8` near the existing `ACCTEST_PARALLELISM` block in `Makefile`.
+- [x] 1.1 Add `ACCTEST_PACKAGE_PARALLELISM ?= 6` near the existing `ACCTEST_PARALLELISM` block in `Makefile`. (Initial design said `8`; reduced to `6` after CI fleet HTTP 400 failures at 80 peak in-flight tests.)
 - [x] 1.2 Thread the variable into the `testacc` recipe as `-p $(ACCTEST_PACKAGE_PARALLELISM)`, placed alongside `-parallel $(ACCTEST_PARALLELISM)`.
 - [x] 1.3 Update the `makefile-workflows` capability spec to require explicit, contributor-overridable package parallelism for `testacc`, with a `MODIFIED` requirement and accompanying scenarios.
 - [x] 1.4 Verify locally that `make testacc TESTARGS='-run ^TestAccResourceDashboardEmptyDashboard$$' ACCTEST_PACKAGE_PARALLELISM=2` honors the override (smoke test only; no behavioral assertion needed beyond observing the flag in the printed command).
@@ -26,6 +26,6 @@
 
 ## 5. Verify and document
 
-- [ ] 5.1 Run `make testacc TESTARGS='-run ^TestAccResourceDashboard'` against a local 9.4 stack (`testacc-vs-docker`) and confirm the suite passes with the new shape.
-- [ ] 5.2 Run `openspec validate --specs` and `openspec validate --change speed-up-dashboard-acceptance-tests` (when available) to confirm the spec delta is well-formed.
-- [ ] 5.3 Open the PR with the latest snapshot matrix wall-clock recorded in the description (before/after, captured from the failing-CI run linked in `proposal.md` and the new CI run on this branch). Confirm peak `--rerun-fails` usage did not increase materially.
+- [x] 5.1 Run `make testacc TESTARGS='-run ^TestAccResourceDashboard'` against a local 9.4 stack (`testacc-vs-docker`) and confirm the suite passes with the new shape.
+- [x] 5.2 Run `openspec validate --specs` and `openspec validate --change speed-up-dashboard-acceptance-tests` (when available) to confirm the spec delta is well-formed.
+- [x] 5.3 Open the PR with the latest snapshot matrix wall-clock recorded in the description (before/after, captured from the failing-CI run linked in `proposal.md` and the new CI run on this branch). Confirm peak `--rerun-fails` usage did not increase materially.
