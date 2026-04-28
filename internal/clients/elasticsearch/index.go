@@ -202,81 +202,71 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.Elasticsear
 	return diags
 }
 
-func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) diag.Diagnostics {
-	var diags diag.Diagnostics
+func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) fwdiags.Diagnostics {
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Indices.PutIndexTemplate(template.Name, bytes.NewReader(templateBytes), esClient.Indices.PutIndexTemplate.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create index template"); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to create index template")
 }
 
-func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.IndexTemplateResponse, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	req := esClient.Indices.GetIndexTemplate.WithName(templateName)
 	res, err := esClient.Indices.GetIndexTemplate(req, esClient.Indices.GetIndexTemplate.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, "Unable to request index template."); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to request index template."); diags.HasError() {
 		return nil, diags
 	}
 
 	var indexTemplates models.IndexTemplatesResponse
 	if err := json.NewDecoder(res.Body).Decode(&indexTemplates); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	// we requested only 1 template
 	if len(indexTemplates.IndexTemplates) != 1 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Wrong number of templates returned",
-			Detail:   fmt.Sprintf("Elasticsearch API returned %d when requested '%s' template.", len(indexTemplates.IndexTemplates), templateName),
-		})
-		return nil, diags
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong number of templates returned",
+				fmt.Sprintf("Elasticsearch API returned %d when requested '%s' template.", len(indexTemplates.IndexTemplates), templateName),
+			),
+		}
 	}
 	tpl := indexTemplates.IndexTemplates[0]
-	return &tpl, diags
+	return &tpl, nil
 }
 
-func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.Indices.DeleteIndexTemplate(templateName, esClient.Indices.DeleteIndexTemplate.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete index template"); diags.HasError() {
-		return diags
-	}
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to delete index template")
 }
 
 // createIndexResponse is the minimal structure of the Elasticsearch Create Index API response.

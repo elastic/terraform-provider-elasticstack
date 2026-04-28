@@ -25,11 +25,34 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+// configuredString returns the string value of the named attribute in rawConfig
+// when it is explicitly set in user configuration, even to an empty string.
+// SDKv2's d.GetOk collapses "attribute unset" and "attribute set to the zero
+// value" into the same return signal, which previously caused Terraform to
+// omit explicit `description = ""` (and similar) from the PUT request body so
+// Kibana silently retained the old value. Using GetRawConfig keeps the
+// distinction intact. See https://github.com/elastic/terraform-provider-elasticstack/issues/1881.
+func configuredString(rawConfig cty.Value, attr string) *string {
+	if !rawConfig.IsKnown() || rawConfig.IsNull() {
+		return nil
+	}
+	if !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute(attr) {
+		return nil
+	}
+	v := rawConfig.GetAttr(attr)
+	if v.IsNull() || !v.IsKnown() {
+		return nil
+	}
+	s := v.AsString()
+	return &s
+}
 
 var spaceSolutionMinVersion = version.Must(version.NewVersion("8.16.0"))
 
@@ -141,11 +164,11 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 	spaceID := d.Get("space_id").(string)
 	name := d.Get("name").(string)
 
-	var description *string
-	if v, ok := d.GetOk("description"); ok {
-		s := v.(string)
-		description = &s
-	}
+	// Use the raw config to distinguish "user set the attribute to an empty
+	// string" from "user did not set the attribute at all" — see
+	// configuredString above.
+	rawConfig := d.GetRawConfig()
+	description := configuredString(rawConfig, "description")
 
 	features := make([]string, 0)
 	if v, ok := d.GetOk("disabled_features"); ok {
@@ -155,23 +178,9 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 		}
 	}
 
-	var initials *string
-	if v, ok := d.GetOk("initials"); ok {
-		s := v.(string)
-		initials = &s
-	}
-
-	var color *string
-	if v, ok := d.GetOk("color"); ok {
-		s := v.(string)
-		color = &s
-	}
-
-	var imageURL *string
-	if v, ok := d.GetOk("image_url"); ok {
-		s := v.(string)
-		imageURL = &s
-	}
+	initials := configuredString(rawConfig, "initials")
+	color := configuredString(rawConfig, "color")
+	imageURL := configuredString(rawConfig, "image_url")
 
 	var spaceResponse *kbapi.SpaceResponse
 

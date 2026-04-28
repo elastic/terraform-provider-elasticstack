@@ -18,8 +18,10 @@
 package agentpolicy
 
 import (
+	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -157,6 +159,88 @@ func TestConvertHostNameFormatToAgentFeature(t *testing.T) {
 			assert.NotNil(t, got)
 			assert.Equal(t, tt.want.Name, got.Name)
 			assert.Equal(t, tt.want.Enabled, got.Enabled)
+		})
+	}
+}
+
+// TestPopulateFromAPI_Description_Null_vs_EmptyString asserts the
+// null-preserving behavior for the `description` attribute. Regression test
+// for https://github.com/elastic/terraform-provider-elasticstack/issues/993:
+// the Fleet API returns an empty string for an unset description, which
+// previously triggered "Provider produced inconsistent result after apply:
+// was null, but now cty.StringVal("")" whenever the user's plan omitted the
+// attribute.
+func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
+	emptyStr := ""
+	foo := "foo"
+
+	tests := []struct {
+		name      string
+		initial   types.String // the pre-populate plan/state value
+		apiValue  *string      // data.Description as returned by Fleet
+		wantNull  bool
+		wantValue string // only meaningful when wantNull is false
+	}{
+		{
+			name:     "null in plan and nil from API stays null",
+			initial:  types.StringNull(),
+			apiValue: nil,
+			wantNull: true,
+		},
+		{
+			name:     "null in plan and empty string from API stays null",
+			initial:  types.StringNull(),
+			apiValue: &emptyStr,
+			wantNull: true,
+		},
+		{
+			name:      "null in plan and value from API adopts value",
+			initial:   types.StringNull(),
+			apiValue:  &foo,
+			wantNull:  false,
+			wantValue: "foo",
+		},
+		{
+			name:      "empty string in plan and empty string from API stays empty string",
+			initial:   types.StringValue(""),
+			apiValue:  &emptyStr,
+			wantNull:  false,
+			wantValue: "",
+		},
+		{
+			name:      "value in plan and matching value from API stays value",
+			initial:   types.StringValue("foo"),
+			apiValue:  &foo,
+			wantNull:  false,
+			wantValue: "foo",
+		},
+		{
+			name:      "value in plan and different value from API adopts API value",
+			initial:   types.StringValue("foo"),
+			apiValue:  &emptyStr, // user removed out-of-band; Kibana response is ""
+			wantNull:  false,
+			wantValue: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			model := &agentPolicyModel{
+				Description: tc.initial,
+			}
+			data := &kbapi.AgentPolicy{
+				Id:          "policy-id",
+				Description: tc.apiValue,
+			}
+			diags := model.populateFromAPI(context.Background(), data)
+			assert.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+
+			if tc.wantNull {
+				assert.True(t, model.Description.IsNull(), "expected Description to be null, got %q", model.Description.ValueString())
+			} else {
+				assert.False(t, model.Description.IsNull(), "expected Description to be set, got null")
+				assert.Equal(t, tc.wantValue, model.Description.ValueString())
+			}
 		})
 	}
 }

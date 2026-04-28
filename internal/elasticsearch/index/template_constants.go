@@ -17,16 +17,10 @@
 
 package index
 
-import _ "embed"
+import "github.com/hashicorp/go-version"
 
-//go:embed descriptions/component_template_resource.md
-var componentTemplateResourceDescription string
+// MinSupportedIgnoreMissingComponentTemplateVersion is the minimum Elasticsearch version for ignore_missing_component_templates.
+var MinSupportedIgnoreMissingComponentTemplateVersion = version.Must(version.NewVersion("8.7.0"))
 
-//go:embed descriptions/component_template_alias_name.md
-var componentTemplateAliasNameDescription string
-
-//go:embed descriptions/index_template_mappings.md
-var indexTemplateMappingsDescription string
-
-//go:embed descriptions/component_template_settings.md
-var componentTemplateSettingsDescription string
+// MinSupportedDataStreamOptionsVersion is the minimum Elasticsearch version for template.data_stream_options.
+var MinSupportedDataStreamOptionsVersion = version.Must(version.NewVersion("9.1.0"))
