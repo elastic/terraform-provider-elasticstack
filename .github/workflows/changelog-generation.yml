@@ -1055,6 +1055,8 @@ jobs:
               runChangelogEngine,
             } = _changelogEngine;
             
+            // Mode is workflow-driven via MODE env only; the inlined bundle still carries resolveReleaseMode (event-based) from changelog-release-context.js for tests/lib reuse—unused on this path until that module is split.
+            
             const { owner, repo } = context.repo;
             
             const mode = (process.env.MODE || 'unreleased').trim();

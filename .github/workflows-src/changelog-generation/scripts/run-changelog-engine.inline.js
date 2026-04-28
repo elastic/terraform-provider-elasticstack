@@ -1,6 +1,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 //include: ../../lib/changelog-engine-workflow.js
+// Mode is workflow-driven via MODE env only; the inlined bundle still carries resolveReleaseMode (event-based) from changelog-release-context.js for tests/lib reuse—unused on this path until that module is split.
 
 const { owner, repo } = context.repo;
 
