@@ -118,10 +118,6 @@ New path-prefix directories SHALL NOT appear without an explicit harness change;
 - **WHEN** the PlanOnly harness next runs
 - **THEN** that file SHALL be covered by a subtest without extra configuration
 
-#### Scenario: Other directories not covered by prefixes are not implicitly skipped
-
-- **NOTE** This preserves the original intent except where an explicit enumerated per-file exclusion applies above.
-
 ### Requirement: The harness SHALL run as acceptance coverage (REQ-006)
 
 The PlanOnly harness SHALL run under the existing acceptance-test workflow. It SHALL require the same acceptance-test preconditions as other provider acceptance tests, including `TF_ACC=1` and the live Elastic Stack environment variables validated by `acctest.PreCheck(t)`.
