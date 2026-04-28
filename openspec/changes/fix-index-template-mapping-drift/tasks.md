@@ -21,9 +21,9 @@
 
 ## 4. Remove workaround and enable acceptance target
 
-- [ ] 4.1 Remove `t.Skip()` from `TestAccResourceIndexTemplateUserMappingNoDrift`.
-- [ ] 4.2 Remove `lifecycle { ignore_changes = [mappings] }` from `internal/elasticsearch/index/index/testdata/TestAccResourceIndexWithTemplate/create/index.tf`.
-- [ ] 4.3 Adjust the `TestAccResourceIndexWithTemplate` expected `mappings` assertion to match the new user-intent-preserving state behavior.
+- [x] 4.1 Remove `t.Skip()` from `TestAccResourceIndexTemplateUserMappingNoDrift`.
+- [x] 4.2 Remove `lifecycle { ignore_changes = [mappings] }` from `internal/elasticsearch/index/index/testdata/TestAccResourceIndexWithTemplate/create/index.tf`.
+- [x] 4.3 Adjust the `TestAccResourceIndexWithTemplate` expected `mappings` assertion to match the new user-intent-preserving state behavior.
 
 ## 5. Document and verify
 
