@@ -8,6 +8,7 @@ const {
   buildUnreleasedPRBody,
   buildReleasePRBody,
   manageUnreleasedPR,
+  findOpenReleasePrepPRNumber,
   refreshReleasePR,
 } = require('./changelog-pr-management.js');
 
@@ -179,16 +180,133 @@ test('refreshReleasePR: prNumber present → calls pulls.update with correct bod
 });
 
 // ---------------------------------------------------------------------------
-// refreshReleasePR: prNumber absent → core.warning called, no API call
+// findOpenReleasePrepPRNumber
 // ---------------------------------------------------------------------------
 
-test('refreshReleasePR: prNumber absent → emits warning, does not call pulls.update', async () => {
+test('findOpenReleasePrepPRNumber: returns first open PR number for prep-release-<version> head', async () => {
+  const listCalls = [];
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          listCalls.push(args);
+          return {
+            data: [{ number: 88, html_url: 'https://github.com/org/repo/pull/88' }],
+          };
+        },
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '1.2.3',
+  });
+
+  assert.equal(num, 88);
+  assert.equal(listCalls.length, 1);
+  assert.equal(listCalls[0].head, 'org:prep-release-1.2.3');
+  assert.equal(listCalls[0].base, 'main');
+  assert.equal(listCalls[0].state, 'open');
+});
+
+test('findOpenReleasePrepPRNumber: empty targetVersion → null without API', async () => {
+  const listCalls = [];
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          listCalls.push(args);
+          return { data: [] };
+        },
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '',
+  });
+
+  assert.equal(num, null);
+  assert.equal(listCalls.length, 0);
+});
+
+test('findOpenReleasePrepPRNumber: no matching PR → null', async () => {
+  const github = {
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '9.0.0',
+  });
+
+  assert.equal(num, null);
+});
+
+// ---------------------------------------------------------------------------
+// refreshReleasePR: prNumber absent → lookup by head, then pulls.update
+// ---------------------------------------------------------------------------
+
+test('refreshReleasePR: prNumber absent but prep-release PR exists → updates looked-up PR', async () => {
+  const updateCalls = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          assert.equal(args.head, 'acme:prep-release-2.1.0');
+          assert.equal(args.base, 'main');
+          return { data: [{ number: 77 }] };
+        },
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: () => {
+      assert.fail('should not warn');
+    },
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'acme',
+    repo: 'repo',
+    prNumber: null,
+    compareRange: 'v1.0.0...v2.1.0',
+    targetVersion: '2.1.0',
+  });
+
+  assert.equal(updateCalls.length, 1);
+  assert.equal(updateCalls[0].pull_number, 77);
+});
+
+test('refreshReleasePR: prNumber absent and no prep-release PR → warning, no pulls.update', async () => {
   const updateCalls = [];
   const warnings = [];
 
   const github = {
     rest: {
       pulls: {
+        list: async () => ({ data: [] }),
         update: async (args) => {
           updateCalls.push(args);
           return { data: {} };
@@ -212,7 +330,10 @@ test('refreshReleasePR: prNumber absent → emits warning, does not call pulls.u
     targetVersion: '2.0.0',
   });
 
-  assert.equal(updateCalls.length, 0, 'pulls.update should not be called');
-  assert.equal(warnings.length, 1, 'one warning should be emitted');
-  assert.ok(warnings[0].includes('skipping PR metadata refresh'), 'warning message should mention skipping');
+  assert.equal(updateCalls.length, 0);
+  assert.equal(warnings.length, 1);
+  assert.ok(
+    warnings[0].includes('Could not resolve'),
+    'warning should mention resolution failure'
+  );
 });
