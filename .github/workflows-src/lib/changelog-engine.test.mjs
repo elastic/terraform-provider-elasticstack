@@ -199,6 +199,36 @@ test('runChangelogRenderAndWrite release inserts section after Unreleased', () =
   assert.ok(u !== -1 && r !== -1 && r > u && old > r);
 });
 
+test('runChangelogRenderAndWrite release with zero PRs writes header-only section', () => {
+  const core = mockCore();
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
+  const changelogPath = path.join(dir, 'CHANGELOG.md');
+  writeFileSync(
+    changelogPath,
+    ['# L', '', '## [Unreleased]', 'pending', '', '## [0.9.0]', 'z'].join('\n'),
+    'utf8'
+  );
+  const fs = require('node:fs');
+  const out = runChangelogRenderAndWrite({
+    core,
+    prRecords: [],
+    mode: 'release',
+    targetVersion: '1.0.0',
+    changelogPath,
+    fs,
+  });
+  assert.match(out.sectionHeader, /^## \[1\.0\.0\] - \d{4}-\d{2}-\d{2}$/);
+  assert.equal(out.hasPRs, false);
+  assert.equal(out.hasUserFacingChanges, false);
+  assert.equal(out.included.length, 0);
+  const text = readFileSync(changelogPath, 'utf8');
+  const u = text.indexOf('## [Unreleased]');
+  const r = text.indexOf('## [1.0.0]');
+  const old = text.indexOf('## [0.9.0]');
+  assert.ok(u !== -1 && r !== -1 && r > u && old > r);
+  assert.ok(text.includes('## [1.0.0]'));
+});
+
 test('runChangelogRenderAndWrite assembly failure calls setFailed and throws', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));

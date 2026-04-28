@@ -45,7 +45,9 @@ const hasPRs = prRecords.length > 0;
 let sectionHeader = '';
 let hasUserFacingChanges = false;
 
-if (hasPRs) {
+const shouldRenderChangelog = mode === 'release' || hasPRs;
+
+if (shouldRenderChangelog) {
   const changelogPath = process.env.CHANGELOG_PATH || 'CHANGELOG.md';
   const out = runChangelogRenderAndWrite({
     core,
@@ -66,10 +68,7 @@ if (hasPRs) {
 } else {
   core.info('No merged PRs in compare range; skipping changelog file update');
   const today = new Date().toISOString().split('T')[0];
-  sectionHeader =
-    mode === 'release' && targetVersion
-      ? `## [${targetVersion}] - ${today}`
-      : '## [Unreleased]';
+  sectionHeader = '## [Unreleased]';
 }
 
 core.setOutput('mode', mode);
