@@ -8,11 +8,11 @@
 
 ## 2. GitHub Actions workflow change
 
-- [ ] 2.1 Locate the workflow source template(s) in `workflows-src/` that define the acceptance-test matrix job.
-- [ ] 2.2 Add `shard: [0, 1]` as a matrix dimension so each `(version, shard)` pair runs as an independent job with its own runner and Elastic stack.
-- [ ] 2.3 Thread `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` into the `make testacc` step in the template.
-- [ ] 2.4 Regenerate the compiled workflow files via `make workflow-generate` and confirm `make check-workflows` passes.
-- [ ] 2.5 Confirm `make check-lint` passes with the updated workflow sources and Makefile.
+- [x] 2.1 Locate the workflow source template(s) in `workflows-src/` that define the acceptance-test matrix job.
+- [x] 2.2 Add `shard: [0, 1]` as a matrix dimension so each `(version, shard)` pair runs as an independent job with its own runner and Elastic stack.
+- [x] 2.3 Thread `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` into the `make testacc` step in the template.
+- [x] 2.4 Regenerate the compiled workflow files via `make workflow-generate` and confirm `make check-workflows` passes.
+- [x] 2.5 Confirm `make check-lint` passes with the updated workflow sources and Makefile.
 
 ## 3. Verify and document
 
