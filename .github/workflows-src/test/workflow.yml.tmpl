@@ -213,16 +213,38 @@ jobs:
           - '9.4.0-SNAPSHOT'
         include:
           - version: '8.0.1'
+            shard: 0
+            fleetImage: elastic/elastic-agent
+            runner: 'ubuntu-22.04'
+          - version: '8.0.1'
+            shard: 1
             fleetImage: elastic/elastic-agent
             runner: 'ubuntu-22.04'
           - version: '8.1.3'
+            shard: 0
+            fleetImage: elastic/elastic-agent
+            runner: 'ubuntu-22.04'
+          - version: '8.1.3'
+            shard: 1
             fleetImage: elastic/elastic-agent
             runner: 'ubuntu-22.04'
           - version: '8.2.3'
+            shard: 0
+            runner: 'ubuntu-22.04'
+          - version: '8.2.3'
+            shard: 1
             runner: 'ubuntu-22.04'
           - version: '8.3.3'
+            shard: 0
+            runner: 'ubuntu-22.04'
+          - version: '8.3.3'
+            shard: 1
             runner: 'ubuntu-22.04'
           - version: '8.4.3'
+            shard: 0
+            runner: 'ubuntu-22.04'
+          - version: '8.4.3'
+            shard: 1
             runner: 'ubuntu-22.04'
     steps:
       - name: Free up disk space
@@ -334,7 +356,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
-            const marker = '<!-- tf-acceptance-snapshot-warning:${{ matrix.version }} -->';
+            const marker = '<!-- tf-acceptance-snapshot-warning:${{ matrix.version }}-shard-${{ matrix.shard }} -->';
             const body = [
               marker,
               ':warning: Terraform acceptance tests failed for snapshot stack version `${{ matrix.version }}`.',
