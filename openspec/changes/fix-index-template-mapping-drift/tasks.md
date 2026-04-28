@@ -1,6 +1,6 @@
 ## 1. Preserve Phase 1 reproduction coverage
 
-- [x] 1.1 Create a worktree for the investigation at `/Users/tobio/Projects/terraform-provider-elasticstack-issue563-phase1`.
+- [x] 1.1 Create a worktree for the investigation.
 - [x] 1.2 Add `TestAccResourceIndexTemplateNoMappingDrift` with no index `mappings`, no `ignore_changes`, and a second step asserting `plancheck.ExpectEmptyPlan()`.
 - [x] 1.3 Add `TestAccResourceIndexTemplateUserMappingNoDrift` with user-owned index `mappings`, template-injected extras, no `ignore_changes`, and a second step asserting `plancheck.ExpectEmptyPlan()`.
 - [x] 1.4 Run targeted acceptance coverage against the local Elastic Stack and record current behavior: no-config mapping case passes; user-owned mapping case fails with provider inconsistent result after apply.

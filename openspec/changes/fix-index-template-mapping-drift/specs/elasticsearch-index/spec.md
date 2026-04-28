@@ -1,6 +1,7 @@
 # Delta Spec: `elasticstack_elasticsearch_index` Template Mapping Drift
 
 Base spec: `openspec/specs/elasticsearch-index/spec.md`
+Resource implementation: `internal/elasticsearch/index/index`
 Last requirement in base spec: REQ-029
 This delta modifies: REQ-015-REQ-024
 
