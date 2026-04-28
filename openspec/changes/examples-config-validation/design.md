@@ -54,14 +54,21 @@ An earlier version of this design considered stripping every embedded `provider 
 
 This change therefore leaves embedded provider and connection blocks in place. If a future change wants to standardise example docs (e.g. for stylistic consistency), it can do so as a separate, focused cleanup with its own justification.
 
-### 5. Static skip-list for non-covered directories
+### 5. Static skip-list for non-covered directories and enumerated per-file snippets
 
-Two directories under `examples/` are not covered by this harness:
+Two **directory prefixes** under `examples/` are not traversed by the embedded example trees (`examples/cloud/`, `examples/provider/`); the harness rejects them similarly by prefix (`skippedExamplePathPrefixes`). Out of scope patterns:
 
-- `examples/cloud/`: uses the `ec` (Elastic Cloud) provider, not `elasticstack`. Out of scope for this test.
-- `examples/provider/`: contains snippets demonstrating provider configuration itself. They are intentionally partial and not standalone configurations.
+- **`examples/cloud/`**: uses the `ec` (Elastic Cloud) provider, not `elasticstack`.
+- **`examples/provider/`**: partial provider-configuration snippets rather than runnable roots.
 
-We will hard-code these paths in the harness skip-list. We considered an in-file sentinel comment (`# acctest:skip reason=...`) for richer per-file metadata, but with "fix everything" as the policy (see decision 6) the only legitimate skips are these two structural cases, and a static list keeps the mechanism trivial to audit.
+Beyond prefixes, **`planOnlySkippedEmbedPaths`** holds a **minimal** allowlist for individual `examples/resources/**/*.tf` and `examples/data-sources/**/*.tf` snippets that legitimately resist single-module Plugin Framework harness planning despite being checked into `examples/`. Each entry names the embed path and states why (see nearby comments in `examples_plan_test.go`). Current documented cases:
+
+- **`data-sources/elasticstack_kibana_agentbuilder_agent/import.tf`** — consumes `terraform_remote_state` referencing another Terraform root; isolation would require scaffolding a second workspace.
+- **`resources/elasticstack_elasticsearch_security_api_key/rotation.tf`** — installs **`hashicorp/time`** alongside `elasticstack`; the harness exposes only compiled `elasticstack` factories (`ProtoV6ProviderFactories`).
+
+Introducing a new enumerated skip **still** demands a reviewer-visible code edit plus rationale; sentinel comments alone are intentionally **not** parsed to avoid unmanaged sprawl.
+
+We considered sentinel comments (`# acctest:skip reason=`) for richer UX, but enumerated inline constants keep policy grep-friendly and deterministic for CI auditors.
 
 ### 6. Fix every example the harness flags
 

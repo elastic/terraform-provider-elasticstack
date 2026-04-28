@@ -8,7 +8,7 @@ A PlanOnly acceptance test for every example file closes that gap using the same
 
 - Add a Go acceptance test that, for every `*.tf` file under `examples/resources/` and `examples/data-sources/`, runs the file through a `terraform-plugin-testing` `PlanOnly` step against the in-process provider, with one subtest per file so failures attribute to the offending snippet.
 - Establish a convention that each example `.tf` file is **self-contained**: it must not reference resources or data sources defined only in sibling files. Restructure `examples/resources/elasticstack_kibana_alerting_rule/` (currently the only directory that violates this) so each `.tf` file stands on its own.
-- Skip `examples/cloud/` (uses the `ec` provider) and `examples/provider/` (provider-config snippets, not standalone configs) from the harness via a static path skip-list.
+- Skip `examples/cloud/` (uses the `ec` provider), `examples/provider/` (provider-config snippets), plus a minimal **enumerated per-file skip list** in the harness source for snippets that cannot be planned in isolation (for example `terraform_remote_state` multi-root workflows or **`hashicorp/time`** rotations that require CLI provider installation). Paths and rationales MUST be documented beside the harness code (`planOnlySkippedEmbedPaths`). New per-file skips require a code change — not sentinel comments alone.
 - Run under normal acceptance-test prechecks so examples that plan data sources or provider-configured resources use the same live Elastic Stack environment as the existing acceptance suite.
 - Fix every example surfaced as broken by the new test on first run, including the `delayed_data_check_config` bug from #2523 and any other latent schema mismatches.
 

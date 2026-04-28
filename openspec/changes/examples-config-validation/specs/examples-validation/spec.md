@@ -2,7 +2,7 @@
 
 ### Requirement: Every example file SHALL plan against the provider (REQ-001)
 
-For every `*.tf` file under `examples/resources/` and `examples/data-sources/` that is not in the skip-list defined by this capability, the project SHALL provide an automated acceptance test that runs that file in isolation through a `terraform-plugin-testing` `PlanOnly` step against the in-process `elasticstack` provider.
+For every `*.tf` file under `examples/resources/` and `examples/data-sources/` that is not excluded by the skip-lists defined by REQ-005, the project SHALL provide an automated acceptance test that runs that file in isolation through a `terraform-plugin-testing` `PlanOnly` step against the in-process `elasticstack` provider.
 
 The test SHALL fail when planning reports any diagnostic of severity `error` for a covered file. The test SHALL surface the offending file path and plan diagnostic text in the failure output.
 
@@ -87,9 +87,14 @@ For covered files under `examples/data-sources/`, the harness SHALL set `ExpectN
 
 ### Requirement: The harness SHALL skip non-covered example directories (REQ-005)
 
-The PlanOnly harness SHALL exclude `examples/cloud/` and `examples/provider/` from coverage. The skip-list SHALL be expressed as repository-relative path prefixes in the harness source code and SHALL be documented inline.
+The PlanOnly harness SHALL exclude:
 
-The harness SHALL NOT exclude any other directory by default. New skips SHALL require explicit code changes to the harness, with a documented justification, rather than being controlled by data files or environment variables.
+1. **`examples/cloud/`** and **`examples/provider/`** using repository-relative **path prefixes** (see Scenario: `examples/cloud/` is not planned). Those trees are intentionally out of scope for the elasticstack-only harness.
+2. A **minimal enumerated list of individual example files** embedded as `examples/resources/<path>.tf` or `examples/data-sources/<path>.tf` entries that cannot be planned in isolation for documented structural reasons — for example, a snippet that pulls state from another root module (`terraform_remote_state`) or declares a standalone `terraform` `required_providers` block that installs providers beyond the harness’s in-process `elasticstack` factory. Exact paths and justifications SHALL live alongside the harness code; **adding or changing** an entry SHALL require editing that list and documenting the rationale.
+
+Together, §1–2 form the authoritative skip surfaces for REQ-001. Listing is code-owned (not configurable via sentinel comments or environment variables) so auditors can grep the harness instead of scattering policy.
+
+New path-prefix directories SHALL NOT appear without an explicit harness change; likewise, adding a new per-file skip SHALL remain rare and justification-backed.
 
 #### Scenario: `examples/cloud/` is not planned
 
@@ -101,11 +106,21 @@ The harness SHALL NOT exclude any other directory by default. New skips SHALL re
 - **WHEN** the PlanOnly harness walks `examples/`
 - **THEN** files under `examples/provider/` SHALL NOT produce subtests
 
-#### Scenario: Other directories are not implicitly skipped
+#### Scenario: Harness explicitly excludes an enumerated per-file snippet when required
 
-- **GIVEN** a new `*.tf` file added under any path beneath `examples/resources/` or `examples/data-sources/`
+- **GIVEN** an example `.tf` file embedded at a path enumerated in `planOnlySkippedEmbedPaths` (or equivalent harness constant name) **with inline documentation** naming the path and rationale
+- **WHEN** the PlanOnly harness runs
+- **THEN** that file SHALL NOT produce a subtest (so `terraform_remote_state`/external-provider-only snippets do not fail the harness by design while users may still paste them elsewhere)
+
+#### Scenario: New snippets under embedded trees are planned by default
+
+- **GIVEN** a new `*.tf` file added under any path beneath `examples/resources/` or `examples/data-sources/` **and not** matching a skipped prefix or enumerated per-file skip list entry
 - **WHEN** the PlanOnly harness next runs
-- **THEN** that file SHALL be covered by a subtest without further configuration
+- **THEN** that file SHALL be covered by a subtest without extra configuration
+
+#### Scenario: Other directories not covered by prefixes are not implicitly skipped
+
+- **NOTE** This preserves the original intent except where an explicit enumerated per-file exclusion applies above.
 
 ### Requirement: The harness SHALL run as acceptance coverage (REQ-006)
 
