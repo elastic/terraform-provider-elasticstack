@@ -73,7 +73,7 @@ const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mappin
 	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},` +
 	`"column":"host.name","format":{"type":"number"}}`
 
-func TestAccResourceDashboardXYChart(t *testing.T) {
+func TestAccResourceDashboardXYChart_basic(t *testing.T) {
 	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -121,6 +121,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.#", "1"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_axis(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -147,6 +157,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.y2.domain_json"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_decorations(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -162,6 +182,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.decorations.show_value_labels", "false"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_filters(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -174,6 +204,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"log.level"`)),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_fitting(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -187,6 +227,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.fitting.end_value", "nearest"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_legend_outside(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -204,6 +254,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.legend.statistics.1", "max"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_legend_inside(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -220,6 +280,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.legend.statistics.0", "count"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_layers(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -241,6 +311,16 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.0.config_json"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_layers_reference(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
