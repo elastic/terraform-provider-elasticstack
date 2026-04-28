@@ -8,11 +8,11 @@
 
 ## 2. New `DataSourceBase` substrate
 
-- [ ] 2.1 Add `internal/entitycore/data_source_base.go` declaring `type DataSourceBase struct { component Component; dataSourceName string; client *clients.ProviderClientFactory }`. Add `func NewDataSourceBase(component Component, dataSourceName string) *DataSourceBase`.
-- [ ] 2.2 Implement `(*DataSourceBase).Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse)` using `clients.ConvertProviderDataToFactory(req.ProviderData)`, appending diagnostics, returning early on error-level diagnostics without overwriting any prior factory, and otherwise assigning the conversion result. Behavior must match `ResourceBase.Configure` semantically.
-- [ ] 2.3 Implement `(*DataSourceBase).Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse)` setting `resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, b.component, b.dataSourceName)`.
-- [ ] 2.4 Implement `(b *DataSourceBase) Client() *clients.ProviderClientFactory` with the same nil-receiver tolerance as `ResourceBase.Client()`.
-- [ ] 2.5 Add `internal/entitycore/data_source_base_test.go` mirroring the existing resource-base tests:
+- [x] 2.1 Add `internal/entitycore/data_source_base.go` declaring `type DataSourceBase struct { component Component; dataSourceName string; client *clients.ProviderClientFactory }`. Add `func NewDataSourceBase(component Component, dataSourceName string) *DataSourceBase`.
+- [x] 2.2 Implement `(*DataSourceBase).Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse)` using `clients.ConvertProviderDataToFactory(req.ProviderData)`, appending diagnostics, returning early on error-level diagnostics without overwriting any prior factory, and otherwise assigning the conversion result. Behavior must match `ResourceBase.Configure` semantically.
+- [x] 2.3 Implement `(*DataSourceBase).Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse)` setting `resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, b.component, b.dataSourceName)`.
+- [x] 2.4 Implement `(b *DataSourceBase) Client() *clients.ProviderClientFactory` with the same nil-receiver tolerance as `ResourceBase.Client()`.
+- [x] 2.5 Add `internal/entitycore/data_source_base_test.go` mirroring the existing resource-base tests:
   - `Configure` stores the factory on success.
   - `Configure` does not overwrite a previously-stored factory after a diagnostics failure.
   - `Configure` accepts nil `ProviderData` (assigning a nil factory).
