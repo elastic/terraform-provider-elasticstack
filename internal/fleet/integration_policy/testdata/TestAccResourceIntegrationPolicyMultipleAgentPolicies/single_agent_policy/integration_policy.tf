@@ -26,12 +26,6 @@ resource "elasticstack_fleet_integration" "test_policy" {
   force   = true
 }
 
-resource "elasticstack_fleet_agent_download_source" "default" {
-  name    = "Test Artifacts Source"
-  host    = "https://artifacts.elastic.co/downloads/"
-  default = true
-}
-
 resource "elasticstack_fleet_agent_policy" "test_policy_1" {
   name            = "${var.policy_name} Agent Policy 1"
   namespace       = "default"
@@ -39,8 +33,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy_1" {
   monitor_logs    = true
   monitor_metrics = true
   skip_destroy    = false
-
-  depends_on = [elasticstack_fleet_agent_download_source.default]
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy_2" {
@@ -50,8 +42,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy_2" {
   monitor_logs    = true
   monitor_metrics = true
   skip_destroy    = false
-
-  depends_on = [elasticstack_fleet_agent_download_source.default]
 }
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
