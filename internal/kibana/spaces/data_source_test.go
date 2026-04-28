@@ -70,37 +70,6 @@ func testCheckSpaceAttrByID(spaceID, attr, value string) resource.TestCheckFunc 
 	}
 }
 
-// testCheckSpaceAttrSetByID returns a TestCheckFunc that scans the "spaces"
-// list in state to find the element whose id equals spaceID, then asserts that
-// attr is set to a non-empty value.
-func testCheckSpaceAttrSetByID(spaceID, attr string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[testSpacesResourceName]
-		if !ok {
-			return fmt.Errorf("resource %q not found in state", testSpacesResourceName)
-		}
-		attrs := rs.Primary.Attributes
-		countStr, ok := attrs["spaces.#"]
-		if !ok {
-			return fmt.Errorf("%q: spaces.# not found in state", testSpacesResourceName)
-		}
-		count, err := strconv.Atoi(countStr)
-		if err != nil {
-			return fmt.Errorf("%q: spaces.# is not a number: %w", testSpacesResourceName, err)
-		}
-		for i := range count {
-			if attrs[fmt.Sprintf("spaces.%d.id", i)] == spaceID {
-				got := attrs[fmt.Sprintf("spaces.%d.%s", i, attr)]
-				if got == "" {
-					return fmt.Errorf("%q spaces[id=%q].%s: expected a non-empty value, got empty string", testSpacesResourceName, spaceID, attr)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("%q: no space with id %q found in state", testSpacesResourceName, spaceID)
-	}
-}
-
 // TestAccSpacesDataSource verifies the data source returns all expected fields
 // for the pre-existing default space.
 func TestAccSpacesDataSource(t *testing.T) {
@@ -116,7 +85,6 @@ func TestAccSpacesDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.name", "Default"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
-					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.initials"),
 					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.image_url", ""),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.solution", ""),
@@ -166,8 +134,8 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					testCheckSpaceAttrByID(spaceID, "name", "Test Coverage Space"),
 					testCheckSpaceAttrByID(spaceID, "description", "Test space for data source coverage"),
 					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "0"),
-					testCheckSpaceAttrSetByID(spaceID, "initials"),
-					testCheckSpaceAttrSetByID(spaceID, "color"),
+					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
+					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
 				),
 			},
 		},

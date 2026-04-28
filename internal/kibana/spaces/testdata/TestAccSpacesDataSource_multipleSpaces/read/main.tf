@@ -12,6 +12,8 @@ resource "elasticstack_kibana_space" "test" {
   space_id    = var.space_id
   name        = "Test Coverage Space"
   description = "Test space for data source coverage"
+  initials    = "TC"
+  color       = "#E8478B"
 }
 
 data "elasticstack_kibana_spaces" "all_spaces" {
