@@ -49,6 +49,8 @@ output "agent_export" {
 ### Import the exported agent into another cluster
 
 ```terraform
+# PlanOnly harness: intentionally excluded (`planOnlySkippedEmbedPaths`) — this root depends on terraform_remote_state to another workspace.
+#
 # Import an agent and its writable tools into another cluster.
 #
 # Prerequisites:
