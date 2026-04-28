@@ -7,10 +7,10 @@
 
 ## 2. Split the longest monolithic dashboard tests
 
-- [ ] 2.1 Replace `TestAccResourceDashboardXYChart` with one `TestAccResourceDashboardXYChart_<facet>` function per existing `ConfigDirectory` (`basic`, `axis`, `decorations`, `filters`, `fitting`, `legend_outside`, `legend_inside`, `layers`, `layers_reference`), each carrying its own `Check` block from the original Steps slice. Pair `layers_reference` with the existing ImportState step inside its own function. Keep `TestAccResourceDashboardXYChartMinimalConfig` as-is.
-- [ ] 2.2 Replace `TestAccResourceDashboardPanels` with one `TestAccResourceDashboardPanels_<facet>` function per existing `ConfigDirectory` (`basic`, `multiple_panels`, `with_sections`, `multi_sections_single_panel_each`, `multi_sections_multi_panels_each`, `panels_and_sections`).
-- [ ] 2.3 Apply the same split to `TestAccResourceDashboardESQLControl` (the 232 s test in `acc_esql_control_panels_test.go`).
-- [ ] 2.4 If wall-clock measurements after 2.1–2.3 still show a single dashboard test ≥ 120 s, apply the same split to `TestAccResourceDashboardLensDashboardAppByValue`, `TestAccResourceDashboardLensDashboardAppByValueTypedMetric`, and `TestAccResourceDashboardSloBurnRateDisplayOptions`; otherwise mark this task done and stop.
+- [x] 2.1 Replace `TestAccResourceDashboardXYChart` with one `TestAccResourceDashboardXYChart_<facet>` function per existing `ConfigDirectory` (`basic`, `axis`, `decorations`, `filters`, `fitting`, `legend_outside`, `legend_inside`, `layers`, `layers_reference`), each carrying its own `Check` block from the original Steps slice. Pair `layers_reference` with the existing ImportState step inside its own function. Keep `TestAccResourceDashboardXYChartMinimalConfig` as-is.
+- [x] 2.2 Replace `TestAccResourceDashboardPanels` with one `TestAccResourceDashboardPanels_<facet>` function per existing `ConfigDirectory` (`basic`, `multiple_panels`, `with_sections`, `multi_sections_single_panel_each`, `multi_sections_multi_panels_each`, `panels_and_sections`).
+- [x] 2.3 Apply the same split to `TestAccResourceDashboardESQLControl` (the 232 s test in `acc_esql_control_panels_test.go`).
+- [x] 2.4 If wall-clock measurements after 2.1–2.3 still show a single dashboard test ≥ 120 s, apply the same split to `TestAccResourceDashboardLensDashboardAppByValue`, `TestAccResourceDashboardLensDashboardAppByValueTypedMetric`, and `TestAccResourceDashboardSloBurnRateDisplayOptions`; otherwise mark this task done and stop.
 
 ## 3. Delete duplicate dashboard tests
 
