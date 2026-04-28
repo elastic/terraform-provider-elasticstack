@@ -57,12 +57,12 @@ func (t mappingsType) ValueType(_ context.Context) attr.Value {
 
 func (t mappingsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	if in.IsNull() {
-		return NewMappingsNull(), nil
+		return newMappingsNull(), nil
 	}
 	if in.IsUnknown() {
-		return NewMappingsUnknown(), nil
+		return newMappingsUnknown(), nil
 	}
-	return NewMappingsValue(in.ValueString()), nil
+	return newMappingsValue(in.ValueString()), nil
 }
 
 func (t mappingsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
@@ -106,13 +106,13 @@ func (v mappingsValue) Equal(o attr.Value) bool {
 
 // StringSemanticEquals returns true if the refreshed/API mappings are a
 // non-drifting superset of the prior user-intent mappings.
-func (v mappingsValue) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+func (v mappingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	newValue, ok := newValuable.(mappingsValue)
 	if !ok {
 		// Fall back to standard normalized comparison for unexpected types
-		return v.Normalized.StringSemanticEquals(context.Background(), newValuable)
+		return v.Normalized.StringSemanticEquals(ctx, newValuable)
 	}
 
 	if v.IsNull() || v.IsUnknown() {
@@ -139,19 +139,19 @@ func (v mappingsValue) StringSemanticEquals(_ context.Context, newValuable baset
 	return mappingsSemanticallyEqual(newMap, priorMap), diags
 }
 
-func NewMappingsNull() mappingsValue {
+func newMappingsNull() mappingsValue {
 	return mappingsValue{
 		Normalized: jsontypes.NewNormalizedNull(),
 	}
 }
 
-func NewMappingsUnknown() mappingsValue {
+func newMappingsUnknown() mappingsValue {
 	return mappingsValue{
 		Normalized: jsontypes.NewNormalizedUnknown(),
 	}
 }
 
-func NewMappingsValue(value string) mappingsValue {
+func newMappingsValue(value string) mappingsValue {
 	return mappingsValue{
 		Normalized: jsontypes.NewNormalizedValue(value),
 	}

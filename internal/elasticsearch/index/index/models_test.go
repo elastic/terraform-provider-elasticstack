@@ -137,7 +137,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if null",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: NewMappingsNull(),
+				Mappings: newMappingsNull(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -149,7 +149,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if unknown",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: NewMappingsUnknown(),
+				Mappings: newMappingsUnknown(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -161,7 +161,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should unmarshall mappings if provided",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: NewMappingsValue(`{"a": "b"}`),
+				Mappings: newMappingsValue(`{"a": "b"}`),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{

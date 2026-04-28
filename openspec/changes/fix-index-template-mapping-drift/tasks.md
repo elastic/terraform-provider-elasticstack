@@ -27,8 +27,8 @@
 
 ## 5. Document and verify
 
-- [ ] 5.1 Add a `CHANGELOG.md` Fixed entry referencing GitHub issue #563.
-- [ ] 5.2 Update any user-facing resource description or generated docs that mention the mapping/template workaround.
-- [ ] 5.3 Run `go test ./internal/elasticsearch/index/index -run TestAccResourceIndexTemplate -count=0` for compile coverage.
+- [x] 5.1 Add a `CHANGELOG.md` Fixed entry referencing GitHub issue #563.
+- [x] 5.2 Update any user-facing resource description or generated docs that mention the mapping/template workaround.
+- [x] 5.3 Run `go test ./internal/elasticsearch/index/index -run TestAccResourceIndexTemplate -count=0` for compile coverage.
 - [ ] 5.4 Run targeted acceptance tests: `TestAccResourceIndexTemplateNoMappingDrift`, `TestAccResourceIndexTemplateUserMappingNoDrift`, `TestAccResourceIndexWithTemplate`, and `TestAccResourceIndexRemovingField`.
-- [ ] 5.5 Run `make build`.
+- [x] 5.5 Run `make build`.

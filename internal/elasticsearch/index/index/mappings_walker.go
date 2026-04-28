@@ -94,14 +94,10 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 				return result
 			}
 
-			// semantic_text special handling: not a replacement if model_settings differs
+			// semantic_text special handling: not a replacement if model_settings differs.
+			// Semantic equality handles model_settings auto-populated by Elasticsearch.
 			if stateType == "semantic_text" {
-				if _, stateHasModelSettings := stateField["model_settings"]; stateHasModelSettings {
-					if _, cfgHasModelSettings := cfgField["model_settings"]; !cfgHasModelSettings {
-						// ES auto-populates model_settings - not a replacement trigger
-						continue
-					}
-				}
+				continue
 			}
 			continue
 		} else if stateHasType || cfgHasType {

@@ -37,7 +37,6 @@ import (
 const indexSettingsAnalysisAnalyzerExpected = `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],` +
 	`"tokenizer":"standard","type":"custom"}}`
 const indexAliasFilterExpected = `{"term":{"user.id":"developer"}}`
-const indexTemplateMappingsExpected = `{"dynamic_templates":[{"strings_as_ip":{"match":"ip*","match_mapping_type":"string","runtime":{"type":"ip"}}}]}`
 
 func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
