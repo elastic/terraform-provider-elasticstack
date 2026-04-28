@@ -90,6 +90,22 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 					"panels.0.esql_control_config.single_select",
 				},
 			},
+			// Update to empty config block (exercises with_config → empty_config update path)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "esql_control"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.variable_name"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.variable_type"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.esql_query"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.control_type"),
+				),
+			},
 		},
 	})
 }
