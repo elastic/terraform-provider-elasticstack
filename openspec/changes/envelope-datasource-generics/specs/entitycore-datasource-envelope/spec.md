@@ -1,0 +1,65 @@
+## ADDED Requirements
+
+### Requirement: Envelope constructor produces a valid DataSource
+The system SHALL provide a generic constructor `NewKibanaDataSource[T]()` (and `NewElasticsearchDataSource[T]()`) that returns a value satisfying `datasource.DataSource`.
+
+#### Scenario: Constructor returns valid data source
+- **WHEN** `NewKibanaDataSource[T](component, name, schema, readFunc)` is called
+- **THEN** the returned value SHALL satisfy `datasource.DataSource`
+- **AND** the returned value SHALL satisfy `datasource.DataSourceWithConfigure`
+
+### Requirement: Envelope injects connection block into schema
+The system SHALL inject the scoped connection block (`kibana_connection` or `elasticsearch_connection`) into the schema before exposing it via the `Schema` method.
+
+#### Scenario: Schema includes injected connection block
+- **WHEN** a data source is constructed with `NewKibanaDataSource[T]` and a schema that lacks a `kibana_connection` block
+- **THEN** calling `Schema` on the resulting data source SHALL return a schema that includes the `kibana_connection` block
+- **AND** the concrete schema attributes SHALL remain unchanged
+
+### Requirement: Envelope owns config deserialization
+The system SHALL deserialize the Terraform config into an internal envelope struct that holds both the connection block and the concrete model.
+
+#### Scenario: Config decode populates concrete model fields
+- **WHEN** `Read` is invoked with a Terraform config containing both `kibana_connection` and concrete attributes
+- **THEN** the concrete model SHALL be deserialized into the generic type parameter `T`
+- **AND** the connection block value SHALL be captured separately
+
+### Requirement: Envelope owns scoped client resolution
+The system SHALL resolve the scoped client from the provider factory using the captured connection block value.
+
+#### Scenario: Scoped client resolved from connection block
+- **WHEN** `Read` captures a non-empty `kibana_connection` block
+- **THEN** the system SHALL call `GetKibanaClient` with that connection value
+- **AND** pass the resulting `*KibanaScopedClient` to the concrete read function
+
+#### Scenario: Scoped client resolved from provider defaults
+- **WHEN** `Read` captures an empty or null `kibana_connection` block
+- **THEN** the system SHALL call `GetKibanaClient` with an empty list
+- **AND** the factory SHALL return the provider-default scoped client
+
+### Requirement: Envelope delegates entity logic to read function
+The system SHALL invoke the concrete read function with the scoped client and deserialized model, then capture the returned model and diagnostics.
+
+#### Scenario: Read function receives client and model
+- **WHEN** `Read` has successfully deserialized config and resolved the client
+- **THEN** the concrete read function SHALL be called with `(context, *KibanaScopedClient, T)`
+- **AND** its returned `(T, diag.Diagnostics)` SHALL be used for state setting
+
+### Requirement: Envelope owns state persistence
+The system SHALL set the Terraform state from the model returned by the concrete read function, preserving the connection block value from the original config.
+
+#### Scenario: State set after successful read
+- **WHEN** the concrete read function returns a model without error diagnostics
+- **THEN** `resp.State.Set` SHALL be called with the envelope containing the returned model and the original connection block
+
+#### Scenario: State not set on read function error
+- **WHEN** the concrete read function returns error diagnostics
+- **THEN** `resp.State.Set` SHALL NOT be called
+- **AND** the error diagnostics SHALL be appended to `resp.Diagnostics`
+
+### Requirement: Existing struct-based data sources remain functional
+The system SHALL NOT break existing data sources that embed `*DataSourceBase` and implement `Read` directly.
+
+#### Scenario: Struct-based data source continues to work
+- **WHEN** an existing data source uses struct-based embedding without the generic constructor
+- **THEN** its `Configure`, `Metadata`, and `Read` behavior SHALL remain unchanged
