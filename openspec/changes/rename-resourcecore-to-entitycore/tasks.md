@@ -36,11 +36,11 @@
 
 ## 5. Pilot data-source migration: Kibana (`spaces`)
 
-- [ ] 5.1 In `internal/kibana/spaces/data_source.go`, change `dataSource` from `type dataSource struct { client *clients.ProviderClientFactory }` to `type dataSource struct { *entitycore.DataSourceBase }`.
-- [ ] 5.2 Replace the `NewDataSource` body with `return &dataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentKibana, "spaces")}`.
-- [ ] 5.3 Delete the package-local `Metadata` and `Configure` methods on `dataSource`. Keep the `var (_ datasource.DataSource ... )` interface assertions; the embedded `DataSourceBase` continues to satisfy them through promotion.
-- [ ] 5.4 Update every package-local site that reads `d.client` (in this file or its `Schema`/`Read` neighbors in the same package) to call `d.Client()` instead. Verify the resulting Terraform type name is exactly `<provider>_kibana_spaces`.
-- [ ] 5.5 Add `internal/kibana/spaces/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[dataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`.
+- [x] 5.1 In `internal/kibana/spaces/data_source.go`, change `dataSource` from `type dataSource struct { client *clients.ProviderClientFactory }` to `type dataSource struct { *entitycore.DataSourceBase }`.
+- [x] 5.2 Replace the `NewDataSource` body with `return &dataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentKibana, "spaces")}`.
+- [x] 5.3 Delete the package-local `Metadata` and `Configure` methods on `dataSource`. Keep the `var (_ datasource.DataSource ... )` interface assertions; the embedded `DataSourceBase` continues to satisfy them through promotion.
+- [x] 5.4 Update every package-local site that reads `d.client` (in this file or its `Schema`/`Read` neighbors in the same package) to call `d.Client()` instead. Verify the resulting Terraform type name is exactly `<provider>_kibana_spaces`.
+- [x] 5.5 Add `internal/kibana/spaces/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[dataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`.
 
 ## 6. Pilot data-source migration: Fleet (`enrollment_tokens`)
 

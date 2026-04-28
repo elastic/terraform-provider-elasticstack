@@ -34,7 +34,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	apiClient, diags := d.client.GetKibanaClient(ctx, state.KibanaConnection)
+	apiClient, diags := d.Client().GetKibanaClient(ctx, state.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -18,22 +18,18 @@
 package spaces
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/stretchr/testify/require"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
-var (
-	_ datasource.DataSource              = &dataSource{}
-	_ datasource.DataSourceWithConfigure = &dataSource{}
-)
-
-// NewDataSource is a helper function to simplify the provider implementation.
-func NewDataSource() datasource.DataSource {
-	return &dataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentKibana, "spaces")}
-}
-
-// dataSource is the data source implementation.
-type dataSource struct {
-	*entitycore.DataSourceBase
+func TestDataSource_embedsEntityCoreDataSourceBase(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[dataSource]()
+	field, ok := rt.FieldByName("DataSourceBase")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.DataSourceBase](), field.Type)
 }
