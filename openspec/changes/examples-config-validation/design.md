@@ -50,15 +50,11 @@ The user explicitly preferred per-file failure attribution. To make per-file iso
 
 Today, only one directory violates this: `examples/resources/elasticstack_kibana_alerting_rule/`. Its `resource-index-rule.tf` and `resource_rule_action_frequency.tf` both reference `elasticstack_kibana_action_connector.index_example` and `elasticstack_elasticsearch_data_stream.my_data_stream` defined in the directory's `resource.tf`. We will inline those dependencies into each file. The cost is some duplication in the generated docs; the benefit is that every documented snippet is independently usable.
 
-### 4. Strip embedded provider configuration from examples
+### 4. Leave embedded provider configuration in examples alone
 
-Around twenty examples currently include `provider "elasticstack" { elasticsearch {} }`, and a handful include per-resource `elasticsearch_connection {}` blocks with hardcoded `localhost:9200` / `changeme` credentials. Both patterns:
+An earlier version of this design considered stripping every embedded `provider "elasticstack" { ... }` block and per-resource `elasticsearch_connection { ... }` block from existing examples. That cleanup is unnecessary for the validate-based harness: `terraform validate` accepts those blocks as schema-conformant input and does not require the harness to inject its own provider configuration. The blocks are also stylistic choices in the rendered docs (some users prefer the explicit setup, others prefer it implicit), and stripping them would produce a large, behaviourally-irrelevant docs diff.
 
-- Conflict with the provider configuration the harness needs to inject.
-- Bake test-environment defaults into the rendered docs.
-- Encourage users to copy stale credentials into real configurations.
-
-We will strip both patterns from existing examples in a single cleanup pass. Going forward, the validation test itself enforces the convention: any new example that re-introduces a `provider` block will fail validation against the harness-injected provider configuration. No additional lint tool is needed.
+This change therefore leaves embedded provider and connection blocks in place. The harness itself does not write a provider configuration into the per-test working directory; it only writes the `terraform { required_providers { ... } }` pin needed for `terraform init` to discover the locally built provider. If a future change wants to standardise example docs (e.g. for stylistic consistency), it can do so as a separate, focused cleanup with its own justification.
 
 ### 5. Static skip-list for non-validatable directories
 
@@ -82,7 +78,6 @@ The harness still depends on the locally built provider being available to the `
 ## Risks / Trade-offs
 
 - **`terraform init` per subtest is slow.** With ~115 examples and a fresh init per directory, naive sequential execution may add several minutes to `go test`. Mitigation: run subtests in parallel (`t.Parallel()`), which is safe because each writes to its own tempdir; share the provider plugin cache across subtests via `TF_PLUGIN_CACHE_DIR`. Measure before optimizing further.
-- **Strip-provider-blocks changes generated docs.** The doc regeneration will produce a large diff. Mitigation: treat docs regeneration as part of this change and review the diff in the same PR. Users who depended on the old in-snippet provider config will need to provide their own — same as for ~80% of existing examples that already omit it.
 - **Self-contained example files inflate `alerting_rule` docs slightly.** Each of the three rule snippets will redefine the connector and data stream prerequisites. Mitigation: accept the duplication; it is a one-time cost confined to one resource and matches what users actually need to copy.
 - **Latent broken examples may be more numerous than expected.** Mitigation: the WIP commit referenced by the task already proves the harness pattern works; we will run it locally during implementation to enumerate and fix all surfaced failures before the change is ready for review.
 - **`terraform validate` may not catch every schema bug Plugin Framework providers can express.** Some validations only run during plan (e.g. `Validators` on attributes that compare across blocks). Mitigation: treat this test as a floor, not a ceiling. Per-resource acceptance tests continue to cover apply-time behaviour.
@@ -94,13 +89,12 @@ The work is naturally staged:
 
 1. Add the embed FS in `examples/examples.go` and the validation harness in `internal/acctest/`.
 2. Run the harness locally; collect the list of failing example files.
-3. Strip embedded `provider` and `elasticsearch_connection` blocks across all examples.
-4. Restructure `examples/resources/elasticstack_kibana_alerting_rule/` for self-containment.
-5. Fix `delayed_data_check_config` (#2523) and every other example surfaced as broken by step 2.
-6. Regenerate provider docs (`make docs-generate` or equivalent).
-7. Land the harness, the cleanups, and the regenerated docs in a single change.
+3. Restructure `examples/resources/elasticstack_kibana_alerting_rule/` for self-containment.
+4. Fix `delayed_data_check_config` (#2523) and every other example surfaced as broken by step 2.
+5. Regenerate provider docs only for the example files actually changed.
+6. Land the harness, the targeted cleanups, and any regenerated docs in a single change.
 
-No external data migration is required. No state-format changes. Users who relied on in-example provider blocks will need to provide their own provider configuration after this change — which they typically already do.
+No external data migration is required. No state-format changes. Embedded provider and connection blocks in existing examples remain valid input to the harness and are deliberately left untouched.
 
 ## Open Questions
 
