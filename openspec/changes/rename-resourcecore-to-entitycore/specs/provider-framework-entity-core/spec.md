@@ -1,12 +1,4 @@
-# provider-framework-entity-core Specification
-
-## Purpose
-
-Canonical requirements for the shared Plugin Framework **entity core** (`internal/entitycore`): two embedded substrate types — `ResourceBase` for Plugin Framework resources and `DataSourceBase` for Plugin Framework data sources — that centralize Terraform type-name construction from typed stack components, provider client-factory wiring via `Configure`, and the rule that the substrate does not own import, schema, validation, or read behavior. Pilot resources and data sources embed these types to avoid duplicated boilerplate.
-
-This capability supersedes the prior `provider-framework-resource-core` capability. Every existing requirement on `provider-framework-resource-core` is preserved here, restated against the renamed type `ResourceBase`. The capability is broadened with parallel requirements for `DataSourceBase`.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Embedded entity core constructs Terraform type names from typed namespace parts
 
@@ -58,10 +50,7 @@ Both `ResourceBase` and `DataSourceBase` SHALL store the configured `*clients.Pr
 
 ### Requirement: Embedded entity core does not define entity-kind-specific behavior
 
-Neither `ResourceBase` nor `DataSourceBase` SHALL implement behavior beyond `Configure`, `Metadata`, and `Client`. Specifically:
-
-- `ResourceBase` SHALL NOT implement `ImportState`, `Schema`, `Create`, `Read`, `Update`, `Delete`, `UpgradeState`, `ValidateConfig`, `ConfigValidators`, `ModifyPlan`, or any other Plugin Framework resource lifecycle method. Concrete resources retain explicit ownership of all such behavior.
-- `DataSourceBase` SHALL NOT implement `Schema`, `Read`, `ConfigValidators`, or `ValidateConfig`. Concrete data sources retain explicit ownership of all such behavior.
+Neither `ResourceBase` nor `DataSourceBase` SHALL implement behavior beyond `Configure`, `Metadata`, and `Client`. `ResourceBase` SHALL NOT implement `ImportState`, `Schema`, `Create`, `Read`, `Update`, `Delete`, `UpgradeState`, `ValidateConfig`, `ConfigValidators`, `ModifyPlan`, or any other Plugin Framework resource lifecycle method. `DataSourceBase` SHALL NOT implement `Schema`, `Read`, `ConfigValidators`, or `ValidateConfig`. Concrete resources and data sources retain explicit ownership of all such behavior.
 
 #### Scenario: Resource without import remains non-importable
 
@@ -78,7 +67,7 @@ Neither `ResourceBase` nor `DataSourceBase` SHALL implement behavior beyond `Con
 - **WHEN** a concrete data source embeds `*entitycore.DataSourceBase`
 - **THEN** the concrete data source SHALL define its own `Schema` and `Read`, and the substrate SHALL NOT provide defaults for either
 
-### Requirement: Compatible Plugin Framework resources use `ResourceBase` for bootstrap wiring
+### Requirement: Compatible Plugin Framework resources use ResourceBase for bootstrap wiring
 
 For every Plugin Framework resource in this provider whose bootstrap logic is limited to storing a `*clients.ProviderClientFactory`, converting `ProviderData` through the canonical `clients.ConvertProviderDataToFactory` flow, constructing a static Terraform type name from fixed namespace parts, and leaving import/CRUD/state behavior on the concrete resource, the provider SHALL implement that bootstrap wiring by embedding `*entitycore.ResourceBase` instead of re-declaring a `client` field plus resource-local `Configure` and `Metadata` methods. Each migrated resource SHALL initialize the substrate with the component namespace and literal resource-name suffix that preserve its pre-existing Terraform type name exactly, and SHALL keep any explicit `ImportState` behavior on the concrete resource.
 
@@ -99,25 +88,23 @@ For every Plugin Framework resource in this provider whose bootstrap logic is li
 - **WHEN** a compatible Plugin Framework resource without an explicit `ImportState` is migrated to embed `*entitycore.ResourceBase`
 - **THEN** it SHALL continue not to satisfy `resource.ResourceWithImportState`
 
-### Requirement: Compatible Plugin Framework data sources use `DataSourceBase` for bootstrap wiring
+### Requirement: Compatible Plugin Framework data sources use DataSourceBase for bootstrap wiring
 
-For every Plugin Framework data source in this provider whose bootstrap logic is limited to storing a `*clients.ProviderClientFactory`, converting `ProviderData` through the canonical `clients.ConvertProviderDataToFactory` flow, and constructing a static Terraform type name from fixed namespace parts, the provider SHALL implement that bootstrap wiring by embedding `*entitycore.DataSourceBase` instead of re-declaring a `client` field plus data-source-local `Configure` and `Metadata` methods. Each migrated data source SHALL initialize the substrate with the component namespace and literal data-source-name suffix that preserve its pre-existing Terraform type name exactly, and SHALL keep `Schema` and `Read` defined on the concrete data source.
+For every Plugin Framework data source in this provider whose bootstrap logic is limited to storing a `*clients.ProviderClientFactory`, converting `ProviderData` through the canonical `clients.ConvertProviderDataToFactory` flow, and constructing a static Terraform type name from fixed namespace parts, the provider SHALL implement that bootstrap wiring by embedding `*entitycore.DataSourceBase` instead of re-declaring a `client` field plus data-source-local `Configure` and `Metadata` methods. Each migrated data source SHALL initialize the substrate with the component namespace and literal data-source-name suffix that preserve its pre-existing Terraform type name exactly, and SHALL keep `Schema` and `Read` defined on the concrete data source. The change `rename-resourcecore-to-entitycore` migrates one data source per stack component (excluding APM, which has no Plugin Framework data sources today). Subsequent changes MAY migrate additional Plugin Framework data sources under this requirement.
 
-This requirement applies as Plugin Framework data sources are migrated; this change migrates one data source per stack component (excluding APM, which has no Plugin Framework data sources today). Subsequent changes MAY migrate additional Plugin Framework data sources under this requirement.
-
-#### Scenario: Compatible Elasticsearch data source uses `enrich_policy` as the literal name suffix
+#### Scenario: Compatible Elasticsearch data source uses enrich_policy as the literal name suffix
 
 - **WHEN** `elasticstack_elasticsearch_enrich_policy` (data source) is implemented through `DataSourceBase`
 - **THEN** it SHALL configure `DataSourceBase` with component `elasticsearch` and data-source name `enrich_policy`
 - **AND** its `Schema` and `Read` SHALL remain defined on the concrete data source
 
-#### Scenario: Compatible Kibana data source uses `spaces` as the literal name suffix
+#### Scenario: Compatible Kibana data source uses spaces as the literal name suffix
 
 - **WHEN** `elasticstack_kibana_spaces` (data source) is implemented through `DataSourceBase`
 - **THEN** it SHALL configure `DataSourceBase` with component `kibana` and data-source name `spaces`
 - **AND** its `Schema` and `Read` SHALL remain defined on the concrete data source
 
-#### Scenario: Compatible Fleet data source uses `enrollment_tokens` as the literal name suffix
+#### Scenario: Compatible Fleet data source uses enrollment_tokens as the literal name suffix
 
 - **WHEN** `elasticstack_fleet_enrollment_tokens` (data source) is implemented through `DataSourceBase`
 - **THEN** it SHALL configure `DataSourceBase` with component `fleet` and data-source name `enrollment_tokens`
