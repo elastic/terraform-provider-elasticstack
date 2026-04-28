@@ -3,10 +3,23 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-  pull_request_target:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+    inputs:
+      mode:
+        description: "Changelog mode"
+        type: choice
+        options:
+          - unreleased
+          - release
+        default: unreleased
+        required: false
+      target_version:
+        description: "Release version as semver X.Y.Z (no leading v); required when mode is release"
+        type: string
+        required: false
+      target_branch:
+        description: "Optional branch override for push (default generated-changelog or prep-release-<version>)"
+        type: string
+        required: false
 
 permissions:
   contents: write
@@ -16,60 +29,67 @@ jobs:
   generate-changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name != 'pull_request_target' ||
-      (startsWith(github.head_ref, 'prep-release-') &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'unreleased' }}
+      TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_version || '' }}
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || '' }}
     steps:
+      - name: Validate release inputs
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release'
+        env:
+          TARGET_VERSION: ${{ github.event.inputs.target_version }}
+        run: |
+          if [ -z "$TARGET_VERSION" ]; then
+            echo "::error::Release mode requires target_version (semver X.Y.Z without leading v). target_branch is an optional override for the checkout branch and does not replace target_version."
+            exit 1
+          fi
+          if ! printf '%s' "$TARGET_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::target_version must be semver X.Y.Z without a leading v (got: '$TARGET_VERSION')."
+            exit 1
+          fi
+
+      - name: Resolve checkout ref
+        id: resolve_checkout_ref
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${INPUT_MODE}" = "release" ]; then
+            if [ -n "${INPUT_TARGET_BRANCH}" ]; then
+              echo "checkout_ref=${INPUT_TARGET_BRANCH}" >> "${GITHUB_OUTPUT}"
+            else
+              echo "checkout_ref=prep-release-${INPUT_TARGET_VERSION}" >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            echo "checkout_ref=${DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+          INPUT_TARGET_VERSION: ${{ github.event.inputs.target_version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          ref: ${{ steps.resolve_checkout_ref.outputs.checkout_ref }}
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || '' }}
 
-      - name: Resolve release context
-        id: resolve_release_context
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/resolve-release-context.inline.js
-
-      - name: Gather merged PRs
-        id: gather_merged_prs
+      - name: Run changelog engine
+        id: changelog_engine
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/gather-merged-prs.inline.js
-
-      - name: Render changelog section
-        id: render_changelog
-        if: steps.gather_merged_prs.outputs.has_prs == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        env:
-          MERGED_PRS_PATH: ${{ steps.gather_merged_prs.outputs.merged_prs_path }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
           CHANGELOG_PATH: CHANGELOG.md
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          x-script-include: scripts/render-changelog.inline.js
+          x-script-include: scripts/run-changelog-engine.inline.js
 
       - name: Commit changelog (release mode)
         id: commit_release
-        if: >-
-          steps.resolve_release_context.outputs.mode == 'release' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'release'
         env:
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-          TARGET_BRANCH: ${{ steps.resolve_release_context.outputs.target_branch }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -87,12 +107,12 @@ jobs:
 
       - name: Refresh release PR metadata (release mode)
         if: >-
-          steps.resolve_release_context.outputs.mode == 'release' &&
+          steps.changelog_engine.outputs.mode == 'release' &&
           steps.commit_release.outputs.ran == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           x-script-include: scripts/refresh-release-pr.inline.js
@@ -100,9 +120,9 @@ jobs:
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
         if: >-
-          steps.resolve_release_context.outputs.mode == 'unreleased' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+          steps.changelog_engine.outputs.mode == 'unreleased' &&
+          steps.changelog_engine.outputs.has_prs == 'true' &&
+          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -122,14 +142,14 @@ jobs:
           steps.push_unreleased.outputs.pushed == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           x-script-include: scripts/manage-unreleased-pr.inline.js
 
       - name: Report result (unreleased mode)
         if: >-
-          steps.resolve_release_context.outputs.mode == 'unreleased' &&
+          steps.changelog_engine.outputs.mode == 'unreleased' &&
           steps.lookup_pr.outcome == 'success'
         run: |
           echo "PR action: ${{ steps.lookup_pr.outputs.pr_action }}"

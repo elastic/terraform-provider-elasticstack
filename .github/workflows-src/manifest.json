@@ -21,6 +21,10 @@
       "output": ".github/workflows/changelog-generation.yml"
     },
     {
+      "template": ".github/workflows-src/prep-release/workflow.yml.tmpl",
+      "output": ".github/workflows/prep-release.yml"
+    },
+    {
       "template": ".github/workflows-src/kibana-spec-impact/workflow.md.tmpl",
       "output": ".github/workflows/kibana-spec-impact.md"
     },

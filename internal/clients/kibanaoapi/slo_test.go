@@ -25,6 +25,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// kbapiTestArtifacts is a test helper; nested field name matches generated kbapi.
+//
+//nolint:revive // var-naming: `Id` matches kbapi SLOsArtifacts OpenAPI
+func kbapiTestArtifacts(dashboardID string) *kbapi.SLOsArtifacts {
+	return &kbapi.SLOsArtifacts{Dashboards: &[]struct {
+		Id string `json:"id"`
+	}{{Id: dashboardID}}}
+}
+
 func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
 	t.Helper()
 	ind := kbapi.SLOsIndicatorPropertiesApmAvailability{
@@ -117,6 +126,32 @@ func Test_SloResponseToModel(t *testing.T) {
 			spaceID:       "space-id",
 			sloResponse:   nil,
 			expectedModel: nil,
+		},
+		{
+			name:    "maps artifacts from get SLO",
+			spaceID: "space-id",
+			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
+				Id:              "slo-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
+				BudgetingMethod: "occurrences",
+				Settings:        kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				Artifacts:       kbapiTestArtifacts("dashboard-1"),
+			},
+			expectedModel: &models.Slo{
+				SloID:           "slo-id",
+				SpaceID:         "space-id",
+				Name:            "slo-name",
+				Description:     "slo-description",
+				Indicator:       makeApmAvailabilityIndicator(t),
+				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
+				BudgetingMethod: "occurrences",
+				Settings:        &kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				Artifacts:       kbapiTestArtifacts("dashboard-1"),
+				GroupBy:         nil,
+			},
 		},
 	}
 

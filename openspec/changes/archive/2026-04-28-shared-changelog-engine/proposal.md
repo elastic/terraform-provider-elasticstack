@@ -4,7 +4,7 @@ The final release changelog update currently depends on `ci-changelog-generation
 
 ## What Changes
 
-- Refactor changelog-generation logic into a shared repository-authored script/engine that resolves merged PRs via the GitHub API using the workflow token, parses PR-body changelog contracts, and rewrites `CHANGELOG.md` deterministically.
+- Refactor changelog-generation logic into a shared repository-authored Node.js engine, built by composing the existing JavaScript helpers under `.github/workflows-src/lib/` and the inline scripts under `.github/workflows-src/changelog-generation/scripts/`, that resolves merged PRs via the GitHub API using the workflow token, parses PR-body changelog contracts, and rewrites `CHANGELOG.md` deterministically. The shared engine SHALL be implemented in JavaScript/Node and SHALL NOT be reimplemented in Go.
 - Update `prep-release.yml` to invoke the shared changelog engine directly in release mode during release preparation, so release preparation fails immediately when changelog assembly fails.
 - Simplify `changelog-generation.yml` so its automatic triggers only cover scheduled unreleased maintenance, while `workflow_dispatch` also supports an explicit release mode via inputs.
 - Remove the `pull_request_target` release trigger path from the changelog-generation workflow and replace event-inferred release mode with explicit workflow inputs.
@@ -24,5 +24,5 @@ The final release changelog update currently depends on `ci-changelog-generation
 - `.github/workflows/prep-release.yml`
 - `.github/workflows/changelog-generation.yml`
 - `.github/workflows-src/changelog-generation/workflow.yml.tmpl`
-- changelog-generation helper code under `.github/workflows-src/lib/` and/or `scripts/changelog-generation/`
+- changelog-generation helper code under `.github/workflows-src/lib/` and inline scripts under `.github/workflows-src/changelog-generation/scripts/`
 - OpenSpec specs for `ci-changelog-generation` and `ci-release-pr-preparation`

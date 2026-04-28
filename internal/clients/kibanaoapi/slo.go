@@ -57,6 +57,33 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 	}
 }
 
+// EnableSlo calls the Kibana API to enable an existing SLO.
+func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
+	resp, err := client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
+	}
+	return checkSloEnableDisableResponse(resp.StatusCode(), resp.Body)
+}
+
+// DisableSlo calls the Kibana API to disable an existing SLO.
+func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
+	resp, err := client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
+	}
+	return checkSloEnableDisableResponse(resp.StatusCode(), resp.Body)
+}
+
+func checkSloEnableDisableResponse(statusCode int, body []byte) diag.Diagnostics {
+	switch statusCode {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return reportUnknownError(statusCode, body)
+	}
+}
+
 // CreateSlo creates a new SLO in the given space and returns the created SLO's ID.
 func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SLOsCreateSloRequest) (*kbapi.SLOsCreateSloResponse, diag.Diagnostics) {
 	resp, err := client.API.CreateSloOpWithResponse(
@@ -173,6 +200,8 @@ func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *
 		Settings:        &res.Settings,
 		GroupBy:         TransformGroupByFromResponse(res.GroupBy),
 		Tags:            res.Tags,
+		Enabled:         res.Enabled,
+		Artifacts:       res.Artifacts,
 	}
 }
 

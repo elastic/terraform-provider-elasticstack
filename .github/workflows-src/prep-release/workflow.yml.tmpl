@@ -1,0 +1,207 @@
+name: Prepare Release
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump mode'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prep-release:
+    name: Prepare release branch and PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: Resolve previous release tag
+        id: prev-tag
+        run: |
+          PREV_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG="v0.0.0"
+            echo "::warning::No existing tags matching 'v[0-9]*.[0-9]*.[0-9]*' found; defaulting to v0.0.0"
+          else
+            echo "Previous release tag: ${PREV_TAG}"
+          fi
+          echo "PREV_TAG=${PREV_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute target version
+        id: version
+        run: |
+          PREV_TAG="${{ steps.prev-tag.outputs.PREV_TAG }}"
+          # Strip leading 'v'
+          VERSION="${PREV_TAG#v}"
+          # Split into components
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+          BUMP="${{ inputs.bump }}"
+          case "$BUMP" in
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+          esac
+          TARGET_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "Target version: ${TARGET_VERSION}"
+          echo "TARGET_VERSION=${TARGET_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Derive branch and PR title
+        id: meta
+        run: |
+          TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          BRANCH="prep-release-${TARGET_VERSION}"
+          PR_TITLE="Prepare ${TARGET_VERSION} release"
+          echo "BRANCH=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "PR_TITLE=${PR_TITLE}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release branch already exists
+        id: branch-check
+        run: |
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
+            echo "Branch ${BRANCH} already exists on remote"
+            echo "EXISTS=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Branch ${BRANCH} does not exist on remote"
+            echo "EXISTS=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or switch to release branch
+        run: |
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          EXISTS="${{ steps.branch-check.outputs.EXISTS }}"
+          if [ "$EXISTS" = "true" ]; then
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git merge --no-edit origin/main || { git merge --abort; exit 1; }
+          else
+            git checkout main
+            git pull origin main
+            git checkout -b "${BRANCH}"
+          fi
+
+      - name: Apply version bump to Makefile
+        run: |
+          TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          sed -i "s/^VERSION ?= .*/VERSION ?= ${TARGET_VERSION}/" Makefile
+          if git diff --quiet Makefile; then
+            echo "Makefile already has VERSION ?= ${TARGET_VERSION}"
+          else
+            echo "Makefile updated: VERSION set to ${TARGET_VERSION}"
+          fi
+
+      - name: Run changelog engine (release mode)
+        id: changelog_engine
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          MODE: release
+          TARGET_VERSION: ${{ steps.version.outputs.TARGET_VERSION }}
+          CHANGELOG_PATH: CHANGELOG.md
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          x-script-include: ../changelog-generation/scripts/run-changelog-engine.inline.js
+
+      - name: Commit release preparation
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          git add Makefile CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit for release preparation; Makefile and CHANGELOG.md already match target ${TARGET_VERSION}."
+            exit 0
+          fi
+          git commit -m "chore(release): prepare ${TARGET_VERSION}"
+
+      - name: Push release branch
+        run: |
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          git push origin "${BRANCH}"
+
+      - name: Check if release PR already exists
+        id: pr-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          PR_URL=$(gh pr list --head "${BRANCH}" --state open --json url --jq '.[0].url')
+          if [ -n "$PR_URL" ]; then
+            echo "PR already exists: ${PR_URL}"
+            echo "EXISTS=true" >> "$GITHUB_OUTPUT"
+            echo "PR_URL=${PR_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No open PR found for branch ${BRANCH}"
+            echo "EXISTS=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release PR
+        if: steps.pr-check.outputs.EXISTS == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          PR_TITLE="${{ steps.meta.outputs.PR_TITLE }}"
+          TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          printf '%s\n' \
+            "This pull request prepares the ${TARGET_VERSION} release." \
+            "" \
+            "## Changes" \
+            "" \
+            "- Bumps \`VERSION\` in \`Makefile\` to \`${TARGET_VERSION}\`" \
+            "- Regenerates the \`## [${TARGET_VERSION}]\` section in \`CHANGELOG.md\` via the shared changelog engine (release range: previous tag to this branch HEAD)" \
+            "" \
+            "## Checklist" \
+            "" \
+            "- [ ] Changelog section looks correct" \
+            "- [ ] Version bump is correct" \
+            > /tmp/pr-body.txt
+          gh pr create \
+            --head "${BRANCH}" \
+            --base main \
+            --title "${PR_TITLE}" \
+            --body-file /tmp/pr-body.txt \
+            --label no-changelog
+
+      - name: Report outcome
+        run: |
+          TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
+          BRANCH="${{ steps.meta.outputs.BRANCH }}"
+          PR_EXISTS="${{ steps.pr-check.outputs.EXISTS }}"
+          PR_URL="${{ steps.pr-check.outputs.PR_URL }}"
+          echo "Release preparation complete"
+          echo "  Target version : ${TARGET_VERSION}"
+          echo "  Branch         : ${BRANCH}"
+          echo "  Compare range  : ${{ steps.changelog_engine.outputs.compare_range }}"
+          echo "  Section header : ${{ steps.changelog_engine.outputs.section_header }}"
+          echo "  Has PRs in range: ${{ steps.changelog_engine.outputs.has_prs }}"
+          echo "  User-facing changelog entries: ${{ steps.changelog_engine.outputs.has_user_facing_changes }}"
+          if [ "$PR_EXISTS" = "true" ]; then
+            echo "  PR             : ${PR_URL} (reused)"
+          else
+            echo "  PR             : created"
+          fi

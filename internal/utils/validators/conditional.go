@@ -30,6 +30,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// attrValueIsUnsetForConditionalValidation returns whether the attribute value should be treated
+// as unset for RequiredIf, ForbiddenIf, and AllowedIf.
+//
+// Known empty types.String ("") is treated as unset, so optional strings left blank in
+// configuration do not count as a set value. Other attribute kinds only consider null/unknown
+// as unset. This matches typical HCL/TF expectations for optional string attributes.
+func attrValueIsUnsetForConditionalValidation(val attr.Value) bool {
+	if val == nil || val.IsNull() || val.IsUnknown() {
+		return true
+	}
+	if s, ok := val.(types.String); ok {
+		return s.ValueString() == ""
+	}
+	return false
+}
+
 type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics
 
 // condition represents a validation rule that enforces conditional requirements
@@ -164,6 +180,10 @@ func (v Condition) ValidateInt64(ctx context.Context, request validator.Int64Req
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
+func (v Condition) ValidateFloat64(ctx context.Context, request validator.Float64Request, response *validator.Float64Response) {
+	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
+}
+
 func (v Condition) ValidateBool(ctx context.Context, request validator.BoolRequest, response *validator.BoolResponse) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
@@ -237,8 +257,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
-			isEmpty := val.IsNull() || val.IsUnknown()
-			isSet := !isEmpty
+			isSet := !attrValueIsUnsetForConditionalValidation(val)
 
 			if dependentFieldHasAllowedValue {
 				return diags
@@ -336,7 +355,7 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
-			isEmpty := val.IsNull() || val.IsUnknown()
+			isEmpty := attrValueIsUnsetForConditionalValidation(val)
 
 			if !dependentFieldHasAllowedValue {
 				return diags
@@ -395,8 +414,7 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 				return diags
 			}
 
-			isEmpty := val.IsNull() || val.IsUnknown()
-			isSet := !isEmpty
+			isSet := !attrValueIsUnsetForConditionalValidation(val)
 			if isSet {
 				diags.AddAttributeError(p, "Invalid Configuration",
 					fmt.Sprintf("Attribute %s cannot be set when %s equals %q",
@@ -439,8 +457,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
-			isEmpty := val.IsNull() || val.IsUnknown()
-			isSet := !isEmpty
+			isSet := !attrValueIsUnsetForConditionalValidation(val)
 
 			if dependentFieldHasAllowedValue {
 				return diags
@@ -506,7 +523,7 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
-			isEmpty := val.IsNull() || val.IsUnknown()
+			isEmpty := attrValueIsUnsetForConditionalValidation(val)
 
 			if !dependentFieldHasAllowedValue {
 				return diags
@@ -578,8 +595,7 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 				return diags
 			}
 
-			isEmpty := val.IsNull() || val.IsUnknown()
-			isSet := !isEmpty
+			isSet := !attrValueIsUnsetForConditionalValidation(val)
 			if isSet {
 				var msg string
 				if len(allowedValues) == 1 {

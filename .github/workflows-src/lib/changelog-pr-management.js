@@ -96,29 +96,58 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
 }
 
 /**
+ * Find the open release prep PR for a version (`prep-release-<semver>` → `main`).
+ *
+ * @param {{ github: object, owner: string, repo: string, targetVersion: string }} opts
+ * @returns {Promise<number|null>}
+ */
+async function findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion }) {
+  if (!targetVersion) {
+    return null;
+  }
+  const head = `prep-release-${targetVersion}`;
+  const { data: prs } = await github.rest.pulls.list({
+    owner,
+    repo,
+    state: 'open',
+    head: `${owner}:${head}`,
+    base: 'main',
+  });
+  return prs.length > 0 ? prs[0].number : null;
+}
+
+/**
  * Refresh the release prep PR body with generated metadata.
  *
- * If prNumber is null/undefined, emits a warning and returns without failing.
+ * When `prNumber` is absent (e.g. workflow_dispatch), looks up an open PR with
+ * head `prep-release-<targetVersion>` and base `main`.
  *
- * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+ * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null|undefined, compareRange: string, targetVersion: string }} opts
  * @returns {Promise<void>}
  */
 async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-  if (!prNumber) {
-    core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+  let num = prNumber ?? null;
+  if (!num) {
+    num = await findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion });
+  }
+  if (!num) {
+    core.warning(
+      'Could not resolve a release prep PR to refresh (no PR number and no open PR for ' +
+        `prep-release-${targetVersion || '<version>'} → main); skipping PR body update`
+    );
     return;
   }
 
   const prBody = buildReleasePRBody({ targetVersion, compareRange });
 
-  core.info(`Refreshing release PR #${prNumber} metadata`);
+  core.info(`Refreshing release PR #${num} metadata`);
   await github.rest.pulls.update({
     owner,
     repo,
-    pull_number: prNumber,
+    pull_number: num,
     body: prBody,
   });
-  core.info(`Release PR #${prNumber} metadata refreshed`);
+  core.info(`Release PR #${num} metadata refreshed`);
 }
 
 if (typeof module !== 'undefined') {
@@ -126,6 +155,7 @@ if (typeof module !== 'undefined') {
     buildUnreleasedPRBody,
     buildReleasePRBody,
     manageUnreleasedPR,
+    findOpenReleasePrepPRNumber,
     refreshReleasePR,
   };
 }

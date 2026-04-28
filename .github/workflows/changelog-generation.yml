@@ -4,10 +4,23 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-  pull_request_target:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+    inputs:
+      mode:
+        description: "Changelog mode"
+        type: choice
+        options:
+          - unreleased
+          - release
+        default: unreleased
+        required: false
+      target_version:
+        description: "Release version as semver X.Y.Z (no leading v); required when mode is release"
+        type: string
+        required: false
+      target_branch:
+        description: "Optional branch override for push (default generated-changelog or prep-release-<version>)"
+        type: string
+        required: false
 
 permissions:
   contents: write
@@ -17,26 +30,66 @@ jobs:
   generate-changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name != 'pull_request_target' ||
-      (startsWith(github.head_ref, 'prep-release-') &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'unreleased' }}
+      TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_version || '' }}
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || '' }}
     steps:
+      - name: Validate release inputs
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release'
+        env:
+          TARGET_VERSION: ${{ github.event.inputs.target_version }}
+        run: |
+          if [ -z "$TARGET_VERSION" ]; then
+            echo "::error::Release mode requires target_version (semver X.Y.Z without leading v). target_branch is an optional override for the checkout branch and does not replace target_version."
+            exit 1
+          fi
+          if ! printf '%s' "$TARGET_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::target_version must be semver X.Y.Z without a leading v (got: '$TARGET_VERSION')."
+            exit 1
+          fi
+
+      - name: Resolve checkout ref
+        id: resolve_checkout_ref
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${INPUT_MODE}" = "release" ]; then
+            if [ -n "${INPUT_TARGET_BRANCH}" ]; then
+              echo "checkout_ref=${INPUT_TARGET_BRANCH}" >> "${GITHUB_OUTPUT}"
+            else
+              echo "checkout_ref=prep-release-${INPUT_TARGET_VERSION}" >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            echo "checkout_ref=${DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+          INPUT_TARGET_VERSION: ${{ github.event.inputs.target_version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          ref: ${{ steps.resolve_checkout_ref.outputs.checkout_ref }}
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || '' }}
 
-      - name: Resolve release context
-        id: resolve_release_context
+      - name: Run changelog engine
+        id: changelog_engine
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          CHANGELOG_PATH: CHANGELOG.md
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { execSync } = require('child_process');
+            const fs = require('fs');
+            /**
+             * Expanded into GitHub Actions inline scripts. Do not require() repository lib paths from here.
+             * Node tests load changelog-engine.js instead.
+             */
             const RELEASE_BRANCH_PATTERN = /^prep-release-(.+)$/;
             const SEMVER_TAG_PATTERN = /^v\d+\.\d+\.\d+$/;
             
@@ -106,170 +159,90 @@ jobs:
               };
             }
             
-            // Determine mode from event
-            const eventName = context.eventName;
-            const headBranch =
-              context.payload.pull_request?.head?.ref ??
-              context.payload.ref?.replace('refs/heads/', '') ??
-              process.env.GITHUB_HEAD_REF ??
-              process.env.GITHUB_REF_NAME ??
-              '';
+            /**
+             * Rewrite a single section in CHANGELOG.md without affecting other sections.
+             * Extracted from the changelog-generation inline render step for reuse and tests.
+             */
             
-            let tags = [];
-            try {
-              // List all tags matching vX.Y.Z semver pattern, sort by version, pick the latest
-              const tagsRaw = execSync(
-                'git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname',
-                { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-              ).trim();
-            
-              tags = parseSemverTags(tagsRaw);
-            } catch (err) {
-              core.warning(`Failed to list git tags: ${err.message}`);
-            }
-            
-            const releaseContext = buildReleaseContext({ eventName, headBranch, tags });
-            
-            if (releaseContext.mode === 'release') {
-              core.info(`Release mode: branch=${headBranch}, version=${releaseContext.targetVersion}`);
-            }
-            if (releaseContext.excludedCurrentTag) {
-              core.info(
-                `Excluded current release tag ${releaseContext.excludedTag} from previous tag candidates`
-              );
-            }
-            if (releaseContext.previousTag) {
-              core.info(`Resolved previous tag: ${releaseContext.previousTag}`);
-            } else if (tags.length === 0) {
-              core.warning('No semver release tags found; compare range will cover full history');
-            }
-            
-            core.setOutput('mode', releaseContext.mode);
-            core.setOutput('target_version', releaseContext.targetVersion);
-            core.setOutput('previous_tag', releaseContext.previousTag);
-            core.setOutput('compare_range', releaseContext.compareRange);
-            core.setOutput('target_branch', releaseContext.targetBranch);
-            
-            core.info(`Mode: ${releaseContext.mode}`);
-            core.info(`Compare range: ${releaseContext.compareRange}`);
-            core.info(`Target branch: ${releaseContext.targetBranch}`);
-            
-      - name: Gather merged PRs
-        id: gather_merged_prs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        env:
-          PREVIOUS_TAG: ${{ steps.resolve_release_context.outputs.previous_tag }}
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const { execSync } = require('child_process');
-            
-            const previousTag = process.env.PREVIOUS_TAG || '';
-            const compareRange = process.env.COMPARE_RANGE || 'HEAD';
-            const mode = process.env.MODE || 'unreleased';
-            const targetVersion = process.env.TARGET_VERSION || '';
-            
-            const { owner, repo } = context.repo;
-            
-            function parseCommitShas(raw = '') {
-              return raw
-                .split('\n')
-                .map((sha) => sha.trim())
-                .filter(Boolean);
-            }
-            
-            function getLabelNames(pr) {
-              return (pr.labels ?? []).map((label) => label.name);
-            }
-            
-            // Collect commits in range
-            let commitSHAs = [];
-            try {
-              const range = compareRange || 'HEAD';
-              const raw = execSync(`git log --format=%H ${range}`, {
-                encoding: 'utf8',
-                stdio: ['pipe', 'pipe', 'pipe'],
-              }).trim();
-              commitSHAs = parseCommitShas(raw);
-              core.info(`Found ${commitSHAs.length} commit(s) in range ${range}`);
-            } catch (err) {
-              core.warning(`Failed to list commits in range: ${err.message}`);
-            }
-            
-            // Find PRs associated with these commits and dedupe merged PRs as we go.
-            const mergedPullRequestsByNumber = new Map();
-            
-            for (const sha of commitSHAs) {
-              try {
-                const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                  owner,
-                  repo,
-                  commit_sha: sha,
-                });
-                for (const pr of prs) {
-                  if (pr.state === 'closed' && pr.merged_at && !mergedPullRequestsByNumber.has(pr.number)) {
-                    mergedPullRequestsByNumber.set(pr.number, pr);
-                  }
+            /**
+             * @param {string[]} lines
+             * @param {number} startIndex
+             * @returns {number}
+             */
+            function findSectionEnd(lines, startIndex) {
+              for (let i = startIndex + 1; i < lines.length; i++) {
+                if (/^## /.test(lines[i])) {
+                  return i;
                 }
-              } catch (err) {
-                core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
               }
+              return lines.length;
             }
             
-            const mergedPullRequests = Array.from(mergedPullRequestsByNumber.values());
-            core.info(`Found ${mergedPullRequests.length} unique merged PR(s) in compare range`);
+            /**
+             * @param {string} content - Current CHANGELOG.md content.
+             * @param {string} newSectionContent - Full replacement (header + body).
+             * @param {'unreleased'|'release'} mode
+             * @param {string} targetVersion - Version without leading v (release mode only).
+             * @returns {string}
+             */
+            function rewriteChangelogSection(content, newSectionContent, mode, targetVersion) {
+              const lines = content.split('\n');
             
-            // Build the PR metadata records for the renderer.
-            // We capture: number, url, merge_commit_sha, labels, body.
-            // We do NOT need per-file classification here — deterministic rendering uses the
-            // PR-body changelog contract and the no-changelog label instead.
-            const prRecords = mergedPullRequests.map((pr) => ({
-              number: pr.number,
-              title: pr.title,
-              url: pr.html_url,
-              merge_commit_sha: pr.merge_commit_sha,
-              author: pr.user?.login ?? 'unknown',
-              labels: getLabelNames(pr),
-              body: pr.body || '',
-            }));
+              let targetStart = -1;
             
-            const manifest = {
-              generated_at: new Date().toISOString(),
-              mode,
-              target_version: targetVersion,
-              previous_tag: previousTag,
-              compare_range: compareRange,
-              pr_count: prRecords.length,
-              pull_requests: prRecords,
-            };
+              if (mode === 'unreleased') {
+                targetStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+              } else {
+                targetStart = lines.findIndex((line) => line.startsWith(`## [${targetVersion}]`));
+              }
             
-            const artifactDir = '/tmp/changelog-assembly';
-            const artifactPath = `${artifactDir}/merged-prs.json`;
-            fs.mkdirSync(artifactDir, { recursive: true });
-            fs.writeFileSync(artifactPath, JSON.stringify(manifest, null, 2), 'utf8');
+              if (targetStart === -1) {
+                if (mode === 'release') {
+                  const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+                  if (unreleasedStart !== -1) {
+                    const insertAfter = findSectionEnd(lines, unreleasedStart);
+                    const before = lines.slice(0, insertAfter);
+                    const after = lines.slice(insertAfter);
+                    return [...before, '', newSectionContent, ...after].join('\n');
+                  }
+                  return newSectionContent + '\n\n' + content;
+                }
+                return newSectionContent + '\n\n' + content;
+              }
             
-            core.setOutput('merged_prs_path', artifactPath);
-            const hasPRs = prRecords.length > 0;
-            core.setOutput('has_prs', hasPRs ? 'true' : 'false');
-            core.info(`Merged PR manifest written to ${artifactPath} (${prRecords.length} PRs)`);
+              const sectionEnd = findSectionEnd(lines, targetStart);
             
-      - name: Render changelog section
-        id: render_changelog
-        if: steps.gather_merged_prs.outputs.has_prs == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        env:
-          MERGED_PRS_PATH: ${{ steps.gather_merged_prs.outputs.merged_prs_path }}
-          MODE: ${{ steps.resolve_release_context.outputs.mode }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-          CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
+              const before = lines.slice(0, targetStart);
+              const after = lines.slice(sectionEnd);
+            
+              while (before.length > 0 && before[before.length - 1] === '') {
+                before.pop();
+              }
+            
+              const parts = [...before];
+              if (parts.length > 0) parts.push('');
+              parts.push(newSectionContent);
+            
+              let afterStart = 0;
+              while (afterStart < after.length && after[afterStart] === '') {
+                afterStart++;
+              }
+            
+              if (afterStart < after.length) {
+                parts.push('');
+                parts.push(...after.slice(afterStart));
+              }
+            
+              return parts.join('\n');
+            }
+            
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                findSectionEnd,
+                rewriteChangelogSection,
+              };
+            }
+            
             /**
              * Deterministic changelog renderer.
              *
@@ -744,198 +717,445 @@ jobs:
             }
             
             /**
-             * Find the index of the next `##`-level section header after startIndex,
-             * returning it as the exclusive end of the current section.
-             * If no next section is found, returns the index of the last non-blank line + 1.
-             *
-             * @param {string[]} lines
-             * @param {number} startIndex - Index of the current section header.
-             * @returns {number}
+             * Dependency-injected changelog engine. Used from changelog-engine.js (Node)
+             * and from changelog-engine-workflow.js (inlined into GitHub Actions scripts).
              */
-            function findSectionEnd(lines, startIndex) {
-              for (let i = startIndex + 1; i < lines.length; i++) {
-                if (/^## /.test(lines[i])) {
-                  return i;
-                }
-              }
-              // No next section — return end of file
-              return lines.length;
-            }
+            
+            /** Semver X.Y.Z without leading `v` */
+            const TARGET_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
+            
+            const TAG_LIST_CMD =
+              'git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname';
             
             /**
-             * Rewrite only the target section of CHANGELOG.md.
-             * Preserves all other sections and the link footer exactly.
-             *
-             * @param {string} content - Current CHANGELOG.md content.
-             * @param {string} sectionHeader - The target section header line.
-             * @param {string} newSectionContent - The full replacement (header + body).
-             * @param {string} mode - 'unreleased' | 'release'
-             * @param {string} targetVersion - Version string (release mode only).
-             * @returns {string}
+             * @param {{
+             *   parseSemverTags: Function,
+             *   selectPreviousTag: Function,
+             *   buildCompareRange: Function,
+             *   rewriteChangelogSection: Function,
+             *   renderChangelogSection: Function,
+             *   execSyncDefault?: Function,
+             * }} deps
              */
-            function rewriteChangelogSection(content, sectionHeader, newSectionContent, mode, targetVersion) {
-              const lines = content.split('\n');
+            function createChangelogEngine(deps) {
+              const {
+                parseSemverTags,
+                selectPreviousTag,
+                buildCompareRange,
+                rewriteChangelogSection,
+                renderChangelogSection,
+                execSyncDefault,
+              } = deps;
             
-              // Find the start of the target section
-              let targetStart = -1;
+              const fallbackExec =
+                execSyncDefault ?? require('child_process').execSync;
             
-              if (mode === 'unreleased') {
-                targetStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-              } else {
-                // For release mode, look for the exact version header or the Unreleased section
-                // (we insert after Unreleased when no existing release section is found)
-                targetStart = lines.findIndex((line) =>
-                  line.startsWith(`## [${targetVersion}]`)
+              function validateModeAndTargetVersion(mode, targetVersion, core) {
+                if (mode !== 'unreleased' && mode !== 'release') {
+                  const msg = `Invalid changelog mode: "${mode}". Must be 'unreleased' or 'release'.`;
+                  if (core && typeof core.setFailed === 'function') core.setFailed(msg);
+                  throw new Error(msg);
+                }
+                if (mode === 'release') {
+                  if (!targetVersion || !TARGET_VERSION_PATTERN.test(targetVersion)) {
+                    const msg =
+                      'Release mode requires targetVersion: a non-empty semver string X.Y.Z without a leading "v".';
+                    if (core && typeof core.setFailed === 'function') core.setFailed(msg);
+                    throw new Error(msg);
+                  }
+                }
+              }
+            
+              function formatAssemblyFailureMessage(errors) {
+                const errorMessages = errors.map((e) => `  - ${e.reason}`).join('\n');
+                return (
+                  `Changelog assembly failed. The following pull requests are missing a required ## Changelog section or Summary field:\n${errorMessages}\n\n` +
+                  'Each merged PR must either:\n' +
+                  "  1. Have a '## Changelog' section with 'Customer impact' and (when not 'none') a 'Summary' field, OR\n" +
+                  "  2. Be labeled 'no-changelog'"
                 );
               }
             
-              if (targetStart === -1) {
-                // Section not found — insert appropriately
-                if (mode === 'release') {
-                  // Insert after ## [Unreleased] section if present, otherwise at the top
-                  const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-                  if (unreleasedStart !== -1) {
-                    // Find the end of the Unreleased section
-                    const insertAfter = findSectionEnd(lines, unreleasedStart);
-                    const before = lines.slice(0, insertAfter);
-                    const after = lines.slice(insertAfter);
-                    return [...before, '', newSectionContent, ...after].join('\n');
-                  } else {
-                    // No Unreleased section — prepend after any top-level heading
-                    return newSectionContent + '\n\n' + content;
+              function parseCommitShas(raw = '') {
+                return raw
+                  .split('\n')
+                  .map((sha) => sha.trim())
+                  .filter(Boolean);
+              }
+            
+              function getLabelNames(pr) {
+                return (pr.labels ?? []).map((label) => label.name);
+              }
+            
+              function resolveChangelogCompareContext({ mode, targetVersion, exec, core }) {
+                validateModeAndTargetVersion(mode, targetVersion, core);
+            
+                let tags = [];
+                try {
+                  const tagsRaw = exec(TAG_LIST_CMD, {
+                    encoding: 'utf8',
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                  }).trim();
+                  tags = parseSemverTags(tagsRaw);
+                } catch (err) {
+                  if (core && typeof core.warning === 'function') {
+                    core.warning(`Failed to list git tags: ${err.message}`);
                   }
-                } else {
-                  // unreleased: prepend after any top-level heading
-                  return newSectionContent + '\n\n' + content;
                 }
+            
+                const {
+                  previousTag,
+                  excludedTag,
+                  excludedCurrentTag,
+                } = selectPreviousTag({ tags, mode, targetVersion });
+                const compareRange = buildCompareRange(previousTag);
+                const targetBranch =
+                  mode === 'unreleased' ? 'generated-changelog' : `prep-release-${targetVersion}`;
+            
+                return {
+                  previousTag,
+                  compareRange,
+                  targetBranch,
+                  excludedTag,
+                  excludedCurrentTag,
+                  tags,
+                };
               }
             
-              // Find the end of the target section (start of the next ## section)
-              const sectionEnd = findSectionEnd(lines, targetStart);
+              async function gatherMergedPRRecordsForRange({
+                github,
+                owner,
+                repo,
+                compareRange,
+                exec,
+                core,
+              }) {
+                const range = compareRange || 'HEAD';
+                let commitSHAs = [];
+                try {
+                  const raw = exec(`git log --format=%H ${range}`, {
+                    encoding: 'utf8',
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                  }).trim();
+                  commitSHAs = parseCommitShas(raw);
+                  if (core && typeof core.info === 'function') {
+                    core.info(`Found ${commitSHAs.length} commit(s) in range ${range}`);
+                  }
+                } catch (err) {
+                  if (core && typeof core.warning === 'function') {
+                    core.warning(`Failed to list commits in range: ${err.message}`);
+                  }
+                }
             
-              const before = lines.slice(0, targetStart);
-              const after = lines.slice(sectionEnd);
+                const mergedPullRequestsByNumber = new Map();
             
-              // Remove trailing blank lines from 'before' that were padding before the old section
-              while (before.length > 0 && before[before.length - 1] === '') {
-                before.pop();
+                for (const sha of commitSHAs) {
+                  try {
+                    const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                      owner,
+                      repo,
+                      commit_sha: sha,
+                    });
+                    for (const pr of prs) {
+                      if (pr.state === 'closed' && pr.merged_at && !mergedPullRequestsByNumber.has(pr.number)) {
+                        mergedPullRequestsByNumber.set(pr.number, pr);
+                      }
+                    }
+                  } catch (err) {
+                    if (core && typeof core.warning === 'function') {
+                      core.warning(`Failed to list PRs for commit ${sha}: ${err.message}`);
+                    }
+                  }
+                }
+            
+                const mergedPullRequests = Array.from(mergedPullRequestsByNumber.values());
+                if (core && typeof core.info === 'function') {
+                  core.info(`Found ${mergedPullRequests.length} unique merged PR(s) in compare range`);
+                }
+            
+                return mergedPullRequests.map((pr) => ({
+                  number: pr.number,
+                  title: pr.title,
+                  url: pr.html_url,
+                  merge_commit_sha: pr.merge_commit_sha,
+                  author: pr.user?.login ?? 'unknown',
+                  labels: getLabelNames(pr),
+                  body: pr.body || '',
+                }));
               }
             
-              // Rebuild: before content, blank separator, new section, blank separator, after content
-              const parts = [...before];
-              if (parts.length > 0) parts.push('');
-              parts.push(newSectionContent);
+              function runChangelogRenderAndWrite({ core, prRecords, mode, targetVersion, changelogPath, fs }) {
+                validateModeAndTargetVersion(mode, targetVersion, core);
             
-              // Normalize leading blank lines in 'after'
-              let afterStart = 0;
-              while (afterStart < after.length && after[afterStart] === '') {
-                afterStart++;
+                const result = renderChangelogSection(prRecords);
+            
+                if (!result.success) {
+                  const msg = formatAssemblyFailureMessage(result.errors);
+                  if (core && typeof core.setFailed === 'function') core.setFailed(msg);
+                  const err = new Error(msg);
+                  err.assemblyErrors = result.errors;
+                  throw err;
+                }
+            
+                let currentChangelog = '';
+                try {
+                  currentChangelog = fs.readFileSync(changelogPath, 'utf8');
+                } catch (err) {
+                  if (core && typeof core.warning === 'function') {
+                    core.warning(`Could not read ${changelogPath}: ${err.message}. Will create a new file.`);
+                  }
+                }
+            
+                const today = new Date().toISOString().split('T')[0];
+                let sectionHeader;
+                if (mode === 'release' && targetVersion) {
+                  sectionHeader = `## [${targetVersion}] - ${today}`;
+                } else {
+                  sectionHeader = '## [Unreleased]';
+                }
+            
+                const sectionBody = result.sectionBody;
+                const newSectionContent = sectionBody
+                  ? `${sectionHeader}\n\n${sectionBody}`
+                  : `${sectionHeader}`;
+            
+                const updatedChangelog = rewriteChangelogSection(
+                  currentChangelog,
+                  newSectionContent,
+                  mode,
+                  targetVersion
+                );
+            
+                try {
+                  fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');
+                  if (core && typeof core.info === 'function') {
+                    core.info(`CHANGELOG.md updated with section: ${sectionHeader}`);
+                  }
+                } catch (err) {
+                  const msg = `Failed to write ${changelogPath}: ${err.message}`;
+                  if (core && typeof core.setFailed === 'function') core.setFailed(msg);
+                  throw new Error(msg);
+                }
+            
+                const hasPRs = prRecords.length > 0;
+                // hasUserFacingChanges reflects whether the rendered section body has any
+                // content the changelog should publish. This is broader than `included`
+                // (PRs that contributed change bullets) because PRs marked
+                // `Customer impact: none` can still contribute a `### Breaking changes`
+                // block, which is user-facing and must be committed/pushed.
+                const hasUserFacingChanges =
+                  typeof sectionBody === 'string' && sectionBody.trim().length > 0;
+            
+                return {
+                  sectionHeader,
+                  hasPRs,
+                  hasUserFacingChanges,
+                  included: result.included,
+                  excluded: result.excluded,
+                  errors: [],
+                };
               }
             
-              if (afterStart < after.length) {
-                parts.push('');
-                parts.push(...after.slice(afterStart));
+              async function runChangelogEngine({
+                github,
+                core,
+                mode,
+                targetVersion = '',
+                owner,
+                repo,
+                changelogPath = 'CHANGELOG.md',
+                exec = fallbackExec,
+                fs = require('fs'),
+              }) {
+                validateModeAndTargetVersion(mode, targetVersion, core);
+            
+                const {
+                  previousTag,
+                  compareRange,
+                  targetBranch,
+                  excludedTag,
+                  excludedCurrentTag,
+                  tags,
+                } = resolveChangelogCompareContext({ mode, targetVersion, exec, core });
+            
+                if (mode === 'release' && core && typeof core.info === 'function') {
+                  core.info(`Release mode: version=${targetVersion}`);
+                }
+                if (excludedCurrentTag && core && typeof core.info === 'function') {
+                  core.info(`Excluded current release tag ${excludedTag} from previous tag candidates`);
+                }
+                if (previousTag && core && typeof core.info === 'function') {
+                  core.info(`Resolved previous tag: ${previousTag}`);
+                } else if (tags.length === 0 && core && typeof core.warning === 'function') {
+                  core.warning('No semver release tags found; compare range will cover full history');
+                }
+            
+                const prRecords = await gatherMergedPRRecordsForRange({
+                  github,
+                  owner,
+                  repo,
+                  compareRange,
+                  exec,
+                  core,
+                });
+            
+                const renderOutcome = runChangelogRenderAndWrite({
+                  core,
+                  prRecords,
+                  mode,
+                  targetVersion,
+                  changelogPath,
+                  fs,
+                });
+            
+                return {
+                  mode,
+                  targetVersion: mode === 'release' ? targetVersion : '',
+                  previousTag,
+                  compareRange,
+                  targetBranch,
+                  sectionHeader: renderOutcome.sectionHeader,
+                  hasPRs: renderOutcome.hasPRs,
+                  hasUserFacingChanges: renderOutcome.hasUserFacingChanges,
+                  included: renderOutcome.included,
+                  excluded: renderOutcome.excluded,
+                  errors: [],
+                };
               }
             
-              return parts.join('\n');
+              return {
+                TARGET_VERSION_PATTERN,
+                validateModeAndTargetVersion,
+                resolveChangelogCompareContext,
+                gatherMergedPRRecordsForRange,
+                formatAssemblyFailureMessage,
+                runChangelogRenderAndWrite,
+                runChangelogEngine,
+              };
             }
             
-            const mergedPRsPath = process.env.MERGED_PRS_PATH || '';
-            const mode = process.env.MODE || 'unreleased';
-            const targetVersion = process.env.TARGET_VERSION || '';
-            const changelogPath = process.env.CHANGELOG_PATH || 'CHANGELOG.md';
-            
-            if (!mergedPRsPath) {
-              core.setFailed('MERGED_PRS_PATH environment variable is required');
-              process.exit(1);
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                TARGET_VERSION_PATTERN,
+                createChangelogEngine,
+              };
             }
             
-            if (mode === 'release' && !targetVersion) {
-              core.setFailed('Release mode requires target_version from resolve_release_context');
-              process.exit(1);
+            // `execSync` MUST be declared in the including entry script (e.g. run-changelog-engine.inline.js)
+            // before this file is expanded, so we do not re-declare it here (duplicate const breaks the bundle).
+            
+            const _changelogEngine = createChangelogEngine({
+              parseSemverTags,
+              selectPreviousTag,
+              buildCompareRange,
+              rewriteChangelogSection,
+              renderChangelogSection,
+              execSyncDefault: execSync,
+            });
+            
+            // `TARGET_VERSION_PATTERN` is intentionally NOT destructured here: it is already declared as a
+            // `const` by the included `changelog-engine-factory.js`, and a second `const` in the same scope
+            // would be a SyntaxError when this bundle is inlined into the workflow YAML.
+            const {
+              validateModeAndTargetVersion,
+              resolveChangelogCompareContext,
+              gatherMergedPRRecordsForRange,
+              formatAssemblyFailureMessage,
+              runChangelogRenderAndWrite,
+              runChangelogEngine,
+            } = _changelogEngine;
+            
+            // Mode is workflow-driven via MODE env only; the inlined bundle still carries resolveReleaseMode (event-based) from changelog-release-context.js for tests/lib reuse—unused on this path until that module is split.
+            
+            const { owner, repo } = context.repo;
+            
+            const mode = (process.env.MODE || 'unreleased').trim();
+            const targetVersion = (process.env.TARGET_VERSION || '').trim();
+            const targetBranchOverride = (process.env.TARGET_BRANCH || '').trim();
+            
+            const ctx = resolveChangelogCompareContext({
+              mode,
+              targetVersion,
+              exec: execSync,
+              core,
+            });
+            
+            const effectiveTargetBranch = targetBranchOverride || ctx.targetBranch;
+            
+            if (mode === 'release') {
+              core.info(`Release mode: version=${targetVersion}, push branch=${effectiveTargetBranch}`);
             }
-            
-            // Read the merged PR manifest
-            let manifest;
-            try {
-              manifest = JSON.parse(fs.readFileSync(mergedPRsPath, 'utf8'));
-            } catch (err) {
-              core.setFailed(`Failed to read merged PR manifest from ${mergedPRsPath}: ${err.message}`);
-              process.exit(1);
-            }
-            
-            const prRecords = manifest.pull_requests || [];
-            core.info(`Rendering changelog from ${prRecords.length} merged PR(s)`);
-            
-            // Run deterministic rendering
-            const result = renderChangelogSection(prRecords);
-            
-            if (!result.success) {
-              // Hard fail: report all assembly errors clearly
-              const errorMessages = result.errors.map((e) => `  - ${e.reason}`).join('\n');
-              core.setFailed(
-                `Changelog assembly failed. The following pull requests are missing a required ## Changelog section or Summary field:\n${errorMessages}\n\n` +
-                'Each merged PR must either:\n' +
-                "  1. Have a '## Changelog' section with 'Customer impact' and (when not 'none') a 'Summary' field, OR\n" +
-                "  2. Be labeled 'no-changelog'"
+            if (ctx.excludedCurrentTag) {
+              core.info(
+                `Excluded current release tag ${ctx.excludedTag} from previous tag candidates`
               );
-              process.exit(1);
+            }
+            if (ctx.previousTag) {
+              core.info(`Resolved previous tag: ${ctx.previousTag}`);
+            } else if (ctx.tags.length === 0) {
+              core.warning('No semver release tags found; compare range will cover full history');
             }
             
-            // Log what was included/excluded
-            core.info(`Included ${result.included.length} PR(s) with change bullets or breaking changes`);
-            core.info(`Excluded ${result.excluded.length} PR(s) (no-changelog or Customer impact: none)`);
-            for (const ex of result.excluded) {
-              core.info(`  Excluded PR #${ex.prNumber}: ${ex.reason}`);
-            }
+            const prRecords = await gatherMergedPRRecordsForRange({
+              github,
+              owner,
+              repo,
+              compareRange: ctx.compareRange,
+              exec: execSync,
+              core,
+            });
             
-            // Read current CHANGELOG.md
-            let currentChangelog = '';
-            try {
-              currentChangelog = fs.readFileSync(changelogPath, 'utf8');
-            } catch (err) {
-              core.warning(`Could not read ${changelogPath}: ${err.message}. Will create a new file.`);
-            }
+            const hasPRs = prRecords.length > 0;
+            let sectionHeader = '';
+            let hasUserFacingChanges = false;
             
-            // Rewrite the target section in CHANGELOG.md
-            const today = new Date().toISOString().split('T')[0];
-            let sectionHeader;
-            if (mode === 'release' && targetVersion) {
-              sectionHeader = `## [${targetVersion}] - ${today}`;
+            const shouldRenderChangelog = mode === 'release' || hasPRs;
+            
+            if (shouldRenderChangelog) {
+              const changelogPath = process.env.CHANGELOG_PATH || 'CHANGELOG.md';
+              const out = runChangelogRenderAndWrite({
+                core,
+                prRecords,
+                mode,
+                targetVersion,
+                changelogPath,
+                fs,
+              });
+              sectionHeader = out.sectionHeader;
+              hasUserFacingChanges = out.hasUserFacingChanges;
+              core.info(`Included ${out.included.length} PR(s) with change bullets or breaking changes`);
+              core.info(`Excluded ${out.excluded.length} PR(s) (no-changelog or Customer impact: none)`);
+              for (const ex of out.excluded) {
+                core.info(`  Excluded PR #${ex.prNumber}: ${ex.reason}`);
+              }
+              core.info(`Changelog section rendered: ${out.sectionHeader}`);
             } else {
+              core.info('No merged PRs in compare range; skipping changelog file update');
               sectionHeader = '## [Unreleased]';
             }
             
-            const sectionBody = result.sectionBody;
-            const newSectionContent = sectionBody
-              ? `${sectionHeader}\n\n${sectionBody}`
-              : `${sectionHeader}`;
-            
-            const updatedChangelog = rewriteChangelogSection(currentChangelog, sectionHeader, newSectionContent, mode, targetVersion);
-            
-            // Write updated CHANGELOG.md
-            try {
-              fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');
-              core.info(`CHANGELOG.md updated with section: ${sectionHeader}`);
-            } catch (err) {
-              core.setFailed(`Failed to write ${changelogPath}: ${err.message}`);
-              process.exit(1);
-            }
-            
+            core.setOutput('mode', mode);
+            core.setOutput('target_version', mode === 'release' ? targetVersion : '');
+            core.setOutput('previous_tag', ctx.previousTag);
+            core.setOutput('compare_range', ctx.compareRange);
+            core.setOutput('target_branch', effectiveTargetBranch);
+            core.setOutput('has_prs', hasPRs ? 'true' : 'false');
+            core.setOutput(
+              'has_user_facing_changes',
+              hasUserFacingChanges ? 'true' : 'false'
+            );
             core.setOutput('section_header', sectionHeader);
-            core.setOutput('has_changes', result.included.length > 0 || result.excluded.length > 0 ? 'true' : 'false');
-            core.setOutput('has_user_facing_changes', result.included.length > 0 ? 'true' : 'false');
-            core.info(`Changelog section rendered: ${sectionHeader}`);
+            
+            core.info(`Mode: ${mode}`);
+            core.info(`Compare range: ${ctx.compareRange}`);
+            core.info(`Target branch: ${effectiveTargetBranch}`);
             
       - name: Commit changelog (release mode)
         id: commit_release
-        if: >-
-          steps.resolve_release_context.outputs.mode == 'release' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'release'
         env:
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
-          TARGET_BRANCH: ${{ steps.resolve_release_context.outputs.target_branch }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
+          TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -953,12 +1173,12 @@ jobs:
 
       - name: Refresh release PR metadata (release mode)
         if: >-
-          steps.resolve_release_context.outputs.mode == 'release' &&
+          steps.changelog_engine.outputs.mode == 'release' &&
           steps.commit_release.outputs.ran == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
-          TARGET_VERSION: ${{ steps.resolve_release_context.outputs.target_version }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
+          TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -1060,29 +1280,58 @@ jobs:
             }
             
             /**
+             * Find the open release prep PR for a version (`prep-release-<semver>` → `main`).
+             *
+             * @param {{ github: object, owner: string, repo: string, targetVersion: string }} opts
+             * @returns {Promise<number|null>}
+             */
+            async function findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion }) {
+              if (!targetVersion) {
+                return null;
+              }
+              const head = `prep-release-${targetVersion}`;
+              const { data: prs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${head}`,
+                base: 'main',
+              });
+              return prs.length > 0 ? prs[0].number : null;
+            }
+            
+            /**
              * Refresh the release prep PR body with generated metadata.
              *
-             * If prNumber is null/undefined, emits a warning and returns without failing.
+             * When `prNumber` is absent (e.g. workflow_dispatch), looks up an open PR with
+             * head `prep-release-<targetVersion>` and base `main`.
              *
-             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null|undefined, compareRange: string, targetVersion: string }} opts
              * @returns {Promise<void>}
              */
             async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-              if (!prNumber) {
-                core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+              let num = prNumber ?? null;
+              if (!num) {
+                num = await findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion });
+              }
+              if (!num) {
+                core.warning(
+                  'Could not resolve a release prep PR to refresh (no PR number and no open PR for ' +
+                    `prep-release-${targetVersion || '<version>'} → main); skipping PR body update`
+                );
                 return;
               }
             
               const prBody = buildReleasePRBody({ targetVersion, compareRange });
             
-              core.info(`Refreshing release PR #${prNumber} metadata`);
+              core.info(`Refreshing release PR #${num} metadata`);
               await github.rest.pulls.update({
                 owner,
                 repo,
-                pull_number: prNumber,
+                pull_number: num,
                 body: prBody,
               });
-              core.info(`Release PR #${prNumber} metadata refreshed`);
+              core.info(`Release PR #${num} metadata refreshed`);
             }
             
             if (typeof module !== 'undefined') {
@@ -1090,6 +1339,7 @@ jobs:
                 buildUnreleasedPRBody,
                 buildReleasePRBody,
                 manageUnreleasedPR,
+                findOpenReleasePrepPRNumber,
                 refreshReleasePR,
               };
             }
@@ -1104,9 +1354,9 @@ jobs:
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
         if: >-
-          steps.resolve_release_context.outputs.mode == 'unreleased' &&
-          steps.gather_merged_prs.outputs.has_prs == 'true' &&
-          steps.render_changelog.outputs.has_user_facing_changes == 'true'
+          steps.changelog_engine.outputs.mode == 'unreleased' &&
+          steps.changelog_engine.outputs.has_prs == 'true' &&
+          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -1126,7 +1376,7 @@ jobs:
           steps.push_unreleased.outputs.pushed == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          COMPARE_RANGE: ${{ steps.resolve_release_context.outputs.compare_range }}
+          COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -1228,29 +1478,58 @@ jobs:
             }
             
             /**
+             * Find the open release prep PR for a version (`prep-release-<semver>` → `main`).
+             *
+             * @param {{ github: object, owner: string, repo: string, targetVersion: string }} opts
+             * @returns {Promise<number|null>}
+             */
+            async function findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion }) {
+              if (!targetVersion) {
+                return null;
+              }
+              const head = `prep-release-${targetVersion}`;
+              const { data: prs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${head}`,
+                base: 'main',
+              });
+              return prs.length > 0 ? prs[0].number : null;
+            }
+            
+            /**
              * Refresh the release prep PR body with generated metadata.
              *
-             * If prNumber is null/undefined, emits a warning and returns without failing.
+             * When `prNumber` is absent (e.g. workflow_dispatch), looks up an open PR with
+             * head `prep-release-<targetVersion>` and base `main`.
              *
-             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null, compareRange: string, targetVersion: string }} opts
+             * @param {{ github: object, core: object, owner: string, repo: string, prNumber: number|null|undefined, compareRange: string, targetVersion: string }} opts
              * @returns {Promise<void>}
              */
             async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRange, targetVersion }) {
-              if (!prNumber) {
-                core.warning('No pull_request.number in event metadata; skipping PR metadata refresh');
+              let num = prNumber ?? null;
+              if (!num) {
+                num = await findOpenReleasePrepPRNumber({ github, owner, repo, targetVersion });
+              }
+              if (!num) {
+                core.warning(
+                  'Could not resolve a release prep PR to refresh (no PR number and no open PR for ' +
+                    `prep-release-${targetVersion || '<version>'} → main); skipping PR body update`
+                );
                 return;
               }
             
               const prBody = buildReleasePRBody({ targetVersion, compareRange });
             
-              core.info(`Refreshing release PR #${prNumber} metadata`);
+              core.info(`Refreshing release PR #${num} metadata`);
               await github.rest.pulls.update({
                 owner,
                 repo,
-                pull_number: prNumber,
+                pull_number: num,
                 body: prBody,
               });
-              core.info(`Release PR #${prNumber} metadata refreshed`);
+              core.info(`Release PR #${num} metadata refreshed`);
             }
             
             if (typeof module !== 'undefined') {
@@ -1258,6 +1537,7 @@ jobs:
                 buildUnreleasedPRBody,
                 buildReleasePRBody,
                 manageUnreleasedPR,
+                findOpenReleasePrepPRNumber,
                 refreshReleasePR,
               };
             }
@@ -1272,7 +1552,7 @@ jobs:
             
       - name: Report result (unreleased mode)
         if: >-
-          steps.resolve_release_context.outputs.mode == 'unreleased' &&
+          steps.changelog_engine.outputs.mode == 'unreleased' &&
           steps.lookup_pr.outcome == 'success'
         run: |
           echo "PR action: ${{ steps.lookup_pr.outputs.pr_action }}"

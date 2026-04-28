@@ -118,7 +118,43 @@ resource "elasticstack_kibana_slo" "custom_kql" {
 
 }
 
-//Available from 8.10.0
+# Object-form KQL (filter_kql, good_kql, total_kql) and optional settings.sync_field / enabled
+# (see resource schema). Use the attribute form `filter_kql = { kql_query = "..." }` inside
+# `kql_custom_indicator`, not a nested `filter_kql { }` block.
+resource "elasticstack_kibana_slo" "kql_object_form" {
+  name        = "kql object form example"
+  description = "KQL with object-form union and managed enabled state"
+  enabled     = true
+
+  kql_custom_indicator {
+    index = "my-index"
+    # Either legacy strings or the *_kql object (not both) per logical field
+    filter_kql = { kql_query = "service.name: checkout" }
+    good_kql   = { kql_query = "http.response.status_code: 200" }
+    total_kql  = { kql_query = "*" }
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+    sync_field = "@timestamp"
+  }
+}
+
+#Available from 8.10.0
 resource "elasticstack_kibana_slo" "custom_histogram" {
   name        = "custom histogram"
   description = "custom histogram"
@@ -244,6 +280,8 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 
 - `apm_availability_indicator` (Block List) (see [below for nested schema](#nestedblock--apm_availability_indicator))
 - `apm_latency_indicator` (Block List) (see [below for nested schema](#nestedblock--apm_latency_indicator))
+- `artifacts` (Attributes) Links to related assets (for example dashboards) returned and managed with the SLO. (see [below for nested schema](#nestedatt--artifacts))
+- `enabled` (Boolean) Whether the SLO is enabled in Kibana.
 - `group_by` (List of String) Optional group by fields to use to generate an SLO per distinct value.
 - `histogram_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -251,7 +289,7 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `metric_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator))
 - `objective` (Block List) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
 - `settings` (Block, Optional) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
-- `slo_id` (String) An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.
+- `slo_id` (String) An ID (8 to 36 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
 - `time_window` (Block List) Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`. (see [below for nested schema](#nestedblock--time_window))
@@ -292,6 +330,22 @@ Required:
 Optional:
 
 - `filter` (String)
+
+
+<a id="nestedatt--artifacts"></a>
+### Nested Schema for `artifacts`
+
+Optional:
+
+- `dashboards` (Attributes List) Dashboard references attached to the SLO. (see [below for nested schema](#nestedatt--artifacts--dashboards))
+
+<a id="nestedatt--artifacts--dashboards"></a>
+### Nested Schema for `artifacts.dashboards`
+
+Required:
+
+- `id` (String) Dashboard saved object id.
+
 
 
 <a id="nestedblock--histogram_custom_indicator"></a>
@@ -365,9 +419,63 @@ Optional:
 
 - `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
+- `filter_kql` (Attributes) Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. Use the attribute form in Terraform (e.g. `filter_kql = { kql_query = "..." }`), not a nested `filter_kql { ... }` block. (see [below for nested schema](#nestedatt--kql_custom_indicator--filter_kql))
 - `good` (String)
+- `good_kql` (Attributes) Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. Use the attribute form in Terraform (e.g. `good_kql = { kql_query = "..." }`), not a nested `good_kql { ... }` block. (see [below for nested schema](#nestedatt--kql_custom_indicator--good_kql))
 - `timestamp_field` (String)
 - `total` (String)
+- `total_kql` (Attributes) Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. Use the attribute form in Terraform (e.g. `total_kql = { kql_query = "..." }`), not a nested `total_kql { ... }` block. (see [below for nested schema](#nestedatt--kql_custom_indicator--total_kql))
+
+<a id="nestedatt--kql_custom_indicator--filter_kql"></a>
+### Nested Schema for `kql_custom_indicator.filter_kql`
+
+Optional:
+
+- `filters` (Attributes List) Optional Kibana filter objects (query JSON) accompanying the KQL object form. (see [below for nested schema](#nestedatt--kql_custom_indicator--filter_kql--filters))
+- `kql_query` (String) KQL query string when using the object form.
+
+<a id="nestedatt--kql_custom_indicator--filter_kql--filters"></a>
+### Nested Schema for `kql_custom_indicator.filter_kql.filters`
+
+Optional:
+
+- `query` (String) Filter query as a JSON object.
+
+
+
+<a id="nestedatt--kql_custom_indicator--good_kql"></a>
+### Nested Schema for `kql_custom_indicator.good_kql`
+
+Optional:
+
+- `filters` (Attributes List) Optional Kibana filter objects (query JSON) accompanying the KQL object form. (see [below for nested schema](#nestedatt--kql_custom_indicator--good_kql--filters))
+- `kql_query` (String) KQL query string when using the object form.
+
+<a id="nestedatt--kql_custom_indicator--good_kql--filters"></a>
+### Nested Schema for `kql_custom_indicator.good_kql.filters`
+
+Optional:
+
+- `query` (String) Filter query as a JSON object.
+
+
+
+<a id="nestedatt--kql_custom_indicator--total_kql"></a>
+### Nested Schema for `kql_custom_indicator.total_kql`
+
+Optional:
+
+- `filters` (Attributes List) Optional Kibana filter objects (query JSON) accompanying the KQL object form. (see [below for nested schema](#nestedatt--kql_custom_indicator--total_kql--filters))
+- `kql_query` (String) KQL query string when using the object form.
+
+<a id="nestedatt--kql_custom_indicator--total_kql--filters"></a>
+### Nested Schema for `kql_custom_indicator.total_kql.filters`
+
+Optional:
+
+- `query` (String) Filter query as a JSON object.
+
+
 
 
 <a id="nestedblock--metric_custom_indicator"></a>
@@ -459,6 +567,7 @@ Optional:
 - `frequency` (String)
 - `prevent_initial_backfill` (Boolean) Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary
 - `sync_delay` (String)
+- `sync_field` (String) The date field used to identify new documents in the source. When unspecified, the indicator timestamp field is used.
 
 
 <a id="nestedblock--time_window"></a>
@@ -502,13 +611,13 @@ Optional:
 
 Required:
 
-- `aggregation` (String) The aggregation type for this metric. One of: sum, avg, min, max, value_count, last_value, cardinality, std_deviation, percentile, doc_count. Determines which other fields are required.
-- `name` (String) The unique name for this metric. Used as a variable in the equation field.
+- `aggregation` (String) The aggregation type for this metric (kbapi timeslice metric union: no value_count). One of: sum, avg, min, max, last_value, cardinality, std_deviation, percentile, doc_count. Determines which other fields are required.
+- `name` (String) The unique name for this metric. Used as a variable in the equation field. Must be a single letter A–Z.
 
 Optional:
 
-- `field` (String) Field to aggregate. Required for sum, avg, min, max, value_count, last_value, cardinality, std_deviation, percentile. Must NOT be set for doc_count.
-- `filter` (String) Optional KQL filter for this metric. Supported for all aggregations except doc_count.
+- `field` (String) Field to aggregate. Required for sum, avg, min, max, last_value, cardinality, std_deviation, percentile. Must NOT be set for doc_count.
+- `filter` (String) Optional KQL filter for this metric. Supported for all timeslice metric aggregation kinds, including doc_count, per the Kibana SLO API.
 - `percentile` (Number) Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations.
 
 ## Import

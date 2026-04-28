@@ -24,10 +24,17 @@ import (
 	"strings"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -53,16 +60,52 @@ func getSchema() schema.Schema {
 				},
 			},
 			"slo_id": schema.StringAttribute{
-				Description: "An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.",
+				Description: "An ID (8 to 36 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.",
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(8, 48),
+					stringvalidator.LengthBetween(8, 36),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9_-]+$`), "must contain only letters, numbers, hyphens, and underscores"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"enabled": schema.BoolAttribute{
+				Description: "Whether the SLO is enabled in Kibana.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"artifacts": schema.SingleNestedAttribute{
+				Description: "Links to related assets (for example dashboards) returned and managed with the SLO.",
+				Optional:    true,
+				Computed:    true,
+				// Default null normalizes an omitted `artifacts` to null; a successful read
+				// still maps API dashboard references into state (REQ-020/REQ-039).
+				Default: objectdefault.StaticValue(
+					types.ObjectNull(tfArtifactsAttrTypes),
+				),
+				Attributes: map[string]schema.Attribute{
+					"dashboards": schema.ListNestedAttribute{
+						Description: "Dashboard references attached to the SLO.",
+						Optional:    true,
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Description: "Dashboard saved object id.",
+									Required:    true,
+								},
+							},
+						},
+					},
+				},
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
@@ -113,6 +156,11 @@ func getSchema() schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"sync_delay": schema.StringAttribute{Optional: true, Computed: true},
 					"frequency":  schema.StringAttribute{Optional: true, Computed: true},
+					"sync_field": schema.StringAttribute{
+						Description: "The date field used to identify new documents in the source. When unspecified, the indicator timestamp field is used.",
+						Optional:    true,
+						Computed:    true,
+					},
 					"prevent_initial_backfill": schema.BoolAttribute{
 						Description: "Prevents the underlying ES transform from attempting to backfill data on start, which can sometimes be resource-intensive or time-consuming and unnecessary",
 						Optional:    true,
@@ -126,7 +174,12 @@ func getSchema() schema.Schema {
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"duration": schema.StringAttribute{Required: true},
-						"type":     schema.StringAttribute{Required: true},
+						"type": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("rolling", "calendarAligned"),
+							},
+						},
 					},
 				},
 			},
@@ -174,10 +227,33 @@ func metricCustomIndicatorSchema() schema.Block {
 								Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"name":        schema.StringAttribute{Required: true},
-										"aggregation": schema.StringAttribute{Required: true},
-										"field":       schema.StringAttribute{Optional: true, Description: "Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count."},
-										"filter":      schema.StringAttribute{Optional: true},
+										"name": schema.StringAttribute{
+											Required: true,
+											Validators: []validator.String{
+												stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Z]$`), "must be a single Latin letter (A–Z)"),
+											},
+										},
+										"aggregation": schema.StringAttribute{
+											Required: true,
+											Validators: []validator.String{
+												stringvalidator.OneOf("sum", "doc_count"),
+											},
+										},
+										"field": schema.StringAttribute{
+											Optional:    true,
+											Description: "Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count.",
+											Validators: []validator.String{
+												validators.RequiredIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{"sum"},
+												),
+												validators.ForbiddenIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{"doc_count"},
+												),
+											},
+										},
+										"filter": schema.StringAttribute{Optional: true},
 									},
 								},
 							},
@@ -195,10 +271,33 @@ func metricCustomIndicatorSchema() schema.Block {
 								Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"name":        schema.StringAttribute{Required: true},
-										"aggregation": schema.StringAttribute{Required: true},
-										"field":       schema.StringAttribute{Optional: true, Description: "Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count."},
-										"filter":      schema.StringAttribute{Optional: true},
+										"name": schema.StringAttribute{
+											Required: true,
+											Validators: []validator.String{
+												stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Z]$`), "must be a single Latin letter (A–Z)"),
+											},
+										},
+										"aggregation": schema.StringAttribute{
+											Required: true,
+											Validators: []validator.String{
+												stringvalidator.OneOf("sum", "doc_count"),
+											},
+										},
+										"field": schema.StringAttribute{
+											Optional:    true,
+											Description: "Field to aggregate. Required for all aggregations except doc_count. Must NOT be set for doc_count.",
+											Validators: []validator.String{
+												validators.RequiredIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{"sum"},
+												),
+												validators.ForbiddenIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{"doc_count"},
+												),
+											},
+										},
+										"filter": schema.StringAttribute{Optional: true},
 									},
 								},
 							},
@@ -228,8 +327,32 @@ func histogramCustomIndicatorSchema() schema.Block {
 							"aggregation": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("value_count", "range")}},
 							"field":       schema.StringAttribute{Required: true},
 							"filter":      schema.StringAttribute{Optional: true},
-							"from":        schema.Float64Attribute{Optional: true},
-							"to":          schema.Float64Attribute{Optional: true},
+							"from": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
+							"to": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
 						},
 					},
 				},
@@ -240,8 +363,32 @@ func histogramCustomIndicatorSchema() schema.Block {
 							"aggregation": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("value_count", "range")}},
 							"field":       schema.StringAttribute{Required: true},
 							"filter":      schema.StringAttribute{Optional: true},
-							"from":        schema.Float64Attribute{Optional: true},
-							"to":          schema.Float64Attribute{Optional: true},
+							"from": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
+							"to": schema.Float64Attribute{
+								Optional: true,
+								Validators: []validator.Float64{
+									validators.RequiredIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"range"},
+									),
+									validators.ForbiddenIfDependentPathExpressionOneOf(
+										path.MatchRelative().AtParent().AtName("aggregation"),
+										[]string{"value_count"},
+									),
+								},
+							},
 						},
 					},
 				},
@@ -288,13 +435,82 @@ func kqlCustomIndicatorSchema() schema.Block {
 		Validators: []validator.List{listvalidator.SizeBetween(1, 1)},
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"index":           schema.StringAttribute{Required: true},
-				"data_view_id":    schema.StringAttribute{Optional: true, Description: "Optional data view id to use for this indicator."},
-				"filter":          schema.StringAttribute{Optional: true},
-				"good":            schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("")},
-				"total":           schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("")},
+				"index":        schema.StringAttribute{Required: true},
+				"data_view_id": schema.StringAttribute{Optional: true, Description: "Optional data view id to use for this indicator."},
+				"filter": schema.StringAttribute{
+					Optional: true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("filter_kql")),
+					},
+				},
+				"filter_kql": kqlWithFiltersObjectSchema("filter"),
+				"good": schema.StringAttribute{
+					Optional: true,
+					Computed: true,
+					Default:  stringdefault.StaticString(""),
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("good_kql")),
+					},
+				},
+				"good_kql": kqlWithFiltersObjectSchema("good"),
+				"total": schema.StringAttribute{
+					Optional: true,
+					Computed: true,
+					Default:  stringdefault.StaticString(""),
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("total_kql")),
+					},
+				},
+				"total_kql":       kqlWithFiltersObjectSchema("total"),
 				"timestamp_field": schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("@timestamp")},
 			},
+		},
+	}
+}
+
+// kqlWithFiltersObjectSchema defines the object-form KQL union (kqlQuery + filters) used for filter, good, and total.
+func kqlWithFiltersObjectSchema(parallelStringAttr string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Description: fmt.Sprintf(
+			"Object-form KQL (kqlQuery and filters). Mutually exclusive with the legacy string attribute for the same logical field. "+
+				"Use the attribute form in Terraform (e.g. `%[1]s = { kql_query = \"...\" }`), not a nested `%[1]s { ... }` block.",
+			parallelStringAttr+"_kql",
+		),
+		Optional: true,
+		Computed: true,
+		// ObjectNull default keeps a stable placeholder for the nested _kql block; a read
+		// may still set object-form KQL from the API.
+		Default: objectdefault.StaticValue(
+			types.ObjectNull(tfKqlKqlObjectAttrTypes),
+		),
+		Attributes: map[string]schema.Attribute{
+			"kql_query": schema.StringAttribute{
+				Description: "KQL query string when using the object form.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"filters": schema.ListNestedAttribute{
+				Description: "Optional Kibana filter objects (query JSON) accompanying the KQL object form.",
+				Optional:    true,
+				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"query": schema.StringAttribute{
+							Description: "Filter query as a JSON object.",
+							Optional:    true,
+							Computed:    true,
+							CustomType:  jsontypes.NormalizedType{},
+						},
+					},
+				},
+			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(parallelStringAttr)),
+			kqlObjectFormMeaningful{},
+		},
+		PlanModifiers: []planmodifier.Object{
+			objectplanmodifier.UseStateForUnknown(),
 		},
 	}
 }
@@ -324,18 +540,55 @@ func timesliceMetricIndicatorSchema() schema.Block {
 								Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"name": schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
-										"aggregation": schema.StringAttribute{
+										"name": schema.StringAttribute{
 											Required:    true,
-											Description: fmt.Sprintf("The aggregation type for this metric. One of: %s. Determines which other fields are required.", strings.Join(timesliceMetricAggregations, ", ")),
-											Validators:  []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
+											Description: "The unique name for this metric. Used as a variable in the equation field. Must be a single letter A–Z.",
+											Validators: []validator.String{
+												stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Z]$`), "must be a single Latin letter (A–Z)"),
+											},
+										},
+										"aggregation": schema.StringAttribute{
+											Required: true,
+											Description: fmt.Sprintf(
+												"The aggregation type for this metric (kbapi timeslice metric union: no value_count). One of: %s. Determines which other fields are required.",
+												strings.Join(timesliceMetricAggregations, ", "),
+											),
+											Validators: []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
 										},
 										"field": schema.StringAttribute{
 											Optional:    true,
 											Description: fmt.Sprintf("Field to aggregate. Required for %s. Must NOT be set for doc_count.", strings.Join(timesliceMetricAggregationsWithField, ", ")),
+											Validators: []validator.String{
+												validators.RequiredIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													timesliceMetricAggregationsWithField,
+												),
+												validators.ForbiddenIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{timesliceMetricAggregationDocCount},
+												),
+											},
 										},
-										"percentile": schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
-										"filter":     schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
+										"percentile": schema.Float64Attribute{
+											Optional:    true,
+											Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations.",
+											Validators: []validator.Float64{
+												validators.RequiredIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													[]string{timesliceMetricAggregationPercentile},
+												),
+												validators.ForbiddenIfDependentPathExpressionOneOf(
+													path.MatchRelative().AtParent().AtName("aggregation"),
+													timesliceMetricAggregationsWithoutPercentile,
+												),
+												float64validator.Between(0, 100),
+											},
+										},
+										"filter": schema.StringAttribute{
+											Optional: true,
+											Description: "Optional KQL filter for this metric. Supported for all timeslice metric aggregation " +
+												"kinds, including doc_count, per the Kibana SLO API.",
+										},
 									},
 								},
 							},

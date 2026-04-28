@@ -31,8 +31,19 @@ import (
 var tfSettingsAttrTypes = map[string]attr.Type{
 	"sync_delay":               types.StringType,
 	"frequency":                types.StringType,
+	"sync_field":               types.StringType,
 	"prevent_initial_backfill": types.BoolType,
 }
+
+// tfSloArtifactDashboardObjectType and tfArtifactsAttrTypes match the `artifacts` SingleNestedAttribute schema.
+var (
+	tfSloArtifactDashboardObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
+		"id": types.StringType,
+	}}
+	tfArtifactsAttrTypes = map[string]attr.Type{
+		"dashboards": types.ListType{ElemType: tfSloArtifactDashboardObjectType},
+	}
+)
 
 type tfModel struct {
 	ID               types.String `tfsdk:"id"`
@@ -43,6 +54,7 @@ type tfModel struct {
 	Description  types.String `tfsdk:"description"`
 	SpaceID      types.String `tfsdk:"space_id"`
 	BudgetMethod types.String `tfsdk:"budgeting_method"`
+	Enabled      types.Bool   `tfsdk:"enabled"`
 
 	TimeWindow []tfTimeWindow `tfsdk:"time_window"`
 	Objective  []tfObjective  `tfsdk:"objective"`
@@ -50,6 +62,8 @@ type tfModel struct {
 
 	GroupBy GroupByValue   `tfsdk:"group_by"`
 	Tags    []types.String `tfsdk:"tags"`
+
+	Artifacts types.Object `tfsdk:"artifacts"`
 
 	MetricCustomIndicator    []tfMetricCustomIndicator    `tfsdk:"metric_custom_indicator"`
 	HistogramCustomIndicator []tfHistogramCustomIndicator `tfsdk:"histogram_custom_indicator"`
@@ -73,6 +87,7 @@ type tfObjective struct {
 type tfSettings struct {
 	SyncDelay              types.String `tfsdk:"sync_delay"`
 	Frequency              types.String `tfsdk:"frequency"`
+	SyncField              types.String `tfsdk:"sync_field"`
 	PreventInitialBackfill types.Bool   `tfsdk:"prevent_initial_backfill"`
 }
 
@@ -163,6 +178,17 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		}
 	}
 
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		art, artDiags := tfArtifactsToAPIModel(m.Artifacts)
+		diags.Append(artDiags...)
+		if diags.HasError() {
+			return models.Slo{}, diags
+		}
+		if art != nil {
+			apiModel.Artifacts = art
+		}
+	}
+
 	return apiModel, diags
 }
 
@@ -217,6 +243,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.Name = types.StringValue(apiModel.Name)
 	m.Description = types.StringValue(apiModel.Description)
 	m.BudgetMethod = types.StringValue(string(apiModel.BudgetingMethod))
+	m.Enabled = types.BoolValue(apiModel.Enabled)
 
 	m.TimeWindow = []tfTimeWindow{{
 		Duration: types.StringValue(apiModel.TimeWindow.Duration),
@@ -242,6 +269,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		attrValues := map[string]attr.Value{
 			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
 			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),
+			"sync_field":               types.StringPointerValue(apiModel.Settings.SyncField),
 			"prevent_initial_backfill": types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
 		}
 		settingsObj, objDiags := types.ObjectValue(tfSettingsAttrTypes, attrValues)
@@ -249,6 +277,49 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		m.Settings = settingsObj
 	} else {
 		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
+	}
+
+	// Artifacts (REQ-020 / REQ-039): when the API returns at least one dashboard
+	// reference, always write `artifacts` into state (including import) even if
+	// the block was not in the practitioner file. If the block exists in state
+	// and the API has no references, use an empty dashboards list. If nothing
+	// was stored and the API has no references, keep null to avoid
+	// `{ dashboards = [] }` drift for omitted `artifacts`.
+	artifactRowCount := 0
+	if apiModel.Artifacts != nil && apiModel.Artifacts.Dashboards != nil {
+		artifactRowCount = len(*apiModel.Artifacts.Dashboards)
+	}
+	priorHasArtifacts := typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull()
+	switch {
+	case artifactRowCount > 0:
+		rows := make([]attr.Value, 0, artifactRowCount)
+		for _, row := range *apiModel.Artifacts.Dashboards {
+			rowObj, rowDiags := types.ObjectValue(tfSloArtifactDashboardObjectType.AttrTypes, map[string]attr.Value{
+				"id": types.StringValue(row.Id),
+			})
+			diags.Append(rowDiags...)
+			rows = append(rows, rowObj)
+		}
+		if diags.HasError() {
+			return diags
+		}
+		listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
+		diags.Append(listDiags...)
+		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": listVal,
+		})
+		diags.Append(artDiags...)
+		m.Artifacts = artObj
+	case priorHasArtifacts:
+		emptyBoards, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{})
+		diags.Append(listDiags...)
+		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
+			"dashboards": emptyBoards,
+		})
+		diags.Append(artDiags...)
+		m.Artifacts = artObj
+	default:
+		m.Artifacts = types.ObjectNull(tfArtifactsAttrTypes)
 	}
 
 	if apiModel.GroupBy != nil {
@@ -318,6 +389,12 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 		return tfSettings{}, diags
 	}
 
+	syncFieldVal, ok := attrs["sync_field"].(types.String)
+	if !ok {
+		diags.AddError("Invalid configuration", "settings.sync_field is not a string")
+		return tfSettings{}, diags
+	}
+
 	preventInitialBackfillVal, ok := attrs["prevent_initial_backfill"].(types.Bool)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.prevent_initial_backfill is not a bool")
@@ -327,8 +404,94 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 	return tfSettings{
 		SyncDelay:              syncDelayVal,
 		Frequency:              frequencyVal,
+		SyncField:              syncFieldVal,
 		PreventInitialBackfill: preventInitialBackfillVal,
 	}, diags
+}
+
+// sloArtifactDashboardRef is the provider-side shape for a dashboard reference (`id` in JSON).
+type sloArtifactDashboardRef struct {
+	ID string `json:"id"`
+}
+
+// tfArtifactsToAPIModel maps Terraform `artifacts` to the create/update payload.
+// It returns an error diagnostic when the block is set but a dashboard row is invalid
+// (wrong type, unknown id) instead of dropping values silently.
+func tfArtifactsToAPIModel(obj types.Object) (*kbapi.SLOsArtifacts, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	attrs := obj.Attributes()
+	dl, ok := attrs["dashboards"].(types.List)
+	if !ok {
+		diags.AddError("Invalid configuration", "artifacts: dashboards is not a list")
+		return nil, diags
+	}
+	if dl.IsNull() {
+		return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(nil)}, diags
+	}
+	if dl.IsUnknown() {
+		diags.AddError("Invalid configuration", "artifacts: dashboards is unknown; the value must be known to send artifacts to Kibana")
+		return nil, diags
+	}
+	elems := dl.Elements()
+	refs := make([]sloArtifactDashboardRef, 0, len(elems))
+	for i, e := range elems {
+		rowObj, ok := e.(types.Object)
+		if !ok {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d] must be an object", i))
+			return nil, diags
+		}
+		idVal, ok := rowObj.Attributes()["id"].(types.String)
+		if !ok {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d] has no id attribute", i))
+			return nil, diags
+		}
+		if idVal.IsNull() {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is null", i))
+			return nil, diags
+		}
+		if idVal.IsUnknown() {
+			diags.AddError("Invalid configuration", fmt.Sprintf("artifacts.dashboards[%d].id is unknown", i))
+			return nil, diags
+		}
+		refs = append(refs, sloArtifactDashboardRef{ID: idVal.ValueString()})
+	}
+	if len(refs) == 0 {
+		empty := []sloArtifactDashboardRef{}
+		return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(&empty)}, diags
+	}
+	return &kbapi.SLOsArtifacts{Dashboards: asKbapiArtifactDashboards(&refs)}, diags
+}
+
+// asKbapiArtifactDashboards converts provider refs to the generated kbapi slice type (field name Id in OpenAPI).
+func asKbapiArtifactDashboards(refs *[]sloArtifactDashboardRef) *[]struct {
+	//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+	Id string `json:"id"`
+} {
+	if refs == nil {
+		empty := []struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+			Id string `json:"id"`
+		}{}
+		return &empty
+	}
+	if len(*refs) == 0 {
+		empty := []struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+			Id string `json:"id"`
+		}{}
+		return &empty
+	}
+	out := make([]struct {
+		//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+		Id string `json:"id"`
+	}, 0, len(*refs))
+	for _, ref := range *refs {
+		out = append(out, struct {
+			//nolint:revive // var-naming: must match generated kbapi / Kibana SLOsArtifacts
+			Id string `json:"id"`
+		}{Id: ref.ID})
+	}
+	return &out
 }
 
 func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
@@ -348,6 +511,11 @@ func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
 	if typeutils.IsKnown(s.PreventInitialBackfill) {
 		v := s.PreventInitialBackfill.ValueBool()
 		settings.PreventInitialBackfill = &v
+		hasAny = true
+	}
+	if typeutils.IsKnown(s.SyncField) {
+		v := s.SyncField.ValueString()
+		settings.SyncField = &v
 		hasAny = true
 	}
 

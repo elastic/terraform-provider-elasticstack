@@ -1093,3 +1093,43 @@ func TestPathExpression_WithNestedAttributes(t *testing.T) {
 	// Should get error because type is "secure" and value is set
 	require.True(t, response.Diagnostics.HasError(), "Expected validation error for nested attribute validation")
 }
+
+func TestRequiredIfDependentPathExpressionOneOf_treatsEmptyStringAsUnset(t *testing.T) {
+	t.Parallel()
+
+	// Sibling "aggregation" is "sum", so "field" is required — an explicit empty string must still be rejected.
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"aggregation": schema.StringAttribute{Optional: true},
+			"field":       schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfigValues := map[string]tftypes.Value{
+		"aggregation": tftypes.NewValue(tftypes.String, "sum"),
+		"field":       tftypes.NewValue(tftypes.String, ""),
+	}
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"aggregation": tftypes.String,
+				"field":       tftypes.String,
+			},
+		},
+		rawConfigValues,
+	)
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := RequiredIfDependentPathExpressionOneOf(
+		path.MatchRelative().AtParent().AtName("aggregation"),
+		[]string{"sum"},
+	)
+	request := validator.StringRequest{
+		Path:        path.Root("field"),
+		ConfigValue: types.StringValue(""),
+		Config:      config,
+	}
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), request, response)
+	require.True(t, response.Diagnostics.HasError(), "empty string should count as unset for required-if validation")
+}

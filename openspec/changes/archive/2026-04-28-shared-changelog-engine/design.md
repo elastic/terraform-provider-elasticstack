@@ -2,7 +2,7 @@
 
 The current changelog automation mixes two concerns in one workflow: scheduled maintenance of the `## [Unreleased]` section and release-specific regeneration of a concrete `## [x.y.z] - <date>` section. Release mode is currently activated from `pull_request_target` events on `prep-release-*` branches, which makes final release changelog generation depend on PR event delivery and timing rather than on the release-preparation workflow that actually owns the release branch contents.
 
-The repository already contains deterministic changelog parsing and rendering logic spread across inline `actions/github-script` steps, small shared JavaScript helpers under `.github/workflows-src/lib/`, and a small `scripts/changelog-generation` Go entrypoint. The target design should preserve deterministic assembly and existing PR-body changelog-contract rules, while moving release-mode invocation to an explicit synchronous step in release preparation.
+The repository already contains deterministic changelog parsing and rendering logic implemented in JavaScript: a consolidated `actions/github-script` step in `.github/workflows-src/changelog-generation/scripts/run-changelog-engine.inline.js` (plus orchestration-only scripts such as `manage-unreleased-pr.inline.js` and `refresh-release-pr.inline.js`) and shared modules under `.github/workflows-src/lib/` (including the composed changelog engine in `changelog-engine-factory.js` / `changelog-engine-workflow.js`, `changelog-release-context.js`, `changelog-renderer.js`, `pr-changelog-parser.js`, and `changelog-pr-management.js`). The target design SHALL preserve deterministic assembly and existing PR-body changelog-contract rules and SHALL extract and consolidate this existing JavaScript logic into the shared engine. There is no Go implementation of the changelog generator and the shared engine SHALL NOT introduce one.
 
 ## Goals / Non-Goals
 
@@ -20,6 +20,15 @@ The repository already contains deterministic changelog parsing and rendering lo
 - Generalizing the engine into a cross-repository tool.
 
 ## Decisions
+
+### Implement the shared engine in JavaScript/Node by reusing existing helpers
+The shared changelog engine SHALL be authored in JavaScript and run on the Node.js runtime already used by `actions/github-script` and the existing workflow-source helpers. It SHALL be assembled by extracting and composing the existing JS modules under `.github/workflows-src/lib/` and the inline script bodies under `.github/workflows-src/changelog-generation/scripts/`, rather than by reimplementing changelog parsing, rendering, or PR resolution in another language.
+
+This preserves the existing test coverage in `.github/workflows-src/lib/*.test.mjs`, keeps GitHub API access aligned with `@actions/github` / `octokit` usage already established in the workflow scripts, and avoids introducing a second runtime/toolchain just for changelog assembly.
+
+**Alternatives considered:**
+- Reimplement the engine in Go under `scripts/changelog-generation/`: rejected because the canonical changelog logic, tests, and PR-body parsing already live in JavaScript, and a Go rewrite would duplicate that logic and require parallel maintenance.
+- Mix Go and JavaScript across the engine: rejected for the same reasons; a single-language engine is simpler to test and operate inside `actions/github-script`-style invocations.
 
 ### Use an explicit shared changelog engine instead of event-inferred release mode
 The changelog engine will be invoked with explicit workflow inputs that select `release` or `unreleased` mode. Release-mode behavior will no longer be inferred from `pull_request_target` event metadata.
@@ -72,7 +81,7 @@ This preserves a single operational place for changelog regeneration without kee
 
 ## Migration Plan
 
-1. Extract or consolidate the deterministic changelog engine behind a reusable repository-authored script interface.
+1. Extract and consolidate the existing JavaScript changelog logic from `.github/workflows-src/changelog-generation/scripts/*.inline.js` and `.github/workflows-src/lib/*.js` into a reusable Node.js engine module, preserving and extending the existing `*.test.mjs` coverage. Do not introduce a Go implementation.
 2. Update `prep-release.yml` to invoke the engine in release mode after applying the version bump and before creating/updating the PR.
 3. Update `changelog-generation.yml` and its template to remove `pull_request_target`, add explicit `workflow_dispatch` inputs for release mode, and invoke the shared engine in unreleased or release mode accordingly.
 4. Preserve or adapt PR-management helper logic so unreleased mode still maintains the singleton `generated-changelog` PR and release mode can refresh release PR metadata when manually dispatched.
