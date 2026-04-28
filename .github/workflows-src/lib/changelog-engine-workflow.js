@@ -19,8 +19,10 @@ const _changelogEngine = createChangelogEngine({
   execSyncDefault: execSync,
 });
 
+// `TARGET_VERSION_PATTERN` is intentionally NOT destructured here: it is already declared as a
+// `const` by the included `changelog-engine-factory.js`, and a second `const` in the same scope
+// would be a SyntaxError when this bundle is inlined into the workflow YAML.
 const {
-  TARGET_VERSION_PATTERN,
   validateModeAndTargetVersion,
   resolveChangelogCompareContext,
   gatherMergedPRRecordsForRange,

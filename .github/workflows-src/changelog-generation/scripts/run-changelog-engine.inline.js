@@ -67,7 +67,6 @@ if (shouldRenderChangelog) {
   core.info(`Changelog section rendered: ${out.sectionHeader}`);
 } else {
   core.info('No merged PRs in compare range; skipping changelog file update');
-  const today = new Date().toISOString().split('T')[0];
   sectionHeader = '## [Unreleased]';
 }
 
