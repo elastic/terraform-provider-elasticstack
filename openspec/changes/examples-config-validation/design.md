@@ -80,6 +80,10 @@ Because PlanOnly may evaluate data sources and provider plan validation that dep
 
 The harness uses the in-process provider factories from `acctest.Providers`, so it does not need `terraform init`, `dev_overrides`, a filesystem mirror, or a locally installed provider binary.
 
+### 8. Bounded concurrency inside `TestAccExamples_planOnly`
+
+Subtests remain parallel (`t.Parallel()`), but simultaneous PlanOnly runs across ~100+ Terraform roots are gated with a semaphore (default fan-out capped at a small constant — see `internal/acctest/examples_plan_test.go`). Full unbounded parallelism correlated with flaky refresh-phase failures complaining that the Elasticsearch client was unset despite `ELASTICSEARCH_ENDPOINTS`. That appears to arise from concurrency stress across many independent `resource.Test`/Terraform runs hitting the muxed in-process provider, not from individual example snippets being wrong once `elasticsearch-only` patterns are corrected. The cap aligns typical concurrent plan throughput with `-parallel` without serializing all examples.
+
 ## Risks / Trade-offs
 
 - **PlanOnly may be slower or flakier than schema-only validation.** Some examples, especially data sources, may reach the live stack during planning. Mitigation: run under existing acceptance-test prechecks, keep each example isolated, and use normal acceptance-test CI expectations for service availability.
@@ -105,4 +109,4 @@ No external data migration is required. No state-format changes. Embedded provid
 
 - **Resource-vs-data-source plan expectations**: resolved in implementation — `ExpectNonEmptyPlan: true` for all `examples/resources/` files; for `examples/data-sources/`, `true` when the root HCL body declares a `resource` or `output` block, else `false`, matching `terraform-plugin-testing` PlanOnly semantics.
 - **Test location**: place the new test alongside existing acceptance-test helpers in `internal/acctest/`, or in a new package if importing `examples` creates an undesirable dependency direction. Default plan: `internal/acctest/` with a clear filename like `examples_plan_test.go`.
-- **Parallelism limit**: how aggressively to parallelise. Default plan: full `t.Parallel()` with the standard `go test -parallel` cap; tune if live-stack contention shows up under high parallelism.
+- **Parallelism limit**: resolved — retain `t.Parallel()` with a bounded semaphore for concurrent PlanOnly executions (Decision 8). Tune `maxConcurrentExamplesPlanHarness` if stacks or mux behaviour warrant it.

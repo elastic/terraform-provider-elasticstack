@@ -67,6 +67,16 @@ func shouldSkipExamplePath(repoRelative string) bool {
 	return false
 }
 
+// maxConcurrentExamplesPlanHarness bounds how many example PlanOnly subtests may execute
+// terraform-plugin-testing workloads at once. Hundreds of unchecked t.Parallel() subtests
+// each spinning a Terraform core and Configure cycle against the muxed in-process provider
+// correlated with flaky refresh-plan failures where Elasticsearch resolution briefly appears
+// unset ("elasticsearch client is not configured..."). Keeping concurrent plans near typical
+// go test -parallel throughput stabilizes CI while preserving parallelism.
+const maxConcurrentExamplesPlanHarness = 16
+
+var examplesPlanHarnessSem = make(chan struct{}, maxConcurrentExamplesPlanHarness)
+
 type tfExamplePlanCase struct {
 	pathUnderExamples string // e.g. resources/elasticstack_x/resource.tf — subtest id (REQ-002)
 	repoExamplesPath  string // e.g. examples/resources/… — skip prefixes and resource-vs-DS semantics
@@ -146,6 +156,7 @@ func expectNonEmptyPlanForExample(repoExamplesPath string, cfg []byte) bool {
 // TestAccExamples_planOnly runs each example *.tf under examples/resources and
 // examples/data-sources in isolation with PlanOnly against the in-process
 // provider. Subtest names are paths under examples/ (REQ-002).
+// Concurrency across subtests is bounded by examplesPlanHarnessSem (see constants above).
 func TestAccExamples_planOnly(t *testing.T) {
 	var cases []tfExamplePlanCase
 	res, err := collectTfExamples(examples.ResourcesFS)
@@ -170,6 +181,8 @@ func TestAccExamples_planOnly(t *testing.T) {
 		}
 		t.Run(c.pathUnderExamples, func(t *testing.T) {
 			t.Parallel()
+			examplesPlanHarnessSem <- struct{}{}
+			t.Cleanup(func() { <-examplesPlanHarnessSem })
 
 			body, err := fs.ReadFile(c.fsys, c.embedRelativePath)
 			if err != nil {

@@ -14,6 +14,7 @@ Retrieves information about an existing index template definition. See, https://
 
 ```terraform
 provider "elasticstack" {
+  # Elasticsearch-only: keep this example aligned with other ES data sources that do not need Kibana.
   elasticsearch {}
 }
 

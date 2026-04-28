@@ -1,4 +1,5 @@
 provider "elasticstack" {
+  # Elasticsearch-only: keep this example aligned with other ES data sources that do not need Kibana.
   elasticsearch {}
 }
 
