@@ -127,9 +127,7 @@ resource "elasticstack_elasticsearch_index" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Index name validation for static and date math names
 
 The `name` attribute on `elasticstack_elasticsearch_index` SHALL accept either a static index name that matches the existing lowercase index-name rules or a plain Elasticsearch date math index name expression. Validation SHALL keep these paths separate by using `stringvalidator.Any(...)` with the static-name regex `^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$` and the date-math regex `^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`. The date-math regex enforces that: the name cannot start with `-`, `_`, or `+`; the static prefix consists only of valid index-name characters; and the date math section `{...}` appears at the end immediately before the closing `>` (no suffix after the brace). Values that satisfy neither regex branch SHALL be rejected during schema validation. When a validated date math name is used to create an index, the provider SHALL URI-encode that name before sending it in the Create Index API path.
@@ -237,17 +235,16 @@ On create, the resource SHALL build an API model from the plan (including settin
 
 ### Requirement: Update flow (REQ-015–REQ-018)
 
-On update, the resource SHALL only call the relevant update APIs when the corresponding values have changed. Alias changes SHALL be applied by deleting aliases removed from config (via Delete Alias API) and upserting all aliases present in plan (via Put Alias API). Dynamic setting changes SHALL be applied by calling the Put Settings API with the diff, setting removed dynamic settings to `null` in the request. Mapping changes SHALL be applied by calling the Put Mapping API when `mappings` has semantically changed. All update APIs SHALL target the persisted concrete index identity from state / `id`, not the configured `name`. After all updates, the resource SHALL perform a read to refresh state while preserving any configured `name` already stored in state.
+On update, the resource SHALL only call the relevant update APIs when the corresponding values have changed. Alias changes SHALL be applied by deleting aliases removed from config (via Delete Alias API) and upserting all aliases present in plan (via Put Alias API). Dynamic setting changes SHALL be applied by calling the Put Settings API with the diff, setting removed dynamic settings to `null` in the request. Mapping changes SHALL be applied by calling the Put Mapping API only when the user-owned mapping intent has semantically changed. Template-injected mapping content that appears in the Elasticsearch Get Index API response SHALL NOT by itself cause a mapping update, replacement, provider inconsistent-result error, or non-empty follow-up plan. All update APIs SHALL target the persisted concrete index identity from state / `id`, not the configured `name`. After all updates, the resource SHALL perform a read to refresh state while preserving any configured `name` already stored in state.
 
 #### Scenario: Removed alias is deleted
 
-- GIVEN an alias exists in state but is absent from the plan
-- WHEN update runs
-- THEN the resource SHALL call the Delete Alias API for that alias against the concrete managed index
+- WHEN state has alias `old_alias` and config does not
+- THEN update SHALL call the Delete Alias API for `old_alias`
 
-#### Scenario: Removed dynamic setting set to null
+#### Scenario: Removed dynamic setting is nulled
 
-- GIVEN a dynamic setting is present in state but absent from the plan
+- WHEN state has a dynamic setting value and config removes it
 - WHEN update runs
 - THEN the resource SHALL send that setting as `null` in the Put Settings request
 
@@ -260,15 +257,14 @@ On update, the resource SHALL only call the relevant update APIs when the corres
 
 ### Requirement: Read (REQ-019–REQ-021)
 
-On read, the resource SHALL parse `id` to extract the concrete index name, call the Get Index API with `flat_settings=true`, and if the index is not found (HTTP 404 or missing from response), SHALL remove the resource from state without error. When the index is found, the resource SHALL populate `concrete_name`, all aliases, `mappings`, `settings_raw`, and all individual setting attributes from the API response. When state already contains a configured `name`, read SHALL preserve that configured value and SHALL NOT overwrite it with the concrete index name. When state does not contain `name`, read SHALL backfill `name` from the concrete index name.
+On read, the resource SHALL parse `id` to extract the concrete index name, call the Get Index API with `flat_settings=true`, and if the index is not found (HTTP 404 or missing from response), SHALL remove the resource from state without error. When the index is found, the resource SHALL populate `concrete_name`, all aliases, `mappings`, `settings_raw`, and all individual setting attributes from the API response. For `mappings`, read SHALL preserve the user's prior mapping intent when the API response is a semantically equal superset caused by mappings injected by a matching index template. When state already contains a configured `name`, read SHALL preserve that configured value and SHALL NOT overwrite it with the concrete index name. When state does not contain `name`, read SHALL backfill `name` from the concrete index name.
 
 #### Scenario: Index not found
 
-- GIVEN the Get Index API returns 404 or the concrete index name is absent from the response
-- WHEN read runs
-- THEN the resource SHALL be removed from state and no error diagnostic SHALL be added
+- **WHEN** the Get Index API returns 404
+- **THEN** the resource SHALL remove itself from state without error
 
-#### Scenario: Read preserves configured date math name
+#### Scenario: Date math name remains stable during read
 
 - **WHEN** state already contains a configured date math expression in `name` and read refreshes the managed concrete index
 - **THEN** `name` SHALL remain unchanged and `concrete_name` SHALL reflect the concrete index being managed
@@ -359,3 +355,4 @@ On every read, the resource SHALL serialize all index settings returned by the A
 - GIVEN a successful Get Index API response
 - WHEN the provider maps the response to state
 - THEN `settings_raw` SHALL contain the JSON-serialized settings object from the API response
+
