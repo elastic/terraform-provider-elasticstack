@@ -34,9 +34,40 @@ jobs:
       TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_version || '' }}
       TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || '' }}
     steps:
+      - name: Validate release inputs
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release'
+        env:
+          TARGET_VERSION: ${{ github.event.inputs.target_version }}
+          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+        run: |
+          if [ -z "$TARGET_VERSION" ] && [ -z "$TARGET_BRANCH" ]; then
+            echo "::error::Release mode requires target_version (semver X.Y.Z without leading v) and/or target_branch to select the prep-release branch for checkout."
+            exit 1
+          fi
+
+      - name: Resolve checkout ref
+        id: resolve_checkout_ref
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${INPUT_MODE}" = "release" ]; then
+            if [ -n "${INPUT_TARGET_BRANCH}" ]; then
+              echo "checkout_ref=${INPUT_TARGET_BRANCH}" >> "${GITHUB_OUTPUT}"
+            else
+              echo "checkout_ref=prep-release-${INPUT_TARGET_VERSION}" >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            echo "checkout_ref=${DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+          INPUT_TARGET_VERSION: ${{ github.event.inputs.target_version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          ref: ${{ steps.resolve_checkout_ref.outputs.checkout_ref }}
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
