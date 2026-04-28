@@ -2,10 +2,7 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
+# Look up a built-in cluster role that always exists.
 data "elasticstack_elasticsearch_security_role" "role" {
-  name = "testrole"
-}
-
-output "role" {
-  value = data.elasticstack_elasticsearch_security_role.role.name
+  name = "superuser"
 }
