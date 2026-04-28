@@ -34,8 +34,8 @@ The system SHALL resolve the scoped client from the provider factory using the c
 
 #### Scenario: Scoped client resolved from provider defaults
 - **WHEN** `Read` captures an empty or null `kibana_connection` block
-- **THEN** the system SHALL call `GetKibanaClient` with an empty list
-- **AND** the factory SHALL return the provider-default scoped client
+- **THEN** the system SHALL call `GetKibanaClient` with the captured connection block value
+- **AND** when that captured value is null or empty, the factory SHALL return the provider-default scoped client
 
 ### Requirement: Envelope delegates entity logic to read function
 The system SHALL invoke the concrete read function with the scoped client and deserialized model, then capture the returned model and diagnostics.
