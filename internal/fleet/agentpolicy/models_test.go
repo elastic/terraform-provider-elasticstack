@@ -175,11 +175,11 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 	foo := "foo"
 
 	tests := []struct {
-		name          string
-		initial       types.String // the pre-populate plan/state value
-		apiValue      *string      // data.Description as returned by Fleet
-		wantNull      bool
-		wantValue     string // only meaningful when wantNull is false
+		name      string
+		initial   types.String // the pre-populate plan/state value
+		apiValue  *string      // data.Description as returned by Fleet
+		wantNull  bool
+		wantValue string // only meaningful when wantNull is false
 	}{
 		{
 			name:     "null in plan and nil from API stays null",
