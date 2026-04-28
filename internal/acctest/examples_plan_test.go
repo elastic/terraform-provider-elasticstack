@@ -71,9 +71,10 @@ func shouldSkipExamplePath(repoRelative string) bool {
 // terraform-plugin-testing workloads at once. Hundreds of unchecked t.Parallel() subtests
 // each spinning a Terraform core and Configure cycle against the muxed in-process provider
 // correlated with flaky refresh-plan failures where Elasticsearch resolution briefly appears
-// unset ("elasticsearch client is not configured..."). Keeping concurrent plans near typical
-// go test -parallel throughput stabilizes CI while preserving parallelism.
-const maxConcurrentExamplesPlanHarness = 16
+// unset ("elasticsearch client is not configured..."). A cap of 16 still reproduced flakes
+// under repeated full-package runs (-count≥2); 4 aligns CI stability while keeping modest
+// parallelism (t.Parallel() remains enabled).
+const maxConcurrentExamplesPlanHarness = 4
 
 var examplesPlanHarnessSem = make(chan struct{}, maxConcurrentExamplesPlanHarness)
 
