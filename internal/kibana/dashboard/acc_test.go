@@ -193,7 +193,7 @@ func TestAccResourceDashboardInSpace(t *testing.T) {
 	})
 }
 
-func TestAccResourceDashboardPanels(t *testing.T) {
+func TestAccResourceDashboardPanels_basic(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -219,6 +219,16 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.title", "My Markdown Panel"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardPanels_multiple_panels(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -243,6 +253,16 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.title", "My Markdown Panel"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardPanels_with_sections(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -269,6 +289,16 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.hide_title", "false"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardPanels_multi_sections_single_panel_each(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -291,6 +321,16 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardPanels_multi_sections_multi_panels_each(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -315,6 +355,16 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.1.markdown_config.content", "Section two - panel two"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardPanels_panels_and_sections(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
