@@ -11,8 +11,8 @@
 
 ## 2. Example cleanup
 
-- [ ] 2.1 Restructure `examples/resources/elasticstack_kibana_alerting_rule/` so `resource.tf`, `resource-index-rule.tf`, and `resource_rule_action_frequency.tf` each define their own connector and data-stream prerequisites and plan independently
-- [ ] 2.2 Audit other multi-file example directories (e.g. `elasticstack_fleet_output/`, `elasticstack_fleet_integration/`, `elasticstack_kibana_security_role/`) and inline cross-file dependencies if any exist
+- [x] 2.1 Restructure `examples/resources/elasticstack_kibana_alerting_rule/` so `resource.tf`, `resource-index-rule.tf`, and `resource_rule_action_frequency.tf` each define their own connector and data-stream prerequisites and plan independently
+- [x] 2.2 Audit other multi-file example directories (e.g. `elasticstack_fleet_output/`, `elasticstack_fleet_integration/`, `elasticstack_kibana_security_role/`) and inline cross-file dependencies if any exist
 
 ## 3. Fix example bugs surfaced by the harness
 
