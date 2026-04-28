@@ -18,6 +18,7 @@
 package acctest
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -26,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/examples"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -52,13 +52,12 @@ func shouldSkipExamplePath(repoRelative string) bool {
 }
 
 type tfExamplePlanCase struct {
-	repoRelative       string // e.g. examples/resources/elasticstack_x/resource.tf
-	fsys               fs.FS
-	embedRelativePath  string // path within ResourcesFS/DataSourcesFS
-	expectNonEmptyPlan bool
+	repoRelative      string // e.g. examples/resources/elasticstack_x/resource.tf
+	fsys              fs.FS
+	embedRelativePath string // path within ResourcesFS/DataSourcesFS
 }
 
-func collectTfExamples(fsys fs.FS, expectNonEmptyPlan bool) ([]tfExamplePlanCase, error) {
+func collectTfExamples(fsys fs.FS) ([]tfExamplePlanCase, error) {
 	var out []tfExamplePlanCase
 	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -77,10 +76,9 @@ func collectTfExamples(fsys fs.FS, expectNonEmptyPlan bool) ([]tfExamplePlanCase
 			return nil
 		}
 		out = append(out, tfExamplePlanCase{
-			repoRelative:       repoRel,
-			fsys:               fsys,
-			embedRelativePath:  path,
-			expectNonEmptyPlan: expectNonEmptyPlan,
+			repoRelative:      repoRel,
+			fsys:              fsys,
+			embedRelativePath: path,
 		})
 		return nil
 	})
@@ -90,10 +88,20 @@ func collectTfExamples(fsys fs.FS, expectNonEmptyPlan bool) ([]tfExamplePlanCase
 	return out, nil
 }
 
-func staticConfigDirectory(dir string) config.TestStepConfigFunc {
-	return func(_ config.TestStepConfigRequest) string {
-		return dir
+// planHarnessSubdir matches ConfigDirectory below (NamedTestCaseDirectory(planHarnessDirName)).
+const planHarnessSubdirName = "plan"
+
+// expectNonEmptyPlanForExample matches REQ-004 resource vs data-directory expectations against
+// terraform-plugin-testing semantics for PlanOnly steps: both the non-refresh and refresh-plan
+// checks key off ExpectNonEmptyPlan — use false only when plans are expected empty (typically
+// no managed resources declared in that file).
+func expectNonEmptyPlanForExample(repoRelative string, cfg []byte) bool {
+	if strings.HasPrefix(repoRelative, "examples/resources/") {
+		return true
 	}
+	// Data-source docs tree: tolerate both read-only-only (empty plan) and configs that declare
+	// prerequisite managed resources alongside data sources / data blocks.
+	return bytes.Contains(cfg, []byte(`resource "`))
 }
 
 // TestAccExamples_planOnly runs each example *.tf under examples/resources and
@@ -101,13 +109,13 @@ func staticConfigDirectory(dir string) config.TestStepConfigFunc {
 // provider. Subtest names are the repo-relative paths (REQ-002).
 func TestAccExamples_planOnly(t *testing.T) {
 	var cases []tfExamplePlanCase
-	res, err := collectTfExamples(examples.ResourcesFS, true)
+	res, err := collectTfExamples(examples.ResourcesFS)
 	if err != nil {
 		t.Fatalf("walk resources examples: %v", err)
 	}
 	cases = append(cases, res...)
 
-	ds, err := collectTfExamples(examples.DataSourcesFS, false)
+	ds, err := collectTfExamples(examples.DataSourcesFS)
 	if err != nil {
 		t.Fatalf("walk data-sources examples: %v", err)
 	}
@@ -118,7 +126,6 @@ func TestAccExamples_planOnly(t *testing.T) {
 	})
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.repoRelative, func(t *testing.T) {
 			t.Parallel()
 
@@ -127,21 +134,31 @@ func TestAccExamples_planOnly(t *testing.T) {
 				t.Fatalf("read embedded %s: %v", c.embedRelativePath, err)
 			}
 
-			tmpDir := t.TempDir()
+			testDataBranch := filepath.Join("testdata", t.Name())
+			planDir := filepath.Join(testDataBranch, planHarnessSubdirName)
+			t.Cleanup(func() {
+				if errRemove := os.RemoveAll(testDataBranch); errRemove != nil {
+					t.Logf("remove generated testdata %s: %v", testDataBranch, errRemove)
+				}
+			})
+			if err := os.MkdirAll(planDir, 0o755); err != nil {
+				t.Fatalf("mkdir %s: %v", planDir, err)
+			}
 			tfName := filepath.Base(c.embedRelativePath)
-			tfPath := filepath.Join(tmpDir, tfName)
+			tfPath := filepath.Join(planDir, tfName)
 			if err := os.WriteFile(tfPath, body, 0o644); err != nil {
 				t.Fatalf("write %s: %v", tfPath, err)
 			}
 
+			expectNonEmpty := expectNonEmptyPlanForExample(c.repoRelative, body)
 			resource.Test(t, resource.TestCase{
 				PreCheck: func() { PreCheck(t) },
 				Steps: []resource.TestStep{
 					{
 						ProtoV6ProviderFactories: Providers,
-						ConfigDirectory:          staticConfigDirectory(tmpDir),
+						ConfigDirectory:          NamedTestCaseDirectory(planHarnessSubdirName),
 						PlanOnly:                 true,
-						ExpectNonEmptyPlan:       c.expectNonEmptyPlan,
+						ExpectNonEmptyPlan:       expectNonEmpty,
 					},
 				},
 			})
