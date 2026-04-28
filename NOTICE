@@ -4715,10 +4715,10 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-sdk/v2
-Version: v2.40.0
+Version: v2.40.1
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-sdk/v2@v2.40.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-sdk/v2@v2.40.1/LICENSE:
 
 Copyright IBM Corp. 2019, 2026
 
