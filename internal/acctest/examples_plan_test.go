@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -41,6 +42,20 @@ import (
 var skippedExamplePathPrefixes = []string{
 	"examples/cloud/",
 	"examples/provider/",
+}
+
+// planOnlySkippedEmbedPaths lists paths under the embedded resources/ or data-sources/
+// trees (same form as collectTfExamples slashPath, e.g. data-sources/foo/bar.tf) that
+// cannot be planned in isolation by design. Keep this list minimal and document each entry.
+var planOnlySkippedEmbedPaths = []string{
+	// Requires a separate root module and terraform_remote_state; not a single-module plan.
+	"data-sources/elasticstack_kibana_agentbuilder_agent/import.tf",
+	// Depends on the external hashicorp/time provider; harness uses only elasticstack factories.
+	"resources/elasticstack_elasticsearch_security_api_key/rotation.tf",
+}
+
+func shouldSkipPlanOnlyExample(pathUnderExamples string) bool {
+	return slices.Contains(planOnlySkippedEmbedPaths, pathUnderExamples)
 }
 
 func shouldSkipExamplePath(repoRelative string) bool {
@@ -150,6 +165,9 @@ func TestAccExamples_planOnly(t *testing.T) {
 	})
 
 	for _, c := range cases {
+		if shouldSkipPlanOnlyExample(c.pathUnderExamples) {
+			continue
+		}
 		t.Run(c.pathUnderExamples, func(t *testing.T) {
 			t.Parallel()
 
