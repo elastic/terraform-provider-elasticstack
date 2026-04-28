@@ -177,7 +177,7 @@ func Test_PlanModifyString(t *testing.T) {
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
 					`removing field [mappings["properties"]["field2"]] in mappings is ignored.`,
-					"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+					"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 				),
 			},
 		},
@@ -223,7 +223,7 @@ func Test_PlanModifyString(t *testing.T) {
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
 					`removing field [mappings["properties"]["field1"]["properties"]["field2"]] in mappings is ignored.`,
-					"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+					"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 				),
 			},
 		},

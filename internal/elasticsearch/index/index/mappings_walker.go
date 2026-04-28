@@ -77,7 +77,7 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 			result.Diags.AddAttributeWarning(
 				path.Root("mappings"),
 				fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
-				"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+				"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 			)
 			continue
 		}
@@ -116,7 +116,7 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 				result.Diags.AddAttributeWarning(
 					path.Root("mappings"),
 					fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath.AtMapKey("properties")),
-					"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+					"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 				)
 				continue
 			}
@@ -242,7 +242,10 @@ func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			if !ok {
 				return false
 			}
-			return propertiesSemanticallyEqual(userProps, apiProps)
+			if !propertiesSemanticallyEqual(userProps, apiProps) {
+				return false
+			}
+			continue
 		}
 
 		if !reflect.DeepEqual(userVal, apiVal) {
