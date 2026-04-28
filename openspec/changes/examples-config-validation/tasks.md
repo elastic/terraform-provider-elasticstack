@@ -1,7 +1,7 @@
 ## 1. PlanOnly acceptance harness
 
 - [x] 1.1 Add `examples/examples.go` exporting `embed.FS` instances for `examples/resources` and `examples/data-sources`
-- [x] 1.2 Add a Go acceptance test (e.g. `internal/acctest/examples_plan_test.go`) that walks both embedded filesystems and runs each `.tf` file as a subtest named after its repo-relative path
+- [x] 1.2 Add a Go acceptance test (e.g. `internal/acctest/examples_plan_test.go`) that walks both embedded filesystems and runs each `.tf` file as a subtest named after its path under `examples/` (such as `resources/...` or `data-sources/...`)
 - [x] 1.3 In each subtest, write the example contents into a per-test tempdir and run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory` pointing at that tempdir, and `PlanOnly: true`
 - [x] 1.4 Use the existing acceptance-test precheck (`acctest.PreCheck(t)`) so the harness runs only when the standard live Elastic Stack environment is configured
 - [x] 1.5 Skip `examples/cloud/` and `examples/provider/` via a static path skip-list documented in the harness

@@ -18,7 +18,6 @@
 package acctest
 
 import (
-	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -27,6 +26,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/examples"
+	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -52,7 +53,8 @@ func shouldSkipExamplePath(repoRelative string) bool {
 }
 
 type tfExamplePlanCase struct {
-	repoRelative      string // e.g. examples/resources/elasticstack_x/resource.tf
+	pathUnderExamples string // e.g. resources/elasticstack_x/resource.tf — subtest id (REQ-002)
+	repoExamplesPath  string // e.g. examples/resources/… — skip prefixes and resource-vs-DS semantics
 	fsys              fs.FS
 	embedRelativePath string // path within ResourcesFS/DataSourcesFS
 }
@@ -76,7 +78,8 @@ func collectTfExamples(fsys fs.FS) ([]tfExamplePlanCase, error) {
 			return nil
 		}
 		out = append(out, tfExamplePlanCase{
-			repoRelative:      repoRel,
+			pathUnderExamples: slashPath,
+			repoExamplesPath:  repoRel,
 			fsys:              fsys,
 			embedRelativePath: path,
 		})
@@ -88,25 +91,44 @@ func collectTfExamples(fsys fs.FS) ([]tfExamplePlanCase, error) {
 	return out, nil
 }
 
-// planHarnessSubdir matches ConfigDirectory below (NamedTestCaseDirectory(planHarnessDirName)).
+// planHarnessSubdir matches ConfigDirectory below (NamedTestCaseDirectory(planHarnessSubdirName)).
 const planHarnessSubdirName = "plan"
 
-// expectNonEmptyPlanForExample matches REQ-004 resource vs data-directory expectations against
-// terraform-plugin-testing semantics for PlanOnly steps: both the non-refresh and refresh-plan
-// checks key off ExpectNonEmptyPlan — use false only when plans are expected empty (typically
-// no managed resources declared in that file).
-func expectNonEmptyPlanForExample(repoRelative string, cfg []byte) bool {
-	if strings.HasPrefix(repoRelative, "examples/resources/") {
+// tfRootDeclaresResourceOrOutput returns true when the root HCL body contains a real top-level
+// resource or output block (not strings/comments). This mirrors common non-empty plan causes
+// when combined with ExpectNonEmptyPlan checks in terraform-plugin-testing (resource and output
+// changes both contribute to a non-empty plan JSON).
+func tfRootDeclaresResourceOrOutput(src []byte) bool {
+	parser := hclparse.NewParser()
+	file, diags := parser.ParseHCL(src, "example.tf")
+	if diags.HasErrors() {
+		return false
+	}
+	body, ok := file.Body.(*hclsyntax.Body)
+	if !ok {
+		return false
+	}
+	for _, block := range body.Blocks {
+		switch block.Type {
+		case "resource", "output":
+			return true
+		default:
+		}
+	}
+	return false
+}
+
+// expectNonEmptyPlanForExample matches REQ-004 for data-source vs resource trees.
+func expectNonEmptyPlanForExample(repoExamplesPath string, cfg []byte) bool {
+	if strings.HasPrefix(repoExamplesPath, "examples/resources/") {
 		return true
 	}
-	// Data-source docs tree: tolerate both read-only-only (empty plan) and configs that declare
-	// prerequisite managed resources alongside data sources / data blocks.
-	return bytes.Contains(cfg, []byte(`resource "`))
+	return tfRootDeclaresResourceOrOutput(cfg)
 }
 
 // TestAccExamples_planOnly runs each example *.tf under examples/resources and
 // examples/data-sources in isolation with PlanOnly against the in-process
-// provider. Subtest names are the repo-relative paths (REQ-002).
+// provider. Subtest names are paths under examples/ (REQ-002).
 func TestAccExamples_planOnly(t *testing.T) {
 	var cases []tfExamplePlanCase
 	res, err := collectTfExamples(examples.ResourcesFS)
@@ -122,11 +144,11 @@ func TestAccExamples_planOnly(t *testing.T) {
 	cases = append(cases, ds...)
 
 	sort.Slice(cases, func(i, j int) bool {
-		return cases[i].repoRelative < cases[j].repoRelative
+		return cases[i].pathUnderExamples < cases[j].pathUnderExamples
 	})
 
 	for _, c := range cases {
-		t.Run(c.repoRelative, func(t *testing.T) {
+		t.Run(c.pathUnderExamples, func(t *testing.T) {
 			t.Parallel()
 
 			body, err := fs.ReadFile(c.fsys, c.embedRelativePath)
@@ -150,7 +172,7 @@ func TestAccExamples_planOnly(t *testing.T) {
 				t.Fatalf("write %s: %v", tfPath, err)
 			}
 
-			expectNonEmpty := expectNonEmptyPlanForExample(c.repoRelative, body)
+			expectNonEmpty := expectNonEmptyPlanForExample(c.repoExamplesPath, body)
 			resource.Test(t, resource.TestCase{
 				PreCheck: func() { PreCheck(t) },
 				Steps: []resource.TestStep{
