@@ -69,13 +69,14 @@ func Test_PlanModifyString(t *testing.T) {
 			stateMappings:  basetypes.NewStringValue("{}"),
 		},
 		{
-			name: "should do nothing if the state mappings do not define any properties",
+			name: "should not alter the final plan when state mappings do not define any properties",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"not_properties": map[string]any{
 					"hello": "world",
 				},
 			}),
-			configMappings: basetypes.NewStringValue("{}"),
+			configMappings:       basetypes.NewStringValue("{}"),
+			expectedPlanMappings: basetypes.NewStringValue("{}"),
 		},
 		{
 			name: "requires replace if state mappings define properties but the config value does not",
@@ -85,6 +86,7 @@ func Test_PlanModifyString(t *testing.T) {
 				},
 			}),
 			configMappings:          basetypes.NewStringValue("{}"),
+			expectedPlanMappings:    basetypes.NewStringValue("{}"),
 			expectedRequiresReplace: true,
 		},
 		{
@@ -97,6 +99,16 @@ func Test_PlanModifyString(t *testing.T) {
 				},
 			}),
 			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"type": "string",
+					},
+					"field2": map[string]any{
+						"type": "string",
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
@@ -123,10 +135,17 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"type": "int",
+					},
+				},
+			}),
 			expectedRequiresReplace: true,
 		},
 		{
-			name: "should warn when a field is removed from config",
+			name: "should add the removed field to the plan and include a warning when a field is removed from config",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
@@ -144,6 +163,16 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"type": "string",
+					},
+					"field2": map[string]any{
+						"type": "string",
+					},
+				},
+			}),
 			expectedDiags: diag.Diagnostics{
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
@@ -153,7 +182,7 @@ func Test_PlanModifyString(t *testing.T) {
 			},
 		},
 		{
-			name: "should warn when a sub-field is removed from config",
+			name: "should add the removed field to the plan and include a warning when a sub-field is removed from config",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
@@ -176,6 +205,20 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
+								"type": "string",
+							},
+							"field3": map[string]any{
+								"type": "string",
+							},
+						},
+					},
+				},
+			}),
 			expectedDiags: diag.Diagnostics{
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
@@ -185,7 +228,7 @@ func Test_PlanModifyString(t *testing.T) {
 			},
 		},
 		{
-			name: "should not require replace for semantic_text fields when model_settings is not in config",
+			name: "should carry forward model_settings from state for semantic_text fields when not in config",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"summary": map[string]any{
@@ -209,9 +252,24 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+						"model_settings": map[string]any{
+							"dimensions":   1024,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "cosine",
+							"task_type":    "text_embedding",
+						},
+					},
+				},
+			}),
 		},
 		{
-			name: "should not require replace when model_settings for semantic_text matches config",
+			name: "should not overwrite model_settings for semantic_text when explicitly specified in config",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"summary": map[string]any{
@@ -242,9 +300,24 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".elser-2",
+						"model_settings": map[string]any{
+							"dimensions":   384,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "dot_product",
+							"task_type":    "sparse_embedding",
+						},
+					},
+				},
+			}),
 		},
 		{
-			name: "should not require replace for nested semantic_text fields when model_settings is not in config",
+			name: "should carry forward model_settings for nested semantic_text field when not in config",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"asset": map[string]any{
@@ -276,6 +349,25 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"asset": map[string]any{
+						"properties": map[string]any{
+							"summary": map[string]any{
+								"type":         "semantic_text",
+								"inference_id": ".jina-embeddings-v3",
+								"model_settings": map[string]any{
+									"dimensions":   1024,
+									"element_type": "float",
+									"service":      "elastic",
+									"similarity":   "cosine",
+									"task_type":    "text_embedding",
+								},
+							},
+						},
+					},
+				},
+			}),
 		},
 		{
 			name: "requires replace when a sub-fields type is changed",
@@ -291,6 +383,17 @@ func Test_PlanModifyString(t *testing.T) {
 				},
 			}),
 			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
+								"type": "int",
+							},
+						},
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{

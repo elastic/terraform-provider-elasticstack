@@ -123,8 +123,8 @@ func (v mappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 		return v.Normalized.Equal(newValue.Normalized), diags
 	}
 
-	var priorMap, newMap map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &priorMap); err != nil {
+	var vMap, newMap map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &vMap); err != nil {
 		diags.AddError("Semantic Equality Check Error", err.Error())
 		return false, diags
 	}
@@ -133,10 +133,10 @@ func (v mappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 		return false, diags
 	}
 
-	// priorMap = API/state value (may contain template extras)
-	// newMap   = planned/config value (user intent)
-	// We check if priorMap is a non-drifting superset of newMap.
-	return mappingsSemanticallyEqual(newMap, priorMap), diags
+	// Semantic equality for mappings is bidirectional: two mapping values are
+	// semantically equal when one is a non-drifting superset of the other.
+	// This handles both planning (plan vs prior state) and apply (state vs plan).
+	return mappingsSemanticallyEqual(vMap, newMap) || mappingsSemanticallyEqual(newMap, vMap), diags
 }
 
 func newMappingsNull() mappingsValue {

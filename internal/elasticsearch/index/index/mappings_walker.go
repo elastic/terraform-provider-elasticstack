@@ -19,11 +19,14 @@ package index
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
+
+const semanticTextType = "semantic_text"
 
 // mappingDiffResult captures the outcome of comparing state and config mappings
 // for the purpose of detecting user-owned changes that require replacement.
@@ -96,7 +99,7 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 
 			// semantic_text special handling: not a replacement if model_settings differs.
 			// Semantic equality handles model_settings auto-populated by Elasticsearch.
-			if stateType == "semantic_text" {
+			if stateType == semanticTextType {
 				continue
 			}
 			continue
@@ -128,6 +131,89 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 	}
 
 	return result
+}
+
+// mergeMappingsForPlan merges state mappings into config mappings to produce a
+// planned value that preserves state-only fields (those retained by ES or
+// injected by templates).
+func mergeMappingsForPlan(stateMappings, cfgMappings map[string]any) map[string]any {
+	merged := make(map[string]any, len(cfgMappings))
+	maps.Copy(merged, cfgMappings)
+
+	// Merge properties recursively
+	if stateProps, ok := stateMappings["properties"].(map[string]any); ok {
+		cfgProps, ok := merged["properties"].(map[string]any)
+		if ok {
+			merged["properties"] = mergeProperties(stateProps, cfgProps)
+		}
+	}
+
+	// Copy known top-level template-injected keys from state that are not in config.
+	for _, key := range []string{"dynamic_templates", "_meta", "runtime"} {
+		if val, exists := stateMappings[key]; exists {
+			if _, inConfig := merged[key]; !inConfig {
+				merged[key] = val
+			}
+		}
+	}
+
+	return merged
+}
+
+func mergeProperties(stateProps, cfgProps map[string]any) map[string]any {
+	merged := make(map[string]any, len(cfgProps))
+	maps.Copy(merged, cfgProps)
+
+	for fieldName, stateFieldRaw := range stateProps {
+		stateField, ok := stateFieldRaw.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		cfgFieldRaw, cfgHas := merged[fieldName]
+		if !cfgHas {
+			// Field retained by Elasticsearch
+			merged[fieldName] = stateFieldRaw
+			continue
+		}
+
+		cfgField, ok := cfgFieldRaw.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		mergedField := make(map[string]any, len(cfgField))
+		maps.Copy(mergedField, cfgField)
+
+		// Check type
+		stateType, stateHasType := stateField["type"]
+		cfgType, cfgHasType := cfgField["type"]
+
+		if stateHasType && cfgHasType && reflect.DeepEqual(stateType, cfgType) {
+			// For semantic_text fields, copy model_settings from state if not in config
+			if stateType == semanticTextType {
+				if modelSettings, exists := stateField["model_settings"]; exists {
+					if _, configHasModelSettings := cfgField["model_settings"]; !configHasModelSettings {
+						mergedField["model_settings"] = modelSettings
+					}
+				}
+			}
+		}
+
+		// Recursively merge nested properties
+		if stateNested, stateHasNested := stateField["properties"]; stateHasNested {
+			cfgNested, cfgHasNested := cfgField["properties"]
+			if cfgHasNested {
+				mergedField["properties"] = mergeProperties(stateNested.(map[string]any), cfgNested.(map[string]any))
+			} else {
+				mergedField["properties"] = stateNested
+			}
+		}
+
+		merged[fieldName] = mergedField
+	}
+
+	return merged
 }
 
 // mappingsSemanticallyEqual compares user-owned mappings against API mappings.
@@ -210,7 +296,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 
 	for key, userVal := range userField {
 		// For semantic_text fields, allow API to have model_settings that the user didn't specify
-		if key == "model_settings" && userHasType && userType == "semantic_text" && !userHasModelSettings {
+		if key == "model_settings" && userHasType && userType == semanticTextType && !userHasModelSettings {
 			continue
 		}
 

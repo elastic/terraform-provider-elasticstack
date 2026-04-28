@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type mappingsPlanModifier struct{}
@@ -49,10 +50,21 @@ func (p mappingsPlanModifier) PlanModifyString(_ context.Context, req planmodifi
 	result := compareMappingsForPlan(stateMappings, cfgMappings)
 	resp.RequiresReplace = result.RequiresReplace
 	resp.Diagnostics.Append(result.Diags...)
+
+	// Merge state-only mapping content (retained fields and template extras)
+	// into the planned value to avoid perpetual drift.
+	merged := mergeMappingsForPlan(stateMappings, cfgMappings)
+	planBytes, err := json.Marshal(merged)
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Failed to marshal final mappings", err.Error())
+		return
+	}
+
+	resp.PlanValue = basetypes.NewStringValue(string(planBytes))
 }
 
 func (p mappingsPlanModifier) Description(_ context.Context) string {
-	return "Detects incompatible mapping changes that require replacement"
+	return "Preserves existing mappings which don't exist in config and detects incompatible changes"
 }
 
 func (p mappingsPlanModifier) MarkdownDescription(ctx context.Context) string {
