@@ -37,7 +37,7 @@ The bug class motivating this change (#2523, block vs. attribute) is caught befo
 
 The harness will:
 1. Embed the contents of `examples/resources/` and `examples/data-sources/` via `embed.FS` in `examples/examples.go`.
-2. For each example `.tf` file, write it into an isolated per-subtest module directory under `testdata/<test name>/plan/` (see `acctest.NamedTestCaseDirectory("plan")`), matching the repo’s acceptance-test directory pattern enforced by `acctestconfigdirlint`.
+2. For each example `.tf` file, write it into an isolated per-subtest module directory under `testdata/<test name>/plan/` — where `<test name>` is the full `testing.T` name (`t.Name()`, including `TestAccExamples_planOnly` and `/`-separated subtest segments — see `acctest.NamedTestCaseDirectory("plan")`) — matching the repo’s acceptance-test directory pattern enforced by `acctestconfigdirlint`.
 3. Run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory: acctest.NamedTestCaseDirectory("plan")`, and `PlanOnly: true`.
 4. Set `ExpectNonEmptyPlan: true` for every file under `examples/resources/`. For files under `examples/data-sources/`, set `ExpectNonEmptyPlan: true` only when HCL parsing of the root body finds a top-level `resource` or `output` block (supporting managed resources or outputs in the snippet); otherwise use `false` so read-only plans are not rejected solely for being empty. This aligns with `terraform-plugin-testing`, which compares `ExpectNonEmptyPlan` to both the non-refresh and refresh plans in a PlanOnly step.
 5. Use `t.Run("<path-under-examples/>", ...)` so the failing file is named in the test output and matches `-run` filters.

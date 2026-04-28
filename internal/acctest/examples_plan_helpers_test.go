@@ -17,7 +17,83 @@
 
 package acctest
 
-import "testing"
+import (
+	"io/fs"
+	"sort"
+	"testing"
+	"testing/fstest"
+)
+
+func TestExamplesHarness_collectTfExamples(t *testing.T) {
+	t.Parallel()
+
+	cfgRes := []byte(`provider "elasticstack" {}
+
+resource "elasticstack_elasticsearch_index" "i" {
+  name                = "n"
+  deletion_protection = false
+}
+`)
+	cfgDSOnly := []byte(`provider "elasticstack" {}
+
+data "elasticstack_elasticsearch_info" "x" {}
+`)
+	cfgDSMixed := []byte(`provider "elasticstack" {}
+
+resource "elasticstack_elasticsearch_index" "y" {}
+
+data "elasticstack_elasticsearch_enrich_policy" "p" {
+  name = "n"
+}
+`)
+
+	mfs := fstest.MapFS{
+		"resources/r1/resource.tf":              &fstest.MapFile{Data: cfgRes, Mode: 0o644},
+		"data-sources/ds1/data.tf":              &fstest.MapFile{Data: cfgDSOnly, Mode: 0o644},
+		"data-sources/ds2/data.tf":              &fstest.MapFile{Data: cfgDSMixed, Mode: 0o644},
+		"resources/ignored-non-tf-manifest.txt": &fstest.MapFile{Data: []byte("x"), Mode: 0o644},
+	}
+
+	got, err := collectTfExamples(mfs)
+	if err != nil {
+		t.Fatalf("collectTfExamples: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("len(cases) = %d, want 3 (non-.tf skipped)", len(got))
+	}
+	sort.Slice(got, func(i, j int) bool {
+		return got[i].pathUnderExamples < got[j].pathUnderExamples
+	})
+
+	want := []struct {
+		pathUnder      string
+		repoExamples   string
+		expectNonEmpty bool
+	}{
+		{"data-sources/ds1/data.tf", "examples/data-sources/ds1/data.tf", false},
+		{"data-sources/ds2/data.tf", "examples/data-sources/ds2/data.tf", true},
+		{"resources/r1/resource.tf", "examples/resources/r1/resource.tf", true},
+	}
+
+	for i := range got {
+		if got[i].pathUnderExamples != want[i].pathUnder {
+			t.Fatalf("[%d].pathUnderExamples = %q, want %q", i, got[i].pathUnderExamples, want[i].pathUnder)
+		}
+		if got[i].repoExamplesPath != want[i].repoExamples {
+			t.Fatalf("[%d].repoExamplesPath = %q, want %q", i, got[i].repoExamplesPath, want[i].repoExamples)
+		}
+		if got[i].embedRelativePath != want[i].pathUnder {
+			t.Fatalf("[%d].embedRelativePath = %q, want %q", i, got[i].embedRelativePath, want[i].pathUnder)
+		}
+		body, errFS := fs.ReadFile(mfs, got[i].embedRelativePath)
+		if errFS != nil {
+			t.Fatalf("[%d] ReadFile: %v", i, errFS)
+		}
+		if en := expectNonEmptyPlanForExample(got[i].repoExamplesPath, body); en != want[i].expectNonEmpty {
+			t.Fatalf("[%d] expectNonEmptyPlanForExample = %v, want %v", i, en, want[i].expectNonEmpty)
+		}
+	}
+}
 
 func TestExamplesHarness_tfRootDeclaresResourceOrOutput(t *testing.T) {
 	t.Parallel()

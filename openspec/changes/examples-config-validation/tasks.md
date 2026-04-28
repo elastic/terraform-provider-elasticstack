@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add `examples/examples.go` exporting `embed.FS` instances for `examples/resources` and `examples/data-sources`
 - [x] 1.2 Add a Go acceptance test (e.g. `internal/acctest/examples_plan_test.go`) that walks both embedded filesystems and runs each `.tf` file as a subtest named after its path under `examples/` (such as `resources/...` or `data-sources/...`)
-- [x] 1.3 In each subtest, write the example into an isolated config directory under `testdata/<test name>/plan/` (via `acctest.NamedTestCaseDirectory("plan")`) and run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory` pointing at that directory, and `PlanOnly: true`
+- [x] 1.3 In each subtest, write the example into an isolated config directory under `testdata/<test name>/plan/` (`<test name>` = full `t.Name()` including subtest path; via `acctest.NamedTestCaseDirectory("plan")`) and run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory` pointing at that directory, and `PlanOnly: true`
 - [x] 1.4 Use the existing acceptance-test precheck (`acctest.PreCheck(t)`) so the harness runs only when the standard live Elastic Stack environment is configured
 - [x] 1.5 Skip `examples/cloud/` and `examples/provider/` via a static path skip-list documented in the harness
 - [x] 1.6 Set `ExpectNonEmptyPlan: true` for all `examples/resources/` examples; for `examples/data-sources/`, set `ExpectNonEmptyPlan: true` when the root HCL body declares a top-level `resource` or `output` block, otherwise `false` (read-only / empty-friendly), matching `terraform-plugin-testing` PlanOnly checks

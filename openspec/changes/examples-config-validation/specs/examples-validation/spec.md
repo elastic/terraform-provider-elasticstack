@@ -61,29 +61,29 @@ This requirement is enforced by REQ-001 and REQ-002: the harness plans each file
 
 The PlanOnly harness SHALL use `terraform-plugin-testing` with `resource.Test`, `ProtoV6ProviderFactories: acctest.Providers`, and `PlanOnly: true`. It SHALL NOT shell out to `terraform validate`, manage a Terraform CLI provider installation, or require `dev_overrides`.
 
-`terraform-plugin-testing` applies `ExpectNonEmptyPlan` to PlanOnly steps against both the non-refresh plan and the follow-up refresh plan: a mismatch fails the step. The harness therefore chooses `ExpectNonEmptyPlan` so that success is allowed whenever the plan can legitimately be non-empty or empty under that model.
+`ExpectNonEmptyPlan` is **not** a “permit empty or non-empty” switch: each value makes a definite requirement. On PlanOnly steps `terraform-plugin-testing` checks whether each plan (`ExpectNonEmptyPlan: false` requires empty plans; `true` requires non-empty plans) satisfies the chosen flag for both the non-refresh and refresh plans. The harness sets **exactly one** flag per covered file from the categories below; the framework then enforces that plan shape — there is no single setting under which success means “either empty or non-empty.”
 
-For covered files under `examples/resources/`, the harness SHALL set `ExpectNonEmptyPlan: true` (resource-documentation examples normally plan creates).
+For covered files under `examples/resources/`, the harness SHALL set `ExpectNonEmptyPlan: true` (resource-documentation examples normally produce non-empty plans).
 
-For covered files under `examples/data-sources/`, the harness SHALL set `ExpectNonEmptyPlan: true` when the root module body, as parsed by HCL, declares a top-level `resource` or `output` block (supporting managed resources or outputs in the same file). Otherwise it SHALL set `ExpectNonEmptyPlan: false` so read-only data-source examples whose plans are empty are not rejected solely for that reason.
+For covered files under `examples/data-sources/`, the harness SHALL set `ExpectNonEmptyPlan: true` when the root module body, as parsed by HCL, declares a top-level `resource` or `output` block (supporting managed resources or outputs in the same file). Otherwise it SHALL set `ExpectNonEmptyPlan: false` for examples that intend read-only behaviour and legitimately yield empty plans without tripping non-empty assertions.
 
 #### Scenario: Resource example may produce creates
 
 - **GIVEN** a resource example that plans one or more managed resources
-- **WHEN** the PlanOnly harness runs against that file
-- **THEN** the subtest SHALL pass if planning succeeds and `ExpectNonEmptyPlan` is satisfied (non-empty plans allowed)
+- **WHEN** the PlanOnly harness runs against that file with `ExpectNonEmptyPlan: true`
+- **THEN** the subtest SHALL pass if planning succeeds and the plans match the non-empty expectation enforced by `terraform-plugin-testing`
 
 #### Scenario: Data-source example with only reads may produce an empty plan
 
 - **GIVEN** a data-source example whose root module declares no `resource` or `output` blocks (only data sources, provider configuration, etc.)
-- **WHEN** the PlanOnly harness runs against that file
-- **THEN** the subtest SHALL pass if planning succeeds and the plan is empty, with `ExpectNonEmptyPlan: false`
+- **WHEN** the PlanOnly harness runs against that file with `ExpectNonEmptyPlan: false`
+- **THEN** the subtest SHALL pass if planning succeeds and the plans match the empty expectation enforced by `terraform-plugin-testing`
 
 #### Scenario: Data-source example with supporting resources or outputs may produce a non-empty plan
 
 - **GIVEN** a data-source example whose root module declares at least one top-level `resource` or `output` block in the same file
-- **WHEN** the PlanOnly harness runs against that file
-- **THEN** the subtest SHALL pass if planning succeeds and `ExpectNonEmptyPlan: true` is satisfied (non-empty plans allowed)
+- **WHEN** the PlanOnly harness runs against that file with `ExpectNonEmptyPlan: true`
+- **THEN** the subtest SHALL pass if planning succeeds and the plans match the non-empty expectation enforced by `terraform-plugin-testing`
 
 ### Requirement: The harness SHALL skip non-covered example directories (REQ-005)
 
