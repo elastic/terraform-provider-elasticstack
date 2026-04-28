@@ -37,10 +37,10 @@ The bug class motivating this change (#2523, block vs. attribute) is caught befo
 
 The harness will:
 1. Embed the contents of `examples/resources/` and `examples/data-sources/` via `embed.FS` in `examples/examples.go`.
-2. For each example `.tf` file, write it to a temporary directory as an isolated Terraform module.
-3. Run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory` pointing at that generated module, and `PlanOnly: true`.
-4. Set `ExpectNonEmptyPlan: true` for resource examples, where a successful plan normally contains creates. For data-source-only examples, leave the default expectation so a successful read-only plan may be empty.
-5. Use `t.Run("<relative-path>", ...)` so the failing file is named in the test output and matches `-run` filters.
+2. For each example `.tf` file, write it into an isolated per-subtest module directory under `testdata/<test name>/plan/` (see `acctest.NamedTestCaseDirectory("plan")`), matching the repo’s acceptance-test directory pattern enforced by `acctestconfigdirlint`.
+3. Run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory: acctest.NamedTestCaseDirectory("plan")`, and `PlanOnly: true`.
+4. Set `ExpectNonEmptyPlan: true` for every file under `examples/resources/`. For files under `examples/data-sources/`, set `ExpectNonEmptyPlan: true` only when HCL parsing of the root body finds a top-level `resource` or `output` block (supporting managed resources or outputs in the snippet); otherwise use `false` so read-only plans are not rejected solely for being empty. This aligns with `terraform-plugin-testing`, which compares `ExpectNonEmptyPlan` to both the non-refresh and refresh plans in a PlanOnly step.
+5. Use `t.Run("<path-under-examples/>", ...)` so the failing file is named in the test output and matches `-run` filters.
 
 ### 3. One subtest per example file
 
@@ -96,6 +96,6 @@ No external data migration is required. No state-format changes. Embedded provid
 
 ## Open Questions
 
-- **Resource-vs-data-source plan expectations**: use `ExpectNonEmptyPlan: true` for resource examples and the default empty-plan expectation for data-source examples. Confirm whether any data-source examples also create supporting resources and need the resource-style expectation.
+- **Resource-vs-data-source plan expectations**: resolved in implementation — `ExpectNonEmptyPlan: true` for all `examples/resources/` files; for `examples/data-sources/`, `true` when the root HCL body declares a `resource` or `output` block, else `false`, matching `terraform-plugin-testing` PlanOnly semantics.
 - **Test location**: place the new test alongside existing acceptance-test helpers in `internal/acctest/`, or in a new package if importing `examples` creates an undesirable dependency direction. Default plan: `internal/acctest/` with a clear filename like `examples_plan_test.go`.
 - **Parallelism limit**: how aggressively to parallelise. Default plan: full `t.Parallel()` with the standard `go test -parallel` cap; tune if live-stack contention shows up under high parallelism.

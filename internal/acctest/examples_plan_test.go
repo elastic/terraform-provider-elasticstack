@@ -101,6 +101,8 @@ const planHarnessSubdirName = "plan"
 func tfRootDeclaresResourceOrOutput(src []byte) bool {
 	parser := hclparse.NewParser()
 	file, diags := parser.ParseHCL(src, "example.tf")
+	// Unparseable configs: return false so ExpectNonEmptyPlan is not set from a partial AST; Terraform
+	// will surface invalid configuration through plan diagnostics instead.
 	if diags.HasErrors() {
 		return false
 	}
