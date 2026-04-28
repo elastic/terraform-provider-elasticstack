@@ -2,7 +2,7 @@
 
 - [ ] 1.1 Add `examples/examples.go` exporting `embed.FS` instances for `examples/resources` and `examples/data-sources`
 - [ ] 1.2 Add a Go test (e.g. `internal/acctest/examples_validate_test.go`) that walks both embedded filesystems and runs each `.tf` file as a subtest named after its repo-relative path
-- [ ] 1.3 In each subtest, write the example contents plus a generated provider-pin file (`terraform { required_providers { ... } }`) into a per-test tempdir, then invoke `terraform init` and `terraform validate` via `terraform-exec`
+- [ ] 1.3 In each subtest, write the example contents plus a generated provider-pin file (`terraform { required_providers { ... } }`) and an injected `provider "elasticstack" { ... }` configuration into a per-test tempdir, then invoke `terraform init` and `terraform validate` via `terraform-exec`
 - [ ] 1.4 Configure the harness to discover the locally built provider via `dev_overrides` (or filesystem mirror if `dev_overrides` proves noisy)
 - [ ] 1.5 Skip `examples/cloud/` and `examples/provider/` via a static path skip-list documented in the harness
 - [ ] 1.6 Surface `terraform validate` diagnostics in the test failure message so the offending file, line, and message are visible without re-running locally
@@ -11,7 +11,8 @@
 ## 2. Example cleanup
 
 - [ ] 2.1 Remove top-level `provider "elasticstack" { ... }` blocks from every file under `examples/resources/` and `examples/data-sources/`
-- [ ] 2.2 Remove per-resource `elasticsearch_connection { ... }` blocks from example resources, including hardcoded `localhost:9200` / `changeme` credentials
+- [ ] 2.2 Remove every per-resource `elasticsearch_connection { ... }` block from example resources, regardless of whether the block contains hardcoded `localhost:9200` / `changeme` credentials, environment-variable references, or no attributes at all
+- [ ] 2.2.1 Add an explicit content check in the harness that fails any subtest whose example file contains an `elasticsearch_connection` block, since `terraform validate` will not catch valid-but-forbidden blocks on its own
 - [ ] 2.3 Restructure `examples/resources/elasticstack_kibana_alerting_rule/` so `resource.tf`, `resource-index-rule.tf`, and `resource_rule_action_frequency.tf` each define their own connector and data-stream prerequisites and validate independently
 - [ ] 2.4 Audit other multi-file example directories (e.g. `elasticstack_fleet_output/`, `elasticstack_fleet_integration/`, `elasticstack_kibana_security_role/`) and inline cross-file dependencies if any exist
 

@@ -4,6 +4,8 @@
 
 For every `*.tf` file under `examples/resources/` and `examples/data-sources/` that is not in the skip-list defined by this capability, the project SHALL provide an automated test that runs `terraform init` and `terraform validate` against the locally built `elasticstack` provider for that file in isolation.
 
+Before invoking `terraform validate`, the harness SHALL inject a provider configuration for the `elasticstack` provider into the per-test working directory so that examples can reference provider-managed resources without declaring their own provider block. The injected configuration SHALL pin the locally built `elasticstack` provider and SHALL be the single source of provider configuration during validation.
+
 The test SHALL fail when `terraform validate` reports any diagnostic of severity `error` for a covered file. The test SHALL surface the offending file path, validate diagnostic text, and source location in the failure message.
 
 #### Scenario: Schema-conformant example passes
@@ -59,15 +61,23 @@ This requirement is enforced by REQ-001 and REQ-002: the harness validates each 
 
 ### Requirement: Example files SHALL NOT embed provider configuration (REQ-004)
 
-`*.tf` files under `examples/resources/` and `examples/data-sources/` SHALL NOT contain a top-level `provider "elasticstack" { ... }` block. They SHALL NOT contain per-resource `elasticsearch_connection { ... }` blocks with hardcoded credentials.
+`*.tf` files under `examples/resources/` and `examples/data-sources/` SHALL NOT contain a top-level `provider "elasticstack" { ... }` block. They SHALL NOT contain per-resource `elasticsearch_connection { ... }` blocks, regardless of whether those blocks contain hardcoded credentials, environment-variable references, or are otherwise empty.
 
-This requirement is enforced by REQ-001: the validation harness injects provider configuration, and a duplicate provider block in an example produces a `terraform validate` error.
+The top-level `provider` ban is enforced by REQ-001: the validation harness injects provider configuration, and a duplicate top-level provider block in an example produces a `terraform validate` error.
+
+The per-resource `elasticsearch_connection` ban SHALL additionally be enforced by an explicit content check in the harness, because `elasticsearch_connection` is a valid schema block on individual resources and would not by itself cause `terraform validate` to fail. The harness SHALL scan each covered file and SHALL fail the corresponding subtest if any `elasticsearch_connection` block is present, regardless of its contents.
 
 #### Scenario: Embedded provider block is rejected
 
 - **GIVEN** an example file that contains `provider "elasticstack" { elasticsearch {} }`
 - **WHEN** the validation harness runs against that file with provider configuration injected by the harness
 - **THEN** the subtest SHALL fail with the duplicate-provider-configuration diagnostic from `terraform validate`
+
+#### Scenario: Per-resource `elasticsearch_connection` block is rejected
+
+- **GIVEN** an example file that contains an `elasticsearch_connection { ... }` block on any resource, including blocks that use environment-variable references or contain no attributes
+- **WHEN** the validation harness runs against that file
+- **THEN** the subtest SHALL fail with a content-check diagnostic identifying the offending block, independently of any `terraform validate` outcome
 
 ### Requirement: The harness SHALL skip non-validatable example directories (REQ-005)
 
@@ -93,7 +103,7 @@ The harness SHALL NOT exclude any other directory by default. New skips SHALL re
 
 ### Requirement: The harness SHALL run without a live Elastic stack (REQ-006)
 
-The validation harness SHALL be executable as part of the standard `go test ./...` invocation. It SHALL NOT require `TF_ACC=1`, `ES_ENDPOINTS`, `KIBANA_ENDPOINT`, or any other live-stack environment variable. It SHALL NOT depend on Elasticsearch or Kibana being reachable from the host running the test.
+The validation harness SHALL be executable as part of the standard `go test ./...` invocation. It SHALL NOT require `TF_ACC=1`, `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD`, `ELASTICSEARCH_API_KEY`, `KIBANA_ENDPOINT`, `KIBANA_USERNAME`, `KIBANA_PASSWORD`, `KIBANA_API_KEY`, or any other live-stack environment variable consumed by the provider's acceptance-test harness. It SHALL NOT depend on Elasticsearch or Kibana being reachable from the host running the test.
 
 #### Scenario: Test runs in a clean environment
 
