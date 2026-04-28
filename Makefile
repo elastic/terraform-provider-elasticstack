@@ -9,6 +9,8 @@ MARCH = "$$(go env GOOS)_$$(go env GOARCH)"
 
 ACCTEST_PARALLELISM ?= 10
 ACCTEST_PACKAGE_PARALLELISM ?= 6
+ACCTEST_TOTAL_SHARDS ?= 1
+ACCTEST_SHARD_INDEX ?= 0
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
@@ -65,7 +67,7 @@ testacc-vs-docker:
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="./..." -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(shell go list ./... | awk 'NR % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests

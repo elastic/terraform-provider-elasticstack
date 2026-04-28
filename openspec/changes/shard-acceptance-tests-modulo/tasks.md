@@ -1,10 +1,10 @@
 ## 1. Makefile sharding variables
 
-- [ ] 1.1 Add `ACCTEST_TOTAL_SHARDS ?= 1` and `ACCTEST_SHARD_INDEX ?= 0` near the existing `ACCTEST_PARALLELISM` / `ACCTEST_PACKAGE_PARALLELISM` block in `Makefile`.
-- [ ] 1.2 Replace the `--packages="./..."` argument in the `testacc` recipe with `--packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')"`.
-- [ ] 1.3 Verify that `make testacc` without shard variables is equivalent to today (smoke-test: run `make testacc TESTARGS='-run ^TestAccResourceDashboardEmptyDashboard$$'` and confirm the single test runs).
-- [ ] 1.4 Verify that `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=0` and `ACCTEST_SHARD_INDEX=1` together cover all packages: `diff <(go list ./... | sort) <(cat <(go list ./... | sort | awk '(NR-1)%2==0') <(go list ./... | sort | awk '(NR-1)%2==1') | sort)` should produce no output.
-- [ ] 1.5 Update the `makefile-workflows` capability spec (REQ-023–REQ-024 or a new requirement) to require that `testacc` supports `ACCTEST_TOTAL_SHARDS` / `ACCTEST_SHARD_INDEX` with modulo-based package selection and backwards-compatible defaults.
+- [x] 1.1 Add `ACCTEST_TOTAL_SHARDS ?= 1` and `ACCTEST_SHARD_INDEX ?= 0` near the existing `ACCTEST_PARALLELISM` / `ACCTEST_PACKAGE_PARALLELISM` block in `Makefile`.
+- [x] 1.2 Replace the `--packages="./..."` argument in the `testacc` recipe with `--packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')"`.
+- [x] 1.3 Verify that `make testacc` without shard variables is equivalent to today (smoke-test: run `make testacc TESTARGS='-run ^TestAccResourceDashboardEmptyDashboard$$'` and confirm the single test runs).
+- [x] 1.4 Verify that `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=0` and `ACCTEST_SHARD_INDEX=1` together cover all packages: `diff <(go list ./... | sort) <(cat <(go list ./... | sort | awk '(NR-1)%2==0') <(go list ./... | sort | awk '(NR-1)%2==1') | sort)` should produce no output.
+- [x] 1.5 Update the `makefile-workflows` capability spec (REQ-023–REQ-024 or a new requirement) to require that `testacc` supports `ACCTEST_TOTAL_SHARDS` / `ACCTEST_SHARD_INDEX` with modulo-based package selection and backwards-compatible defaults.
 
 ## 2. GitHub Actions workflow change
 
