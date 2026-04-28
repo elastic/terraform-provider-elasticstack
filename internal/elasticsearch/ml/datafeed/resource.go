@@ -22,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,12 +35,12 @@ var (
 )
 
 type datafeedResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_datafeed"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_datafeed"),
 	}
 }
 

@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -36,12 +36,12 @@ var (
 )
 
 type roleResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newRoleResource() *roleResource {
 	return &roleResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_role"),
 	}
 }
 

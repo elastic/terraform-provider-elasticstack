@@ -21,19 +21,19 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCustomIntegrationResource_embedsResourceCore(t *testing.T) {
+func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
 	t.Parallel()
 	r := newCustomIntegrationResource()
 	rt := reflect.TypeOf(r).Elem()
-	field, ok := rt.FieldByName("Core")
+	field, ok := rt.FieldByName("ResourceBase")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
 }
 
 func TestCustomIntegrationResource_noImportSupport(t *testing.T) {

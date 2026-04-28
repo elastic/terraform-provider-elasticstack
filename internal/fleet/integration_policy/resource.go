@@ -26,8 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,13 +47,13 @@ var (
 )
 
 type integrationPolicyResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 	*fleetpkg.SpaceImporter
 }
 
 func newIntegrationPolicyResource() *integrationPolicyResource {
 	return &integrationPolicyResource{
-		Core:          resourcecore.New(resourcecore.ComponentFleet, "integration_policy"),
+		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "integration_policy"),
 		SpaceImporter: fleetpkg.NewSpaceImporter(path.Root("policy_id")),
 	}
 }

@@ -34,7 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
@@ -46,12 +46,12 @@ var (
 )
 
 type enrichPolicyResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newEnrichPolicyResource() *enrichPolicyResource {
 	return &enrichPolicyResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "enrich_policy"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "enrich_policy"),
 	}
 }
 

@@ -20,7 +20,7 @@ package script
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type scriptResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newScriptResource() *scriptResource {
 	return &scriptResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "script"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "script"),
 	}
 }
 

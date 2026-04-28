@@ -20,7 +20,7 @@ package jobstate
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,12 +32,12 @@ var (
 )
 
 type mlJobStateResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newMLJobStateResource() *mlJobStateResource {
 	return &mlJobStateResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_job_state"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_job_state"),
 	}
 }
 

@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -171,12 +171,12 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 type Resource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResource() *Resource {
 	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "import_saved_objects"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "import_saved_objects"),
 	}
 }
 

@@ -18,7 +18,7 @@
 package customintegration
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -29,12 +29,12 @@ var (
 )
 
 type customIntegrationResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newCustomIntegrationResource() *customIntegrationResource {
 	return &customIntegrationResource{
-		Core: resourcecore.New(resourcecore.ComponentFleet, "custom_integration"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentFleet, "custom_integration"),
 	}
 }
 

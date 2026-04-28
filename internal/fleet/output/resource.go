@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -40,13 +40,13 @@ var (
 var MinVersionOutputKafka = version.Must(version.NewVersion("8.13.0"))
 
 type outputResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 	*fleet.SpaceImporter
 }
 
 func newOutputResource() *outputResource {
 	return &outputResource{
-		Core:          resourcecore.New(resourcecore.ComponentFleet, "output"),
+		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "output"),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("output_id")),
 	}
 }

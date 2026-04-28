@@ -20,7 +20,7 @@ package agentbuilderworkflow
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,12 +35,12 @@ var (
 )
 
 type WorkflowResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newWorkflowResource() *WorkflowResource {
 	return &WorkflowResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_workflow"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_workflow"),
 	}
 }
 

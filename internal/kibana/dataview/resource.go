@@ -21,7 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,12 +34,12 @@ var (
 )
 
 type Resource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResource() *Resource {
 	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "data_view"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "data_view"),
 	}
 }
 

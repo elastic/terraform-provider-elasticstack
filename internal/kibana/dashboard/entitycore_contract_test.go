@@ -22,21 +22,21 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsResourceCore(t *testing.T) {
+func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
-	field, ok := rt.FieldByName("Core")
+	field, ok := rt.FieldByName("ResourceBase")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
 }
 
 // Passthrough import keeps the full import identifier on the id attribute,

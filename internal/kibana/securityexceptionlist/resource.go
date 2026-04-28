@@ -20,7 +20,7 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,12 +32,12 @@ var (
 )
 
 type ExceptionListResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newExceptionListResource() *ExceptionListResource {
 	return &ExceptionListResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "security_exception_list"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_exception_list"),
 	}
 }
 

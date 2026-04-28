@@ -20,7 +20,7 @@ package watch
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,12 +32,12 @@ var (
 )
 
 type watchResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newWatchResource() *watchResource {
 	return &watchResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "watch"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "watch"),
 	}
 }
 

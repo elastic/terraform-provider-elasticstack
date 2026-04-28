@@ -18,7 +18,7 @@
 package securityenablerule
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,12 +31,12 @@ var (
 )
 
 type EnableRuleResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newEnableRuleResource() *EnableRuleResource {
 	return &EnableRuleResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "security_enable_rule"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_enable_rule"),
 	}
 }
 

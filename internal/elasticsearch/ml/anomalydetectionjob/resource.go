@@ -21,7 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,12 +34,12 @@ var (
 )
 
 type anomalyDetectionJobResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 	return &anomalyDetectionJobResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_anomaly_detection_job"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_anomaly_detection_job"),
 	}
 }
 

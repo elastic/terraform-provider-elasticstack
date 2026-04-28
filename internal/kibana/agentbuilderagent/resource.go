@@ -20,7 +20,7 @@ package agentbuilderagent
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,12 +34,12 @@ var (
 )
 
 type AgentResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newAgentResource() *AgentResource {
 	return &AgentResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "agentbuilder_agent"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_agent"),
 	}
 }
 

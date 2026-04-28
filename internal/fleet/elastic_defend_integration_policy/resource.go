@@ -20,8 +20,8 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,13 +33,13 @@ var (
 )
 
 type elasticDefendIntegrationPolicyResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 	*fleet.SpaceImporter
 }
 
 func newElasticDefendIntegrationPolicyResource() *elasticDefendIntegrationPolicyResource {
 	return &elasticDefendIntegrationPolicyResource{
-		Core:          resourcecore.New(resourcecore.ComponentFleet, "elastic_defend_integration_policy"),
+		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "elastic_defend_integration_policy"),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
 	}
 }

@@ -18,8 +18,8 @@
 package serverhost
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -31,13 +31,13 @@ var (
 )
 
 type serverHostResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 	*fleet.SpaceImporter
 }
 
 func newServerHostResource() *serverHostResource {
 	return &serverHostResource{
-		Core:          resourcecore.New(resourcecore.ComponentFleet, "server_host"),
+		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "server_host"),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("host_id")),
 	}
 }

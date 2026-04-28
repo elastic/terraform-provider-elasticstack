@@ -22,11 +22,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
+func TestPluginFrameworkResourcesEmbedEntityCoreResourceBase(t *testing.T) {
 	t.Parallel()
 
 	// Match the real registration path in (*Provider).Resources, including
@@ -34,21 +34,21 @@ func TestPluginFrameworkResourcesEmbedResourceCore(t *testing.T) {
 	p := &Provider{version: AccTestVersion}
 	ctx := context.Background()
 
-	corePtrType := reflect.TypeFor[*resourcecore.Core]()
+	resourceBasePtrType := reflect.TypeFor[*entitycore.ResourceBase]()
 
 	for _, newRes := range p.Resources(ctx) {
 		r := newRes()
 		rt := reflect.TypeOf(r)
-		if !typeEmbedsCorePtr(rt, corePtrType) {
-			t.Fatalf("resource %T does not embed *resourcecore.Core", r)
+		if !typeEmbedsResourceBasePtr(rt, resourceBasePtrType) {
+			t.Fatalf("resource %T does not embed *entitycore.ResourceBase", r)
 		}
-		if !resourceConstructedWithNonNilCore(r, corePtrType) {
-			t.Fatalf("resource %T has nil or missing *resourcecore.Core on the constructed value", r)
+		if !resourceConstructedWithNonNilResourceBase(r, resourceBasePtrType) {
+			t.Fatalf("resource %T has nil or missing *entitycore.ResourceBase on the constructed value", r)
 		}
 	}
 }
 
-func resourceConstructedWithNonNilCore(r resource.Resource, corePtrType reflect.Type) bool {
+func resourceConstructedWithNonNilResourceBase(r resource.Resource, resourceBasePtrType reflect.Type) bool {
 	v := reflect.ValueOf(r)
 	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
@@ -59,14 +59,14 @@ func resourceConstructedWithNonNilCore(r resource.Resource, corePtrType reflect.
 	if v.Kind() != reflect.Struct {
 		return false
 	}
-	f := v.FieldByName("Core")
-	if !f.IsValid() || f.Type() != corePtrType {
+	f := v.FieldByName("ResourceBase")
+	if !f.IsValid() || f.Type() != resourceBasePtrType {
 		return false
 	}
 	return !f.IsNil()
 }
 
-func typeEmbedsCorePtr(rt reflect.Type, corePtr reflect.Type) bool {
+func typeEmbedsResourceBasePtr(rt reflect.Type, resourceBasePtr reflect.Type) bool {
 	if rt.Kind() == reflect.Pointer {
 		rt = rt.Elem()
 	}
@@ -74,7 +74,7 @@ func typeEmbedsCorePtr(rt reflect.Type, corePtr reflect.Type) bool {
 		return false
 	}
 	for f := range rt.Fields() {
-		if f.Anonymous && f.Type == corePtr {
+		if f.Anonymous && f.Type == resourceBasePtr {
 			return true
 		}
 	}

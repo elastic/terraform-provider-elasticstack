@@ -20,7 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,12 +32,12 @@ var (
 )
 
 type Resource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResource() *Resource {
 	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "maintenance_window"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "maintenance_window"),
 	}
 }
 

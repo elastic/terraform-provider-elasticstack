@@ -22,8 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -49,13 +49,13 @@ var (
 )
 
 type agentPolicyResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 	*fleet.SpaceImporter
 }
 
 func newAgentPolicyResource() *agentPolicyResource {
 	return &agentPolicyResource{
-		Core:          resourcecore.New(resourcecore.ComponentFleet, "agent_policy"),
+		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "agent_policy"),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
 	}
 }

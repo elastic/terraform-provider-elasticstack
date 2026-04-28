@@ -20,7 +20,7 @@ package prebuiltrules
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,12 +33,12 @@ var (
 )
 
 type PrebuiltRuleResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newPrebuiltRuleResource() *PrebuiltRuleResource {
 	return &PrebuiltRuleResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "install_prebuilt_rules"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "install_prebuilt_rules"),
 	}
 }
 

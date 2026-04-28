@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,12 +44,12 @@ var (
 )
 
 type Resource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResource() *Resource {
 	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_api_key"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_api_key"),
 	}
 }
 

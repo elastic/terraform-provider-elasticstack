@@ -20,7 +20,7 @@ package rolemapping
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type roleMappingResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newRoleMappingResource() *roleMappingResource {
 	return &roleMappingResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_role_mapping"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_role_mapping"),
 	}
 }
 

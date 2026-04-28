@@ -20,7 +20,7 @@ package securityexceptionitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type ExceptionItemResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newExceptionItemResource() *ExceptionItemResource {
 	return &ExceptionItemResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "security_exception_item"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_exception_item"),
 	}
 }
 

@@ -15,40 +15,42 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package alias
+package connectors
 
 import (
 	"context"
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAliasResource_embedsResourceCore(t *testing.T) {
+func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
 	t.Parallel()
-	rt := reflect.TypeFor[aliasResource]()
-	field, ok := rt.FieldByName("Core")
-	require.True(t, ok)
+	rt := reflect.TypeFor[Resource]()
+	field, ok := rt.FieldByName("ResourceBase")
+	require.True(t, ok, "Resource should embed *entitycore.ResourceBase as field ResourceBase")
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
 }
 
-func TestAliasResource_importState_passthroughCompoundID(t *testing.T) {
+// Custom ImportState copies the import identifier onto id without parsing;
+// multi-segment IDs remain intact (contrast with fleet agent download source).
+func TestResource_importState_setsIDVerbatim(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	r, ok := any(newAliasResource()).(resource.ResourceWithImportState)
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
 	require.True(t, ok)
 	st := providerfwtest.EmptyImportState(t, r)
 	resp := &resource.ImportStateResponse{State: st}
 
-	const importID = "cluster/uuid/alias/name"
+	const importID = "preconfigured/my-connector"
 	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 

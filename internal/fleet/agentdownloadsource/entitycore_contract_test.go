@@ -15,33 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connectors
+package agentdownloadsource
 
 import (
 	"context"
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsResourceCore(t *testing.T) {
+func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
-	field, ok := rt.FieldByName("Core")
-	require.True(t, ok, "Resource should embed *resourcecore.Core as field Core")
+	field, ok := rt.FieldByName("ResourceBase")
+	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*resourcecore.Core](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
 }
 
-// Custom ImportState copies the import identifier onto id without parsing;
-// multi-segment IDs remain intact (contrast with fleet agent download source).
-func TestResource_importState_setsIDVerbatim(t *testing.T) {
+// Import splits "<space>/<source_id>" into structured attributes instead of
+// preserving the raw import string on id (passthrough shape).
+func TestResource_importState_customCompositeID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -50,12 +50,21 @@ func TestResource_importState_setsIDVerbatim(t *testing.T) {
 	st := providerfwtest.EmptyImportState(t, r)
 	resp := &resource.ImportStateResponse{State: st}
 
-	const importID = "preconfigured/my-connector"
-	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "myspace/the-src-id"}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 
-	var id types.String
-	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	var sourceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("source_id"), &sourceID)...)
 	require.False(t, resp.Diagnostics.HasError())
-	require.Equal(t, importID, id.ValueString())
+	require.Equal(t, "the-src-id", sourceID.ValueString())
+
+	var spaceIDs types.Set
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_ids"), &spaceIDs)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var elems []types.String
+	resp.Diagnostics.Append(spaceIDs.ElementsAs(ctx, &elems, false)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Len(t, elems, 1)
+	require.Equal(t, "myspace", elems[0].ValueString())
 }

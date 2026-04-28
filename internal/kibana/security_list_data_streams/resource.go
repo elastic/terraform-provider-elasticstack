@@ -20,7 +20,7 @@ package securitylistdatastreams
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type securityListDataStreamsResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newSecurityListDataStreamsResource() *securityListDataStreamsResource {
 	return &securityListDataStreamsResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "security_list_data_streams"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_list_data_streams"),
 	}
 }
 

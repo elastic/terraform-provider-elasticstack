@@ -18,7 +18,7 @@
 package integration
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -35,12 +35,12 @@ var (
 )
 
 type integrationResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newIntegrationResource() *integrationResource {
 	return &integrationResource{
-		Core: resourcecore.New(resourcecore.ComponentFleet, "integration"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentFleet, "integration"),
 	}
 }
 

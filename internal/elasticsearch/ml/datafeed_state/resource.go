@@ -20,7 +20,7 @@ package datafeedstate
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,12 +32,12 @@ var (
 )
 
 type mlDatafeedStateResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newMLDatafeedStateResource() *mlDatafeedStateResource {
 	return &mlDatafeedStateResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "ml_datafeed_state"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_datafeed_state"),
 	}
 }
 

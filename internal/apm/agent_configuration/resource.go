@@ -20,7 +20,7 @@ package agentconfiguration
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type resourceAgentConfiguration struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResourceAgentConfiguration() *resourceAgentConfiguration {
 	return &resourceAgentConfiguration{
-		Core: resourcecore.New(resourcecore.ComponentAPM, "agent_configuration"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentAPM, "agent_configuration"),
 	}
 }
 

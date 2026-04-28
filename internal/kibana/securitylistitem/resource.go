@@ -20,7 +20,7 @@ package securitylistitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type securityListItemResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newSecurityListItemResource() *securityListItemResource {
 	return &securityListItemResource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "security_list_item"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_list_item"),
 	}
 }
 

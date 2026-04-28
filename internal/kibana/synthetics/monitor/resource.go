@@ -21,8 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -30,12 +30,12 @@ import (
 
 // Resource represents a synthetics monitor resource
 type Resource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newResource() *Resource {
 	return &Resource{
-		Core: resourcecore.New(resourcecore.ComponentKibana, "synthetics_monitor"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "synthetics_monitor"),
 	}
 }
 

@@ -20,7 +20,7 @@ package securityuser
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,12 +33,12 @@ var (
 )
 
 type userResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newUserResource() *userResource {
 	return &userResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_user"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_user"),
 	}
 }
 

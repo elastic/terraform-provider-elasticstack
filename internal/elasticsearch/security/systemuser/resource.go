@@ -18,7 +18,7 @@
 package systemuser
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/resourcecore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -29,12 +29,12 @@ var (
 )
 
 type systemUserResource struct {
-	*resourcecore.Core
+	*entitycore.ResourceBase
 }
 
 func newSystemUserResource() *systemUserResource {
 	return &systemUserResource{
-		Core: resourcecore.New(resourcecore.ComponentElasticsearch, "security_system_user"),
+		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_system_user"),
 	}
 }
 

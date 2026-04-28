@@ -124,7 +124,8 @@ func (r *embedResourceBaseTestResource) Schema(_ context.Context, _ resource.Sch
 
 func (r *embedResourceBaseTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 }
-func (r *embedResourceBaseTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedResourceBaseTestResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
+}
 func (r *embedResourceBaseTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 }
 func (r *embedResourceBaseTestResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
@@ -136,7 +137,8 @@ func (r *embedResourceBaseWithImport) Schema(_ context.Context, _ resource.Schem
 
 func (r *embedResourceBaseWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 }
-func (r *embedResourceBaseWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (r *embedResourceBaseWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
+}
 func (r *embedResourceBaseWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 }
 func (r *embedResourceBaseWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
