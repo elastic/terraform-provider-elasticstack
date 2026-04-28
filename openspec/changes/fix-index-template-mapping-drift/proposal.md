@@ -25,7 +25,7 @@ The exact reproduced mismatch is:
 ## Capabilities
 
 ### New Capabilities
-- `elasticsearch-index-template-mapping-drift`: index mappings owned by an index template are treated as non-drift when they appear in the index API response.
+<!-- None. -->
 
 ### Modified Capabilities
 - `elasticsearch-index`: `mappings` comparison preserves user intent while tolerating template-injected mapping supersets.
