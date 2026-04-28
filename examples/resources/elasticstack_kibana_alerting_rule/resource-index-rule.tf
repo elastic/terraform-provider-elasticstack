@@ -90,7 +90,7 @@ resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceede
     timeWindowUnit      = "d"
     groupBy             = "all"
     threshold           = [10]
-    index               = elasticstack_elasticsearch_data_stream.my_data_stream.name
+    index               = [elasticstack_elasticsearch_data_stream.my_data_stream.name]
     timeField           = "@timestamp"
   })
 
