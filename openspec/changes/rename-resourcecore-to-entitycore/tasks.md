@@ -1,10 +1,10 @@
 ## 1. Package rename and symbol rename
 
-- [ ] 1.1 Move every file from `internal/resourcecore/` to `internal/entitycore/`. Rename the package declaration in `core.go`, `doc.go`, `core_test.go`, and `configure_test.go` from `package resourcecore` to `package entitycore`. Delete the now-empty `internal/resourcecore/` directory.
-- [ ] 1.2 In the moved package, rename `core.go` to `resource_base.go`. Inside it, rename the type `Core` to `ResourceBase`, the constructor `New` to `NewResourceBase`, and update all internal references (including the `Configure`, `Metadata`, and `Client` receiver type). Preserve `Component`, the four `Component*` constants, and `Client()`'s signature exactly.
-- [ ] 1.3 In `internal/entitycore/doc.go`, update the package comment to describe the entity core (covering resources via `ResourceBase` and data sources via `DataSourceBase`). Reuse the existing `Component` and `New` (now `NewResourceBase`) prose; preserve the documentation of the literal-suffix rule and the "Component is not a client-resolution kind" note.
-- [ ] 1.4 In the moved package, rename `core_test.go` to `resource_base_test.go`. Update test names from `*Core*` to `*ResourceBase*`, update construction calls from `New(...)` to `NewResourceBase(...)`, and update assertions accordingly.
-- [ ] 1.5 In `internal/entitycore/configure_test.go`, update construction calls from `New(...)` to `NewResourceBase(...)` and update any reference to the type name. Keep the existing test coverage of the diagnostics-failure rule unchanged in semantics.
+- [x] 1.1 Move every file from `internal/resourcecore/` to `internal/entitycore/`. Rename the package declaration in `core.go`, `doc.go`, `core_test.go`, and `configure_test.go` from `package resourcecore` to `package entitycore`. Delete the now-empty `internal/resourcecore/` directory.
+- [x] 1.2 In the moved package, rename `core.go` to `resource_base.go`. Inside it, rename the type `Core` to `ResourceBase`, the constructor `New` to `NewResourceBase`, and update all internal references (including the `Configure`, `Metadata`, and `Client` receiver type). Preserve `Component`, the four `Component*` constants, and `Client()`'s signature exactly.
+- [x] 1.3 In `internal/entitycore/doc.go`, update the package comment to describe the entity core (covering resources via `ResourceBase` and data sources via `DataSourceBase`). Reuse the existing `Component` and `New` (now `NewResourceBase`) prose; preserve the documentation of the literal-suffix rule and the "Component is not a client-resolution kind" note.
+- [x] 1.4 In the moved package, rename `core_test.go` to `resource_base_test.go`. Update test names from `*Core*` to `*ResourceBase*`, update construction calls from `New(...)` to `NewResourceBase(...)`, and update assertions accordingly.
+- [x] 1.5 In `internal/entitycore/configure_test.go`, update construction calls from `New(...)` to `NewResourceBase(...)` and update any reference to the type name. Keep the existing test coverage of the diagnostics-failure rule unchanged in semantics.
 
 ## 2. New `DataSourceBase` substrate
 
@@ -57,8 +57,8 @@
 
 ## 8. Verification
 
-- [ ] 8.1 Run `make build` and confirm a clean build with no references to `resourcecore` remaining (`rg "resourcecore" internal provider | wc -l` reports 0; `openspec/changes/archive/` is excluded from this check).
-- [ ] 8.2 Run `go test ./internal/entitycore/...` and confirm all `ResourceBase` tests (renamed from `Core` tests) and all new `DataSourceBase` tests pass.
-- [ ] 8.3 Run `go test ./internal/elasticsearch/enrich/... ./internal/kibana/spaces/... ./internal/fleet/enrollmenttokens/...` and confirm the new `entitycore_contract_test.go` files pass and the existing acceptance test files compile (acceptance tests themselves are not required to be re-run as part of this change since the user-observable contract is unchanged).
-- [ ] 8.4 Run `go test ./...` (unit tests only) and confirm the renamed resource-side `entitycore_contract_test.go` files pass and no unit test references `resourcecore`.
-- [ ] 8.5 Run `make check-openspec` (or `openspec validate` once `make setup` has installed the CLI) and confirm the change validates.
+- [x] 8.1 Run `make build` and confirm a clean build with no references to `resourcecore` remaining (`rg "resourcecore" internal provider | wc -l` reports 0; `openspec/changes/archive/` is excluded from this check).
+- [x] 8.2 Run `go test ./internal/entitycore/...` and confirm all `ResourceBase` tests (renamed from `Core` tests) and all new `DataSourceBase` tests pass.
+- [x] 8.3 Run `go test ./internal/elasticsearch/enrich/... ./internal/kibana/spaces/... ./internal/fleet/enrollmenttokens/...` and confirm the new `entitycore_contract_test.go` files pass and the existing acceptance test files compile (acceptance tests themselves are not required to be re-run as part of this change since the user-observable contract is unchanged).
+- [x] 8.4 Run `go test ./...` (unit tests only) and confirm the renamed resource-side `entitycore_contract_test.go` files pass and no unit test references `resourcecore`.
+- [x] 8.5 Run `make check-openspec` (or `openspec validate` once `make setup` has installed the CLI) and confirm the change validates.
