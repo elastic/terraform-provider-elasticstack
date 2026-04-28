@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
