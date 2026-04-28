@@ -19,10 +19,10 @@
 
 ## 4. Audit `acc_lens_dashboard_app_panels_test.go`
 
-- [ ] 4.1 Tabulate every `(test_function, ConfigDirectory, step_intent)` triple in `acc_lens_dashboard_app_panels_test.go`. Record the table in the PR description.
-- [ ] 4.2 For each `ConfigDirectory` referenced by more than one function, classify each occurrence as one of: first creator, ImportState, PlanOnly assertion, or update-from-prior. Note any cases where two functions create-then-destroy the same `ConfigDirectory`.
-- [ ] 4.3 Fold ImportState-only and PlanOnly-only duplicate functions into their first creator as additional Steps; delete the now-empty wrappers. Leave update-from-prior cases untouched.
-- [ ] 4.4 If the audit also surfaces a monolithic ParallelTest in this file with ≥ 4 independent `ConfigDirectory` steps and a wall-clock ≥ 120 s in the most recent CI run, apply the §2 split to it. Otherwise note the file is already acceptably structured.
+- [x] 4.1 Tabulate every `(test_function, ConfigDirectory, step_intent)` triple in `acc_lens_dashboard_app_panels_test.go`. Record the table in the PR description.
+- [x] 4.2 For each `ConfigDirectory` referenced by more than one function, classify each occurrence as one of: first creator, ImportState, PlanOnly assertion, or update-from-prior. Note any cases where two functions create-then-destroy the same `ConfigDirectory`. **Result**: `"basic"` appears as a `NamedTestCaseDirectory` arg in three functions, but each resolves to a distinct physical path (keyed by test function name via `config.TestNameDirectory()`). No shared physical paths — no true duplicates.
+- [x] 4.3 Fold ImportState-only and PlanOnly-only duplicate functions into their first creator as additional Steps; delete the now-empty wrappers. Leave update-from-prior cases untouched. **Result**: Zero foldable duplicates found; no changes needed.
+- [x] 4.4 If the audit also surfaces a monolithic ParallelTest in this file with ≥ 4 independent `ConfigDirectory` steps and a wall-clock ≥ 120 s in the most recent CI run, apply the §2 split to it. Otherwise note the file is already acceptably structured. **Result**: `TestAccResourceDashboardLensDashboardAppPlan` has 12 plan-error steps but all are `PlanOnly: true` with `ExpectError` — they fail before any API call, running in milliseconds. Not a split candidate. The file is already acceptably structured. Also fixed a latent bug from task 2.4: testdata directories `TestAccResourceDashboardLensDashboardAppByValue/` and `TestAccResourceDashboardLensDashboardAppByValueTypedMetric/` were renamed to `TestAccResourceDashboardLensDashboardAppByValue_basic/` and `TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic/` to match the `_basic`-suffixed function names introduced in 2.4.
 
 ## 5. Verify and document
 
