@@ -18,20 +18,18 @@
 package enrollmenttokens
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/stretchr/testify/require"
 )
 
-var (
-	_ datasource.DataSource              = &enrollmentTokensDataSource{}
-	_ datasource.DataSourceWithConfigure = &enrollmentTokensDataSource{}
-)
-
-// NewDataSource is a helper function to simplify the provider implementation.
-func NewDataSource() datasource.DataSource {
-	return &enrollmentTokensDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentFleet, "enrollment_tokens")}
-}
-
-type enrollmentTokensDataSource struct {
-	*entitycore.DataSourceBase
+func TestDataSource_embedsEntityCoreDataSourceBase(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[enrollmentTokensDataSource]()
+	field, ok := rt.FieldByName("DataSourceBase")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.DataSourceBase](), field.Type)
 }

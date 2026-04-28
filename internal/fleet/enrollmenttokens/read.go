@@ -36,7 +36,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	client, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
+	client, diags := d.Client().GetKibanaClient(ctx, model.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

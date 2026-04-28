@@ -44,11 +44,11 @@
 
 ## 6. Pilot data-source migration: Fleet (`enrollment_tokens`)
 
-- [ ] 6.1 In `internal/fleet/enrollmenttokens/data_source.go`, change `enrollmentTokensDataSource` from `type enrollmentTokensDataSource struct { client *clients.ProviderClientFactory }` to `type enrollmentTokensDataSource struct { *entitycore.DataSourceBase }`.
-- [ ] 6.2 Replace the `NewDataSource` body with `return &enrollmentTokensDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentFleet, "enrollment_tokens")}`.
-- [ ] 6.3 Delete the package-local `Metadata` and `Configure` methods on `enrollmentTokensDataSource`. Keep the `var (_ datasource.DataSource ... )` interface assertions.
-- [ ] 6.4 Update every package-local site that reads `d.client` (in this file or its `Schema`/`Read` neighbors in the same package) to call `d.Client()` instead. Verify the resulting Terraform type name is exactly `<provider>_fleet_enrollment_tokens`.
-- [ ] 6.5 Add `internal/fleet/enrollmenttokens/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[enrollmentTokensDataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`.
+- [x] 6.1 In `internal/fleet/enrollmenttokens/data_source.go`, change `enrollmentTokensDataSource` from `type enrollmentTokensDataSource struct { client *clients.ProviderClientFactory }` to `type enrollmentTokensDataSource struct { *entitycore.DataSourceBase }`.
+- [x] 6.2 Replace the `NewDataSource` body with `return &enrollmentTokensDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentFleet, "enrollment_tokens")}`.
+- [x] 6.3 Delete the package-local `Metadata` and `Configure` methods on `enrollmentTokensDataSource`. Keep the `var (_ datasource.DataSource ... )` interface assertions.
+- [x] 6.4 Update every package-local site that reads `d.client` (in this file or its `Schema`/`Read` neighbors in the same package) to call `d.Client()` instead. Verify the resulting Terraform type name is exactly `<provider>_fleet_enrollment_tokens`.
+- [x] 6.5 Add `internal/fleet/enrollmenttokens/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[enrollmentTokensDataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`.
 
 ## 7. OpenSpec capability rename
 
