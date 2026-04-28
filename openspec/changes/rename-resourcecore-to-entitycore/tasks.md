@@ -52,8 +52,8 @@
 
 ## 7. OpenSpec capability rename
 
-- [ ] 7.1 At archive time, rename `openspec/specs/provider-framework-resource-core/` to `openspec/specs/provider-framework-entity-core/`. The contents of the renamed `spec.md` are replaced wholesale by the delta authored under `openspec/changes/rename-resourcecore-to-entitycore/specs/provider-framework-entity-core/spec.md`.
-- [ ] 7.2 Confirm there are no remaining workspace references to the old capability name `provider-framework-resource-core` in non-archived OpenSpec artifacts (`openspec/changes/*/` excluding `openspec/changes/archive/`) after the archive step. Archived references are intentionally preserved.
+- [x] 7.1 At archive time, rename `openspec/specs/provider-framework-resource-core/` to `openspec/specs/provider-framework-entity-core/`. The contents of the renamed `spec.md` are replaced wholesale by the delta authored under `openspec/changes/rename-resourcecore-to-entitycore/specs/provider-framework-entity-core/spec.md`.
+- [x] 7.2 Confirm there are no remaining workspace references to the old capability name `provider-framework-resource-core` in non-archived OpenSpec artifacts (`openspec/changes/*/` excluding `openspec/changes/archive/`) after the archive step. Archived references are intentionally preserved.
 
 ## 8. Verification
 
