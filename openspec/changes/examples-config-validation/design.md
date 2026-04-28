@@ -5,44 +5,42 @@ The provider ships ~115 example `.tf` files under `examples/resources/` and `exa
 1. `terraform-plugin-docs` embeds them into the generated reference docs at `docs/resources/<name>.md` and `docs/data-sources/<name>.md`.
 2. End users copy them into their own configurations as starting points.
 
-Today there is no automated check that these snippets parse against the provider's actual schema. Schema drift between the provider and its documented examples (e.g. a block-form attribute being changed to an object attribute) is silent until a user reports a broken copy-paste, as in issue #2523.
+Today there is no automated check that these snippets plan against the provider's actual schema and plan-time validation. Schema drift between the provider and its documented examples (e.g. a block-form attribute being changed to an object attribute) is silent until a user reports a broken copy-paste, as in issue #2523.
 
-This change introduces a single Go test that validates every example against the locally built provider. The design favours keeping the test cheap, fast, and correct over catching every possible bug class — `terraform validate` is the right tool for "does this snippet match the schema", and going further (PlanOnly, full Apply) trades dramatically more execution cost and infrastructure dependency for a small marginal gain in coverage.
+This change introduces a PlanOnly acceptance test that verifies every covered example against the in-process provider used by the existing acceptance suite. The design favours using the provider test harness already present in the repo over maintaining a separate `terraform validate` runner, provider installation path, and Terraform CLI orchestration.
 
 ## Goals / Non-Goals
 
 **Goals**:
-- Catch schema-mismatch bugs in example `.tf` files (block vs. attribute, wrong attribute names, type errors, missing required attributes) before they reach users.
+- Catch schema-mismatch and plan-time validation bugs in example `.tf` files (block vs. attribute, wrong attribute names, type errors, missing required attributes, invalid provider validators) before they reach users.
 - Attribute failures to a specific example file so the fix is obvious.
-- Run as part of the normal `go test ./...` suite without requiring a live Elastic stack.
-- Make example files self-contained so users can copy any single snippet and have it parse.
-- Establish "examples must validate" as an enforceable convention going forward.
+- Run as part of the existing acceptance-test workflow using the same provider factories and prechecks as other acceptance coverage.
+- Make example files self-contained so users can copy any single snippet and have it plan.
+- Establish "examples must plan" as an enforceable convention going forward.
 
 **Non-Goals**:
-- Verify that examples produce a valid plan (would force a third of data-source examples to depend on a live stack).
 - Verify that examples can be applied successfully (different and much more expensive guarantee, already partially covered by per-resource acceptance tests).
 - Lint examples for stylistic concerns (formatting, comment quality).
 - Test combinations of examples that span multiple resource directories.
 
 ## Decisions
 
-### 1. Use `terraform validate` rather than `PlanOnly`
+### 1. Use `PlanOnly` acceptance tests rather than `terraform validate`
 
-`terraform validate` parses the configuration and checks it against the provider schema, including block-vs-attribute, attribute names, types, required attributes, and intra-config references. It does **not** call data sources or refresh state, so it has no live-backend dependency.
+`terraform-plugin-testing` already gives the provider a stable in-process execution path through `resource.Test`, `ProtoV6ProviderFactories`, `ConfigDirectory`, and `PlanOnly`. Using that path avoids the complexity of creating a separate `terraform validate` harness that must install or locate a locally built provider, manage `terraform init`, parse CLI diagnostics, and handle Terraform CLI warning noise.
 
-`PlanOnly` via `terraform-plugin-testing` would additionally evaluate data sources and resolve computed cross-resource references. In this repo, only a small minority of resource examples reference data sources at all, and most data-source examples are local-compute (`elasticstack_elasticsearch_ingest_processor_*`). The marginal coverage `PlanOnly` would add over `validate` is small — and would require a live Elastic and Kibana stack for a meaningful subset of examples, pushing the test out of unit-test territory.
+PlanOnly also catches more of what users experience when they copy an example: provider schema checks, Plugin Framework validators, data source planning, and provider configuration all run through the same machinery as the rest of the acceptance suite. The trade-off is that this is acceptance coverage, not a stack-free unit test. Examples that include data sources or provider interactions may require the live Elasticsearch/Kibana endpoints already required by `acctest.PreCheck`.
 
-The bug class motivating this change (#2523, block vs. attribute) is squarely in `validate`'s wheelhouse.
+The bug class motivating this change (#2523, block vs. attribute) is caught before planning can succeed, and additional plan-time validation failures are caught as well.
 
-### 2. Drive the harness via `terraform-exec`, not `terraform-plugin-testing`
-
-`terraform-plugin-testing` does not expose a "validate-only" step; its lifecycle starts at plan. Using `terraform-exec` (`tfexec.NewTerraform(...).Init(...).Validate(...)`) keeps the harness aligned with what is actually being tested and avoids dragging in lifecycle behaviour the test does not want.
+### 2. Drive the harness via `terraform-plugin-testing`
 
 The harness will:
 1. Embed the contents of `examples/resources/` and `examples/data-sources/` via `embed.FS` in `examples/examples.go`.
-2. For each example `.tf` file, write it to a temporary directory together with a generated `terraform.tf` that pins the locally built provider via `dev_overrides` (or the existing acceptance-test provider factory if cleaner — see open question 1).
-3. Run `terraform init` and `terraform validate`, surfacing structured diagnostics if validation fails.
-4. Use `t.Run("<relative-path>", ...)` so the failing file is named in the test output and matches `-run` filters.
+2. For each example `.tf` file, write it to a temporary directory as an isolated Terraform module.
+3. Run `resource.Test` with `ProtoV6ProviderFactories: acctest.Providers`, `ConfigDirectory` pointing at that generated module, and `PlanOnly: true`.
+4. Set `ExpectNonEmptyPlan: true` for resource examples, where a successful plan normally contains creates. For data-source-only examples, leave the default expectation so a successful read-only plan may be empty.
+5. Use `t.Run("<relative-path>", ...)` so the failing file is named in the test output and matches `-run` filters.
 
 ### 3. One subtest per example file
 
@@ -52,13 +50,13 @@ Today, only one directory violates this: `examples/resources/elasticstack_kibana
 
 ### 4. Leave embedded provider configuration in examples alone
 
-An earlier version of this design considered stripping every embedded `provider "elasticstack" { ... }` block and per-resource `elasticsearch_connection { ... }` block from existing examples. That cleanup is unnecessary for the validate-based harness: `terraform validate` accepts those blocks as schema-conformant input and does not require the harness to inject its own provider configuration. The blocks are also stylistic choices in the rendered docs (some users prefer the explicit setup, others prefer it implicit), and stripping them would produce a large, behaviourally-irrelevant docs diff.
+An earlier version of this design considered stripping every embedded `provider "elasticstack" { ... }` block and per-resource `elasticsearch_connection { ... }` block from existing examples. That cleanup is unnecessary for the PlanOnly harness: the acceptance-test provider configuration path already supplies the environment needed by examples, and examples that intentionally show explicit provider or connection blocks should continue to do so in the generated docs.
 
-This change therefore leaves embedded provider and connection blocks in place. The harness itself does not write a provider configuration into the per-test working directory; it only writes the `terraform { required_providers { ... } }` pin needed for `terraform init` to discover the locally built provider. If a future change wants to standardise example docs (e.g. for stylistic consistency), it can do so as a separate, focused cleanup with its own justification.
+This change therefore leaves embedded provider and connection blocks in place. If a future change wants to standardise example docs (e.g. for stylistic consistency), it can do so as a separate, focused cleanup with its own justification.
 
-### 5. Static skip-list for non-validatable directories
+### 5. Static skip-list for non-covered directories
 
-Two directories under `examples/` cannot be validated by this harness:
+Two directories under `examples/` are not covered by this harness:
 
 - `examples/cloud/`: uses the `ec` (Elastic Cloud) provider, not `elasticstack`. Out of scope for this test.
 - `examples/provider/`: contains snippets demonstrating provider configuration itself. They are intentionally partial and not standalone configurations.
@@ -69,25 +67,25 @@ We will hard-code these paths in the harness skip-list. We considered an in-file
 
 Rather than landing the test in a partially-disabled state, this change fixes every example that the new harness reports as broken. We expect the `delayed_data_check_config` bug from #2523 plus a small number of latent issues — most likely a handful of block-vs-attribute or attribute-rename mistakes that have accumulated since the relevant resources were last touched.
 
-### 7. Run alongside the regular `go test` suite
+### 7. Run with the acceptance-test suite
 
-Because `terraform validate` does not need a live stack, this test does not need the `TF_ACC=1` gating used for true acceptance tests. It can be a standard `*_test.go` test in `internal/acctest/` (or a new lightweight package) that runs in `make test`. CI will catch broken examples on every PR, not only on full acceptance runs.
+Because PlanOnly may evaluate data sources and provider plan validation that depends on live services, this test belongs in the acceptance-test suite and should use `acctest.PreCheck(t)`. CI will catch broken examples wherever acceptance tests run with the standard Elasticsearch/Kibana environment.
 
-The harness still depends on the locally built provider being available to the `terraform` CLI. We will use the same `dev_overrides`-style configuration the existing development workflow already supports.
+The harness uses the in-process provider factories from `acctest.Providers`, so it does not need `terraform init`, `dev_overrides`, a filesystem mirror, or a locally installed provider binary.
 
 ## Risks / Trade-offs
 
-- **`terraform init` per subtest is slow.** With ~115 examples and a fresh init per directory, naive sequential execution may add several minutes to `go test`. Mitigation: run subtests in parallel (`t.Parallel()`), which is safe because each writes to its own tempdir; share the provider plugin cache across subtests via `TF_PLUGIN_CACHE_DIR`. Measure before optimizing further.
+- **PlanOnly may be slower or flakier than schema-only validation.** Some examples, especially data sources, may reach the live stack during planning. Mitigation: run under existing acceptance-test prechecks, keep each example isolated, and use normal acceptance-test CI expectations for service availability.
 - **Self-contained example files inflate `alerting_rule` docs slightly.** Each of the three rule snippets will redefine the connector and data stream prerequisites. Mitigation: accept the duplication; it is a one-time cost confined to one resource and matches what users actually need to copy.
 - **Latent broken examples may be more numerous than expected.** Mitigation: the WIP commit referenced by the task already proves the harness pattern works; we will run it locally during implementation to enumerate and fix all surfaced failures before the change is ready for review.
-- **`terraform validate` may not catch every schema bug Plugin Framework providers can express.** Some validations only run during plan (e.g. `Validators` on attributes that compare across blocks). Mitigation: treat this test as a floor, not a ceiling. Per-resource acceptance tests continue to cover apply-time behaviour.
-- **Provider `Configure` may still be invoked by `terraform validate` in some Terraform versions.** Mitigation: confirm during implementation that the elasticstack provider's `Configure` does not require live connectivity (most providers defer client construction). If it does, document the requirement and consider running with `TF_SKIP_PROVIDER_VERIFY` or split the harness into stack-required and stack-free buckets.
+- **PlanOnly does not prove apply succeeds.** The test stops before mutating the stack. Mitigation: treat this test as a documentation-example floor; per-resource acceptance tests continue to cover apply, update, read, import, and destroy behaviour.
+- **Data-source examples may need real backing objects.** Some data sources cannot plan successfully unless referenced objects exist. Mitigation: either make those examples self-contained by defining their prerequisites in the same file, or add narrowly documented skips only when a prerequisite cannot be created without leaving PlanOnly scope.
 
 ## Migration Plan
 
 The work is naturally staged:
 
-1. Add the embed FS in `examples/examples.go` and the validation harness in `internal/acctest/`.
+1. Add the embed FS in `examples/examples.go` and the PlanOnly acceptance harness in `internal/acctest/`.
 2. Run the harness locally; collect the list of failing example files.
 3. Restructure `examples/resources/elasticstack_kibana_alerting_rule/` for self-containment.
 4. Fix `delayed_data_check_config` (#2523) and every other example surfaced as broken by step 2.
@@ -98,6 +96,6 @@ No external data migration is required. No state-format changes. Embedded provid
 
 ## Open Questions
 
-- **Provider availability mechanism**: should the harness use `dev_overrides` (matching the local development workflow) or build the provider once at test setup and inject it via a filesystem mirror? `dev_overrides` is simpler but emits a stderr warning each invocation; a filesystem mirror is cleaner but more setup. Default plan: `dev_overrides`, revisit if the warnings make output hard to read.
-- **Test location**: place the new test alongside existing acceptance tests in `internal/acctest/` for consistency, or in a new `internal/examples/` package to signal it is a different class of test (no `TF_ACC=1` gating, no live stack). Default plan: `internal/acctest/` with a clear filename like `examples_validate_test.go`; revisit if the lighter dependencies make a separate package worth the split.
-- **Parallelism limit**: how aggressively to parallelise. Default plan: full `t.Parallel()` with the standard `go test -parallel` cap; tune if init contention shows up under high parallelism.
+- **Resource-vs-data-source plan expectations**: use `ExpectNonEmptyPlan: true` for resource examples and the default empty-plan expectation for data-source examples. Confirm whether any data-source examples also create supporting resources and need the resource-style expectation.
+- **Test location**: place the new test alongside existing acceptance-test helpers in `internal/acctest/`, or in a new package if importing `examples` creates an undesirable dependency direction. Default plan: `internal/acctest/` with a clear filename like `examples_plan_test.go`.
+- **Parallelism limit**: how aggressively to parallelise. Default plan: full `t.Parallel()` with the standard `go test -parallel` cap; tune if live-stack contention shows up under high parallelism.
