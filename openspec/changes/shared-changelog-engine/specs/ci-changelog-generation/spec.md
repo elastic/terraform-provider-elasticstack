@@ -54,6 +54,17 @@ In explicit release mode, after deterministic validation succeeds, repository-au
 - **WHEN** the changelog generator runs in explicit release mode
 - **THEN** it SHALL regenerate the concrete release section needed for that branch without treating the branch as the singleton `Unreleased` maintenance branch
 
+### Requirement: Shared changelog engine reuses existing JavaScript helpers
+The shared changelog engine SHALL be implemented in JavaScript and SHALL run on the Node.js runtime already used by `actions/github-script` and the workflow-source helpers. It SHALL be built by extracting and composing the existing JavaScript modules under `.github/workflows-src/changelog-generation/scripts/` and `.github/workflows-src/lib/` rather than by reimplementing changelog parsing, rendering, or PR resolution in another language. The engine SHALL NOT be authored in Go and SHALL NOT introduce a parallel Go implementation of changelog generation.
+
+#### Scenario: Engine is implemented in JavaScript
+- **WHEN** the shared changelog engine is invoked from any workflow
+- **THEN** it SHALL execute as JavaScript on Node.js and SHALL reuse the existing repository-authored JS helpers for release-context resolution, merged-PR resolution, PR-body changelog parsing, and changelog rendering
+
+#### Scenario: No Go implementation of the changelog engine
+- **WHEN** maintainers add or modify shared changelog engine logic
+- **THEN** that logic SHALL live in the existing JavaScript helper tree and SHALL NOT be added under `scripts/` as a Go program
+
 ### Requirement: Merged PR changelog metadata is gathered for deterministic assembly
 Before changelog rendering starts, a shared repository-authored changelog engine SHALL gather the merged pull requests in the authoritative release range and capture the metadata needed for rendering from those PRs by using the GitHub API with the workflow's repository token. For each merged PR, the engine SHALL capture at least the pull request number, URL, merge commit SHA, labels, and pull request body.
 

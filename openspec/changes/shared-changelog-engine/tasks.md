@@ -1,8 +1,8 @@
 ## 1. Extract the shared changelog engine
 
-- [ ] 1.1 Identify the current changelog-generation logic that must move behind a shared repository-authored script interface, including release-context resolution, merged-PR discovery, changelog parsing/validation, rendering, and `CHANGELOG.md` rewriting
-- [ ] 1.2 Implement the shared engine so it accepts explicit mode inputs (`unreleased` or `release`, with explicit target version for release mode), resolves merged PRs through the GitHub API using the workflow token, and emits structured outputs needed by workflows
-- [ ] 1.3 Preserve or add automated tests covering deterministic assembly, release/unreleased mode selection, GitHub-backed merged-PR resolution, and changelog-section rewriting behavior
+- [ ] 1.1 Inventory the existing JavaScript changelog-generation logic under `.github/workflows-src/changelog-generation/scripts/*.inline.js` and `.github/workflows-src/lib/*.js` (release-context resolution, merged-PR discovery, PR-body changelog parsing/validation, rendering, and `CHANGELOG.md` rewriting) that must move behind the shared engine interface
+- [ ] 1.2 Implement the shared engine in JavaScript/Node by composing the existing helpers (do NOT reimplement in Go), so it accepts explicit mode inputs (`unreleased` or `release`, with explicit target version for release mode), resolves merged PRs through the GitHub API using the workflow token, and emits structured outputs needed by workflows
+- [ ] 1.3 Preserve and extend the existing `.github/workflows-src/lib/*.test.mjs` coverage so the shared engine has automated tests covering deterministic assembly, release/unreleased mode selection, GitHub-backed merged-PR resolution, and changelog-section rewriting behavior
 
 ## 2. Update changelog-generation workflow behavior
 
