@@ -138,9 +138,9 @@ func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 	})
 }
 
-// TestAccResourceDashboardSloBurnRateDisplayOptions covers hide_title, hide_border, title,
-// description, and update behavior (duration change, bool flip).
-func TestAccResourceDashboardSloBurnRateDisplayOptions(t *testing.T) {
+// TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options covers
+// hide_title, hide_border, title, and description fields on create.
+func TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -165,7 +165,27 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.hide_border", "false"),
 				),
 			},
-			// Update: change duration, flip hide_title/hide_border, remove title/description
+		},
+	})
+}
+
+// TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated covers
+// update behavior: duration change, bool flip, removal of title/description.
+func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t *testing.T) {
+	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with display options first, then update: change duration, flip hide_title/hide_border, remove title/description
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_options"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
