@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -439,7 +440,7 @@ func kqlCustomIndicatorSchema() schema.Block {
 				"filter": schema.StringAttribute{
 					Optional: true,
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "filter_kql"},
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("filter_kql")),
 					},
 				},
 				"filter_kql": kqlWithFiltersObjectSchema("filter"),
@@ -448,7 +449,7 @@ func kqlCustomIndicatorSchema() schema.Block {
 					Computed: true,
 					Default:  stringdefault.StaticString(""),
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "good_kql"},
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("good_kql")),
 					},
 				},
 				"good_kql": kqlWithFiltersObjectSchema("good"),
@@ -457,7 +458,7 @@ func kqlCustomIndicatorSchema() schema.Block {
 					Computed: true,
 					Default:  stringdefault.StaticString(""),
 					Validators: []validator.String{
-						kqlLegacyStringExclusiveWithObject{parallelObjectAttr: "total_kql"},
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("total_kql")),
 					},
 				},
 				"total_kql":       kqlWithFiltersObjectSchema("total"),
@@ -505,7 +506,7 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string) schema.SingleNestedAt
 			},
 		},
 		Validators: []validator.Object{
-			kqlObjectFormExclusiveWithString{parallelStringAttr: parallelStringAttr},
+			objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(parallelStringAttr)),
 			kqlObjectFormMeaningful{},
 		},
 		PlanModifiers: []planmodifier.Object{

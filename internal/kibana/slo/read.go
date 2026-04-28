@@ -76,7 +76,7 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.Kibana
 	}
 
 	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
-	res, artifacts, fwDiags := kibanaoapi.GetSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)
+	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return false, diags
@@ -85,7 +85,7 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.Kibana
 		return false, diags
 	}
 
-	apiModel := kibanaoapi.SloResponseToModel(compID.ClusterID, res, artifacts)
+	apiModel := kibanaoapi.SloResponseToModel(compID.ClusterID, res)
 	state.ID = types.StringValue((&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: apiModel.SloID}).String())
 	diags.Append(state.populateFromAPI(apiModel)...)
 	if diags.HasError() {

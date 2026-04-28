@@ -19,98 +19,11 @@ package slo
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// kqlLegacyStringExclusiveWithObject enforces that the string arm of a KQL union and the
-// parallel *_kql object form are not both configured.
-type kqlLegacyStringExclusiveWithObject struct {
-	parallelObjectAttr string
-}
-
-func (v kqlLegacyStringExclusiveWithObject) Description(_ context.Context) string {
-	return fmt.Sprintf("mutually exclusive with %s: configure only one representation", v.parallelObjectAttr)
-}
-
-func (v kqlLegacyStringExclusiveWithObject) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v kqlLegacyStringExclusiveWithObject) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	s := req.ConfigValue.ValueString()
-	if s == "" {
-		return
-	}
-
-	var o types.Object
-	merge := req.Path.Expression().Merge(path.MatchRelative().AtParent().AtName(v.parallelObjectAttr))
-	matched, diags := req.Config.PathMatches(ctx, merge)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() || len(matched) == 0 {
-		return
-	}
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, matched[0], &o)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if o.IsNull() || o.IsUnknown() {
-		return
-	}
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		"Invalid Configuration",
-		fmt.Sprintf("Cannot set both this attribute and %s. Remove one of them.", v.parallelObjectAttr),
-	)
-}
-
-// kqlObjectFormExclusiveWithString enforces the same rule from the object-form attribute.
-type kqlObjectFormExclusiveWithString struct {
-	parallelStringAttr string
-}
-
-func (v kqlObjectFormExclusiveWithString) Description(_ context.Context) string {
-	return fmt.Sprintf("mutually exclusive with %s: configure only one representation", v.parallelStringAttr)
-}
-
-func (v kqlObjectFormExclusiveWithString) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v kqlObjectFormExclusiveWithString) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	merge := req.Path.Expression().Merge(path.MatchRelative().AtParent().AtName(v.parallelStringAttr))
-	matched, diags := req.Config.PathMatches(ctx, merge)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() || len(matched) == 0 {
-		return
-	}
-	var s types.String
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, matched[0], &s)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if s.IsNull() || s.IsUnknown() {
-		return
-	}
-	if s.ValueString() == "" {
-		return
-	}
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		"Invalid Configuration",
-		fmt.Sprintf("Cannot set both %s and this block. Remove one of them.", v.parallelStringAttr),
-	)
-}
 
 // kqlObjectFormMeaningful requires that a configured (known) KQL object form includes a non-blank
 // kql_query and/or a non-empty filters list. Unknown attribute values are accepted so read/computed

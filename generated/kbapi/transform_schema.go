@@ -608,6 +608,7 @@ var transformers = []TransformFunc{
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
 	fixSloFloatFormats,
+	fixSloResponseArtifacts,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -1498,6 +1499,18 @@ func fixSloFloatFormats(schema *Schema) {
 	// Timeslice metric threshold and percentile
 	schema.Components.Set("schemas.SLOs_indicator_properties_timeslice_metric.properties.params.properties.metric.properties.threshold.format", "double")
 	schema.Components.Set("schemas.SLOs_timeslice_metric_percentile_metric.properties.percentile.format", "double")
+}
+
+// fixSloResponseArtifacts adds the `artifacts` property to the SLO response
+// schema. Kibana's published OpenAPI omits it from SLOs_slo_with_summary_response
+// even though the GET endpoint returns it (it is documented on the create/update
+// request schemas). Adding it here lets oapi-codegen populate JSON200.Artifacts
+// directly, removing the need for the resource layer to re-decode the body.
+func fixSloResponseArtifacts(schema *Schema) {
+	schema.Components.Set(
+		"schemas.SLOs_slo_with_summary_response.properties.artifacts",
+		Map{"$ref": "#/components/schemas/SLOs_artifacts"},
+	)
 }
 
 func fixAlertingRuleParams(schema *Schema) {

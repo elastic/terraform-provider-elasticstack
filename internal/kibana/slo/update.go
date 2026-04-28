@@ -121,9 +121,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		Settings:        apiModel.Settings,
 		GroupBy:         groupBy,
 		Tags:            kibanaoapi.TagsToPtr(apiModel.Tags),
-	}
-	if apiModel.Artifacts != nil {
-		reqModel.Artifacts = apiModel.Artifacts
+		Artifacts:       apiModel.Artifacts,
 	}
 
 	desiredEnabled := plan.Enabled

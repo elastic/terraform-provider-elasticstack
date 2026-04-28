@@ -65,13 +65,11 @@ func Test_SloResponseToModel(t *testing.T) {
 		name          string
 		spaceID       string
 		sloResponse   *kbapi.SLOsSloWithSummaryResponse
-		artifacts     *kbapi.SLOsArtifacts
 		expectedModel *models.Slo
 	}{
 		{
-			name:      "should return a model with the correct values",
-			spaceID:   "space-id",
-			artifacts: nil,
+			name:    "should return a model with the correct values",
+			spaceID: "space-id",
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
 				Name:            "slo-name",
@@ -96,9 +94,8 @@ func Test_SloResponseToModel(t *testing.T) {
 			},
 		},
 		{
-			name:      "should return tags if available",
-			spaceID:   "space-id",
-			artifacts: nil,
+			name:    "should return tags if available",
+			spaceID: "space-id",
 			sloResponse: &kbapi.SLOsSloWithSummaryResponse{
 				Id:              "slo-id",
 				Name:            "slo-name",
@@ -127,7 +124,6 @@ func Test_SloResponseToModel(t *testing.T) {
 		{
 			name:          "nil response should return a nil model",
 			spaceID:       "space-id",
-			artifacts:     nil,
 			sloResponse:   nil,
 			expectedModel: nil,
 		},
@@ -142,8 +138,8 @@ func Test_SloResponseToModel(t *testing.T) {
 				TimeWindow:      kbapi.SLOsTimeWindow{Duration: "7d", Type: "rolling"},
 				BudgetingMethod: "occurrences",
 				Settings:        kbapi.SLOsSettings{SyncDelay: &syncDelay},
+				Artifacts:       kbapiTestArtifacts("dashboard-1"),
 			},
-			artifacts: kbapiTestArtifacts("dashboard-1"),
 			expectedModel: &models.Slo{
 				SloID:           "slo-id",
 				SpaceID:         "space-id",
@@ -161,7 +157,7 @@ func Test_SloResponseToModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := SloResponseToModel(tt.spaceID, tt.sloResponse, tt.artifacts)
+			model := SloResponseToModel(tt.spaceID, tt.sloResponse)
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}

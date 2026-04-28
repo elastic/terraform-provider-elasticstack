@@ -644,7 +644,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name": config.StringVariable("kql-dup"),
 				},
 				// Fires on either the string or object arm of the KQL exclusive pair.
-				ExpectError: regexp.MustCompile(`(?s)Invalid Configuration.*Cannot set both.*good`),
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Combination.*good`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -956,7 +956,7 @@ func checkSloAPIEnabled(want bool) resource.TestCheckFunc {
 		if err != nil {
 			return err
 		}
-		apiSlo, _, getDiags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
+		apiSlo, getDiags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)
 		if getDiags.HasError() {
 			return fmt.Errorf("get SLO: %v", getDiags)
 		}
@@ -975,7 +975,7 @@ func checkSloAPIEnabled(want bool) resource.TestCheckFunc {
 var checkResourceSloDestroy = checks.KibanaResourceDestroyCheckCompositeID(
 	"elasticstack_kibana_slo",
 	func(ctx context.Context, client *kibanaoapi.Client, spaceID, sloID string) (bool, error) {
-		res, _, diags := kibanaoapi.GetSlo(ctx, client, spaceID, sloID)
+		res, diags := kibanaoapi.GetSlo(ctx, client, spaceID, sloID)
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to check if SLO was destroyed: %v", diags)
 		}

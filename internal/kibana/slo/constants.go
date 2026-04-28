@@ -48,7 +48,7 @@ var SLOKqlFleetAccTestConstraints = mustKqlAccConstraint(">=8.10.0,!=8.11.0,!=8.
 func mustKqlAccConstraint(s string) version.Constraints {
 	c, err := version.NewConstraint(s)
 	if err != nil {
-		panic(fmt.Errorf("SLOKqlAccTestConstraints: %w", err))
+		panic(fmt.Errorf("invalid SLO KQL acc test constraint %q: %w", s, err))
 	}
 	return c
 }
