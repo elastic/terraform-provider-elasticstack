@@ -234,6 +234,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        shard: [0, 1]
         version:
           - '8.5.3'
           - '8.6.2'
@@ -361,7 +362,7 @@ jobs:
         id: tf-acceptance
         timeout-minutes: 30
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
-        run: make testacc
+        run: make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
         env:
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
