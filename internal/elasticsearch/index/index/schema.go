@@ -503,7 +503,7 @@ func getSchema() schema.Schema {
 				Description: mappingsDescription,
 				Optional:    true,
 				Computed:    true,
-				CustomType:  jsontypes.NormalizedType{},
+				CustomType:  mappingsType{},
 				Validators: []validator.String{
 					index.StringIsJSONObject{},
 				},

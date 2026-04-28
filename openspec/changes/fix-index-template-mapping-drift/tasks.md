@@ -14,10 +14,10 @@
 
 ## 3. Fix semantic equality for `mappings`
 
-- [ ] 3.1 Add `mappingsType` / `mappingsValue` in `internal/elasticsearch/index/index/mappings_type.go`, string-backed by `jsontypes.Normalized`.
-- [ ] 3.2 Implement `StringSemanticEquals` so refreshed/API mappings that are a non-drifting superset of prior user intent compare equal.
-- [ ] 3.3 Switch the `mappings` attribute in `internal/elasticsearch/index/index/schema.go` from `jsontypes.NormalizedType{}` to the custom mappings type.
-- [ ] 3.4 Simplify `mappingsPlanModifier` so it uses the shared helper only for `RequiresReplace` decisions and no longer copies state-only mapping values into the plan.
+- [x] 3.1 Add `mappingsType` / `mappingsValue` in `internal/elasticsearch/index/index/mappings_type.go`, string-backed by `jsontypes.Normalized`.
+- [x] 3.2 Implement `StringSemanticEquals` so refreshed/API mappings that are a non-drifting superset of prior user intent compare equal.
+- [x] 3.3 Switch the `mappings` attribute in `internal/elasticsearch/index/index/schema.go` from `jsontypes.NormalizedType{}` to the custom mappings type.
+- [x] 3.4 Simplify `mappingsPlanModifier` so it uses the shared helper only for `RequiresReplace` decisions and no longer copies state-only mapping values into the plan.
 
 ## 4. Remove workaround and enable acceptance target
 
