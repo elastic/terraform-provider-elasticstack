@@ -9,13 +9,19 @@ resource "elasticstack_kibana_space" "test" {
   description = "Test space for Fleet enrollment tokens space_id test"
 }
 
+resource "elasticstack_fleet_agent_download_source" "default" {
+  name    = "Test Artifacts Source"
+  host    = "https://artifacts.elastic.co/downloads/"
+  default = true
+}
+
 resource "elasticstack_fleet_agent_policy" "test" {
   name        = "Test Agent Policy for Enrollment Tokens (SpaceID)"
   namespace   = "default"
   description = "Agent Policy for testing Enrollment Tokens with space_id"
   space_ids   = [var.space_id]
 
-  depends_on = [elasticstack_kibana_space.test]
+  depends_on = [elasticstack_kibana_space.test, elasticstack_fleet_agent_download_source.default]
 }
 
 data "elasticstack_fleet_enrollment_tokens" "test" {
