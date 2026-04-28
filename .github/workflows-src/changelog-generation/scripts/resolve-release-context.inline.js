@@ -1,7 +1,6 @@
 const { execSync } = require('child_process');
-//include: ../../lib/changelog-release-context.js
+//include: ../../lib/changelog-engine-workflow.js
 
-// Determine mode from event
 const eventName = context.eventName;
 const headBranch =
   context.payload.pull_request?.head?.ref ??
@@ -10,41 +9,42 @@ const headBranch =
   process.env.GITHUB_REF_NAME ??
   '';
 
-let tags = [];
-try {
-  // List all tags matching vX.Y.Z semver pattern, sort by version, pick the latest
-  const tagsRaw = execSync(
-    'git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-version:refname',
-    { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-  ).trim();
+const explicitModeRaw = process.env.MODE ?? process.env.INPUT_MODE ?? '';
+let mode;
+let targetVersion = process.env.TARGET_VERSION ?? process.env.INPUT_TARGET_VERSION ?? '';
 
-  tags = parseSemverTags(tagsRaw);
-} catch (err) {
-  core.warning(`Failed to list git tags: ${err.message}`);
+if (explicitModeRaw === 'unreleased' || explicitModeRaw === 'release') {
+  mode = explicitModeRaw;
+} else {
+  const legacy = resolveReleaseMode({ eventName, headBranch });
+  mode = legacy.mode;
+  if (legacy.targetVersion) {
+    targetVersion = legacy.targetVersion;
+  }
 }
 
-const releaseContext = buildReleaseContext({ eventName, headBranch, tags });
+const ctx = resolveChangelogCompareContext({ mode, targetVersion, exec: execSync, core });
 
-if (releaseContext.mode === 'release') {
-  core.info(`Release mode: branch=${headBranch}, version=${releaseContext.targetVersion}`);
+if (mode === 'release') {
+  core.info(`Release mode: branch=${headBranch}, version=${targetVersion}`);
 }
-if (releaseContext.excludedCurrentTag) {
+if (ctx.excludedCurrentTag) {
   core.info(
-    `Excluded current release tag ${releaseContext.excludedTag} from previous tag candidates`
+    `Excluded current release tag ${ctx.excludedTag} from previous tag candidates`
   );
 }
-if (releaseContext.previousTag) {
-  core.info(`Resolved previous tag: ${releaseContext.previousTag}`);
-} else if (tags.length === 0) {
+if (ctx.previousTag) {
+  core.info(`Resolved previous tag: ${ctx.previousTag}`);
+} else if (ctx.tags.length === 0) {
   core.warning('No semver release tags found; compare range will cover full history');
 }
 
-core.setOutput('mode', releaseContext.mode);
-core.setOutput('target_version', releaseContext.targetVersion);
-core.setOutput('previous_tag', releaseContext.previousTag);
-core.setOutput('compare_range', releaseContext.compareRange);
-core.setOutput('target_branch', releaseContext.targetBranch);
+core.setOutput('mode', mode);
+core.setOutput('target_version', mode === 'release' ? targetVersion : '');
+core.setOutput('previous_tag', ctx.previousTag);
+core.setOutput('compare_range', ctx.compareRange);
+core.setOutput('target_branch', ctx.targetBranch);
 
-core.info(`Mode: ${releaseContext.mode}`);
-core.info(`Compare range: ${releaseContext.compareRange}`);
-core.info(`Target branch: ${releaseContext.targetBranch}`);
+core.info(`Mode: ${mode}`);
+core.info(`Compare range: ${ctx.compareRange}`);
+core.info(`Target branch: ${ctx.targetBranch}`);
