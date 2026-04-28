@@ -1220,20 +1220,6 @@ jobs:
             echo "EXISTS=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Ensure no-changelog label on existing release PR
-        if: steps.pr-check.outputs.EXISTS == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          PR_URL="${{ steps.pr-check.outputs.PR_URL }}"
-          HAS_LABEL=$(gh pr view "${PR_URL}" --json labels --jq 'any(.labels[]; .name == "no-changelog")')
-          if [ "${HAS_LABEL}" = "true" ]; then
-            echo "Release PR already has label no-changelog"
-          else
-            echo "Adding label no-changelog to existing release PR"
-            gh pr edit "${PR_URL}" --add-label no-changelog
-          fi
-
       - name: Create release PR
         if: steps.pr-check.outputs.EXISTS == 'false'
         env:
