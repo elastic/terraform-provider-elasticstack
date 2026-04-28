@@ -28,7 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccResourceDashboardESQLControl(t *testing.T) {
+func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -90,7 +90,17 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 					"panels.0.esql_control_config.single_select",
 				},
 			},
-			// Update to empty config block
+		},
+	})
+}
+
+func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
+	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with empty config block
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -106,6 +116,16 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.control_type"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccResourceDashboardESQLControl_no_config(t *testing.T) {
+	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			// esql_control_config is required when type = "esql_control"; omitting it must be rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -115,17 +135,6 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				ExpectError: regexp.MustCompile(`(?i)esql_control_config`),
-			},
-			// Restore a valid config so post-test destroy does not reuse the invalid fixture.
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
