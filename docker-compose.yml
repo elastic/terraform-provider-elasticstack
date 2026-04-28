@@ -20,8 +20,10 @@ services:
       xpack.watcher.enabled: true
       repositories.url.allowed_urls: https://example.com/*
       path.repo: /tmp
-      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS}
-    mem_limit: 2g
+      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+      thread_pool.write.queue_size: 20000
+      thread_pool.search.queue_size: 10000
+    mem_limit: 3g
     ulimits:
       memlock:
         soft: -1
@@ -67,6 +69,11 @@ services:
       ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY}
       ELASTICSEARCH_PUBLICBASEURL: http://localhost:${ELASTICSEARCH_PORT}
+    mem_limit: 2g
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     healthcheck:
       test:
         [

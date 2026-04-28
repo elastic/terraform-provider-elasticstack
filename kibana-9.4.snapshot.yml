@@ -1,6 +1,8 @@
 server.host: 0.0.0.0
 server.shutdownTimeout: 5s
 server.name: kibana
+server.maxPayload: 10485760
+elasticsearch.requestTimeout: 60000
 feature_flags.overrides:
   lens.apiFormat: true
 server.oas.enabled: true
