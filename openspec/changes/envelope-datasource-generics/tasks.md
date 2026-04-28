@@ -7,7 +7,7 @@
 - [ ] 1.5 Implement schema injection for `elasticsearch_connection` block into datasource schema
 - [ ] 1.6 Implement generic `Read()` on `genericKibanaDataSource[T]` (config decode → client resolve → callback → state set)
 - [ ] 1.7 Implement generic `Read()` on `genericElasticsearchDataSource[T]`
-- [ ] 1.8 Add datasource-schema-specific connection block helpers (adapt `GetKbFWConnectionBlock` / `GetEsFWConnectionBlock` to `datasource.Block` types)
+- [ ] 1.8 Reuse existing datasource-compatible connection block helpers where possible (e.g., `GetKbFWConnectionBlock` / `GetEsFWConnectionBlock`), and if any changes are needed, ensure they target `github.com/hashicorp/terraform-plugin-framework/datasource/schema` block types (typically `dsschema.Block`), not `datasource.Block`
 - [ ] 1.9 Write unit tests for envelope config decode, client resolution, and state set
 
 ## 2. Agent Builder data source migrations
