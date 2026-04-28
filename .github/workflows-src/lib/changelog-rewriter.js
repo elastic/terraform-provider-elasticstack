@@ -19,13 +19,12 @@ function findSectionEnd(lines, startIndex) {
 
 /**
  * @param {string} content - Current CHANGELOG.md content.
- * @param {string} sectionHeader - The target section header line (for release mode lookup).
  * @param {string} newSectionContent - Full replacement (header + body).
  * @param {'unreleased'|'release'} mode
  * @param {string} targetVersion - Version without leading v (release mode only).
  * @returns {string}
  */
-function rewriteChangelogSection(content, sectionHeader, newSectionContent, mode, targetVersion) {
+function rewriteChangelogSection(content, newSectionContent, mode, targetVersion) {
   const lines = content.split('\n');
 
   let targetStart = -1;

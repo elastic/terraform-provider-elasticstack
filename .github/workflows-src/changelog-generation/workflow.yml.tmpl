@@ -38,10 +38,13 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release'
         env:
           TARGET_VERSION: ${{ github.event.inputs.target_version }}
-          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
         run: |
-          if [ -z "$TARGET_VERSION" ] && [ -z "$TARGET_BRANCH" ]; then
-            echo "::error::Release mode requires target_version (semver X.Y.Z without leading v) and/or target_branch to select the prep-release branch for checkout."
+          if [ -z "$TARGET_VERSION" ]; then
+            echo "::error::Release mode requires target_version (semver X.Y.Z without leading v). target_branch is an optional override for the checkout branch and does not replace target_version."
+            exit 1
+          fi
+          if ! printf '%s' "$TARGET_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::target_version must be semver X.Y.Z without a leading v (got: '$TARGET_VERSION')."
             exit 1
           fi
 
@@ -83,10 +86,7 @@ jobs:
 
       - name: Commit changelog (release mode)
         id: commit_release
-        if: >-
-          steps.changelog_engine.outputs.mode == 'release' &&
-          steps.changelog_engine.outputs.has_prs == 'true' &&
-          steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        if: steps.changelog_engine.outputs.mode == 'release'
         env:
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
           TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}

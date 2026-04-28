@@ -219,13 +219,12 @@ jobs:
             
             /**
              * @param {string} content - Current CHANGELOG.md content.
-             * @param {string} sectionHeader - The target section header line (for release mode lookup).
              * @param {string} newSectionContent - Full replacement (header + body).
              * @param {'unreleased'|'release'} mode
              * @param {string} targetVersion - Version without leading v (release mode only).
              * @returns {string}
              */
-            function rewriteChangelogSection(content, sectionHeader, newSectionContent, mode, targetVersion) {
+            function rewriteChangelogSection(content, newSectionContent, mode, targetVersion) {
               const lines = content.split('\n');
             
               let targetStart = -1;
@@ -961,7 +960,6 @@ jobs:
             
                 const updatedChangelog = rewriteChangelogSection(
                   currentChangelog,
-                  sectionHeader,
                   newSectionContent,
                   mode,
                   targetVersion
@@ -979,7 +977,13 @@ jobs:
                 }
             
                 const hasPRs = prRecords.length > 0;
-                const hasUserFacingChanges = result.included.length > 0;
+                // hasUserFacingChanges reflects whether the rendered section body has any
+                // content the changelog should publish. This is broader than `included`
+                // (PRs that contributed change bullets) because PRs marked
+                // `Customer impact: none` can still contribute a `### Breaking changes`
+                // block, which is user-facing and must be committed/pushed.
+                const hasUserFacingChanges =
+                  typeof sectionBody === 'string' && sectionBody.trim().length > 0;
             
                 return {
                   sectionHeader,

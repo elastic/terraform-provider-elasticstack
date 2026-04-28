@@ -165,6 +165,42 @@ test('runChangelogRenderAndWrite sets hasUserFacingChanges when PR included', ()
   assert.ok(!text.includes('\nold\n'));
 });
 
+test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking-changes content rendered', () => {
+  const core = mockCore();
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
+  const changelogPath = path.join(dir, 'CHANGELOG.md');
+  writeFileSync(changelogPath, '# L\n\n## [Unreleased]\nold\n', 'utf8');
+  const fs = require('node:fs');
+  const prRecords = [
+    {
+      number: 7,
+      url: 'https://github.com/o/r/pull/7',
+      labels: [],
+      body: [
+        '## Changelog',
+        'Customer impact: none',
+        '',
+        '### Breaking changes',
+        'A new required env var `FOO` must be set.',
+      ].join('\n'),
+    },
+  ];
+  const out = runChangelogRenderAndWrite({
+    core,
+    prRecords,
+    mode: 'release',
+    targetVersion: '1.0.0',
+    changelogPath,
+    fs,
+  });
+  assert.equal(out.included.length, 0);
+  assert.equal(out.hasPRs, true);
+  assert.equal(out.hasUserFacingChanges, true);
+  const text = readFileSync(changelogPath, 'utf8');
+  assert.ok(text.includes('### Breaking changes'));
+  assert.ok(text.includes('FOO'));
+});
+
 test('runChangelogRenderAndWrite release inserts section after Unreleased', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));

@@ -203,7 +203,6 @@ function createChangelogEngine(deps) {
 
     const updatedChangelog = rewriteChangelogSection(
       currentChangelog,
-      sectionHeader,
       newSectionContent,
       mode,
       targetVersion
@@ -221,7 +220,13 @@ function createChangelogEngine(deps) {
     }
 
     const hasPRs = prRecords.length > 0;
-    const hasUserFacingChanges = result.included.length > 0;
+    // hasUserFacingChanges reflects whether the rendered section body has any
+    // content the changelog should publish. This is broader than `included`
+    // (PRs that contributed change bullets) because PRs marked
+    // `Customer impact: none` can still contribute a `### Breaking changes`
+    // block, which is user-facing and must be committed/pushed.
+    const hasUserFacingChanges =
+      typeof sectionBody === 'string' && sectionBody.trim().length > 0;
 
     return {
       sectionHeader,
