@@ -33,7 +33,7 @@ import (
 )
 
 // skippedExamplePathPrefixes lists repository-relative path prefixes excluded
-// from the PlanOnly harness (REQ-005). They are not present in the embedded
+// from the PlanOnly harness (REQ-005 directory skips). They are not present in the embedded
 // trees ResourcesFS/DataSourcesFS; the list documents and enforces policy if
 // embedding or discovery changes.
 //

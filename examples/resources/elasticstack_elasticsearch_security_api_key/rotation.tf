@@ -1,3 +1,5 @@
+# PlanOnly harness: intentionally excluded (`planOnlySkippedEmbedPaths`) — this file enables hashicorp/time, which the harness does not register.
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
