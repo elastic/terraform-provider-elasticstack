@@ -1,9 +1,9 @@
 ## 1. Make `testacc` package-parallelism explicit
 
-- [ ] 1.1 Add `ACCTEST_PACKAGE_PARALLELISM ?= 8` near the existing `ACCTEST_PARALLELISM` block in `Makefile`.
-- [ ] 1.2 Thread the variable into the `testacc` recipe as `-p $(ACCTEST_PACKAGE_PARALLELISM)`, placed alongside `-parallel $(ACCTEST_PARALLELISM)`.
-- [ ] 1.3 Update the `makefile-workflows` capability spec to require explicit, contributor-overridable package parallelism for `testacc`, with a `MODIFIED` requirement and accompanying scenarios.
-- [ ] 1.4 Verify locally that `make testacc TESTARGS='-run ^TestAccResourceDashboardEmptyDashboard$$' ACCTEST_PACKAGE_PARALLELISM=2` honors the override (smoke test only; no behavioral assertion needed beyond observing the flag in the printed command).
+- [x] 1.1 Add `ACCTEST_PACKAGE_PARALLELISM ?= 8` near the existing `ACCTEST_PARALLELISM` block in `Makefile`.
+- [x] 1.2 Thread the variable into the `testacc` recipe as `-p $(ACCTEST_PACKAGE_PARALLELISM)`, placed alongside `-parallel $(ACCTEST_PARALLELISM)`.
+- [x] 1.3 Update the `makefile-workflows` capability spec to require explicit, contributor-overridable package parallelism for `testacc`, with a `MODIFIED` requirement and accompanying scenarios.
+- [x] 1.4 Verify locally that `make testacc TESTARGS='-run ^TestAccResourceDashboardEmptyDashboard$$' ACCTEST_PACKAGE_PARALLELISM=2` honors the override (smoke test only; no behavioral assertion needed beyond observing the flag in the printed command).
 
 ## 2. Split the longest monolithic dashboard tests
 
