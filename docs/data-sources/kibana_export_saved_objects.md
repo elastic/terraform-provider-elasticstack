@@ -23,8 +23,8 @@ data "elasticstack_kibana_export_saved_objects" "example" {
   include_references_deep = true
   objects = [
     {
-      type = "dashboard",
-      id   = "7c5f07ee-7e41-4d50-ae1f-dfe54cc87209"
+      type = "dashboard"
+      id   = "elastic_agent-02117980-6082-11f0-89d2-bb7ceae5af7f"
     }
   ]
 }

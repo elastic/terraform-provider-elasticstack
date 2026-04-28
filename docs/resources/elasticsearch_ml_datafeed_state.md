@@ -38,17 +38,20 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
   job_id      = "example-anomaly-job"
   description = "Example anomaly detection job"
 
-  analysis_config {
+  analysis_config = {
     bucket_span = "15m"
-    detectors {
-      function      = "mean"
-      field_name    = "value"
-      by_field_name = "user"
-    }
+    detectors = [
+      {
+        function      = "mean"
+        field_name    = "value"
+        by_field_name = "user"
+      }
+    ]
   }
 
-  data_description {
-    time_field = "@timestamp"
+  data_description = {
+    time_field  = "@timestamp"
+    time_format = "epoch_ms"
   }
 }
 

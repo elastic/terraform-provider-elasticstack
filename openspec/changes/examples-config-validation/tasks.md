@@ -16,10 +16,10 @@
 
 ## 3. Fix example bugs surfaced by the harness
 
-- [ ] 3.1 Fix `examples/resources/elasticstack_elasticsearch_ml_datafeed/resource.tf` so `delayed_data_check_config` is configured as an attribute (not a block), per issue #2523
-- [ ] 3.2 Run the new PlanOnly harness locally with the acceptance-test environment configured and enumerate every failing example file
-- [ ] 3.3 Fix each surfaced failure (block-vs-attribute mistakes, renamed attributes, missing required fields, etc.) and verify the harness passes for every example
-- [ ] 3.4 If any failure represents a genuine schema regression rather than a stale example, file a follow-up issue and resolve in scope or in a follow-on change before merging
+- [x] 3.1 Fix `examples/resources/elasticstack_elasticsearch_ml_datafeed/resource.tf` so `delayed_data_check_config` is configured as an attribute (not a block), per issue #2523
+- [x] 3.2 Run the new PlanOnly harness locally with the acceptance-test environment configured and enumerate every failing example file
+- [x] 3.3 Fix each surfaced failure (block-vs-attribute mistakes, renamed attributes, missing required fields, etc.) and verify the harness passes for every example
+- [x] 3.4 If any failure represents a genuine schema regression rather than a stale example, file a follow-up issue and resolve in scope or in a follow-on change before merging
 
 ## 4. Documentation and CI integration
 

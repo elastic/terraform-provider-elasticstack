@@ -31,6 +31,8 @@ resource "elasticstack_kibana_security_detection_rule" "example" {
   to          = "now"
   interval    = "5m"
 
+  index = ["logs-*"]
+
   author          = ["Security Team"]
   tags            = ["security", "authentication", "admin"]
   license         = "Elastic License v2"
@@ -106,33 +108,52 @@ resource "elasticstack_kibana_security_detection_rule" "advanced" {
   EOT
 }
 
-# Security detection rule with a Slack notification action.
+# Security detection rule with a connector action (Cases webhook).
 # The params attribute is a JSON-encoded object — use jsonencode() to set it.
-# Nested objects (e.g. subActionParams) do not need a separate jsonencode() call.
-resource "elasticstack_kibana_security_detection_rule" "with_slack_action" {
-  name        = "Threat Detection with Slack Notification"
+resource "elasticstack_kibana_action_connector" "case_webhook" {
+  name              = "doc-example-cases-webhook"
+  connector_type_id = ".cases-webhook"
+
+  config = jsonencode({
+    createIncidentJson                  = "{}"
+    createIncidentResponseKey           = "key"
+    createIncidentUrl                   = "https://www.elastic.co/"
+    getIncidentResponseExternalTitleKey = "title"
+    getIncidentUrl                      = "https://www.elastic.co/"
+    updateIncidentJson                  = "{}"
+    updateIncidentUrl                   = "https://www.elastic.co/"
+    viewIncidentUrl                     = "https://www.elastic.co/"
+    createIncidentMethod                = "post"
+  })
+
+  secrets = jsonencode({
+    user     = "user1"
+    password = "password1"
+  })
+}
+
+resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
+  name        = "Threat Detection with Notification Action"
   type        = "query"
   query       = "event.category:malware"
   language    = "kuery"
   enabled     = true
-  description = "Detects malware events and notifies the security channel"
+  description = "Detects malware events and opens a Cases incident"
   severity    = "high"
   risk_score  = 80
   from        = "now-6m"
   to          = "now"
   interval    = "5m"
 
+  index = ["logs-*"]
+
   actions = [
     {
-      action_type_id = ".slack_api"
-      id             = "my-slack-connector-id"
+      action_type_id = ".cases-webhook"
+      id             = elasticstack_kibana_action_connector.case_webhook.connector_id
       group          = "default"
       params = jsonencode({
-        subAction = "postMessage"
-        subActionParams = {
-          channelIds = ["C0123456789"]
-          text       = "Alert: {{rule.name}} fired at {{context.date}}"
-        }
+        message = "Alert: {{rule.name}}"
       })
       frequency = {
         notify_when = "onActiveAlert"
