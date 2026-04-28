@@ -14,8 +14,8 @@
 
 ## 3. Delete duplicate dashboard tests
 
-- [ ] 3.1 Append a `PlanOnly: true` re-apply step (with a `TestCheckNoResourceAttr` for `panels.0.slo_burn_rate_config.slo_instance_id`) to `TestAccResourceDashboardSloBurnRate`'s Steps slice; delete `TestAccResourceDashboardSloBurnRateSloInstanceIDNullPreservation` from `acc_slo_burn_rate_panels_test.go`.
-- [ ] 3.2 Append the equivalent `PlanOnly: true` re-apply step to `TestAccResourceDashboardSloErrorBudget` (the base test in `acc_slo_error_budget_panels_test.go`); delete `TestAccResourceDashboardSloErrorBudgetSloInstanceIDNullPreservation`.
+- [x] 3.1 Append a `PlanOnly: true` re-apply step (with a `TestCheckNoResourceAttr` for `panels.0.slo_burn_rate_config.slo_instance_id`) to `TestAccResourceDashboardSloBurnRate`'s Steps slice; delete `TestAccResourceDashboardSloBurnRateSloInstanceIDNullPreservation` from `acc_slo_burn_rate_panels_test.go`.
+- [x] 3.2 Append the equivalent `PlanOnly: true` re-apply step to `TestAccResourceDashboardSloErrorBudget` (the base test in `acc_slo_error_budget_panels_test.go`); delete `TestAccResourceDashboardSloErrorBudgetSloInstanceIDNullPreservation`.
 
 ## 4. Audit `acc_lens_dashboard_app_panels_test.go`
 

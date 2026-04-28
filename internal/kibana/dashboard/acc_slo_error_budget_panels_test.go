@@ -61,17 +61,7 @@ func TestAccResourceDashboardSloErrorBudgetMinimal(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-		},
-	})
-}
-
-func TestAccResourceDashboardSloErrorBudgetSloInstanceIDNullPreservation(t *testing.T) {
-	dashboardTitle := "Test Dashboard SLO Error Budget No Instance " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			// Create without slo_instance_id; verify no drift on re-plan
+			// Re-apply with no changes — verify slo_instance_id stays null (no drift).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -79,19 +69,7 @@ func TestAccResourceDashboardSloErrorBudgetSloInstanceIDNullPreservation(t *test
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.slo_instance_id"),
-				),
-			},
-			// Apply again — should produce no diff (no drift)
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				ExpectNonEmptyPlan: false,
+				PlanOnly: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.slo_instance_id"),
 				),

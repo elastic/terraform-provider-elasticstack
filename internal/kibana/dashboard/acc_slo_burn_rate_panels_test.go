@@ -68,6 +68,19 @@ func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			// Re-apply with no changes — verify slo_instance_id stays null (no drift).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.slo_instance_id"),
+				),
+			},
 		},
 	})
 }
@@ -253,39 +266,6 @@ func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`Missing SLO burn rate panel configuration`),
-			},
-		},
-	})
-}
-
-// slo_instance_id null-preservation: when not configured, stays null after Kibana read-back.
-func TestAccResourceDashboardSloBurnRateSloInstanceIDNullPreservation(t *testing.T) {
-	dashboardTitle := "Test Dashboard SLO Burn Rate Null Preservation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			// Create without slo_instance_id — should be null after read-back.
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.slo_instance_id"),
-				),
-			},
-			// Re-apply — no plan changes expected (null-preservation).
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				PlanOnly: true,
 			},
 		},
 	})
