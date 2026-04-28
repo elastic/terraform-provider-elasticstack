@@ -46,13 +46,21 @@ type mappingDiffResult struct {
 func compareMappingsForPlan(stateMappings, cfgMappings map[string]any) mappingDiffResult {
 	var result mappingDiffResult
 
-	if stateProps, ok := stateMappings["properties"]; ok {
-		cfgProps, ok := cfgMappings["properties"]
+	if statePropsRaw, ok := stateMappings["properties"]; ok {
+		cfgPropsRaw, ok := cfgMappings["properties"]
 		if !ok {
 			result.RequiresReplace = true
 			return result
 		}
-		result = walkPropertiesForPlan(path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]any), cfgProps.(map[string]any))
+
+		stateProps, stateOK := statePropsRaw.(map[string]any)
+		cfgProps, cfgOK := cfgPropsRaw.(map[string]any)
+		if !stateOK || !cfgOK {
+			// Invalid properties structure; schema validation normally prevents this.
+			return result
+		}
+
+		result = walkPropertiesForPlan(path.Root("mappings").AtMapKey("properties"), stateProps, cfgProps)
 	}
 
 	return result
@@ -109,8 +117,8 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 		}
 
 		// Check nested properties
-		if stateNested, stateHasNested := stateField["properties"]; stateHasNested {
-			cfgNested, cfgHasNested := cfgField["properties"]
+		if stateNestedRaw, stateHasNested := stateField["properties"]; stateHasNested {
+			cfgNestedRaw, cfgHasNested := cfgField["properties"]
 			if !cfgHasNested {
 				result.RemovedFields = append(result.RemovedFields, currentPath.AtMapKey("properties").String())
 				result.Diags.AddAttributeWarning(
@@ -120,7 +128,12 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 				)
 				continue
 			}
-			nestedResult := walkPropertiesForPlan(currentPath.AtMapKey("properties"), stateNested.(map[string]any), cfgNested.(map[string]any))
+			stateNested, stateOK := stateNestedRaw.(map[string]any)
+			cfgNested, cfgOK := cfgNestedRaw.(map[string]any)
+			if !stateOK || !cfgOK {
+				continue
+			}
+			nestedResult := walkPropertiesForPlan(currentPath.AtMapKey("properties"), stateNested, cfgNested)
 			result.Diags.Append(nestedResult.Diags...)
 			if nestedResult.RequiresReplace {
 				result.RequiresReplace = true
@@ -201,12 +214,18 @@ func mergeProperties(stateProps, cfgProps map[string]any) map[string]any {
 		}
 
 		// Recursively merge nested properties
-		if stateNested, stateHasNested := stateField["properties"]; stateHasNested {
-			cfgNested, cfgHasNested := cfgField["properties"]
+		if stateNestedRaw, stateHasNested := stateField["properties"]; stateHasNested {
+			cfgNestedRaw, cfgHasNested := cfgField["properties"]
 			if cfgHasNested {
-				mergedField["properties"] = mergeProperties(stateNested.(map[string]any), cfgNested.(map[string]any))
+				stateNested, stateOK := stateNestedRaw.(map[string]any)
+				cfgNested, cfgOK := cfgNestedRaw.(map[string]any)
+				if stateOK && cfgOK {
+					mergedField["properties"] = mergeProperties(stateNested, cfgNested)
+				} else {
+					mergedField["properties"] = cfgNestedRaw
+				}
 			} else {
-				mergedField["properties"] = stateNested
+				mergedField["properties"] = stateNestedRaw
 			}
 		}
 
