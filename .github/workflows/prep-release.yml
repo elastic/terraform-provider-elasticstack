@@ -1076,7 +1076,8 @@ jobs:
               };
             }
             
-            const { execSync } = require('child_process');
+            // `execSync` MUST be declared in the including entry script (e.g. run-changelog-engine.inline.js)
+            // before this file is expanded, so we do not re-declare it here (duplicate const breaks the bundle).
             
             const _changelogEngine = createChangelogEngine({
               parseSemverTags,
