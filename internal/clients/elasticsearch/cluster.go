@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -54,25 +57,11 @@ func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, repository *models.SnapshotRepository) diag.Diagnostics {
-	var diags diag.Diagnostics
-	snapRepoBytes, err := json.Marshal(repository)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Snapshot.CreateRepository(repository.Name, bytes.NewReader(snapRepoBytes), esClient.Snapshot.CreateRepository.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create or update the snapshot repository"); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return doSDKWrite(apiClient, repository, "Unable to create or update the snapshot repository",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Snapshot.CreateRepository(repository.Name, body, esClient.Snapshot.CreateRepository.WithContext(ctx))
+		},
+	)
 }
 
 func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
@@ -131,27 +120,11 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 }
 
 func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slm *models.SnapshotPolicy) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	slmBytes, err := json.Marshal(slm)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	req := esClient.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
-	res, err := esClient.SlmPutLifecycle(slm.ID, req, esClient.SlmPutLifecycle.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create or update the SLM"); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return doSDKWrite(apiClient, slm, "Unable to create or update the SLM",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.SlmPutLifecycle(slm.ID, esClient.SlmPutLifecycle.WithBody(body), esClient.SlmPutLifecycle.WithContext(ctx))
+		},
+	)
 }
 
 func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
@@ -209,24 +182,11 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 }
 
 func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) diag.Diagnostics {
-	var diags diag.Diagnostics
-	settingsBytes, err := json.Marshal(settings)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Cluster.PutSettings(bytes.NewReader(settingsBytes), esClient.Cluster.PutSettings.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to update cluster settings."); diags.HasError() {
-		return diags
-	}
-	return diags
+	return doSDKWrite(apiClient, settings, "Unable to update cluster settings.",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Cluster.PutSettings(body, esClient.Cluster.PutSettings.WithContext(ctx))
+		},
+	)
 }
 
 func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, diag.Diagnostics) {

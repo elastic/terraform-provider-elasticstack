@@ -22,11 +22,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -121,26 +123,11 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 }
 
 func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) diag.Diagnostics {
-	var diags diag.Diagnostics
-	templateBytes, err := json.Marshal(template)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Cluster.PutComponentTemplate(template.Name, bytes.NewReader(templateBytes), esClient.Cluster.PutComponentTemplate.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create component template"); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return doSDKWrite(apiClient, template, "Unable to create component template",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Cluster.PutComponentTemplate(template.Name, body, esClient.Cluster.PutComponentTemplate.WithContext(ctx))
+		},
+	)
 }
 
 // GetComponentTemplate returns a component template by name. flatSettings controls the
@@ -769,26 +756,11 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipeline *models.IngestPipeline) diag.Diagnostics {
-	var diags diag.Diagnostics
-	pipelineBytes, err := json.Marshal(pipeline)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Ingest.PutPipeline(pipeline.Name, bytes.NewReader(pipelineBytes), esClient.Ingest.PutPipeline.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create or update ingest pipeline: %s", pipeline.Name)); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return doSDKWrite(apiClient, pipeline, fmt.Sprintf("Unable to create or update ingest pipeline: %s", pipeline.Name),
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Ingest.PutPipeline(pipeline.Name, body, esClient.Ingest.PutPipeline.WithContext(ctx))
+		},
+	)
 }
 
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {

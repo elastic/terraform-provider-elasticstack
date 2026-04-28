@@ -18,12 +18,14 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -117,7 +119,6 @@ func tryJSONUnmarshalString(s string) (any, bool) {
 }
 
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) diag.Diagnostics {
-	var diags diag.Diagnostics
 	payloadPolicy := map[string]any{
 		"indices":       policy.Indices,
 		"enrich_fields": policy.EnrichFields,
@@ -130,28 +131,12 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		tflog.Error(ctx, fmt.Sprintf("JAW: query did not unmarshall %s", policy.Query))
 	}
 
-	payload := map[string]any{}
-	payload[policy.Type] = payloadPolicy
-	policyBytes, err := json.Marshal(payload)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	res, err := esClient.EnrichPutPolicy(policy.Name, bytes.NewReader(policyBytes), esClient.EnrichPutPolicy.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-
-	if diags := diagutil.CheckError(res, "Unable to create enrich policy"); diags.HasError() {
-		return diags
-	}
-	return diags
+	payload := map[string]any{policy.Type: payloadPolicy}
+	return doSDKWrite(apiClient, payload, "Unable to create enrich policy",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.EnrichPutPolicy(policy.Name, body, esClient.EnrichPutPolicy.WithContext(ctx))
+		},
+	)
 }
 
 func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {

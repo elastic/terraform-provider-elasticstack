@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -32,27 +35,14 @@ import (
 )
 
 func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *models.User) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		diags.AddError("Unable to marshal user", err.Error())
-		return diags
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
-	res, err := esClient.Security.PutUser(user.Username, bytes.NewReader(userBytes), esClient.Security.PutUser.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Unable to create or update user", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-	if fwDiags := diagutil.CheckErrorFromFW(res, "Unable to create or update a user"); fwDiags.HasError() {
-		return fwDiags
-	}
-	return diags
+	return doFWWrite(apiClient, user,
+		"Unable to marshal user",
+		"Unable to create or update user",
+		"Unable to create or update a user",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Security.PutUser(user.Username, body, esClient.Security.PutUser.WithContext(ctx))
+		},
+	)
 }
 
 func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*models.User, diag.Diagnostics) {
@@ -199,26 +189,11 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 }
 
 func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, role *models.Role) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	roleBytes, err := json.Marshal(role)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Security.PutRole(role.Name, bytes.NewReader(roleBytes), esClient.Security.PutRole.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create role"); diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return doSDKWrite(apiClient, role, "Unable to create role",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Security.PutRole(role.Name, body, esClient.Security.PutRole.WithContext(ctx))
+		},
+	)
 }
 
 func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*models.Role, diag.Diagnostics) {
@@ -275,24 +250,14 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 }
 
 func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMapping *models.RoleMapping) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-	roleMappingBytes, err := json.Marshal(roleMapping)
-	if err != nil {
-		diags.AddError("Unable to marshal role mapping", err.Error())
-		return diags
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
-	res, err := esClient.Security.PutRoleMapping(roleMapping.Name, bytes.NewReader(roleMappingBytes), esClient.Security.PutRoleMapping.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Unable to put role mapping", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-	return diagutil.CheckErrorFromFW(res, "Unable to put role mapping")
+	return doFWWrite(apiClient, roleMapping,
+		"Unable to marshal role mapping",
+		"Unable to put role mapping",
+		"Unable to put role mapping",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Security.PutRoleMapping(roleMapping.Name, body, esClient.Security.PutRoleMapping.WithContext(ctx))
+		},
+	)
 }
 
 func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
