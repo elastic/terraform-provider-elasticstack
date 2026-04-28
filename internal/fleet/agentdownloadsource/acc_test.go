@@ -71,7 +71,7 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Updated Agent Download Source %s", random)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent-updated"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
