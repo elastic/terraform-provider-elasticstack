@@ -78,6 +78,21 @@ func TestDataSourceBase_Configure(t *testing.T) {
 		require.True(t, badResp.Diagnostics.HasError())
 		require.Same(t, f, b.Client(), "client must stay the last successful assignment")
 	})
+
+	t.Run("untyped_nil_clears_prior_factory", func(t *testing.T) {
+		t.Parallel()
+		b := NewDataSourceBase(ComponentElasticsearch, "x")
+		f := nonNilTestFactory()
+		var okResp datasource.ConfigureResponse
+		b.Configure(ctx, datasource.ConfigureRequest{ProviderData: f}, &okResp)
+		require.False(t, okResp.Diagnostics.HasError())
+		require.Same(t, f, b.Client())
+
+		var nilResp datasource.ConfigureResponse
+		b.Configure(ctx, datasource.ConfigureRequest{ProviderData: nil}, &nilResp)
+		require.False(t, nilResp.Diagnostics.HasError(), "untyped nil should succeed and clear client")
+		require.Nil(t, b.Client(), "client should be nil after untyped nil reconfiguration")
+	})
 }
 
 func TestDataSourceBase_Metadata_typeNamesPerComponent(t *testing.T) {
