@@ -8,9 +8,9 @@
 
 ## 2. Implement shared mapping semantics
 
-- [ ] 2.1 Extract `mappingsPlanModifier.modifyMappings` logic into a shared helper in `internal/elasticsearch/index/index/mappings_walker.go`.
-- [ ] 2.2 Generalize the helper beyond `properties` so it can classify top-level API-only keys such as `dynamic_templates` as non-drifting template-owned extras.
-- [ ] 2.3 Add table-driven unit tests for the helper, covering matching mappings, template-injected `properties`, template-injected `dynamic_templates`, removed fields retained by Elasticsearch, and incompatible user-owned type changes.
+- [x] 2.1 Extract `mappingsPlanModifier.modifyMappings` logic into a shared helper in `internal/elasticsearch/index/index/mappings_walker.go`.
+- [x] 2.2 Generalize the helper beyond `properties` so it can classify top-level API-only keys such as `dynamic_templates` as non-drifting template-owned extras.
+- [x] 2.3 Add table-driven unit tests for the helper, covering matching mappings, template-injected `properties`, template-injected `dynamic_templates`, removed fields retained by Elasticsearch, and incompatible user-owned type changes.
 
 ## 3. Fix semantic equality for `mappings`
 
