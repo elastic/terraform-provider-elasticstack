@@ -116,7 +116,7 @@ func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			// Create with empty config block
+			// Create with minimal config block (required fields only, no optional title/time_window overrides)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
