@@ -28,11 +28,11 @@
 
 ## 4. Pilot data-source migration: Elasticsearch (`enrich_policy`)
 
-- [ ] 4.1 In `internal/elasticsearch/enrich/data_source.go`, change `enrichPolicyDataSource` from `type enrichPolicyDataSource struct { client *clients.ProviderClientFactory }` to `type enrichPolicyDataSource struct { *entitycore.DataSourceBase }`.
-- [ ] 4.2 Replace the `NewEnrichPolicyDataSource` body with `return &enrichPolicyDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentElasticsearch, "enrich_policy")}`.
-- [ ] 4.3 Delete the package-local `Metadata` and `Configure` methods on `enrichPolicyDataSource`. Keep `Schema` and `Read` unchanged.
-- [ ] 4.4 Update the `Read` method to obtain the client via `d.Client()` instead of `d.client`. Verify the resulting Terraform type name is exactly `<provider>_elasticsearch_enrich_policy`.
-- [ ] 4.5 Add `internal/elasticsearch/enrich/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[enrichPolicyDataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`. Mirror the structure of `internal/kibana/dashboard/resourcecore_contract_test.go` (post-rename: `entitycore_contract_test.go`).
+- [x] 4.1 In `internal/elasticsearch/enrich/data_source.go`, change `enrichPolicyDataSource` from `type enrichPolicyDataSource struct { client *clients.ProviderClientFactory }` to `type enrichPolicyDataSource struct { *entitycore.DataSourceBase }`.
+- [x] 4.2 Replace the `NewEnrichPolicyDataSource` body with `return &enrichPolicyDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentElasticsearch, "enrich_policy")}`.
+- [x] 4.3 Delete the package-local `Metadata` and `Configure` methods on `enrichPolicyDataSource`. Keep `Schema` and `Read` unchanged.
+- [x] 4.4 Update the `Read` method to obtain the client via `d.Client()` instead of `d.client`. Verify the resulting Terraform type name is exactly `<provider>_elasticsearch_enrich_policy`.
+- [x] 4.5 Add `internal/elasticsearch/enrich/entitycore_contract_test.go` containing a `TestDataSource_embedsEntityCoreDataSourceBase` that uses `reflect.TypeFor[enrichPolicyDataSource]()` and asserts an anonymous embedded field of type `*entitycore.DataSourceBase`. Mirror the structure of `internal/kibana/dashboard/resourcecore_contract_test.go` (post-rename: `entitycore_contract_test.go`).
 
 ## 5. Pilot data-source migration: Kibana (`spaces`)
 
