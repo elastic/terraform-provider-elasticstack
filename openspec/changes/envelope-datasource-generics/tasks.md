@@ -1,6 +1,6 @@
 ## 1. Envelope generics constructor — `internal/entitycore`
 
-- [x] 1.1 Add `kibanaEnvelope[T any]` and `elasticsearchEnvelope[T any]` types with anonymous field embed
+- [x] 1.1 Add `KibanaConnectionField` / `ElasticsearchConnectionField` embeddable connection helpers and `KibanaDataSourceModel` / `ElasticsearchDataSourceModel` interface constraints for the generic constructors (anonymous-field embed of type parameters is not possible in Go as of golang/go#49030, so the concrete model embeds the helper directly)
 - [x] 1.2 Add `NewKibanaDataSource[T]()` constructor returning `datasource.DataSource`
 - [x] 1.3 Add `NewElasticsearchDataSource[T]()` constructor returning `datasource.DataSource`
 - [x] 1.4 Implement schema injection for `kibana_connection` block into datasource schema

@@ -106,6 +106,27 @@ func TestNewKibanaDataSource_schemaInjection(t *testing.T) {
 	require.Contains(t, resp.Schema.Attributes, "id")
 }
 
+func TestNewElasticsearchDataSource_schemaInjection(t *testing.T) {
+	t.Parallel()
+	ds := NewElasticsearchDataSource[struct {
+		ElasticsearchConnectionField
+	}](ComponentElasticsearch, "test_entity", func() dsschema.Schema {
+		return dsschema.Schema{}
+	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
+		ElasticsearchConnectionField
+	}) (struct {
+		ElasticsearchConnectionField
+	}, diag.Diagnostics) {
+		return model, nil
+	})
+
+	var resp datasource.SchemaResponse
+	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Schema.Blocks, "elasticsearch_connection")
+}
+
 func TestNewKibanaDataSource_schemaDefensiveClone(t *testing.T) {
 	t.Parallel()
 	originalSchema := getTestSchema()
