@@ -48,7 +48,9 @@ The canonical list is the root `Makefile`, but the usual ones are:
 
 ## Example snippets (`examples/resources`, `examples/data-sources`)
 
-Each `*.tf` file under those trees is embedded in the Terraform Registry–style docs under `docs/resources/` and `docs/data-sources/`. Contributions must satisfy both of the following:
+These trees hold copy-paste-ready Terraform for this provider. Snippets **may** be surfaced on generated reference pages (`docs/resources/`, `docs/data-sources/`), in docs templates, or in guides—not every `.tf` is shown on every page, but **each covered file** participates in validation below.
+
+Regardless of how a file is surfaced, contributions must satisfy both of the following:
 
 - **Self-contained modules:** A file must not depend on declarations that exist only in a sibling `.tf` in the same directory (locals, variables, resources, data sources copied from another file).
 - **Plan-only acceptance coverage:** `TestAccExamples_planOnly` in `internal/acctest/` plans every covered example in isolation against the provider (with `TF_ACC=1` and the usual Elasticsearch/Kibana environment variables used elsewhere in acceptance tests).

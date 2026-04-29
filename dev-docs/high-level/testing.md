@@ -11,6 +11,14 @@ The provider has unit tests and acceptance tests.
 
 Acceptance tests require a running Elastic Stack and `TF_ACC=1`. 
 
+### Examples PlanOnly harness (`TestAccExamples_planOnly`)
+
+`*.tf` files under `examples/resources/` and `examples/data-sources/` (except harness skip-lists) are planned in isolation by `TestAccExamples_planOnly` in `internal/acctest/`. For contributor expectations—self-contained modules, acceptance environment—see the **Example snippets** section in [`development-workflow.md`](./development-workflow.md). Targeted run:
+
+```bash
+TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1
+```
+
 - Prefer running targeted tests with `go test -v [-run 'filter'] <package>`
 - When instructed, run the full acceptance test suite with `make testacc`
 - The Elastic stack is almost certainly already running. Check before considering starting a new environment (`curl -u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD $ELASTICSEARCH_ENDPOINTS`). 
