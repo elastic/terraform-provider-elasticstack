@@ -237,7 +237,7 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 
 	// If the model implements the optional version-requirements interface,
 	// evaluate each requirement before invoking the entity read function.
-	if versionModel, ok := any(model).(KibanaDataSourceWithVersionRequirements); ok {
+	if versionModel, ok := any(&model).(KibanaDataSourceWithVersionRequirements); ok {
 		reqs, vDiags := versionModel.GetVersionRequirements()
 		resp.Diagnostics.Append(vDiags...)
 		if resp.Diagnostics.HasError() {
