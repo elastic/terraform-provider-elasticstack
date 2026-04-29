@@ -297,11 +297,17 @@ When `verify` is set to `true` (the default), the resource SHALL include `verify
 
 ---
 
-## Data source requirements
+**Data source requirements:**
 
 ### Requirement: Data source read-only semantics (REQ-DS-001)
 
 The data source SHALL support only a read operation. It SHALL NOT perform create, update, or delete operations.
+
+#### Scenario: Read-only data source
+
+- GIVEN the data source is configured
+- WHEN Terraform evaluates the data source
+- THEN the provider SHALL only read the repository and SHALL NOT create, update, or delete it
 
 ### Requirement: Data source API (REQ-DS-002)
 
@@ -317,9 +323,21 @@ The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_
 
 The data source SHALL set `id` in the format `<cluster_uuid>/<repository_name>` by calling `client.ID(ctx, repoName)` after resolving the client. The `id` SHALL be set regardless of whether the repository was found.
 
+#### Scenario: Data source id set
+
+- GIVEN the data source read runs for a repository name
+- WHEN the provider resolves the Elasticsearch client
+- THEN `id` SHALL be set to `<cluster_uuid>/<repository_name>`
+
 ### Requirement: Data source connection (REQ-DS-004)
 
 The data source SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection.
+
+#### Scenario: Data source-scoped connection
+
+- GIVEN `elasticsearch_connection` is configured on the data source
+- WHEN the data source reads the repository
+- THEN the provider SHALL use the typed scoped client rebuilt from that connection
 
 ### Requirement: Data source type block population (REQ-DS-005)
 

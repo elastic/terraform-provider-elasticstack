@@ -209,7 +209,7 @@ The resource SHALL support upgrading prior state schema version 0 to schema vers
 
 ---
 
-## Data source requirements
+**Data source requirements:**
 
 ### Requirement: Read API (REQ-DS-001)
 

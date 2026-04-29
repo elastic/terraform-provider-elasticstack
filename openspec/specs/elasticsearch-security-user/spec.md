@@ -208,7 +208,7 @@ The resource SHALL enforce that at most one of `password`, `password_hash`, or `
 
 ---
 
-## Data source requirements
+**Data source requirements:**
 
 ### Requirement: Read API (REQ-DS-001)
 
