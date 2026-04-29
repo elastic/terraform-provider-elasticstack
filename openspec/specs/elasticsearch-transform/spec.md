@@ -51,7 +51,7 @@ resource "elasticstack_elasticsearch_transform" "example" {
     }
   }
 
-  # Settings — each requires a minimum Elasticsearch version (see Compatibility requirements)
+  # Settings — requires a minimum Elasticsearch version when noted
   align_checkpoints    = <optional, bool>
   dates_as_epoch_millis = <optional, bool>
   deduce_mappings      = <optional, bool>    # requires Elasticsearch >= 8.1.0

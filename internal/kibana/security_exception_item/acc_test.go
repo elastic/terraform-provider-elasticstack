@@ -124,6 +124,7 @@ func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_create"),
 				ConfigVariables: config.Variables{
