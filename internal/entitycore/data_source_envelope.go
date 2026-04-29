@@ -23,7 +23,9 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -67,6 +69,27 @@ type KibanaDataSourceModel interface {
 // GetElasticsearchConnection method).
 type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
+}
+
+// DataSourceVersionRequirement describes a minimum server version that a
+// Kibana data source model requires before the entity read function is
+// invoked.
+type DataSourceVersionRequirement struct {
+	// MinVersion is the minimum Kibana server version required.
+	MinVersion *version.Version
+	// ErrorMessage is the human-readable detail added to the
+	// "Unsupported server version" diagnostic when the server does not
+	// satisfy MinVersion.
+	ErrorMessage string
+}
+
+// KibanaDataSourceWithVersionRequirements is an optional interface that
+// Kibana data source models may implement to declare pre-read server version
+// requirements. When a decoded model satisfies this interface, the generic
+// Kibana data source envelope evaluates the requirements after scoped client
+// resolution and before invoking the concrete read function.
+type KibanaDataSourceWithVersionRequirements interface {
+	GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics)
 }
 
 // genericKibanaDataSource implements [datasource.DataSource] and
@@ -210,6 +233,28 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If the model implements the optional version-requirements interface,
+	// evaluate each requirement before invoking the entity read function.
+	if versionModel, ok := any(model).(KibanaDataSourceWithVersionRequirements); ok {
+		reqs, vDiags := versionModel.GetVersionRequirements()
+		resp.Diagnostics.Append(vDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		for _, vReq := range reqs {
+			supported, sdkDiags := client.EnforceMinVersion(ctx, vReq.MinVersion)
+			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			if !supported {
+				resp.Diagnostics.AddError("Unsupported server version", vReq.ErrorMessage)
+				return
+			}
+		}
 	}
 
 	result, diags := d.readFunc(ctx, client, model)
