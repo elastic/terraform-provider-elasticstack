@@ -57,6 +57,6 @@ Regardless of how a file is surfaced, contributions must satisfy both of the fol
 
 If you touch or add snippets, run the harness targeted at your change—for example:
 
-`TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$'`
+`TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1`
 
 Some paths are intentionally skipped in the harness (documented beside the harness); those remain rare exceptions.
