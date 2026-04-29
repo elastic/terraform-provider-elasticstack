@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -43,8 +44,8 @@ type toolModel struct {
 }
 
 type toolDataSourceModel struct {
+	entitycore.KibanaConnectionField
 	ID                        types.String                    `tfsdk:"id"`
-	KibanaConnection          types.List                      `tfsdk:"kibana_connection"`
 	SpaceID                   types.String                    `tfsdk:"space_id"`
 	ToolID                    types.String                    `tfsdk:"tool_id"`
 	Type                      types.String                    `tfsdk:"type"`
