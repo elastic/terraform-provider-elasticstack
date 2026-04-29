@@ -32,7 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-
 func TestAccResourceExceptionList(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-%s", uuid.New().String()[:8])
 

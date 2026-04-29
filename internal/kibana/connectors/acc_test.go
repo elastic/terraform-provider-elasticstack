@@ -289,7 +289,7 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				Config:   sdkIndexConnectorConfig,
+				Config: sdkIndexConnectorConfig,
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -333,7 +333,7 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				Config:   sdkSlackConnectorConfig,
+				Config: sdkSlackConnectorConfig,
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},

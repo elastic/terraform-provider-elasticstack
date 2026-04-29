@@ -31,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-
 func TestAccResourceSecurityListDataStreams(t *testing.T) {
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
