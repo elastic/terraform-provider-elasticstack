@@ -20,15 +20,26 @@ Existing struct-based data sources (`spaces`, `enrollment_tokens`, `index_templa
 
 ## Decisions
 
-### 1. Envelope struct with anonymous field embed
+### 1. Envelope with interface-constrained models and embeddable connection helpers
 
-**Decision:** `kibanaEnvelope[T any]` wraps the concrete model via anonymous field `T`, plus the connection block field `KibanaConnection types.List`.
+**Decision:** The generic constructor uses a type constraint `T KibanaDataSourceModel` (and `T ElasticsearchDataSourceModel`) where the model provides a `GetKibanaConnection() types.List` method. Two embeddable structs—`KibanaConnectionField` and `ElasticsearchConnectionField`—supply the connection block field and its getter so concrete models need only embed the helper.
 
-**Rationale:** Go's `tfsdk` struct tag support now handles embedded structs (terraform-plugin-framework PR #667, #1021). This means `Config.Get(ctx, &envelope)` reads both the connection block and the promoted concrete fields into one struct. The concrete model remains clean—no connection field, no interface method.
+**Rationale:** Go does not allow embedding a **type parameter** itself in a struct (golang/go#49030):
 
-**Alternative considered:** Interface constraint `M interface { GetKibanaConnection() types.List }` on the generic parameter. Rejected because it requires every concrete model to add a method or embed a helper struct with a method. The anonymous field approach requires no changes to the concrete model at all.
+```go
+type envelope[T any] struct {
+    T   // ❌ invalid: embedded field type cannot be a type parameter
+    KibanaConnection types.List
+}
+```
 
-**Alternative considered:** Named field `Body T` instead of anonymous embed. Rejected because it breaks Terraform's struct-to-schema matching unless the schema namespacing changes, which would be a breaking schema change.
+Because this is a hard language limitation, the framework's support for promoted embedded-struct fields cannot be used with generic envelopes. Instead, the concrete model `T` must itself contain the connection block field. An interface constraint keeps the constructor's contract explicit, and embeddable helper structs (`KibanaConnectionField`, `ElasticsearchConnectionField`) minimize boilerplate—concrete models embed the helper rather than declaring the field and method manually.
+
+**Alternative considered:** Anonymous field embed `T` in a non-generic struct. Rejected because Go forbids embedding type parameters.
+
+**Alternative considered:** Named field `Body T` in the envelope. Rejected because it would require the schema to namespace the concrete attributes under `body`, which is a breaking schema change.
+
+**Alternative considered:** Reflection-based field injection or two-pass decode. Rejected because it is fragile, harder to test, and couples the envelope to Terraform framework internals.
 
 ### 2. Schema injection at construction time
 
@@ -64,7 +75,7 @@ Existing struct-based data sources (`spaces`, `enrollment_tokens`, `index_templa
 
 ## Risks / Trade-offs
 
-- **[Risk]** `tfsdk` embedded struct support may not work identically for `Config.Get()` vs `State.Set()` in all framework versions. → **Mitigation:** Validate with a spike before full migration. If embedding fails, fall back to typed `KibanaDataSource` embeddable (no generics) plus local helpers.
+- **[Risk]** Go may never lift the restriction on embedding type parameters in structs, which would permanently block the originally-envisioned anonymous-field pattern. → **Mitigation:** The shipped design explicitly chooses an interface-constraint + embeddable helper approach that works within the current language. The helper structs (`KibanaConnectionField`, `ElasticsearchConnectionField`) are a stable contract even if Go generics evolve.
 - **[Risk]** Schema injection could mutate shared map state if the concrete package holds a reference to the `Blocks` map. → **Mitigation:** The constructor accepts a factory function (callers pass `getDataSourceSchema`, not a `schema.Schema` value) and defensively clones the `Blocks` map before injecting the connection block. The resulting schema instance is fully owned by the generic base.
 - **[Risk]** Data sources with unusual `Read` patterns (no state set, conditional early return, manual state removal) can't use the envelope. → **Mitigation:** The envelope is opt-in. Complex data sources stay struct-based. We'll document the envelope's limitations.
 - **[Risk]** Future framework versions may change `Config.Get()` reflection behavior. → **Mitigation:** The envelope code is centralized; a fix is one place. Existing struct-based data sources are unaffected.
@@ -81,5 +92,4 @@ Existing struct-based data sources (`spaces`, `enrollment_tokens`, `index_templa
 
 ## Open Questions
 
-- Does the framework's embedded struct support work identically for `Config.Get` across all supported framework versions in `go.mod`?
 - Should we also migrate `kibana/spaces` and `fleet/enrollmenttokens` (simple cases) as part of this change, or keep the scope to Agent Builder only?
