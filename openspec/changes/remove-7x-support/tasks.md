@@ -7,8 +7,8 @@
 
 ## 2. Docker Workflow Support Floor
 
-- [ ] 2.1 Update `Makefile` Fleet image fallback logic so it matches `8.0.%` and `8.1.%`, but not `7.17.%`.
-- [ ] 2.2 Update comments and current OpenSpec wording for Makefile workflow behavior so older-version fallback language no longer mentions 7.17.
+- [x] 2.1 Update `Makefile` Fleet image fallback logic so it matches `8.0.%` and `8.1.%`, but not `7.17.%`.
+- [x] 2.2 Update comments and current OpenSpec wording for Makefile workflow behavior so older-version fallback language no longer mentions 7.17.
 
 ## 3. Remove Redundant Pre-8.0 Runtime Gates
 
