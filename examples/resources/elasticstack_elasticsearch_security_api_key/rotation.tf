@@ -1,4 +1,4 @@
-# PlanOnly harness: intentionally excluded (`planOnlySkippedEmbedPaths`) — this file enables hashicorp/time, which the harness does not register.
+# Rotation uses the external hashicorp/time provider alongside elasticstack — install both when planning this example locally.
 
 provider "elasticstack" {
   elasticsearch {}

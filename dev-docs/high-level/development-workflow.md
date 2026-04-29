@@ -45,3 +45,16 @@ The canonical list is the root `Makefile`, but the usual ones are:
 - `make test`
 - `make testacc` (requires Docker and `TF_ACC=1`)
 - `make docs-generate`
+
+## Example snippets (`examples/resources`, `examples/data-sources`)
+
+Each `*.tf` file under those trees is embedded in the Terraform Registry–style docs under `docs/resources/` and `docs/data-sources/`. Contributions must satisfy both of the following:
+
+- **Self-contained modules:** A file must not depend on declarations that exist only in a sibling `.tf` in the same directory (locals, variables, resources, data sources copied from another file).
+- **Plan-only acceptance coverage:** `TestAccExamples_planOnly` in `internal/acctest/` plans every covered example in isolation against the provider (with `TF_ACC=1` and the usual Elasticsearch/Kibana environment variables used elsewhere in acceptance tests).
+
+If you touch or add snippets, run the harness targeted at your change—for example:
+
+`TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$'`
+
+Some paths are intentionally skipped in the harness (documented beside the harness); those remain rare exceptions.
