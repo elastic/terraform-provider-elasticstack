@@ -26,15 +26,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var minExceptionListAPISupport = version.Must(version.NewVersion("7.9.0"))
 
 func TestAccResourceExceptionList(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-%s", uuid.New().String()[:8])
@@ -44,7 +41,6 @@ func TestAccResourceExceptionList(t *testing.T) {
 		CheckDestroy: checkResourceExceptionListDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -68,7 +64,6 @@ func TestAccResourceExceptionList(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optional"),
 				ConfigVariables: config.Variables{
@@ -97,7 +92,6 @@ func TestAccResourceExceptionList(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -116,7 +110,6 @@ func TestAccResourceExceptionList(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -144,7 +137,6 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_create"),
 				ConfigVariables: config.Variables{
 					"list_id":        config.StringVariable(listID),
@@ -169,7 +161,6 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
 					"list_id":        config.StringVariable(listID),
@@ -189,7 +180,6 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
 					"list_id":        config.StringVariable(listID),
@@ -219,7 +209,6 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -251,7 +240,6 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -278,7 +266,6 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
