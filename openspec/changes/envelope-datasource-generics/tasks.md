@@ -17,7 +17,7 @@
 - [x] 2.3 Migrate `kibana/agentbuildertool` data source to `NewKibanaDataSource[toolDataSourceModel]`
 - [x] 2.4 Remove `data_source.go` and `data_source_read.go` orchestration from `agentbuildertool`
 - [x] 2.5 Evaluate `kibana/agentbuilderagent` data source for envelope fit; migrate if straightforward, otherwise extract domain-local read pipeline helper
-- [ ] 2.6 Extract shared Agent Builder read pipeline helpers (version enforcement, composite ID resolution, space ID fallback) if multiple Agent Builder datasources remain struct-based
+- [x] 2.6 Extract shared Agent Builder read pipeline helpers (version enforcement, composite ID resolution, space ID fallback) if multiple Agent Builder datasources remain struct-based — **N/A**: after migrations only `agentbuilderagent` remains struct-based, so the condition is false.
 
 ## 3. Verification
 
