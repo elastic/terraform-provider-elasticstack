@@ -27,7 +27,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `openspec validate remove-7x-support --strict`.
-- [ ] 5.2 Run `make check-workflows`.
-- [ ] 5.3 Run focused Go tests for changed transform, ILM, and version-related acceptance helper code where unit coverage exists.
-- [ ] 5.4 Run `make build`.
+- [x] 5.1 Run `openspec validate remove-7x-support --strict`.
+- [x] 5.2 Run `make check-workflows`.
+- [x] 5.3 Run focused Go tests for changed transform, ILM, and version-related acceptance helper code where unit coverage exists.
+- [x] 5.4 Run `make build`.
