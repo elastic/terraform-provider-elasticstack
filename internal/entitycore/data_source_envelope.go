@@ -54,11 +54,18 @@ func (f ElasticsearchConnectionField) GetElasticsearchConnection() types.List {
 	return f.ElasticsearchConnection
 }
 
-type kibanaDataSourceModel interface {
+// KibanaDataSourceModel is the type constraint for models passed to
+// [NewKibanaDataSource]. It is satisfied by any struct that embeds
+// [KibanaConnectionField] (or otherwise provides a GetKibanaConnection method).
+type KibanaDataSourceModel interface {
 	GetKibanaConnection() types.List
 }
 
-type elasticsearchDataSourceModel interface {
+// ElasticsearchDataSourceModel is the type constraint for models passed to
+// [NewElasticsearchDataSource]. It is satisfied by any struct that embeds
+// [ElasticsearchConnectionField] (or otherwise provides a
+// GetElasticsearchConnection method).
+type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
 }
 
@@ -66,7 +73,7 @@ type elasticsearchDataSourceModel interface {
 // [datasource.DataSourceWithConfigure] for Kibana-backed data sources. It
 // owns config decode, scoped client resolution, and state persistence; entity
 // logic is delegated to the readFunc callback.
-type genericKibanaDataSource[T kibanaDataSourceModel] struct {
+type genericKibanaDataSource[T KibanaDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
@@ -76,7 +83,7 @@ type genericKibanaDataSource[T kibanaDataSourceModel] struct {
 
 // genericElasticsearchDataSource implements [datasource.DataSource] and
 // [datasource.DataSourceWithConfigure] for Elasticsearch-backed data sources.
-type genericElasticsearchDataSource[T elasticsearchDataSourceModel] struct {
+type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
@@ -106,7 +113,7 @@ type genericElasticsearchDataSource[T elasticsearchDataSourceModel] struct {
 //	        readMyEntity,
 //	    )
 //	}
-func NewKibanaDataSource[T kibanaDataSourceModel](
+func NewKibanaDataSource[T KibanaDataSourceModel](
 	component Component,
 	name string,
 	schemaFactory func() dsschema.Schema,
@@ -126,7 +133,7 @@ func NewKibanaDataSource[T kibanaDataSourceModel](
 // persistence.
 //
 // The concrete model T must embed [ElasticsearchConnectionField].
-func NewElasticsearchDataSource[T elasticsearchDataSourceModel](
+func NewElasticsearchDataSource[T ElasticsearchDataSourceModel](
 	component Component,
 	name string,
 	schemaFactory func() dsschema.Schema,
