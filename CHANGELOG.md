@@ -56,6 +56,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 - Add import support to the elasticstack_elasticsearch_enrich_policy resource ([#2427](https://github.com/elastic/terraform-provider-elasticstack/pull/2427))
 - Add ssl.verification_mode attribute to the elasticstack_fleet_output ssl block ([#2415](https://github.com/elastic/terraform-provider-elasticstack/pull/2415))
 
+### Fixed
+
+- Fixed perpetual plan drift on `elasticstack_elasticsearch_index` `mappings` when an index template injects additional mapping content (such as `dynamic_templates`, `properties`, or `_meta`). The provider now uses semantic equality so that template-injected mappings are treated as non-drift, eliminating the need for `lifecycle { ignore_changes = [mappings] }` workarounds. ([#563](https://github.com/elastic/terraform-provider-elasticstack/issues/563))
+
 ## [0.14.5] - 2026-04-21
 
 - Fix `elasticstack_kibana_slo.metric_custom_indicator` to support doc_count aggregation by making field optional and sending the no-field API variant ([#2394](https://github.com/elastic/terraform-provider-elasticstack/pull/2394))

@@ -44,20 +44,10 @@ var settingsRequiredVersions map[string]*version.Version
 func init() {
 	settingsRequiredVersions = make(map[string]*version.Version)
 
-	// capabilities
-	settingsRequiredVersions["destination.pipeline"] = version.Must(version.NewVersion("7.3.0"))
+	// capabilities requiring >= 8.0
 	settingsRequiredVersions["destination.aliases"] = version.Must(version.NewVersion("8.8.0"))
-	settingsRequiredVersions["frequency"] = version.Must(version.NewVersion("7.3.0"))
-	settingsRequiredVersions["latest"] = version.Must(version.NewVersion("7.11.0"))
-	settingsRequiredVersions["retention_policy"] = version.Must(version.NewVersion("7.12.0"))
-	settingsRequiredVersions["source.runtime_mappings"] = version.Must(version.NewVersion("7.12.0"))
-	settingsRequiredVersions["metadata"] = version.Must(version.NewVersion("7.16.0"))
 
-	// settings
-	settingsRequiredVersions["docs_per_second"] = version.Must(version.NewVersion("7.8.0"))
-	settingsRequiredVersions["max_page_search_size"] = version.Must(version.NewVersion("7.8.0"))
-	settingsRequiredVersions["dates_as_epoch_millis"] = version.Must(version.NewVersion("7.11.0"))
-	settingsRequiredVersions["align_checkpoints"] = version.Must(version.NewVersion("7.15.0"))
+	// settings requiring >= 8.0
 	settingsRequiredVersions["deduce_mappings"] = version.Must(version.NewVersion("8.1.0"))
 	settingsRequiredVersions["num_failure_retries"] = version.Must(version.NewVersion("8.4.0"))
 	settingsRequiredVersions["unattended"] = version.Must(version.NewVersion("8.5.0"))

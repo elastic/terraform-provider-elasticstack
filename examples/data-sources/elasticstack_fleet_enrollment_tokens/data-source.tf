@@ -1,3 +1,7 @@
+# Excluded from TestAccExamples_planOnly (planOnlySkippedEmbedPaths): enrollment token
+# reads require a Fleet agent policy_id that exists in Kibana/Fleet; example UUIDs vary by stack.
+# Substitute policy_id from your Fleet agent policy before apply.
+
 provider "elasticstack" {
   kibana {}
 }

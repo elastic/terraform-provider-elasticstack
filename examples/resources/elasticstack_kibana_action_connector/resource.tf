@@ -1,4 +1,5 @@
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 
@@ -18,7 +19,7 @@ resource "elasticstack_kibana_action_connector" "pagerduty-connector" {
     apiUrl = "https://events.pagerduty.com/v2/enqueue"
   })
   secrets = jsonencode({
-    routingKey = pagerduty_service_integration.kibana.integration_key
+    routingKey = "<your-pagerduty-routing-key>"
   })
 }
 

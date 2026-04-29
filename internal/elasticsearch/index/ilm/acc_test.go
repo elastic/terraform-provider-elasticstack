@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var totalShardsPerNodeVersionLimit = version.Must(version.NewVersion("7.16.0"))
 var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
 var downsampleVersionLimit = version.Must(version.NewVersion("8.10.0"))
 var allowWriteAfterShrinkVersionLimit = version.Must(version.NewVersion("8.14.0"))
@@ -108,7 +107,6 @@ func TestAccResourceILM(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(totalShardsPerNodeVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("total_shards_per_node"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),

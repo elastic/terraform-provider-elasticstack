@@ -2,6 +2,16 @@ provider "elasticstack" {
   kibana {}
 }
 
+# Tool referenced by the agent (minimal ES|QL example)
+resource "elasticstack_kibana_agentbuilder_tool" "my_tool" {
+  tool_id     = "example-doc-tool"
+  type        = "esql"
+  description = "Read-only tool for the agent example"
+  configuration = jsonencode({
+    query = "FROM logs-* | LIMIT 10"
+  })
+}
+
 # Basic agent with tools
 resource "elasticstack_kibana_agentbuilder_agent" "my_agent" {
   agent_id      = "my-agent"

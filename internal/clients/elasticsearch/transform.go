@@ -30,13 +30,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
-
-var transformFeatureMinSupportedVersion = version.Must(version.NewVersion("7.2.0"))
-
-var apiOperationTimeoutParamMinSupportedVersion = version.Must(version.NewVersion("7.17.0"))
 
 func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
 
@@ -51,29 +46,10 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diag.FromErr(err)
 	}
 
-	serverVersion, diags := apiClient.ServerVersion(ctx)
-	if diags.HasError() {
-		return diags
-	}
-
-	if serverVersion.LessThan(transformFeatureMinSupportedVersion) {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Transforms not supported",
-			Detail:   fmt.Sprintf(`Transform feature requires a minimum Elasticsearch version of "%s"`, transformFeatureMinSupportedVersion),
-		})
-		return diags
-	}
-
-	withTimeout := serverVersion.GreaterThanOrEqual(apiOperationTimeoutParamMinSupportedVersion)
-
 	putOptions := []func(*esapi.TransformPutTransformRequest){
 		esClient.TransformPutTransform.WithContext(ctx),
 		esClient.TransformPutTransform.WithDeferValidation(params.DeferValidation),
-	}
-
-	if withTimeout {
-		putOptions = append(putOptions, esClient.TransformPutTransform.WithTimeout(params.Timeout))
+		esClient.TransformPutTransform.WithTimeout(params.Timeout),
 	}
 
 	res, err := esClient.TransformPutTransform(bytes.NewReader(transformBytes), transform.Name, putOptions...)
@@ -87,15 +63,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 
 	if params.Enabled {
-
-		var timeout time.Duration
-		if withTimeout {
-			timeout = params.Timeout
-		} else {
-			timeout = 0
-		}
-
-		if diags := startTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
+		if diags := startTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
 			return diags
 		}
 	}
@@ -211,29 +179,10 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		return diag.FromErr(err)
 	}
 
-	serverVersion, diags := apiClient.ServerVersion(ctx)
-	if diags.HasError() {
-		return diags
-	}
-
-	if serverVersion.LessThan(transformFeatureMinSupportedVersion) {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Transforms not supported",
-			Detail:   fmt.Sprintf(`Transform feature requires a minimum Elasticsearch version of "%s"`, transformFeatureMinSupportedVersion),
-		})
-		return diags
-	}
-
-	withTimeout := serverVersion.GreaterThanOrEqual(apiOperationTimeoutParamMinSupportedVersion)
-
 	updateOptions := []func(*esapi.TransformUpdateTransformRequest){
 		esClient.TransformUpdateTransform.WithContext(ctx),
 		esClient.TransformUpdateTransform.WithDeferValidation(params.DeferValidation),
-	}
-
-	if withTimeout {
-		updateOptions = append(updateOptions, esClient.TransformUpdateTransform.WithTimeout(params.Timeout))
+		esClient.TransformUpdateTransform.WithTimeout(params.Timeout),
 	}
 
 	res, err := esClient.TransformUpdateTransform(bytes.NewReader(transformBytes), transform.Name, updateOptions...)
@@ -246,20 +195,13 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		return diags
 	}
 
-	var timeout time.Duration
-	if withTimeout {
-		timeout = params.Timeout
-	} else {
-		timeout = 0
-	}
-
 	if params.ApplyEnabled {
 		if params.Enabled {
-			if diags := startTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
+			if diags := startTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
 				return diags
 			}
 		} else {
-			if diags := stopTransform(ctx, esClient, transform.Name, timeout); diags.HasError() {
+			if diags := stopTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
 				return diags
 			}
 		}
@@ -293,10 +235,7 @@ func startTransform(ctx context.Context, esClient *elasticsearch.Client, transfo
 
 	startOptions := []func(*esapi.TransformStartTransformRequest){
 		esClient.TransformStartTransform.WithContext(ctx),
-	}
-
-	if timeout > 0 {
-		startOptions = append(startOptions, esClient.TransformStartTransform.WithTimeout(timeout))
+		esClient.TransformStartTransform.WithTimeout(timeout),
 	}
 
 	startRes, err := esClient.TransformStartTransform(transformName, startOptions...)
@@ -317,10 +256,7 @@ func stopTransform(ctx context.Context, esClient *elasticsearch.Client, transfor
 
 	stopOptions := []func(*esapi.TransformStopTransformRequest){
 		esClient.TransformStopTransform.WithContext(ctx),
-	}
-
-	if timeout > 0 {
-		stopOptions = append(stopOptions, esClient.TransformStopTransform.WithTimeout(timeout))
+		esClient.TransformStopTransform.WithTimeout(timeout),
 	}
 
 	startRes, err := esClient.TransformStopTransform(transformName, stopOptions...)

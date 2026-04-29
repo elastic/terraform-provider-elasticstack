@@ -52,7 +52,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 ### Optional
 
 - `description` (String) Description of the processor.
-- `ecs_compatibility` (String) Must be disabled or v1. If v1, the processor uses patterns with Elastic Common Schema (ECS) field names. **NOTE:** Supported only starting from version of Elasticsearch **7.16.x**.
+- `ecs_compatibility` (String) Must be disabled or v1. If v1, the processor uses patterns with Elastic Common Schema (ECS) field names.
 - `if` (String) Conditionally execute the processor
 - `ignore_failure` (Boolean) Ignore failures for the processor.
 - `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document

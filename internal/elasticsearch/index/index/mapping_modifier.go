@@ -20,12 +20,8 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -51,96 +47,24 @@ func (p mappingsPlanModifier) PlanModifyString(_ context.Context, req planmodifi
 	_ = json.Unmarshal([]byte(stateStr), &stateMappings)
 	_ = json.Unmarshal([]byte(cfgStr), &cfgMappings)
 
-	if stateProps, ok := stateMappings["properties"]; ok {
-		cfgProps, ok := cfgMappings["properties"]
-		if !ok {
-			resp.RequiresReplace = true
-			return
-		}
+	result := compareMappingsForPlan(stateMappings, cfgMappings)
+	resp.RequiresReplace = result.RequiresReplace
+	resp.Diagnostics.Append(result.Diags...)
 
-		requiresReplace, finalMappings, diags := p.modifyMappings(path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]any), cfgProps.(map[string]any))
-		resp.RequiresReplace = requiresReplace
-		cfgMappings["properties"] = finalMappings
-		resp.Diagnostics.Append(diags...)
-
-		planBytes, err := json.Marshal(cfgMappings)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(req.Path, "Failed to marshal final mappings", err.Error())
-			return
-		}
-
-		resp.PlanValue = basetypes.NewStringValue(string(planBytes))
-	}
-}
-
-func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, oldMappings map[string]any, newMappings map[string]any) (bool, map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	warningDetail := "Elasticsearch will maintain the current field in it's mapping. " +
-		"Re-index to remove the field completely"
-	for k, v := range oldMappings {
-		oldFieldSettings := v.(map[string]any)
-		newFieldSettings, ok := newMappings[k]
-		currentPath := initialPath.AtMapKey(k)
-		// When field is removed, it'll be ignored in elasticsearch
-		if !ok {
-			diags.AddAttributeWarning(
-				path.Root("mappings"),
-				fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
-				warningDetail,
-			)
-			newMappings[k] = v
-			continue
-		}
-		newSettings := newFieldSettings.(map[string]any)
-		// check if the "type" field exists and match with new one
-		if s, ok := oldFieldSettings["type"]; ok {
-			if ns, ok := newSettings["type"]; ok {
-				if !reflect.DeepEqual(s, ns) {
-					return true, newMappings, diags
-				}
-				// For semantic_text fields, Elasticsearch auto-populates model_settings
-				// after index creation. Copy model_settings from state into the plan
-				// when the user has not specified them, so the plan matches what ES returns.
-				if s == "semantic_text" {
-					if modelSettings, exists := oldFieldSettings["model_settings"]; exists {
-						if _, configHasModelSettings := newSettings["model_settings"]; !configHasModelSettings {
-							newSettings["model_settings"] = modelSettings
-						}
-					}
-					newMappings[k] = newSettings
-				}
-				continue
-			}
-
-			return true, newMappings, diags
-		}
-
-		// if we have "mapping" field, let's call ourself to check again
-		if s, ok := oldFieldSettings["properties"]; ok {
-			currentPath = currentPath.AtMapKey("properties")
-			if ns, ok := newSettings["properties"]; ok {
-				requiresReplace, newProperties, d := p.modifyMappings(currentPath, s.(map[string]any), ns.(map[string]any))
-				diags.Append(d...)
-				newSettings["properties"] = newProperties
-				if requiresReplace {
-					return true, newMappings, diags
-				}
-			} else {
-				diags.AddAttributeWarning(
-					path.Root("mappings"),
-					fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
-					warningDetail,
-				)
-				newSettings["properties"] = s
-			}
-		}
+	// Merge state-only mapping content (retained fields and template extras)
+	// into the planned value to avoid perpetual drift.
+	merged := mergeMappingsForPlan(stateMappings, cfgMappings)
+	planBytes, err := json.Marshal(merged)
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Failed to marshal final mappings", err.Error())
+		return
 	}
 
-	return false, newMappings, diags
+	resp.PlanValue = basetypes.NewStringValue(string(planBytes))
 }
 
 func (p mappingsPlanModifier) Description(_ context.Context) string {
-	return "Preserves existing mappings which don't exist in config"
+	return "Preserves existing mappings which don't exist in config and detects incompatible changes"
 }
 
 func (p mappingsPlanModifier) MarkdownDescription(ctx context.Context) string {

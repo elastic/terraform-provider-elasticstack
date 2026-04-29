@@ -15,33 +15,29 @@ Export an Agent Builder agent by ID, optionally including its tools and workflow
 ### Export an agent (with dependencies for cross-cluster import)
 
 ```terraform
-# Export an agent and its dependencies (full tool rows + workflow YAML on workflow tools).
-#
-# Set include_dependencies = true so each `tools` entry includes type, configuration,
-# readonly, tags, and (for workflow tools) workflow_id + workflow_configuration_yaml.
-# Omit it or set false to only get tool id / space_id / tool_id references (no API tool fetch).
-#
-# The `agent_export` output is the whole data source object (read via
-# terraform_remote_state.outputs.agent_export — no jsondecode needed).
+# Export full agent rows (same pattern as terraform_remote_state workflows in import.tf).
 
 provider "elasticstack" {
   kibana {}
 }
 
-variable "agent_id" {
-  description = "The agent ID to export (plain id, or `<space_id>/<agent_id>` if space_id is not set on the data source)."
-  type        = string
+resource "elasticstack_kibana_agentbuilder_tool" "exported_tool" {
+  tool_id       = "doc-export-example-tool"
+  type          = "esql"
+  description   = "Tool for the export data source example"
+  configuration = jsonencode({ query = "FROM logs-* | LIMIT 10" })
 }
 
-variable "space_id" {
-  description = "Kibana space for the agent. Leave null for the default space."
-  type        = string
-  default     = null
+resource "elasticstack_kibana_agentbuilder_agent" "source" {
+  agent_id     = "doc-export-source-agent"
+  name         = "Documentation export agent"
+  description  = "Agent whose configuration is exported by the data source below"
+  instructions = "You are helpful."
+  tools        = [elasticstack_kibana_agentbuilder_tool.exported_tool.tool_id]
 }
 
 data "elasticstack_kibana_agentbuilder_agent" "example" {
-  agent_id             = var.agent_id
-  space_id             = var.space_id
+  agent_id             = elasticstack_kibana_agentbuilder_agent.source.agent_id
   include_dependencies = true
 }
 
@@ -53,6 +49,8 @@ output "agent_export" {
 ### Import the exported agent into another cluster
 
 ```terraform
+# This snippet reads another Terraform root via terraform_remote_state; use it together with that workspace rather than copying this file alone into a single root.
+#
 # Import an agent and its writable tools into another cluster.
 #
 # Prerequisites:

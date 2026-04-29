@@ -38,7 +38,6 @@ import (
 )
 
 var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
-var MinExceptionItemVersion = version.Must(version.NewVersion("7.9.0"))
 
 // https://github.com/elastic/kibana/pull/159223
 // These versions don't respect item_id which breaks most tests
@@ -125,7 +124,7 @@ func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinExceptionItemVersion),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_create"),
 				ConfigVariables: config.Variables{

@@ -166,7 +166,7 @@ type tfModel struct {
 	AnalysisFilter                     jsontypes.Normalized `tfsdk:"analysis_filter"`
 	AnalysisNormalizer                 jsontypes.Normalized `tfsdk:"analysis_normalizer"`
 	Alias                              types.Set            `tfsdk:"alias"`
-	Mappings                           jsontypes.Normalized `tfsdk:"mappings"`
+	Mappings                           mappingsValue        `tfsdk:"mappings"`
 	SettingsRaw                        jsontypes.Normalized `tfsdk:"settings_raw"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
 	WaitForActiveShards                types.String         `tfsdk:"wait_for_active_shards"`
@@ -220,7 +220,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 			}
 		}
 
-		model.Mappings = jsontypes.NewNormalizedValue(string(mappingBytes))
+		model.Mappings = newMappingsValue(string(mappingBytes))
 	}
 
 	diags = setSettingsFromAPI(model, apiModel)

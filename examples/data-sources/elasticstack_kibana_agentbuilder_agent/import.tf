@@ -1,3 +1,5 @@
+# This snippet reads another Terraform root via terraform_remote_state; use it together with that workspace rather than copying this file alone into a single root.
+#
 # Import an agent and its writable tools into another cluster.
 #
 # Prerequisites:

@@ -25,15 +25,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
-
-var MinListDataStreamsVersion = version.Must(version.NewVersion("7.10.0"))
 
 func TestAccResourceSecurityListDataStreams(t *testing.T) {
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -44,7 +40,6 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -58,7 +53,6 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -80,7 +74,6 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -94,7 +87,6 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),

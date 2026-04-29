@@ -69,13 +69,14 @@ func Test_PlanModifyString(t *testing.T) {
 			stateMappings:  basetypes.NewStringValue("{}"),
 		},
 		{
-			name: "should do nothing if the state mappings do not define any properties",
+			name: "should not alter the final plan when state mappings do not define any properties",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"not_properties": map[string]any{
 					"hello": "world",
 				},
 			}),
-			configMappings: basetypes.NewStringValue("{}"),
+			configMappings:       basetypes.NewStringValue("{}"),
+			expectedPlanMappings: basetypes.NewStringValue("{}"),
 		},
 		{
 			name: "requires replace if state mappings define properties but the config value does not",
@@ -85,6 +86,7 @@ func Test_PlanModifyString(t *testing.T) {
 				},
 			}),
 			configMappings:          basetypes.NewStringValue("{}"),
+			expectedPlanMappings:    basetypes.NewStringValue("{}"),
 			expectedRequiresReplace: true,
 		},
 		{
@@ -175,7 +177,7 @@ func Test_PlanModifyString(t *testing.T) {
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
 					`removing field [mappings["properties"]["field2"]] in mappings is ignored.`,
-					"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+					"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 				),
 			},
 		},
@@ -221,7 +223,7 @@ func Test_PlanModifyString(t *testing.T) {
 				diag.NewAttributeWarningDiagnostic(
 					path.Root("mappings"),
 					`removing field [mappings["properties"]["field1"]["properties"]["field2"]] in mappings is ignored.`,
-					"Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely",
+					"Elasticsearch will maintain the current field in its mapping. Re-index to remove the field completely",
 				),
 			},
 		},

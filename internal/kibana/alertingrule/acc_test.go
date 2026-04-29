@@ -64,7 +64,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestAccResourceAlertingRule(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
 	minSupportedAlertsFilterVersion := version.Must(version.NewSemver("8.9.0"))
 	minSupportedAlertDelayVersion := version.Must(version.NewSemver("8.13.0"))
@@ -80,7 +79,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -99,7 +97,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -114,7 +111,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
@@ -301,7 +297,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_no_frequency_create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -330,7 +325,6 @@ func TestAccResourceAlertingRule(t *testing.T) {
 }
 
 func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	ruleID := uuid.New().String()
@@ -341,7 +335,6 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_explicit"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -382,7 +375,6 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_aggtype"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -416,7 +408,6 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_aggtype"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -456,7 +447,6 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 }
 
 func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	ruleID := uuid.New().String()
@@ -467,7 +457,6 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -523,7 +512,6 @@ func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 var testAccResourceAlertingRuleFromSDKCreateConfig string
 
 func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	ruleID := uuid.New().String()
@@ -534,7 +522,6 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Create the alerting rule with the last provider version where it was built on the SDK
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
@@ -557,7 +544,6 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 			},
 			{
 				// Upgrade to current PFW provider
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

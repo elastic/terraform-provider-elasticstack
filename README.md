@@ -8,7 +8,7 @@ The Elastic Stack provider allows you to manage and configure the Elastic stack 
 
 ## Getting started
 
-__The provider supports Elastic Stack versions 7.x+__
+__The provider supports Elastic Stack versions 8.0+__
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
 in order to interact with the Elasticsearch and be able to use the provider's full capabilities.

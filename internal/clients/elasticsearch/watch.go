@@ -18,11 +18,13 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -45,24 +47,16 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyBytes []byte) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
-
-	res, err := esClient.Watcher.PutWatch(watchID, bytes.NewReader(watchBodyBytes),
-		esClient.Watcher.PutWatch.WithActive(active),
-		esClient.Watcher.PutWatch.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Unable to create or update watch", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-
-	return diagutil.CheckErrorFromFW(res, "Unable to create or update watch")
+	return doFWWrite(apiClient, json.RawMessage(watchBodyBytes),
+		"Unable to marshal watch body",
+		"Unable to create or update watch",
+		"Unable to create or update watch",
+		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
+			return esClient.Watcher.PutWatch(watchID, body,
+				esClient.Watcher.PutWatch.WithActive(active),
+				esClient.Watcher.PutWatch.WithContext(ctx))
+		},
+	)
 }
 
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {

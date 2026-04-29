@@ -9,13 +9,22 @@ The provider has unit tests and acceptance tests.
 
 ## Acceptance tests
 
-Acceptance tests require a running Elastic Stack and `TF_ACC=1`. 
+Acceptance tests require a running Elastic Stack and `TF_ACC=1`.
 
-- Prefer running targeted tests with `go test -v [-run 'filter'] <package>`
-- When instructed, run the full acceptance test suite with `make testacc`
-- The Elastic stack is almost certainly already running. Check before considering starting a new environment (`curl -u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD $ELASTICSEARCH_ENDPOINTS`). 
-- Start local stack services if required (set `STACK_VERSION` if a specific version is required):
-  - `make docker-fleet`
+General workflow (all acceptance coverage, not only the examples harness):
+
+- Prefer targeted runs: `go test -v [-run 'filter'] <package>`
+- When instructed, run the full suite with `make testacc`
+- The Elastic stack may already be running; check before starting a new environment (`curl -u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD $ELASTICSEARCH_ENDPOINTS`)
+- To start local stack services if needed (set `STACK_VERSION` when a specific version is required): `make docker-fleet`
+
+### Examples PlanOnly harness (`TestAccExamples_planOnly`)
+
+`*.tf` files under `examples/resources/` and `examples/data-sources/` (except harness skip-lists) are planned in isolation by `TestAccExamples_planOnly` in `internal/acctest/`. For contributor expectations—self-contained modules, acceptance environment—see the **Example snippets** section in [`development-workflow.md`](./development-workflow.md).
+
+```bash
+TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1
+```
 
 ### Required environment variables (common)
 

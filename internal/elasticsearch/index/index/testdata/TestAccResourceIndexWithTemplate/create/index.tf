@@ -44,9 +44,5 @@ resource "elasticstack_elasticsearch_index" "test" {
     },
   ]
 
-  lifecycle {
-    ignore_changes = [mappings]
-  }
-
   depends_on = [elasticstack_elasticsearch_index_template.test]
 }

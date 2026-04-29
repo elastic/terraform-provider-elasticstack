@@ -3,7 +3,7 @@ resource "elasticstack_kibana_stream" "nginx_errors" {
   space_id = "default"
 
   query_config = {
-    esql = "FROM logs.nginx | WHERE http.response.status_code >= 400"
-    view = "logs-nginx-errors"
+    # `view` is computed ($.<stream name>). FROM must use $.{parent prefix} notation (last dot segment stripped).
+    esql = "FROM $.logs.nginx | WHERE http.response.status_code >= 400"
   }
 }

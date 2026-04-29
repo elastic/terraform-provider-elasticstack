@@ -35,24 +35,23 @@ resource "elasticstack_fleet_integration" "test_integration" {
 }
 ```
 
-### Tracking the latest version
+### Pinning a package version explicitly
 
-An integration can track the latest available version by utilizing the `elasticstack_fleet_integration` data source. 
-The data source will retrieve the latest available version of the specified integration package, which can then be 
-passed to the `version` attribute of the `elasticstack_fleet_integration` resource. 
+Specify `version` using the manifest version string shown in Fleet or the Elastic Package Registry.
+
+To derive the resolved registry version for a package by name instead of pinning a literal, configure the **`elasticstack_fleet_integration` data source** and set `version = data.elasticstack_fleet_integration.<label>.version` alongside this resource (see the nested provider schema for [`elasticstack_fleet_integration` (data source)](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/data-sources/fleet_integration)). That chained workflow requires the Fleet API read to populate `version` before Terraform can fix the managed resource attributes; standalone `terraform validate`/`plan` examples that omit the data-source read may need a pinned literal depending on Fleet version.
 
 ```terraform
 provider "elasticstack" {
   kibana {}
 }
 
-data "elasticstack_fleet_integration" "tcp" {
-  name = "tcp"
-}
+# Pin a concrete EPM package version string for reproducible installs. To adopt the
+# version Kibana resolves for a package name, use data.elasticstack_fleet_integration.<name>.version — that pattern requires apply-time reads; isolated Plan-only runs cannot always compute a literal `version` beforehand (Fleet 7.17 and mixed matrix stacks).
 
 resource "elasticstack_fleet_integration" "test_integration" {
   name    = "tcp"
-  version = data.elasticstack_fleet_integration.tcp.version
+  version = "1.16.0"
   force   = true
 }
 ```

@@ -3,7 +3,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_agentbuilder_workflow" "my_workflow" {
-  configuration = <<-EOT
+  configuration_yaml = <<-EOT
 name: My Workflow
 description: An example workflow
 enabled: true

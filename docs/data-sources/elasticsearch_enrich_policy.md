@@ -45,7 +45,7 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy1" {
 }
 
 data "elasticstack_elasticsearch_enrich_policy" "policy" {
-  name = "policy1"
+  name = elasticstack_elasticsearch_enrich_policy.policy1.name
 }
 
 output "name" {

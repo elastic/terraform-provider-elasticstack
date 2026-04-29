@@ -37,7 +37,6 @@ import (
 const indexSettingsAnalysisAnalyzerExpected = `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],` +
 	`"tokenizer":"standard","type":"custom"}}`
 const indexAliasFilterExpected = `{"term":{"user.id":"developer"}}`
-const indexTemplateMappingsExpected = `{"dynamic_templates":[{"strings_as_ip":{"match":"ip*","match_mapping_type":"string","runtime":{"type":"ip"}}}]}`
 
 func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -334,7 +333,7 @@ func TestAccResourceIndexWithTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "default_pipeline"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "mappings", indexTemplateMappingsExpected),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "mappings"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]string{
 						"name":           fmt.Sprintf("%s-alias", indexName),
 						"is_write_index": "true",
@@ -381,7 +380,6 @@ func TestAccResourceIndexTemplateNoMappingDrift(t *testing.T) {
 }
 
 func TestAccResourceIndexTemplateUserMappingNoDrift(t *testing.T) {
-	t.Skip("documents current mapping drift when template-injected mappings merge with user-owned mappings; enable after #563 fix")
 
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 

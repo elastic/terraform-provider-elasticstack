@@ -36,15 +36,6 @@ resource "elasticstack_fleet_output" "test_output" {
 ### Basic Kafka output
 
 ```terraform
-terraform {
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.14"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -85,18 +76,28 @@ resource "elasticstack_fleet_output" "kafka_basic" {
 ### Advanced Kafka output
 
 ```terraform
-terraform {
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.14"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
+}
+
+# Placeholder PEM material for illustration only — replace with real certificates in production.
+locals {
+  example_ca          = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_cert = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_key  = <<-EOT
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEpAIBAAKCAQEA0
+    -----END RSA PRIVATE KEY-----
+  EOT
 }
 
 # Advanced Kafka Fleet Output with SSL authentication
@@ -113,19 +114,17 @@ resource "elasticstack_fleet_output" "kafka_advanced" {
     "kafka3:9092"
   ]
 
-  # Advanced Kafka configuration
   kafka = {
     auth_type      = "ssl"
     topic          = "elastic-logs"
     partition      = "round_robin"
     compression    = "snappy"
     required_acks  = -1
-    broker_timeout = 10
-    timeout        = 30
+    broker_timeout = 10.0
+    timeout        = 30.0
     version        = "2.6.0"
     client_id      = "elastic-beats-client"
 
-    # Custom headers for message metadata
     headers = [
       {
         key   = "datacenter"
@@ -140,29 +139,14 @@ resource "elasticstack_fleet_output" "kafka_advanced" {
         value = "production"
       }
     ]
-
-    # Hash-based partitioning
-    hash = {
-      hash   = "host.name"
-      random = false
-    }
-
-    # SASL configuration
-    sasl = {
-      mechanism = "SCRAM-SHA-256"
-    }
   }
 
-  # SSL configuration (reusing common SSL block)
   ssl = {
-    certificate_authorities = [
-      file("${path.module}/ca.crt")
-    ]
-    certificate = file("${path.module}/client.crt")
-    key         = file("${path.module}/client.key")
+    certificate_authorities = [trimspace(local.example_ca)]
+    certificate             = trimspace(local.example_client_cert)
+    key                     = trimspace(local.example_client_key)
   }
 
-  # Additional YAML configuration for advanced settings
   config_yaml = yamlencode({
     "ssl.verification_mode"   = "full"
     "ssl.supported_protocols" = ["TLSv1.2", "TLSv1.3"]
@@ -186,11 +170,9 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
     partition   = "round_robin"
     compression = "lz4"
 
-    round_robin = [
-      {
-        group_events = 100
-      }
-    ]
+    round_robin = {
+      group_events = 100
+    }
   }
 }
 ```
@@ -207,7 +189,7 @@ resource "elasticstack_fleet_output" "remote" {
   name                 = "Remote Elasticsearch"
   output_id            = "remote-es-output"
   type                 = "remote_elasticsearch"
-  service_token        = var.remote_service_token
+  service_token        = "REPLACE_ME_REMOTE_CLUSTER_SERVICE_TOKEN"
   default_integrations = false
   default_monitoring   = false
 
@@ -215,20 +197,14 @@ resource "elasticstack_fleet_output" "remote" {
     "https://remote-elasticsearch.example.com:9200",
   ]
 
-  # Optional: automatic integration asset sync to the remote cluster (subscription/version limits apply).
-  sync_integrations             = true
-  sync_uninstalled_integrations = false
-  write_to_logs_streams         = false
-
   ssl = {
-    certificate_authorities = [file("${path.module}/remote-ca.pem")]
+    certificate_authorities = [trimspace(<<-EOT
+      -----BEGIN CERTIFICATE-----
+      MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIwDAQEKBQYwOzEbMBkGA1UEAxMSRWxhc3RpY
+      -----END CERTIFICATE-----
+    EOT
+    )]
   }
-}
-
-variable "remote_service_token" {
-  type        = string
-  sensitive   = true
-  description = "Service token for the remote Elasticsearch cluster (create per Elastic/Fleet docs)."
 }
 ```
 

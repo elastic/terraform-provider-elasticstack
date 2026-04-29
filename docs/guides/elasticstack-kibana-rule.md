@@ -112,6 +112,20 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 When you define the connector, you can optionally specify an `executionTimeField`:
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "kibana-index-connector-example"
+  mappings = jsonencode({
+    properties = {
+      alert_date = { type = "date", format = "date_optional_time||epoch_millis" }
+    }
+  })
+}
+
 resource "elasticstack_kibana_action_connector" "index_example" {
   name              = "my_index_connector"
   connector_type_id = ".index"
@@ -130,6 +144,83 @@ You can now create an index threshold rule that detects when your data stream ex
 In this example, the rule checks whether the count of all documents in the data stream exceeds 10 over a period of 1 day:
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+// Prerequisites: data stream and index connector referenced by this rule (self-contained snippet).
+
+resource "elasticstack_elasticsearch_index_lifecycle" "my_lifecycle_policy" {
+  name = "my_lifecycle_policy"
+
+  hot {
+    min_age = "1h"
+    set_priority {
+      priority = 10
+    }
+    rollover {
+      max_age = "1d"
+    }
+    readonly {}
+  }
+
+  delete {
+    min_age = "2d"
+    delete {}
+  }
+}
+
+resource "elasticstack_elasticsearch_component_template" "my_mappings" {
+  name = "my_mappings"
+  template {
+    mappings = jsonencode({
+      properties = {
+        field1       = { type = "keyword" }
+        field2       = { type = "text" }
+        "@timestamp" = { type = "date" }
+      }
+    })
+  }
+}
+
+resource "elasticstack_elasticsearch_component_template" "my_settings" {
+  name = "my_settings"
+  template {
+    settings = jsonencode({
+      "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.my_lifecycle_policy.name
+    })
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template" "my_index_template" {
+  name           = "my_index_template"
+  priority       = 500
+  index_patterns = ["my-data-stream*"]
+  composed_of = [
+    elasticstack_elasticsearch_component_template.my_mappings.name,
+    elasticstack_elasticsearch_component_template.my_settings.name
+  ]
+  data_stream {}
+}
+
+resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
+  name = "my-data-stream"
+
+  depends_on = [
+    elasticstack_elasticsearch_index_template.my_index_template
+  ]
+}
+
+resource "elasticstack_kibana_action_connector" "index_example" {
+  name              = "my_index_connector"
+  connector_type_id = ".index"
+  config = jsonencode({
+    index              = elasticstack_elasticsearch_data_stream.my_data_stream.name
+    executionTimeField = "alert_date"
+  })
+}
+
 resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceeded" {
   name         = "DailyDocumentCountThresholdExceeded"
   consumer     = "alerts"
@@ -145,7 +236,7 @@ resource "elasticstack_kibana_alerting_rule" "DailyDocumentCountThresholdExceede
     timeWindowUnit      = "d"
     groupBy             = "all"
     threshold           = [10]
-    index               = elasticstack_elasticsearch_data_stream.my_data_stream.name
+    index               = [elasticstack_elasticsearch_data_stream.my_data_stream.name]
     timeField           = "@timestamp"
   })
 

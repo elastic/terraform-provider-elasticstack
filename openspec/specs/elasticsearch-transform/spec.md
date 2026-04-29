@@ -18,12 +18,12 @@ resource "elasticstack_elasticsearch_transform" "example" {
   source {                                            # required, max 1
     indices          = <required, list(string)>
     query            = <optional, string>             # JSON string; default: {"match_all":{}}; JSON-normalized diff suppression
-    runtime_mappings = <optional, string>             # JSON string; JSON-normalized diff suppression; requires Elasticsearch >= 7.12.0
+    runtime_mappings = <optional, string>             # JSON string; JSON-normalized diff suppression
   }
 
   destination {                                       # required, max 1
     index    = <required, string>                     # 1–255 chars; lowercase alphanumeric + selected punctuation; cannot start with -, _, +
-    pipeline = <optional, string>                     # requires Elasticsearch >= 7.3.0
+    pipeline = <optional, string>
     aliases {                                         # optional, list; requires Elasticsearch >= 8.8.0
       alias           = <required, string>
       move_on_creation = <optional, bool>             # default: false
@@ -31,13 +31,13 @@ resource "elasticstack_elasticsearch_transform" "example" {
   }
 
   pivot  = <optional, string>   # JSON string; exactly one of pivot or latest required; force new; JSON-normalized diff suppression
-  latest = <optional, string>   # JSON string; exactly one of pivot or latest required; force new; JSON-normalized diff suppression; requires Elasticsearch >= 7.11.0
+  latest = <optional, string>   # JSON string; exactly one of pivot or latest required; force new; JSON-normalized diff suppression
 
-  frequency = <optional, string> # Elastic duration string; default: "1m"; requires Elasticsearch >= 7.3.0
+  frequency = <optional, string> # Elastic duration string; default: "1m"
 
-  metadata = <optional, string>  # JSON string; JSON-normalized diff suppression; requires Elasticsearch >= 7.16.0
+  metadata = <optional, string>  # JSON string; JSON-normalized diff suppression
 
-  retention_policy {                                  # optional, max 1; requires Elasticsearch >= 7.12.0
+  retention_policy {                                  # optional, max 1
     time {                                            # required, max 1
       field   = <required, string>
       max_age = <required, string>                    # Elastic duration string
@@ -51,12 +51,12 @@ resource "elasticstack_elasticsearch_transform" "example" {
     }
   }
 
-  # Settings — each requires a minimum Elasticsearch version (see Compatibility requirements)
-  align_checkpoints    = <optional, bool>    # requires Elasticsearch >= 7.15.0
-  dates_as_epoch_millis = <optional, bool>   # requires Elasticsearch >= 7.11.0
+  # Settings — requires a minimum Elasticsearch version when noted
+  align_checkpoints    = <optional, bool>
+  dates_as_epoch_millis = <optional, bool>
   deduce_mappings      = <optional, bool>    # requires Elasticsearch >= 8.1.0
-  docs_per_second      = <optional, float>   # >= 0; requires Elasticsearch >= 7.8.0
-  max_page_search_size = <optional, int>     # 10–65536; requires Elasticsearch >= 7.8.0
+  docs_per_second      = <optional, float>   # >= 0
+  max_page_search_size = <optional, int>     # 10–65536
   num_failure_retries  = <optional, int>     # -1–100; requires Elasticsearch >= 8.4.0
   unattended           = <optional, bool>    # requires Elasticsearch >= 8.5.0
 
@@ -100,16 +100,6 @@ The resource SHALL use the Elasticsearch Put Transform API to create transforms 
 - GIVEN a non-success response from the Delete Transform API
 - WHEN the provider handles the response
 - THEN Terraform diagnostics SHALL include the error
-
-### Requirement: Minimum server version for transforms (REQ-006)
-
-The resource SHALL verify the Elasticsearch server version is at least `7.2.0` before calling the Put Transform or Update Transform API. If the server version is lower, the resource SHALL fail with a "Transforms not supported" error diagnostic and SHALL not proceed with the API call.
-
-#### Scenario: Server too old
-
-- GIVEN an Elasticsearch server with version below `7.2.0`
-- WHEN create or update is attempted
-- THEN the resource SHALL return a "Transforms not supported" error and SHALL not call the API
 
 ### Requirement: Identity and import (REQ-007–REQ-009)
 
@@ -171,11 +161,11 @@ On create, when `enabled` is `true`, the resource SHALL call the Elasticsearch S
 
 ### Requirement: Timeout parameter (REQ-016–REQ-017)
 
-The `timeout` attribute SHALL accept a Go duration string and SHALL default to `"30s"`. When the Elasticsearch server version is at least `7.17.0`, the resource SHALL pass the parsed `timeout` value as the API operation timeout parameter to the Put Transform, Update Transform, Start Transform, and Stop Transform APIs. When the server version is below `7.17.0`, the resource SHALL omit the timeout parameter from API calls.
+The `timeout` attribute SHALL accept a Go duration string and SHALL default to `"30s"`. The resource SHALL pass the parsed `timeout` value as the API operation timeout parameter to the Put Transform, Update Transform, Start Transform, and Stop Transform APIs.
 
-#### Scenario: Timeout passed to API on supported version
+#### Scenario: Timeout passed to API
 
-- GIVEN an Elasticsearch server >= 7.17.0 and `timeout = "60s"`
+- GIVEN `timeout = "60s"`
 - WHEN create or update runs
 - THEN the API call SHALL include a 60-second timeout parameter
 
@@ -203,26 +193,16 @@ Exactly one of `pivot` or `latest` MUST be configured. The schema SHALL enforce 
 
 Settings and capabilities that require a minimum Elasticsearch version SHALL be silently omitted from API calls (with a log warning) when the server version is below the minimum. The version requirements are:
 
-- `destination.pipeline`: requires Elasticsearch >= `7.3.0`
 - `destination.aliases`: requires Elasticsearch >= `8.8.0`
-- `frequency`: requires Elasticsearch >= `7.3.0`
-- `latest`: requires Elasticsearch >= `7.11.0`
-- `retention_policy`: requires Elasticsearch >= `7.12.0`
-- `source.runtime_mappings`: requires Elasticsearch >= `7.12.0`
-- `metadata`: requires Elasticsearch >= `7.16.0`
-- `docs_per_second`: requires Elasticsearch >= `7.8.0`
-- `max_page_search_size`: requires Elasticsearch >= `7.8.0`
-- `dates_as_epoch_millis`: requires Elasticsearch >= `7.11.0`
-- `align_checkpoints`: requires Elasticsearch >= `7.15.0`
 - `deduce_mappings`: requires Elasticsearch >= `8.1.0`
 - `num_failure_retries`: requires Elasticsearch >= `8.4.0`
 - `unattended`: requires Elasticsearch >= `8.5.0`
 
 #### Scenario: Version-gated setting silently omitted
 
-- GIVEN `align_checkpoints = true` and an Elasticsearch server version below `7.15.0`
+- GIVEN `unattended = true` and an Elasticsearch server version below `8.5.0`
 - WHEN create or update runs
-- THEN `align_checkpoints` SHALL be omitted from the API request body and a warning SHALL be logged
+- THEN `unattended` SHALL be omitted from the API request body and a warning SHALL be logged
 
 ### Requirement: Create and read-after-write (REQ-033)
 
@@ -266,7 +246,7 @@ The `source.query` field SHALL be validated as a JSON string by schema, SHALL de
 
 ### Requirement: JSON field mapping — pivot, latest, metadata (REQ-038–REQ-040)
 
-The `pivot` and `latest` fields SHALL be validated as JSON strings and SHALL apply JSON-normalized diff suppression. On create, the resource SHALL decode `pivot` or `latest` (whichever is set) into an `any` value for the API request. The `metadata` field SHALL be validated as a JSON string and SHALL apply JSON-normalized diff suppression. On create and update, when `metadata` is set and the server version is at least `7.16.0`, the resource SHALL decode it into a `map[string]any` for the API request.
+The `pivot` and `latest` fields SHALL be validated as JSON strings and SHALL apply JSON-normalized diff suppression. On create, the resource SHALL decode `pivot` or `latest` (whichever is set) into an `any` value for the API request. The `metadata` field SHALL be validated as a JSON string and SHALL apply JSON-normalized diff suppression. On create and update, when `metadata` is set, the resource SHALL decode it into a `map[string]any` for the API request.
 
 #### Scenario: Invalid pivot JSON rejected
 

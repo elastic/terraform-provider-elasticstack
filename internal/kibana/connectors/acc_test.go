@@ -187,7 +187,6 @@ var checkResourceKibanaConnectorDestroy = checks.KibanaResourceDestroyCheckCompo
 )
 
 func TestAccResourceKibanaConnectorIndex(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -197,7 +196,6 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
@@ -211,7 +209,6 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
@@ -228,7 +225,6 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -238,7 +234,6 @@ func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
@@ -255,7 +250,6 @@ func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_auth_type"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
@@ -280,7 +274,6 @@ func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -296,8 +289,7 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   sdkIndexConnectorConfig,
+				Config: sdkIndexConnectorConfig,
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -310,7 +302,6 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
@@ -327,7 +318,6 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -343,8 +333,7 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   sdkSlackConnectorConfig,
+				Config: sdkSlackConnectorConfig,
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -356,7 +345,6 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
