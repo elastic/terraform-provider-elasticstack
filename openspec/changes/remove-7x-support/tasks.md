@@ -21,9 +21,9 @@
 
 ## 4. Generated Documentation and Stale References
 
-- [ ] 4.1 Update live schema descriptions that advertise 7.15, 7.16, or 7.x support boundaries where those boundaries are no longer relevant.
-- [ ] 4.2 Regenerate Terraform docs with `make docs-generate`.
-- [ ] 4.3 Search current docs, workflow sources, Makefile, live OpenSpec specs, and implementation code for remaining current-support 7.x references; leave historical changelog entries and archived OpenSpec changes unchanged.
+- [x] 4.1 Update live schema descriptions that advertise 7.15, 7.16, or 7.x support boundaries where those boundaries are no longer relevant.
+- [x] 4.2 Regenerate Terraform docs with `make docs-generate`.
+- [x] 4.3 Search current docs, workflow sources, Makefile, live OpenSpec specs, and implementation code for remaining current-support 7.x references; leave historical changelog entries and archived OpenSpec changes unchanged.
 
 ## 5. Verification
 
