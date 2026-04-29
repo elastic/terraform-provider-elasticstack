@@ -54,7 +54,7 @@ All ILM action blocks are also `SingleNestedBlock`s.
 ```hcl
 allocate {
   number_of_replicas    = <optional + computed, int>    # default 0
-  total_shards_per_node = <optional + computed, int>    # default -1; non-default requires ES >= 7.16
+  total_shards_per_node = <optional + computed, int>    # default -1
   include               = <optional, json object string>
   exclude               = <optional, json object string>
   require               = <optional, json object string>
@@ -234,7 +234,6 @@ The following minimum versions SHALL apply:
 
 - `rollover.max_primary_shard_docs`: Elasticsearch `8.2.0`
 - `rollover.min_age`, `rollover.min_docs`, `rollover.min_size`, `rollover.min_primary_shard_docs`, `rollover.min_primary_shard_size`: Elasticsearch `8.4.0`
-- `allocate.total_shards_per_node` when not `-1`: Elasticsearch `7.16.0`
 - `shrink.allow_write_after_shrink` when `true`: Elasticsearch `8.14.0`
 
 #### Scenario: Unsupported rollover min condition
