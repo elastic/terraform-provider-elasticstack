@@ -288,7 +288,24 @@ jobs:
       - name: Get dependencies
         run: make vendor
 
+      - name: Pre-pull fleet image
+        if: matrix.fleetImage
+        timeout-minutes: 5
+        run: |
+          for i in {1..3}; do
+            echo "Attempt $i: pulling ${{ matrix.fleetImage }}:${{ matrix.version }}..."
+            if timeout 90 docker pull "${{ matrix.fleetImage }}:${{ matrix.version }}"; then
+              echo "Fleet image pulled successfully"
+              exit 0
+            fi
+            echo "Attempt $i failed or timed out. Retrying in 30s..."
+            sleep 30
+          done
+          echo "Failed to pull fleet image after 3 attempts"
+          exit 1
+
       - name: Start stack with docker compose
+        timeout-minutes: 10
         run: make docker-fleet
         env:
           STACK_VERSION: ${{ matrix.version }}
