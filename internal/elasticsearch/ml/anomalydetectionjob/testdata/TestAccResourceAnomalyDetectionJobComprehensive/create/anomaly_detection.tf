@@ -13,23 +13,29 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
   groups      = ["test-group", "ml-group"]
 
   analysis_config = {
-    bucket_span = "10m"
+    bucket_span              = "10m"
+    latency                  = "30s"
+    summary_count_field_name = "event_count"
     detectors = [
       {
         function             = "count"
-        detector_description = "Count detector"
+        partition_field_name = "host"
+        detector_description = "Count by host"
       },
       {
         function             = "mean"
         field_name           = "response_time"
-        detector_description = "Mean response time detector"
+        by_field_name        = "status"
+        over_field_name      = "clientip"
+        detector_description = "Mean response time by status over client"
       }
     ]
     influencers = ["status_code"]
   }
 
   analysis_limits = {
-    model_memory_limit = "100mb"
+    model_memory_limit            = "100mb"
+    categorization_examples_limit = 5
   }
 
   data_description = {
@@ -39,6 +45,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
 
   model_plot_config = {
     enabled = true
+    terms   = "host1"
   }
 
   allow_lazy_open                           = true
