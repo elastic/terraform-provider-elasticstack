@@ -64,7 +64,7 @@ func DataSourceProcessorGrok() *schema.Resource {
 			},
 		},
 		"ecs_compatibility": {
-			Description:  "Must be disabled or v1. If v1, the processor uses patterns with Elastic Common Schema (ECS) field names. **NOTE:** Supported only starting from version of Elasticsearch **7.16.x**.",
+			Description:  "Must be disabled or v1. If v1, the processor uses patterns with Elastic Common Schema (ECS) field names.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: validation.StringInSlice([]string{"disabled", "v1"}, false),
