@@ -30,7 +30,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `make build` to ensure the harness compiles
-- [ ] 5.2 Run the targeted acceptance test for the harness (for example, `TF_ACC=1 go test ./internal/acctest/... -run '^TestAccExamples_planOnly$'`) and confirm every example subtest passes
-- [ ] 5.3 Run `make check-openspec` (or `make check-lint`) to confirm the OpenSpec artifacts are valid
-- [ ] 5.4 Re-verify that issue #2523's reproduction (`delayed_data_check_config { ... }` as a block) is no longer present in `examples/resources/elasticstack_elasticsearch_ml_datafeed/`
+- [x] 5.1 Run `make build` to ensure the harness compiles
+- [x] 5.2 Run the targeted acceptance test for the harness (for example, `TF_ACC=1 go test ./internal/acctest/... -run '^TestAccExamples_planOnly$'`) and confirm every example subtest passes
+- [x] 5.3 Run `make check-openspec` (or `make check-lint`) to confirm the OpenSpec artifacts are valid
+- [x] 5.4 Re-verify that issue #2523's reproduction (`delayed_data_check_config { ... }` as a block) is no longer present in `examples/resources/elasticstack_elasticsearch_ml_datafeed/`
