@@ -65,6 +65,7 @@ Beyond prefixes, **`planOnlySkippedEmbedPaths`** holds a **minimal** allowlist f
 
 - **`data-sources/elasticstack_kibana_agentbuilder_agent/import.tf`** — consumes `terraform_remote_state` referencing another Terraform root; isolation would require scaffolding a second workspace.
 - **`resources/elasticstack_elasticsearch_security_api_key/rotation.tf`** — installs **`hashicorp/time`** alongside `elasticstack`; the harness exposes only compiled `elasticstack` factories (`ProtoV6ProviderFactories`).
+- **`data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf`** — Fleet enrollment token reads depend on an agent **`policy_id` UUID that exists in that target stack**. Matrix acceptance stacks expose no common UUID; example IDs return HTTP 404 in CI despite valid provider schema.
 
 Introducing a new enumerated skip **still** demands a reviewer-visible code edit plus rationale; sentinel comments alone are intentionally **not** parsed to avoid unmanaged sprawl.
 

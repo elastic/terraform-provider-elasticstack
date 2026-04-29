@@ -52,6 +52,8 @@ var planOnlySkippedEmbedPaths = []string{
 	"data-sources/elasticstack_kibana_agentbuilder_agent/import.tf",
 	// Depends on the external hashicorp/time provider; harness uses only elasticstack factories.
 	"resources/elasticstack_elasticsearch_security_api_key/rotation.tf",
+	// Requires a Fleet agent policy UUID that exists in Kibana/Fleet — matrix stacks yield 404 otherwise; no stack-agnostic UUID for copy-pasted examples.
+	"data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf",
 }
 
 func shouldSkipPlanOnlyExample(pathUnderExamples string) bool {
