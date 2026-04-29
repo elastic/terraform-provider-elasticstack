@@ -19,6 +19,8 @@ package datafeedstate_test
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -48,6 +50,7 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "started"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "force", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed_state.test", "id"),
 				),
 			},
 			{
@@ -62,6 +65,7 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "stopped"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "force", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed_state.test", "id"),
 				),
 			},
 		},
@@ -114,6 +118,7 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -127,10 +132,26 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					"index_name":  config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "started"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "start", "2024-01-01T00:00:00Z"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "end", "2024-01-02T00:00:00Z"),
+					resource.TestCheckResourceAttr(resourceName, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(resourceName, "state", "started"),
+					resource.TestCheckResourceAttr(resourceName, "start", "2024-01-01T00:00:00Z"),
+					resource.TestCheckResourceAttr(resourceName, "end", "2024-01-02T00:00:00Z"),
+					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "60s"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_times_updated_timeout"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "90s"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
 			},
 		},
@@ -213,4 +234,203 @@ func TestAccResourceMLDatafeedState_multiStep(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccResourceMLDatafeedState_timesMultiStep exercises multi-step coverage for
+// start/end values: creates with an initial time range, stops, restarts with a
+// different range, then stops again with end omitted to verify end is unset in state.
+func TestAccResourceMLDatafeedState_timesMultiStep(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial_with_times"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "started"),
+					resource.TestCheckResourceAttr(resourceName, "start", "2022-01-01T00:00:00Z"),
+					resource.TestCheckResourceAttr(resourceName, "end", "2022-01-31T00:00:00Z"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped_1"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("new_times"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "started"),
+					resource.TestCheckResourceAttr(resourceName, "start", "2023-06-01T00:00:00Z"),
+					resource.TestCheckResourceAttrSet(resourceName, "end"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("end_omitted"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+					resource.TestCheckNoResourceAttr(resourceName, "end"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLDatafeedState_timeouts verifies that the timeouts.create and
+// timeouts.update attributes round-trip correctly through create and update.
+func TestAccResourceMLDatafeedState_timeouts(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_timeouts"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+					resource.TestCheckResourceAttr(resourceName, "timeouts.create", "5m"),
+					resource.TestCheckResourceAttr(resourceName, "timeouts.update", "5m"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_updated_timeouts"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+					resource.TestCheckResourceAttr(resourceName, "timeouts.create", "10m"),
+					resource.TestCheckResourceAttr(resourceName, "timeouts.update", "10m"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLDatafeedState_explicitConnection exercises the
+// elasticsearch_connection block on the resource, asserting that the endpoint
+// and insecure fields are stored correctly. Import ignores the connection block
+// because the password/api_key fields are sensitive and not returned by the API.
+func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
+	endpoints := testAccMLDatafeedStateESEndpoints()
+	if len(endpoints) == 0 {
+		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, ep := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(ep))
+	}
+
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("started"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+					"endpoints":   config.ListVariable(endpointVars...),
+					"api_key":     config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.insecure", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories:  acctest.Providers,
+				ConfigDirectory:           acctest.NamedTestCaseDirectory("started"),
+				ResourceName:              resourceName,
+				ImportState:               true,
+				ImportStateVerify:         true,
+				ImportStateVerifyIgnore:   []string{"elasticsearch_connection", "force", "datafeed_timeout", "id"},
+				ImportStateVerifyIdentifierAttribute: "datafeed_id",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[resourceName]
+					if !ok {
+						return "", fmt.Errorf("not found: %s", resourceName)
+					}
+					return rs.Primary.Attributes["datafeed_id"], nil
+				},
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+					"endpoints":   config.ListVariable(endpointVars...),
+					"api_key":     config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+			},
+		},
+	})
+}
+
+func testAccMLDatafeedStateESEndpoints() []string {
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	parts := strings.Split(rawEndpoints, ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
 }
