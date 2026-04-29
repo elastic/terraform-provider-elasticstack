@@ -450,33 +450,19 @@ func getModelWithVersionReqsDiagErrorSchema() dsschema.Schema {
 	}
 }
 
-// modelWithMinVersion always requires Kibana >= minVersion. The requirement is
-// embedded as a package-level variable because the decoded model is a
-// zero-value struct and cannot receive injected state. Tests that use this type
-// must NOT run in parallel (they mutate global state).
-type modelWithMinVersion struct {
+// supportedVersionModel has a minimum version that the mock server at 8.19.0
+// will satisfy.
+type supportedVersionModel struct {
 	KibanaConnectionField
 	ID types.String `tfsdk:"id"`
 }
 
-// minVersionForTest is the package-level minimum version used by
-// modelWithMinVersion.GetVersionRequirements. It is set and cleared within
-// each test function. Tests using modelWithMinVersion MUST NOT call t.Parallel.
-var (
-	minVersionForTest    *goversion.Version
-	minVersionErrMsgTest string
-)
-
-func (*modelWithMinVersion) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
-	if minVersionForTest == nil {
-		return nil, nil
-	}
-	return []DataSourceVersionRequirement{
-		{MinVersion: minVersionForTest, ErrorMessage: minVersionErrMsgTest},
-	}, nil
+func (*supportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+	minVer, _ := goversion.NewVersion("8.0.0")
+	return []DataSourceVersionRequirement{{MinVersion: minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
 
-func getModelWithMinVersionSchema() dsschema.Schema {
+func getSupportedVersionModelSchema() dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
 			"id": dsschema.StringAttribute{Computed: true},
@@ -485,6 +471,18 @@ func getModelWithMinVersionSchema() dsschema.Schema {
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
+}
+
+// unsupportedVersionModel has a minimum version that the mock server at 7.17.0
+// will NOT satisfy.
+type unsupportedVersionModel struct {
+	KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+}
+
+func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+	minVer, _ := goversion.NewVersion("8.0.0")
+	return []DataSourceVersionRequirement{{MinVersion: minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
 }
 
 // =============================================================================
@@ -538,6 +536,13 @@ func TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 	resp.State = tfsdk.State{Schema: schemaWithConn}
 	ds.Read(ctx, req, &resp)
 
+	// Guard: if the factory's defaultClient is nil, GetKibanaClient returns a
+	// "Provider not configured" error before readFunc is ever reached, causing a
+	// false pass when asserting readFuncCalled == false. Detect that here.
+	for _, d := range resp.Diagnostics {
+		require.NotEqual(t, "Provider not configured", d.Summary(),
+			"factory must be configured — test would give a false pass if factory has nil client")
+	}
 	require.True(t, readFuncCalled, "readFunc must be called when model has no version requirements")
 	require.False(t, resp.Diagnostics.HasError(), "Read must not produce errors: %v", resp.Diagnostics)
 
@@ -617,26 +622,15 @@ func TestKibanaDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 // httptest Kibana server reporting a version that satisfies the minimum
 // requirement.
 //
-// NOTE: This test mutates package-level state (minVersionForTest) and must NOT
-// call t.Parallel.
+// NOTE: Uses t.Setenv via newKibanaFactoryForURL; must NOT call t.Parallel.
 func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 	ctx := context.Background()
 
 	srv := newMockKibanaStatusServer("8.19.0", "default")
 	defer srv.Close()
 
-	minVer, err := goversion.NewVersion("8.0.0")
-	require.NoError(t, err)
-
-	minVersionForTest = minVer
-	minVersionErrMsgTest = ""
-	t.Cleanup(func() {
-		minVersionForTest = nil
-		minVersionErrMsgTest = ""
-	})
-
 	readFuncCalled := false
-	ds := NewKibanaDataSource[modelWithMinVersion](ComponentKibana, "supported_entity",
+	ds := NewKibanaDataSource[supportedVersionModel](ComponentKibana, "supported_entity",
 		func() dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
@@ -644,7 +638,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 				},
 			}
 		},
-		func(_ context.Context, _ *clients.KibanaScopedClient, model modelWithMinVersion) (modelWithMinVersion, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, model supportedVersionModel) (supportedVersionModel, diag.Diagnostics) {
 			readFuncCalled = true
 			model.ID = types.StringValue("supported-result")
 			return model, nil
@@ -654,7 +648,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
 
-	schema := getModelWithMinVersionSchema()
+	schema := getSupportedVersionModelSchema()
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse
@@ -665,7 +659,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 		"Read must succeed when server satisfies minimum version: %v", resp.Diagnostics)
 	require.True(t, readFuncCalled, "readFunc must be invoked when server satisfies minimum version")
 
-	var result modelWithMinVersion
+	var result supportedVersionModel
 	diags := resp.State.Get(ctx, &result)
 	require.False(t, diags.HasError())
 	require.Equal(t, "supported-result", result.ID.ValueString())
@@ -675,8 +669,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 // "Unsupported server stops before read function" scenario end-to-end with an
 // httptest Kibana server reporting a version below the minimum requirement.
 //
-// NOTE: This test mutates package-level state (minVersionForTest) and must NOT
-// call t.Parallel.
+// NOTE: Uses t.Setenv via newKibanaFactoryForURL; must NOT call t.Parallel.
 func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.T) {
 	ctx := context.Background()
 
@@ -684,19 +677,8 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	srv := newMockKibanaStatusServer("7.17.0", "default")
 	defer srv.Close()
 
-	minVer, err := goversion.NewVersion("8.0.0")
-	require.NoError(t, err)
-
-	const wantErrDetail = "server is too old for this data source"
-	minVersionForTest = minVer
-	minVersionErrMsgTest = wantErrDetail
-	t.Cleanup(func() {
-		minVersionForTest = nil
-		minVersionErrMsgTest = ""
-	})
-
 	readFuncCalled := false
-	ds := NewKibanaDataSource[modelWithMinVersion](ComponentKibana, "unsupported_entity",
+	ds := NewKibanaDataSource[unsupportedVersionModel](ComponentKibana, "unsupported_entity",
 		func() dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
@@ -704,7 +686,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 				},
 			}
 		},
-		func(_ context.Context, _ *clients.KibanaScopedClient, model modelWithMinVersion) (modelWithMinVersion, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, model unsupportedVersionModel) (unsupportedVersionModel, diag.Diagnostics) {
 			readFuncCalled = true
 			return model, nil
 		},
@@ -713,7 +695,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
 
-	schema := getModelWithMinVersionSchema()
+	schema := getSupportedVersionModelSchema()
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse
@@ -728,7 +710,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	for _, e := range resp.Diagnostics.Errors() {
 		if e.Summary() == "Unsupported server version" {
 			foundUnsupported = true
-			require.Contains(t, e.Detail(), wantErrDetail,
+			require.Contains(t, e.Detail(), "requires Kibana 8.0.0 or later",
 				"Unsupported server version detail must contain the model error message")
 		}
 	}
