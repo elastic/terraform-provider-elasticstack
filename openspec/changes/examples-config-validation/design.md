@@ -105,6 +105,14 @@ The work is naturally staged:
 
 No external data migration is required. No state-format changes. Embedded provider and connection blocks in existing examples remain valid input to the harness and are deliberately left untouched.
 
+## Task 4 — documentation, CI alignment, and harness timing
+
+**CI:** The workflow in `.github/workflows/test.yml` (“Matrix Acceptance Test” job) starts a Docker Elastic Stack, then runs `make testacc` with `TF_ACC: "1"` and the usual `ELASTICSEARCH_ENDPOINTS`, Elasticsearch credentials, and `KIBANA_ENDPOINT`/`KIBANA_PASSWORD` (same inputs as the rest of the acceptance suite). That target uses `gotestsum` with `--packages="./..."`, so `TestAccExamples_planOnly` in `internal/acctest/` is part of the standard acceptance matrix whenever provider-impacting changes trigger that job.
+
+**Harness wall time:** A full successful PlanOnly run was not timed in this workspace because no live stack was available (`acctest.PreCheck` fails without `ELASTICSEARCH_ENDPOINTS`; an aborted run exited in on the order of seconds). With a configured stack, contributors should expect multi-minute wall time for ~100+ isolated plans; throughput is intentionally capped by **`maxConcurrentExamplesPlanHarness = 4`** (bounded semaphore), not by `t.Parallel()` alone (see Decision 8). Re-measure locally when needed:
+
+`time env TF_ACC=1 ELASTICSEARCH_ENDPOINTS=… KIBANA_ENDPOINT=… ELASTICSEARCH_USERNAME=… ELASTICSEARCH_PASSWORD=… go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1`
+
 ## Open Questions
 
 - **Resource-vs-data-source plan expectations**: resolved in implementation — `ExpectNonEmptyPlan: true` for all `examples/resources/` files; for `examples/data-sources/`, `true` when the root HCL body declares a `resource` or `output` block, else `false`, matching `terraform-plugin-testing` PlanOnly semantics.

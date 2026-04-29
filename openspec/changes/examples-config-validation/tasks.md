@@ -7,7 +7,7 @@
 - [x] 1.5 Skip `examples/cloud/` and `examples/provider/` via a static path skip-list documented in the harness
 - [x] 1.6 Set `ExpectNonEmptyPlan: true` for all `examples/resources/` examples; for `examples/data-sources/`, set `ExpectNonEmptyPlan: true` when the root HCL body declares a top-level `resource` or `output` block, otherwise `false` (read-only / empty-friendly), matching `terraform-plugin-testing` PlanOnly checks
 - [x] 1.7 Ensure plan diagnostics and `resource.Test` failure output include the offending example path clearly enough to fix failures from CI logs
-- [x] 1.8 Mark subtests as `t.Parallel()` while respecting the normal `go test -parallel` cap to keep wall-clock reasonable without overwhelming the live stack
+- [x] 1.8 Enable `t.Parallel()` on subtests and gate concurrent Plan executions with `maxConcurrentExamplesPlanHarness` (bounded semaphore; currently 4); `go test -parallel` still caps goroutine parallelism, but the semaphore is what limits simultaneous Plan workloads against the live stack mux
 
 ## 2. Example cleanup
 
@@ -23,10 +23,10 @@
 
 ## 4. Documentation and CI integration
 
-- [ ] 4.1 Regenerate provider docs (`make docs-generate` or repo equivalent) so `docs/resources/*.md` and `docs/data-sources/*.md` reflect the cleaned example files
-- [ ] 4.2 Confirm the new test is picked up by the acceptance-test CI path, using the standard `TF_ACC=1` and Elastic Stack environment variables
-- [ ] 4.3 Measure local execution time for the harness and document it in the change's design notes if it exceeds a few minutes; tune parallelism if needed
-- [ ] 4.4 Add a brief contributor note (in `dev-docs/high-level/development-workflow.md` or equivalent) explaining that every example `.tf` file must plan successfully in the PlanOnly acceptance harness and be self-contained (no cross-file references within the same example directory)
+- [x] 4.1 Regenerate provider docs (`make docs-generate` or repo equivalent) so `docs/resources/*.md` and `docs/data-sources/*.md` reflect the cleaned example files
+- [x] 4.2 Confirm the new test is picked up by the acceptance-test CI path, using the standard `TF_ACC=1` and Elastic Stack environment variables
+- [x] 4.3 Measure local execution time for the harness and document it in the change's design notes if it exceeds a few minutes; tune parallelism if needed
+- [x] 4.4 Add a brief contributor note (in `dev-docs/high-level/development-workflow.md` or equivalent) explaining that every example `.tf` file must plan successfully in the PlanOnly acceptance harness and be self-contained (no cross-file references within the same example directory)
 
 ## 5. Verification
 
