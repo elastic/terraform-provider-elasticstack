@@ -56,7 +56,7 @@ func blockAllocate() schema.SingleNestedBlock {
 				Default:     int64default.StaticInt64(0),
 			},
 			"total_shards_per_node": schema.Int64Attribute{
-				Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**",
+				Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited).",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(-1),

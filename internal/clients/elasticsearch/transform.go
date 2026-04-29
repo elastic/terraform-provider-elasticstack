@@ -235,10 +235,7 @@ func startTransform(ctx context.Context, esClient *elasticsearch.Client, transfo
 
 	startOptions := []func(*esapi.TransformStartTransformRequest){
 		esClient.TransformStartTransform.WithContext(ctx),
-	}
-
-	if timeout > 0 {
-		startOptions = append(startOptions, esClient.TransformStartTransform.WithTimeout(timeout))
+		esClient.TransformStartTransform.WithTimeout(timeout),
 	}
 
 	startRes, err := esClient.TransformStartTransform(transformName, startOptions...)
@@ -259,10 +256,7 @@ func stopTransform(ctx context.Context, esClient *elasticsearch.Client, transfor
 
 	stopOptions := []func(*esapi.TransformStopTransformRequest){
 		esClient.TransformStopTransform.WithContext(ctx),
-	}
-
-	if timeout > 0 {
-		stopOptions = append(stopOptions, esClient.TransformStopTransform.WithTimeout(timeout))
+		esClient.TransformStopTransform.WithTimeout(timeout),
 	}
 
 	startRes, err := esClient.TransformStopTransform(transformName, stopOptions...)
