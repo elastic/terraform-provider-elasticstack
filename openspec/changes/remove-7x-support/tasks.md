@@ -12,12 +12,12 @@
 
 ## 3. Remove Redundant Pre-8.0 Runtime Gates
 
-- [ ] 3.1 Remove the transform minimum feature gate for Elasticsearch versions below `7.2.0`.
-- [ ] 3.2 Always pass transform API operation timeouts for supported versions; remove the `7.17.0` timeout branch.
-- [ ] 3.3 Remove transform setting gates whose minimum versions are below `8.0.0`, while preserving gates for `8.1.0`, `8.4.0`, `8.5.0`, and `8.8.0`.
-- [ ] 3.4 Always decode configured transform `metadata` on create and update for supported versions.
-- [ ] 3.5 Remove the ILM `allocate.total_shards_per_node` `7.16.0` compatibility gate while preserving later 8.x ILM gates.
-- [ ] 3.6 Review acceptance tests with explicit 7.x-only skips or minimums and remove or update only those that are redundant under the 8.0+ support floor.
+- [x] 3.1 Remove the transform minimum feature gate for Elasticsearch versions below `7.2.0`.
+- [x] 3.2 Always pass transform API operation timeouts for supported versions; remove the `7.17.0` timeout branch.
+- [x] 3.3 Remove transform setting gates whose minimum versions are below `8.0.0`, while preserving gates for `8.1.0`, `8.4.0`, `8.5.0`, and `8.8.0`.
+- [x] 3.4 Always decode configured transform `metadata` on create and update for supported versions.
+- [x] 3.5 Remove the ILM `allocate.total_shards_per_node` `7.16.0` compatibility gate while preserving later 8.x ILM gates.
+- [x] 3.6 Review acceptance tests with explicit 7.x-only skips or minimums and remove or update only those that are redundant under the 8.0+ support floor.
 
 ## 4. Generated Documentation and Stale References
 
