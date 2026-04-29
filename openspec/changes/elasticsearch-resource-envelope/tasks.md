@@ -1,11 +1,11 @@
 ## 1. Envelope implementation
 
-- [ ] 1.1 Add `internal/entitycore/resource_envelope.go` defining `ElasticsearchResourceModel` constraint (`GetID() types.String` + `GetElasticsearchConnection() types.List`), `genericElasticsearchResource[T]` struct embedding `*ResourceBase`, and the constructor `NewElasticsearchResource[T](component Component, name string, schemaFactory func() rschema.Schema, readFunc, deleteFunc) *genericElasticsearchResource[T]`.
+- [ ] 1.1 Add `internal/entitycore/resource_envelope.go` defining `ElasticsearchResourceModel` constraint (`GetID() types.String` + `GetElasticsearchConnection() types.List`), exported `ElasticsearchResource[T]` struct embedding `*ResourceBase`, and the constructor `NewElasticsearchResource[T](component Component, name string, schemaFactory func() rschema.Schema, readFunc, deleteFunc) *ElasticsearchResource[T]`.
 - [ ] 1.2 Implement `Schema` on the envelope: copy the user-supplied blocks map and inject `elasticsearch_connection` via `providerschema.GetEsFWConnectionBlock()`, mirroring the data source envelope.
 - [ ] 1.3 Implement `Read` on the envelope: state.Get into `T`, parse composite ID via `clients.CompositeIDFromStrFw`, resolve scoped client via `Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())`, invoke `readFunc`, then either `state.Set` (found=true) or `state.RemoveResource` (found=false). Short-circuit on every diagnostic gate.
 - [ ] 1.4 Implement `Delete` on the envelope: same prelude as Read, invoke `deleteFunc`, append diagnostics.
 - [ ] 1.5 Implement default `ImportState` on the envelope as `resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)`.
-- [ ] 1.6 Add interface assertions: `var _ resource.Resource = (*genericElasticsearchResource[…])(nil)` etc., to fail compile if any method is missing.
+- [ ] 1.6 Add interface assertions: `var _ resource.Resource = (*ElasticsearchResource[…])(nil)` etc., to fail compile if any method is missing.
 - [ ] 1.7 Update `internal/entitycore/doc.go` to document the resource envelope alongside the data source envelope (mention the model constraint, callback signatures, and the default ImportState).
 - [ ] 1.8 Add `internal/entitycore/resource_envelope_test.go` covering: constructor returns valid resource, Metadata type-name composition, Schema injects connection block, Read happy path, Read not-found removes state, Read short-circuits on each diagnostic gate, Delete happy path, Delete short-circuits on each diagnostic gate, default ImportState passthrough.
 

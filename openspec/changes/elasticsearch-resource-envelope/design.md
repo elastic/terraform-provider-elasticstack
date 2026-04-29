@@ -42,7 +42,7 @@ Create and Update flows in these resources diverge significantly (write-only pas
 
 ## Decisions
 
-### D1. Envelope owns Read + Delete + Schema; concrete owns Create + Update + ImportState
+### D1. Envelope owns Read + Delete + Schema + default ImportState; concrete owns Create + Update
 
 **Choice:** Wrap Read, Delete, Schema (with connection-block injection), Configure, Metadata, and provide a default ImportState that passes through `id`. Concrete resources keep Create and Update.
 
@@ -133,7 +133,7 @@ func deleteSystemUser(ctx context.Context, _ *clients.ElasticsearchScopedClient,
 
 ### D8. Envelope reuses `ResourceBase` rather than re-implementing Configure/Metadata
 
-**Choice:** `genericElasticsearchResource[T]` embeds `*ResourceBase` and uses its existing `Configure`, `Metadata`, and `Client()` methods. The envelope adds Schema, Read, Delete, and ImportState only.
+**Choice:** `ElasticsearchResource[T]` embeds `*ResourceBase` and uses its existing `Configure`, `Metadata`, and `Client()` methods. The envelope adds Schema, Read, Delete, and ImportState only.
 
 **Rationale:** Keeps the simple-base requirements (in `provider-framework-entity-core` spec) the single source of truth for Configure/Metadata behavior. The data source envelope today re-implements these — that's tolerable but slightly duplicative; resources have a chance to do better. Embedding also means the struct remains a `ResourceWithConfigure` automatically.
 
