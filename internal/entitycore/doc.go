@@ -20,6 +20,43 @@
 // required by [resource.Resource], and stores the configured [*clients.ProviderClientFactory]
 // for use via [ResourceBase.Client]. Data sources are covered by [DataSourceBase].
 //
+// # Data source patterns
+//
+// There are two supported patterns for data sources:
+//
+//  1. **Struct-based embedding** — embed [*DataSourceBase] and implement [datasource.DataSource]
+//     directly. This is the right choice for data sources with complex Read logic
+//     (conditional early returns, custom state manipulation, or multiple API calls
+//     with branching) that don't fit a uniform pipeline.
+//
+//  2. **Envelope generics** — use [NewKibanaDataSource] or [NewElasticsearchDataSource]
+//     to eliminate Read orchestration boilerplate. The constructor owns config decode,
+//     scoped client resolution, and state persistence. The concrete package provides
+//     only a schema factory (without connection blocks), a model that embeds
+//     [KibanaConnectionField] or [ElasticsearchConnectionField], and a pure read
+//     function that performs the entity-specific API call and model mapping.
+//
+//     Example envelope data source:
+//
+//     type myModel struct {
+//     entitycore.KibanaConnectionField
+//     ID types.String `tfsdk:"id"`
+//     }
+//
+//     func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
+//     // API call and model population …
+//     return model, nil
+//     }
+//
+//     func NewDataSource() datasource.DataSource {
+//     return entitycore.NewKibanaDataSource[myModel](
+//     entitycore.ComponentKibana,
+//     "my_entity",
+//     getDataSourceSchema, // returns datasource.Schema without kibana_connection block
+//     readMyEntity,
+//     )
+//     }
+//
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
 // can use different component strings for Terraform naming, such as APM resources
