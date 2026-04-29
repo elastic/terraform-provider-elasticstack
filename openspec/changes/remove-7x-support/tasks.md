@@ -2,7 +2,7 @@
 
 - [x] 1.1 Update `README.md` so the documented minimum supported Elastic Stack version is `8.0` or higher.
 - [x] 1.2 Remove the `7.17.13` entry from `.github/workflows-src/test/workflow.yml.tmpl`.
-- [ ] 1.3 Regenerate `.github/workflows/test.yml` with `make workflow-generate`.
+- [x] 1.3 Regenerate `.github/workflows/test.yml` with `make workflow-generate`.
 - [ ] 1.4 Verify the generated workflow acceptance matrix contains no Elastic Stack 7.x entries.
 
 ## 2. Docker Workflow Support Floor
