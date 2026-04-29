@@ -18,18 +18,16 @@
 package agentbuilderagent
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the schema for the data source.
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = dsschema.Schema{
+// getDataSourceSchema returns the schema for the agent data source.
+// The kibana_connection block is injected by the envelope and must not be
+// declared here.
+func getDataSourceSchema() dsschema.Schema {
+	return dsschema.Schema{
 		Description: "Export an Agent Builder agent by ID, optionally including its tools and workflows. See https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-agent-builder-agents-id",
 		MarkdownDescription: "Export an Agent Builder agent by ID, optionally including its tools and workflows. " +
 			"See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html).",
@@ -127,9 +125,6 @@ func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 					},
 				},
 			},
-		},
-		Blocks: map[string]dsschema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

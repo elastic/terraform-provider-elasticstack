@@ -21,44 +21,29 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_ datasource.DataSource              = &DataSource{}
-	_ datasource.DataSourceWithConfigure = &DataSource{}
 	// workflow_ids, skill_ids, and plugin_ids on agents require 9.4+
 	minVersionAdvancedAgentConfig = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return &DataSource{}
+	return entitycore.NewKibanaDataSource[agentDataSourceModel](
+		entitycore.ComponentKibana,
+		"agentbuilder_agent",
+		getDataSourceSchema,
+		readAgentDataSource,
+	)
 }
 
-// DataSource is the data source implementation.
-type DataSource struct {
-	client *clients.ProviderClientFactory
-}
-
-// Metadata returns the data source type name.
-func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_kibana_agentbuilder_agent"
-}
-
-// Configure adds the provider configured client to the data source.
-func (d *DataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	d.client = factory
+// readAgentDataSource is the envelope read callback for the agent data source.
+// The full implementation will be provided in Task 4.
+func readAgentDataSource(_ context.Context, _ *clients.KibanaScopedClient, _ agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
+	panic("not yet implemented")
 }

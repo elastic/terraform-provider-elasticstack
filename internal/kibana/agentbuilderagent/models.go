@@ -70,6 +70,12 @@ type toolModel struct {
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
+// GetKibanaConnection returns the kibana_connection block value, satisfying
+// the entitycore.KibanaDataSourceModel interface required by NewKibanaDataSource.
+func (model agentDataSourceModel) GetKibanaConnection() types.List {
+	return model.KibanaConnection
+}
+
 func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	if data == nil {
 		return nil
