@@ -446,8 +446,11 @@ func TestAccResourceDatafeedExpandWildcardsAll(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
-					// The API returns at least one element (either "all" or the expanded set).
-					resource.TestCheckResourceAttrSet(resourceAddr, "indices_options.expand_wildcards.#"),
+					// This stack returns "all" as-is (1 element). Stacks that expand "all"
+					// to ["open","closed","hidden"] would have count 3; semantic equality
+					// handles both via SetSemanticEquals in either case.
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "all"),
 				),
 			},
 			// Step 2: re-apply the same config (still expand_wildcards = ["all"]).
