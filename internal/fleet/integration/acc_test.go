@@ -93,6 +93,7 @@ func TestAccResourceIntegration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", "default"),
 				),
 			},
 			{

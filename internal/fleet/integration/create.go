@@ -156,7 +156,12 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	// Populate space_id in state
 	// If space_id is unknown (not provided by user), set to null to satisfy Terraform's requirement
 	if planModel.SpaceID.IsUnknown() {
-		planModel.SpaceID = types.StringNull()
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, installOptions.SpaceID)
+		if !getDiags.HasError() && pkg != nil && pkg.InstallationInfo != nil && pkg.InstallationInfo.InstalledKibanaSpaceId != nil {
+			planModel.SpaceID = types.StringValue(*pkg.InstallationInfo.InstalledKibanaSpaceId)
+		} else {
+			planModel.SpaceID = types.StringNull()
+		}
 	}
 
 	diags = state.Set(ctx, planModel)
