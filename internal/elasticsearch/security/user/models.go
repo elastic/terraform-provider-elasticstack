@@ -37,5 +37,5 @@ type Data struct {
 	Enabled                 types.Bool           `tfsdk:"enabled"`
 }
 
-func (d Data) GetID() types.String { return d.ID }
+func (d Data) GetID() types.String                    { return d.ID }
 func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
