@@ -18,13 +18,11 @@
 package role
 
 import (
-	"context"
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -33,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 )
 
@@ -42,16 +39,13 @@ const CurrentSchemaVersion = 1
 //go:embed resource-description.md
 var roleResourceDescription string
 
-func (r *roleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema(CurrentSchemaVersion)
-}
+func getSchemaFactory() schema.Schema { return GetSchema(CurrentSchemaVersion) }
 
 func GetSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:             version,
 		MarkdownDescription: roleResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			"applications": schema.SetNestedBlock{
 				MarkdownDescription: "A list of application privilege entries.",
 				NestedObject: schema.NestedBlockObject{

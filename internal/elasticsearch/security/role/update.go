@@ -95,7 +95,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	data.ID = types.StringValue(id.String())
-	readData, readDiags := r.read(ctx, data)
+	readData, readDiags := readRoleForUpdate(ctx, r, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags

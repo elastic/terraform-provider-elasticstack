@@ -25,64 +25,48 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readRole(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	readData, diags := r.read(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
-}
-
-func (r *roleResource) read(ctx context.Context, data Data) (*Data, diag.Diagnostics) {
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	if diags.HasError() {
-		return nil, diags
-	}
-	roleID := compID.ResourceID
-
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	role, sdkDiags := elasticsearch.GetRole(ctx, client, roleID)
+	role, sdkDiags := elasticsearch.GetRole(ctx, client, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
 	if role == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found`, roleID))
-		return nil, diags
+		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found`, resourceID))
+		return state, false, diags
 	}
 
 	// Convert from API model
-	diags.Append(data.fromAPIModel(ctx, role)...)
+	diags.Append(state.fromAPIModel(ctx, role)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	// Set the name to the resourceID we extracted to ensure consistency
+	state.Name = types.StringValue(resourceID)
+
+	return state, true, diags
+}
+
+func readRoleForUpdate(ctx context.Context, r *roleResource, data Data) (*Data, diag.Diagnostics) {
+	roleID := data.Name.ValueString()
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
+	if clientDiags.HasError() {
+		return nil, clientDiags
+	}
+	result, found, diags := readRole(ctx, client, roleID, data)
 	if diags.HasError() {
 		return nil, diags
 	}
-
-	// Set the name to the roleID we extracted to ensure consistency
-	data.Name = types.StringValue(roleID)
-
-	return &data, diags
+	if !found {
+		return nil, diags
+	}
+	return &result, diags
 }

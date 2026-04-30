@@ -532,3 +532,6 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 
 	return diags
 }
+
+func (data Data) GetID() types.String                    { return data.ID }
+func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
