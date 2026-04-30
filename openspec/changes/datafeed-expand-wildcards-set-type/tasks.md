@@ -32,11 +32,11 @@
 
 ## 5. State upgrader (conditional)
 
-- [ ] 5.1 **Only if task 4.3 reveals a state decode error:** add `StateUpgraders` on the datafeed resource with a schema version bump from 0 to 1. The upgrader reads `indices_options.expand_wildcards` as a list and writes it back as a set. Update `.SchemaVersion` on the resource.
+- [x] 5.1 **Only if task 4.3 reveals a state decode error:** add `StateUpgraders` on the datafeed resource with a schema version bump from 0 to 1. The upgrader reads `indices_options.expand_wildcards` as a list and writes it back as a set. Update `.SchemaVersion` on the resource.
 
 ## 6. Spec update (delta)
 
-- [ ] 6.1 The delta spec at `openspec/changes/datafeed-expand-wildcards-set-type/specs/elasticsearch-ml-datafeed/spec.md` (created alongside this task file) documents the updated schema and plan behavior. Review it for accuracy before implementation begins and update it if design decisions change.
+- [x] 6.1 The delta spec at `openspec/changes/datafeed-expand-wildcards-set-type/specs/elasticsearch-ml-datafeed/spec.md` (created alongside this task file) documents the updated schema and plan behavior. Review it for accuracy before implementation begins and update it if design decisions change.
 
 ## 7. Verification
 

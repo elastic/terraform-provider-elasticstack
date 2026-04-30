@@ -189,6 +189,6 @@ Optional:
 Optional:
 
 - `allow_no_indices` (Boolean) If true, wildcard indices expressions that resolve into no concrete indices are ignored. This includes the `_all` string or when no indices are specified.
-- `expand_wildcards` (List of String) Type of index that wildcard patterns can match. If the request can target data streams, this argument determines whether wildcard expressions match hidden data streams. Supports comma-separated values.
+- `expand_wildcards` (Set of String) Type of index that wildcard patterns can match. If the request can target data streams, this argument determines whether wildcard expressions match hidden data streams. Supports comma-separated values.
 - `ignore_throttled` (Boolean, Deprecated) If true, concrete, expanded, or aliased indices are ignored when frozen. This setting is deprecated.
 - `ignore_unavailable` (Boolean) If true, unavailable indices (missing or closed) are ignored.
