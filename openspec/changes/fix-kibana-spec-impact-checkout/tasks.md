@@ -8,10 +8,10 @@
 
 ## 2. Regenerate compiled lockfile
 
-- [ ] 2.1 Run `go run ./scripts/compile-workflow-sources` to regenerate `.github/workflows/kibana-spec-impact.lock.yml`
-- [ ] 2.2 Inspect the diff to confirm only the pre-activation checkout path and `--memory` flag changed; no other jobs or steps were altered
+- [x] 2.1 Run `go run ./scripts/compile-workflow-sources` to regenerate `.github/workflows/kibana-spec-impact.lock.yml`
+- [x] 2.2 Inspect the diff to confirm only the pre-activation checkout path and `--memory` flag changed; no other jobs or steps were altered
 
 ## 3. Verify agent steps remain untouched
 
-- [ ] 3.1 Confirm the `agent` job's `Download kibana spec impact report` and `Clone repo-memory branch` steps still reference `/tmp/gh-aw/...` paths (these are correct and must not change)
-- [ ] 3.2 Confirm the repo-memory tool config (`branch-name: memory/kibana-spec-impact`) matches the checkout `ref` in pre-activation
+- [x] 3.1 Confirm the `agent` job's `Download kibana spec impact report` and `Clone repo-memory branch` steps still reference `/tmp/gh-aw/...` paths (these are correct and must not change)
+- [x] 3.2 Confirm the repo-memory tool config (`branch-name: memory/kibana-spec-impact`) matches the checkout `ref` in pre-activation
