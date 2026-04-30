@@ -13,8 +13,8 @@
 
 ## 2. Schema update
 
-- [ ] 2.1 In `internal/elasticsearch/ml/datafeed/schema.go`, change `indices_options.expand_wildcards` from `schema.ListAttribute` to `schema.SetAttribute`. Replace `ElementType: types.StringType` with `CustomType: ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}`. Remove `listplanmodifier.UseStateForUnknown()` and `listvalidator.*` imports if no longer needed. The `stringvalidator.OneOf` constraint on values remains (applied via `setvalidator.ValueStringsAre`).
-- [ ] 2.2 Remove unused imports from `schema.go` (`listplanmodifier`, `listvalidator`) if they are no longer referenced.
+- [x] 2.1 In `internal/elasticsearch/ml/datafeed/schema.go`, change `indices_options.expand_wildcards` from `schema.ListAttribute` to `schema.SetAttribute`. Replace `ElementType: types.StringType` with `CustomType: ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}`. Remove `listplanmodifier.UseStateForUnknown()` and `listvalidator.*` imports if no longer needed. The `stringvalidator.OneOf` constraint on values remains (applied via `setvalidator.ValueStringsAre`).
+- [x] 2.2 Remove unused imports from `schema.go` (`listplanmodifier`, `listvalidator`) if they are no longer referenced.
 
 ## 3. Model update
 
