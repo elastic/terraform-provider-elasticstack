@@ -152,7 +152,7 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
 		}
 		planS := pStr.ValueString()
-		actS, _ := stringFromAny(actualRaw)
+		actS := stringFromAny(actualRaw)
 		if planS != actS {
 			return mismatch(tfAttr, planS, actS)
 		}
@@ -261,12 +261,12 @@ func boolFromAny(v any) (val bool, display string, ok bool) {
 	}
 }
 
-func stringFromAny(v any) (string, bool) {
+func stringFromAny(v any) string {
 	switch x := v.(type) {
 	case string:
-		return x, true
+		return x
 	default:
-		return fmt.Sprintf("%v", v), true
+		return fmt.Sprintf("%v", v)
 	}
 }
 
