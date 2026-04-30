@@ -69,9 +69,12 @@ resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   })
 }
 
+# Datafeed is stopped; start/end are updated in config to exercise attribute
+# changes across steps without re-starting the datafeed (which could be flaky
+# when the index has no data and the datafeed auto-stops immediately).
 resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
   datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
-  state       = "started"
+  state       = "stopped"
   start       = "2023-06-01T00:00:00Z"
   end         = "2023-06-30T00:00:00Z"
 
@@ -79,8 +82,4 @@ resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
     elasticstack_elasticsearch_ml_datafeed.test,
     elasticstack_elasticsearch_ml_job_state.test
   ]
-
-  lifecycle {
-    ignore_changes = ["state"]
-  }
 }

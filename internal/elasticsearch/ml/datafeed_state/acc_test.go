@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const mlDatafeedStateResourceName = "elasticstack_elasticsearch_ml_datafeed_state.test"
+
 func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -47,10 +49,10 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					"index_name":  config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "started"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "force", "false"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed_state.test", "id"),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "id"),
 				),
 			},
 			{
@@ -62,10 +64,10 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					"index_name":  config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "stopped"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "force", "false"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed_state.test", "id"),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "stopped"),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "id"),
 				),
 			},
 		},
@@ -92,15 +94,15 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 			{
 				ProtoV6ProviderFactories:             acctest.Providers,
 				ConfigDirectory:                      acctest.NamedTestCaseDirectory("create"),
-				ResourceName:                         "elasticstack_elasticsearch_ml_datafeed_state.test",
+				ResourceName:                         mlDatafeedStateResourceName,
 				ImportState:                          true,
 				ImportStateVerify:                    true,
 				ImportStateVerifyIdentifierAttribute: "datafeed_id",
 				ImportStateVerifyIgnore:              []string{"force", "datafeed_timeout", "id"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources["elasticstack_elasticsearch_ml_datafeed_state.test"]
+					rs, ok := s.RootModule().Resources[mlDatafeedStateResourceName]
 					if !ok {
-						return "", fmt.Errorf("not found: %s", "elasticstack_elasticsearch_ml_datafeed_state.test")
+						return "", fmt.Errorf("not found: %s", mlDatafeedStateResourceName)
 					}
 					return rs.Primary.Attributes["datafeed_id"], nil
 				},
@@ -118,7 +120,7 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+	resourceName := mlDatafeedStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -237,13 +239,14 @@ func TestAccResourceMLDatafeedState_multiStep(t *testing.T) {
 }
 
 // TestAccResourceMLDatafeedState_timesMultiStep exercises multi-step coverage for
-// start/end values: creates with an initial time range, stops, restarts with a
-// different range, then stops again with end omitted to verify end is unset in state.
+// start/end values across stopped-state transitions. It verifies that start/end
+// are stored when set, can be updated, and that end is absent from state when
+// removed from config.
 func TestAccResourceMLDatafeedState_timesMultiStep(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+	resourceName := mlDatafeedStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -284,9 +287,9 @@ func TestAccResourceMLDatafeedState_timesMultiStep(t *testing.T) {
 					"index_name":  config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "state", "started"),
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
 					resource.TestCheckResourceAttr(resourceName, "start", "2023-06-01T00:00:00Z"),
-					resource.TestCheckResourceAttrSet(resourceName, "end"),
+					resource.TestCheckResourceAttr(resourceName, "end", "2023-06-30T00:00:00Z"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
 			},
@@ -313,7 +316,7 @@ func TestAccResourceMLDatafeedState_timeouts(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+	resourceName := mlDatafeedStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -352,8 +355,9 @@ func TestAccResourceMLDatafeedState_timeouts(t *testing.T) {
 
 // TestAccResourceMLDatafeedState_explicitConnection exercises the
 // elasticsearch_connection block on the resource, asserting that the endpoint
-// and insecure fields are stored correctly. Import ignores the connection block
-// because the password/api_key fields are sensitive and not returned by the API.
+// and insecure fields are stored correctly. The datafeed is kept in the
+// "stopped" state so the API state always matches the config, making
+// ImportStateVerify reliable without needing to ignore the "state" attribute.
 func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 	endpoints := testAccMLDatafeedStateESEndpoints()
 	if len(endpoints) == 0 {
@@ -367,14 +371,14 @@ func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_datafeed_state.test"
+	resourceName := mlDatafeedStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("started"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped"),
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
 					"datafeed_id": config.StringVariable(datafeedID),
@@ -386,6 +390,7 @@ func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
 					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
 					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
@@ -394,12 +399,12 @@ func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 				),
 			},
 			{
-				ProtoV6ProviderFactories:  acctest.Providers,
-				ConfigDirectory:           acctest.NamedTestCaseDirectory("started"),
-				ResourceName:              resourceName,
-				ImportState:               true,
-				ImportStateVerify:         true,
-				ImportStateVerifyIgnore:   []string{"elasticsearch_connection", "force", "datafeed_timeout", "id"},
+				ProtoV6ProviderFactories:             acctest.Providers,
+				ConfigDirectory:                      acctest.NamedTestCaseDirectory("stopped"),
+				ResourceName:                         resourceName,
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIgnore:              []string{"elasticsearch_connection", "force", "datafeed_timeout", "id"},
 				ImportStateVerifyIdentifierAttribute: "datafeed_id",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[resourceName]

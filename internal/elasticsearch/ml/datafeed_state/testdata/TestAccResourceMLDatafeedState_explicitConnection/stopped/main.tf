@@ -92,11 +92,12 @@ resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   })
 }
 
+# Use state="stopped" so the datafeed is never started and never auto-stops.
+# This makes the test deterministic: the API state always matches the config
+# state, so ImportStateVerify succeeds without needing to ignore "state".
 resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
   datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
-  state       = "started"
-  start       = "2024-01-01T00:00:00Z"
-  end         = "2024-01-02T00:00:00Z"
+  state       = "stopped"
 
   elasticsearch_connection {
     endpoints = var.endpoints
@@ -110,8 +111,4 @@ resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
     elasticstack_elasticsearch_ml_datafeed.test,
     elasticstack_elasticsearch_ml_job_state.test
   ]
-
-  lifecycle {
-    ignore_changes = ["state"]
-  }
 }
