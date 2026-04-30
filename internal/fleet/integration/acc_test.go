@@ -43,6 +43,7 @@ var (
 	// Tests that rely on the actually-installed version (as opposed to the
 	// version echoed back from the request path) require this floor.
 	minVersionInstallationInfo = version.Must(version.NewVersion("8.9.0"))
+	minVersionSpaceIDReadback  = version.Must(version.NewVersion("8.10.0"))
 )
 
 //go:embed testdata/TestAccResourceIntegrationFromSDK/main.tf
@@ -93,6 +94,13 @@ func TestAccResourceIntegration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDReadback),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", "default"),
 				),
 			},
