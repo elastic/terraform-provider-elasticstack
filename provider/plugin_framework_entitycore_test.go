@@ -77,6 +77,13 @@ func typeEmbedsResourceBasePtr(rt reflect.Type, resourceBasePtr reflect.Type) bo
 		if f.Anonymous && f.Type == resourceBasePtr {
 			return true
 		}
+		// Allow transitive embedding via anonymous pointer fields
+		// (e.g. *ElasticsearchResource[T] embeds *ResourceBase).
+		if f.Anonymous && f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct {
+			if typeEmbedsResourceBasePtr(f.Type, resourceBasePtr) {
+				return true
+			}
+		}
 	}
 	return false
 }
