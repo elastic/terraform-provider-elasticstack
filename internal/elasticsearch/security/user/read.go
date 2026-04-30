@@ -26,68 +26,50 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	usernameID := compID.ResourceID
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	user, sdkDiags := elasticsearch.GetUser(ctx, client, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
 	if user == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, compID.ResourceID))
-		resp.State.RemoveResource(ctx)
-		return
+		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, resourceID))
+		return state, false, nil
 	}
 
 	// Set the fields
-	data.Username = types.StringValue(usernameID)
-	data.Email = types.StringValue(user.Email)
-	data.FullName = types.StringValue(user.FullName)
-	data.Enabled = types.BoolValue(user.Enabled)
+	state.Username = types.StringValue(resourceID)
+	state.Email = types.StringValue(user.Email)
+	state.FullName = types.StringValue(user.FullName)
+	state.Enabled = types.BoolValue(user.Enabled)
 
 	// Handle metadata
 	if len(user.Metadata) > 0 {
 		metadata, err := json.Marshal(user.Metadata)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to marshal metadata", err.Error())
-			return
+			diags.AddError("Failed to marshal metadata", err.Error())
+			return state, false, diags
 		}
-		data.Metadata = jsontypes.NewNormalizedValue(string(metadata))
+		state.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 	} else {
-		data.Metadata = jsontypes.NewNormalizedNull()
+		state.Metadata = jsontypes.NewNormalizedNull()
 	}
 
 	// Convert roles slice to set
-	rolesSet, diags := types.SetValueFrom(ctx, types.StringType, user.Roles)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	rolesSet, roleDiags := types.SetValueFrom(ctx, types.StringType, user.Roles)
+	diags.Append(roleDiags...)
+	if diags.HasError() {
+		return state, false, diags
 	}
-	data.Roles = rolesSet
+	state.Roles = rolesSet
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return state, true, diags
 }
