@@ -184,10 +184,10 @@ func TestNewElasticsearchResource_schemaDefensiveClone(t *testing.T) {
 
 func TestNewElasticsearchResource_Configure(t *testing.T) {
 	ctx := context.Background()
-	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
 
 	t.Run("nil_provider_data", func(t *testing.T) {
 		t.Parallel()
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -195,6 +195,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("valid_factory", func(t *testing.T) {
 		t.Parallel()
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
 		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
@@ -203,6 +204,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("invalid_provider_data", func(t *testing.T) {
 		t.Parallel()
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: "wrong-type"}, &resp)
 		require.True(t, resp.Diagnostics.HasError())
@@ -413,6 +415,46 @@ func TestNewElasticsearchResource_Delete_happyPath(t *testing.T) {
 	require.True(t, deleteCalled, "deleteFunc should be called")
 }
 
+func TestNewElasticsearchResource_Delete_shortCircuitStateGetError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	factory := newTestConfiguredFactory(t)
+	deleteCalled := false
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		testReadFuncFound,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) diag.Diagnostics {
+			deleteCalled = true
+			return nil
+		},
+	)
+	r.client = factory
+
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	badSchema := getTestResourceSchema()
+	state := tfsdk.State{Raw: objValue, Schema: badSchema}
+
+	req := resource.DeleteRequest{State: state}
+	resp := resource.DeleteResponse{State: state}
+
+	r.Delete(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, deleteCalled, "deleteFunc should not be called when state.Get fails")
+}
+
 func TestNewElasticsearchResource_Delete_shortCircuitCompositeIDError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -468,6 +510,94 @@ func TestNewElasticsearchResource_Delete_shortCircuitClientError(t *testing.T) {
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
 	require.False(t, deleteCalled, "deleteFunc should not be called when client resolution fails")
+}
+
+func TestNewElasticsearchResource_Delete_appendsDeleteFuncDiagnostics(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	factory := newTestConfiguredFactory(t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		testReadFuncFound,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) diag.Diagnostics {
+			var diags diag.Diagnostics
+			diags.AddError("delete error", "something went wrong")
+			return diags
+		},
+	)
+	r.client = factory
+
+	state := makeTestResourceState(t, "cluster/user1")
+	req := resource.DeleteRequest{State: state}
+	resp := resource.DeleteResponse{State: state}
+
+	r.Delete(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "delete error")
+}
+
+type overridingEnvelopeTestResource struct {
+	*ElasticsearchResource[testResourceModel]
+	createCalled bool
+	updateCalled bool
+}
+
+func (r *overridingEnvelopeTestResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+	r.createCalled = true
+}
+
+func (r *overridingEnvelopeTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+	r.updateCalled = true
+}
+
+func TestNewElasticsearchResource_Create_defaultDiagnostic(t *testing.T) {
+	t.Parallel()
+	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
+
+	var resp resource.CreateResponse
+	r.Create(context.Background(), resource.CreateRequest{}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Create not implemented")
+}
+
+func TestNewElasticsearchResource_Update_defaultDiagnostic(t *testing.T) {
+	t.Parallel()
+	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
+
+	var resp resource.UpdateResponse
+	r.Update(context.Background(), resource.UpdateRequest{}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Update not implemented")
+}
+
+func TestNewElasticsearchResource_CreateAndUpdate_concreteOverridesWin(t *testing.T) {
+	t.Parallel()
+	r := &overridingEnvelopeTestResource{
+		ElasticsearchResource: NewElasticsearchResource[testResourceModel](
+			ComponentElasticsearch,
+			"test_entity",
+			getTestResourceSchema,
+			testReadFuncFound,
+			testDeleteFunc,
+		),
+	}
+
+	var createResp resource.CreateResponse
+	var asResource resource.Resource = r
+	asResource.Create(context.Background(), resource.CreateRequest{}, &createResp)
+	require.True(t, r.createCalled)
+	require.False(t, createResp.Diagnostics.HasError())
+
+	var updateResp resource.UpdateResponse
+	asResource.Update(context.Background(), resource.UpdateRequest{}, &updateResp)
+	require.True(t, r.updateCalled)
+	require.False(t, updateResp.Diagnostics.HasError())
 }
 
 func TestNewElasticsearchResource_ImportState_defaultPassthrough(t *testing.T) {

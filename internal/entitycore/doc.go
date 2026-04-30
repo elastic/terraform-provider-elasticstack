@@ -72,7 +72,9 @@
 //     (without elasticsearch_connection block), a read callback returning
 //     (T, bool, diag.Diagnostics), and a delete callback. The envelope injects the
 //     connection block, parses composite IDs, resolves the scoped client, and
-//     persists state. Concrete resources keep Create and Update.
+//     persists state. Concrete resources keep Create and Update; the envelope's
+//     default Create and Update return diagnostics so forgotten overrides fail
+//     loudly during runtime instead of silently no-oping.
 //
 //     The default ImportState is passthrough on id; concrete resources may override
 //     it by defining their own ImportState method.

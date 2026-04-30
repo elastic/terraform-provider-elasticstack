@@ -97,9 +97,14 @@ func (r *ElasticsearchResource[T]) Schema(_ context.Context, _ resource.SchemaRe
 	resp.Schema = schema
 }
 
-// Create is intentionally left as a no-op. Concrete resources that embed
-// *ElasticsearchResource[T] override this method with their own create logic.
-func (r *ElasticsearchResource[T]) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+// Create provides a defensive default for the envelope. Concrete resources that
+// embed *ElasticsearchResource[T] are expected to override this method with
+// their own create logic.
+func (r *ElasticsearchResource[T]) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
+	resp.Diagnostics.AddError(
+		"Create not implemented",
+		"ElasticsearchResource only provides shared Schema, Read, Delete, and ImportState behavior. Concrete resources embedding ElasticsearchResource must implement Create.",
+	)
 }
 
 // Read implements [resource.Resource] with the standard prelude: decode state,
@@ -139,9 +144,14 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 	}
 }
 
-// Update is intentionally left as a no-op. Concrete resources that embed
-// *ElasticsearchResource[T] override this method with their own update logic.
-func (r *ElasticsearchResource[T]) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+// Update provides a defensive default for the envelope. Concrete resources that
+// embed *ElasticsearchResource[T] are expected to override this method with
+// their own update logic.
+func (r *ElasticsearchResource[T]) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError(
+		"Update not implemented",
+		"ElasticsearchResource only provides shared Schema, Read, Delete, and ImportState behavior. Concrete resources embedding ElasticsearchResource must implement Update.",
+	)
 }
 
 // Delete implements [resource.Resource] with the standard prelude, then
