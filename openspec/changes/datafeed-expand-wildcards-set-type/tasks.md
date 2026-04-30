@@ -18,11 +18,11 @@
 
 ## 3. Model update
 
-- [ ] 3.1 In `internal/elasticsearch/ml/datafeed/models.go`, change `IndicesOptions.ExpandWildcards` from `types.List` to `ExpandWildcardsValue`.
-- [ ] 3.2 In `ToAPIModel` (models.go), replace `indicesOptions.ExpandWildcards.ElementsAs(ctx, &expandWildcards, false)` with the equivalent call on `ExpandWildcardsValue` (it embeds `basetypes.SetValue` so `ElementsAs` is available directly; no cast needed).
-- [ ] 3.3 In `FromAPIModel` (models.go), replace `types.ListValueFrom(ctx, types.StringType, apiModel.IndicesOptions.ExpandWildcards)` with element construction into `ExpandWildcardsValue` using `NewExpandWildcardsValue`. When the API returns an empty slice, use `NewExpandWildcardsNull()`.
-- [ ] 3.4 In `GetIndicesOptionsAttrTypes()` (schema.go) and both uses of `map[string]attr.Type{...}` in `FromAPIModel` that reference `"expand_wildcards"`, replace `types.ListType{ElemType: types.StringType}` with `ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}`.
-- [ ] 3.5 Update `types.ObjectValueFrom` / `types.ObjectNull` call sites in `FromAPIModel` that build `IndicesOptions` objects to use the updated attribute type map.
+- [x] 3.1 In `internal/elasticsearch/ml/datafeed/models.go`, change `IndicesOptions.ExpandWildcards` from `types.List` to `ExpandWildcardsValue`.
+- [x] 3.2 In `ToAPIModel` (models.go), replace `indicesOptions.ExpandWildcards.ElementsAs(ctx, &expandWildcards, false)` with the equivalent call on `ExpandWildcardsValue` (it embeds `basetypes.SetValue` so `ElementsAs` is available directly; no cast needed).
+- [x] 3.3 In `FromAPIModel` (models.go), replace `types.ListValueFrom(ctx, types.StringType, apiModel.IndicesOptions.ExpandWildcards)` with element construction into `ExpandWildcardsValue` using `NewExpandWildcardsValue`. When the API returns an empty slice, use `NewExpandWildcardsNull()`.
+- [x] 3.4 In `GetIndicesOptionsAttrTypes()` (schema.go) and both uses of `map[string]attr.Type{...}` in `FromAPIModel` that reference `"expand_wildcards"`, replace `types.ListType{ElemType: types.StringType}` with `ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}`.
+- [x] 3.5 Update `types.ObjectValueFrom` / `types.ObjectNull` call sites in `FromAPIModel` that build `IndicesOptions` objects to use the updated attribute type map.
 
 ## 4. Acceptance test update
 

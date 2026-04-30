@@ -66,10 +66,10 @@ type DelayedDataCheckConfig struct {
 
 // IndicesOptions represents the indices options for search
 type IndicesOptions struct {
-	ExpandWildcards   types.List `tfsdk:"expand_wildcards"`
-	IgnoreUnavailable types.Bool `tfsdk:"ignore_unavailable"`
-	AllowNoIndices    types.Bool `tfsdk:"allow_no_indices"`
-	IgnoreThrottled   types.Bool `tfsdk:"ignore_throttled"`
+	ExpandWildcards   ExpandWildcardsValue `tfsdk:"expand_wildcards"`
+	IgnoreUnavailable types.Bool           `tfsdk:"ignore_unavailable"`
+	AllowNoIndices    types.Bool           `tfsdk:"allow_no_indices"`
+	IgnoreThrottled   types.Bool           `tfsdk:"ignore_throttled"`
 }
 
 // ToAPIModel converts the Terraform model to an API model for creating/updating
@@ -354,11 +354,15 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	if apiModel.IndicesOptions != nil {
 		indicesOptionsTF := IndicesOptions{}
 		if len(apiModel.IndicesOptions.ExpandWildcards) > 0 {
-			expandWildcardsList, diag := types.ListValueFrom(ctx, types.StringType, apiModel.IndicesOptions.ExpandWildcards)
+			elems := make([]attr.Value, len(apiModel.IndicesOptions.ExpandWildcards))
+			for i, s := range apiModel.IndicesOptions.ExpandWildcards {
+				elems[i] = types.StringValue(s)
+			}
+			expandWildcardsVal, diag := NewExpandWildcardsValue(elems)
 			diags.Append(diag...)
-			indicesOptionsTF.ExpandWildcards = expandWildcardsList
+			indicesOptionsTF.ExpandWildcards = expandWildcardsVal
 		} else {
-			indicesOptionsTF.ExpandWildcards = types.ListNull(types.StringType)
+			indicesOptionsTF.ExpandWildcards = NewExpandWildcardsNull()
 		}
 		if apiModel.IndicesOptions.IgnoreUnavailable != nil {
 			indicesOptionsTF.IgnoreUnavailable = types.BoolValue(*apiModel.IndicesOptions.IgnoreUnavailable)
@@ -377,7 +381,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 		}
 
 		indicesOptionsObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
-			"expand_wildcards":   types.ListType{ElemType: types.StringType},
+			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
 			"ignore_unavailable": types.BoolType,
 			"allow_no_indices":   types.BoolType,
 			"ignore_throttled":   types.BoolType,
@@ -386,7 +390,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 		m.IndicesOptions = indicesOptionsObj
 	} else {
 		m.IndicesOptions = types.ObjectNull(map[string]attr.Type{
-			"expand_wildcards":   types.ListType{ElemType: types.StringType},
+			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
 			"ignore_unavailable": types.BoolType,
 			"allow_no_indices":   types.BoolType,
 			"ignore_throttled":   types.BoolType,
