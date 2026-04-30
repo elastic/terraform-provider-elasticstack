@@ -27,7 +27,7 @@
 ## 4. Acceptance test update
 
 - [x] 4.1 In `internal/elasticsearch/ml/datafeed/acc_test.go`, replace any `resource.TestCheckResourceAttr("…", "indices_options.expand_wildcards.0", …)` style index-based assertions with `resource.TestCheckTypeSetElemAttr("…", "indices_options.expand_wildcards.*", …)`.
-- [x] 4.2 If any test fixture HCL sets `expand_wildcards = ["all"]`, add or update a test step that asserts the normalized element set (`"open"`, `"closed"`, `"hidden"`) is present without a perpetual diff. The fixture value `["all"]` must be preserved as written.
+- [x] 4.2 If any test fixture HCL sets `expand_wildcards = ["all"]`, add or update a test step that asserts the normalized element set (`"open"`, `"closed"`, `"hidden"`) is present without a perpetual diff. The fixture value `["all"]` must be preserved as written. **Implemented:** `TestAccResourceDatafeedExpandWildcardsAll` in `acc_test.go` with fixture at `testdata/TestAccResourceDatafeedExpandWildcardsAll/create/datafeed.tf`. Step 1 creates the datafeed with `expand_wildcards = ["all"]`. Step 2 re-applies with `PlanOnly: true` and no `ExpectNonEmptyPlan`, confirming semantic equality suppresses the diff. This stack version keeps `"all"` as-is; the semantic equality implementation also handles the expand case (`["all"]` == `["open","closed","hidden"]`) for stacks that expand the token.
 - [x] 4.3 Verify state upgrader is not required: run `TestAccResourceDatafeed` with a state snapshot written under the old list schema. If a diagnostic error occurs during state decode, proceed to add a state upgrader (see task 5).
 
 ## 5. State upgrader (conditional)

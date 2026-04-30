@@ -419,6 +419,54 @@ func TestAccResourceDatafeedDelayedDataDisabled(t *testing.T) {
 	})
 }
 
+// TestAccResourceDatafeedExpandWildcardsAll is the primary regression test for the
+// expand_wildcards set-type change. It verifies that a datafeed configured with
+// expand_wildcards = ["all"] does not produce a perpetual plan diff after the initial
+// apply. The Elasticsearch API normalises "all" to ["open","closed","hidden"]; the
+// custom ExpandWildcardsType semantic-equality implementation must suppress the diff.
+func TestAccResourceDatafeedExpandWildcardsAll(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-ew-all-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-ew-all-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	const resourceAddr = "elasticstack_elasticsearch_ml_datafeed.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: apply with expand_wildcards = ["all"].
+			// Elasticsearch may store "all" as-is or expand it to ["open","closed","hidden"]
+			// depending on the stack version. Either way the datafeed must be created
+			// successfully and the expand_wildcards attribute must be populated.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
+					// The API returns at least one element (either "all" or the expanded set).
+					resource.TestCheckResourceAttrSet(resourceAddr, "indices_options.expand_wildcards.#"),
+				),
+			},
+			// Step 2: re-apply the same config (still expand_wildcards = ["all"]).
+			// PlanOnly: true ensures no changes are applied; ExpectNonEmptyPlan: false
+			// (the default) causes the test to fail if Terraform detects a diff, proving
+			// that semantic equality suppresses the "all" → ["open","closed","hidden"] diff.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceDatafeed_ImportNonExistent(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
