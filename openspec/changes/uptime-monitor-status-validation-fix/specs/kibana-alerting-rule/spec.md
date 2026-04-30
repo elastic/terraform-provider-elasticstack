@@ -40,7 +40,7 @@ The `legacyMonitorStatusParams.Filters` struct used as the second (legacy fallba
 | `Tags`          | `"tags"`            |
 | `MonitorType`   | `"monitor.type"`    |
 | `ObserverGeoName` | `"observer.geo.name"` |
-| `UrlPort`       | `"url.port"`        |
+| `URLPort`       | `"url.port"`        |
 
 All four fields SHALL be tagged `omitempty` so they do not appear as required keys in the `computeRequiredKeys` heuristic.
 

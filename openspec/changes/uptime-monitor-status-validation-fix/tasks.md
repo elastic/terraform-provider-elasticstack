@@ -10,10 +10,11 @@
   - `Tags *[]string \`json:"tags,omitempty"\`` (already present — keep)
   - `MonitorType *[]string \`json:"monitor.type,omitempty"\`` (add)
   - `ObserverGeoName *[]string \`json:"observer.geo.name,omitempty"\`` (add)
-  - `UrlPort *[]string \`json:"url.port,omitempty"\`` (add)
+  - `URLPort *[]string \`json:"url.port,omitempty"\`` (add)
 
 ## 3. Testing
 
-- [ ] 3.1 Add or extend a unit test in `internal/kibana/alertingrule/` covering `validateRuleParams("xpack.uptime.alerts.monitorStatus", ...)` for a params object that includes both `availability` and `filters` with all four sub-fields — assert that validation returns no errors.
-- [ ] 3.2 Add a unit test asserting that params matching the existing Synthetics struct (e.g. containing `condition` or `monitorIds`) still fail validation for `"xpack.uptime.alerts.monitorStatus"` (regression guard to confirm we did not accidentally broaden acceptance to the wrong namespace).
-- [ ] 3.3 (Optional) If a `TestAcc` acceptance test exists for `xpack.uptime.alerts.monitorStatus`, add a config step that exercises `availability` + multi-field `filters` to confirm end-to-end plan/apply success.
+- [x] 3.1 Add or extend a unit test in `internal/kibana/alertingrule/` covering `validateRuleParams("xpack.uptime.alerts.monitorStatus", ...)` for a params object that includes both `availability` and `filters` with all four sub-fields — assert that validation returns no errors.
+- [x] 3.2 Add a unit test asserting that params matching the existing Synthetics struct (e.g. containing `condition` or `monitorIds`) still fail validation for `"xpack.uptime.alerts.monitorStatus"` (regression guard to confirm we did not accidentally broaden acceptance to the wrong namespace).
+- [x] 3.3 (Optional) If a `TestAcc` acceptance test exists for `xpack.uptime.alerts.monitorStatus`, add a config step that exercises `availability` + multi-field `filters` to confirm end-to-end plan/apply success.
+  - **N/A**: No existing `TestAcc` acceptance test for this rule type.

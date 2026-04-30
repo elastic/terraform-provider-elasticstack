@@ -750,3 +750,62 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRuleParamsUptimeMonitorStatusWithAvailabilityAndFilters(t *testing.T) {
+	params := map[string]any{
+		"numTimes":                5.0,
+		"shouldCheckStatus":       true,
+		"shouldCheckAvailability": false,
+		"availability": map[string]any{
+			"range":     30.0,
+			"rangeUnit": "d",
+			"threshold": "99",
+		},
+		"filters": map[string]any{
+			"tags":              []any{"o11y"},
+			"monitor.type":      []any{"http"},
+			"observer.geo.name": []any{"us-east"},
+			"url.port":          []any{"443"},
+		},
+	}
+
+	if errs := validateRuleParams("xpack.uptime.alerts.monitorStatus", params); len(errs) > 0 {
+		t.Fatalf("expected no validation errors for uptime monitor status with availability and all filter sub-fields, got: %v", errs)
+	}
+}
+
+func TestValidateRuleParamsUptimeMonitorStatusRejectsSyntheticsFields(t *testing.T) {
+	params := map[string]any{
+		"numTimes":                5.0,
+		"shouldCheckStatus":       true,
+		"shouldCheckAvailability": false,
+		"condition": map[string]any{
+			"downMonitors": map[string]any{
+				"count": 1,
+			},
+		},
+	}
+
+	errs := validateRuleParams("xpack.uptime.alerts.monitorStatus", params)
+	if len(errs) == 0 {
+		t.Fatalf("expected validation errors for synthetics-only field 'condition'")
+	}
+	if !strings.Contains(strings.Join(errs, "; "), "unknown field \"condition\"") {
+		t.Fatalf("expected unknown field error for 'condition', got: %v", errs)
+	}
+
+	paramsWithMonitorIDs := map[string]any{
+		"numTimes":                5.0,
+		"shouldCheckStatus":       true,
+		"shouldCheckAvailability": false,
+		"monitorIds":              []any{"monitor-1"},
+	}
+
+	errs = validateRuleParams("xpack.uptime.alerts.monitorStatus", paramsWithMonitorIDs)
+	if len(errs) == 0 {
+		t.Fatalf("expected validation errors for synthetics-only field 'monitorIds'")
+	}
+	if !strings.Contains(strings.Join(errs, "; "), "unknown field \"monitorIds\"") {
+		t.Fatalf("expected unknown field error for 'monitorIds', got: %v", errs)
+	}
+}

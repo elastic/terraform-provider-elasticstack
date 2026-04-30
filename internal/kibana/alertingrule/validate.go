@@ -54,7 +54,7 @@ type legacyMonitorStatusParams struct {
 		Tags            *[]string `json:"tags,omitempty"`
 		MonitorType     *[]string `json:"monitor.type,omitempty"`
 		ObserverGeoName *[]string `json:"observer.geo.name,omitempty"`
-		UrlPort         *[]string `json:"url.port,omitempty"`
+		URLPort         *[]string `json:"url.port,omitempty"`
 	} `json:"filters,omitempty"`
 	NumTimes                float32  `json:"numTimes"`
 	Search                  *string  `json:"search,omitempty"`
