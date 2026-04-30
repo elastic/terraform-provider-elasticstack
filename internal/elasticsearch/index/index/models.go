@@ -169,6 +169,7 @@ type tfModel struct {
 	Mappings                           mappingsValue        `tfsdk:"mappings"`
 	SettingsRaw                        jsontypes.Normalized `tfsdk:"settings_raw"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
+	UseExisting                        types.Bool           `tfsdk:"use_existing"`
 	WaitForActiveShards                types.String         `tfsdk:"wait_for_active_shards"`
 	MasterTimeout                      customtypes.Duration `tfsdk:"master_timeout"`
 	Timeout                            customtypes.Duration `tfsdk:"timeout"`

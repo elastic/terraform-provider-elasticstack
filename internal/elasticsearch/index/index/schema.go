@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
@@ -525,6 +526,12 @@ func getSchema() schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					planmodifiers.BoolUseDefaultIfUnknown(true),
 				},
+			},
+			"use_existing": schema.BoolAttribute{
+				Description: useExistingDescription,
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"wait_for_active_shards": schema.StringAttribute{
 				Description: waitForActiveShardsDescription,
