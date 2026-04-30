@@ -40,8 +40,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 `make build` passes with no compilation errors.
-- [ ] 7.2 `go test ./internal/elasticsearch/ml/datafeed/...` (unit tests) passes.
-- [ ] 7.3 `make check-lint` passes.
-- [ ] 7.4 `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate datafeed-expand-wildcards-set-type --type change` passes.
-- [ ] 7.5 If an Elasticsearch stack is available: run `TF_ACC=1 go test ./internal/elasticsearch/ml/datafeed/... -run TestAccResourceDatafeed -v` and confirm no perpetual diff for `expand_wildcards = ["all"]` configurations.
+- [x] 7.1 `make build` passes with no compilation errors.
+- [x] 7.2 `go test ./internal/elasticsearch/ml/datafeed/...` (unit tests) passes.
+- [x] 7.3 `make check-lint` passes.
+- [x] 7.4 `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate datafeed-expand-wildcards-set-type --type change` passes.
+- [x] 7.5 If an Elasticsearch stack is available: run `TF_ACC=1 go test ./internal/elasticsearch/ml/datafeed/... -run TestAccResourceDatafeed -v` and confirm no perpetual diff for `expand_wildcards = ["all"]` configurations.
