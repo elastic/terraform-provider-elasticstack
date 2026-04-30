@@ -1,10 +1,10 @@
 ## 1. Fix pre-activation checkout path in workflow template
 
-- [ ] 1.1 Edit `.github/workflows-src/kibana-spec-impact/workflow.md.tmpl`
+- [x] 1.1 Edit `.github/workflows-src/kibana-spec-impact/workflow.md.tmpl`
   - Change the `Checkout repo-memory branch` step `path` from `/tmp/gh-aw/repo-memory/kibana-spec-impact` to a workspace-relative path (`gh-aw-repo-memory/kibana-spec-impact`)
   - Update the `--memory` flag in the `Compute kibana spec impact` step to match the new relative path
   - Preserve `continue-on-error: true` on the checkout step
-- [ ] 1.2 Verify the template compiles cleanly by running the workflow compiler
+- [x] 1.2 Verify the template compiles cleanly by running the workflow compiler
 
 ## 2. Regenerate compiled lockfile
 
