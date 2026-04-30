@@ -191,18 +191,26 @@ Exactly one of `pivot` or `latest` MUST be configured. The schema SHALL enforce 
 
 ### Requirement: Version-gated settings (REQ-020–REQ-032)
 
-Settings and capabilities that require a minimum Elasticsearch version SHALL be silently omitted from API calls (with a log warning) when the server version is below the minimum. The version requirements are:
+Settings and capabilities that require a minimum supported Elasticsearch version later than `8.0.0` SHALL be silently omitted from API calls (with a log warning) when the server version is below the minimum. The version requirements are:
 
 - `destination.aliases`: requires Elasticsearch >= `8.8.0`
 - `deduce_mappings`: requires Elasticsearch >= `8.1.0`
 - `num_failure_retries`: requires Elasticsearch >= `8.4.0`
 - `unattended`: requires Elasticsearch >= `8.5.0`
 
+Transform settings and capabilities that are available throughout the supported `8.x` and later range SHALL NOT have pre-8.0 compatibility gates.
+
 #### Scenario: Version-gated setting silently omitted
 
-- GIVEN `unattended = true` and an Elasticsearch server version below `8.5.0`
+- GIVEN `deduce_mappings = true` and an Elasticsearch server version below `8.1.0`
 - WHEN create or update runs
-- THEN `unattended` SHALL be omitted from the API request body and a warning SHALL be logged
+- THEN `deduce_mappings` SHALL be omitted from the API request body and a warning SHALL be logged
+
+#### Scenario: Supported-range setting is always sent
+
+- GIVEN `align_checkpoints = true`
+- WHEN create or update runs against a supported Elasticsearch server version
+- THEN `align_checkpoints` SHALL be included in the API request body
 
 ### Requirement: Create and read-after-write (REQ-033)
 
