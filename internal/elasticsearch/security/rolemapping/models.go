@@ -32,3 +32,6 @@ type Data struct {
 	RoleTemplates           jsontypes.Normalized `tfsdk:"role_templates"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
 }
+
+func (d Data) GetID() types.String                    { return d.ID }
+func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }

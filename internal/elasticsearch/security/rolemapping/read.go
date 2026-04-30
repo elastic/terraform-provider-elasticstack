@@ -20,7 +20,6 @@ package rolemapping
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -29,9 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // readRoleMapping reads role mapping data from Elasticsearch and returns Data
@@ -98,37 +95,13 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	return data, diags
 }
 
-func (r *roleMappingResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+func readRoleMappingResource(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	readData, diags := readRoleMapping(ctx, state, resourceID, client)
+	if diags.HasError() {
+		return state, false, diags
 	}
-
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	roleMappingName := compID.ResourceID
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readData, diags := readRoleMapping(ctx, data, roleMappingName, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if readData == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Role mapping "%s" not found, removing from state`, roleMappingName))
-		resp.State.RemoveResource(ctx)
-		return
+		return state, false, nil
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return *readData, true, diags
 }
