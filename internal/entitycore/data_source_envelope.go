@@ -76,7 +76,7 @@ type ElasticsearchDataSourceModel interface {
 // invoked.
 type DataSourceVersionRequirement struct {
 	// MinVersion is the minimum Kibana server version required.
-	MinVersion *version.Version
+	MinVersion version.Version
 	// ErrorMessage is the human-readable detail added to the
 	// "Unsupported server version" diagnostic when the server does not
 	// satisfy MinVersion.
@@ -245,7 +245,7 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		}
 
 		for _, vReq := range reqs {
-			supported, sdkDiags := client.EnforceMinVersion(ctx, vReq.MinVersion)
+			supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
 			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 			if resp.Diagnostics.HasError() {
 				return

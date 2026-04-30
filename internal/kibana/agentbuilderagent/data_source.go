@@ -140,7 +140,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 			}
 			toolsByID[toolID] = tool
 
-			if tool.Type == "workflow" {
+			if tool.Type == "workflow" && tool.Configuration != nil {
 				if workflowID, ok := tool.Configuration["workflow_id"].(string); ok && workflowID != "" {
 					toolWorkflowIDSet[workflowID] = struct{}{}
 				}
@@ -268,7 +268,7 @@ func toolModelFromAPI(ctx context.Context, spaceID string, tool *models.Tool, wo
 		tm.Configuration = types.StringNull()
 	}
 
-	if tool.Type == "workflow" {
+	if tool.Type == "workflow" && tool.Configuration != nil {
 		if workflowID, ok := tool.Configuration["workflow_id"].(string); ok && workflowID != "" {
 			tm.WorkflowID = types.StringValue(workflowID)
 			if workflow, found := workflowsByID[workflowID]; found {

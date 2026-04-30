@@ -86,7 +86,7 @@ func (model agentDataSourceModel) GetKibanaConnection() types.List {
 func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
 	return []entitycore.DataSourceVersionRequirement{
 		{
-			MinVersion:   minKibanaAgentBuilderAPIVersion,
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 		},
 	}, nil

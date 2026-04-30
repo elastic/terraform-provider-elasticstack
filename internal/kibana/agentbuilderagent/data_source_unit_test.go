@@ -120,7 +120,7 @@ func TestAgentDataSourceModel_GetVersionRequirements(t *testing.T) {
 	reqs, diags := m.GetVersionRequirements()
 	require.False(t, diags.HasError(), "GetVersionRequirements must not return error diagnostics")
 	require.Len(t, reqs, 1, "GetVersionRequirements must return exactly one requirement")
-	require.Equal(t, minKibanaAgentBuilderAPIVersion, reqs[0].MinVersion,
+	require.Equal(t, *minKibanaAgentBuilderAPIVersion, reqs[0].MinVersion,
 		"MinVersion must equal minKibanaAgentBuilderAPIVersion")
 	require.NotEmpty(t, reqs[0].ErrorMessage,
 		"ErrorMessage must not be empty")

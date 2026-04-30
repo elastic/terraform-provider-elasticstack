@@ -458,8 +458,8 @@ type supportedVersionModel struct {
 }
 
 func (*supportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
-	minVer, _ := goversion.NewVersion("8.0.0")
-	return []DataSourceVersionRequirement{{MinVersion: minVer, ErrorMessage: "needs 8.0.0"}}, nil
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
 
 func getSupportedVersionModelSchema() dsschema.Schema {
@@ -481,8 +481,8 @@ type unsupportedVersionModel struct {
 }
 
 func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
-	minVer, _ := goversion.NewVersion("8.0.0")
-	return []DataSourceVersionRequirement{{MinVersion: minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
 }
 
 // =============================================================================
