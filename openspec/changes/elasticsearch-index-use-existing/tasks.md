@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add the optional `use_existing` boolean attribute (default `false`, no plan modifiers) to `internal/elasticsearch/index/index/schema.go` with a description that explains: opt-in, create-time-only, static names only, strict on static settings, full ownership after adopt.
 - [x] 1.2 Add the corresponding `UseExisting types.Bool` field to `tfModel` in `internal/elasticsearch/index/index/models.go`.
-- [ ] 1.3 Regenerate `docs/resources/elasticsearch_index.md` so the new attribute is documented.
+- [x] 1.3 Regenerate `docs/resources/elasticsearch_index.md` so the new attribute is documented.
 
 ## 2. Static-setting strict comparison helper
 
