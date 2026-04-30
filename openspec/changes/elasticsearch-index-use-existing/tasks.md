@@ -12,15 +12,15 @@
 
 ## 3. Adopt branch in Create
 
-- [ ] 3.1 Refactor `Update` in `internal/elasticsearch/index/index/update.go` so the alias, dynamic-setting, and mapping reconciliation logic is callable as package-private helpers taking explicit arguments (synthetic state vs plan). Preserve all existing semantics.
-- [ ] 3.2 In `internal/elasticsearch/index/index/create.go`, when `use_existing = true`:
-  - [ ] 3.2.1 If the configured `name` matches `esclient.DateMathIndexNameRe`, add a warning diagnostic explaining `use_existing` is ignored for date math names and fall through to the existing create path.
-  - [ ] 3.2.2 Otherwise call `elasticsearch.GetIndex` for the configured `name`. If the response is `nil` (404), fall through to the existing create path.
-  - [ ] 3.2.3 If the response returns an existing index, build a synthetic `tfModel` from the API response using the existing `populateFromAPI` flow.
-  - [ ] 3.2.4 Run the static-setting strict comparison; on any mismatch, return an error diagnostic listing each mismatch and stop without mutating the cluster.
-  - [ ] 3.2.5 Otherwise call the alias, dynamic-setting, and mapping reconciliation helpers with the synthetic state vs the plan.
-  - [ ] 3.2.6 Compute `id` from the cluster UUID and the existing concrete index name, set `ConcreteName`, perform a final read, and add a warning diagnostic stating that the existing index was adopted (including the concrete name).
-- [ ] 3.3 When `use_existing = false`, ensure the create path is byte-for-byte the same as today (no warning, no extra API call).
+- [x] 3.1 Refactor `Update` in `internal/elasticsearch/index/index/update.go` so the alias, dynamic-setting, and mapping reconciliation logic is callable as package-private helpers taking explicit arguments (synthetic state vs plan). Preserve all existing semantics.
+- [x] 3.2 In `internal/elasticsearch/index/index/create.go`, when `use_existing = true`:
+  - [x] 3.2.1 If the configured `name` matches `esclient.DateMathIndexNameRe`, add a warning diagnostic explaining `use_existing` is ignored for date math names and fall through to the existing create path.
+  - [x] 3.2.2 Otherwise call `elasticsearch.GetIndex` for the configured `name`. If the response is `nil` (404), fall through to the existing create path.
+  - [x] 3.2.3 If the response returns an existing index, build a synthetic `tfModel` from the API response using the existing `populateFromAPI` flow.
+  - [x] 3.2.4 Run the static-setting strict comparison; on any mismatch, return an error diagnostic listing each mismatch and stop without mutating the cluster.
+  - [x] 3.2.5 Otherwise call the alias, dynamic-setting, and mapping reconciliation helpers with the synthetic state vs the plan.
+  - [x] 3.2.6 Compute `id` from the cluster UUID and the existing concrete index name, set `ConcreteName`, perform a final read, and add a warning diagnostic stating that the existing index was adopted (including the concrete name).
+- [x] 3.3 When `use_existing = false`, ensure the create path is byte-for-byte the same as today (no warning, no extra API call).
 
 ## 4. Acceptance and unit coverage
 
