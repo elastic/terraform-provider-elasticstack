@@ -22,9 +22,29 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
 )
+
+func deprecatedSettingsBlockList(ctx context.Context, t *testing.T, entries []settingTfModel) types.List {
+	t.Helper()
+
+	settingSet, diags := basetypes.NewSetValueFrom(ctx, settingElementType(), entries)
+	require.Empty(t, diags)
+
+	obj, diags := basetypes.NewObjectValue(
+		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType()}},
+		map[string]attr.Value{"setting": settingSet},
+	)
+	require.Empty(t, diags)
+
+	list, diags := basetypes.NewListValue(settingsElementType(), []attr.Value{obj})
+	require.Empty(t, diags)
+
+	return list
+}
 
 func Test_compareStaticSettings_nilPlan(t *testing.T) {
 	t.Parallel()
@@ -42,31 +62,31 @@ func Test_compareStaticSettings_noMismatches_allStaticMatch(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                               basetypes.NewStringValue("my-index"),
-		NumberOfShards:                     basetypes.NewInt64Value(1),
-		NumberOfRoutingShards:              basetypes.NewInt64Value(2),
-		Codec:                              basetypes.NewStringValue("best_compression"),
-		RoutingPartitionSize:               basetypes.NewInt64Value(3),
-		LoadFixedBitsetFiltersEagerly:      basetypes.NewBoolValue(true),
-		ShardCheckOnStartup:                basetypes.NewStringValue("checksum"),
-		SortField:                          sortField,
-		SortOrder:                          sortOrder,
-		MappingCoerce:                      basetypes.NewBoolValue(false),
-		Settings:                           basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection:            basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                          basetypes.NewStringValue("my-index"),
+		NumberOfShards:                basetypes.NewInt64Value(1),
+		NumberOfRoutingShards:         basetypes.NewInt64Value(2),
+		Codec:                         basetypes.NewStringValue("best_compression"),
+		RoutingPartitionSize:          basetypes.NewInt64Value(3),
+		LoadFixedBitsetFiltersEagerly: basetypes.NewBoolValue(true),
+		ShardCheckOnStartup:           basetypes.NewStringValue("checksum"),
+		SortField:                     sortField,
+		SortOrder:                     sortOrder,
+		MappingCoerce:                 basetypes.NewBoolValue(false),
+		Settings:                      basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnection:       basetypes.NewListNull(basetypes.ObjectType{}),
 	}
 
 	existing := models.Index{
 		Settings: map[string]any{
-			"index.number_of_shards":                 "1",
-			"index.number_of_routing_shards":         "2",
-			"index.codec":                            "best_compression",
-			"index.routing_partition_size":           "3",
+			"index.number_of_shards":                  "1",
+			"index.number_of_routing_shards":          "2",
+			"index.codec":                             "best_compression",
+			"index.routing_partition_size":            "3",
 			"index.load_fixed_bitset_filters_eagerly": "true",
-			"index.shard.check_on_startup":           "checksum",
-			"index.sort.field":                       []any{"b", "a"},
-			"index.sort.order":                       []any{"asc", "desc"},
-			"index.mapping.coerce":                   "false",
+			"index.shard.check_on_startup":            "checksum",
+			"index.sort.field":                        []any{"b", "a"},
+			"index.sort.order":                        []any{"asc", "desc"},
+			"index.mapping.coerce":                    "false",
 		},
 	}
 
@@ -361,10 +381,10 @@ func Test_compareStaticSettings_prefixedKeyPreferred(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
+		Name:                          basetypes.NewStringValue("i"),
 		LoadFixedBitsetFiltersEagerly: basetypes.NewBoolValue(false),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Settings:                      basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnection:       basetypes.NewListNull(basetypes.ObjectType{}),
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -416,4 +436,82 @@ func Test_compareStaticSettings_sortOrder_orderMatters(t *testing.T) {
 	require.Empty(t, diags)
 	require.Len(t, mismatches, 1)
 	require.Equal(t, "sort_order", mismatches[0].Attribute)
+}
+
+func Test_compareStaticSettings_deprecatedSettingsBlock_staticMismatch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	settings := deprecatedSettingsBlockList(ctx, t, []settingTfModel{
+		{Name: basetypes.NewStringValue("number_of_shards"), Value: basetypes.NewStringValue("3")},
+	})
+
+	plan := &tfModel{
+		Name:                    basetypes.NewStringValue("i"),
+		Settings:                settings,
+		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+	}
+	existing := models.Index{
+		Settings: map[string]any{
+			"index.number_of_shards": "2",
+		},
+	}
+
+	mismatches, diags := compareStaticSettings(ctx, plan, existing)
+	require.Empty(t, diags)
+	require.Len(t, mismatches, 1)
+	require.Equal(t, "number_of_shards", mismatches[0].Attribute)
+	require.Equal(t, "3", mismatches[0].Configured)
+	require.Equal(t, "2", mismatches[0].Actual)
+}
+
+func Test_compareStaticSettings_deprecatedSettingsBlock_staticMatch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	settings := deprecatedSettingsBlockList(ctx, t, []settingTfModel{
+		{Name: basetypes.NewStringValue("number_of_shards"), Value: basetypes.NewStringValue("2")},
+	})
+
+	plan := &tfModel{
+		Name:                    basetypes.NewStringValue("i"),
+		Settings:                settings,
+		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+	}
+	existing := models.Index{
+		Settings: map[string]any{
+			"index.number_of_shards": "2",
+		},
+	}
+
+	mismatches, diags := compareStaticSettings(ctx, plan, existing)
+	require.Empty(t, diags)
+	require.Empty(t, mismatches)
+}
+
+func Test_compareStaticSettings_sortField_mismatch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	sortField, diags := basetypes.NewSetValueFrom(ctx, basetypes.StringType{}, []string{"a", "b"})
+	require.Empty(t, diags)
+
+	plan := &tfModel{
+		Name:                    basetypes.NewStringValue("i"),
+		SortField:               sortField,
+		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+	}
+	existing := models.Index{
+		Settings: map[string]any{
+			"index.sort.field": []any{"a", "c"},
+		},
+	}
+
+	mismatches, diags := compareStaticSettings(ctx, plan, existing)
+	require.Empty(t, diags)
+	require.Len(t, mismatches, 1)
+	require.Equal(t, "sort_field", mismatches[0].Attribute)
+	require.Equal(t, "a, b", mismatches[0].Configured)
+	require.Equal(t, "a, c", mismatches[0].Actual)
 }

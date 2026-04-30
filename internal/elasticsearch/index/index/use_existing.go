@@ -21,15 +21,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // staticSettingMismatch records one static index setting that differs between
@@ -41,11 +38,11 @@ type staticSettingMismatch struct {
 }
 
 // compareStaticSettings walks staticSettingsKeys and reports mismatches for
-// settings that are explicitly set in the plan (Known and non-null) but differ
-// from existing.Settings. Plan fields that are null or unknown are skipped.
-//
-// Elasticsearch flat settings commonly use keys prefixed with "index."; bare
-// keys are also checked.
+// settings explicitly present in the plan after merging typed attributes and
+// the deprecated `settings` block (see tfModel.toIndexSettings). Keys absent
+// from that merged map are skipped. Values are compared to existing.Settings,
+// using keys with an `index.` prefix first, then bare keys (Elasticsearch flat
+// settings).
 func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.Index) ([]staticSettingMismatch, diag.Diagnostics) {
 	if plan == nil {
 		return nil, diag.Diagnostics{
@@ -53,46 +50,41 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 		}
 	}
 
-	var diags diag.Diagnostics
-	var mismatches []staticSettingMismatch
+	planSettings, diags := plan.toIndexSettings(ctx)
+	if diags.HasError() {
+		return nil, diags
+	}
 
-	modelType := reflect.TypeFor[tfModel]()
 	settings := existing.Settings
 	if settings == nil {
 		settings = map[string]any{}
 	}
 
-	for _, key := range staticSettingsKeys {
-		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
-		planField, ok := plan.getFieldValueByTagValue(tfFieldKey, modelType)
-		if !ok {
-			diags.AddError(
-				"failed to find setting field",
-				fmt.Sprintf("expected field with tfsdk tag %s", tfFieldKey),
-			)
-			return nil, diags
-		}
+	var mismatches []staticSettingMismatch
 
-		if planField == nil || planField.IsNull() || planField.IsUnknown() {
+	for _, key := range staticSettingsKeys {
+		planVal, ok := planSettings[key]
+		if !ok {
 			continue
 		}
 
+		tfAttr := convertSettingsKeyToTFFieldKey(key)
 		actualRaw, found := lookupExistingSetting(settings, key)
 		if !found {
 			mismatches = append(mismatches, staticSettingMismatch{
-				Attribute:  tfFieldKey,
-				Configured: configuredStringFromPlan(ctx, planField),
+				Attribute:  tfAttr,
+				Configured: configuredDisplayFromPlanValue(key, planVal),
 				Actual:     "<absent>",
 			})
 			continue
 		}
 
-		if mm := compareStaticSettingValue(ctx, key, tfFieldKey, planField, actualRaw); mm != nil {
+		if mm := compareStaticPlanAndES(tfAttr, key, planVal, actualRaw); mm != nil {
 			mismatches = append(mismatches, *mm)
 		}
 	}
 
-	return mismatches, diags
+	return mismatches, nil
 }
 
 func lookupExistingSetting(settings map[string]any, key string) (any, bool) {
@@ -106,39 +98,43 @@ func lookupExistingSetting(settings map[string]any, key string) (any, bool) {
 	return nil, false
 }
 
-func configuredStringFromPlan(ctx context.Context, planVal attr.Value) string {
-	switch v := planVal.(type) {
-	case types.Int64:
-		return strconv.FormatInt(v.ValueInt64(), 10)
-	case types.Bool:
-		return strconv.FormatBool(v.ValueBool())
-	case types.String:
-		return v.ValueString()
-	case types.Set:
-		var elems []string
-		_ = v.ElementsAs(ctx, &elems, true)
-		sort.Strings(elems)
-		return strings.Join(elems, ", ")
-	case types.List:
-		var elems []string
-		_ = v.ElementsAs(ctx, &elems, true)
-		return strings.Join(elems, ", ")
+func configuredDisplayFromPlanValue(key string, planVal any) string {
+	switch key {
+	case "number_of_shards", "number_of_routing_shards", "routing_partition_size":
+		i, s, ok := int64FromAny(planVal)
+		if ok {
+			return strconv.FormatInt(i, 10)
+		}
+		return s
+	case "codec", "shard.check_on_startup":
+		return stringFromPlanScalar(planVal)
+	case "load_fixed_bitset_filters_eagerly", "mapping.coerce":
+		b, s, ok := boolFromAny(planVal)
+		if ok {
+			return strconv.FormatBool(b)
+		}
+		return s
+	case "sort.field":
+		_, d := planStringSliceForSortFieldSet(planVal)
+		return d
+	case "sort.order":
+		_, d := planStringSliceForSortOrder(planVal)
+		return d
 	default:
-		return fmt.Sprintf("%v", planVal)
+		return fmt.Sprint(planVal)
 	}
 }
 
-func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVal attr.Value, actualRaw any) *staticSettingMismatch {
-	switch esKey {
+func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any) *staticSettingMismatch {
+	switch key {
 	case "number_of_shards", "number_of_routing_shards", "routing_partition_size":
-		pInt, ok := planVal.(types.Int64)
-		if !ok {
-			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
+		planI, cfg, okP := int64FromAny(planVal)
+		if !okP {
+			_, actStr, _ := int64FromAny(actualRaw)
+			return mismatch(tfAttr, cfg, actStr)
 		}
-		planI := pInt.ValueInt64()
-		cfg := strconv.FormatInt(planI, 10)
-		actI, actStr, ok := int64FromAny(actualRaw)
-		if !ok {
+		actI, actStr, okA := int64FromAny(actualRaw)
+		if !okA {
 			return mismatch(tfAttr, cfg, actStr)
 		}
 		if planI != actI {
@@ -147,11 +143,7 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 		return nil
 
 	case "codec", "shard.check_on_startup":
-		pStr, ok := planVal.(types.String)
-		if !ok {
-			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
-		}
-		planS := pStr.ValueString()
+		planS := stringFromPlanScalar(planVal)
 		actS := stringFromAny(actualRaw)
 		if planS != actS {
 			return mismatch(tfAttr, planS, actS)
@@ -159,14 +151,13 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 		return nil
 
 	case "load_fixed_bitset_filters_eagerly", "mapping.coerce":
-		pBool, ok := planVal.(types.Bool)
-		if !ok {
-			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
+		planB, cfg, okP := boolFromAny(planVal)
+		if !okP {
+			_, actStr, _ := boolFromAny(actualRaw)
+			return mismatch(tfAttr, cfg, actStr)
 		}
-		planB := pBool.ValueBool()
-		cfg := strconv.FormatBool(planB)
-		actB, actStr, ok := boolFromAny(actualRaw)
-		if !ok {
+		actB, actStr, okA := boolFromAny(actualRaw)
+		if !okA {
 			return mismatch(tfAttr, cfg, actStr)
 		}
 		if planB != actB {
@@ -175,13 +166,7 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 		return nil
 
 	case "sort.field":
-		pSet, ok := planVal.(types.Set)
-		if !ok {
-			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
-		}
-		var planElems []string
-		_ = pSet.ElementsAs(ctx, &planElems, true)
-		cfg := configuredStringFromPlan(ctx, planVal)
+		planElems, cfg := planStringSliceForSortFieldSet(planVal)
 		actSlice := stringSliceFromSortFieldAny(actualRaw)
 		if !equalAsStringSets(planElems, actSlice) {
 			return mismatch(tfAttr, cfg, formatAsSortedUniqueSet(actSlice))
@@ -189,13 +174,7 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 		return nil
 
 	case "sort.order":
-		pList, ok := planVal.(types.List)
-		if !ok {
-			return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(unexpected plan type %T)", planVal))
-		}
-		var planElems []string
-		_ = pList.ElementsAs(ctx, &planElems, true)
-		cfg := configuredStringFromPlan(ctx, planVal)
+		planElems, cfg := planStringSliceForSortOrder(planVal)
 		actSlice := stringSliceOrderedFromAny(actualRaw)
 		if !slicesEqual(planElems, actSlice) {
 			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
@@ -203,7 +182,71 @@ func compareStaticSettingValue(ctx context.Context, esKey, tfAttr string, planVa
 		return nil
 
 	default:
-		return mismatch(tfAttr, configuredStringFromPlan(ctx, planVal), fmt.Sprintf("(internal: unknown static key %q)", esKey))
+		return mismatch(tfAttr, configuredDisplayFromPlanValue(key, planVal), fmt.Sprintf("(internal: unknown static key %q)", key))
+	}
+}
+
+func stringFromPlanScalar(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func planStringSliceForSortFieldSet(v any) ([]string, string) {
+	switch x := v.(type) {
+	case []string:
+		cp := append([]string(nil), x...)
+		return cp, formatAsSortedUniqueSet(cp)
+	case []any:
+		out := make([]string, 0, len(x))
+		for _, e := range x {
+			out = append(out, elemToString(e))
+		}
+		return out, formatAsSortedUniqueSet(out)
+	case string:
+		trimmed := strings.TrimSpace(x)
+		if trimmed == "" {
+			return nil, ""
+		}
+		var arr []string
+		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil && len(arr) > 0 {
+			return arr, formatAsSortedUniqueSet(arr)
+		}
+		one := []string{trimmed}
+		return one, formatAsSortedUniqueSet(one)
+	default:
+		s := []string{fmt.Sprint(v)}
+		return s, formatAsSortedUniqueSet(s)
+	}
+}
+
+func planStringSliceForSortOrder(v any) ([]string, string) {
+	switch x := v.(type) {
+	case []string:
+		cp := append([]string(nil), x...)
+		return cp, strings.Join(cp, ", ")
+	case []any:
+		out := make([]string, 0, len(x))
+		for _, e := range x {
+			out = append(out, elemToString(e))
+		}
+		return out, strings.Join(out, ", ")
+	case string:
+		trimmed := strings.TrimSpace(x)
+		if trimmed == "" {
+			return nil, ""
+		}
+		var arr []string
+		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil && len(arr) > 0 {
+			return arr, strings.Join(arr, ", ")
+		}
+		return []string{trimmed}, trimmed
+	default:
+		s := fmt.Sprint(v)
+		return []string{s}, s
 	}
 }
 
@@ -291,7 +334,6 @@ func stringSliceFromSortFieldAny(v any) []string {
 }
 
 func stringSliceOrderedFromAny(v any) []string {
-	// Same shapes as sort.field; order preserved for list-like values.
 	return stringSliceFromSortFieldAny(v)
 }
 
