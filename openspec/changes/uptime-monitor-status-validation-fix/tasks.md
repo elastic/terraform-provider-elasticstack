@@ -1,12 +1,12 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate uptime-monitor-status-validation-fix --type change` (or `make check-openspec` after sync).
+- [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate uptime-monitor-status-validation-fix --type change` (or `make check-openspec` after sync).
 - [ ] 1.2 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` or **archive** the change per project workflow.
 
 ## 2. Implementation
 
-- [ ] 2.1 In `internal/kibana/alertingrule/validate.go`, in `ruleTypeParamsSpecs`, change the `mustNewParamsSchemaSpecFromContainer` call for `"xpack.uptime.alerts.monitorStatus"` from `&kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting{}` to `&kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting{}`.
-- [ ] 2.2 In `internal/kibana/alertingrule/validate.go`, expand `legacyMonitorStatusParams.Filters` from its current single-field shape to include all four Kibana-accepted sub-fields:
+- [x] 2.1 In `internal/kibana/alertingrule/validate.go`, in `ruleTypeParamsSpecs`, change the `mustNewParamsSchemaSpecFromContainer` call for `"xpack.uptime.alerts.monitorStatus"` from `&kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting{}` to `&kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting{}`.
+- [x] 2.2 In `internal/kibana/alertingrule/validate.go`, expand `legacyMonitorStatusParams.Filters` from its current single-field shape to include all four Kibana-accepted sub-fields:
   - `Tags *[]string \`json:"tags,omitempty"\`` (already present — keep)
   - `MonitorType *[]string \`json:"monitor.type,omitempty"\`` (add)
   - `ObserverGeoName *[]string \`json:"observer.geo.name,omitempty"\`` (add)
