@@ -34,4 +34,4 @@
 ## 5. Changelog and references
 
 - [x] 5.1 Add a `CHANGELOG.md` entry under "Unreleased" describing the new `use_existing` attribute and referencing issue #966.
-- [ ] 5.2 Cross-link the new attribute in the resource description / schema docs so practitioners encountering the "already exists" error during replacement can discover the workaround.
+- [x] 5.2 Cross-link the new attribute in the resource description / schema docs so practitioners encountering the "already exists" error during replacement can discover the workaround.

@@ -55,7 +55,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
+		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			"settings": schema.ListNestedBlock{

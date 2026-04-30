@@ -46,5 +46,8 @@ var waitForActiveShardsDescription string
 //go:embed descriptions/master_timeout.md
 var masterTimeoutDescription string
 
+//go:embed descriptions/resource.md
+var resourceDescription string
+
 //go:embed descriptions/use_existing.md
 var useExistingDescription string
