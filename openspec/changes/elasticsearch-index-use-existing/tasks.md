@@ -24,10 +24,10 @@
 
 ## 4. Acceptance and unit coverage
 
-- [ ] 4.1 Add an acceptance test that creates an index out-of-band (or via an index template that pre-creates a concrete index), then applies a Terraform configuration with `use_existing = true` and verifies: success, the warning diagnostic, no spurious follow-up plan, and that subsequent updates run through the normal update path.
-- [ ] 4.2 Add an acceptance test where the existing index has a different `number_of_shards` than config and verify the apply fails with an error diagnostic listing the mismatch and no mutation occurs (existing index settings remain unchanged).
-- [ ] 4.3 Add an acceptance test for `use_existing = true` plus a date math `name` that asserts the warning is emitted and the create proceeds normally.
-- [ ] 4.4 Add unit tests covering the create handler's branching (existence check skipped for date math, 404 falls through, 200 with mismatching static settings errors, 200 with matching static settings runs reconciliation and emits the warning).
+- [x] 4.1 Add an acceptance test that creates an index out-of-band (or via an index template that pre-creates a concrete index), then applies a Terraform configuration with `use_existing = true` and verifies: success, the warning diagnostic, no spurious follow-up plan, and that subsequent updates run through the normal update path.
+- [x] 4.2 Add an acceptance test where the existing index has a different `number_of_shards` than config and verify the apply fails with an error diagnostic listing the mismatch and no mutation occurs (existing index settings remain unchanged).
+- [x] 4.3 Add an acceptance test for `use_existing = true` plus a date math `name` that asserts the warning is emitted and the create proceeds normally.
+- [x] 4.4 Add unit tests covering the create handler's branching (existence check skipped for date math, 404 falls through, 200 with mismatching static settings errors, 200 with matching static settings runs reconciliation and emits the warning).
 
   Branches in **task 4.4** are fully covered in acceptance tests (`TestAccResourceIndexUseExistingDateMath`, `TestAccResourceIndexUseExistingFallthrough`, `TestAccResourceIndexUseExistingMismatch`, `TestAccResourceIndexUseExistingAdopt`, plus `…AdoptAliasReconcile`, `…TemplateNoMappingDrift`); unit tests cover helper extraction only—injectable ES client for `Create` is deferred (see change `design.md`, section “Testing: use_existing create-branch coverage”).
 

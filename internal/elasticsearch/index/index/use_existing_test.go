@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -514,4 +515,64 @@ func Test_compareStaticSettings_sortField_mismatch(t *testing.T) {
 	require.Equal(t, "sort_field", mismatches[0].Attribute)
 	require.Equal(t, "a, b", mismatches[0].Configured)
 	require.Equal(t, "a, c", mismatches[0].Actual)
+}
+
+func Test_formatStaticSettingMismatchesDetail(t *testing.T) {
+	t.Parallel()
+	detail := formatStaticSettingMismatchesDetail("my-index", []staticSettingMismatch{
+		{Attribute: "number_of_shards", Configured: "2", Actual: "1"},
+		{Attribute: "codec", Configured: "default", Actual: "best_compression"},
+	})
+	require.Contains(t, detail, "concrete_name: my-index")
+	require.Contains(t, detail, "number_of_shards: configured=2, actual=1")
+	require.Contains(t, detail, "codec: configured=default, actual=best_compression")
+}
+
+func Test_useExistingDateMathNameMatchesGateRegex(t *testing.T) {
+	t.Parallel()
+	require.True(t, elasticsearch.DateMathIndexNameRe.MatchString("<logs-{now/d}>"))
+	// Same shape as TestAccResourceIndexUseExistingDateMath (random label between angle brackets).
+	require.True(t, elasticsearch.DateMathIndexNameRe.MatchString("<useexist-abcdefghij-{now/d}>"))
+}
+
+func Test_populateFromAPI_syntheticAdoptPriorState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	indexName := "synthetic-adopt-unit-index"
+
+	m := &tfModel{
+		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+	}
+	apiModel := models.Index{
+		Aliases: map[string]models.IndexAlias{
+			"alias_a": {IsWriteIndex: true},
+		},
+		Mappings: map[string]any{
+			"properties": map[string]any{
+				"foo": map[string]any{"type": "keyword"},
+			},
+		},
+		Settings: map[string]any{
+			"index.number_of_shards": "1",
+		},
+	}
+
+	diags := m.populateFromAPI(ctx, indexName, apiModel)
+	require.False(t, diags.HasError())
+
+	require.Equal(t, indexName, m.Name.ValueString())
+	require.Equal(t, indexName, m.ConcreteName.ValueString())
+
+	require.False(t, m.Mappings.IsNull())
+	require.Contains(t, m.Mappings.ValueString(), "foo")
+	require.Contains(t, m.Mappings.ValueString(), "keyword")
+
+	var aliases []aliasTfModel
+	diags = m.Alias.ElementsAs(ctx, &aliases, true)
+	require.False(t, diags.HasError())
+	require.Len(t, aliases, 1)
+	require.Equal(t, "alias_a", aliases[0].Name.ValueString())
+
+	require.False(t, m.SettingsRaw.IsNull())
+	require.Contains(t, m.SettingsRaw.ValueString(), "number_of_shards")
 }
