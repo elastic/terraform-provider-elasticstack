@@ -20,9 +20,13 @@ package index_test
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -638,6 +642,224 @@ func deleteElasticsearchIndexOOB(t *testing.T, name string) {
 	}
 }
 
+func getElasticsearchIndexDoc(t *testing.T, indexName string) map[string]any {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	esClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get Elasticsearch API client: %v", err)
+	}
+	res, err := esClient.Indices.Get(
+		[]string{indexName},
+		esClient.Indices.Get.WithFlatSettings(true),
+		esClient.Indices.Get.WithContext(ctx),
+	)
+	if err != nil {
+		t.Fatalf("Indices.Get request: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 404 {
+		t.Fatalf("index %q not found", indexName)
+	}
+	if res.IsError() {
+		b, _ := io.ReadAll(res.Body)
+		t.Fatalf("Indices.Get(%q): %s", indexName, string(b))
+	}
+	var top map[string]json.RawMessage
+	if err := json.NewDecoder(res.Body).Decode(&top); err != nil {
+		t.Fatalf("decode get-index response: %v", err)
+	}
+	raw, ok := top[indexName]
+	if !ok {
+		t.Fatalf("index %q not present in response (have %d keys)", indexName, len(top))
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("unmarshal index document: %v", err)
+	}
+	return doc
+}
+
+func primaryShardsString(settings map[string]any) string {
+	if settings == nil {
+		return ""
+	}
+	if v, ok := settings["index.number_of_shards"]; ok {
+		return normalizeJSONNumberString(v)
+	}
+	if inner, ok := settings["index"].(map[string]any); ok {
+		if v, ok := inner["number_of_shards"]; ok {
+			return normalizeJSONNumberString(v)
+		}
+	}
+	return ""
+}
+
+func normalizeJSONNumberString(v any) string {
+	switch x := v.(type) {
+	case string:
+		return strings.TrimSpace(x)
+	case float64:
+		return fmt.Sprintf("%.0f", x)
+	case json.Number:
+		if i, err := x.Int64(); err == nil {
+			return fmt.Sprintf("%d", i)
+		}
+		return x.String()
+	case int:
+		return fmt.Sprintf("%d", x)
+	case int64:
+		return fmt.Sprintf("%d", x)
+	default:
+		return strings.TrimSpace(fmt.Sprint(x))
+	}
+}
+
+func assertIndexPrimaryShards(t *testing.T, indexName, want string) {
+	t.Helper()
+	doc := getElasticsearchIndexDoc(t, indexName)
+	settings, _ := doc["settings"].(map[string]any)
+	got := primaryShardsString(settings)
+	if got != want {
+		t.Fatalf("index %q primary shards: want %q, got %q", indexName, want, got)
+	}
+}
+
+func assertIndexAliasesExactly(t *testing.T, indexName string, want []string) {
+	t.Helper()
+	doc := getElasticsearchIndexDoc(t, indexName)
+	aliases, _ := doc["aliases"].(map[string]any)
+	got := make([]string, 0, len(aliases))
+	for k := range aliases {
+		got = append(got, k)
+	}
+	sort.Strings(got)
+	if want == nil {
+		want = []string{}
+	}
+	wantSorted := append([]string(nil), want...)
+	sort.Strings(wantSorted)
+	if !slices.Equal(got, wantSorted) {
+		t.Fatalf("index %q aliases: want %v, got %v", indexName, wantSorted, got)
+	}
+}
+
+func TestAccResourceIndexUseExistingFallthrough(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "concrete_name", indexName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_use_existing", "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingAdoptAliasReconcile(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{
+  "settings": { "index": { "number_of_shards": 1 } },
+  "aliases": { "legacy_alias": {} }
+}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					func(_ *terraform.State) error {
+						assertIndexAliasesExactly(t, indexName, []string{"new_alias"})
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingTemplateNoMappingDrift(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_template"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", indexName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{"settings":{"index":{"number_of_shards":1}}}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step2_adopt"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_adopt_template", "name", indexName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_adopt"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceIndexUseExistingAdopt(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -700,6 +922,14 @@ func TestAccResourceIndexUseExistingMismatch(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	t.Cleanup(func() {
 		deleteElasticsearchIndexOOB(t, indexName)
+	})
+	// When TF_ACC is off, PreCheck fatals before the step runs; skip ES verification in that case.
+	t.Cleanup(func() {
+		if os.Getenv("TF_ACC") != "1" {
+			return
+		}
+		assertIndexPrimaryShards(t, indexName, "1")
+		assertIndexAliasesExactly(t, indexName, nil)
 	})
 
 	resource.Test(t, resource.TestCase{
