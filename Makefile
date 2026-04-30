@@ -126,7 +126,6 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
-	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_download_sources -d '{"name":"Elastic Artifacts","host":"https://artifacts.elastic.co/downloads/","is_default":true}' || true
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network

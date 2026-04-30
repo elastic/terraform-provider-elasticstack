@@ -20,7 +20,6 @@ package agentdownloadsource
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -58,34 +57,6 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// If deleting the default download source, promote another source to default
-	// first so Fleet is never left without one. Without this, concurrent agent
-	// policy creates fail with HTTP 400 "Default download source host is not setup".
-	if state.Default.ValueBool() {
-		listResp, listDiags := fleet.ListAgentDownloadSources(ctx, client, spaceID)
-		resp.Diagnostics.Append(listDiags...)
-		if !resp.Diagnostics.HasError() && listResp.JSON200 != nil {
-			for _, s := range listResp.JSON200.Items {
-				if s.Id == sourceID {
-					continue
-				}
-				isDefault := true
-				updateReq := kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
-					Host:      s.Host,
-					Name:      s.Name,
-					IsDefault: &isDefault,
-					ProxyId:   s.ProxyId,
-				}
-				_, updateDiags := fleet.UpdateAgentDownloadSource(ctx, client, s.Id, spaceID, updateReq)
-				resp.Diagnostics.Append(updateDiags...)
-				break
-			}
-		}
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
 	diags = fleet.DeleteAgentDownloadSource(ctx, client, sourceID, spaceID)
