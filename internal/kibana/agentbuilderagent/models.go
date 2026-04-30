@@ -19,9 +19,11 @@ package agentbuilderagent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -74,6 +76,69 @@ type toolModel struct {
 // the entitycore.KibanaDataSourceModel interface required by NewKibanaDataSource.
 func (model agentDataSourceModel) GetKibanaConnection() types.List {
 	return model.KibanaConnection
+}
+
+// GetVersionRequirements returns the static minimum Kibana version requirements
+// for the Agent Builder agent data source. This satisfies the optional
+// entitycore.KibanaDataSourceWithVersionRequirements interface, allowing the
+// generic Kibana data source envelope to enforce the requirement before invoking
+// the entity read callback.
+func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
+	return []entitycore.DataSourceVersionRequirement{
+		{
+			MinVersion:   minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}, nil
+}
+
+func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
+	if data == nil {
+		return nil
+	}
+
+	var diags diag.Diagnostics
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.AgentID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Name = types.StringValue(data.Name)
+
+	if data.Description != nil && *data.Description != "" {
+		model.Description = types.StringValue(*data.Description)
+	} else {
+		model.Description = types.StringNull()
+	}
+
+	if data.AvatarColor != nil && *data.AvatarColor != "" {
+		model.AvatarColor = types.StringValue(*data.AvatarColor)
+	} else {
+		model.AvatarColor = types.StringNull()
+	}
+
+	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
+		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
+	} else {
+		model.AvatarSymbol = types.StringNull()
+	}
+
+	cfg := data.Configuration
+
+	if cfg.Instructions != nil && *cfg.Instructions != "" {
+		model.Instructions = types.StringValue(*cfg.Instructions)
+	} else {
+		model.Instructions = types.StringNull()
+	}
+
+	if len(data.Labels) > 0 {
+		labels, d := types.SetValueFrom(ctx, types.StringType, data.Labels)
+		diags.Append(d...)
+		model.Labels = labels
+	} else {
+		model.Labels = types.SetNull(types.StringType)
+	}
+
+	return diags
 }
 
 func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
