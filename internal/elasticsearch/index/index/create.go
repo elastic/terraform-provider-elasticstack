@@ -20,7 +20,6 @@ package index
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -124,14 +123,9 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	}
 
 	if len(mismatches) > 0 {
-		var b strings.Builder
-		fmt.Fprintf(&b, "concrete_name: %s\n\n", concreteName)
-		for _, m := range mismatches {
-			fmt.Fprintf(&b, "%s: configured=%s, actual=%s\n", m.Attribute, m.Configured, m.Actual)
-		}
 		resp.Diagnostics.AddError(
 			"existing index has incompatible static settings",
-			strings.TrimSuffix(b.String(), "\n"),
+			formatStaticSettingMismatchesDetail(concreteName, mismatches),
 		)
 		return
 	}

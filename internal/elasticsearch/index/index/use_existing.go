@@ -87,6 +87,17 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 	return mismatches, nil
 }
 
+// formatStaticSettingMismatchesDetail builds the error detail string for adopt-time
+// static setting mismatches (used by Create).
+func formatStaticSettingMismatchesDetail(concreteName string, mismatches []staticSettingMismatch) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "concrete_name: %s\n\n", concreteName)
+	for _, m := range mismatches {
+		fmt.Fprintf(&b, "%s: configured=%s, actual=%s\n", m.Attribute, m.Configured, m.Actual)
+	}
+	return strings.TrimSuffix(b.String(), "\n")
+}
+
 func lookupExistingSetting(settings map[string]any, key string) (any, bool) {
 	prefixed := "index." + key
 	if v, ok := settings[prefixed]; ok && v != nil {
