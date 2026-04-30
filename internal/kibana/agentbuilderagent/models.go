@@ -76,55 +76,6 @@ func (model agentDataSourceModel) GetKibanaConnection() types.List {
 	return model.KibanaConnection
 }
 
-func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	var diags diag.Diagnostics
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.AgentID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	if data.AvatarColor != nil && *data.AvatarColor != "" {
-		model.AvatarColor = types.StringValue(*data.AvatarColor)
-	} else {
-		model.AvatarColor = types.StringNull()
-	}
-
-	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
-		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
-	} else {
-		model.AvatarSymbol = types.StringNull()
-	}
-
-	cfg := data.Configuration
-
-	if cfg.Instructions != nil && *cfg.Instructions != "" {
-		model.Instructions = types.StringValue(*cfg.Instructions)
-	} else {
-		model.Instructions = types.StringNull()
-	}
-
-	if len(data.Labels) > 0 {
-		labels, d := types.SetValueFrom(ctx, types.StringType, data.Labels)
-		diags.Append(d...)
-		model.Labels = labels
-	} else {
-		model.Labels = types.SetNull(types.StringType)
-	}
-
-	return diags
-}
-
 func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	if data == nil {
 		return nil

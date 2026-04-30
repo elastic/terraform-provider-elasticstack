@@ -22,14 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 var (
-	// workflow_ids, skill_ids, and plugin_ids on agents require 9.4+
-	minVersionAdvancedAgentConfig = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	_ datasource.DataSource              = NewDataSource()
+	_ datasource.DataSourceWithConfigure = NewDataSource().(datasource.DataSourceWithConfigure)
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.
