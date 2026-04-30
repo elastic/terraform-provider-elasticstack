@@ -24,17 +24,24 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
-	_ resource.Resource              = newSystemUserResource()
-	_ resource.ResourceWithConfigure = newSystemUserResource()
+	_ resource.Resource                = newSystemUserResource()
+	_ resource.ResourceWithConfigure   = newSystemUserResource()
+	_ resource.ResourceWithImportState = newSystemUserResource()
 )
 
 type systemUserResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[Data]
 }
 
 func newSystemUserResource() *systemUserResource {
 	return &systemUserResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_system_user"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
+			entitycore.ComponentElasticsearch,
+			"security_system_user",
+			GetSchema,
+			readSystemUser,
+			deleteSystemUser,
+		),
 	}
 }
 
