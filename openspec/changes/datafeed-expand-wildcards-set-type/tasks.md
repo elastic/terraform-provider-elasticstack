@@ -1,9 +1,9 @@
 ## 1. Custom set type
 
-- [ ] 1.1 Create `internal/elasticsearch/ml/datafeed/expand_wildcards_type.go`. Define `ExpandWildcardsType` implementing `basetypes.SetTypable` (embed `basetypes.SetType{ElemType: types.StringType}`). Define `ExpandWildcardsValue` implementing `basetypes.SetValuableWithSemanticEquals` (embed `basetypes.SetValue`). Add constructor helpers: `NewExpandWildcardsNull()`, `NewExpandWildcardsUnknown()`, `NewExpandWildcardsValue(elements []attr.Value) (ExpandWildcardsValue, diag.Diagnostics)`.
-- [ ] 1.2 Implement `SetSemanticEquals` on `ExpandWildcardsValue`. The method MUST: handle null/unknown conservatively; normalize both sides by expanding `"all"` → `{"open","closed","hidden"}`; compare normalized sets for equality; leave `"none"` and all other tokens as literals. Return `(bool, diag.Diagnostics)` per the Plugin Framework contract.
-- [ ] 1.3 Add required interface assertions in the same file: `var _ basetypes.SetTypable = (*ExpandWildcardsType)(nil)` and `var _ basetypes.SetValuableWithSemanticEquals = (*ExpandWildcardsValue)(nil)`.
-- [ ] 1.4 Create `internal/elasticsearch/ml/datafeed/expand_wildcards_type_test.go` with unit tests covering:
+- [x] 1.1 Create `internal/elasticsearch/ml/datafeed/expand_wildcards_type.go`. Define `ExpandWildcardsType` implementing `basetypes.SetTypable` (embed `basetypes.SetType{ElemType: types.StringType}`). Define `ExpandWildcardsValue` implementing `basetypes.SetValuableWithSemanticEquals` (embed `basetypes.SetValue`). Add constructor helpers: `NewExpandWildcardsNull()`, `NewExpandWildcardsUnknown()`, `NewExpandWildcardsValue(elements []attr.Value) (ExpandWildcardsValue, diag.Diagnostics)`.
+- [x] 1.2 Implement `SetSemanticEquals` on `ExpandWildcardsValue`. The method MUST: handle null/unknown conservatively; normalize both sides by expanding `"all"` → `{"open","closed","hidden"}`; compare normalized sets for equality; leave `"none"` and all other tokens as literals. Return `(bool, diag.Diagnostics)` per the Plugin Framework contract.
+- [x] 1.3 Add required interface assertions in the same file: `var _ basetypes.SetTypable = (*ExpandWildcardsType)(nil)` and `var _ basetypes.SetValuableWithSemanticEquals = (*ExpandWildcardsValue)(nil)`.
+- [x] 1.4 Create `internal/elasticsearch/ml/datafeed/expand_wildcards_type_test.go` with unit tests covering:
   - `{"all"}` == `{"open","closed","hidden"}` (both directions)
   - `{"open","closed","hidden"}` == `{"hidden","open","closed"}` (order insensitivity)
   - `{"all"}` != `{"open","closed"}` (partial expansion not equal)
