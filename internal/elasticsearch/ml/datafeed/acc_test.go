@@ -152,8 +152,8 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 
 					// Indices options
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.0", "open"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.1", "closed"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "open"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "closed"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_unavailable", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.allow_no_indices", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_throttled", "false"),
@@ -197,7 +197,7 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 
 					// Verify updated indices options
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.#", "1"), // Updated to 1
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.0", "open"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "open"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_unavailable", "false"), // Updated from true
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.allow_no_indices", "true"),    // Updated from false
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_throttled", "true"),    // Updated from false
@@ -411,8 +411,8 @@ func TestAccResourceDatafeedDelayedDataDisabled(t *testing.T) {
 
 					// Broader expand_wildcards coverage: "hidden" value not covered by the comprehensive test
 					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "2"),
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.0", "open"),
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.1", "hidden"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "open"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "hidden"),
 				),
 			},
 		},
