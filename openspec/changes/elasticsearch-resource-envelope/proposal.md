@@ -4,7 +4,7 @@ Issue [#2555](https://github.com/elastic/terraform-provider-elasticstack/issues/
 
 ## What Changes
 
-- Add `entitycore.NewElasticsearchResource[T]`: a generic constructor that returns a Plugin Framework resource owning Configure, Metadata, Schema (with `elasticsearch_connection` block injection), Read, Delete, and ImportState (passthrough on `id`).
+- Add `entitycore.NewElasticsearchResource[T]`: a generic constructor that returns a Plugin Framework resource owning Configure, Metadata, Schema (with `elasticsearch_connection` block injection), Read, and Delete.
 - Add `entitycore.ElasticsearchResourceModel` type constraint requiring `GetID() types.String` and `GetElasticsearchConnection() types.List`.
 - Concrete resources supply: a schema factory (without the connection block), a read callback `func(ctx, *clients.ElasticsearchScopedClient, resourceID string, state T) (T, bool, diag.Diagnostics)` (bool = found), and a delete callback `func(ctx, *clients.ElasticsearchScopedClient, resourceID string, state T) diag.Diagnostics`.
 - Concrete resources continue to own Create and Update (their flows diverge — write-only passwords, server-version gating, JSON marshalling, post-write re-reads).
@@ -17,7 +17,7 @@ No external behavior, schema, generated docs, or acceptance test fixtures change
 ## Capabilities
 
 ### New Capabilities
-- `entitycore-resource-envelope`: Generic resource envelope (sibling to `entitycore-datasource-envelope`) that owns Configure, Metadata, Schema-with-connection-injection, Read prelude with composite-ID parsing and not-found removal, Delete prelude, and default ImportState passthrough.
+- `entitycore-resource-envelope`: Generic resource envelope (sibling to `entitycore-datasource-envelope`) that owns Configure, Metadata, Schema-with-connection-injection, Read prelude with composite-ID parsing and not-found removal, and Delete prelude.
 
 ### Modified Capabilities
 <!-- None. The four security resource specs describe externally-observable behavior, which is preserved verbatim. The provider-framework-entity-core spec describes the simple ResourceBase substrate, which is unchanged; the envelope is an additional, separately-specified capability. -->

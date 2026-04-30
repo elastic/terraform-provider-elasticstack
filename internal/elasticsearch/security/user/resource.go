@@ -18,7 +18,10 @@
 package securityuser
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -47,4 +50,8 @@ func newUserResource() *userResource {
 
 func NewUserResource() resource.Resource {
 	return newUserResource()
+}
+
+func (r *userResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

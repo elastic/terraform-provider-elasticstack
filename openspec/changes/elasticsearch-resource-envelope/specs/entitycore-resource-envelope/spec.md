@@ -9,7 +9,7 @@ The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` t
 - **WHEN** `NewElasticsearchResource[T](component, name, schemaFactory, readFunc, deleteFunc)` is called with non-nil callbacks
 - **THEN** the returned value SHALL satisfy `resource.Resource`
 - **AND** the returned value SHALL satisfy `resource.ResourceWithConfigure`
-- **AND** the returned value SHALL satisfy `resource.ResourceWithImportState`
+- **AND** the returned value SHALL NOT satisfy `resource.ResourceWithImportState` (import is opt-in for concrete resources)
 
 ### Requirement: Envelope owns Configure and Metadata
 
@@ -110,20 +110,22 @@ The system SHALL require concrete resources to supply a non-nil delete callback.
 - **WHEN** the delete callback is supplied as a function that returns `nil` diagnostics without performing an API call
 - **THEN** the envelope SHALL invoke that callback during `Delete` and proceed normally, removing the resource from state
 
-### Requirement: Envelope provides a default ImportState passthrough
+### Requirement: Envelope does not implement ImportState
 
-The system SHALL implement `ImportState` as a passthrough on the `id` attribute equivalent to `resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)`. Concrete resources MAY override `ImportState` by defining the method on the concrete type that embeds the envelope.
+The system SHALL NOT implement `ImportState` on the envelope. Import support SHALL remain opt-in for concrete resources, matching the provider-wide convention. Concrete resources that support import SHALL implement `ImportState` themselves, typically as a passthrough on the `id` attribute.
 
-#### Scenario: Default import passes through the id attribute
+#### Scenario: Envelope resource without ImportState does not satisfy ResourceWithImportState
 
-- **WHEN** a Terraform import command is executed against a resource that uses the envelope without overriding `ImportState`
-- **THEN** the `id` attribute SHALL be set to the supplied import identifier
-- **AND** the subsequent Read SHALL receive that `id` in its prior state
+- **WHEN** an envelope is constructed via `NewElasticsearchResource[T]`
+- **THEN** the returned resource SHALL satisfy `resource.Resource`
+- **AND** SHALL satisfy `resource.ResourceWithConfigure`
+- **AND** SHALL NOT satisfy `resource.ResourceWithImportState`
 
-#### Scenario: Concrete resource overrides default import behavior
+#### Scenario: Concrete resource adds ImportState passthrough
 
-- **WHEN** a concrete resource that embeds `*ElasticsearchResource[T]` defines its own `ImportState` method
-- **THEN** the concrete method SHALL be invoked instead of the envelope's default
+- **WHEN** a concrete resource that embeds `*ElasticsearchResource[T]` defines its own `ImportState` method using `resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)`
+- **THEN** that resource SHALL satisfy `resource.ResourceWithImportState`
+- **AND** the `id` attribute SHALL be set to the supplied import identifier
 
 ### Requirement: Model type constraint exposes ID and connection block
 

@@ -28,10 +28,11 @@ Create and Update flows in these resources diverge significantly (write-only pas
 
 **Goals:**
 
-- Provide `entitycore.NewElasticsearchResource[T]` that owns Schema (with connection-block injection), Configure, Metadata, Read prelude, Delete prelude, and ImportState (passthrough).
+- Provide `entitycore.NewElasticsearchResource[T]` that owns Schema (with connection-block injection), Configure, Metadata, Read prelude, and Delete prelude.
 - Mirror the data source envelope's shape: type-parameter constraint, schema factory, pure callbacks.
 - Migrate the four Elasticsearch security resources to use it. No external behavior change.
 - Preserve existing acceptance tests verbatim.
+- Preserve the provider-wide convention that import support is opt-in: the envelope does NOT implement ImportState; resources that need it implement it themselves.
 
 **Non-Goals:**
 
@@ -42,11 +43,11 @@ Create and Update flows in these resources diverge significantly (write-only pas
 
 ## Decisions
 
-### D1. Envelope owns Read + Delete + Schema + default ImportState; concrete owns Create + Update
+### D1. Envelope owns Read + Delete + Schema; concrete owns Create + Update + ImportState
 
-**Choice:** Wrap Read, Delete, Schema (with connection-block injection), Configure, Metadata, and provide a default ImportState that passes through `id`. Concrete resources keep Create and Update.
+**Choice:** Wrap Read, Delete, Schema (with connection-block injection), Configure, and Metadata. Concrete resources keep Create, Update, and ImportState.
 
-**Rationale:** Read and Delete have a uniform prelude across the four resources; Create and Update don't. Wrapping only what's actually duplicated avoids over-fitting the abstraction. Schema injection is included because connection-block declarations are also duplicated and the data source envelope already does this — symmetry keeps the entitycore API coherent.
+**Rationale:** Read and Delete have a uniform prelude across the four resources; Create and Update don't. ImportState is a one-liner (`resource.ImportStatePassthroughID`) that almost every Plugin Framework resource implements identically, but making it the envelope's default would force import support on every envelope consumer. The provider convention is opt-in: resources declare `ResourceWithImportState` explicitly. Removing ImportState from the envelope preserves that convention and lets future resources use the envelope regardless of whether they support import. Schema injection is included because connection-block declarations are also duplicated and the data source envelope already does this — symmetry keeps the entitycore API coherent.
 
 **Alternatives considered:**
 
@@ -119,11 +120,16 @@ func deleteSystemUser(ctx context.Context, _ *clients.ElasticsearchScopedClient,
 
 **Rationale:** A nilable callback hides intent at the envelope layer. Making it required forces each resource to express the delete behavior explicitly. The "no API call" case is a one-line function — clearer than a magic nil.
 
-### D6. ImportState defaults to passthrough on `id`; concrete may override
+### D6. ImportState is NOT in the envelope; concrete resources opt in
 
-**Choice:** The envelope implements `ImportState` as `resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)`. Because the four security resources currently all do this, no overrides are needed in this migration. Concrete resources retain the ability to define their own `ImportState` on the embedded struct, which Plugin Framework will dispatch to (Go method-set rules give concrete methods precedence over promoted methods).
+**Choice:** The envelope does NOT implement `ImportState`. Concrete resources that need import support implement it themselves with the standard one-liner:
+```go
+func (r *resourceType) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+    resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+```
 
-**Rationale:** Captures the universal default; opt-out is free.
+**Rationale:** In Go, embedding a struct that implements `ResourceWithImportState` makes the outer type permanently implement that interface. There's no way to un-implement an interface. If the envelope provided a default ImportState, any resource using it would be forced to support import — even resources like `api_key` that intentionally do not. Keeping ImportState out of the envelope preserves the provider's opt-in convention and matches every other Plugin Framework resource in the codebase.
 
 ### D7. Connection-block injection mirrors the data source envelope
 
@@ -145,7 +151,7 @@ func deleteSystemUser(ctx context.Context, _ *clients.ElasticsearchScopedClient,
 
 - **Risk:** systemuser's no-op delete looks like dead code. **Mitigation:** Leave a one-line comment in `deleteSystemUser` explaining why it's a no-op (system users aren't deletable).
 
-- **Risk:** Default ImportState passthrough hides import behavior from a quick scan of the resource file. **Mitigation:** Document the default in the envelope's package comment alongside the existing data source envelope docs in `internal/entitycore/doc.go`.
+- **Risk:** No envelope default for ImportState means slightly more boilerplate for resources that do support import. **Mitigation:** The boilerplate is a single standardized line; every other PF resource in the provider does exactly this. The consistency gain outweighs the three extra lines per resource.
 
 - **Trade-off:** Update flows aren't wrapped. Each resource still decodes plan, gets the client, reads state where needed, and writes state. Acceptable for now — wrapping later is a refinement, not a rewrite.
 
@@ -158,7 +164,7 @@ func deleteSystemUser(ctx context.Context, _ *clients.ElasticsearchScopedClient,
    - Move `read` body into a package-level `readXxx` function with the new callback signature; delete the `Read` method.
    - Move `delete` body into a package-level `deleteXxx` function; delete the `Delete` method.
    - Strip the `elasticsearch_connection` block from the schema factory; the envelope injects it.
-   - Drop `ImportState` if and only if it was already plain passthrough on `id`.
+   - Add `ImportState` passthrough on `id` to the concrete resource type (opt-in, same as every other PF resource in the provider).
 3. Update `internal/entitycore/doc.go` to document the resource envelope alongside the data source envelope.
 4. Run `make check-lint`, `make build`, `make check-openspec`, and the security acceptance tests.
 

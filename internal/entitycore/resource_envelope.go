@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -57,9 +56,8 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 // Configure, Metadata, and Client.
 //
 // The envelope owns Schema (with elasticsearch_connection block injection),
-// Read, Delete, and a default ImportState passthrough on id. Concrete
-// resources that embed *ElasticsearchResource[T] must implement Create and
-// Update.
+// Read, and Delete. Concrete resources that embed *ElasticsearchResource[T]
+// must implement Create and Update, and may choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	*ResourceBase
 	schemaFactory func() rschema.Schema
@@ -68,9 +66,9 @@ type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 }
 
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
-// Schema, Read, Delete, and ImportState. Concrete resources supply a schema
-// factory (without elasticsearch_connection block), a read callback, and a
-// delete callback.
+// Schema, Read, and Delete. Concrete resources supply a schema factory
+// (without elasticsearch_connection block), a read callback, and a delete
+// callback.
 func NewElasticsearchResource[T ElasticsearchResourceModel](
 	component Component,
 	name string,
@@ -103,7 +101,7 @@ func (r *ElasticsearchResource[T]) Schema(_ context.Context, _ resource.SchemaRe
 func (r *ElasticsearchResource[T]) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
 	resp.Diagnostics.AddError(
 		"Create not implemented",
-		"ElasticsearchResource only provides shared Schema, Read, Delete, and ImportState behavior. Concrete resources embedding ElasticsearchResource must implement Create.",
+		"ElasticsearchResource only provides shared Schema, Read, and Delete behavior. Concrete resources embedding ElasticsearchResource must implement Create.",
 	)
 }
 
@@ -150,7 +148,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 func (r *ElasticsearchResource[T]) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError(
 		"Update not implemented",
-		"ElasticsearchResource only provides shared Schema, Read, Delete, and ImportState behavior. Concrete resources embedding ElasticsearchResource must implement Update.",
+		"ElasticsearchResource only provides shared Schema, Read, and Delete behavior. Concrete resources embedding ElasticsearchResource must implement Update.",
 	)
 }
 
@@ -178,15 +176,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 	resp.Diagnostics.Append(r.deleteFunc(ctx, client, compID.ResourceID, model)...)
 }
 
-// ImportState implements [resource.ResourceWithImportState] as a passthrough
-// on the id attribute. Concrete resources may override this by defining their
-// own ImportState method.
-func (r *ElasticsearchResource[T]) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
 var (
-	_ resource.Resource                = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
-	_ resource.ResourceWithConfigure   = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
-	_ resource.ResourceWithImportState = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
+	_ resource.Resource              = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
+	_ resource.ResourceWithConfigure = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
 )

@@ -66,18 +66,15 @@
 //     significantly from a uniform shape.
 //
 //  2. **Envelope generics** — use [NewElasticsearchResource] to eliminate duplicated
-//     Read/Delete/Schema/ImportState preludes for Elasticsearch-backed resources.
+//     Read/Delete/Schema preludes for Elasticsearch-backed resources.
 //     The model must satisfy [ElasticsearchResourceModel] (value-receiver GetID and
 //     GetElasticsearchConnection). The concrete resource provides a schema factory
 //     (without elasticsearch_connection block), a read callback returning
 //     (T, bool, diag.Diagnostics), and a delete callback. The envelope injects the
 //     connection block, parses composite IDs, resolves the scoped client, and
-//     persists state. Concrete resources keep Create and Update; the envelope's
-//     default Create and Update return diagnostics so forgotten overrides fail
-//     loudly during runtime instead of silently no-oping.
-//
-//     The default ImportState is passthrough on id; concrete resources may override
-//     it by defining their own ImportState method.
+//     persists state. Concrete resources keep Create, Update, and ImportState;
+//     the envelope's default Create and Update return diagnostics so forgotten
+//     overrides fail loudly during runtime instead of silently no-oping.
 //
 //     Example envelope resource:
 //

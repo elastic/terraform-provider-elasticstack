@@ -139,7 +139,7 @@ func TestNewElasticsearchResource_typeAssertions(t *testing.T) {
 	require.NotNil(t, r)
 	require.Implements(t, (*resource.Resource)(nil), r)
 	require.Implements(t, (*resource.ResourceWithConfigure)(nil), r)
-	require.Implements(t, (*resource.ResourceWithImportState)(nil), r)
+
 }
 
 func TestNewElasticsearchResource_Metadata(t *testing.T) {
@@ -598,37 +598,4 @@ func TestNewElasticsearchResource_CreateAndUpdate_concreteOverridesWin(t *testin
 	asResource.Update(context.Background(), resource.UpdateRequest{}, &updateResp)
 	require.True(t, r.updateCalled)
 	require.False(t, updateResp.Diagnostics.HasError())
-}
-
-func TestNewElasticsearchResource_ImportState_defaultPassthrough(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc)
-
-	schemaWithID := rschema.Schema{
-		Attributes: map[string]rschema.Attribute{
-			"id": rschema.StringAttribute{Computed: true},
-		},
-	}
-	state := tfsdk.State{
-		Raw: tftypes.NewValue(tftypes.Object{
-			AttributeTypes: map[string]tftypes.Type{
-				"id": tftypes.String,
-			},
-		}, nil),
-		Schema: schemaWithID,
-	}
-	resp := resource.ImportStateResponse{State: state}
-
-	r.ImportState(ctx, resource.ImportStateRequest{ID: "cluster/user1"}, &resp)
-
-	require.False(t, resp.Diagnostics.HasError())
-
-	var result struct {
-		ID types.String `tfsdk:"id"`
-	}
-	diags := resp.State.Get(ctx, &result)
-	require.False(t, diags.HasError())
-	require.Equal(t, "cluster/user1", result.ID.ValueString())
 }
