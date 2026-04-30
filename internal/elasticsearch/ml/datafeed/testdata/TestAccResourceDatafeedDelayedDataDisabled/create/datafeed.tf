@@ -59,9 +59,9 @@ resource "elasticstack_elasticsearch_ml_datafeed" "test" {
     # check_window intentionally omitted to cover the disabled/empty state
   }
 
-  # Broader expand_wildcards coverage: "all" value not covered by the comprehensive test
+  # Broader expand_wildcards coverage: "hidden" value not covered by the comprehensive test
   indices_options = {
-    expand_wildcards = ["all"]
+    expand_wildcards = ["open", "hidden"]
   }
 
   depends_on = [elasticstack_elasticsearch_ml_anomaly_detection_job.test]

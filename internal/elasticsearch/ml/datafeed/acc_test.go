@@ -104,14 +104,14 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 	const runtimeMappingsUpdate = `{"day_of_week":{"script":{"source":"emit(doc['@timestamp'].value.dayOfWeek)"},"type":"long"}}`
 
 	// Expected normalized JSON for script_fields after Elasticsearch stores them.
-	// Elasticsearch adds lang:"painless" to scripts; keys sorted: "lang" < "source".
+	// Elasticsearch does NOT add lang:"painless" to the stored representation.
 	// Field names sorted: "double_value" < "status_upper".
-	const scriptFieldsCreate = `{"double_value":{"script":{"lang":"painless","source":"doc['value'].value * 2"}},` +
-		`"status_upper":{"script":{"lang":"painless","source":"doc['status'].value.toUpperCase()"}}}`
+	const scriptFieldsCreate = `{"double_value":{"script":{"source":"doc['value'].value * 2"}},` +
+		`"status_upper":{"script":{"source":"doc['status'].value.toUpperCase()"}}}`
 	// Update step changes double_value→triple_value and status_upper→status_lower.
 	// "status_lower" < "triple_value" alphabetically.
-	const scriptFieldsUpdate = `{"status_lower":{"script":{"lang":"painless","source":"doc['status'].value.toLowerCase()"}},` +
-		`"triple_value":{"script":{"lang":"painless","source":"doc['value'].value * 3"}}}`
+	const scriptFieldsUpdate = `{"status_lower":{"script":{"source":"doc['status'].value.toLowerCase()"}},` +
+		`"triple_value":{"script":{"source":"doc['value'].value * 3"}}}`
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -362,7 +362,7 @@ func TestAccResourceDatafeedChunkingModes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr(resourceAddr, "chunking_config.mode", "auto"),
-					resource.TestCheckResourceAttr(resourceAddr, "chunking_config.time_span", ""),
+					resource.TestCheckNoResourceAttr(resourceAddr, "chunking_config.time_span"),
 				),
 			},
 			// Step 2: mode = "off" — time_span must not be set
@@ -376,7 +376,7 @@ func TestAccResourceDatafeedChunkingModes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr(resourceAddr, "chunking_config.mode", "off"),
-					resource.TestCheckResourceAttr(resourceAddr, "chunking_config.time_span", ""),
+					resource.TestCheckNoResourceAttr(resourceAddr, "chunking_config.time_span"),
 				),
 			},
 		},
@@ -407,11 +407,12 @@ func TestAccResourceDatafeedDelayedDataDisabled(t *testing.T) {
 
 					// Disabled delayed data check without check_window: check_window must be absent/empty
 					resource.TestCheckResourceAttr(resourceAddr, "delayed_data_check_config.enabled", "false"),
-					resource.TestCheckResourceAttr(resourceAddr, "delayed_data_check_config.check_window", ""),
+					resource.TestCheckNoResourceAttr(resourceAddr, "delayed_data_check_config.check_window"),
 
-					// Broader expand_wildcards coverage: "all" value
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "1"),
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.0", "all"),
+					// Broader expand_wildcards coverage: "hidden" value not covered by the comprehensive test
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "2"),
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.0", "open"),
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.1", "hidden"),
 				),
 			},
 		},

@@ -40,6 +40,8 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
         function = "count"
       }
     ]
+    # Required when the datafeed uses aggregations to pre-summarize data
+    summary_count_field_name = "doc_count"
   }
 
   data_description = {
