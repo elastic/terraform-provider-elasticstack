@@ -6,9 +6,9 @@
 
 ## 2. Static-setting strict comparison helper
 
-- [ ] 2.1 Add a helper that, given a plan `tfModel` and a `models.Index` returned by Get Index, walks `staticSettingsKeys` and reports a list of mismatches for static settings that are explicitly set in the plan (`Known()` and not null) and differ from the existing index value.
-- [ ] 2.2 Normalize comparison values so Elasticsearch's stringly-typed responses (`"1"`, `"true"`) compare equal to the typed plan values (`int64(1)`, `true`) for each `staticSettingsKeys` attribute type used in the schema.
-- [ ] 2.3 Add unit tests for the helper covering: no mismatches, single mismatch, multiple mismatches, plan attribute null/unknown, value-type normalization for ints, bools, strings, and the list/set typed static settings (`sort.field`, `sort.order`).
+- [x] 2.1 Add a helper that, given a plan `tfModel` and a `models.Index` returned by Get Index, walks `staticSettingsKeys` and reports a list of mismatches for static settings that are explicitly set in the plan (`Known()` and not null) and differ from the existing index value.
+- [x] 2.2 Normalize comparison values so Elasticsearch's stringly-typed responses (`"1"`, `"true"`) compare equal to the typed plan values (`int64(1)`, `true`) for each `staticSettingsKeys` attribute type used in the schema.
+- [x] 2.3 Add unit tests for the helper covering: no mismatches, single mismatch, multiple mismatches, plan attribute null/unknown, value-type normalization for ints, bools, strings, and the list/set typed static settings (`sort.field`, `sort.order`).
 
 ## 3. Adopt branch in Create
 
