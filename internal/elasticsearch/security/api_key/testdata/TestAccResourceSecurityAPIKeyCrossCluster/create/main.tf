@@ -13,7 +13,10 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
   access = {
     search = [
       {
-        names = ["logs-*", "metrics-*"]
+        names                    = ["logs-*", "metrics-*"]
+        field_security           = jsonencode({ grant = ["title", "body"] })
+        query                    = jsonencode({ match = { status = "published" } })
+        allow_restricted_indices = true
       }
     ]
     replication = [
