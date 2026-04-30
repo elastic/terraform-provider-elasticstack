@@ -1047,14 +1047,9 @@ func removeBrokenDiscriminator(schema *Schema) {
 }
 
 func fixPutSecurityRoleName(schema *Schema) {
-	putEndpoint := schema.MustGetPath("/api/security/role/{name}").MustGetEndpoint("put")
-	putEndpoint.Delete("requestBody.content.application/json.schema.properties.kibana.items.properties.base.anyOf")
-	putEndpoint.Move("requestBody.content.application/json.schema.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.kibana.items.properties.spaces")
-
-	postEndpoint := schema.MustGetPath("/api/security/roles").MustGetEndpoint("post")
-	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.additionalProperties", "requestBody.content.application/json.schema.properties.roles")
-	postEndpoint.Delete("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.base.anyOf")
-	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces")
+	schema.Components.Delete("schemas.Kibana_HTTP_APIs_security_role_kibana_privilege.properties.base.anyOf")
+	schema.Components.Move("schemas.Kibana_HTTP_APIs_security_role_kibana_privilege.properties.spaces.anyOf.1", "schemas.Kibana_HTTP_APIs_security_role_kibana_privilege.properties.spaces")
+	schema.Components.Move("schemas.Kibana_HTTP_APIs_security_roles_bulk_create_or_update_payload.properties.roles.additionalProperties", "schemas.Kibana_HTTP_APIs_security_roles_bulk_create_or_update_payload.properties.roles")
 }
 
 func fixGetSpacesParams(schema *Schema) {
