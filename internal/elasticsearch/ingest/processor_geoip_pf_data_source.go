@@ -56,7 +56,10 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
+		m.TargetField = types.StringValue("geoip")
+		body.TargetField = "geoip"
+	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
@@ -116,6 +119,7 @@ func NewProcessorGeoIPDataSource() datasource.DataSource {
 		"target_field": schema.StringAttribute{
 			Description: "The field that will hold the geographical information looked up from the MaxMind database.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"ignore_missing": schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist, the processor quietly exits without modifying the document.",

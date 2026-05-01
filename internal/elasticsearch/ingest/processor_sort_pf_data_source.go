@@ -55,7 +55,10 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.Order) {
+	if m.Order.IsNull() || m.Order.IsUnknown() {
+		m.Order = types.StringValue("asc")
+		body.Order = "asc"
+	} else {
 		body.Order = m.Order.ValueString()
 	}
 	if IsKnown(m.TargetField) {
@@ -87,6 +90,7 @@ func NewProcessorSortDataSource() datasource.DataSource {
 		"order": schema.StringAttribute{
 			Description: "The sort order to use. Accepts `asc` or `desc`.",
 			Optional:    true,
+			Computed:    true,
 			Validators:  []validator.String{stringvalidator.OneOf("asc", "desc")},
 		},
 		"target_field": schema.StringAttribute{

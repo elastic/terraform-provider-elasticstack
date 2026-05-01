@@ -71,7 +71,10 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.Fields = elems
 	}
-	if IsKnown(m.TargetField) {
+	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
+		m.TargetField = types.StringValue("fingerprint")
+		body.TargetField = "fingerprint"
+	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
@@ -83,7 +86,10 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.Salt) {
 		body.Salt = m.Salt.ValueString()
 	}
-	if IsKnown(m.Method) {
+	if m.Method.IsNull() || m.Method.IsUnknown() {
+		m.Method = types.StringValue("SHA-1")
+		body.Method = "SHA-1"
+	} else {
 		body.Method = m.Method.ValueString()
 	}
 
@@ -114,6 +120,7 @@ func NewProcessorFingerprintDataSource() datasource.DataSource {
 		"target_field": schema.StringAttribute{
 			Description: "Output field for the fingerprint.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"ignore_missing": schema.BoolAttribute{
 			Description: "If `true`, the processor ignores any missing `fields`. If all fields are missing, the processor silently exits without modifying the document.",
@@ -127,6 +134,7 @@ func NewProcessorFingerprintDataSource() datasource.DataSource {
 		"method": schema.StringAttribute{
 			Description: "The hash method used to compute the fingerprint.",
 			Optional:    true,
+			Computed:    true,
 			Validators:  []validator.String{stringvalidator.OneOf("MD5", "SHA-1", "SHA-256", "SHA-512", "MurmurHash3")},
 		},
 	}

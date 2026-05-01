@@ -58,7 +58,10 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
+		m.TargetField = types.StringValue("@timestamp")
+		body.TargetField = "@timestamp"
+	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
 	if IsKnown(m.Formats) {
@@ -77,13 +80,22 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.Formats = elems
 	}
-	if IsKnown(m.Timezone) {
+	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
+		m.Timezone = types.StringValue("UTC")
+		body.Timezone = "UTC"
+	} else {
 		body.Timezone = m.Timezone.ValueString()
 	}
-	if IsKnown(m.Locale) {
+	if m.Locale.IsNull() || m.Locale.IsUnknown() {
+		m.Locale = types.StringValue("ENGLISH")
+		body.Locale = "ENGLISH"
+	} else {
 		body.Locale = m.Locale.ValueString()
 	}
-	if IsKnown(m.OutputFormat) {
+	if m.OutputFormat.IsNull() || m.OutputFormat.IsUnknown() {
+		m.OutputFormat = types.StringValue("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+		body.OutputFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+	} else {
 		body.OutputFormat = m.OutputFormat.ValueString()
 	}
 
@@ -112,6 +124,7 @@ func NewProcessorDateDataSource() datasource.DataSource {
 		"target_field": schema.StringAttribute{
 			Description: "The field that will hold the parsed date.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"formats": schema.ListAttribute{
 			Description: "An array of the expected date formats.",
@@ -122,14 +135,17 @@ func NewProcessorDateDataSource() datasource.DataSource {
 		"timezone": schema.StringAttribute{
 			Description: "The timezone to use when parsing the date.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"locale": schema.StringAttribute{
 			Description: "The locale to use when parsing the date, relevant when parsing month names or week days.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"output_format": schema.StringAttribute{
 			Description: "The format to use when writing the date to `target_field`.",
 			Optional:    true,
+			Computed:    true,
 		},
 	}
 

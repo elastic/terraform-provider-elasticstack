@@ -81,13 +81,22 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.DateFormats = elems
 	}
-	if IsKnown(m.Timezone) {
+	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
+		m.Timezone = types.StringValue("UTC")
+		body.Timezone = "UTC"
+	} else {
 		body.Timezone = m.Timezone.ValueString()
 	}
-	if IsKnown(m.Locale) {
+	if m.Locale.IsNull() || m.Locale.IsUnknown() {
+		m.Locale = types.StringValue("ENGLISH")
+		body.Locale = "ENGLISH"
+	} else {
 		body.Locale = m.Locale.ValueString()
 	}
-	if IsKnown(m.IndexNameFormat) {
+	if m.IndexNameFormat.IsNull() || m.IndexNameFormat.IsUnknown() {
+		m.IndexNameFormat = types.StringValue("yyyy-MM-dd")
+		body.IndexNameFormat = "yyyy-MM-dd"
+	} else {
 		body.IndexNameFormat = m.IndexNameFormat.ValueString()
 	}
 
@@ -130,14 +139,17 @@ func NewProcessorDateIndexNameDataSource() datasource.DataSource {
 		"timezone": schema.StringAttribute{
 			Description: "The timezone to use when parsing the date and when date math index supports resolves expressions into concrete index names.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"locale": schema.StringAttribute{
 			Description: "The locale to use when parsing the date from the document being preprocessed, relevant when parsing month names or week days.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"index_name_format": schema.StringAttribute{
 			Description: "The format to be used when printing the parsed date into the index name.",
 			Optional:    true,
+			Computed:    true,
 		},
 	}
 

@@ -77,7 +77,10 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.IgnoreEmptyValue = m.IgnoreEmptyValue.ValueBool()
 	}
-	if IsKnown(m.MediaType) {
+	if m.MediaType.IsNull() || m.MediaType.IsUnknown() {
+		m.MediaType = types.StringValue("application/json")
+		body.MediaType = "application/json"
+	} else {
 		body.MediaType = m.MediaType.ValueString()
 	}
 
@@ -134,6 +137,7 @@ func NewProcessorSetDataSource() datasource.DataSource {
 		"media_type": schema.StringAttribute{
 			Description: "The media type for encoding value.",
 			Optional:    true,
+			Computed:    true,
 		},
 	}
 

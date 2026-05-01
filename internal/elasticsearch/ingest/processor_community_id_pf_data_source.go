@@ -92,7 +92,10 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if IsKnown(m.Seed) {
+	if m.Seed.IsNull() || m.Seed.IsUnknown() {
+		m.Seed = types.Int64Value(0)
+		body.Seed = intPtr(0)
+	} else {
 		body.Seed = intPtr(m.Seed.ValueInt64())
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
@@ -151,6 +154,7 @@ func NewProcessorCommunityIDDataSource() datasource.DataSource {
 		"seed": schema.Int64Attribute{
 			Description: communityIDSeedDescription,
 			Optional:    true,
+			Computed:    true,
 			Validators:  []validator.Int64{int64validator.Between(0, 65535)},
 		},
 		"transport": schema.StringAttribute{

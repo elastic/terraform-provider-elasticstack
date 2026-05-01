@@ -81,10 +81,16 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
 	}
-	if IsKnown(m.Separator) {
+	if m.Separator.IsNull() || m.Separator.IsUnknown() {
+		m.Separator = types.StringValue(",")
+		body.Separator = ","
+	} else {
 		body.Separator = m.Separator.ValueString()
 	}
-	if IsKnown(m.Quote) {
+	if m.Quote.IsNull() || m.Quote.IsUnknown() {
+		m.Quote = types.StringValue("\"")
+		body.Quote = "\""
+	} else {
 		body.Quote = m.Quote.ValueString()
 	}
 	if m.Trim.IsNull() || m.Trim.IsUnknown() {
@@ -133,10 +139,12 @@ func NewProcessorCSVDataSource() datasource.DataSource {
 		"separator": schema.StringAttribute{
 			Description: "Separator used in CSV, has to be single character string.",
 			Optional:    true,
+			Computed:    true,
 		},
 		"quote": schema.StringAttribute{
 			Description: "Quote used in CSV, has to be single character string",
 			Optional:    true,
+			Computed:    true,
 		},
 		"trim": schema.BoolAttribute{
 			Description: "Trim whitespaces in unquoted fields.",
