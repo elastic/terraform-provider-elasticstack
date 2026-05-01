@@ -31,6 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const mlJobStateResourceName = "elasticstack_elasticsearch_ml_job_state.test"
+
 func TestAccResourceMLJobState(t *testing.T) {
 	jobID := fmt.Sprintf("test-ml-job-state-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -44,11 +46,11 @@ func TestAccResourceMLJobState(t *testing.T) {
 					"job_id": config.StringVariable(jobID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_id", jobID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "state", "opened"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "force", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_timeout", "30s"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_job_state.test", "id"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_timeout", "30s"),
+					resource.TestCheckResourceAttrSet(mlJobStateResourceName, "id"),
 					// Verify that the ML job was created by the anomaly detector resource
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_id", jobID),
 				),
@@ -60,11 +62,11 @@ func TestAccResourceMLJobState(t *testing.T) {
 					"job_id": config.StringVariable(jobID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_id", jobID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "state", "closed"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "force", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_timeout", "30s"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_job_state.test", "id"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "closed"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_timeout", "30s"),
+					resource.TestCheckResourceAttrSet(mlJobStateResourceName, "id"),
 				),
 			},
 			{
@@ -76,11 +78,11 @@ func TestAccResourceMLJobState(t *testing.T) {
 					"job_timeout": config.StringVariable("1m"),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_id", jobID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "state", "opened"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "force", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_timeout", "1m"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_job_state.test", "id"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "force", "true"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_timeout", "1m"),
+					resource.TestCheckResourceAttrSet(mlJobStateResourceName, "id"),
 				),
 			},
 			{
@@ -91,12 +93,12 @@ func TestAccResourceMLJobState(t *testing.T) {
 					"force":       config.BoolVariable(true),
 					"job_timeout": config.StringVariable("1m"),
 				},
-				ResourceName:            "elasticstack_elasticsearch_ml_job_state.test",
+				ResourceName:            mlJobStateResourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force", "job_timeout", "timeouts"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_job_state.test"]
+					rs := s.RootModule().Resources[mlJobStateResourceName]
 					return rs.Primary.ID, nil
 				},
 			},
@@ -130,10 +132,10 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 					"job_id": config.StringVariable(jobID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_id", jobID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "state", "opened"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "force", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "job_timeout", "30s"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_timeout", "30s"),
 				),
 			},
 			{
@@ -142,11 +144,11 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
-				ResourceName:      "elasticstack_elasticsearch_ml_job_state.test",
+				ResourceName:      mlJobStateResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_job_state.test"]
+					rs := s.RootModule().Resources[mlJobStateResourceName]
 					return rs.Primary.ID, nil
 				},
 			},
@@ -159,7 +161,7 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 // those (same pattern as ml data feed state import tests).
 func TestAccResourceMLJobStateImportWithOptions(t *testing.T) {
 	jobID := fmt.Sprintf("test-ml-job-state-import-opts-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_job_state.test"
+	resourceName := mlJobStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -207,7 +209,7 @@ func TestAccResourceMLJobStateImportWithOptions(t *testing.T) {
 // step 3 (reversal) restores defaults and re-verifies.
 func TestAccResourceMLJobStateForceAndTimeoutUpdate(t *testing.T) {
 	jobID := fmt.Sprintf("test-ml-job-upd-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_job_state.test"
+	resourceName := mlJobStateResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -273,7 +275,7 @@ func TestAccResourceMLJobStateExplicitConnection(t *testing.T) {
 		endpointVars = append(endpointVars, config.StringVariable(endpoint))
 	}
 	jobID := fmt.Sprintf("test-ml-job-state-explicit-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_job_state.test"
+	resourceName := mlJobStateResourceName
 
 	// Build per-endpoint assertions for all indices.
 	openedChecks := []resource.TestCheckFunc{
@@ -417,7 +419,7 @@ func TestAccResourceMLJobStateExplicitConnectionAPIKey(t *testing.T) {
 		endpointVars = append(endpointVars, config.StringVariable(endpoint))
 	}
 	jobID := fmt.Sprintf("test-ml-job-apikey-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	resourceName := "elasticstack_elasticsearch_ml_job_state.test"
+	resourceName := mlJobStateResourceName
 
 	checks := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(resourceName, "state", "opened"),
@@ -502,7 +504,7 @@ func TestAccResourceMLJobState_update_timeout(t *testing.T) {
 					"job_id": config.StringVariable(jobID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_job_state.test", "state", "closed"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "closed"),
 				),
 			},
 			// Step 2: attempt to update to opened with a very short timeout - expect failure.
