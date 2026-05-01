@@ -13,7 +13,7 @@
 
 ## 3. Requirements Update
 
-- [ ] 3.1 Update REQ-011 in `openspec/specs/kibana-data-view/spec.md` to match the modified requirement in the change delta spec (mark `runtime_field_map` as `Computed`, add scenario for omitted config with persisted API value)
+- [x] 3.1 Update REQ-011 in `openspec/specs/kibana-data-view/spec.md` to match the modified requirement in the change delta spec (mark `runtime_field_map` as `Computed`, add scenario for omitted config with persisted API value)
 
 ## 4. Validation
 
