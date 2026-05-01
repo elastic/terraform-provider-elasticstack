@@ -65,6 +65,9 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		policy = p
 		break
 	}
+	if policyType == "" {
+		return nil, diag.Errorf("enrich policy %s has no recognized policy type", policyName)
+	}
 
 	name := policyName
 	if policy.Name != nil {
