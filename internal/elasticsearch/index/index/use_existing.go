@@ -223,7 +223,10 @@ func planStringSliceForSortFieldSet(v any) ([]string, string) {
 			return nil, ""
 		}
 		var arr []string
-		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil && len(arr) > 0 {
+		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
+			if len(arr) == 0 {
+				return nil, ""
+			}
 			return arr, formatAsSortedUniqueSet(arr)
 		}
 		one := []string{trimmed}
@@ -251,7 +254,10 @@ func planStringSliceForSortOrder(v any) ([]string, string) {
 			return nil, ""
 		}
 		var arr []string
-		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil && len(arr) > 0 {
+		if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
+			if len(arr) == 0 {
+				return nil, ""
+			}
 			return arr, strings.Join(arr, ", ")
 		}
 		return []string{trimmed}, trimmed

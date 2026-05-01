@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -150,7 +151,7 @@ func (r *Resource) adoptExistingIndexOnCreate(
 		return
 	}
 
-	if !plan.Alias.Equal(synthetic.Alias) {
+	if typeutils.IsKnown(plan.Alias) && !plan.Alias.Equal(synthetic.Alias) {
 		resp.Diagnostics.Append(r.updateAliases(ctx, client, concreteName, planAPIModel.Aliases, syntheticAPIModel.Aliases)...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -162,9 +163,11 @@ func (r *Resource) adoptExistingIndexOnCreate(
 		return
 	}
 
-	resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, plan.Mappings, synthetic.Mappings)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if typeutils.IsKnown(plan.Mappings) {
+		resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, plan.Mappings, synthetic.Mappings)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	id, sdkDiags := client.ID(ctx, concreteName)
@@ -179,6 +182,13 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	finalModel, diags := readIndex(ctx, *plan, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if finalModel == nil {
+		resp.Diagnostics.AddError(
+			"Index disappeared during adoption",
+			fmt.Sprintf("index %q was present for updates but not found when reading final state", concreteName),
+		)
 		return
 	}
 
