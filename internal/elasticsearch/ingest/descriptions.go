@@ -49,6 +49,9 @@ var processorEnrichDataSourceDescription string
 //go:embed descriptions/fail_data_source.md
 var processorFailDataSourceDescription string
 
+//go:embed processor_foreach_data_source.md
+var foreachDataSourceDescription string
+
 //go:embed descriptions/fingerprint_data_source.md
 var processorFingerprintDataSourceDescription string
 
