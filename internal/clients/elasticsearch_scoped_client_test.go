@@ -541,3 +541,61 @@ func TestGetElasticsearchClientFromSDK_NilFactory(t *testing.T) {
 	_, diags := f.GetElasticsearchClientFromSDK(rd)
 	assert.True(t, diags.HasError(), "GetElasticsearchClientFromSDK on a nil factory must return an error diagnostic")
 }
+
+// --- GetESTypedClient tests ---
+
+func TestGetESTypedClient_ReturnsNonNil(t *testing.T) {
+	t.Parallel()
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"http://localhost:9200"}})
+	if err != nil {
+		t.Fatalf("failed to create elasticsearch client: %v", err)
+	}
+
+	scoped := &ElasticsearchScopedClient{
+		elasticsearch: esClient,
+		esEndpoints:   []string{"http://localhost:9200"},
+	}
+
+	typedClient := scoped.GetESTypedClient()
+	if typedClient == nil {
+		t.Fatal("expected non-nil typed client, got nil")
+	}
+}
+
+func TestGetESTypedClient_CachesResult(t *testing.T) {
+	t.Parallel()
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"http://localhost:9200"}})
+	if err != nil {
+		t.Fatalf("failed to create elasticsearch client: %v", err)
+	}
+
+	scoped := &ElasticsearchScopedClient{
+		elasticsearch: esClient,
+		esEndpoints:   []string{"http://localhost:9200"},
+	}
+
+	first := scoped.GetESTypedClient()
+	second := scoped.GetESTypedClient()
+
+	if first != second {
+		t.Fatal("expected GetESTypedClient to return the same cached pointer, got different pointers")
+	}
+}
+
+func TestGetESTypedClient_PanicsWhenUnconfigured(t *testing.T) {
+	t.Parallel()
+
+	scoped := &ElasticsearchScopedClient{
+		esEndpoints: []string{},
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic when calling GetESTypedClient on unconfigured client, but it did not panic")
+		}
+	}()
+
+	scoped.GetESTypedClient()
+}
