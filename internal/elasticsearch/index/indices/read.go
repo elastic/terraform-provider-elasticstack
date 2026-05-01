@@ -48,8 +48,9 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		indexStateModel := indexTfModel{}
 
 		pDiags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
-		if pDiags.HasError() {
-			return config, pDiags
+		diags.Append(pDiags...)
+		if diags.HasError() {
+			return config, diags
 		}
 
 		indices = append(indices, indexStateModel)
