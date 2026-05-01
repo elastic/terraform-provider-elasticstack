@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,7 +34,7 @@ type processorUserAgentModel struct {
 	TargetField       types.String `tfsdk:"target_field"`
 	IgnoreMissing     types.Bool   `tfsdk:"ignore_missing"`
 	RegexFile         types.String `tfsdk:"regex_file"`
-	Properties        types.List   `tfsdk:"properties"`
+	Properties        types.Set    `tfsdk:"properties"`
 	ExtractDeviceType types.Bool   `tfsdk:"extract_device_type"`
 }
 
@@ -126,11 +124,10 @@ func NewProcessorUserAgentDataSource() datasource.DataSource {
 			Description: "The name of the file in the `config/ingest-user-agent` directory containing the regular expressions for parsing the user agent string.",
 			Optional:    true,
 		},
-		"properties": schema.ListAttribute{
+		"properties": schema.SetAttribute{
 			Description: "Controls what properties are added to `target_field`.",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"extract_device_type": schema.BoolAttribute{
 			Description: "Extracts device type from the user agent string on a best-effort basis. Supported only starting from Elasticsearch version **8.0**",

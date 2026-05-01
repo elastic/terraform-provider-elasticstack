@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,8 +35,8 @@ type processorKVModel struct {
 	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
 	FieldSplit    types.String `tfsdk:"field_split"`
 	ValueSplit    types.String `tfsdk:"value_split"`
-	IncludeKeys   types.List   `tfsdk:"include_keys"`
-	ExcludeKeys   types.List   `tfsdk:"exclude_keys"`
+	IncludeKeys   types.Set    `tfsdk:"include_keys"`
+	ExcludeKeys   types.Set    `tfsdk:"exclude_keys"`
 	Prefix        types.String `tfsdk:"prefix"`
 	TrimKey       types.String `tfsdk:"trim_key"`
 	TrimValue     types.String `tfsdk:"trim_value"`
@@ -49,12 +47,12 @@ func (m *processorKVModel) TypeName() string    { return "kv" }
 func (m *processorKVModel) SetID(id string)     { m.ID = types.StringValue(id) }
 func (m *processorKVModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
 
-func stringListValue(list types.List, diags *diag.Diagnostics) []string {
-	if !IsKnown(list) {
+func stringSetValue(set types.Set, diags *diag.Diagnostics) []string {
+	if !IsKnown(set) {
 		return nil
 	}
-	elems := make([]string, 0, len(list.Elements()))
-	for _, elem := range list.Elements() {
+	elems := make([]string, 0, len(set.Elements()))
+	for _, elem := range set.Elements() {
 		str, ok := elem.(types.String)
 		if !ok || !IsKnown(str) {
 			if !ok {
@@ -98,8 +96,8 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.ValueSplit) {
 		body.ValueSplit = m.ValueSplit.ValueString()
 	}
-	body.IncludeKeys = stringListValue(m.IncludeKeys, &diags)
-	body.ExcludeKeys = stringListValue(m.ExcludeKeys, &diags)
+	body.IncludeKeys = stringSetValue(m.IncludeKeys, &diags)
+	body.ExcludeKeys = stringSetValue(m.ExcludeKeys, &diags)
 	if IsKnown(m.Prefix) {
 		body.Prefix = m.Prefix.ValueString()
 	}
@@ -150,17 +148,15 @@ func NewProcessorKVDataSource() datasource.DataSource {
 			Description: "The field to insert the extracted keys into. Defaults to the root of the document.",
 			Optional:    true,
 		},
-		"include_keys": schema.ListAttribute{
+		"include_keys": schema.SetAttribute{
 			Description: "List of keys to filter and insert into document. Defaults to including all keys",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
-		"exclude_keys": schema.ListAttribute{
+		"exclude_keys": schema.SetAttribute{
 			Description: "List of keys to exclude from document",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"ignore_missing": schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",

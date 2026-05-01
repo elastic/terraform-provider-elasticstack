@@ -44,7 +44,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `if` (String) Conditionally execute the processor
 - `ignore_failure` (Boolean) Ignore failures for the processor.
 - `on_failure` (List of String) Handle failures for the processor.
-- `properties` (List of String) Controls what user related properties are added to the `field`.
+- `properties` (Set of String) Controls what user related properties are added to the `field`.
 - `tag` (String) Identifier for the processor.
 
 ### Read-Only

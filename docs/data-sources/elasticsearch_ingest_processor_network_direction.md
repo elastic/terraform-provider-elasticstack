@@ -63,7 +63,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `if` (String) Conditionally execute the processor
 - `ignore_failure` (Boolean) Ignore failures for the processor.
 - `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- `internal_networks` (List of String) List of internal networks.
+- `internal_networks` (Set of String) List of internal networks.
 - `internal_networks_field` (String) A field on the given document to read the internal_networks configuration from.
 - `on_failure` (List of String) Handle failures for the processor.
 - `source_ip` (String) Field containing the source IP address.

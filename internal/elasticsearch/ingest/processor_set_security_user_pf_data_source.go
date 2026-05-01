@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -33,7 +31,7 @@ type processorSetSecurityUserModel struct {
 	ID         types.String `tfsdk:"id"`
 	JSON       types.String `tfsdk:"json"`
 	Field      types.String `tfsdk:"field"`
-	Properties types.List   `tfsdk:"properties"`
+	Properties types.Set    `tfsdk:"properties"`
 }
 
 func (m *processorSetSecurityUserModel) TypeName() string    { return "set_security_user" }
@@ -93,11 +91,10 @@ func NewProcessorSetSecurityUserDataSource() datasource.DataSource {
 			Description: "The field to store the user information into.",
 			Required:    true,
 		},
-		"properties": schema.ListAttribute{
+		"properties": schema.SetAttribute{
 			Description: "Controls what user related properties are added to the `field`.",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 	}
 

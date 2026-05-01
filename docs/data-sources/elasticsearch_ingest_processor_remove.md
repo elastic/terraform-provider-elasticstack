@@ -35,7 +35,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- `field` (List of String) Fields to be removed.
+- `field` (Set of String) Fields to be removed.
 
 ### Optional
 

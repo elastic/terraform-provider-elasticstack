@@ -36,7 +36,7 @@ type processorCommunityIDModel struct {
 	SourcePort      types.Int64  `tfsdk:"source_port"`
 	DestinationIP   types.String `tfsdk:"destination_ip"`
 	DestinationPort types.Int64  `tfsdk:"destination_port"`
-	IanaNumber      types.String `tfsdk:"iana_number"`
+	IanaNumber      types.Int64  `tfsdk:"iana_number"`
 	IcmpType        types.Int64  `tfsdk:"icmp_type"`
 	IcmpCode        types.Int64  `tfsdk:"icmp_code"`
 	Seed            types.Int64  `tfsdk:"seed"`
@@ -78,7 +78,7 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		body.DestinationPort = intPtr(m.DestinationPort.ValueInt64())
 	}
 	if IsKnown(m.IanaNumber) {
-		body.IanaNumber = m.IanaNumber.ValueString()
+		body.IanaNumber = intPtr(m.IanaNumber.ValueInt64())
 	}
 	if IsKnown(m.IcmpType) {
 		body.IcmpType = intPtr(m.IcmpType.ValueInt64())
@@ -136,7 +136,7 @@ func NewProcessorCommunityIDDataSource() datasource.DataSource {
 			Description: "Field containing the destination port.",
 			Optional:    true,
 		},
-		"iana_number": schema.StringAttribute{
+		"iana_number": schema.Int64Attribute{
 			Description: "Field containing the IANA number.",
 			Optional:    true,
 		},

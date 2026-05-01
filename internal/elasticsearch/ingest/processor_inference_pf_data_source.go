@@ -113,20 +113,7 @@ func NewProcessorInferenceDataSource() datasource.DataSource {
 			Description: "The ID or alias for the trained model, or the ID of the deployment.",
 			Required:    true,
 		},
-		"input_output": schema.SingleNestedAttribute{
-			Description: "Input and output field mappings for the inference processor.",
-			Optional:    true,
-			Attributes: map[string]schema.Attribute{
-				"input_field": schema.StringAttribute{
-					Description: "The field name from which the inference processor reads its input value.",
-					Required:    true,
-				},
-				"output_field": schema.StringAttribute{
-					Description: "The field name to which the inference processor writes its output.",
-					Optional:    true,
-				},
-			},
-		},
+
 		"field_map": schema.MapAttribute{
 			Description: "Maps the document field names to the known field names of the model. Maps the document fields to the model's expected input fields.",
 			Optional:    true,
@@ -138,10 +125,27 @@ func NewProcessorInferenceDataSource() datasource.DataSource {
 		},
 	}
 
+	blocks := map[string]schema.Block{
+		"input_output": schema.SingleNestedBlock{
+			Description: "Input and output field mappings for the inference processor.",
+			Attributes: map[string]schema.Attribute{
+				"input_field": schema.StringAttribute{
+					Description: "The field name from which the inference processor reads its input value.",
+					Required:    true,
+				},
+				"output_field": schema.StringAttribute{
+					Description: "The field name to which the inference processor writes its output.",
+					Optional:    true,
+				},
+			},
+		},
+	}
+
 	maps.Copy(attrs, CommonProcessorSchemaAttributes())
 
 	return NewProcessorDataSource(&processorInferenceModel{}, schema.Schema{
 		Description: processorInferenceDataSourceDescription,
 		Attributes:  attrs,
+		Blocks:      blocks,
 	})
 }

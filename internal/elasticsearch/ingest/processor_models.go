@@ -132,7 +132,7 @@ type processorCommunityIDBody struct {
 	SourcePort      *int   `json:"source_port,omitempty"`
 	DestinationIP   string `json:"destination_ip,omitempty"`
 	DestinationPort *int   `json:"destination_port,omitempty"`
-	IanaNumber      string `json:"iana_number,omitempty"`
+	IanaNumber      *int   `json:"iana_number,omitempty"`
 	IcmpType        *int   `json:"icmp_type,omitempty"`
 	IcmpCode        *int   `json:"icmp_code,omitempty"`
 	Transport       string `json:"transport,omitempty"`

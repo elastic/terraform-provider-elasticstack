@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -35,7 +33,7 @@ type processorNetworkDirectionModel struct {
 	SourceIP              types.String `tfsdk:"source_ip"`
 	DestinationIP         types.String `tfsdk:"destination_ip"`
 	TargetField           types.String `tfsdk:"target_field"`
-	InternalNetworks      types.List   `tfsdk:"internal_networks"`
+	InternalNetworks      types.Set    `tfsdk:"internal_networks"`
 	InternalNetworksField types.String `tfsdk:"internal_networks_field"`
 	IgnoreMissing         types.Bool   `tfsdk:"ignore_missing"`
 }
@@ -120,11 +118,10 @@ func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 			Description: "Output field for the network direction.",
 			Optional:    true,
 		},
-		"internal_networks": schema.ListAttribute{
+		"internal_networks": schema.SetAttribute{
 			Description: "List of internal networks.",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"internal_networks_field": schema.StringAttribute{
 			Description: "A field on the given document to read the internal_networks configuration from.",

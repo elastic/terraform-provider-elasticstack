@@ -41,7 +41,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `description` (String) Description of the processor.
 - `destination_ip` (String) Field containing the destination IP address.
 - `destination_port` (Number) Field containing the destination port.
-- `iana_number` (String) Field containing the IANA number.
+- `iana_number` (Number) Field containing the IANA number.
 - `icmp_code` (Number) Field containing the ICMP code.
 - `icmp_type` (Number) Field containing the ICMP type.
 - `if` (String) Conditionally execute the processor

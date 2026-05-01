@@ -47,11 +47,11 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 ### Optional
 
 - `description` (String) Description of the processor.
-- `exclude_keys` (List of String) List of keys to exclude from document
+- `exclude_keys` (Set of String) List of keys to exclude from document
 - `if` (String) Conditionally execute the processor
 - `ignore_failure` (Boolean) Ignore failures for the processor.
 - `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
-- `include_keys` (List of String) List of keys to filter and insert into document. Defaults to including all keys
+- `include_keys` (Set of String) List of keys to filter and insert into document. Defaults to including all keys
 - `on_failure` (List of String) Handle failures for the processor.
 - `prefix` (String) Prefix to be added to extracted keys.
 - `strip_brackets` (Boolean) If `true` strip brackets `()`, `<>`, `[]` as well as quotes `'` and `"` from extracted values.

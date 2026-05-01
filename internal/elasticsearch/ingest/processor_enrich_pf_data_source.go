@@ -109,7 +109,7 @@ func NewProcessorEnrichDataSource() datasource.DataSource {
 		},
 		"target_field": schema.StringAttribute{
 			Description: "Field added to incoming documents to contain enrich data.",
-			Optional:    true,
+			Required:    true,
 		},
 		"ignore_missing": schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",

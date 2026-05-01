@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,7 +34,7 @@ type processorGeoIPModel struct {
 	TargetField   types.String `tfsdk:"target_field"`
 	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
 	DatabaseFile  types.String `tfsdk:"database_file"`
-	Properties    types.List   `tfsdk:"properties"`
+	Properties    types.Set    `tfsdk:"properties"`
 	FirstOnly     types.Bool   `tfsdk:"first_only"`
 }
 
@@ -128,11 +126,10 @@ func NewProcessorGeoIPDataSource() datasource.DataSource {
 			Description: processorGeoIPDatabaseFileDescription,
 			Optional:    true,
 		},
-		"properties": schema.ListAttribute{
+		"properties": schema.SetAttribute{
 			Description: "Controls what properties are added to the `target_field` based on the geoip lookup.",
 			Optional:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"first_only": schema.BoolAttribute{
 			Description: "If `true` only first found geoip data will be returned, even if field contains array.",

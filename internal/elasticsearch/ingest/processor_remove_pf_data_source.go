@@ -20,11 +20,9 @@ package ingest
 import (
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -32,7 +30,7 @@ type processorRemoveModel struct {
 	CommonProcessorModel
 	ID            types.String `tfsdk:"id"`
 	JSON          types.String `tfsdk:"json"`
-	Field         types.List   `tfsdk:"field"`
+	Field         types.Set    `tfsdk:"field"`
 	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
 }
 
@@ -92,11 +90,10 @@ func NewProcessorRemoveDataSource() datasource.DataSource {
 			Description: "JSON representation of this data source.",
 			Computed:    true,
 		},
-		"field": schema.ListAttribute{
+		"field": schema.SetAttribute{
 			Description: "Fields to be removed.",
 			Required:    true,
 			ElementType: types.StringType,
-			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"ignore_missing": schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
