@@ -20,5 +20,8 @@ resource "elasticstack_kibana_data_view" "dv" {
     name            = var.index_name
     time_field_name = "@timestamp"
     allow_no_index  = true
+    field_attrs = {
+      ingest_failure = { custom_label = "error.ingest_failure", count = 6 }
+    }
   }
 }
