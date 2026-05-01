@@ -16,7 +16,8 @@ The `inference.go` helper functions SHALL use the typed Elasticsearch client (`G
 #### Scenario: UpdateInferenceEndpoint uses typed API
 - **WHEN** `UpdateInferenceEndpoint` updates an inference endpoint
 - **THEN** it SHALL call `typedapi.Inference.Update()`
-- **AND** it SHALL NOT use `esapi.InferenceUpdate` or manual JSON marshaling
+- **AND** it SHALL NOT use `esapi.InferenceUpdate`
+- **AND** it MAY use `.Raw()` to supply a custom JSON body when `types.InferenceEndpoint` serializes `service` (an immutable field the update API rejects); such usage SHALL be documented inline with a design rationale
 
 #### Scenario: DeleteInferenceEndpoint uses typed API
 - **WHEN** `DeleteInferenceEndpoint` deletes an inference endpoint
@@ -29,12 +30,14 @@ The `logstash.go` helper functions SHALL use the typed Elasticsearch client for 
 #### Scenario: PutLogstashPipeline uses typed API
 - **WHEN** `PutLogstashPipeline` creates or updates a logstash pipeline
 - **THEN** it SHALL call `typedapi.Logstash.PutPipeline()` with `types.LogstashPipeline`
-- **AND** it SHALL NOT use `esapi.LogstashPutPipeline` or manual JSON marshaling
+- **AND** it SHALL NOT use `esapi.LogstashPutPipeline`
+- **AND** it MAY use `.Raw()` to preserve pipeline settings that `types.LogstashPipeline` does not fully support; such usage SHALL be documented inline with a design rationale
 
 #### Scenario: GetLogstashPipeline uses typed API
 - **WHEN** `GetLogstashPipeline` reads a logstash pipeline
-- **THEN** it SHALL call `typedapi.Logstash.GetPipeline()` and extract `types.LogstashPipeline` from the response map
+- **THEN** it SHALL call `typedapi.Logstash.GetPipeline()` and extract pipeline data from the response
 - **AND** it SHALL NOT decode JSON from an `*esapi.Response`
+- **AND** it MAY decode from the raw `*http.Response` provided by `.Perform()` when `types.LogstashPipeline` does not fully support all pipeline settings; such usage SHALL be documented inline with a design rationale
 
 #### Scenario: DeleteLogstashPipeline uses typed API
 - **WHEN** `DeleteLogstashPipeline` deletes a logstash pipeline
@@ -70,7 +73,8 @@ The `watch.go` helper functions SHALL use the typed Elasticsearch client for all
 #### Scenario: PutWatch uses typed API
 - **WHEN** `PutWatch` creates or updates a watch
 - **THEN** it SHALL call `typedapi.Watcher.PutWatch()` with `types.Watch` or equivalent typed request fields
-- **AND** it SHALL NOT use `esapi.Watcher.PutWatch` or manual JSON marshaling
+- **AND** it SHALL NOT use `esapi.Watcher.PutWatch`
+- **AND** it MAY use `.Raw()` to preserve dynamic watch body fields (trigger/input/condition/actions/metadata/transform) that the Terraform schema stores as normalized JSON; such usage SHALL be documented inline with a design rationale
 
 #### Scenario: GetWatch uses typed API
 - **WHEN** `GetWatch` reads a watch
