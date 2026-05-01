@@ -49,6 +49,32 @@ type ElasticsearchScopedClient struct {
 	// overrides have been applied. It is used by accessor validation to
 	// distinguish missing endpoint configuration from unexpected nil states.
 	esEndpoints []string
+	// typedClient is the lazily-initialized strongly-typed Elasticsearch client.
+	typedClient *elasticsearch.TypedClient
+	// typedClientOnce ensures typedClient is created exactly once.
+	typedClientOnce sync.Once
+}
+
+// GetESTypedClient returns the strongly-typed Elasticsearch client.
+//
+// The typed client is lazily initialized on the first call by converting the
+// underlying *elasticsearch.Client via ToTyped(). The result is cached so that
+// subsequent calls return the same *elasticsearch.TypedClient without repeated
+// conversion. Initialization is safe for concurrent use by multiple goroutines.
+//
+// The returned typed client shares the same underlying transport, endpoints,
+// and configuration as the untyped client returned by GetESClient(). A product
+// check may run on the typed client's first request, adding marginal latency
+// on first use.
+func (e *ElasticsearchScopedClient) GetESTypedClient() (*elasticsearch.TypedClient, error) {
+	esClient, err := e.GetESClient()
+	if err != nil {
+		return nil, err
+	}
+	e.typedClientOnce.Do(func() {
+		e.typedClient = esClient.ToTyped()
+	})
+	return e.typedClient, nil
 }
 
 // GetESClient returns the underlying go-elasticsearch client. It satisfies the
