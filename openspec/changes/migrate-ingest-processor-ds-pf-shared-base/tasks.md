@@ -1,7 +1,7 @@
 ## 1. Shared Base Infrastructure
 
 - [x] 1.1 Create `internal/elasticsearch/ingest/processor_datasource_base.go` with `ProcessorModel` interface, generic `processorDataSource[T]` struct, and `marshalAndHash()` helper
-- [x] 1.2 Create `internal/elasticsearch/ingest/processor_common.go` with `CommonProcessorModel`, `CommonProcessorSchemaAttributes()`, and `appendCommonFields()` helper
+- [x] 1.2 Create `internal/elasticsearch/ingest/processor_common.go` with `CommonProcessorModel`, `CommonProcessorSchemaAttributes()`, and `toCommonProcessorBody()` helper
 - [x] 1.3 Create `internal/elasticsearch/ingest/processor_models.go` with local inner structs for `drop`, `append`, `script`, `foreach` (keep `json` tags identical to existing `models.ProcessorX`)
 
 ## 2. Representative Processor Migrations

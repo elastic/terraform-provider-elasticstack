@@ -11,7 +11,7 @@ All 39 `elasticstack_elasticsearch_ingest_processor_*` data sources are implemen
 - **Add** `internal/elasticsearch/ingest/processor_common.go` with:
   - `CommonProcessorModel` (PF struct for `description`, `if`, `ignore_failure`, `on_failure`, `tag`)
   - `CommonProcessorSchemaAttributes()` factory
-  - `appendCommonFields()` helper for `MarshalBody()` reuse
+  - `toCommonProcessorBody()` helper for `MarshalBody()` reuse
 - **Add** `internal/elasticsearch/ingest/processor_models.go` with local inner structs for the 4 representatives
 - **Migrate** 4 representative processor data sources to Plugin Framework:
   - `drop` — simplest possible (only common fields, no specific attributes)

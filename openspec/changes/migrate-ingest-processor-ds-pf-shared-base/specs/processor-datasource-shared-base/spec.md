@@ -18,7 +18,7 @@ The system SHALL define a `ProcessorModel` interface that is satisfied by any st
 - THEN it SHALL compile and satisfy the generic constraint
 
 ### Requirement: Common processor fields helper
-The system SHALL provide `CommonProcessorModel` (a struct with `tfsdk` tags for `description`, `if`, `ignore_failure`, `on_failure`, `tag`), `CommonProcessorSchemaAttributes()` returning the common schema attributes, and `appendCommonFields()` for use within `MarshalBody()`.
+The system SHALL provide `CommonProcessorModel` (a struct with `tfsdk` tags for `description`, `if`, `ignore_failure`, `on_failure`, `tag`), `CommonProcessorSchemaAttributes()` returning the common schema attributes, and `toCommonProcessorBody()` for use within `MarshalBody()`.
 
 #### Scenario: Common fields merged into processor schema
 - GIVEN a processor schema factory that merges its specific attributes with `CommonProcessorSchemaAttributes()`
