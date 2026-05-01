@@ -34,7 +34,7 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
-					
+
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.input_field", "foo"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.output_field", "bar"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "ignore_failure", "false"),
@@ -53,7 +53,7 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
-					
+
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.input_field", "foo"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.output_field", "bar"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%", "1"),
@@ -74,7 +74,7 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "updated_endpoint"),
-					
+
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.input_field", "body.content"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.output_field"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%"),
