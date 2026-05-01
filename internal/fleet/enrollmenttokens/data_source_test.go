@@ -39,6 +39,8 @@ var minVersionEnrollmentTokens = version.Must(version.NewVersion("8.6.0"))
 var minVersionEnrollmentTokensSpaceID = version.Must(version.NewVersion("9.1.0"))
 
 func TestAccDataSourceEnrollmentTokens(t *testing.T) {
+	policyID := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
@@ -47,10 +49,13 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionEnrollmentTokens),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"policy_id": config.StringVariable(policyID),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "policy_id", "223b1bf8-240f-463f-8466-5062670d0754"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "id", "223b1bf8-240f-463f-8466-5062670d0754"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", "223b1bf8-240f-463f-8466-5062670d0754"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "policy_id", policyID),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "id", policyID),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", policyID),
 					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test", 1),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.key_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.api_key"),
