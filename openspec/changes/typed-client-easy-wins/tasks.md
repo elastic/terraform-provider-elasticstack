@@ -1,14 +1,14 @@
 ## 1. Inference
 
-- [ ] 1.1 Migrate `PutInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Put()` with `types.InferenceEndpoint`
-- [ ] 1.2 Migrate `GetInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Get()` with `types.InferenceEndpointInfo`
-- [ ] 1.3 Migrate `UpdateInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Update()` with `types.InferenceEndpoint`
-- [ ] 1.4 Migrate `DeleteInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Delete()`
-- [ ] 1.5 Update `internal/elasticsearch/inference/inferenceendpoint/create.go` to compile with migrated `PutInferenceEndpoint` signature
-- [ ] 1.6 Update `internal/elasticsearch/inference/inferenceendpoint/read.go` to compile with migrated `GetInferenceEndpoint` signature
-- [ ] 1.7 Update `internal/elasticsearch/inference/inferenceendpoint/update.go` to compile with migrated `UpdateInferenceEndpoint` signature
-- [ ] 1.8 Update `internal/elasticsearch/inference/inferenceendpoint/delete.go` to compile with migrated `DeleteInferenceEndpoint` signature
-- [ ] 1.9 Remove now-unused custom `InferenceEndpoint` structs from `inference.go` if fully replaced by typed types
+- [x] 1.1 Migrate `PutInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Put()` with `types.InferenceEndpoint`
+- [x] 1.2 Migrate `GetInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Get()` with `types.InferenceEndpointInfo`
+- [x] 1.3 Migrate `UpdateInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Update()` with `types.InferenceEndpoint`
+- [x] 1.4 Migrate `DeleteInferenceEndpoint` in `internal/clients/elasticsearch/inference.go` to use `GetESTypedClient()` and `typedapi.Inference.Delete()`
+- [x] 1.5 Update `internal/elasticsearch/inference/inferenceendpoint/create.go` to compile with migrated `PutInferenceEndpoint` signature
+- [x] 1.6 Update `internal/elasticsearch/inference/inferenceendpoint/read.go` to compile with migrated `GetInferenceEndpoint` signature
+- [x] 1.7 Update `internal/elasticsearch/inference/inferenceendpoint/update.go` to compile with migrated `UpdateInferenceEndpoint` signature
+- [x] 1.8 Update `internal/elasticsearch/inference/inferenceendpoint/delete.go` to compile with migrated `DeleteInferenceEndpoint` signature
+- [x] 1.9 Remove now-unused custom `InferenceEndpoint` structs from `inference.go` if fully replaced by typed types
 
 ## 2. Logstash
 
@@ -20,15 +20,15 @@
 
 ## 3. Enrich
 
-- [ ] 3.1 Migrate `GetEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.GetPolicy()` with `types.Summary`/`types.EnrichPolicy`
-- [ ] 3.2 Migrate `PutEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.PutPolicy()` with `types.EnrichPolicy`
-- [ ] 3.3 Migrate `DeleteEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.DeletePolicy()`
-- [ ] 3.4 Migrate `ExecuteEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.ExecutePolicy()`
-- [ ] 3.5 Handle query string↔`types.Query` conversion at the boundary in enrich helpers
-- [ ] 3.6 Update `internal/elasticsearch/enrich/create.go` to compile with migrated `PutEnrichPolicy` signature
-- [ ] 3.7 Update `internal/elasticsearch/enrich/data_source.go` to compile with migrated `GetEnrichPolicy` signature
-- [ ] 3.8 Update `internal/elasticsearch/enrich/delete.go` to compile with migrated `DeleteEnrichPolicy` signature
-- [ ] 3.9 Remove now-unused custom `enrichPolicyResponse` and `enrichPoliciesResponse` structs from `enrich.go`
+- [x] 3.1 Migrate `GetEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.GetPolicy()` with `types.Summary`/`types.EnrichPolicy`
+- [x] 3.2 Migrate `PutEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.PutPolicy()` with `types.EnrichPolicy`
+- [x] 3.3 Migrate `DeleteEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.DeletePolicy()`
+- [x] 3.4 Migrate `ExecuteEnrichPolicy` in `internal/clients/elasticsearch/enrich.go` to use `GetESTypedClient()` and `typedapi.Enrich.ExecutePolicy()`
+- [x] 3.5 Handle query string↔`types.Query` conversion at the boundary in enrich helpers
+- [x] 3.6 Update `internal/elasticsearch/enrich/create.go` to compile with migrated `PutEnrichPolicy` signature
+- [x] 3.7 Update `internal/elasticsearch/enrich/data_source.go` to compile with migrated `GetEnrichPolicy` signature
+- [x] 3.8 Update `internal/elasticsearch/enrich/delete.go` to compile with migrated `DeleteEnrichPolicy` signature
+- [x] 3.9 Remove now-unused custom `enrichPolicyResponse` and `enrichPoliciesResponse` structs from `enrich.go`
 
 ## 4. Watch
 
