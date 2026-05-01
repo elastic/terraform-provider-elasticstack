@@ -21,35 +21,29 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 func NewEnrichPolicyDataSource() datasource.DataSource {
-	return &enrichPolicyDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentElasticsearch, "enrich_policy")}
-}
-
-type enrichPolicyDataSource struct {
-	*entitycore.DataSourceBase
-}
-
-func (d *enrichPolicyDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = GetDataSourceSchema()
+	return entitycore.NewElasticsearchDataSource[PolicyData](
+		entitycore.ComponentElasticsearch,
+		"enrich_policy",
+		GetDataSourceSchema,
+		readDataSource,
+	)
 }
 
 func GetDataSourceSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: enrichPolicyDataSourceMarkdownDescription,
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -86,44 +80,28 @@ func GetDataSourceSchema() schema.Schema {
 	}
 }
 
-func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data PolicyData
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config PolicyData) (PolicyData, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	policyName := config.Name.ValueString()
 
-	policyName := data.Name.ValueString()
-	client, diags := d.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, sdkDiags := esClient.ID(ctx, policyName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
 	}
+	config.ID = types.StringValue(id.String())
 
-	id, sdkDiags := client.ID(ctx, policyName)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	data.ID = types.StringValue(id.String())
-
-	// Use the same read logic as the resource
-	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, policyName)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, esClient, policyName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
 	}
 
 	if policy == nil {
-		resp.Diagnostics.AddError("Policy not found", fmt.Sprintf("Enrich policy '%s' not found", policyName))
-		return
+		diags.AddError("Policy not found", fmt.Sprintf("Enrich policy '%s' not found", policyName))
+		return config, diags
 	}
 
-	// Convert model to framework types using shared function
-	data.populateFromPolicy(ctx, policy, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	config.populateFromPolicy(ctx, policy, &diags)
+	return config, diags
 }

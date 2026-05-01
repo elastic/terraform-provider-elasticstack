@@ -41,7 +41,8 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 		return config, diags
 	}
 
-	diags = (&config).populateFromAPI(ctx, outputs)
+	pDiags := (&config).populateFromAPI(ctx, outputs)
+	diags.Append(pDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
