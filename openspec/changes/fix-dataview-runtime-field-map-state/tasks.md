@@ -17,6 +17,6 @@
 
 ## 4. Validation
 
-- [ ] 4.1 Run unit tests: `go test ./internal/kibana/dataview/...`
-- [ ] 4.2 Run `make check-lint` to ensure lint passes
-- [ ] 4.3 If a Kibana stack is available, run acceptance tests: `TF_ACC=1 go test -v -run TestAccResourceDataView ./internal/kibana/dataview/... -timeout 20m`
+- [x] 4.1 Run unit tests: `go test ./internal/kibana/dataview/...`
+- [x] 4.2 Run `make check-lint` to ensure lint passes
+- [x] 4.3 If a Kibana stack is available, run acceptance tests: `TF_ACC=1 go test -v -run TestAccResourceDataView ./internal/kibana/dataview/... -timeout 20m`
