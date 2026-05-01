@@ -19,15 +19,21 @@ package exportsavedobjects
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// NewDataSource is a helper function to simplify the provider implementation.
-func NewDataSource() datasource.DataSource {
-	return entitycore.NewKibanaDataSource[dataSourceModel](
-		entitycore.ComponentKibana,
-		"export_saved_objects",
-		getDataSourceSchema,
-		readDataSource,
-	)
+type objectModel struct {
+	Type types.String `tfsdk:"type"`
+	ID   types.String `tfsdk:"id"`
+}
+
+// dataSourceModel maps the data source schema data.
+type dataSourceModel struct {
+	entitycore.KibanaConnectionField
+	ID                    types.String `tfsdk:"id"`
+	SpaceID               types.String `tfsdk:"space_id"`
+	Objects               types.List   `tfsdk:"objects"`
+	ExcludeExportDetails  types.Bool   `tfsdk:"exclude_export_details"`
+	IncludeReferencesDeep types.Bool   `tfsdk:"include_references_deep"`
+	ExportedObjects       types.String `tfsdk:"exported_objects"`
 }

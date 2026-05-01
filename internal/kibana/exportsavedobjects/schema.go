@@ -18,19 +18,13 @@
 package exportsavedobjects
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the schema for the data source.
-func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getDataSourceSchema() schema.Schema {
+	return schema.Schema{
 		Description: "Export Kibana saved objects. This data source allows you to export saved objects from Kibana and store the result in the Terraform state.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -73,24 +67,5 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				Computed:    true,
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
-}
-
-type objectModel struct {
-	Type types.String `tfsdk:"type"`
-	ID   types.String `tfsdk:"id"`
-}
-
-// dataSourceModel maps the data source schema data.
-type dataSourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
-	SpaceID               types.String `tfsdk:"space_id"`
-	Objects               types.List   `tfsdk:"objects"`
-	ExcludeExportDetails  types.Bool   `tfsdk:"exclude_export_details"`
-	IncludeReferencesDeep types.Bool   `tfsdk:"include_references_deep"`
-	ExportedObjects       types.String `tfsdk:"exported_objects"`
+	}
 }
