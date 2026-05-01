@@ -18,14 +18,12 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -33,29 +31,51 @@ import (
 )
 
 func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
-	return doSDKWrite(apiClient, logstashPipeline, "Unable to create or update logstash pipeline",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.LogstashPutPipeline(logstashPipeline.PipelineID, body, esClient.LogstashPutPipeline.WithContext(ctx))
-		},
-	)
+	var diags diag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	b, err := json.Marshal(logstashPipeline)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	res, err := typedClient.Logstash.PutPipeline(logstashPipeline.PipelineID).Raw(bytes.NewReader(b)).Perform(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+
+	if d := diagutil.CheckHTTPError(res, "Unable to create or update logstash pipeline"); d.HasError() {
+		return d
+	}
+
+	return diags
 }
 
 func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(pipelineID), esClient.LogstashGetPipeline.WithContext(ctx))
+
+	res, err := typedClient.Logstash.GetPipeline().Id(pipelineID).Perform(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, "Unable to find logstash pipeline on cluster."); diags.HasError() {
-		return nil, diags
+
+	if d := diagutil.CheckHTTPError(res, "Unable to find logstash pipeline on cluster."); d.HasError() {
+		return nil, d
 	}
 
 	logstashPipeline := make(map[string]models.LogstashPipeline)
@@ -63,9 +83,9 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return nil, diag.FromErr(err)
 	}
 
-	if logstashPipeline, ok := logstashPipeline[pipelineID]; ok {
-		logstashPipeline.PipelineID = pipelineID
-		return &logstashPipeline, diags
+	if pipeline, ok := logstashPipeline[pipelineID]; ok {
+		pipeline.PipelineID = pipelineID
+		return &pipeline, diags
 	}
 
 	diags = append(diags, diag.Diagnostic{
@@ -78,18 +98,16 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.LogstashDeletePipeline(pipelineID, esClient.LogstashDeletePipeline.WithContext(ctx))
 
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete logstash pipeline"); diags.HasError() {
-		return diags
+
+	_, err = typedClient.Logstash.DeletePipeline(pipelineID).Do(ctx)
+	if err != nil {
+		return diag.FromErr(err)
 	}
+
 	return diags
 }
