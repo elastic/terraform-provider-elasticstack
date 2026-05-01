@@ -468,6 +468,8 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "space_id", spaceB),
+					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceA),
+					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceB),
 				),
 			},
 		},
