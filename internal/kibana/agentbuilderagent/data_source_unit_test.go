@@ -21,9 +21,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/stretchr/testify/require"
 )
+
+// Compile-time assertion: agentDataSourceModel implements the optional
+// version-requirements interface. This ensures the envelope will invoke
+// GetVersionRequirements for the agent data source.
+var _ entitycore.KibanaDataSourceWithVersionRequirements = (*agentDataSourceModel)(nil)
 
 // =============================================================================
 // Subtask 5.1 — NewDataSource() interface compliance
@@ -98,4 +104,24 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 		require.Contains(t, resp.Schema.Attributes, attr,
 			"schema Attributes must contain %q", attr)
 	}
+}
+
+// =============================================================================
+// Additional: GetVersionRequirements returns a non-empty requirement
+// =============================================================================
+
+// TestAgentDataSourceModel_GetVersionRequirements confirms that
+// agentDataSourceModel.GetVersionRequirements returns exactly one requirement
+// with MinVersion equal to minKibanaAgentBuilderAPIVersion and a non-empty
+// ErrorMessage.
+func TestAgentDataSourceModel_GetVersionRequirements(t *testing.T) {
+	t.Parallel()
+	var m agentDataSourceModel
+	reqs, diags := m.GetVersionRequirements()
+	require.False(t, diags.HasError(), "GetVersionRequirements must not return error diagnostics")
+	require.Len(t, reqs, 1, "GetVersionRequirements must return exactly one requirement")
+	require.Equal(t, *minKibanaAgentBuilderAPIVersion, reqs[0].MinVersion,
+		"MinVersion must equal minKibanaAgentBuilderAPIVersion")
+	require.NotEmpty(t, reqs[0].ErrorMessage,
+		"ErrorMessage must not be empty")
 }

@@ -17,7 +17,7 @@
 - [x] 3.2 Migrate `enrich_policy` data source to envelope: embed `ElasticsearchConnectionField` in model, extract schema factory, convert `Read` to callback, update `NewEnrichPolicyDataSource`, remove `entitycore_contract_test.go`
 - [x] 3.3 Migrate `indices` data source to envelope: embed `ElasticsearchConnectionField` in model, extract schema factory, convert `Read` to callback, update `NewDataSource`
 - [x] 3.4 Migrate `index_template` data source to envelope: embed `ElasticsearchConnectionField` in model, extract schema factory, convert `Read` to callback, update `NewDataSource`, verify not-found empty-model behavior is preserved
-- [ ] 3.5 Run acceptance tests for all Batch 3 data sources; verify no regressions
+- [x] 3.5 Run acceptance tests for all Batch 3 data sources; verify no regressions
 
 ## 4. Agent Builder agent model cleanup
 
