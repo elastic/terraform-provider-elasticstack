@@ -1,1 +1,0 @@
-No spec changes required for this change. The 4 representative processor data sources (`append`, `drop`, `foreach`, `script`) are migrated from Plugin SDK to Plugin Framework with identical schema attributes, types, defaults, validation rules, JSON output format, and hash-based ID generation. No user-facing requirements change.
