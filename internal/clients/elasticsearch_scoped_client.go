@@ -67,13 +67,15 @@ type ElasticsearchScopedClient struct {
 // check may run on the typed client's first request, adding marginal latency
 // on first use.
 func (e *ElasticsearchScopedClient) GetESTypedClient() *elasticsearch.TypedClient {
+	// Validate the client is configured before using sync.Once so that
+	// a programmer-error panic does not permanently consume the Once.
+	esClient, err := e.GetESClient()
+	if err != nil {
+		// Programmer error: GetESTypedClient was called before the client
+		// was configured. Panic to surface the mistake immediately.
+		panic(err)
+	}
 	e.typedClientOnce.Do(func() {
-		esClient, err := e.GetESClient()
-		if err != nil {
-			// Programmer error: GetESTypedClient was called before the client
-			// was configured. Panic to surface the mistake immediately.
-			panic(err)
-		}
 		e.typedClient = esClient.ToTyped()
 	})
 	return e.typedClient
