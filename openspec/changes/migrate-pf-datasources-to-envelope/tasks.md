@@ -21,20 +21,20 @@
 
 ## 4. Agent Builder agent model cleanup
 
-- [ ] 4.1 Update `agentbuilderagent/models.go` to embed `entitycore.KibanaConnectionField` instead of explicit `KibanaConnection` field
-- [ ] 4.2 Remove `GetKibanaConnection()` and `GetVersionRequirements()` methods from `agentDataSourceModel`
-- [ ] 4.3 Update any test or struct literal that references the old field name or methods
-- [ ] 4.4 Run `agentbuilder_agent` acceptance tests; verify no regressions
+- [x] 4.1 Update `agentbuilderagent/models.go` to embed `entitycore.KibanaConnectionField` instead of explicit `KibanaConnection` field
+- [x] 4.2 Remove `GetKibanaConnection()` and `GetVersionRequirements()` methods from `agentDataSourceModel`
+- [x] 4.3 Update any test or struct literal that references the old field name or methods
+- [x] 4.4 Run `agentbuilder_agent` acceptance tests; verify no regressions
 
 ## 5. Remove dead code
 
-- [ ] 5.1 Delete `internal/entitycore/data_source_base.go`
-- [ ] 5.2 Delete `internal/entitycore/data_source_base_test.go`
-- [ ] 5.3 Verify `go build` passes with no references to `DataSourceBase`
+- [x] 5.1 Delete `internal/entitycore/data_source_base.go`
+- [x] 5.2 Delete `internal/entitycore/data_source_base_test.go`
+- [x] 5.3 Verify `go build` passes with no references to `DataSourceBase`
 
 ## 6. Final verification
 
-- [ ] 6.1 Run `make build` successfully
-- [ ] 6.2 Run `make check-openspec` successfully
-- [ ] 6.3 Run `make check-lint` successfully
-- [ ] 6.4 Confirm all PF data source constructors in `provider/plugin_framework.go` still return valid `datasource.DataSource` values
+- [x] 6.1 Run `make build` successfully
+- [x] 6.2 Run `make check-openspec` successfully
+- [x] 6.3 Run `make check-lint` successfully (packages linted individually; full make check-lint has unrelated OAS generation timeout)
+- [x] 6.4 Confirm all PF data source constructors in `provider/plugin_framework.go` still return valid `datasource.DataSource` values
