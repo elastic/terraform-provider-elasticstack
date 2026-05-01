@@ -23,31 +23,26 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func NewRoleMappingDataSource() datasource.DataSource {
-	return &roleMappingDataSource{}
+	return entitycore.NewElasticsearchDataSource[Data](
+		entitycore.ComponentElasticsearch,
+		"security_role_mapping",
+		getDataSourceSchema,
+		readDataSource,
+	)
 }
 
-type roleMappingDataSource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (d *roleMappingDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_security_role_mapping"
-}
-
-func (d *roleMappingDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getDataSourceSchema() schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: "Retrieves role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html",
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -85,49 +80,30 @@ func (d *roleMappingDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 	}
 }
 
-func (d *roleMappingDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	d.client = client
-}
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config Data) (Data, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	roleMappingName := config.Name.ValueString()
 
-func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, sdkDiags := esClient.ID(ctx, roleMappingName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
 	}
+	config.ID = types.StringValue(id.String())
 
-	roleMappingName := data.Name.ValueString()
-
-	client, diags := d.client.GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id, sdkDiags := client.ID(ctx, roleMappingName)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	data.ID = types.StringValue(id.String())
-
-	// Use the extracted read function
-	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	readData, readDiags := readRoleMapping(ctx, config, roleMappingName, esClient)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
 	if readData == nil {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Role mapping not found",
 			fmt.Sprintf("Role mapping '%s' not found", roleMappingName),
 		)
-		return
+		return config, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return *readData, diags
 }
