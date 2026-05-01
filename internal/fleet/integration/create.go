@@ -103,9 +103,18 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// If space_id is set, use space-aware installation
+	spaceAware := false
 	if typeutils.IsKnown(planModel.SpaceID) {
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
+		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
+		respDiags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if respDiags.HasError() {
+			return
+		}
+		spaceAware = supported
 	}
+	// spaceAware will be used by task 4 (Create/Update space-aware logic).
+	_ = spaceAware
 
 	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 	respDiags.Append(diags...)
