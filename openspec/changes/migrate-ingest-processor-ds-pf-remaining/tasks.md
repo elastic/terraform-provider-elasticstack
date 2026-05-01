@@ -53,5 +53,5 @@
 ## 4. Verification
 
 - [x] 4.1 Run `make build` and verify no compilation errors
-- [ ] 4.2 Run full acceptance test suite for all migrated processor data sources
-- [ ] 4.3 Run `make check-openspec` and verify the change passes validation
+- [x] 4.2 Run full acceptance test suite for all migrated processor data sources
+- [x] 4.3 Run `make check-openspec` and verify the change passes validation

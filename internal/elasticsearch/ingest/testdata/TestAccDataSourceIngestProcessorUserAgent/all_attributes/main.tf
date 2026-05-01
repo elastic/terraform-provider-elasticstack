@@ -9,4 +9,9 @@ data "elasticstack_elasticsearch_ingest_processor_user_agent" "test" {
   properties          = ["os", "name", "device"]
   extract_device_type = true
   ignore_missing      = true
+  ignore_failure      = true
+  description         = "parse user agent"
+  if                  = "ctx.agent != null"
+  tag                 = "ua-tag"
+  on_failure          = ["{\"set\":{\"field\":\"error.message\",\"value\":\"ua failed\"}}"]
 }
