@@ -92,7 +92,7 @@ func NewProcessorCircleDataSource() datasource.DataSource {
 			Computed:    true,
 		},
 		"field": schema.StringAttribute{
-			Description: "The string-valued field to trim whitespace from.",
+			Description: "The field containing the circle geometry to convert.",
 			Required:    true,
 		},
 		"target_field": schema.StringAttribute{
