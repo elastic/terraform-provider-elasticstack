@@ -20,9 +20,11 @@ package ingest
 import (
 	"maps"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -59,8 +61,12 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		elems := make([]string, 0, len(m.Value.Elements()))
 		for _, elem := range m.Value.Elements() {
 			str, ok := elem.(types.String)
-			if !ok {
-				diags.AddError("Invalid value element type", "expected types.String")
+			if !ok || !IsKnown(str) {
+				if !ok {
+					diags.AddError("Invalid value element type", "expected types.String")
+				} else {
+					diags.AddError("Unknown value element", "value elements cannot be unknown")
+				}
 				continue
 			}
 			elems = append(elems, str.ValueString())
@@ -106,6 +112,7 @@ func NewProcessorAppendDataSource() datasource.DataSource {
 			Description: "The value to be appended.",
 			Required:    true,
 			ElementType: types.StringType,
+			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"allow_duplicates": schema.BoolAttribute{
 			Description: "If `false`, the processor does not append values already present in the field.",

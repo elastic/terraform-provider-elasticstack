@@ -18,11 +18,10 @@
 package ingest
 
 import (
-	"encoding/json"
-
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -57,56 +56,11 @@ func CommonProcessorSchemaAttributes() map[string]schema.Attribute {
 			Description: "Handle failures for the processor.",
 			Optional:    true,
 			ElementType: jsontypes.NormalizedType{},
+			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
 		"tag": schema.StringAttribute{
 			Description: "Identifier for the processor.",
 			Optional:    true,
 		},
 	}
-}
-
-// appendCommonFields populates dst with the common processor fields from model.
-// It returns any diagnostics collected while parsing on_failure JSON values.
-//
-//nolint:unused // will be used by concrete processor MarshalBody implementations
-func appendCommonFields(dst map[string]any, model CommonProcessorModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if IsKnown(model.Description) {
-		dst["description"] = model.Description.ValueString()
-	}
-	if IsKnown(model.If) {
-		dst["if"] = model.If.ValueString()
-	}
-	if IsKnown(model.IgnoreFailure) {
-		dst["ignore_failure"] = model.IgnoreFailure.ValueBool()
-	}
-	if IsKnown(model.OnFailure) {
-		elems := make([]map[string]any, 0, len(model.OnFailure.Elements()))
-		for _, elem := range model.OnFailure.Elements() {
-			norm, ok := elem.(jsontypes.Normalized)
-			if !ok {
-				diags.AddError("Invalid on_failure element type", "expected jsontypes.Normalized")
-				continue
-			}
-			if !IsKnown(norm) {
-				diags.AddError("Unknown on_failure element", "on_failure elements cannot be unknown")
-				continue
-			}
-			var item map[string]any
-			if err := json.Unmarshal([]byte(norm.ValueString()), &item); err != nil {
-				diags.AddError("Failed to parse on_failure JSON", err.Error())
-				continue
-			}
-			elems = append(elems, item)
-		}
-		if len(elems) > 0 {
-			dst["on_failure"] = elems
-		}
-	}
-	if IsKnown(model.Tag) {
-		dst["tag"] = model.Tag.ValueString()
-	}
-
-	return diags
 }

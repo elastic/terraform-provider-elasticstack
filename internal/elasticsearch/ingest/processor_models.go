@@ -38,7 +38,7 @@ type CommonProcessorBody struct {
 // CommonProcessorBody. It returns any diagnostics collected while parsing
 // on_failure JSON values.
 //
-//nolint:unused // will be used by concrete processor MarshalBody implementations
+
 func toCommonProcessorBody(model CommonProcessorModel) (CommonProcessorBody, diag.Diagnostics) {
 	var body CommonProcessorBody
 	var diags diag.Diagnostics
@@ -80,14 +80,14 @@ func toCommonProcessorBody(model CommonProcessorModel) (CommonProcessorBody, dia
 
 // processorDropBody is the JSON body for the drop processor.
 //
-//nolint:unused // will be used by concrete processor MarshalBody implementations
+
 type processorDropBody struct {
 	CommonProcessorBody
 }
 
 // processorAppendBody is the JSON body for the append processor.
 //
-//nolint:unused // will be used by concrete processor MarshalBody implementations
+
 type processorAppendBody struct {
 	CommonProcessorBody
 	Field           string   `json:"field"`
@@ -98,7 +98,7 @@ type processorAppendBody struct {
 
 // processorScriptBody is the JSON body for the script processor.
 //
-//nolint:unused // will be used by concrete processor MarshalBody implementations
+
 type processorScriptBody struct {
 	CommonProcessorBody
 	Lang     string         `json:"lang,omitempty"`
@@ -109,7 +109,7 @@ type processorScriptBody struct {
 
 // processorForeachBody is the JSON body for the foreach processor.
 //
-//nolint:unused // will be used by concrete processor MarshalBody implementations
+
 type processorForeachBody struct {
 	CommonProcessorBody
 	Field         string         `json:"field"`

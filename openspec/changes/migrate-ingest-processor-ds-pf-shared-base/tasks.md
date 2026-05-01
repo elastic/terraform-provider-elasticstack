@@ -6,10 +6,10 @@
 
 ## 2. Representative Processor Migrations
 
-- [ ] 2.1 Create `internal/elasticsearch/ingest/processor_drop_data_source.go` (PF schema + model + `MarshalBody()` + constructor)
-- [ ] 2.2 Create `internal/elasticsearch/ingest/processor_append_data_source.go` (PF schema + model + `MarshalBody()` + constructor)
-- [ ] 2.3 Create `internal/elasticsearch/ingest/processor_script_data_source.go` (PF schema + model + `MarshalBody()` + constructor; include `ExactlyOneOf` validator for `script_id` vs `source`)
-- [ ] 2.4 Create `internal/elasticsearch/ingest/processor_foreach_data_source.go` (PF schema + model + `MarshalBody()` + constructor; handle `processor` JSON string → map parsing)
+- [x] 2.1 Create `internal/elasticsearch/ingest/processor_drop_data_source.go` (PF schema + model + `MarshalBody()` + constructor)
+- [x] 2.2 Create `internal/elasticsearch/ingest/processor_append_data_source.go` (PF schema + model + `MarshalBody()` + constructor)
+- [x] 2.3 Create `internal/elasticsearch/ingest/processor_script_data_source.go` (PF schema + model + `MarshalBody()` + constructor; include `ExactlyOneOf` validator for `script_id` vs `source`)
+- [x] 2.4 Create `internal/elasticsearch/ingest/processor_foreach_data_source.go` (PF schema + model + `MarshalBody()` + constructor; handle `processor` JSON string → map parsing)
 
 ## 3. Provider Wiring
 
