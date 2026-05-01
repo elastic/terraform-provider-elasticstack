@@ -26,12 +26,22 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const remoteMonitoringUser = "remote_monitoring_user"
+const systemUserResourceName = "elasticstack_elasticsearch_security_system_user.remote_monitoring_user"
 
 func TestAccResourceSecuritySystemUser(t *testing.T) {
-	newPassword := "new_password"
+	password1 := "new_password_1"
+	password2 := "new_password_2"
+	password3 := "new_password_3"
+	passwordHashBytes, err := bcrypt.GenerateFromPassword([]byte(password3), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash password for test: %s", err)
+	}
+	passwordHash := string(passwordHashBytes)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -42,8 +52,11 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 					"username": config.StringVariable(remoteMonitoringUser),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
 				),
 			},
 			{
@@ -51,12 +64,74 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"username": config.StringVariable(remoteMonitoringUser),
-					"password": config.StringVariable(newPassword),
+					"password": config.StringVariable(password1),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
-					checks.CheckUserCanAuthenticate(remoteMonitoringUser, newPassword),
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "password"),
+					checks.CheckUserCanAuthenticate(remoteMonitoringUser, password1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
+					checks.CheckUserCanAuthenticate(remoteMonitoringUser, password1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disabled"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "false"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reenabled"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+					"password": config.StringVariable(password2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "password"),
+					checks.CheckUserCanAuthenticate(remoteMonitoringUser, password2),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password_hash"),
+				ConfigVariables: config.Variables{
+					"username":      config.StringVariable(remoteMonitoringUser),
+					"password_hash": config.StringVariable(passwordHash),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckResourceAttr(systemUserResourceName, "password_hash", passwordHash),
+					checks.CheckUserCanAuthenticate(remoteMonitoringUser, password3),
 				),
 			},
 		},
@@ -100,8 +175,9 @@ func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
 				},
 				Config: sdkCreateTestConfig,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
 				),
 			},
 			{
@@ -111,8 +187,9 @@ func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
 					"username": config.StringVariable(remoteMonitoringUser),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
 				),
 			},
 		},
