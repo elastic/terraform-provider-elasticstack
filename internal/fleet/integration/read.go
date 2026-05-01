@@ -105,7 +105,7 @@ func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bo
 	}
 
 	if pkg.InstallationInfo == nil {
-		return true
+		return false
 	}
 
 	if pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID {
