@@ -557,10 +557,9 @@ func TestGetESTypedClient_ReturnsNonNil(t *testing.T) {
 		esEndpoints:   []string{"http://localhost:9200"},
 	}
 
-	typedClient := scoped.GetESTypedClient()
-	if typedClient == nil {
-		t.Fatal("expected non-nil typed client, got nil")
-	}
+	typedClient, err := scoped.GetESTypedClient()
+	require.NoError(t, err, "GetESTypedClient must not return an error when configured")
+	require.NotNil(t, typedClient, "expected non-nil typed client, got nil")
 }
 
 func TestGetESTypedClient_CachesResult(t *testing.T) {
@@ -576,26 +575,23 @@ func TestGetESTypedClient_CachesResult(t *testing.T) {
 		esEndpoints:   []string{"http://localhost:9200"},
 	}
 
-	first := scoped.GetESTypedClient()
-	second := scoped.GetESTypedClient()
+	first, err := scoped.GetESTypedClient()
+	require.NoError(t, err)
 
-	if first != second {
-		t.Fatal("expected GetESTypedClient to return the same cached pointer, got different pointers")
-	}
+	second, err := scoped.GetESTypedClient()
+	require.NoError(t, err)
+
+	assert.Equal(t, first, second, "expected GetESTypedClient to return the same cached pointer, got different pointers")
 }
 
-func TestGetESTypedClient_PanicsWhenUnconfigured(t *testing.T) {
+func TestGetESTypedClient_ReturnsErrorWhenUnconfigured(t *testing.T) {
 	t.Parallel()
 
 	scoped := &ElasticsearchScopedClient{
 		esEndpoints: []string{},
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected panic when calling GetESTypedClient on unconfigured client, but it did not panic")
-		}
-	}()
-
-	scoped.GetESTypedClient()
+	typedClient, err := scoped.GetESTypedClient()
+	assert.Nil(t, typedClient, "expected nil typed client when unconfigured")
+	assert.Error(t, err, "expected error when calling GetESTypedClient on unconfigured client")
 }
