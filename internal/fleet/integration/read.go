@@ -23,6 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -50,12 +52,24 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
-	pkg, diags := fleet.GetPackage(ctx, fleetClient, name, version, stateModel.SpaceID.ValueString())
+	spaceID := stateModel.SpaceID.ValueString()
+
+	spaceAware := false
+	if typeutils.IsKnown(stateModel.SpaceID) {
+		supported, sdkDiags := client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		spaceAware = supported
+	}
+
+	pkg, diags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if pkg == nil || !fleetPackageInstalled(pkg, stateModel.SpaceID.ValueString(), false) {
+	if pkg == nil || !fleetPackageInstalled(pkg, spaceID, spaceAware) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
