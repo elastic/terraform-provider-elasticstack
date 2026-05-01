@@ -18,13 +18,11 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -38,37 +36,39 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		diags.AddError("Unable to marshal watch body", err.Error())
 		return diags
 	}
-	return putWatchBytes(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
+	return PutWatchBodyJSON(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
 }
 
 // PutWatchBodyJSON sends a pre-encoded watch document (the JSON object under the watch id) to Put Watch.
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
-	return putWatchBytes(ctx, apiClient, watchID, active, watchBodyJSON)
-}
+	var diags fwdiag.Diagnostics
 
-func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyBytes []byte) fwdiag.Diagnostics {
-	return doFWWrite(apiClient, json.RawMessage(watchBodyBytes),
-		"Unable to marshal watch body",
-		"Unable to create or update watch",
-		"Unable to create or update watch",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Watcher.PutWatch(watchID, body,
-				esClient.Watcher.PutWatch.WithActive(active),
-				esClient.Watcher.PutWatch.WithContext(ctx))
-		},
-	)
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	res, err := typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Perform(ctx)
+	if err != nil {
+		diags.AddError("Unable to create or update watch", err.Error())
+		return diags
+	}
+	defer res.Body.Close()
+
+	return diagutil.CheckHTTPErrorFromFW(res, "Unable to create or update watch")
 }
 
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
 
-	res, err := esClient.Watcher.GetWatch(watchID, esClient.Watcher.GetWatch.WithContext(ctx))
+	res, err := typedClient.Watcher.GetWatch(watchID).Perform(ctx)
 	if err != nil {
 		diags.AddError("Unable to get watch", err.Error())
 		return nil, diags
@@ -79,7 +79,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, nil
 	}
 
-	if d := diagutil.CheckErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
 		return nil, d
 	}
 
@@ -96,13 +96,13 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
+	res, err := typedClient.Watcher.DeleteWatch(watchID).Perform(ctx)
 	if err != nil {
 		diags.AddError("Unable to delete watch", err.Error())
 		return diags
@@ -113,5 +113,5 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		return diags // already gone, treat as success
 	}
 
-	return diagutil.CheckErrorFromFW(res, "Unable to delete watch")
+	return diagutil.CheckHTTPErrorFromFW(res, "Unable to delete watch")
 }
