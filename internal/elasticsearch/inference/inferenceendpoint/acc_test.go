@@ -209,7 +209,8 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	apiKey, _ := inferenceEndpointTestAPIKey()
+	apiKey, usingFakeAPIKey := inferenceEndpointTestAPIKey()
+	skipIfUsingFakeAPIKey := skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -240,6 +241,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				Check:                    resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
 			},
 			// Re-plan after removing task_settings — still no drift.
@@ -247,6 +249,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
 			},

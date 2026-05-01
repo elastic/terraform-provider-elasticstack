@@ -18,7 +18,9 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -84,7 +86,47 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 		return diags
 	}
 
-	req := typedClient.Inference.Update(inferenceID).Request(update)
+	// Build the update body manually, omitting Service which the API rejects as
+	// an immutable field. The typed client's InferenceEndpoint always serializes
+	// Service because the struct tag lacks omitempty.
+	body := make(map[string]any)
+	if len(update.ServiceSettings) > 0 {
+		var ss map[string]any
+		if err := json.Unmarshal(update.ServiceSettings, &ss); err != nil {
+			diags.AddError("Unable to unmarshal service_settings", err.Error())
+			return diags
+		}
+		body["service_settings"] = ss
+	}
+	if len(update.TaskSettings) > 0 {
+		var ts map[string]any
+		if err := json.Unmarshal(update.TaskSettings, &ts); err != nil {
+			diags.AddError("Unable to unmarshal task_settings", err.Error())
+			return diags
+		}
+		body["task_settings"] = ts
+	}
+	if update.ChunkingSettings != nil {
+		b, err := json.Marshal(update.ChunkingSettings)
+		if err != nil {
+			diags.AddError("Unable to marshal chunking_settings", err.Error())
+			return diags
+		}
+		var cs map[string]any
+		if err := json.Unmarshal(b, &cs); err != nil {
+			diags.AddError("Unable to unmarshal chunking_settings", err.Error())
+			return diags
+		}
+		body["chunking_settings"] = cs
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		diags.AddError("Unable to marshal update body", err.Error())
+		return diags
+	}
+
+	req := typedClient.Inference.Update(inferenceID).Raw(bytes.NewReader(jsonBody))
 	if taskType != "" {
 		req.TaskType(taskType)
 	}
