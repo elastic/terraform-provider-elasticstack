@@ -20,139 +20,133 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/enrichpolicyphase"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-type enrichPolicyResponse struct {
-	Name         string         `json:"name"`
-	Indices      []string       `json:"indices"`
-	MatchField   string         `json:"match_field"`
-	EnrichFields []string       `json:"enrich_fields"`
-	Query        map[string]any `json:"query,omitempty"`
-}
-
-type enrichPoliciesResponse struct {
-	Policies []struct {
-		Config map[string]enrichPolicyResponse `json:"config"`
-	} `json:"policies"`
-}
-
-var policyTypes = []string{"range", "match", "geo_match"}
-
-func getPolicyType(m map[string]enrichPolicyResponse) (string, error) {
-	for _, policyType := range policyTypes {
-		if _, ok := m[policyType]; ok {
-			return policyType, nil
-		}
-	}
-	return "", fmt.Errorf("did not find expected policy type")
-}
-
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	req := esClient.EnrichGetPolicy.WithName(policyName)
-	res, err := esClient.EnrichGetPolicy(req, esClient.EnrichGetPolicy.WithContext(ctx))
+
+	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested EnrichPolicy: %s", policyName)); diags.HasError() {
-		return nil, diags
-	}
-
-	var policies enrichPoliciesResponse
-	if err := json.NewDecoder(res.Body).Decode(&policies); err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, nil
+		}
 		return nil, diag.FromErr(err)
 	}
 
-	if len(policies.Policies) == 0 {
+	if len(res.Policies) == 0 {
 		return nil, diags
 	}
 
-	if len(policies.Policies) > 1 {
+	if len(res.Policies) > 1 {
 		tflog.Warn(ctx, fmt.Sprintf(`Somehow found more than one policy for policy named %s`, policyName))
 	}
-	config := policies.Policies[0].Config
-	policyType, err := getPolicyType(config)
-	if err != nil {
-		return nil, diag.FromErr(err)
+
+	summary := res.Policies[0]
+
+	var policyType string
+	var policy types.EnrichPolicy
+	for pt, p := range summary.Config {
+		policyType = pt.String()
+		policy = p
+		break
 	}
-	policy := config[policyType]
-	queryJSON, err := json.Marshal(policy.Query)
-	if err != nil {
-		return nil, diag.FromErr(err)
+
+	name := policyName
+	if policy.Name != nil {
+		name = *policy.Name
+	}
+
+	var queryStr string
+	if policy.Query != nil {
+		queryBytes, err := json.Marshal(policy.Query)
+		if err != nil {
+			return nil, diag.FromErr(err)
+		}
+		queryStr = string(queryBytes)
 	}
 
 	return &models.EnrichPolicy{
 		Type:         policyType,
-		Name:         policy.Name,
+		Name:         name,
 		Indices:      policy.Indices,
 		MatchField:   policy.MatchField,
 		EnrichFields: policy.EnrichFields,
-		Query:        string(queryJSON),
+		Query:        queryStr,
 	}, diags
 }
 
-func tryJSONUnmarshalString(s string) (any, bool) {
-	var data any
-	if err := json.Unmarshal([]byte(s), &data); err != nil {
-		return s, false
-	}
-	return data, true
-}
-
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) diag.Diagnostics {
-	payloadPolicy := map[string]any{
-		"indices":       policy.Indices,
-		"enrich_fields": policy.EnrichFields,
-		"match_field":   policy.MatchField,
+	var diags diag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	if query, ok := tryJSONUnmarshalString(policy.Query); ok {
-		payloadPolicy["query"] = query
-	} else if policy.Query != "" {
-		tflog.Error(ctx, fmt.Sprintf("JAW: query did not unmarshall %s", policy.Query))
+	enrichPolicy := &types.EnrichPolicy{
+		Indices:      policy.Indices,
+		MatchField:   policy.MatchField,
+		EnrichFields: policy.EnrichFields,
 	}
 
-	payload := map[string]any{policy.Type: payloadPolicy}
-	return doSDKWrite(apiClient, payload, "Unable to create enrich policy",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.EnrichPutPolicy(policy.Name, body, esClient.EnrichPutPolicy.WithContext(ctx))
-		},
-	)
+	if policy.Query != "" {
+		var query types.Query
+		if err := json.Unmarshal([]byte(policy.Query), &query); err != nil {
+			return diag.FromErr(err)
+		}
+		enrichPolicy.Query = &query
+	}
+
+	req := typedClient.Enrich.PutPolicy(policy.Name)
+	switch policy.Type {
+	case "geo_match":
+		req.GeoMatch(enrichPolicy)
+	case "match":
+		req.Match(enrichPolicy)
+	case "range":
+		req.Range(enrichPolicy)
+	default:
+		return diag.Errorf("unsupported enrich policy type: %s", policy.Type)
+	}
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
 
 func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := esClient.EnrichDeletePolicy(policyName, esClient.EnrichDeletePolicy.WithContext(ctx))
+
+	_, err = typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
 		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete enrich policy: %s", policyName)); diags.HasError() {
-		return diags
 	}
 
 	return diags
@@ -160,30 +154,24 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := esClient.EnrichExecutePolicy(
-		policyName, esClient.EnrichExecutePolicy.WithContext(ctx), esClient.EnrichExecutePolicy.WithWaitForCompletion(true),
-	)
+
+	res, err := typedClient.Enrich.ExecutePolicy(policyName).WaitForCompletion(true).Do(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return diag.Errorf(`Executing policy "%s" failed with http status %d`, policyName, res.StatusCode)
+
+	if res.Status == nil {
+		return diag.Errorf(`Unexpected response to executing enrich policy: no status`)
 	}
-	var response struct {
-		Status struct {
-			Phase string `json:"phase"`
-		} `json:"status"`
+
+	if res.Status.Phase != enrichpolicyphase.COMPLETE {
+		return diag.Errorf(`Unexpected response to executing enrich policy: %s`, res.Status.Phase.String())
 	}
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return diag.FromErr(err)
-	}
-	if response.Status.Phase != "COMPLETE" {
-		return diag.Errorf(`Unexpected response to executing enrich policy: %s`, response.Status.Phase)
-	}
+
 	return diags
 }
