@@ -13,11 +13,11 @@
 
 ## 3. Provider Wiring
 
-- [ ] 3.1 Register the 4 new constructors in `provider/plugin_framework.go`
-- [ ] 3.2 Remove the 4 old SDK registrations from `provider/provider.go` `DataSourcesMap`
+- [x] 3.1 Register the 4 new constructors in `provider/plugin_framework.go`
+- [x] 3.2 Remove the 4 old SDK registrations from `provider/provider.go` `DataSourcesMap`
 
 ## 4. Verification
 
-- [ ] 4.1 Run `make build` and verify no compilation errors
-- [ ] 4.2 Run targeted acceptance tests for the 4 migrated processors
-- [ ] 4.3 Run `make check-openspec` and verify the change passes validation
+- [x] 4.1 Run `make build` and verify no compilation errors
+- [x] 4.2 Run targeted acceptance tests for the 4 migrated processors
+- [x] 4.3 Run `make check-openspec` and verify the change passes validation
