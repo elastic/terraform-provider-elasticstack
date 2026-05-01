@@ -56,7 +56,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `on_failure` (List of String) Handle failures for the processor.
 - `params` (String) Object containing parameters for the script.
 - `script_id` (String) ID of a stored script. If no `source` is specified, this parameter is required.
-- `source` (String) Inline script. If no id is specified, this parameter is required.
+- `source` (String) Inline script. If no `script_id` is specified, this parameter is required.
 - `tag` (String) Identifier for the processor.
 
 ### Read-Only

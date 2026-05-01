@@ -43,10 +43,10 @@ type processorDataSource[T ProcessorModel] struct {
 	schema schema.Schema
 }
 
-// compile-time interface checks.
+// compile-time interface checks with a concrete pointer type.
 var (
-	_ datasource.DataSource              = &processorDataSource[ProcessorModel]{}
-	_ datasource.DataSourceWithConfigure = &processorDataSource[ProcessorModel]{}
+	_ datasource.DataSource              = NewProcessorDataSource(&processorDropModel{}, schema.Schema{})
+	_ datasource.DataSourceWithConfigure = NewProcessorDataSource(&processorDropModel{}, schema.Schema{}).(datasource.DataSourceWithConfigure)
 )
 
 // NewProcessorDataSource returns a new datasource.DataSource for the given
@@ -68,7 +68,7 @@ func (d *processorDataSource[T]) Schema(_ context.Context, _ datasource.SchemaRe
 
 // Read implements datasource.DataSource.
 func (d *processorDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model T
+	model := d.model
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

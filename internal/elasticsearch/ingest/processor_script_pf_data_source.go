@@ -107,7 +107,7 @@ func NewProcessorScriptDataSource() datasource.DataSource {
 			},
 		},
 		"source": schema.StringAttribute{
-			Description: "Inline script. If no id is specified, this parameter is required.",
+			Description: "Inline script. If no `script_id` is specified, this parameter is required.",
 			Optional:    true,
 			Validators: []validator.String{
 				stringvalidator.ExactlyOneOf(
