@@ -22,7 +22,7 @@
 ## 4. Agent Builder agent model cleanup
 
 - [x] 4.1 Update `agentbuilderagent/models.go` to embed `entitycore.KibanaConnectionField` instead of explicit `KibanaConnection` field
-- [x] 4.2 Remove `GetKibanaConnection()` and `GetVersionRequirements()` methods from `agentDataSourceModel`
+- [x] 4.2 Remove the hand-rolled `GetKibanaConnection()` method from `agentDataSourceModel` (embedding now provides it); preserve `GetVersionRequirements()` because the data source still requires pre-read version gating
 - [x] 4.3 Update any test or struct literal that references the old field name or methods
 - [x] 4.4 Run `agentbuilder_agent` acceptance tests; verify no regressions
 

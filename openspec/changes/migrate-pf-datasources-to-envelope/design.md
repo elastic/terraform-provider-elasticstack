@@ -33,7 +33,7 @@ Additionally, `agentbuilder_agent` currently satisfies the envelope contract thr
 
 **Chosen:** All migrated data sources shall embed `entitycore.KibanaConnectionField` or `entitycore.ElasticsearchConnectionField` in their models.
 
-**Rationale:** The envelope's doc.go already prescribes this as the canonical pattern. Embedding provides the `GetKibanaConnection()` / `GetElasticsearchConnection()` method automatically, eliminates hand-rolled accessors, and keeps models self-describing. For `agentbuilder_agent`, this replaces the current accessor-method approach with embedding.
+**Rationale:** The envelope's doc.go already prescribes this as the canonical pattern. Embedding provides the `GetKibanaConnection()` / `GetElasticsearchConnection()` method automatically, eliminates hand-rolled accessors, and keeps models self-describing. For `agentbuilder_agent`, this replaces the hand-rolled `GetKibanaConnection()` accessor with embedding. The optional `GetVersionRequirements()` method is preserved because the agent builder data source still requires pre-read version gating.
 
 **Alternative considered:** Keep existing explicit `KibanaConnection` / `ElasticsearchConnection` fields and add accessor methods. Rejected because it perpetuates inconsistency and the embedding pattern is already proven across `agentbuildertool` and `agentbuilderworkflow`.
 

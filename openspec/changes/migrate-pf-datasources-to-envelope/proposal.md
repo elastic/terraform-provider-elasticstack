@@ -8,7 +8,7 @@ The provider has two parallel data source wiring patterns: the generic `entityco
   - **Kibana-backed** (use `NewKibanaDataSource`): `spaces`, `export_saved_objects`
   - **Fleet-backed Kibana client** (use `NewKibanaDataSource` with `ComponentFleet`): `fleet_integration`, `fleet_output`, `enrollment_tokens`
   - **Elasticsearch-backed** (use `NewElasticsearchDataSource`): `indices`, `index_template`, `enrich_policy`, `security_role_mapping`
-- **Update `agentbuilder_agent` model** to embed `entitycore.KibanaConnectionField` instead of a hand-rolled accessor, aligning it with the other envelope data sources.
+- **Update `agentbuilder_agent` model** to embed `entitycore.KibanaConnectionField` instead of a hand-rolled `GetKibanaConnection()` accessor, aligning it with other envelope data sources. The optional `GetVersionRequirements()` method is preserved because this data source still requires pre-read version gating.
 - **Remove `DataSourceBase`** from `internal/entitycore/data_source_base.go` and all dependent `entitycore_contract_test.go` files, since every PF data source will use the envelope.
 - **Convert schema methods to schema factories** for all migrated data sources: extract the current `Schema` method body into a package-level `func() dsschema.Schema` that omits the connection block (the envelope injects it).
 - **Convert `Read` methods to pure read callbacks** for all migrated data sources: strip envelope-owned orchestration (`req.Config.Get`, client resolution, `resp.State.Set`) and keep only the entity-specific API call and model population logic.
@@ -34,6 +34,6 @@ _(none — no spec-level requirements change; all migrated data sources preserve
 - **`internal/elasticsearch/index/template/`**: `data_source.go`, `data_source_schema.go`, `read.go`, and `models.go` refactored to envelope.
 - **`internal/elasticsearch/enrich/`**: `data_source.go`, `schema.go`, `read.go`, and `models.go` refactored to envelope. `entitycore_contract_test.go` removed.
 - **`internal/elasticsearch/security/rolemapping/`**: `data_source.go`, `schema.go`, `read.go`, and `models.go` refactored to envelope.
-- **`internal/kibana/agentbuilderagent/`**: `models.go` updated to embed `KibanaConnectionField`; accessor methods removed.
+- **`internal/kibana/agentbuilderagent/`**: `models.go` updated to embed `KibanaConnectionField`; hand-rolled `GetKibanaConnection()` removed. `GetVersionRequirements()` is preserved because the data source still requires pre-read version gating.
 - **Provider registration** (`provider/plugin_framework.go`): No changes needed — `NewDataSource` constructors remain stable.
 - **Tests**: All existing acceptance tests should pass without modification. Unit tests that assert on schema block presence may need minor updates since the block is now injected by the envelope.
