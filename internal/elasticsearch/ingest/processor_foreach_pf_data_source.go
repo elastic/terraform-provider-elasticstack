@@ -1,0 +1,116 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package ingest
+
+import (
+	"encoding/json"
+	"maps"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type processorForeachModel struct {
+	CommonProcessorModel
+	ID            types.String         `tfsdk:"id"`
+	JSON          types.String         `tfsdk:"json"`
+	Field         types.String         `tfsdk:"field"`
+	Processor     jsontypes.Normalized `tfsdk:"processor"`
+	IgnoreMissing types.Bool           `tfsdk:"ignore_missing"`
+}
+
+func (m *processorForeachModel) TypeName() string    { return "foreach" }
+func (m *processorForeachModel) SetID(id string)     { m.ID = types.StringValue(id) }
+func (m *processorForeachModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+
+func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	body := processorForeachBody{}
+
+	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	body.CommonProcessorBody = commonBody
+
+	if IsKnown(m.Field) {
+		body.Field = m.Field.ValueString()
+	}
+
+	if IsKnown(m.Processor) {
+		proc := make(map[string]any)
+		if err := json.Unmarshal([]byte(m.Processor.ValueString()), &proc); err != nil {
+			diags.AddError("Failed to parse processor JSON", err.Error())
+			return nil, diags
+		}
+		body.Processor = proc
+	}
+
+	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
+		m.IgnoreMissing = types.BoolValue(false)
+		body.IgnoreMissing = false
+	} else {
+		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
+	}
+
+	// Ensure ignore_failure default is reflected in state.
+	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
+		m.IgnoreFailure = types.BoolValue(false)
+	}
+
+	return body, diags
+}
+
+// NewProcessorForeachDataSource returns a PF data source for the foreach processor.
+func NewProcessorForeachDataSource() datasource.DataSource {
+	attrs := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: "Internal identifier of the resource",
+			Computed:    true,
+		},
+		"json": schema.StringAttribute{
+			Description: "JSON representation of this data source.",
+			Computed:    true,
+		},
+		"field": schema.StringAttribute{
+			Description: "Field containing array or object values.",
+			Required:    true,
+		},
+		"processor": schema.StringAttribute{
+			Description: "Ingest processor to run on each element.",
+			Required:    true,
+			CustomType:  jsontypes.NormalizedType{},
+		},
+		"ignore_missing": schema.BoolAttribute{
+			Description: "If `true`, the processor silently exits without changing the document if the `field` is `null` or missing.",
+			Optional:    true,
+			Computed:    true,
+		},
+	}
+
+	maps.Copy(attrs, CommonProcessorSchemaAttributes())
+
+	return NewProcessorDataSource(&processorForeachModel{}, schema.Schema{
+		Description: foreachDataSourceDescription,
+		Attributes:  attrs,
+	})
+}
