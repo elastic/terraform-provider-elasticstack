@@ -18,70 +18,62 @@
 package outputds
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d *outputDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
-	return schema.Schema{
+func getDataSourceSchema() dsschema.Schema {
+	return dsschema.Schema{
 		Description: "Returns information about a Fleet output. See the [Fleet output API documentation](https://www.elastic.co/docs/api/doc/kibana/v9/group/endpoint-fleet-outputs) for more details.",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{
 				Description: "Generated ID for the outputs.",
 				Computed:    true,
 			},
-			"space_id": schema.StringAttribute{
+			"space_id": dsschema.StringAttribute{
 				Description: "The Kibana space ID where this output is available.",
 				Optional:    true,
 			},
-			"outputs": schema.ListNestedAttribute{
+			"outputs": dsschema.ListNestedAttribute{
 				Description: "The list of outputs",
 				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
+				NestedObject: dsschema.NestedAttributeObject{
+					Attributes: map[string]dsschema.Attribute{
+						"id": dsschema.StringAttribute{
 							Description: "Unique identifier of the output.",
 							Computed:    true,
 						},
-						"name": schema.StringAttribute{
+						"name": dsschema.StringAttribute{
 							Description: "The name of the output.",
 							Computed:    true,
 						},
-						"type": schema.StringAttribute{
+						"type": dsschema.StringAttribute{
 							Description: "The output type.",
 							Computed:    true,
 						},
-						"hosts": schema.ListAttribute{
+						"hosts": dsschema.ListAttribute{
 							Description: "A list of hosts.",
 							Computed:    true,
 							ElementType: types.StringType,
 						},
-						"ca_sha256": schema.StringAttribute{
+						"ca_sha256": dsschema.StringAttribute{
 							Description: "Fingerprint of the Elasticsearch CA certificate.",
 							Computed:    true,
 						},
-						"ca_trusted_fingerprint": schema.StringAttribute{
+						"ca_trusted_fingerprint": dsschema.StringAttribute{
 							Description: "Fingerprint of trusted CA.",
 							Computed:    true,
 						},
-						"default_integrations": schema.BoolAttribute{
+						"default_integrations": dsschema.BoolAttribute{
 							Description: "This output is the default for agent integrations.",
 							Computed:    true,
 						},
-						"default_monitoring": schema.BoolAttribute{
+						"default_monitoring": dsschema.BoolAttribute{
 							Description: "This output is the default for agent monitoring.",
 							Computed:    true,
 						},
-						"config_yaml": schema.StringAttribute{
+						"config_yaml": dsschema.StringAttribute{
 							Description: "Advanced YAML configuration.",
 							Computed:    true,
 							Sensitive:   true,
@@ -90,13 +82,9 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		},
 	}
 }
 
 func getOutputItemElemType() attr.Type {
-	return getSchema().Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
+	return getDataSourceSchema().Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
 }
