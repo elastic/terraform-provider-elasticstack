@@ -34,6 +34,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
@@ -237,6 +238,10 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
 		outputds.NewDataSource,
+		ingest.NewProcessorDropDataSource,
+		ingest.NewProcessorAppendDataSource,
+		ingest.NewProcessorScriptDataSource,
+		ingest.NewProcessorForeachDataSource,
 	}
 }
 
