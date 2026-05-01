@@ -38,6 +38,11 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return diag.FromErr(err)
 	}
 
+	// The typed client's types.LogstashPipeline.PipelineSettings only supports
+	// a subset of the settings keys the provider uses (6 of ~17). Using the typed
+	// struct would silently drop unsupported settings on both PUT and GET. We
+	// therefore marshal the provider's model to JSON and send it via Raw() to
+	// preserve all settings while still using the typed client for transport.
 	b, err := json.Marshal(logstashPipeline)
 	if err != nil {
 		return diag.FromErr(err)
@@ -64,6 +69,10 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return nil, diag.FromErr(err)
 	}
 
+	// We use .Perform() instead of .Do() because types.LogstashPipeline only
+	// supports a subset of pipeline settings. Decoding into the provider's own
+	// model via json.NewDecoder preserves all settings sent by Elasticsearch.
+	// See the comment in PutLogstashPipeline for the same rationale.
 	res, err := typedClient.Logstash.GetPipeline().Id(pipelineID).Perform(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -104,7 +113,10 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 		return diag.FromErr(err)
 	}
 
-	_, err = typedClient.Logstash.DeletePipeline(pipelineID).Do(ctx)
+	// Use .Perform() for explicit 404 handling, consistent with GetLogstashPipeline.
+	// The typed client's .Do() handles 404 internally, but making the status check
+	// explicit in provider code makes the contract visible to maintainers.
+	res, err := typedClient.Logstash.DeletePipeline(pipelineID).Perform(ctx)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -112,6 +124,15 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 			Detail:   fmt.Sprintf("Failed with: %s", err.Error()),
 		})
 		return diags
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return diags
+	}
+
+	if d := diagutil.CheckHTTPError(res, "Unable to delete logstash pipeline"); d.HasError() {
+		return d
 	}
 
 	return diags
