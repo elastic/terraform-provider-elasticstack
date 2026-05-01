@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -40,13 +40,11 @@ type Data struct {
 	ChunkingSettings        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
-func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoint, diag.Diagnostics) {
+func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	endpoint := &elasticsearch.InferenceEndpoint{
-		InferenceID: data.InferenceID.ValueString(),
-		TaskType:    data.TaskType.ValueString(),
-		Service:     data.Service.ValueString(),
+	endpoint := &estypes.InferenceEndpoint{
+		Service: data.Service.ValueString(),
 	}
 
 	if !data.ServiceSettings.IsNull() && !data.ServiceSettings.IsUnknown() {
@@ -55,7 +53,12 @@ func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoin
 			diags.AddError("Invalid service_settings JSON", fmt.Sprintf("Error parsing service_settings: %s", err))
 			return nil, diags
 		}
-		endpoint.ServiceSettings = ss
+		b, err := json.Marshal(ss)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling service_settings: %s", err))
+			return nil, diags
+		}
+		endpoint.ServiceSettings = b
 	}
 
 	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
@@ -64,7 +67,12 @@ func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoin
 			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
 			return nil, diags
 		}
-		endpoint.TaskSettings = ts
+		b, err := json.Marshal(ts)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
+			return nil, diags
+		}
+		endpoint.TaskSettings = b
 	}
 
 	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
@@ -73,44 +81,37 @@ func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoin
 			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings: %s", err))
 			return nil, diags
 		}
-		endpoint.ChunkingSettings = cs
+		b, err := json.Marshal(cs)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling chunking_settings: %s", err))
+			return nil, diags
+		}
+		endpoint.ChunkingSettings = estypes.NewInferenceChunkingSettings()
+		if err := json.Unmarshal(b, endpoint.ChunkingSettings); err != nil {
+			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings into typed struct: %s", err))
+			return nil, diags
+		}
 	}
 
 	return endpoint, diags
 }
 
-func (data *Data) toUpdateModel(ctx context.Context) (*elasticsearch.InferenceEndpointUpdate, diag.Diagnostics) {
-	endpoint, diags := data.toAPIModel(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return &elasticsearch.InferenceEndpointUpdate{
-		InferenceID:      endpoint.InferenceID,
-		TaskType:         endpoint.TaskType,
-		ServiceSettings:  endpoint.ServiceSettings,
-		TaskSettings:     endpoint.TaskSettings,
-		ChunkingSettings: endpoint.ChunkingSettings,
-	}, diags
+func (data *Data) toUpdateModel(ctx context.Context) (*estypes.InferenceEndpoint, diag.Diagnostics) {
+	return data.toAPIModel(ctx)
 }
 
-func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.InferenceEndpoint) diag.Diagnostics {
+func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEndpointInfo) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	data.InferenceID = types.StringValue(endpoint.InferenceID)
-	data.TaskType = types.StringValue(endpoint.TaskType)
+	data.InferenceID = types.StringValue(endpoint.InferenceId)
+	data.TaskType = types.StringValue(endpoint.TaskType.String())
 	data.Service = types.StringValue(endpoint.Service)
 
 	// service_settings: preserve plan value since the API may omit sensitive fields (e.g. api_key)
 	// We only update if the field was previously null/unknown (first read after import).
 	if data.ServiceSettings.IsNull() || data.ServiceSettings.IsUnknown() {
-		if endpoint.ServiceSettings != nil {
-			b, err := json.Marshal(endpoint.ServiceSettings)
-			if err != nil {
-				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling service_settings: %s", err))
-				return diags
-			}
-			data.ServiceSettings = jsontypes.NewNormalizedValue(string(b))
+		if len(endpoint.ServiceSettings) > 0 {
+			data.ServiceSettings = jsontypes.NewNormalizedValue(string(endpoint.ServiceSettings))
 		}
 	}
 
@@ -125,8 +126,13 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.Infere
 			return diags
 		}
 
-		if endpoint.TaskSettings != nil {
-			filtered := intersectKeys(endpoint.TaskSettings, stateTS)
+		if len(endpoint.TaskSettings) > 0 {
+			var apiTS map[string]any
+			if err := json.Unmarshal(endpoint.TaskSettings, &apiTS); err != nil {
+				diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing API task_settings: %s", err))
+				return diags
+			}
+			filtered := intersectKeys(apiTS, stateTS)
 			b, err := json.Marshal(filtered)
 			if err != nil {
 				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
