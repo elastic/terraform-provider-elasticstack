@@ -634,6 +634,44 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 	}
 }
 
+// InstallKibanaAssets installs Kibana assets for an already-installed package into a specific space.
+func InstallKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsJSONRequestBody{
+		Force: &force,
+	}
+
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteKibanaAssets removes Kibana assets for a package from a specific space.
+func DeleteKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // GetPackages returns information about the latest packages known to Fleet.
 // If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
 func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
