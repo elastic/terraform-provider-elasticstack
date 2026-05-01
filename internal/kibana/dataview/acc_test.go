@@ -106,6 +106,7 @@ func TestAccResourceDataView(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
