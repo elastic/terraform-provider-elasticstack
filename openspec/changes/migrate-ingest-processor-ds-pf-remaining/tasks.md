@@ -45,10 +45,10 @@
 ## 3. Cleanup
 
 - [x] 3.1 Delete old SDK data source implementation files (`processor_*_data_source.go`) for all 39 processors
-- [ ] 3.2 Delete old SDK data source test files (`processor_*_data_source_test.go`) for all 39 processors
-- [ ] 3.3 Delete `internal/elasticsearch/ingest/commons_test.go` if no longer needed
-- [ ] 3.4 Move remaining processor structs from `internal/models/ingest.go` to `internal/elasticsearch/ingest/processor_models.go`
-- [ ] 3.5 Delete processor structs from `internal/models/ingest.go`
+- [x] 3.2 Delete old SDK data source test files (`processor_*_data_source_test.go`) for all 39 processors
+- [x] 3.3 Delete `internal/elasticsearch/ingest/commons_test.go` if no longer needed — **N/A**, still used by `pipeline_test.go`
+- [x] 3.4 Move remaining processor structs from `internal/models/ingest.go` to `internal/elasticsearch/ingest/processor_models.go`
+- [x] 3.5 Delete processor structs from `internal/models/ingest.go`
 
 ## 4. Verification
 
