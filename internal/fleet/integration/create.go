@@ -113,13 +113,37 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 		spaceAware = supported
 	}
-	// spaceAware will be used by task 4 (Create/Update space-aware logic).
-	_ = spaceAware
+	// Determine whether to use InstallPackage or InstallKibanaAssets
+	if spaceAware {
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, installOptions.SpaceID)
+		respDiags.Append(getDiags...)
+		if respDiags.HasError() {
+			return
+		}
 
-	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
+		globallyInstalled := pkg != nil && fleetPackageInstalled(pkg, "", false)
+		installedElsewhere := globallyInstalled && !fleetPackageInstalled(pkg, installOptions.SpaceID, true)
+
+		if installedElsewhere {
+			diags = fleet.InstallKibanaAssets(ctx, fleetClient, name, version, installOptions.SpaceID, planModel.Force.ValueBool())
+			respDiags.Append(diags...)
+			if respDiags.HasError() {
+				return
+			}
+		} else {
+			// Package not installed at all, or already installed in target space (upgrade/no-op)
+			diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
+			respDiags.Append(diags...)
+			if respDiags.HasError() {
+				return
+			}
+		}
+	} else {
+		diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
+		respDiags.Append(diags...)
+		if respDiags.HasError() {
+			return
+		}
 	}
 
 	waitErr := asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
@@ -131,23 +155,15 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 			return false, nil
 		}
 
-		if pkg.InstallationInfo != nil {
-			switch pkg.InstallationInfo.InstallStatus {
-			case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
-				return true, nil
-			case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
-				return false, fmt.Errorf("package %s/%s installation failed", name, version)
-			}
+		if fleetPackageInstalled(pkg, installOptions.SpaceID, spaceAware) {
+			return true, nil
 		}
 
-		// Fallback for older Fleet responses that only expose the legacy status field.
-		if pkg.Status != nil {
-			if strings.EqualFold(*pkg.Status, "installed") {
-				return true, nil
-			}
-			if strings.EqualFold(*pkg.Status, "install_failed") {
-				return false, fmt.Errorf("package %s/%s installation failed", name, version)
-			}
+		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed {
+			return false, fmt.Errorf("package %s/%s installation failed", name, version)
+		}
+		if pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
+			return false, fmt.Errorf("package %s/%s installation failed", name, version)
 		}
 
 		return false, nil
