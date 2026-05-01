@@ -43,10 +43,10 @@
 
 ## 5. Cleanup and Verification
 
-- [ ] 5.1 Run `make build` and confirm zero compile errors across the entire codebase
-- [ ] 5.2 Run `make check-lint` and resolve any new lint warnings introduced by typed API usage
-- [ ] 5.3 Run `go test ./internal/clients/elasticsearch/...` to verify unit tests pass
-- [ ] 5.4 Confirm no remaining `GetESClient()` calls exist in the four migrated helper files
-- [ ] 5.5 Clean up any unused imports in the migrated helper files
-- [ ] 5.6 If `models.LogstashPipeline`, `models.Watch`, `models.PutWatch`, or `models.WatchBody` are fully redundant, remove them from `internal/models/models.go`
-- [ ] 5.7 Run targeted acceptance tests for inference, logstash, enrich, and watcher packages where possible
+- [x] 5.1 Run `make build` and confirm zero compile errors across the entire codebase
+- [x] 5.2 Run `make check-lint` and resolve any new lint warnings introduced by typed API usage
+- [x] 5.3 Run `go test ./internal/clients/elasticsearch/...` to verify unit tests pass
+- [x] 5.4 Confirm no remaining `GetESClient()` calls exist in the four migrated helper files
+- [x] 5.5 Clean up any unused imports in the migrated helper files
+- [x] 5.6 If `models.LogstashPipeline`, `models.Watch`, `models.PutWatch`, or `models.WatchBody` are fully redundant, remove them from `internal/models/models.go`
+- [x] 5.7 Run targeted acceptance tests for inference, logstash, enrich, and watcher packages where possible
