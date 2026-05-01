@@ -142,8 +142,8 @@ func collectRegisteredProviderEntities(ctx context.Context, sdkProvider *sdksche
 }
 
 func expectedConnectionForEntity(entity registeredProviderEntity) string {
-	if entity.sdkEntity != nil && entity.entityKind == "data_source" && strings.HasPrefix(entity.name, "elasticstack_elasticsearch_ingest_processor_") {
-		// These SDK data sources construct ingest processor payloads only and do not use provider clients.
+	if entity.entityKind == "data_source" && strings.HasPrefix(entity.name, "elasticstack_elasticsearch_ingest_processor_") {
+		// These data sources construct ingest processor payloads only and do not use provider clients.
 		return ""
 	}
 	if strings.HasPrefix(entity.name, "elasticstack_elasticsearch_") {
