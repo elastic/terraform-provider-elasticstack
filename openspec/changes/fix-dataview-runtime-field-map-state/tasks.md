@@ -5,7 +5,7 @@
 
 ## 2. Acceptance Test Fix
 
-- [ ] 2.1 Update `internal/kibana/dataview/testdata/TestAccResourceDataView/basic_updated/data_view.tf` to include `field_attrs` so the step no longer triggers `RequiresReplace()`
+- [ ] 2.1 Update `internal/kibana/dataview/testdata/TestAccResourceDataView/basic_updated/data_view.tf` to include `field_attrs` with the same values as in `internal/kibana/dataview/testdata/TestAccResourceDataView/basic/data_view.tf`, so the step no longer triggers `RequiresReplace()`
 - [ ] 2.2 Add `captureID` and `checkIDUnchanged` helper functions in `internal/kibana/dataview/acc_test.go` (same pattern used in `TestAccResourceDataViewNamespaces`)
 - [ ] 2.3 Attach `captureID` to the `basic` step's Check and `checkIDUnchanged` to the `basic_updated` step's Check in `TestAccResourceDataView`
 - [ ] 2.4 Update the `basic_updated` step assertions: replace `TestCheckNoResourceAttr(..., "data_view.runtime_field_map")` with `TestCheckResourceAttr(..., "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)")` to assert that Kibana preserves the runtime field
