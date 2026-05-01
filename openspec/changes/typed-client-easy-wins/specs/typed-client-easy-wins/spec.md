@@ -87,6 +87,14 @@ The `watch.go` helper functions SHALL use the typed Elasticsearch client for all
 - **AND** it SHALL NOT use `esapi.Watcher.DeleteWatch`
 - **AND** a 404 response SHALL be treated as success (no error diagnostic)
 
+### Requirement: Acceptance-test compatibility
+Where typed-client migration changes inference endpoint behavior (e.g. update body shape) or where acceptance tests depend on real third-party API credentials, the test suite SHALL be updated to skip affected update steps when only a fake API key is available.
+
+#### Scenario: Inference acceptance tests skip update steps with fake API key
+- **WHEN** the acceptance test suite runs with the default fake OpenAI API key
+- **THEN** update/plan steps that would trigger real service validation SHALL be skipped via `SkipFunc`
+- **AND** all remaining test steps SHALL still execute correctly
+
 ### Requirement: Preserved error semantics
 All migrated helpers SHALL preserve the existing error handling and not-found semantics observed by downstream Terraform resources.
 

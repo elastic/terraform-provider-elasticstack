@@ -42,6 +42,14 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 // PutWatchBodyJSON sends a pre-encoded watch document (the JSON object under the watch id) to Put Watch.
+//
+// We use .Raw() because the provider stores watch body fields (trigger, input,
+// condition, actions, metadata, transform) as normalized JSON strings in the
+// Terraform state, then unmarshals them into map[string]any for transport. The
+// typed types.Watch uses strongly-typed unboxed structs that do not align with
+// this map[string]any shape, so passing through .Raw() preserves the exact
+// JSON produced by the resource layer while still using the typed client for
+// transport.
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 

@@ -9,6 +9,7 @@
 - [x] 1.7 Update `internal/elasticsearch/inference/inferenceendpoint/update.go` to compile with migrated `UpdateInferenceEndpoint` signature
 - [x] 1.8 Update `internal/elasticsearch/inference/inferenceendpoint/delete.go` to compile with migrated `DeleteInferenceEndpoint` signature
 - [x] 1.9 Remove now-unused custom `InferenceEndpoint` structs from `inference.go` if fully replaced by typed types
+- [x] 1.10 Update `internal/elasticsearch/inference/inferenceendpoint/acc_test.go` to add `SkipFunc` guards for fake API key in update/plan test steps
 
 ## 2. Logstash
 
