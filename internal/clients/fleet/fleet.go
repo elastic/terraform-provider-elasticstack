@@ -612,8 +612,11 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	params := kbapi.DeleteFleetEpmPackagesPkgnamePkgversionParams{
+		Force: &force,
+	}
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -655,9 +658,21 @@ func InstallKibanaAssets(ctx context.Context, client *Client, name, version stri
 	}
 }
 
+// forceQueryParamEditor returns a RequestEditorFn that appends ?force=<bool> to
+// the request URL. Used for generated endpoints that do not expose a typed force
+// parameter (e.g. the kibana_assets DELETE endpoint).
+func forceQueryParamEditor(force bool) kbapi.RequestEditorFn {
+	return func(_ context.Context, req *http.Request) error {
+		q := req.URL.Query()
+		q.Set("force", strconv.FormatBool(force))
+		req.URL.RawQuery = q.Encode()
+		return nil
+	}
+}
+
 // DeleteKibanaAssets removes Kibana assets for a package from a specific space.
-func DeleteKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+func DeleteKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, kibanautil.SpaceAwarePathRequestEditor(spaceID), forceQueryParamEditor(force))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
