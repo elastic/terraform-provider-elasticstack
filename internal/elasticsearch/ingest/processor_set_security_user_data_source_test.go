@@ -62,10 +62,10 @@ func TestAccDataSourceIngestProcessorSetSecurityUser(t *testing.T) {
 }
 
 const expectedJSONSetSecurityUser = `{
-	"set_security_user": {
-		"field": "user",
-		"ignore_failure": false
-	}
+  "set_security_user": {
+    "ignore_failure": false,
+    "field": "user"
+  }
 }`
 
 const expectedJSONSetSecurityUserAllAttributes = `{
@@ -83,10 +83,10 @@ const expectedJSONSetSecurityUserAllAttributes = `{
 			}
 		],
 		"properties": [
-			"roles",
-			"username",
-			"email"
-		],
+      "email",
+      "roles",
+      "username"
+    ],
 		"tag": "set-security-user"
 	}
 }`

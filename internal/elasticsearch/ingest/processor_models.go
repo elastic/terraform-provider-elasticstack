@@ -190,7 +190,7 @@ type processorDissectBody struct {
 	CommonProcessorBody
 	Field           string `json:"field"`
 	Pattern         string `json:"pattern"`
-	AppendSeparator string `json:"append_separator,omitempty"`
+	AppendSeparator string `json:"append_separator"`
 	IgnoreMissing   bool   `json:"ignore_missing"`
 }
 

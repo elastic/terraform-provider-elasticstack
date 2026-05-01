@@ -60,23 +60,25 @@ func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 }
 
 const expectedJSONUserAgent = `{
-	"user_agent": {
-		"field": "agent",
-		"ignore_missing": false
-	}
+  "user_agent": {
+    "ignore_failure": false,
+    "field": "agent",
+    "ignore_missing": false
+  }
 }`
 
 const expectedJSONUserAgentAllAttributes = `{
-	"user_agent": {
-		"field": "http.request.headers.user-agent",
-		"target_field": "user_agent_details",
-		"ignore_missing": true,
-		"regex_file": "custom-regexes.yml",
-		"properties": [
-			"os",
-			"device",
-			"name"
-		],
-		"extract_device_type": true
-	}
+  "user_agent": {
+    "ignore_failure": false,
+    "field": "http.request.headers.user-agent",
+    "target_field": "user_agent_details",
+    "ignore_missing": true,
+    "regex_file": "custom-regexes.yml",
+    "properties": [
+      "device",
+      "name",
+      "os"
+    ],
+    "extract_device_type": true
+  }
 }`

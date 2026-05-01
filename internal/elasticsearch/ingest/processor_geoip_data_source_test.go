@@ -42,10 +42,11 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 
 const expectedJSONGeoip = `{
   "geoip": {
-		"field": "ip",
-		"first_only": true,
-		"ignore_missing": false,
-		"target_field": "geoip"
-	}
+    "ignore_failure": false,
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": false,
+    "first_only": true
+  }
 }
 `

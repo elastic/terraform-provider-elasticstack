@@ -116,9 +116,9 @@ const expectedJSONRemoveAllAttributes = `{
 const expectedJSONRemoveUpdated = `{
 	"remove": {
 		"field": [
-			"user.name",
-			"host.name"
-		],
+      "host.name",
+      "user.name"
+    ],
 		"ignore_failure": false,
 		"ignore_missing": false
 	}

@@ -88,7 +88,7 @@ func TestAccDataSourceIngestProcessorFailInvalidOnFailure(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_on_failure"),
-				ExpectError:              regexp.MustCompile(`"on_failure\.0" contains an invalid JSON`),
+				ExpectError:              regexp.MustCompile(`Failed to parse on_failure JSON`),
 			},
 		},
 	})
