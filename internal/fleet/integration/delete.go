@@ -20,7 +20,9 @@ package integration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -56,12 +58,51 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	// If space_id is set, use space-aware uninstallation
 	var spaceID string
 	if typeutils.IsKnown(stateModel.SpaceID) {
 		spaceID = stateModel.SpaceID.ValueString()
 	}
 
+	spaceAware := false
+	if typeutils.IsKnown(stateModel.SpaceID) {
+		supported, sdkDiags := client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		spaceAware = supported
+	}
+
+	if spaceAware {
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+		resp.Diagnostics.Append(getDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if isInstalledInMultipleSpaces(pkg, spaceID) {
+			diags = fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
+
 	diags = fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 	resp.Diagnostics.Append(diags...)
+}
+
+func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
+	if pkg == nil || pkg.InstallationInfo == nil {
+		return false
+	}
+	otherSpaces := 0
+	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		otherSpaces = len(*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)
+	}
+	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
+	if isPrimary {
+		return otherSpaces > 0
+	}
+	return otherSpaces > 1 || pkg.InstallationInfo.InstalledKibanaSpaceId != nil
 }
