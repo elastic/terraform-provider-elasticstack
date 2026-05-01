@@ -12,11 +12,11 @@
 
 ## 2. Logstash
 
-- [ ] 2.1 Migrate `PutLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.PutPipeline()` with `types.LogstashPipeline`
-- [ ] 2.2 Migrate `GetLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.GetPipeline()`
-- [ ] 2.3 Migrate `DeleteLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.DeletePipeline()`
-- [ ] 2.4 Update `internal/elasticsearch/logstash/pipeline.go` to compile with migrated helper signatures
-- [ ] 2.5 Remove or deprecate `models.LogstashPipeline` if fully replaced by `types.LogstashPipeline`
+- [x] 2.1 Migrate `PutLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.PutPipeline()` with `types.LogstashPipeline`
+- [x] 2.2 Migrate `GetLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.GetPipeline()`
+- [x] 2.3 Migrate `DeleteLogstashPipeline` in `internal/clients/elasticsearch/logstash.go` to use `GetESTypedClient()` and `typedapi.Logstash.DeletePipeline()`
+- [x] 2.4 Update `internal/elasticsearch/logstash/pipeline.go` to compile with migrated helper signatures
+- [x] 2.5 Remove or deprecate `models.LogstashPipeline` if fully replaced by `types.LogstashPipeline`
 
 ## 3. Enrich
 
