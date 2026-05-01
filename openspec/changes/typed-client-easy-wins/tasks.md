@@ -32,14 +32,14 @@
 
 ## 4. Watch
 
-- [ ] 4.1 Migrate `PutWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.PutWatch()` with `types.Watch` or `types.WatcherAction`/`types.WatcherCondition`/`types.WatcherInput`
-- [ ] 4.2 Migrate `PutWatchBodyJSON` in `internal/clients/elasticsearch/watch.go` to use typed API, converting raw JSON to typed request fields
-- [ ] 4.3 Migrate `GetWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.GetWatch()` with `types.Watch`
-- [ ] 4.4 Migrate `DeleteWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.DeleteWatch()`, preserving 404-as-success semantics
-- [ ] 4.5 Update `internal/elasticsearch/watcher/watch/create.go` to compile with migrated `PutWatch`/`PutWatchBodyJSON` signatures
-- [ ] 4.6 Update `internal/elasticsearch/watcher/watch/read.go` to compile with migrated `GetWatch` signature
-- [ ] 4.7 Update `internal/elasticsearch/watcher/watch/delete.go` to compile with migrated `DeleteWatch` signature
-- [ ] 4.8 Evaluate whether `models.Watch`, `models.PutWatch`, and `models.WatchBody` can be removed or must be retained for schema-layer mapping
+- [x] 4.1 Migrate `PutWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.PutWatch()` with `types.Watch` or `types.WatcherAction`/`types.WatcherCondition`/`types.WatcherInput`
+- [x] 4.2 Migrate `PutWatchBodyJSON` in `internal/clients/elasticsearch/watch.go` to use typed API, converting raw JSON to typed request fields
+- [x] 4.3 Migrate `GetWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.GetWatch()` with `types.Watch`
+- [x] 4.4 Migrate `DeleteWatch` in `internal/clients/elasticsearch/watch.go` to use `GetESTypedClient()` and `typedapi.Watcher.DeleteWatch()`, preserving 404-as-success semantics
+- [x] 4.5 Update `internal/elasticsearch/watcher/watch/create.go` to compile with migrated `PutWatch`/`PutWatchBodyJSON` signatures
+- [x] 4.6 Update `internal/elasticsearch/watcher/watch/read.go` to compile with migrated `GetWatch` signature
+- [x] 4.7 Update `internal/elasticsearch/watcher/watch/delete.go` to compile with migrated `DeleteWatch` signature
+- [x] 4.8 Evaluate whether `models.Watch`, `models.PutWatch`, and `models.WatchBody` can be removed or must be retained for schema-layer mapping
 
 ## 5. Cleanup and Verification
 
