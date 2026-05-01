@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -39,7 +40,7 @@ var minVersionEnrollmentTokens = version.Must(version.NewVersion("8.6.0"))
 var minVersionEnrollmentTokensSpaceID = version.Must(version.NewVersion("9.1.0"))
 
 func TestAccDataSourceEnrollmentTokens(t *testing.T) {
-	policyID := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	policyID := uuid.New().String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
