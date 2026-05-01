@@ -127,6 +127,7 @@ func getSchema() schema.Schema {
 					"runtime_field_map": schema.MapNestedAttribute{
 						Description: "Map of runtime field definitions by field name.",
 						Optional:    true,
+						Computed:    true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
