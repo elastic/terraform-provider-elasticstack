@@ -14,8 +14,6 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
     search = [
       {
         names                    = ["logs-*", "metrics-*"]
-        field_security           = jsonencode({ grant = ["title", "body"] })
-        query                    = jsonencode({ match = { status = "published" } })
         allow_restricted_indices = true
       }
     ]
