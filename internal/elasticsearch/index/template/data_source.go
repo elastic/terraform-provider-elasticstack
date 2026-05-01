@@ -23,85 +23,44 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// DataSource holds the provider client factory from Configure; Elasticsearch
-// access uses the same pattern as other PF data sources in this provider.
-type DataSource struct {
-	client *clients.ProviderClientFactory
-}
-
 func NewDataSource() datasource.DataSource {
-	return &DataSource{}
+	return entitycore.NewElasticsearchDataSource[Model](
+		entitycore.ComponentElasticsearch,
+		"index_template",
+		getDataSourceSchema,
+		readDataSource,
+	)
 }
 
-// Configure adds the provider-configured client factory to the data source.
-func (d *DataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	_ = ctx
-	// Add a nil check when handling ProviderData because Terraform sets that data after it calls the ConfigureProvider RPC.
-	if req.ProviderData == nil {
-		return
-	}
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config Model) (Model, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	d.client = factory
-}
-
-func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_index_template"
-}
-
-func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var cfg Model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := d.client.GetElasticsearchClient(ctx, cfg.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	name := cfg.Name.ValueString()
-	out, found, diags := readIndexTemplate(ctx, client, name)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	name := config.Name.ValueString()
+	out, found, diags := readIndexTemplate(ctx, esClient, name)
+	if diags.HasError() {
+		return config, diags
 	}
 	if !found {
 		tflog.Info(ctx, fmt.Sprintf(`Index template "%s" not found; leaving data source attributes unset (legacy SDK behavior)`, name))
-		empty := Model{
-			ElasticsearchConnection: cfg.ElasticsearchConnection,
-			Name:                    cfg.Name,
-		}
-		resp.Diagnostics.Append(resp.State.Set(ctx, &empty)...)
-		return
+		return config, diags
 	}
 
-	id, sdkDiags := client.ID(ctx, name)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, sdkDiags := esClient.ID(ctx, name)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	out.ElasticsearchConnection = cfg.ElasticsearchConnection
+	out.ElasticsearchConnection = config.ElasticsearchConnection
 	out.Name = types.StringValue(name)
 	out.ID = types.StringValue(id.String())
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
+	return out, diags
 }
-
-var (
-	_ datasource.DataSource              = &DataSource{}
-	_ datasource.DataSourceWithConfigure = &DataSource{}
-)
