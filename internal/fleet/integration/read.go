@@ -122,6 +122,13 @@ func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bo
 		return false
 	}
 
+	// If the package has no Kibana assets, space-specific installation status is
+	// meaningless — the package's only artifacts are global (ingestion pipelines,
+	// index templates). Treat as installed in all spaces.
+	if len(pkg.InstallationInfo.InstalledKibana) == 0 {
+		return true
+	}
+
 	if pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID {
 		return true
 	}

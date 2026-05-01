@@ -14,7 +14,7 @@
 
 ## 3. Resource Logic — Version Gating (`internal/fleet/integration/resource.go`, `create.go`)
 
-- [x] 3.1 Add `MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("8.15.0"))` constant in `resource.go`
+- [x] 3.1 Add `MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))` constant in `resource.go`
 - [x] 3.2 In `Read`, call `client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)` when `space_id` is known to determine `spaceAware`, then pass to `fleetPackageInstalled`
 - [x] 3.3 In `create`, call `apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)` when `space_id` is known to determine `spaceAware` before install decision
 
@@ -40,7 +40,7 @@
 - [x] 6.2 Add `TestAccResourceIntegration_MultiSpaceInstall`: create space A and B, install same package in both, verify both succeed
 - [x] 6.3 Add `TestAccResourceIntegration_MultiSpaceDelete`: install in two spaces, destroy one resource, verify package remains installed with assets in the other space
 - [x] 6.4 Add `TestAccResourceIntegration_SpaceAwareDrift`: install in space A, manually delete kibana assets from space A via API, verify Terraform plan detects drift and wants re-creation
-- [x] 6.5 Gate multi-space tests on `minVersionSpaceAwareIntegration = 8.15.0` using existing `versionutils.CheckIfVersionIsUnsupported` pattern
+- [x] 6.5 Gate multi-space tests on `minVersionSpaceAwareIntegration = 9.1.0` using existing `versionutils.CheckIfVersionIsUnsupported` pattern
 
 ## 7. Build, Lint, and OpenSpec Validation
 
@@ -48,3 +48,9 @@
 - [x] 7.2 Run `make check-lint` and fix any lint issues
 - [x] 7.3 Run `make check-openspec` and fix any spec validation errors
 - [x] 7.4 Run `openspec validate` on the change to ensure all artifacts are structurally correct
+
+## 8. Fallback and Warning Diagnostics
+
+- [x] 8.1 When `spaceAware` is true but `InstallKibanaAssets` returns an error, fall back to `fleet.InstallPackage` and emit a warning diagnostic
+- [x] 8.2 When `spaceAware` is false and the package is already installed in a different space, emit a warning diagnostic that Kibana assets may not be available in the target space
+- [x] 8.3 Handle packages with no Kibana assets in `fleetPackageInstalled` and `testAccCheckIntegrationInstalledInSpace`: treat as installed in all spaces because space-specific tracking is meaningless for global-only packages

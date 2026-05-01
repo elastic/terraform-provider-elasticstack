@@ -102,10 +102,15 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 	}
 
-	// If space_id is set, use space-aware installation
-	spaceAware := false
+	// If space_id is set, use space-aware installation when supported
+	spaceID := ""
 	if typeutils.IsKnown(planModel.SpaceID) {
-		installOptions.SpaceID = planModel.SpaceID.ValueString()
+		spaceID = planModel.SpaceID.ValueString()
+		installOptions.SpaceID = spaceID
+	}
+
+	spaceAware := false
+	if spaceID != "" {
 		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if respDiags.HasError() {
@@ -113,32 +118,41 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 		spaceAware = supported
 	}
-	// Determine whether to use InstallPackage or InstallKibanaAssets
-	if spaceAware {
-		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, installOptions.SpaceID)
-		respDiags.Append(getDiags...)
-		if respDiags.HasError() {
-			return
-		}
 
-		globallyInstalled := pkg != nil && fleetPackageInstalled(pkg, "", false)
-		installedElsewhere := globallyInstalled && !fleetPackageInstalled(pkg, installOptions.SpaceID, true)
+	// Pre-flight: determine whether the package is already installed elsewhere.
+	// This is needed so we can emit a warning when we can't install space-scoped assets.
+	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+	respDiags.Append(getDiags...)
+	if respDiags.HasError() {
+		return
+	}
 
-		if installedElsewhere {
-			diags = fleet.InstallKibanaAssets(ctx, fleetClient, name, version, installOptions.SpaceID, planModel.Force.ValueBool())
-			respDiags.Append(diags...)
-			if respDiags.HasError() {
-				return
-			}
-		} else {
-			// Package not installed at all, or already installed in target space (upgrade/no-op)
+	globallyInstalled := pkg != nil && fleetPackageInstalled(pkg, "", false)
+	installedElsewhere := globallyInstalled && spaceID != "" && !fleetPackageInstalled(pkg, spaceID, true)
+
+	if spaceAware && installedElsewhere {
+		diags = fleet.InstallKibanaAssets(ctx, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
+		if diags.HasError() {
+			respDiags.AddWarning(
+				"Space-aware asset installation failed",
+				fmt.Sprintf("Failed to install Kibana assets for %s/%s in space %s via the space-aware endpoint (%s). Falling back to standard package installation.", name, version, spaceID, diags[0].Summary()),
+			)
 			diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 			respDiags.Append(diags...)
 			if respDiags.HasError() {
 				return
 			}
+		} else {
+			respDiags.Append(diags...)
 		}
 	} else {
+		if installedElsewhere {
+			respDiags.AddWarning(
+				"Package already installed in a different space",
+				fmt.Sprintf("Package %s/%s is already installed in a different space. Kibana assets may not be available in space %s "+
+					"because the server does not support space-aware asset installation.", name, version, spaceID),
+			)
+		}
 		diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 		respDiags.Append(diags...)
 		if respDiags.HasError() {

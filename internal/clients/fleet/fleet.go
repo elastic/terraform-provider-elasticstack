@@ -639,8 +639,10 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 
 // InstallKibanaAssets installs Kibana assets for an already-installed package into a specific space.
 func InstallKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	spaceIDs := []string{spaceID}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsJSONRequestBody{
-		Force: &force,
+		Force:    &force,
+		SpaceIds: &spaceIDs,
 	}
 
 	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
@@ -650,8 +652,6 @@ func InstallKibanaAssets(ctx context.Context, client *Client, name, version stri
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)

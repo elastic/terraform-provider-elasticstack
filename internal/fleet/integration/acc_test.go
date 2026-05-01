@@ -48,7 +48,7 @@ var (
 	minVersionInstallationInfo = version.Must(version.NewVersion("8.9.0"))
 	// minVersionSpaceAwareIntegration is the minimum version that supports
 	// space-aware kibana_assets endpoints for multi-space asset management.
-	minVersionSpaceAwareIntegration = version.Must(version.NewVersion("8.15.0"))
+	minVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))
 )
 
 //go:embed testdata/TestAccResourceIntegrationFromSDK/main.tf
@@ -417,6 +417,11 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 		}
 		if !globalInstalled {
 			return fmt.Errorf("package %s/%s not globally installed", name, version)
+		}
+		// If the package has no Kibana assets, space-specific installation is
+		// meaningless — the package's only artifacts are global resources.
+		if len(pkg.InstallationInfo.InstalledKibana) == 0 {
+			return nil
 		}
 		inSpace := pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
 

@@ -33,7 +33,7 @@ var (
 	// MinVersionSkipDataStreamRollover is the minimum version that supports the skip_data_stream_rollover parameter
 	MinVersionSkipDataStreamRollover = MinVersionIgnoreMappingUpdateErrors
 	// MinVersionSpaceAwareIntegration is the minimum version that supports space-aware kibana_assets endpoints
-	MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("8.15.0"))
+	MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))
 )
 
 type integrationResource struct {
