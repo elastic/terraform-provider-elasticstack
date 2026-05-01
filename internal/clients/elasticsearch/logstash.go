@@ -106,7 +106,12 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 
 	_, err = typedClient.Logstash.DeletePipeline(pipelineID).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to delete logstash pipeline",
+			Detail:   fmt.Sprintf("Failed with: %s", err.Error()),
+		})
+		return diags
 	}
 
 	return diags
