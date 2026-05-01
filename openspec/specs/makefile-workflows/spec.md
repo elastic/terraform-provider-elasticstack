@@ -156,15 +156,13 @@ The `test` target SHALL run all repository unit-style test suites. It SHALL run 
 
 The `testacc` target SHALL enable Terraform acceptance testing for the module tree, using gotestsum with rerun-of-fails behavior, a configurable rerun max-failures cap, and tunable in-package and cross-package parallelism, timeout, and count via the acceptance-test variables. It SHALL invoke the repository-wide package scope `./...` by default, and pass verbose Go test output through to the underlying test run. The `testacc-vs-docker` target SHALL run acceptance tests against a local Docker stack on default localhost ports with the configured Elasticsearch credentials.
 
-The `testacc` recipe SHALL set `go test`’s package-level parallelism (the `-p` flag) explicitly via a Makefile-defined variable rather than relying on the Go default of `GOMAXPROCS`. The variable SHALL be overridable by contributors and CI through the standard `make VAR=value` mechanism, and the in-package `t.Parallel()` cap (the `-parallel` flag) SHALL remain a separate, independently-overridable variable.
-
 The `testacc` recipe SHALL support modulo-based package sharding via two independently-overridable Makefile variables: `ACCTEST_TOTAL_SHARDS` (total number of shards) and `ACCTEST_SHARD_INDEX` (zero-based index of the shard to run). When `ACCTEST_TOTAL_SHARDS=1` (the default), `testacc` SHALL run all packages identically to the unsharded behaviour — no packages are excluded. When `ACCTEST_TOTAL_SHARDS > 1`, `testacc` SHALL run only those packages whose zero-based position in the sorted `go list ./...` output satisfies `position % ACCTEST_TOTAL_SHARDS == ACCTEST_SHARD_INDEX`. The sorted package list SHALL be derived from `go list ./...` at recipe invocation time so that any package added to the module is automatically assigned to a shard without requiring a configuration change. The union of all shards (indices 0 through ACCTEST_TOTAL_SHARDS−1) SHALL cover every package in `go list ./...` exactly once.
 
 #### Scenario: Acceptance tests with defaults
 
 - GIVEN `make testacc`
 - WHEN the recipe runs
-- THEN `TF_ACC` SHALL be set for acceptance mode and tests SHALL run across all packages with the Makefile’s timeout and parallelism defaults unless overridden
+- THEN `TF_ACC` SHALL be set for acceptance mode and tests SHALL run across all packages with the Makefile's timeout and parallelism defaults unless overridden
 - AND gotestsum reruns SHALL honor both the configured rerun count and the configured max-failures cap
 - AND the underlying `go test` invocation SHALL include both an explicit `-p` value (cross-package parallelism) and an explicit `-parallel` value (in-package `t.Parallel()` cap), each taken from a distinct Makefile variable
 
