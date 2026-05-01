@@ -32,6 +32,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestAccResourceSecurityUser(t *testing.T) {
@@ -109,7 +110,11 @@ func TestAccResourceSecurityUserWithPasswordHash(t *testing.T) {
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	const resourceName = "elasticstack_elasticsearch_security_user.test"
 	const password = "HashPass123!"
-	const passwordHash = "$2b$10$Qgv5EqwUNYZylsj.Ge5FE.woHlDyfAa3OrLpT07mfZ0kLC7pB1EFu"
+	passwordHashBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to generate bcrypt hash for acceptance test: %s", err)
+	}
+	passwordHash := string(passwordHashBytes)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -119,7 +124,8 @@ func TestAccResourceSecurityUserWithPasswordHash(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_password_hash"),
 				ConfigVariables: config.Variables{
-					"username": config.StringVariable(username),
+					"username":      config.StringVariable(username),
+					"password_hash": config.StringVariable(passwordHash),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
