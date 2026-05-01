@@ -61,6 +61,9 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 			Type: item.Type.ValueString(),
 		}
 	})
+	if diags.HasError() {
+		return config, diags
+	}
 
 	// Set default values for boolean options
 	excludeExportDetails := true
