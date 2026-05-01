@@ -99,5 +99,3 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 			"schema Attributes must contain %q", attr)
 	}
 }
-
-

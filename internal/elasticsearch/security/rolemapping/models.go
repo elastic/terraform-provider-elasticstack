@@ -25,13 +25,13 @@ import (
 
 type Data struct {
 	entitycore.ElasticsearchConnectionField
-	ID                      types.String         `tfsdk:"id"`
-	Name                    types.String         `tfsdk:"name"`
-	Enabled                 types.Bool           `tfsdk:"enabled"`
-	Rules                   jsontypes.Normalized `tfsdk:"rules"`
-	Roles                   types.Set            `tfsdk:"roles"`
-	RoleTemplates           jsontypes.Normalized `tfsdk:"role_templates"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
+	ID            types.String         `tfsdk:"id"`
+	Name          types.String         `tfsdk:"name"`
+	Enabled       types.Bool           `tfsdk:"enabled"`
+	Rules         jsontypes.Normalized `tfsdk:"rules"`
+	Roles         types.Set            `tfsdk:"roles"`
+	RoleTemplates jsontypes.Normalized `tfsdk:"role_templates"`
+	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
 }
 
 func (d Data) GetID() types.String { return d.ID }

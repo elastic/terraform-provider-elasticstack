@@ -31,13 +31,13 @@ import (
 
 type PolicyData struct {
 	entitycore.ElasticsearchConnectionField
-	ID                      types.String         `tfsdk:"id"`
-	Name                    types.String         `tfsdk:"name"`
-	PolicyType              types.String         `tfsdk:"policy_type"`
-	Indices                 types.Set            `tfsdk:"indices"`
-	MatchField              types.String         `tfsdk:"match_field"`
-	EnrichFields            types.Set            `tfsdk:"enrich_fields"`
-	Query                   jsontypes.Normalized `tfsdk:"query"`
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	PolicyType   types.String         `tfsdk:"policy_type"`
+	Indices      types.Set            `tfsdk:"indices"`
+	MatchField   types.String         `tfsdk:"match_field"`
+	EnrichFields types.Set            `tfsdk:"enrich_fields"`
+	Query        jsontypes.Normalized `tfsdk:"query"`
 }
 
 type PolicyDataWithExecute struct {
