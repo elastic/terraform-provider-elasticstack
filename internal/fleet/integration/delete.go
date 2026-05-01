@@ -95,14 +95,25 @@ func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
 	if pkg == nil || pkg.InstallationInfo == nil {
 		return false
 	}
+
+	// Verify the target space is actually part of this installation.
+	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
+	inAdditional := false
+	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		_, inAdditional = (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]
+	}
+	if !isPrimary && !inAdditional {
+		return false
+	}
+
 	otherSpaces := 0
 	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
 		otherSpaces = len(*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)
 	}
-	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
-		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
 	if isPrimary {
 		return otherSpaces > 0
 	}
+	// Target is in additional spaces: primary + (additional minus self) = multi.
 	return otherSpaces > 1 || pkg.InstallationInfo.InstalledKibanaSpaceId != nil
 }
