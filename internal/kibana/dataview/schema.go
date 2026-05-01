@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -105,6 +106,9 @@ func getSchema() schema.Schema {
 						ElementType: types.StringType,
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
 					},
 					"field_attrs": schema.MapNestedAttribute{
 						Description: "Map of field attributes by field name.",
@@ -129,6 +133,9 @@ func getSchema() schema.Schema {
 						Description: "Map of runtime field definitions by field name.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
@@ -146,6 +153,9 @@ func getSchema() schema.Schema {
 						Description: "Map of field formats by field name.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
