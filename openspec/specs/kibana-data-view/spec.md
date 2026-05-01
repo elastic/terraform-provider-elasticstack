@@ -20,7 +20,7 @@ resource "elasticstack_kibana_data_view" "example" {
     id              = <optional, computed, string> # saved object id; RequiresReplace; UseStateForUnknown
     time_field_name = <optional, computed, string> # UseStateForUnknown
 
-    source_filters = <optional, list(string)>
+    source_filters = <optional, computed, list(string)>
 
     field_attrs = <optional, map(object({
       custom_label = <optional, string>
@@ -32,7 +32,7 @@ resource "elasticstack_kibana_data_view" "example" {
       script_source = <required, string>
     }))>
 
-    field_formats = <optional, map(object({
+    field_formats = <optional, computed, map(object({
       id     = <required, string>
       params = <optional, computed, object({
         pattern                    = <optional, string>
@@ -214,7 +214,7 @@ When refreshing state, the resource SHALL determine the target data view id and 
 
 ### Requirement: State mapping for empty collections (REQ-011)
 
-When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state. `runtime_field_map` SHALL be marked `Optional` and `Computed` so that it remains user-settable while Terraform also accepts a persisted non-empty value when the attribute is omitted from configuration.
+When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state. `runtime_field_map`, `field_formats`, and `source_filters` SHALL be marked `Optional` and `Computed` so that they remain user-settable while Terraform also accepts a persisted non-empty value when the attribute is omitted from configuration.
 
 #### Scenario: Empty API collection preserves null
 
@@ -228,6 +228,20 @@ When mapping API responses back to Terraform state, empty `source_filters`, `fie
 - WHEN the configuration removes `data_view.runtime_field_map` and update runs
 - AND Kibana preserves the existing runtime fields in its response
 - THEN the provider SHALL accept the persisted `runtime_field_map` into state without raising a consistency error
+
+#### Scenario: Omitted field_formats with persisted API value
+
+- GIVEN prior state where `data_view.field_formats` contains entries
+- WHEN the configuration removes `data_view.field_formats` and update runs
+- AND Kibana preserves the existing field formats in its response
+- THEN the provider SHALL accept the persisted `field_formats` into state without raising a consistency error
+
+#### Scenario: Omitted source_filters with persisted API value
+
+- GIVEN prior state where `data_view.source_filters` contains entries
+- WHEN the configuration removes `data_view.source_filters` and update runs
+- AND Kibana preserves the existing source filters in its response
+- THEN the provider SHALL accept the persisted `source_filters` into state without raising a consistency error
 
 ### Requirement: Namespace state normalization (REQ-012)
 
