@@ -42,7 +42,6 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 - `field` (String) The field in the input document that matches the policies match_field used to retrieve the enrichment data.
 - `policy_name` (String) The name of the enrich policy to use.
-- `target_field` (String) Field added to incoming documents to contain enrich data.
 
 ### Optional
 
@@ -55,6 +54,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `override` (Boolean) If processor will update fields with pre-existing non-null-valued field.
 - `shape_relation` (String) A spatial relation operator used to match the geoshape of incoming documents to documents in the enrich index.
 - `tag` (String) Identifier for the processor.
+- `target_field` (String) Field added to incoming documents to contain enrich data.
 
 ### Read-Only
 

@@ -39,8 +39,8 @@
 
 ## 2. Provider Wiring
 
-- [ ] 2.1 Register all 35 new constructors in `provider/plugin_framework.go`
-- [ ] 2.2 Remove all 35 old SDK registrations from `provider/provider.go`
+- [x] 2.1 Register all 35 new constructors in `provider/plugin_framework.go`
+- [x] 2.2 Remove all 35 old SDK registrations from `provider/provider.go`
 
 ## 3. Cleanup
 

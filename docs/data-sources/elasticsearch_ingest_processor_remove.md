@@ -35,7 +35,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- `field` (Set of String) Fields to be removed.
+- `field` (List of String) Fields to be removed.
 
 ### Optional
 
@@ -48,5 +48,5 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource.
+- `id` (String) Internal identifier of the resource
 - `json` (String) JSON representation of this data source.
