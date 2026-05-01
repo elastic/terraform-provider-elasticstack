@@ -21,8 +21,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -49,14 +51,12 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 		return diags
 	}
 
-	res, err := typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Perform(ctx)
+	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to create or update watch", err.Error())
 		return diags
 	}
-	defer res.Body.Close()
-
-	return diagutil.CheckHTTPErrorFromFW(res, "Unable to create or update watch")
+	return diags
 }
 
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
@@ -68,6 +68,13 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, diags
 	}
 
+	// We use .Perform() (raw *http.Response) instead of .Do() which would
+	// return *getwatch.Response containing *types.Watch. The typed
+	// types.Watch has trigger/input/condition/actions as strongly-typed
+	// unboxed structs, while the provider's models.Watch stores them as
+	// map[string]any under Body (with json:"watch"). The JSON shapes do
+	// not align for a simple Marshal/Unmarshal round-trip, so we decode
+	// directly from the raw response body into models.Watch.
 	res, err := typedClient.Watcher.GetWatch(watchID).Perform(ctx)
 	if err != nil {
 		diags.AddError("Unable to get watch", err.Error())
@@ -102,16 +109,14 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		return diags
 	}
 
-	res, err := typedClient.Watcher.DeleteWatch(watchID).Perform(ctx)
+	_, err = typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags // already gone, treat as success
+		}
 		diags.AddError("Unable to delete watch", err.Error())
 		return diags
 	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return diags // already gone, treat as success
-	}
-
-	return diagutil.CheckHTTPErrorFromFW(res, "Unable to delete watch")
+	return diags
 }
