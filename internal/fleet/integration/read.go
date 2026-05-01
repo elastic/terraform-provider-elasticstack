@@ -55,7 +55,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if pkg == nil || !fleetPackageInstalled(pkg) {
+	if pkg == nil || !fleetPackageInstalled(pkg, stateModel.SpaceID.ValueString(), false) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -79,20 +79,44 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 // fleetPackageInstalled determines whether Fleet reports a package as fully installed.
 // Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
 // and status casing can vary.
-func fleetPackageInstalled(pkg *kbapi.PackageInfo) bool {
+func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bool) bool {
 	if pkg == nil {
 		return false
 	}
+
+	globalInstalled := false
 	if pkg.InstallationInfo != nil {
 		switch pkg.InstallationInfo.InstallStatus {
 		case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
-			return true
+			globalInstalled = true
 		case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
 			return false
 		}
 	}
-	if pkg.Status != nil {
-		return strings.EqualFold(*pkg.Status, "installed")
+	if !globalInstalled && pkg.Status != nil {
+		globalInstalled = strings.EqualFold(*pkg.Status, "installed")
 	}
+	if !globalInstalled {
+		return false
+	}
+
+	if !spaceAware || spaceID == "" {
+		return true
+	}
+
+	if pkg.InstallationInfo == nil {
+		return true
+	}
+
+	if pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID {
+		return true
+	}
+
+	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
+			return true
+		}
+	}
+
 	return false
 }
