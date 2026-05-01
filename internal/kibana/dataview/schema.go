@@ -104,6 +104,7 @@ func getSchema() schema.Schema {
 						Description: "List of field names you want to filter out in Discover.",
 						ElementType: types.StringType,
 						Optional:    true,
+						Computed:    true,
 					},
 					"field_attrs": schema.MapNestedAttribute{
 						Description: "Map of field attributes by field name.",
@@ -144,6 +145,7 @@ func getSchema() schema.Schema {
 					"field_formats": schema.MapNestedAttribute{
 						Description: "Map of field formats by field name.",
 						Optional:    true,
+						Computed:    true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
