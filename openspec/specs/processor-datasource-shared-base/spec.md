@@ -1,8 +1,9 @@
-# processor-datasource-shared-base Specification
+# Purpose
 
-## Purpose
-TBD - created by archiving change migrate-ingest-processor-ds-pf-shared-base. Update Purpose after archive.
+Define the shared base infrastructure for ingest processor data sources migrated to the Terraform Plugin Framework.
+
 ## Requirements
+
 ### Requirement: Generic processor data source base
 The system SHALL provide a generic `processorDataSource[T ProcessorModel]` struct that implements `datasource.DataSource` and `datasource.DataSourceWithConfigure`. It SHALL own the `Metadata`, `Read`, and `Configure` methods, eliminating the need for per-processor `Read` implementations.
 
@@ -35,4 +36,3 @@ Processor data sources SHALL NOT require or expose an `elasticsearch_connection`
 - GIVEN a processor data source configured without any connection block
 - WHEN the data source is read
 - THEN it SHALL succeed and produce valid `json` and `id` outputs
-
