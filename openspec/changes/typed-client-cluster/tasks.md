@@ -1,26 +1,26 @@
 ## 1. Typed Client Infrastructure
 
-- [ ] 1.1 Add `GetESTypedClient() (*elasticsearch.TypedClient, error)` to `ElasticsearchScopedClient` in `internal/clients/elasticsearch_scoped_client.go`
-- [ ] 1.2 Update `serverInfo()` and cached field to use `*core.InfoResponse` instead of `*models.ClusterInfo`
-- [ ] 1.3 Update `ClusterID()`, `ServerVersion()`, and `ServerFlavor()` to read from `*core.InfoResponse`
-- [ ] 1.4 Verify `make build` passes after scoped client changes
+- [x] 1.1 Add `GetESTypedClient() (*elasticsearch.TypedClient, error)` to `ElasticsearchScopedClient` in `internal/clients/elasticsearch_scoped_client.go`
+- [x] 1.2 Update `serverInfo()` and cached field to use `*core.InfoResponse` instead of `*models.ClusterInfo`
+- [x] 1.3 Update `ClusterID()`, `ServerVersion()`, and `ServerFlavor()` to read from `*core.InfoResponse`
+- [x] 1.4 Verify `make build` passes after scoped client changes
 
 ## 2. Cluster Helper Migration
 
-- [ ] 2.1 Rewrite `GetClusterInfo` in `internal/clients/elasticsearch/cluster.go` to use `typedClient.Core.Info().Do(ctx)`
-- [ ] 2.2 Rewrite `PutSnapshotRepository` to use typed API `Snapshot.CreateRepository().Do(ctx)`
-- [ ] 2.3 Rewrite `GetSnapshotRepository` to use typed API `Snapshot.GetRepository().Do(ctx)` with union type handling
-- [ ] 2.4 Rewrite `DeleteSnapshotRepository` to use typed API `Snapshot.DeleteRepository().Do(ctx)`
-- [ ] 2.5 Rewrite `PutSlm` to use typed API `Slm.PutLifecycle().Do(ctx)`
-- [ ] 2.6 Rewrite `GetSlm` to use typed API `Slm.GetLifecycle().Do(ctx)` and return `*types.SLMPolicy`
-- [ ] 2.7 Rewrite `DeleteSlm` to use typed API `Slm.DeleteLifecycle().Do(ctx)`
-- [ ] 2.8 Rewrite `PutSettings` to use typed API `Cluster.PutSettings().Do(ctx)`
-- [ ] 2.9 Rewrite `GetSettings` to use typed API `Cluster.GetSettings().Do(ctx)` and flatten `json.RawMessage` values
-- [ ] 2.10 Rewrite `GetScript` to use typed API `Core.GetScript().Do(ctx)` and return `*types.StoredScript`
-- [ ] 2.11 Rewrite `PutScript` to use typed API `Core.PutScript().Do(ctx)`
-- [ ] 2.12 Rewrite `DeleteScript` to use typed API `Core.DeleteScript().Do(ctx)`
-- [ ] 2.13 Remove unused imports (`bytes`, `encoding/json`, `io`, `net/http`, `esapi`) from `cluster.go` after migration
-- [ ] 2.14 Verify `make build` passes after helper migration
+- [x] 2.1 Rewrite `GetClusterInfo` in `internal/clients/elasticsearch/cluster.go` to use `typedClient.Core.Info().Do(ctx)`
+- [x] 2.2 Rewrite `PutSnapshotRepository` to use typed API `Snapshot.CreateRepository().Do(ctx)`
+- [x] 2.3 Rewrite `GetSnapshotRepository` to use typed API `Snapshot.GetRepository().Do(ctx)` with union type handling
+- [x] 2.4 Rewrite `DeleteSnapshotRepository` to use typed API `Snapshot.DeleteRepository().Do(ctx)`
+- [x] 2.5 Rewrite `PutSlm` to use typed API `Slm.PutLifecycle().Do(ctx)`
+- [x] 2.6 Rewrite `GetSlm` to use typed API `Slm.GetLifecycle().Do(ctx)` and return `*types.SLMPolicy`
+- [x] 2.7 Rewrite `DeleteSlm` to use typed API `Slm.DeleteLifecycle().Do(ctx)`
+- [x] 2.8 Rewrite `PutSettings` to use typed API `Cluster.PutSettings().Do(ctx)`
+- [x] 2.9 Rewrite `GetSettings` to use typed API `Cluster.GetSettings().Do(ctx)` and flatten `json.RawMessage` values
+- [x] 2.10 Rewrite `GetScript` to use typed API `Core.GetScript().Do(ctx)` and return `*types.StoredScript`
+- [x] 2.11 Rewrite `PutScript` to use typed API `Core.PutScript().Do(ctx)`
+- [x] 2.12 Rewrite `DeleteScript` to use typed API `Core.DeleteScript().Do(ctx)`
+- [x] 2.13 Remove unused imports (`bytes`, `encoding/json`, `io`, `net/http`, `esapi`) from `cluster.go` after migration
+- [x] 2.14 Verify `make build` passes after helper migration
 
 ## 3. Caller Updates — Cluster Info
 
