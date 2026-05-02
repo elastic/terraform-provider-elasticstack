@@ -54,7 +54,13 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		DeferValidation(params.DeferValidation).
 		Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to create transform: %s", transform.Name),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	if params.Enabled {
@@ -128,7 +134,13 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 
 	statsRes, err := typedClient.Transform.GetTransformStats(*name).Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to get transform stats: %s", *name),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	var foundTransformStats *models.TransformStats
@@ -177,7 +189,13 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		DeferValidation(params.DeferValidation).
 		Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to update transform: %s", transform.Name),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	if params.ApplyEnabled {
