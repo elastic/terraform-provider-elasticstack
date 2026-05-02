@@ -31,6 +31,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+// PutTransform creates or updates a transform.
+//
+// We use .Raw() because the typed types.TransformDestination does not yet
+// model the destination.aliases field. Passing the raw JSON preserves it.
 func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
@@ -62,6 +66,11 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	return diags
 }
 
+// GetTransform retrieves a transform by name.
+//
+// We use .Perform() (raw *http.Response) instead of .Do() because the typed
+// types.ReindexDestination does not yet model the destination.aliases field.
+// We decode directly from the raw response body to preserve it.
 func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
@@ -145,6 +154,10 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 	return foundTransformStats, diags
 }
 
+// UpdateTransform updates an existing transform.
+//
+// We use .Raw() because the typed types.TransformDestination does not yet
+// model the destination.aliases field. Passing the raw JSON preserves it.
 func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
