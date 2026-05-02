@@ -24,9 +24,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
@@ -182,39 +182,40 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diags
 	}
 
-	var slm models.SnapshotPolicy
-	slm.ID = slmID
-	var slmConfig models.SnapshotPolicyConfig
-	slmRetention := models.SnapshortRetention{}
+	var slm types.SLMPolicy
+	var slmConfig types.Configuration
+	var slmRetention types.Retention
 
+	slm.Name = slmID
 	slm.Repository = d.Get("repository").(string)
 	slm.Schedule = d.Get("schedule").(string)
 	if v, ok := d.GetOk("snapshot_name"); ok {
 		slm.Name = v.(string)
 	}
 	if v, ok := d.GetOk("expire_after"); ok {
-		vv := v.(string)
-		slmRetention.ExpireAfter = &vv
+		slmRetention.ExpireAfter = v.(string)
 	}
 	if v, ok := d.GetOk("max_count"); ok {
-		vv := v.(int)
-		slmRetention.MaxCount = &vv
+		slmRetention.MaxCount = v.(int)
 	}
 	if v, ok := d.GetOk("min_count"); ok {
-		vv := v.(int)
-		slmRetention.MinCount = &vv
+		slmRetention.MinCount = v.(int)
 	}
-	slm.Retention = &slmRetention
+	if slmRetention.ExpireAfter != nil || slmRetention.MaxCount != 0 || slmRetention.MinCount != 0 {
+		slm.Retention = &slmRetention
+	}
 
+	expandWildcards := "open,hidden" // default
 	if v, ok := d.GetOk("expand_wildcards"); ok {
-		vv := v.(string)
-		slmConfig.ExpandWildcards = &vv
+		expandWildcards = v.(string)
 	}
-	if v, ok := d.Get("ignore_unavailable").(bool); ok {
-		slmConfig.IgnoreUnavailable = &v
+	if v, ok := d.GetOk("ignore_unavailable"); ok {
+		vv := v.(bool)
+		slmConfig.IgnoreUnavailable = &vv
 	}
-	if v, ok := d.Get("include_global_state").(bool); ok {
-		slmConfig.IncludeGlobalState = &v
+	if v, ok := d.GetOk("include_global_state"); ok {
+		vv := v.(bool)
+		slmConfig.IncludeGlobalState = &vv
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
@@ -237,7 +238,15 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
-		slmConfig.Metadata = metadata
+		metaRaw := make(types.Metadata)
+		for k, val := range metadata {
+			data, err := json.Marshal(val)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			metaRaw[k] = data
+		}
+		slmConfig.Metadata = metaRaw
 	}
 	if v, ok := d.GetOk("partial"); ok {
 		vv := v.(bool)
@@ -246,7 +255,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	slm.Config = &slmConfig
 
-	if diags := elasticsearch.PutSlm(ctx, client, &slm); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm, expandWildcards); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -290,30 +299,25 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 		return diag.FromErr(err)
 	}
 	if slm.Retention != nil {
-		if v := slm.Retention.ExpireAfter; v != nil {
-			if err := d.Set("expire_after", *v); err != nil {
+		if slm.Retention.ExpireAfter != nil {
+			if err := d.Set("expire_after", fmt.Sprintf("%v", slm.Retention.ExpireAfter)); err != nil {
 				return diag.FromErr(err)
 			}
 		}
-		if v := slm.Retention.MaxCount; v != nil {
-			if err := d.Set("max_count", *v); err != nil {
+		if slm.Retention.MaxCount != 0 {
+			if err := d.Set("max_count", slm.Retention.MaxCount); err != nil {
 				return diag.FromErr(err)
 			}
 		}
-		if v := slm.Retention.MinCount; v != nil {
-			if err := d.Set("min_count", *v); err != nil {
+		if slm.Retention.MinCount != 0 {
+			if err := d.Set("min_count", slm.Retention.MinCount); err != nil {
 				return diag.FromErr(err)
 			}
 		}
 	}
 
 	if c := slm.Config; c != nil {
-		if c.ExpandWildcards != nil {
-			if err := d.Set("expand_wildcards", *c.ExpandWildcards); err != nil {
-				return diag.FromErr(err)
-			}
-		}
-
+		// expand_wildcards is not returned by the typed API; preserve from state
 		if c.IncludeGlobalState != nil {
 			if err := d.Set("include_global_state", *c.IncludeGlobalState); err != nil {
 				return diag.FromErr(err)
@@ -330,11 +334,18 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 			}
 		}
 		if c.Metadata != nil {
-			meta, err := json.Marshal(c.Metadata)
+			meta := make(map[string]any)
+			for k, v := range c.Metadata {
+				var val any
+				if err := json.Unmarshal(v, &val); err == nil {
+					meta[k] = val
+				}
+			}
+			metaBytes, err := json.Marshal(meta)
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			if err := d.Set("metadata", string(meta)); err != nil {
+			if err := d.Set("metadata", string(metaBytes)); err != nil {
 				return diag.FromErr(err)
 			}
 		}

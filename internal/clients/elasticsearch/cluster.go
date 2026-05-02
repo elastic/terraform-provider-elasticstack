@@ -18,6 +18,7 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -228,22 +229,79 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 	return diags
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slm *types.SLMPolicy) sdkdiag.Diagnostics {
+func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *types.SLMPolicy, expandWildcards string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
 
-	req := typedClient.Slm.PutLifecycle(slm.Name)
+	req := typedClient.Slm.PutLifecycle(policyID)
+
+	// Build request body manually to support expand_wildcards and accurate
+	// Retention field omission (types.Retention lacks omitempty on MaxCount/MinCount).
+	body := map[string]any{
+		"name":       slm.Name,
+		"repository": slm.Repository,
+		"schedule":   slm.Schedule,
+	}
 	if slm.Config != nil {
-		req.Config(slm.Config)
+		config := map[string]any{}
+		if len(slm.Config.FeatureStates) > 0 {
+			config["feature_states"] = slm.Config.FeatureStates
+		}
+		if slm.Config.IgnoreUnavailable != nil {
+			config["ignore_unavailable"] = *slm.Config.IgnoreUnavailable
+		}
+		if slm.Config.IncludeGlobalState != nil {
+			config["include_global_state"] = *slm.Config.IncludeGlobalState
+		}
+		if len(slm.Config.Indices) > 0 {
+			config["indices"] = slm.Config.Indices
+		}
+		if slm.Config.Metadata != nil {
+			meta := make(map[string]any)
+			for k, v := range slm.Config.Metadata {
+				var val any
+				if err := json.Unmarshal(v, &val); err == nil {
+					meta[k] = val
+				}
+			}
+			config["metadata"] = meta
+		}
+		if slm.Config.Partial != nil {
+			config["partial"] = *slm.Config.Partial
+		}
+		if expandWildcards != "" {
+			config["expand_wildcards"] = expandWildcards
+		}
+		if len(config) > 0 {
+			body["config"] = config
+		}
+	} else if expandWildcards != "" {
+		body["config"] = map[string]any{"expand_wildcards": expandWildcards}
 	}
-	req.Repository(slm.Repository)
 	if slm.Retention != nil {
-		req.Retention(slm.Retention)
+		retention := map[string]any{}
+		if slm.Retention.ExpireAfter != nil {
+			retention["expire_after"] = slm.Retention.ExpireAfter
+		}
+		if slm.Retention.MaxCount != 0 {
+			retention["max_count"] = slm.Retention.MaxCount
+		}
+		if slm.Retention.MinCount != 0 {
+			retention["min_count"] = slm.Retention.MinCount
+		}
+		if len(retention) > 0 {
+			body["retention"] = retention
+		}
 	}
-	req.Schedule(slm.Schedule)
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	req.Raw(bytes.NewReader(bodyBytes))
 
 	_, err = req.Do(ctx)
 	if err != nil {
@@ -378,7 +436,7 @@ func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	return resp.Script, nil
 }
 
-func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, context string, script *types.StoredScript) fwdiag.Diagnostics {
+func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, context string, script *types.StoredScript, params map[string]any) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
@@ -386,10 +444,30 @@ func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 		return diags
 	}
 
-	req := typedClient.Core.PutScript(id).Script(script)
+	req := typedClient.Core.PutScript(id)
 	if context != "" {
 		req.Context(context)
 	}
+
+	// Build request body manually to support params (types.StoredScript lacks Params).
+	type storedScriptWithParams struct {
+		types.StoredScript
+		Params map[string]any `json:"params,omitempty"`
+	}
+	body := struct {
+		Script storedScriptWithParams `json:"script"`
+	}{
+		Script: storedScriptWithParams{
+			StoredScript: *script,
+			Params:       params,
+		},
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		diags.AddError("Failed to marshal script request", err.Error())
+		return diags
+	}
+	req.Raw(bytes.NewReader(bodyBytes))
 
 	_, err = req.Do(ctx)
 	if err != nil {

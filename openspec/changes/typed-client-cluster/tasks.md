@@ -24,35 +24,35 @@
 
 ## 3. Caller Updates — Cluster Info
 
-- [ ] 3.1 Update `internal/elasticsearch/cluster/cluster_info_data_source.go` to use `*core.InfoResponse`
-- [ ] 3.2 Adapt `build_date` extraction to use typed API `DateTime.String()`
-- [ ] 3.3 Update `internal/elasticsearch/cluster/cluster_info_data_source_test.go` if needed
+- [x] 3.1 Update `internal/elasticsearch/cluster/cluster_info_data_source.go` to use `*core.InfoResponse`
+- [x] 3.2 Adapt `build_date` extraction to handle typed API `DateTime` (type-switch on `any`)
+- [x] 3.3 Update `internal/elasticsearch/cluster/cluster_info_data_source_test.go` if needed
 
 ## 4. Caller Updates — Snapshot Repository
 
-- [ ] 4.1 Update `internal/elasticsearch/cluster/snapshot_repository.go` to adapt to typed API response type
-- [ ] 4.2 Add repository union type-switch logic (`types.Repository` → concrete type → `Type` + `Settings`)
-- [ ] 4.3 Update `internal/elasticsearch/cluster/snapshot_repository_data_source.go` for typed API response
-- [ ] 4.4 Update `internal/elasticsearch/cluster/snapshot_repository_test.go` and `snapshot_repository_data_source_test.go` if needed
+- [x] 4.1 Update `internal/elasticsearch/cluster/snapshot_repository.go` to adapt to typed API response type
+- [x] 4.2 Add repository union type-switch logic (`types.Repository` → concrete type → `Type` + `Settings`)
+- [x] 4.3 Update `internal/elasticsearch/cluster/snapshot_repository_data_source.go` for typed API response
+- [x] 4.4 Update `internal/elasticsearch/cluster/snapshot_repository_test.go` and `snapshot_repository_data_source_test.go` if needed
 
 ## 5. Caller Updates — SLM
 
-- [ ] 5.1 Update `internal/elasticsearch/cluster/slm.go` to use `*types.SLMPolicy` and `*types.Retention`
-- [ ] 5.2 Adapt `config` field mapping to typed API `types.Configuration`
-- [ ] 5.3 Update `internal/elasticsearch/cluster/slm_test.go` if needed
+- [x] 5.1 Update `internal/elasticsearch/cluster/slm.go` to use `*types.SLMPolicy` and `*types.Retention`
+- [x] 5.2 Adapt `config` field mapping to typed API `types.Configuration` with `expand_wildcards` workaround
+- [x] 5.3 Update `internal/elasticsearch/cluster/slm_test.go` if needed
 
 ## 6. Caller Updates — Cluster Settings
 
-- [ ] 6.1 Update `internal/elasticsearch/cluster/settings.go` to handle `getsettings.Response` with `json.RawMessage` values
-- [ ] 6.2 Add flattening helper to convert `map[string]json.RawMessage` to `map[string]any`
-- [ ] 6.3 Update `internal/elasticsearch/cluster/settings_test.go` if needed
+- [x] 6.1 Update `internal/elasticsearch/cluster/settings.go` to handle `getsettings.Response` with `json.RawMessage` values
+- [x] 6.2 Add flattening helper to convert `map[string]json.RawMessage` to `map[string]any`
+- [x] 6.3 Update `internal/elasticsearch/cluster/settings_test.go` if needed
 
 ## 7. Caller Updates — Script Resource
 
-- [ ] 7.1 Update `internal/elasticsearch/cluster/script/read.go` to use `*types.StoredScript`
-- [ ] 7.2 Update `internal/elasticsearch/cluster/script/update.go` to build request via typed API and preserve `params` behavior
-- [ ] 7.3 Update `internal/elasticsearch/cluster/script/delete.go` to call typed `DeleteScript`
-- [ ] 7.4 Update `internal/elasticsearch/cluster/script/acc_test.go` if needed
+- [x] 7.1 Update `internal/elasticsearch/cluster/script/read.go` to use `*types.StoredScript`
+- [x] 7.2 Update `internal/elasticsearch/cluster/script/update.go` to build request via typed API and preserve `params` behavior
+- [x] 7.3 Update `internal/elasticsearch/cluster/script/delete.go` to call typed `DeleteScript`
+- [x] 7.4 Update `internal/elasticsearch/cluster/script/acc_test.go` if needed
 
 ## 8. Model Cleanup
 

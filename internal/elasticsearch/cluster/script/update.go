@@ -21,14 +21,15 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/scriptlanguage"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
@@ -52,30 +53,29 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 		return diags
 	}
 
-	script := models.Script{
-		ID:       scriptID,
-		Language: data.Lang.ValueString(),
-		Source:   data.Source.ValueString(),
+	script := types.StoredScript{
+		Lang:   scriptlanguage.ScriptLanguage{Name: data.Lang.ValueString()},
+		Source: data.Source.ValueString(),
 	}
 
+	var params map[string]any
 	if typeutils.IsKnown(data.Params) {
 		paramsStr := data.Params.ValueString()
 		if paramsStr != "" {
-			var params map[string]any
 			err := json.Unmarshal([]byte(paramsStr), &params)
 			if err != nil {
 				diags.AddError("Error unmarshaling script params", err.Error())
 				return diags
 			}
-			script.Params = params
 		}
 	}
 
+	scriptContext := ""
 	if typeutils.IsKnown(data.Context) {
-		script.Context = data.Context.ValueString()
+		scriptContext = data.Context.ValueString()
 	}
 
-	diags.Append(elasticsearch.PutScript(ctx, client, &script)...)
+	diags.Append(elasticsearch.PutScript(ctx, client, scriptID, scriptContext, &script, params)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -89,7 +89,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 
 	// Preserve connection and ID from the original data
 	readData.ElasticsearchConnection = data.ElasticsearchConnection
-	readData.ID = types.StringValue(id.String())
+	readData.ID = fwtypes.StringValue(id.String())
 
 	// Preserve context from the original data as it's not returned by the API
 	readData.Context = data.Context

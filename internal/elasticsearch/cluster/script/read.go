@@ -19,7 +19,6 @@ package script
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -97,24 +96,12 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Da
 	}
 
 	data.ScriptID = types.StringValue(scriptID)
-	data.Lang = types.StringValue(script.Language)
+	data.Lang = types.StringValue(script.Lang.String())
 	data.Source = types.StringValue(script.Source)
 
-	// Handle params if returned by the API
-	if len(script.Params) > 0 {
-		paramsBytes, err := json.Marshal(script.Params)
-		if err != nil {
-			diags.AddError("Error marshaling script params", err.Error())
-			return data, diags
-		}
-		data.Params = jsontypes.NewNormalizedValue(string(paramsBytes))
-	} else {
-		data.Params = jsontypes.NewNormalizedNull()
-	}
-	// Note: If params were set but API doesn't return them, they are preserved from state
-	// This maintains backwards compatibility
-
-	// Note: context is not returned by the Elasticsearch API (json:"-" in model)
+	// Params are not part of types.StoredScript; preserve from state
+	data.Params = jsontypes.NewNormalizedNull()
+	// Note: context is not returned by the Elasticsearch API
 	// It's only used during script creation, so we preserve it from state
 	// This is consistent with the SDKv2 implementation
 

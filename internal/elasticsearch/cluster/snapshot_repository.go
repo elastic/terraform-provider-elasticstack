@@ -28,8 +28,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -362,12 +361,12 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diags
 	}
 
-	var snapRepo models.SnapshotRepository
-	snapRepo.Name = repoID
+	var repoType string
 	snapRepoSettings := make(map[string]any)
+	verify := true
 
 	if v, ok := d.GetOk("verify"); ok {
-		snapRepo.Verify = v.(bool)
+		verify = v.(bool)
 	}
 
 	// find supported repository types and iterate over them
@@ -375,13 +374,12 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) 
 	delete(schemaTypes, "elasticsearch_connection")
 	for t := range schemaTypes {
 		if v, ok := d.GetOk(t); ok && reflect.TypeOf(v).Kind() == reflect.Slice {
-			snapRepo.Type = t
+			repoType = t
 			expandFsSettings(v.([]any)[0].(map[string]any), snapRepoSettings)
 		}
 	}
-	snapRepo.Settings = snapRepoSettings
 
-	if diags := elasticsearch.PutSnapshotRepository(ctx, client, &snapRepo); diags.HasError() {
+	if diags := elasticsearch.PutSnapshotRepository(ctx, client, repoID, repoType, snapRepoSettings, verify); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -454,7 +452,7 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any)
 	return diags
 }
 
-func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Schema) ([]any, error) {
+func flattenRepoSettings(r *elasticsearch.SnapshotRepositoryInfo, s map[string]*schema.Schema) ([]any, error) {
 	settings := make(map[string]any)
 	result := make([]any, 1)
 
@@ -463,17 +461,35 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 		if schemaDef, ok := s[k]; ok && !schemautil.IsEmpty(v) {
 			switch schemaDef.Type {
 			case schema.TypeInt, schema.TypeFloat:
-				i, err := strconv.Atoi(v.(string))
-				if err != nil {
-					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+				switch val := v.(type) {
+				case int:
+					settings[k] = val
+				case int64:
+					settings[k] = int(val)
+				case float64:
+					settings[k] = int(val)
+				case string:
+					i, err := strconv.Atoi(val)
+					if err != nil {
+						return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+					}
+					settings[k] = i
+				default:
+					settings[k] = v
 				}
-				settings[k] = i
 			case schema.TypeBool:
-				b, err := strconv.ParseBool(v.(string))
-				if err != nil {
-					return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+				switch val := v.(type) {
+				case bool:
+					settings[k] = val
+				case string:
+					b, err := strconv.ParseBool(val)
+					if err != nil {
+						return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+					}
+					settings[k] = b
+				default:
+					settings[k] = v
 				}
-				settings[k] = b
 			default:
 				settings[k] = v
 			}
