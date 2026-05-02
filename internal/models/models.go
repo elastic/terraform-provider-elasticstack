@@ -24,47 +24,6 @@ import (
 	"time"
 )
 
-type BuildDate struct {
-	time.Time
-}
-
-func (b *BuildDate) UnmarshalJSON(dateBytes []byte) error {
-	dateStr := strings.Trim(string(dateBytes), "\"")
-	if dateStr == "null" {
-		b.Time = time.Time{}
-		return nil
-	}
-
-	t, err := time.Parse("2006-01-02T15:04:05Z07:00", dateStr)
-	if err != nil {
-		t, err = time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			return err
-		}
-	}
-
-	b.Time = t
-	return nil
-}
-
-type ClusterInfo struct {
-	Name        string `json:"name"`
-	ClusterName string `json:"cluster_name"`
-	ClusterUUID string `json:"cluster_uuid"`
-	Version     struct {
-		Number                           string    `json:"number"`
-		BuildType                        string    `json:"build_type"`
-		BuildHash                        string    `json:"build_hash"`
-		BuildFlavor                      string    `json:"build_flavor"`
-		BuildDate                        BuildDate `json:"build_date"`
-		BuildSnapshot                    bool      `json:"build_snapshot"`
-		LuceneVersion                    string    `json:"lucene_version"`
-		MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
-		MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
-	} `json:"version"`
-	Tagline string `json:"tagline"`
-}
-
 type User struct {
 	Username     string         `json:"-"`
 	FullName     string         `json:"full_name,omitempty"`
@@ -288,38 +247,6 @@ type Phase struct {
 
 type Action map[string]any
 
-type SnapshotRepository struct {
-	Name     string         `json:"-"`
-	Type     string         `json:"type"`
-	Settings map[string]any `json:"settings"`
-	Verify   bool           `json:"verify"`
-}
-
-type SnapshotPolicy struct {
-	ID         string                `json:"-"`
-	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
-	Name       string                `json:"name"`
-	Repository string                `json:"repository"`
-	Retention  *SnapshortRetention   `json:"retention,omitempty"`
-	Schedule   string                `json:"schedule"`
-}
-
-type SnapshortRetention struct {
-	ExpireAfter *string `json:"expire_after,omitempty"`
-	MaxCount    *int    `json:"max_count,omitempty"`
-	MinCount    *int    `json:"min_count,omitempty"`
-}
-
-type SnapshotPolicyConfig struct {
-	ExpandWildcards    *string          `json:"expand_wildcards,omitempty"`
-	IgnoreUnavailable  *bool            `json:"ignore_unavailable,omitempty"`
-	IncludeGlobalState *bool            `json:"include_global_state,omitempty"`
-	Indices            StringSliceOrCSV `json:"indices,omitempty"`
-	FeatureStates      []string         `json:"feature_states,omitempty"`
-	Metadata           map[string]any   `json:"metadata,omitempty"`
-	Partial            *bool            `json:"partial,omitempty"`
-}
-
 type StringSliceOrCSV []string
 
 var ErrInvalidStringSliceOrCSV = errors.New("expected array of strings, or a csv string")
@@ -416,14 +343,6 @@ type LogstashPipeline struct {
 	PipelineMetadata map[string]any `json:"pipeline_metadata"`
 	PipelineSettings map[string]any `json:"pipeline_settings"`
 	Username         string         `json:"username"`
-}
-
-type Script struct {
-	ID       string         `json:"-"`
-	Language string         `json:"lang"`
-	Source   string         `json:"source"`
-	Params   map[string]any `json:"params"`
-	Context  string         `json:"-"`
 }
 
 type Watch struct {
