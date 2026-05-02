@@ -21,8 +21,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -31,6 +33,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
+
+// formatDuration converts duration to a string in the format accepted by
+// Elasticsearch, matching the legacy esapi behavior (milliseconds).
+func formatDuration(d time.Duration) string {
+	if d < time.Millisecond {
+		return strconv.FormatInt(int64(d), 10) + "nanos"
+	}
+	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
+}
 
 // PutTransform creates or updates a transform.
 //
@@ -51,7 +62,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(timeout.String()).
+		Timeout(formatDuration(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -191,7 +202,7 @@ func UpdateTransform(
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(timeout.String()).
+		Timeout(formatDuration(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -229,6 +240,10 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity: diag.Error,
@@ -249,7 +264,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 		return diag.FromErr(err)
 	}
 
-	_, err = typedClient.Transform.StartTransform(transformName).Timeout(timeout.String()).Do(ctx)
+	_, err = typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
 		return diag.Diagnostics{
 			diag.Diagnostic{
@@ -271,7 +286,7 @@ func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 		return diag.FromErr(err)
 	}
 
-	_, err = typedClient.Transform.StopTransform(transformName).Timeout(timeout.String()).Do(ctx)
+	_, err = typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
 		return diag.Diagnostics{
 			diag.Diagnostic{

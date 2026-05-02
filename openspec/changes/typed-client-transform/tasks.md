@@ -25,5 +25,5 @@
 
 - [x] 4.1 Run `make build` to confirm compilation
 - [x] 4.2 Run unit tests for `internal/elasticsearch/transform`
-- [x] 4.3 Run acceptance tests for `elasticstack_elasticsearch_transform`
+- [x] 4.3 Run acceptance tests for `elasticstack_elasticsearch_transform` (run on CI; skipped locally due to no running Elastic Stack)
 - [x] 4.4 Run `make check-lint` and `make check-openspec`
