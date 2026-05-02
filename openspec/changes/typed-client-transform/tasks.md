@@ -16,10 +16,10 @@
 
 ## 3. Model cleanup
 
-- [ ] 3.1 Remove `models.PutTransformParams` from `internal/models/transform.go` once `PutTransform` no longer needs it
-- [ ] 3.2 Remove `models.UpdateTransformParams` from `internal/models/transform.go` once `UpdateTransform` no longer needs it
-- [ ] 3.3 Remove `models.TransformStats` and `models.GetTransformStatsResponse` from `internal/models/transform.go` once `GetTransformStats` returns `*types.TransformStats` directly
-- [ ] 3.4 Verify `models.Transform` and `models.GetTransformResponse` are not removed — they are still needed for `.Raw()` body construction and manual response decode
+- [x] 3.1 Remove `models.PutTransformParams` from `internal/models/transform.go` once `PutTransform` no longer needs it
+- [x] 3.2 Remove `models.UpdateTransformParams` from `internal/models/transform.go` once `UpdateTransform` no longer needs it
+- [x] 3.3 Remove `models.TransformStats` and `models.GetTransformStatsResponse` from `internal/models/transform.go` once `GetTransformStats` returns `*types.TransformStats` directly
+- [x] 3.4 Verify `models.Transform` and `models.GetTransformResponse` are not removed — they are still needed for `.Raw()` body construction and manual response decode
 
 ## 4. Build and testing
 

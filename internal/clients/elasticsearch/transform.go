@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -35,7 +36,7 @@ import (
 //
 // We use .Raw() because the typed types.TransformDestination does not yet
 // model the destination.aliases field. Passing the raw JSON preserves it.
-func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
+func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, deferValidation bool, timeout time.Duration, enabled bool) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -50,8 +51,8 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(params.Timeout.String()).
-		DeferValidation(params.DeferValidation).
+		Timeout(timeout.String()).
+		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
 		return diag.Diagnostics{
@@ -63,8 +64,8 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		}
 	}
 
-	if params.Enabled {
-		if diags := startTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
+	if enabled {
+		if diags := startTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
 			return diags
 		}
 	}
@@ -125,7 +126,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	return foundTransform, diags
 }
 
-func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.TransformStats, diag.Diagnostics) {
+func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
@@ -143,13 +144,10 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 		}
 	}
 
-	var foundTransformStats *models.TransformStats
+	var foundTransformStats *types.TransformStats
 	for _, ts := range statsRes.Transforms {
 		if ts.Id == *name {
-			foundTransformStats = &models.TransformStats{
-				ID:    ts.Id,
-				State: ts.State,
-			}
+			foundTransformStats = &ts
 			break
 		}
 	}
@@ -170,7 +168,7 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 //
 // We use .Raw() because the typed types.TransformDestination does not yet
 // model the destination.aliases field. Passing the raw JSON preserves it.
-func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
+func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, deferValidation bool, timeout time.Duration, enabled bool, applyEnabled bool) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -185,8 +183,8 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(params.Timeout.String()).
-		DeferValidation(params.DeferValidation).
+		Timeout(timeout.String()).
+		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
 		return diag.Diagnostics{
@@ -198,13 +196,13 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		}
 	}
 
-	if params.ApplyEnabled {
-		if params.Enabled {
-			if diags := startTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
+	if applyEnabled {
+		if enabled {
+			if diags := startTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
 				return diags
 			}
 		} else {
-			if diags := stopTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
+			if diags := stopTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
 				return diags
 			}
 		}
