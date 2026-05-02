@@ -418,11 +418,6 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 		if !globalInstalled {
 			return fmt.Errorf("package %s/%s not globally installed", name, version)
 		}
-		// If the package has no Kibana assets, space-specific installation is
-		// meaningless — the package's only artifacts are global resources.
-		if len(pkg.InstallationInfo.InstalledKibana) == 0 {
-			return nil
-		}
 		inSpace := pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
 
 		if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {

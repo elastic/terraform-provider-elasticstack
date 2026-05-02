@@ -53,4 +53,4 @@
 
 - [x] 8.1 When `spaceAware` is true but `InstallKibanaAssets` returns an error, fall back to `fleet.InstallPackage` and emit a warning diagnostic
 - [x] 8.2 When `spaceAware` is false and the package is already installed in a different space, emit a warning diagnostic that Kibana assets may not be available in the target space
-- [x] 8.3 Handle packages with no Kibana assets in `fleetPackageInstalled` and `testAccCheckIntegrationInstalledInSpace`: treat as installed in all spaces because space-specific tracking is meaningless for global-only packages
+- [x] 8.3 ~~Handle packages with no Kibana assets in `fleetPackageInstalled` and `testAccCheckIntegrationInstalledInSpace`: treat as installed in all spaces~~ **REVERTED**: Fleet tracks spaces in `AdditionalSpacesInstalledKibana` even for packages with no Kibana assets, so `fleetPackageInstalled` must check this field rather than short-circuiting. The no-asset shortcut caused `InstallKibanaAssets` to be skipped (because `installedElsewhere` evaluated to false), leading to incorrect uninstalls in delete path.
