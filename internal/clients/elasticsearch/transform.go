@@ -25,8 +25,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -41,29 +39,22 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diag.FromErr(err)
 	}
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	putOptions := []func(*esapi.TransformPutTransformRequest){
-		esClient.TransformPutTransform.WithContext(ctx),
-		esClient.TransformPutTransform.WithDeferValidation(params.DeferValidation),
-		esClient.TransformPutTransform.WithTimeout(params.Timeout),
-	}
-
-	res, err := esClient.TransformPutTransform(bytes.NewReader(transformBytes), transform.Name, putOptions...)
+	_, err = typedClient.Transform.PutTransform(transform.Name).
+		Raw(bytes.NewReader(transformBytes)).
+		Timeout(params.Timeout.String()).
+		DeferValidation(params.DeferValidation).
+		Do(ctx)
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create transform: %s", transform.Name)); diags.HasError() {
-		return diags
 	}
 
 	if params.Enabled {
-		if diags := startTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
+		if diags := startTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
 			return diags
 		}
 	}
@@ -74,23 +65,22 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	req := esClient.TransformGetTransform.WithTransformID(*name)
-	res, err := esClient.TransformGetTransform(req, esClient.TransformGetTransform.WithContext(ctx))
+	res, err := typedClient.Transform.GetTransform().TransformId(*name).Perform(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
 	defer res.Body.Close()
+
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); diags.HasError() {
-		return nil, diags
+	if d := diagutil.CheckHTTPError(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); d.HasError() {
+		return nil, d
 	}
 
 	var transformsResponse models.GetTransformResponse
@@ -122,34 +112,23 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.TransformStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	getStatsOptions := []func(*esapi.TransformGetTransformStatsRequest){
-		esClient.TransformGetTransformStats.WithContext(ctx),
-	}
-
-	statsRes, err := esClient.TransformGetTransformStats(*name, getStatsOptions...)
+	statsRes, err := typedClient.Transform.GetTransformStats(*name).Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	defer statsRes.Body.Close()
-	if diags := diagutil.CheckError(statsRes, fmt.Sprintf("Unable to get transform stats: %s", *name)); diags.HasError() {
-		return nil, diags
-	}
-
-	var transformsStatsResponse models.GetTransformStatsResponse
-	if err := json.NewDecoder(statsRes.Body).Decode(&transformsStatsResponse); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
 	var foundTransformStats *models.TransformStats
-	for _, ts := range transformsStatsResponse.TransformStats {
-		if ts.ID == *name {
-			foundTransformStats = &ts
+	for _, ts := range statsRes.Transforms {
+		if ts.Id == *name {
+			foundTransformStats = &models.TransformStats{
+				ID:    ts.Id,
+				State: ts.State,
+			}
 			break
 		}
 	}
@@ -174,34 +153,27 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		return diag.FromErr(err)
 	}
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	updateOptions := []func(*esapi.TransformUpdateTransformRequest){
-		esClient.TransformUpdateTransform.WithContext(ctx),
-		esClient.TransformUpdateTransform.WithDeferValidation(params.DeferValidation),
-		esClient.TransformUpdateTransform.WithTimeout(params.Timeout),
-	}
-
-	res, err := esClient.TransformUpdateTransform(bytes.NewReader(transformBytes), transform.Name, updateOptions...)
+	_, err = typedClient.Transform.UpdateTransform(transform.Name).
+		Raw(bytes.NewReader(transformBytes)).
+		Timeout(params.Timeout.String()).
+		DeferValidation(params.DeferValidation).
+		Do(ctx)
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to update transform: %s", transform.Name)); diags.HasError() {
-		return diags
 	}
 
 	if params.ApplyEnabled {
 		if params.Enabled {
-			if diags := startTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
+			if diags := startTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
 				return diags
 			}
 		} else {
-			if diags := stopTransform(ctx, esClient, transform.Name, params.Timeout); diags.HasError() {
+			if diags := stopTransform(ctx, apiClient, transform.Name, params.Timeout); diags.HasError() {
 				return diags
 			}
 		}
@@ -213,60 +185,64 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	res, err := esClient.TransformDeleteTransform(*name, esClient.TransformDeleteTransform.WithForce(true), esClient.TransformDeleteTransform.WithContext(ctx))
+	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete transform: %s", *name)); diags.HasError() {
-		return diags
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to delete transform: %s", *name),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	return diags
 }
 
-func startTransform(ctx context.Context, esClient *elasticsearch.Client, transformName string, timeout time.Duration) diag.Diagnostics {
+func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	startOptions := []func(*esapi.TransformStartTransformRequest){
-		esClient.TransformStartTransform.WithContext(ctx),
-		esClient.TransformStartTransform.WithTimeout(timeout),
-	}
-
-	startRes, err := esClient.TransformStartTransform(transformName, startOptions...)
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	defer startRes.Body.Close()
-	if diags := diagutil.CheckError(startRes, fmt.Sprintf("Unable to start transform: %s", transformName)); diags.HasError() {
-		return diags
+	_, err = typedClient.Transform.StartTransform(transformName).Timeout(timeout.String()).Do(ctx)
+	if err != nil {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to start transform: %s", transformName),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	return diags
 }
 
-func stopTransform(ctx context.Context, esClient *elasticsearch.Client, transformName string, timeout time.Duration) diag.Diagnostics {
+func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	stopOptions := []func(*esapi.TransformStopTransformRequest){
-		esClient.TransformStopTransform.WithContext(ctx),
-		esClient.TransformStopTransform.WithTimeout(timeout),
-	}
-
-	startRes, err := esClient.TransformStopTransform(transformName, stopOptions...)
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	defer startRes.Body.Close()
-	if diags := diagutil.CheckError(startRes, fmt.Sprintf("Unable to stop transform: %s", transformName)); diags.HasError() {
-		return diags
+	_, err = typedClient.Transform.StopTransform(transformName).Timeout(timeout.String()).Do(ctx)
+	if err != nil {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Unable to stop transform: %s", transformName),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	return diags
