@@ -10,9 +10,9 @@
 
 ## 2. Resource and test updates
 
-- [ ] 2.1 Update `internal/elasticsearch/transform/transform.go` to call the migrated helpers (verify signatures remain compatible)
-- [ ] 2.2 Update `internal/elasticsearch/transform/transform_test.go` for any signature or type changes
-- [ ] 2.3 Verify all transform testdata configurations still compile and run correctly
+- [x] 2.1 Update `internal/elasticsearch/transform/transform.go` to call the migrated helpers (verify signatures remain compatible)
+- [x] 2.2 Update `internal/elasticsearch/transform/transform_test.go` for any signature or type changes
+- [x] 2.3 Verify all transform testdata configurations still compile and run correctly
 
 ## 3. Model cleanup
 
