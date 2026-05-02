@@ -25,10 +25,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -168,7 +168,15 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 //
 // We use .Raw() because the typed types.TransformDestination does not yet
 // model the destination.aliases field. Passing the raw JSON preserves it.
-func UpdateTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, deferValidation bool, timeout time.Duration, enabled bool, applyEnabled bool) diag.Diagnostics {
+func UpdateTransform(
+	ctx context.Context,
+	apiClient *clients.ElasticsearchScopedClient,
+	transform *models.Transform,
+	deferValidation bool,
+	timeout time.Duration,
+	enabled bool,
+	applyEnabled bool,
+) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
