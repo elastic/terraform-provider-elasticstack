@@ -18,17 +18,15 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putdatafeed"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatedatafeed"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -36,50 +34,36 @@ import (
 func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	res, err := esClient.ML.OpenJob(jobID, esClient.ML.OpenJob.WithContext(ctx))
+	_, err = typedClient.Ml.OpenJob(jobID).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to open ML job", err.Error())
+		diags.AddError("Failed to open ML job", fmt.Sprintf("Unable to open ML job: %s — %s", jobID, err.Error()))
 		return diags
 	}
-	defer res.Body.Close()
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to open ML job: %s", jobID))
-	diags.Append(fwDiags...)
 
 	return diags
 }
 
 // PutDatafeed creates a machine learning datafeed
-func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, createRequest models.DatafeedCreateRequest) diag.Diagnostics {
+func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request putdatafeed.Request) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	// Send create request to Elasticsearch using helper function
-	body, err := json.Marshal(createRequest)
+	_, err = typedClient.Ml.PutDatafeed(datafeedID).Request(&request).Do(ctx)
 	if err != nil {
-		diags.AddError("Error marshaling request", err.Error())
+		diags.AddError("Failed to create ML datafeed", fmt.Sprintf("Unable to create ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
-
-	res, err := esClient.ML.PutDatafeed(bytes.NewReader(body), datafeedID, esClient.ML.PutDatafeed.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Failed to create ML datafeed", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML datafeed: %s", datafeedID))
-	diags.Append(fwDiags...)
 
 	return diags
 }
@@ -88,74 +72,52 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	options := []func(*esapi.MLCloseJobRequest){
-		esClient.ML.CloseJob.WithContext(ctx),
-		esClient.ML.CloseJob.WithForce(force),
-		esClient.ML.CloseJob.WithAllowNoMatch(true),
-	}
+	req := typedClient.Ml.CloseJob(jobID).
+		Force(force).
+		AllowNoMatch(true)
 
 	if timeout > 0 {
-		options = append(options, esClient.ML.CloseJob.WithTimeout(timeout))
+		req.Timeout(timeout.String())
 	}
 
-	res, err := esClient.ML.CloseJob(jobID, options...)
+	_, err = req.Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to close ML job", err.Error())
+		diags.AddError("Failed to close ML job", fmt.Sprintf("Unable to close ML job: %s — %s", jobID, err.Error()))
 		return diags
 	}
-	defer res.Body.Close()
-
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to close ML job: %s", jobID))
-	diags.Append(fwDiags...)
 
 	return diags
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job
-func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*models.MLJob, diag.Diagnostics) {
+func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*types.JobStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
-	options := []func(*esapi.MLGetJobStatsRequest){
-		esClient.ML.GetJobStats.WithContext(ctx),
-		esClient.ML.GetJobStats.WithJobID(jobID),
-		esClient.ML.GetJobStats.WithAllowNoMatch(true),
-	}
 
-	res, err := esClient.ML.GetJobStats(options...)
+	res, err := typedClient.Ml.GetJobStats().JobId(jobID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML job stats", err.Error())
-		return nil, diags
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML job stats: %s", jobID))...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	var jobStats models.MLJobStats
-	if err := json.NewDecoder(res.Body).Decode(&jobStats); err != nil {
-		diags.AddError("Failed to decode ML job stats response", err.Error())
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, diags
+		}
+		diags.AddError("Failed to get ML job stats", fmt.Sprintf("Unable to get ML job stats: %s — %s", jobID, err.Error()))
 		return nil, diags
 	}
 
-	// Find the specific job in the response
-	for _, job := range jobStats.Jobs {
-		if job.JobID == jobID {
-			return &job, diags
+	for i := range res.Jobs {
+		if res.Jobs[i].JobId == jobID {
+			return &res.Jobs[i], diags
 		}
 	}
 
@@ -164,49 +126,28 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 }
 
 // GetDatafeed retrieves a machine learning datafeed
-func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*models.Datafeed, diag.Diagnostics) {
+func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.MLDatafeed, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
 
-	options := []func(*esapi.MLGetDatafeedsRequest){
-		esClient.ML.GetDatafeeds.WithContext(ctx),
-		esClient.ML.GetDatafeeds.WithDatafeedID(datafeedID),
-		esClient.ML.GetDatafeeds.WithAllowNoMatch(true),
-	}
-
-	res, err := esClient.ML.GetDatafeeds(options...)
+	res, err := typedClient.Ml.GetDatafeeds().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML datafeed", err.Error())
-		return nil, diags
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID))...)
-	if diags.HasError() {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, diags
+		}
+		diags.AddError("Failed to get ML datafeed", fmt.Sprintf("Unable to get ML datafeed: %s — %s", datafeedID, err.Error()))
 		return nil, diags
 	}
 
-	var response struct {
-		Datafeeds []models.Datafeed `json:"datafeeds"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		diags.AddError("Failed to decode ML datafeed response", err.Error())
-		return nil, diags
-	}
-
-	// Find the specific datafeed in the response
-	for _, df := range response.Datafeeds {
-		if df.DatafeedID == datafeedID {
-			return &df, diags
+	for i := range res.Datafeeds {
+		if res.Datafeeds[i].DatafeedId == datafeedID {
+			return &res.Datafeeds[i], diags
 		}
 	}
 
@@ -214,30 +155,20 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 }
 
 // UpdateDatafeed updates a machine learning datafeed
-func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request models.DatafeedUpdateRequest) diag.Diagnostics {
+func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request updatedatafeed.Request) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	// Marshal the update request
-	body, err := json.Marshal(request)
+	_, err = typedClient.Ml.UpdateDatafeed(datafeedID).Request(&request).Do(ctx)
 	if err != nil {
-		diags.AddError("Error marshaling update request", err.Error())
+		diags.AddError("Failed to update ML datafeed", fmt.Sprintf("Unable to update ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
-
-	res, err := esClient.ML.UpdateDatafeed(bytes.NewReader(body), datafeedID, esClient.ML.UpdateDatafeed.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Failed to update ML datafeed", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
@@ -246,25 +177,17 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	options := []func(*esapi.MLDeleteDatafeedRequest){
-		esClient.ML.DeleteDatafeed.WithContext(ctx),
-		esClient.ML.DeleteDatafeed.WithForce(force),
-	}
-
-	res, err := esClient.ML.DeleteDatafeed(datafeedID, options...)
+	_, err = typedClient.Ml.DeleteDatafeed(datafeedID).Force(force).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to delete ML datafeed", err.Error())
+		diags.AddError("Failed to delete ML datafeed", fmt.Sprintf("Unable to delete ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
-	defer res.Body.Close()
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
@@ -273,30 +196,25 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	options := []func(*esapi.MLStopDatafeedRequest){
-		esClient.ML.StopDatafeed.WithContext(ctx),
-		esClient.ML.StopDatafeed.WithForce(force),
-		esClient.ML.StopDatafeed.WithAllowNoMatch(true),
-	}
+	req := typedClient.Ml.StopDatafeed(datafeedID).
+		Force(force).
+		AllowNoMatch(true)
 
 	if timeout > 0 {
-		options = append(options, esClient.ML.StopDatafeed.WithTimeout(timeout))
+		req.Timeout(timeout.String())
 	}
 
-	res, err := esClient.ML.StopDatafeed(datafeedID, options...)
+	_, err = req.Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to stop ML datafeed", err.Error())
+		diags.AddError("Failed to stop ML datafeed", fmt.Sprintf("Unable to stop ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
-	defer res.Body.Close()
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to stop ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
@@ -305,87 +223,64 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	options := []func(*esapi.MLStartDatafeedRequest){
-		esClient.ML.StartDatafeed.WithContext(ctx),
-	}
+	req := typedClient.Ml.StartDatafeed(datafeedID)
 
 	if start != "" {
-		options = append(options, esClient.ML.StartDatafeed.WithStart(start))
+		req.Start(start)
 	}
 
 	if end != "" {
-		options = append(options, esClient.ML.StartDatafeed.WithEnd(end))
+		req.End(end)
 	}
 
 	if timeout > 0 {
-		options = append(options, esClient.ML.StartDatafeed.WithTimeout(timeout))
+		req.Timeout(timeout.String())
 	}
 
-	res, err := esClient.ML.StartDatafeed(datafeedID, options...)
+	_, err = req.Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to start ML datafeed", err.Error())
+		diags.AddError("Failed to start ML datafeed", fmt.Sprintf("Unable to start ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
-	defer res.Body.Close()
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to start ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
 
 // GetDatafeedStats retrieves the statistics for a machine learning datafeed
-func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*models.DatafeedStats, diag.Diagnostics) {
+func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
 
-	options := []func(*esapi.MLGetDatafeedStatsRequest){
-		esClient.ML.GetDatafeedStats.WithContext(ctx),
-		esClient.ML.GetDatafeedStats.WithDatafeedID(datafeedID),
-		esClient.ML.GetDatafeedStats.WithAllowNoMatch(true),
-	}
-
-	res, err := esClient.ML.GetDatafeedStats(options...)
+	res, err := typedClient.Ml.GetDatafeedStats().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML datafeed stats", err.Error())
-		return nil, diags
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedID))...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	var response models.DatafeedStatsResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		diags.AddError("Failed to decode ML datafeed stats response", err.Error())
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, diags
+		}
+		diags.AddError("Failed to get ML datafeed stats", fmt.Sprintf("Unable to get ML datafeed stats: %s — %s", datafeedID, err.Error()))
 		return nil, diags
 	}
 
 	// Since we're requesting stats for a specific datafeed ID, we expect exactly one result
-	if len(response.Datafeeds) == 0 {
+	if len(res.Datafeeds) == 0 {
 		return nil, diags // Datafeed not found, return nil without error
 	}
 
-	if len(response.Datafeeds) > 1 {
-		diags.AddError("Unexpected response", fmt.Sprintf("Expected single datafeed stats for ID %s, got %d", datafeedID, len(response.Datafeeds)))
+	if len(res.Datafeeds) > 1 {
+		diags.AddError("Unexpected response", fmt.Sprintf("Expected single datafeed stats for ID %s, got %d", datafeedID, len(res.Datafeeds)))
 		return nil, diags
 	}
 
-	return &response.Datafeeds[0], diags
+	return &res.Datafeeds[0], diags
 }

@@ -1,17 +1,17 @@
 ## 1. Migrate `internal/clients/elasticsearch/ml_job.go` helpers
 
-- [ ] 1.1 Replace `esClient.ML.OpenJob` with `typedapi.ML.OpenJob(...).Do(ctx)` in `OpenMLJob`
-- [ ] 1.2 Replace `esClient.ML.PutDatafeed` with `typedapi.ML.PutDatafeed(...).Do(ctx)` in `PutDatafeed`; accept typed `types.DatafeedConfig` instead of `models.DatafeedCreateRequest`
-- [ ] 1.3 Replace `esClient.ML.CloseJob` with `typedapi.ML.CloseJob(...).Do(ctx)` in `CloseMLJob`
-- [ ] 1.4 Replace `esClient.ML.GetJobStats` with `typedapi.ML.GetJobStats(...).Do(ctx)` in `GetMLJobStats`; return typed `types.JobStats` instead of `models.MLJob`
-- [ ] 1.5 Replace `esClient.ML.GetDatafeeds` with `typedapi.ML.GetDatafeeds(...).Do(ctx)` in `GetDatafeed`; return typed `types.Datafeed` instead of `models.Datafeed`
-- [ ] 1.6 Replace `esClient.ML.UpdateDatafeed` with `typedapi.ML.UpdateDatafeed(...).Do(ctx)` in `UpdateDatafeed`; accept typed `types.DatafeedConfig` instead of `models.DatafeedUpdateRequest`
-- [ ] 1.7 Replace `esClient.ML.DeleteDatafeed` with `typedapi.ML.DeleteDatafeed(...).Do(ctx)` in `DeleteDatafeed`
-- [ ] 1.8 Replace `esClient.ML.StopDatafeed` with `typedapi.ML.StopDatafeed(...).Do(ctx)` in `StopDatafeed`
-- [ ] 1.9 Replace `esClient.ML.StartDatafeed` with `typedapi.ML.StartDatafeed(...).Do(ctx)` in `StartDatafeed`
-- [ ] 1.10 Replace `esClient.ML.GetDatafeedStats` with `typedapi.ML.GetDatafeedStats(...).Do(ctx)` in `GetDatafeedStats`; return typed `types.DatafeedStats` instead of `models.DatafeedStats`
-- [ ] 1.11 Update all helper signatures to accept `*clients.ElasticsearchScopedClient` and call `GetESTypedClient()` instead of `GetESClient()`
-- [ ] 1.12 Remove unused `bytes`, `encoding/json`, `net/http`, and `esapi` imports from `ml_job.go` where possible
+- [x] 1.1 Replace `esClient.ML.OpenJob` with `typedapi.ML.OpenJob(...).Do(ctx)` in `OpenMLJob`
+- [x] 1.2 Replace `esClient.ML.PutDatafeed` with `typedapi.ML.PutDatafeed(...).Do(ctx)` in `PutDatafeed`; accept typed `types.DatafeedConfig` instead of `models.DatafeedCreateRequest`
+- [x] 1.3 Replace `esClient.ML.CloseJob` with `typedapi.ML.CloseJob(...).Do(ctx)` in `CloseMLJob`
+- [x] 1.4 Replace `esClient.ML.GetJobStats` with `typedapi.ML.GetJobStats(...).Do(ctx)` in `GetMLJobStats`; return typed `types.JobStats` instead of `models.MLJob`
+- [x] 1.5 Replace `esClient.ML.GetDatafeeds` with `typedapi.ML.GetDatafeeds(...).Do(ctx)` in `GetDatafeed`; return typed `types.Datafeed` instead of `models.Datafeed`
+- [x] 1.6 Replace `esClient.ML.UpdateDatafeed` with `typedapi.ML.UpdateDatafeed(...).Do(ctx)` in `UpdateDatafeed`; accept typed `types.DatafeedConfig` instead of `models.DatafeedUpdateRequest`
+- [x] 1.7 Replace `esClient.ML.DeleteDatafeed` with `typedapi.ML.DeleteDatafeed(...).Do(ctx)` in `DeleteDatafeed`
+- [x] 1.8 Replace `esClient.ML.StopDatafeed` with `typedapi.ML.StopDatafeed(...).Do(ctx)` in `StopDatafeed`
+- [x] 1.9 Replace `esClient.ML.StartDatafeed` with `typedapi.ML.StartDatafeed(...).Do(ctx)` in `StartDatafeed`
+- [x] 1.10 Replace `esClient.ML.GetDatafeedStats` with `typedapi.ML.GetDatafeedStats(...).Do(ctx)` in `GetDatafeedStats`; return typed `types.DatafeedStats` instead of `models.DatafeedStats`
+- [x] 1.11 Update all helper signatures to accept `*clients.ElasticsearchScopedClient` and call `GetESTypedClient()` instead of `GetESClient()`
+- [x] 1.12 Remove unused `bytes`, `encoding/json`, `net/http`, and `esapi` imports from `ml_job.go` where possible
 
 ## 2. Migrate `internal/elasticsearch/ml/anomalydetectionjob` resource files
 
