@@ -19,6 +19,7 @@ package cluster_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -130,6 +131,31 @@ func TestAccResourceSLMExtended(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count", "50"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata", `{"created_by":"terraform","purpose":"daily backup"}`),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ResourceName:             "elasticstack_elasticsearch_snapshot_lifecycle.test_slm",
+				ImportState:              true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					attrs := is[0].Attributes
+					if got := attrs["expand_wildcards"]; got != "closed,hidden" {
+						return fmt.Errorf("expected imported expand_wildcards [closed,hidden], got [%s]", got)
+					}
+					if got := attrs["min_count"]; got != "5" {
+						return fmt.Errorf("expected imported min_count [5], got [%s]", got)
+					}
+					if got := attrs["feature_states.#"]; got != "1" {
+						return fmt.Errorf("expected imported feature_states count [1], got [%s]", got)
+					}
+					for attr, value := range attrs {
+						if strings.HasPrefix(attr, "feature_states.") && attr != "feature_states.#" && value == "kibana" {
+							return nil
+						}
+					}
+					return fmt.Errorf("expected imported feature_states to contain [kibana]")
+				},
 			},
 			{
 				// Step 2: update schedule, retention, indices, feature_states, and boolean flags
