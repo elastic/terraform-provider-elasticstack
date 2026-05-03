@@ -32,7 +32,7 @@ KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
 KIBANA_API_KEY_NAME ?= kibana-api-key
 
-FLEET_NAME ?= terraform-elasticstack-fleet
+FLEET_NAME ?= fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
 # Fleet Server image repository. Some older stack versions (notably 8.0.x, 8.1.x)

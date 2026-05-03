@@ -10,4 +10,6 @@ echo "ELASTICSEARCH_URL=http://localhost:{{ 10000 + (branch | hash_port) % 5000 
 
 pre-commit = "make check-lint"
 
-pre-remove = "docker compose down --volumes"
+pre-remove = """docker compose down --volumes && \
+docker compose -f docker-compose.tls.yml down --volumes 2>/dev/null || true
+"""
