@@ -238,11 +238,11 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 	}
 
 	settingsMap := make(map[string]any)
-	if settings != nil {
-		settingsBytes, err := json.Marshal(settings)
-		if err != nil {
-			return nil, err
-		}
+	settingsBytes, err := json.Marshal(settings)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(settingsBytes, []byte("null")) {
 		if err := json.Unmarshal(settingsBytes, &settingsMap); err != nil {
 			return nil, err
 		}
