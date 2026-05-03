@@ -20,11 +20,11 @@
 
 ## 3. Typed client migration — role mapping helpers
 
-- [ ] 3.1 Rewrite `PutRoleMapping` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutRoleMapping` API
-- [ ] 3.2 Rewrite `GetRoleMapping` to use typed `Security.GetRoleMapping` API and return `*types.SecurityRoleMapping`
-- [ ] 3.3 Rewrite `DeleteRoleMapping` to use typed `Security.DeleteRoleMapping` API
-- [ ] 3.4 Update `internal/elasticsearch/security/rolemapping/` resource files for new helper signatures and `*types.SecurityRoleMapping`
-- [ ] 3.5 Update `internal/elasticsearch/security/rolemapping/data_source.go` for new `GetRoleMapping` signature
+- [x] 3.1 Rewrite `PutRoleMapping` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutRoleMapping` API
+- [x] 3.2 Rewrite `GetRoleMapping` to use typed `Security.GetRoleMapping` API and return `*types.SecurityRoleMapping`
+- [x] 3.3 Rewrite `DeleteRoleMapping` to use typed `Security.DeleteRoleMapping` API
+- [x] 3.4 Update `internal/elasticsearch/security/rolemapping/` resource files for new helper signatures and `*types.SecurityRoleMapping`
+- [x] 3.5 Update `internal/elasticsearch/security/rolemapping/data_source.go` for new `GetRoleMapping` signature
 
 ## 4. Typed client migration — API key helpers
 

@@ -323,12 +323,8 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 		Enabled(roleMapping.Enabled).
 		Rules(&roleMapping.Rules)
 
-	if len(roleMapping.Roles) > 0 {
-		req.Roles(roleMapping.Roles...)
-	}
-	if len(roleMapping.RoleTemplates) > 0 {
-		req.RoleTemplates(roleMapping.RoleTemplates...)
-	}
+	req.Roles(roleMapping.Roles...)
+	req.RoleTemplates(roleMapping.RoleTemplates...)
 	if roleMapping.Metadata != nil {
 		req.Metadata(roleMapping.Metadata)
 	}
