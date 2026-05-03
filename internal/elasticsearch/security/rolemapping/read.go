@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
+	esapiTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -76,10 +77,14 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	}
 
 	// Handle role templates
-	if len(roleMapping.RoleTemplates) > 0 {
-		templatesJSON, err := normalizeRoleTemplates(roleMapping.RoleTemplates)
+	// Preserve planned/state value when known to avoid representation drift
+	// caused by the typed client's Script type normalizing strings to objects.
+	if !stateData.RoleTemplates.IsNull() && !stateData.RoleTemplates.IsUnknown() {
+		data.RoleTemplates = stateData.RoleTemplates
+	} else if len(roleMapping.RoleTemplates) > 0 {
+		templatesJSON, err := roleTemplatesToJSON(roleMapping.RoleTemplates)
 		if err != nil {
-			diags.AddError("Failed to normalize role templates", err.Error())
+			diags.AddError("Failed to serialize role templates", err.Error())
 			return nil, diags
 		}
 		data.RoleTemplates = jsontypes.NewNormalizedValue(templatesJSON)
@@ -156,36 +161,23 @@ func normalizeRuleNode(node any) {
 	}
 }
 
-// normalizeRoleTemplates converts the typed role templates back to config-
-// compatible JSON. The typed client's Script type normalizes a plain
-// template string into {"source":"..."}. When the object contains only
-// "source", we convert it back to a string so state matches typical config.
-func normalizeRoleTemplates(templates any) (string, error) {
-	raw, err := json.Marshal(templates)
-	if err != nil {
-		return "", err
-	}
-
-	var list []map[string]any
-	if err := json.Unmarshal(raw, &list); err != nil {
-		return "", err
-	}
-
-	for _, item := range list {
-		if tmpl, ok := item["template"]; ok {
-			if tmplMap, ok := tmpl.(map[string]any); ok {
-				if len(tmplMap) == 1 {
-					if src, ok := tmplMap["source"]; ok {
-						if srcStr, ok := src.(string); ok {
-							item["template"] = srcStr
-						}
-					}
-				}
-			}
+// roleTemplatesToJSON serializes typed role templates back to JSON by
+// directly extracting the Format and Template.Source fields. This avoids
+// round-trip drift caused by the typed client's Script type which may
+// normalize a plain template string into {"source":"..."} on marshal.
+func roleTemplatesToJSON(templates []esapiTypes.RoleTemplate) (string, error) {
+	items := make([]map[string]any, len(templates))
+	for i, t := range templates {
+		item := map[string]any{}
+		if t.Format != nil {
+			item["format"] = t.Format.String()
 		}
+		if t.Template.Source != nil {
+			item["template"] = *t.Template.Source
+		}
+		items[i] = item
 	}
-
-	out, err := json.Marshal(list)
+	out, err := json.Marshal(items)
 	if err != nil {
 		return "", err
 	}
