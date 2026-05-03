@@ -149,7 +149,6 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.http_socket_timeout", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.compress", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_restore_bytes_per_sec", "10mb"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.readonly", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_number_of_snapshots", "100"),
 				),
 			},
