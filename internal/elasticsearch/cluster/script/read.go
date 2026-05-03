@@ -96,7 +96,7 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Da
 	}
 
 	data.ScriptID = types.StringValue(scriptID)
-	data.Lang = types.StringValue(script.Lang.String())
+	data.Lang = types.StringValue(script.Lang.Name)
 	data.Source = types.StringValue(script.Source)
 
 	// Params are not part of types.StoredScript; preserve from state
