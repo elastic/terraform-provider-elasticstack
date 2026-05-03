@@ -46,6 +46,47 @@ The canonical list is the root `Makefile`, but the usual ones are:
 - `make testacc` (requires Docker and `TF_ACC=1`)
 - `make docs-generate`
 
+## Parallel development with worktrunk
+
+[worktrunk](https://github.com/elastic/worktrunk) manages feature worktrees for this repository so multiple branches can be developed in parallel without switching the main working tree.
+
+### Shell integration
+
+Install the shell hook once to get the `wt` alias and tab completion:
+
+```bash
+wt config shell install
+```
+
+After reloading your shell profile, you can use `wt <branch>` to create or switch to a feature worktree, and `wt` commands will have tab completion.
+
+### User configuration
+
+Keep worktrees inside the bare repo by setting the worktree path template in `~/.config/wt/config.toml`:
+
+```toml
+worktree-path = "{{ repo_path }}/{{ branch | sanitize }}"
+```
+
+This places each feature worktree as a sibling to the main checkout, which keeps related branches discoverable and avoids scattering worktrees across the filesystem.
+
+### Environment in a feature worktree
+
+Each worktree has its own `.env` file with per-worktree ports. Before running Makefile targets that depend on port variables, export that worktree's `.env`:
+
+```bash
+set -a; . ./.env; set +a
+# Then run port-dependent targets, for example:
+make testacc-vs-docker
+make set-kibana-password
+```
+
+Alternatively, pass the variables explicitly on the command line:
+
+```bash
+make testacc-vs-docker ELASTICSEARCH_PORT=12345 KIBANA_PORT=16789
+```
+
 ## Example snippets (`examples/resources`, `examples/data-sources`)
 
 These trees hold copy-paste-ready Terraform for this provider. Snippets **may** be surfaced on generated reference pages (`docs/resources/`, `docs/data-sources/`), in docs templates, or in guides—not every `.tf` is shown on every page, but **each covered file** participates in validation below.
