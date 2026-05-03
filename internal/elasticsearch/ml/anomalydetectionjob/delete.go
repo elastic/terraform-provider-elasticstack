@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -56,35 +55,23 @@ func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.D
 		return
 	}
 
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	// First, close the job if it's open
-	closeRes, err := esClient.ML.CloseJob(jobID, esClient.ML.CloseJob.WithContext(ctx))
+	// First, close the job if it's open. Force=true and AllowNoMatch=true to be safe.
+	_, err = typedClient.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx)
 	if err != nil {
 		tflog.Warn(ctx, fmt.Sprintf("Failed to close ML job %s before deletion: %s", jobID, err.Error()))
 		// Continue with deletion even if close fails, as the job might already be closed
-	} else {
-		defer closeRes.Body.Close()
-		if closeRes.StatusCode != 200 && closeRes.StatusCode != 409 { // 409 means already closed
-			tflog.Warn(ctx, fmt.Sprintf("Failed to close ML job %s: status %d", jobID, closeRes.StatusCode))
-		}
 	}
 
 	// Delete the ML job
-	res, err := esClient.ML.DeleteJob(jobID, esClient.ML.DeleteJob.WithContext(ctx))
+	_, err = typedClient.Ml.DeleteJob(jobID).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete ML anomaly detection job", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML anomaly detection job: %s", jobID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Failed to delete ML anomaly detection job", fmt.Sprintf("Unable to delete ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return
 	}
 

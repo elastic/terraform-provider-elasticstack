@@ -18,12 +18,9 @@
 package anomalydetectionjob
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -70,7 +67,7 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	if !hasChanges {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
 		resp.Diagnostics.AddWarning("No changed detected to updateble fields during an update operation", `
-Changes to non-updateable fields should force a recreation of the anomaly detection job. 
+Changes to non-updateable fields should force a recreation of the anomaly detection job.
 Please report this warning to the provider developers.`)
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
@@ -82,30 +79,17 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	// Marshal the update body to JSON
-	body, err := json.Marshal(updateBody)
+	// Build typed request and call the typed API
+	updateReq := updateBody.toUpdateJobRequest()
+	_, err = typedClient.Ml.UpdateJob(jobID).Request(&updateReq).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal job update", err.Error())
-		return
-	}
-
-	// Update the ML job
-	res, err := esClient.ML.UpdateJob(jobID, bytes.NewReader(body), esClient.ML.UpdateJob.WithContext(ctx))
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML anomaly detection job: %s", jobID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return
 	}
 
