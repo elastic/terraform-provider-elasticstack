@@ -1,12 +1,14 @@
 ## 1. docker-compose.yml cleanup
 
-- [ ] 1.1 Remove `container_name:` directive from the `elasticsearch` service
-- [ ] 1.2 Remove `container_name:` directive from the `kibana_settings` service
-- [ ] 1.3 Remove `container_name:` directive from the `kibana` service
-- [ ] 1.4 Remove `container_name:` directive from the `fleet_settings` service
-- [ ] 1.5 Remove `container_name:` directive from the `fleet` service
-- [ ] 1.6 Remove `container_name:` directive from the `acceptance-tests` service
-- [ ] 1.7 Remove `container_name:` directive from the `token-acceptance-tests` service
+- [x] 1.1 Remove `container_name:` directive from the `elasticsearch` service
+- [x] 1.2 Remove `container_name:` directive from the `kibana_settings` service
+- [x] 1.3 Remove `container_name:` directive from the `kibana` service
+- [x] 1.4 Remove `container_name:` directive from the `fleet_settings` service
+- [x] 1.5 Remove `container_name:` directive from the `fleet` service
+- [x] 1.6 Remove `container_name:` directive from the `acceptance-tests` service
+- [x] 1.7 Remove `container_name:` directive from the `token-acceptance-tests` service
+- [x] *(review fix)* Remove `container_name:` directive from the `kibana_certs` service in `docker-compose.tls.yml`
+- [x] *(review fix)* Update `.buildkite/scripts/update-kibana-client.sh` to use `docker compose logs` instead of hardcoded container names
 
 ## 2. .env.template
 
