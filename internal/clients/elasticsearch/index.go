@@ -24,13 +24,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
@@ -53,16 +52,15 @@ import (
 // accepting expressions that would be rejected as static names.
 var DateMathIndexNameRe = regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`)
 
-func durationToEsString(d time.Duration) string {
-	s := d.String()
-	// Strip trailing zero components: "1m0s" → "1m", "1h0m0s" → "1h"
-	for strings.HasSuffix(s, "0s") {
-		s = strings.TrimSuffix(s, "0s")
-	}
-	for strings.HasSuffix(s, "0m") {
-		s = strings.TrimSuffix(s, "0m")
-	}
-	return s
+// encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
+// request path.  Characters inside the expression that have special meaning in a URL
+// path are percent-encoded so the Go HTTP client does not rewrite them.
+// encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
+// request path.  Characters inside the expression that have special meaning in a URL
+// path are percent-encoded so the Go HTTP client does not rewrite them.
+func encodeDateMathIndexName(name string) string {
+	// url.PathEscape encodes the string so it is safe for a path segment.
+	return url.PathEscape(name)
 }
 
 func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.Policy) fwdiags.Diagnostics {
@@ -251,7 +249,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchSc
 // math expression it is URI-encoded before being sent in the API request path so the Go
 // HTTP client does not rewrite the angle brackets or braces.
 func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index *models.Index, params *models.PutIndexParams) (string, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
@@ -260,27 +258,38 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	if err != nil {
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
-	var req create.Request
-	if err := json.Unmarshal(indexBytes, &req); err != nil {
-		return "", diagutil.FrameworkDiagFromError(err)
+
+	indexAPIName := index.Name
+	if DateMathIndexNameRe.MatchString(index.Name) {
+		indexAPIName = encodeDateMathIndexName(index.Name)
 	}
 
-	builder := typedClient.Indices.Create(index.Name).
-		Request(&req).
-		WaitForActiveShards(params.WaitForActiveShards)
+	opts := []func(*esapi.IndicesCreateRequest){
+		esClient.Indices.Create.WithBody(bytes.NewReader(indexBytes)),
+		esClient.Indices.Create.WithContext(ctx),
+		esClient.Indices.Create.WithWaitForActiveShards(params.WaitForActiveShards),
+	}
 	if params.MasterTimeout > 0 {
-		builder = builder.MasterTimeout(durationToEsString(params.MasterTimeout))
+		opts = append(opts, esClient.Indices.Create.WithMasterTimeout(params.MasterTimeout))
 	}
 	if params.Timeout > 0 {
-		builder = builder.Timeout(durationToEsString(params.Timeout))
+		opts = append(opts, esClient.Indices.Create.WithTimeout(params.Timeout))
 	}
-
-	res, err := builder.Do(ctx)
+	res, err := esClient.Indices.Create(indexAPIName, opts...)
 	if err != nil {
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
-
-	concreteName := res.Index
+	defer res.Body.Close()
+	if sdkDiags := diagutil.CheckError(res, fmt.Sprintf("Unable to create index: %s", index.Name)); sdkDiags.HasError() {
+		return "", diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	}
+	var response struct {
+		Index string `json:"index"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return "", diagutil.FrameworkDiagFromError(err)
+	}
+	concreteName := response.Index
 	if concreteName == "" {
 		concreteName = index.Name
 	}

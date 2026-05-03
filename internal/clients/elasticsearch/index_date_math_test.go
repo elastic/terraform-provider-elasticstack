@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestDateMathIndexNameRe verifies the regex that identifies plain date math
@@ -56,6 +57,35 @@ func TestDateMathIndexNameRe(t *testing.T) {
 	for _, tc := range invalidCases {
 		t.Run("invalid: "+tc.name, func(t *testing.T) {
 			assert.False(t, DateMathIndexNameRe.MatchString(tc.input), "expected %q not to match date math regex", tc.input)
+		})
+	}
+}
+
+// TestEncodeDateMathIndexName verifies that date math expressions are
+// URI-percent-encoded correctly and that plain static names are not mangled.
+func TestEncodeDateMathIndexName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    `<logs-{now/d}>`,
+			expected: "%3Clogs-%7Bnow%2Fd%7D%3E",
+		},
+		{
+			input:    `<logs-{now/d{yyyy.MM.dd}}>`,
+			expected: "%3Clogs-%7Bnow%2Fd%7Byyyy.MM.dd%7D%7D%3E",
+		},
+		{
+			input:    `<logs-{now/M{yyyy.MM}}>`,
+			expected: "%3Clogs-%7Bnow%2FM%7Byyyy.MM%7D%7D%3E",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			got := encodeDateMathIndexName(tc.input)
+			require.Equal(t, tc.expected, got)
 		})
 	}
 }
