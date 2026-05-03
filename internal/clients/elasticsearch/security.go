@@ -206,39 +206,90 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 	return diags
 }
 
-func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, role *models.Role) diag.Diagnostics {
-	return doSDKWrite(apiClient, role, "Unable to create role",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Security.PutRole(role.Name, body, esClient.Security.PutRole.WithContext(ctx))
-		},
-	)
-}
-
-func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*models.Role, diag.Diagnostics) {
+func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return diag.FromErr(err)
 	}
-	req := esClient.Security.GetRole.WithName(rolename)
-	res, err := esClient.Security.GetRole(req, esClient.Security.GetRole.WithContext(ctx))
+
+	req := typedClient.Security.PutRole(name)
+
+	if len(role.Applications) > 0 {
+		req.Applications(role.Applications...)
+	}
+	if len(role.Cluster) > 0 {
+		req.Cluster(role.Cluster...)
+	}
+	if role.Description != nil {
+		req.Description(*role.Description)
+	}
+	if len(role.Global) > 0 {
+		globalJSON, err := json.Marshal(role.Global)
+		if err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to marshal global privileges",
+				Detail:   err.Error(),
+			})
+			return diags
+		}
+		var global map[string]json.RawMessage
+		if err := json.Unmarshal(globalJSON, &global); err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to convert global privileges",
+				Detail:   err.Error(),
+			})
+			return diags
+		}
+		req.Global(global)
+	}
+	if len(role.Indices) > 0 {
+		req.Indices(role.Indices...)
+	}
+	if role.Metadata != nil && len(role.Metadata) > 0 {
+		req.Metadata(role.Metadata)
+	}
+	if len(role.RemoteIndices) > 0 {
+		req.RemoteIndices(role.RemoteIndices...)
+	}
+	if len(role.RunAs) > 0 {
+		req.RunAs(role.RunAs...)
+	}
+
+	_, err = req.Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to create or update a role",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckError(res, "Unable to get a role."); diags.HasError() {
-		return nil, diags
-	}
-	roles := make(map[string]models.Role)
-	if err := json.NewDecoder(res.Body).Decode(&roles); err != nil {
+
+	return diags
+}
+
+func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*types.Role, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	if role, ok := roles[rolename]; ok {
+	res, err := typedClient.Security.GetRole().Name(rolename).Do(ctx)
+	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, nil
+		}
+		return nil, diag.FromErr(err)
+	}
+
+	if role, ok := res[rolename]; ok {
 		return &role, diags
 	}
 	diags = append(diags, diag.Diagnostic{
@@ -251,16 +302,23 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := esClient.Security.DeleteRole(rolename, esClient.Security.DeleteRole.WithContext(ctx))
+
+	_, err = typedClient.Security.DeleteRole(rolename).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete role"); diags.HasError() {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to delete a role",
+			Detail:   err.Error(),
+		})
 		return diags
 	}
 
