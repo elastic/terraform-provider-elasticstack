@@ -108,23 +108,23 @@ docker-fleet: ## Start Fleet node in docker container
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
-set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:$(ELASTICSEARCH_PORT)
+set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
 	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
 
 .PHONY: setup-synthetics
-setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:$(KIBANA_PORT)
+setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:5601 (set via KIBANA_PORT env var)
 	@ curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/epm/packages/synthetics/1.2.2 -d '{"force": true}'
 
 .PHONY: create-es-api-key
-create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:$(ELASTICSEARCH_PORT)
+create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
 	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}'
 
 .PHONY: create-es-bearer-token
-create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:$(ELASTICSEARCH_PORT)
+create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
 	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/oauth2/token -d '{"grant_type":"client_credentials"}'
 
 .PHONY: setup-kibana-fleet
-setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:$(KIBANA_PORT)
+setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601 (set via KIBANA_PORT env var)
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
