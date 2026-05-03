@@ -1,6 +1,7 @@
 pre-start = "make setup"
 
-post-start = """cp -n .env.template .env
+post-start = """set -e
+cp -n .env.template .env
 PORT={{ 10000 + (branch | hash_port) % 5000 }}
 KB_PORT={{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}
 grep -q "^ELASTICSEARCH_PORT=" .env || echo "ELASTICSEARCH_PORT=$PORT" >> .env
