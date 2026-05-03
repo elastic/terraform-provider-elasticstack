@@ -62,7 +62,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 				return
 			}
 			if existingPtr != nil {
-				r.adoptExistingIndexOnCreate(ctx, resp, client, &planModel, configuredName, *existingPtr)
+				existingModel, convertDiags := indexStateToModel(*existingPtr)
+				resp.Diagnostics.Append(convertDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				r.adoptExistingIndexOnCreate(ctx, resp, client, &planModel, configuredName, existingModel)
 				return
 			}
 		}
@@ -134,7 +139,12 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	synthetic := tfModel{
 		ElasticsearchConnection: plan.ElasticsearchConnection,
 	}
-	resp.Diagnostics.Append(synthetic.populateFromAPI(ctx, concreteName, existing)...)
+	existingState, convertDiags := modelToIndexState(existing)
+	resp.Diagnostics.Append(convertDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(synthetic.populateFromAPI(ctx, concreteName, existingState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

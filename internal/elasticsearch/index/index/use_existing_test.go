@@ -557,7 +557,10 @@ func Test_populateFromAPI_syntheticAdoptPriorState(t *testing.T) {
 		},
 	}
 
-	diags := m.populateFromAPI(ctx, indexName, apiModel)
+	apiState, convertDiags := modelToIndexState(apiModel)
+	require.False(t, convertDiags.HasError())
+
+	diags := m.populateFromAPI(ctx, indexName, apiState)
 	require.False(t, diags.HasError())
 
 	require.Equal(t, indexName, m.Name.ValueString())
