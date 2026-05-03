@@ -77,12 +77,12 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 
 	// Handle role templates
 	if len(roleMapping.RoleTemplates) > 0 {
-		roleTemplatesJSON, err := json.Marshal(roleMapping.RoleTemplates)
+		templatesJSON, err := normalizeRoleTemplates(roleMapping.RoleTemplates)
 		if err != nil {
-			diags.AddError("Failed to marshal role templates", err.Error())
+			diags.AddError("Failed to normalize role templates", err.Error())
 			return nil, diags
 		}
-		data.RoleTemplates = jsontypes.NewNormalizedValue(string(roleTemplatesJSON))
+		data.RoleTemplates = jsontypes.NewNormalizedValue(templatesJSON)
 	} else {
 		data.RoleTemplates = jsontypes.NewNormalizedNull()
 	}
@@ -154,4 +154,40 @@ func normalizeRuleNode(node any) {
 			normalizeRuleNode(child)
 		}
 	}
+}
+
+// normalizeRoleTemplates converts the typed role templates back to config-
+// compatible JSON. The typed client's Script type normalizes a plain
+// template string into {"source":"..."}. When the object contains only
+// "source", we convert it back to a string so state matches typical config.
+func normalizeRoleTemplates(templates any) (string, error) {
+	raw, err := json.Marshal(templates)
+	if err != nil {
+		return "", err
+	}
+
+	var list []map[string]any
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return "", err
+	}
+
+	for _, item := range list {
+		if tmpl, ok := item["template"]; ok {
+			if tmplMap, ok := tmpl.(map[string]any); ok {
+				if len(tmplMap) == 1 {
+					if src, ok := tmplMap["source"]; ok {
+						if srcStr, ok := src.(string); ok {
+							item["template"] = srcStr
+						}
+					}
+				}
+			}
+		}
+	}
+
+	out, err := json.Marshal(list)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
