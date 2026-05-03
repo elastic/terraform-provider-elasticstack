@@ -23,11 +23,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -313,46 +310,58 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	return diags
 }
 
-func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMapping *models.RoleMapping) fwdiag.Diagnostics {
-	return doFWWrite(apiClient, roleMapping,
-		"Unable to marshal role mapping",
-		"Unable to put role mapping",
-		"Unable to put role mapping",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Security.PutRoleMapping(roleMapping.Name, body, esClient.Security.PutRoleMapping.WithContext(ctx))
-		},
-	)
+func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, roleMapping *types.SecurityRoleMapping) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	req := typedClient.Security.PutRoleMapping(name).
+		Enabled(roleMapping.Enabled).
+		Rules(&roleMapping.Rules)
+
+	if len(roleMapping.Roles) > 0 {
+		req.Roles(roleMapping.Roles...)
+	}
+	if len(roleMapping.RoleTemplates) > 0 {
+		req.RoleTemplates(roleMapping.RoleTemplates...)
+	}
+	if roleMapping.Metadata != nil {
+		req.Metadata(roleMapping.Metadata)
+	}
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to create or update a role mapping", err.Error())
+		return diags
+	}
+
+	return diags
 }
 
-func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
+func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*types.SecurityRoleMapping, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
-	req := esClient.Security.GetRoleMapping.WithName(roleMappingName)
-	res, err := esClient.Security.GetRoleMapping(req, esClient.Security.GetRoleMapping.WithContext(ctx))
+
+	res, err := typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, diags
+		}
 		diags.AddError("Unable to get role mapping", err.Error())
 		return nil, diags
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to get a role mapping."); diags.HasError() {
-		return nil, diags
-	}
-	roleMappings := make(map[string]models.RoleMapping)
-	if err := json.NewDecoder(res.Body).Decode(&roleMappings); err != nil {
-		diags.AddError("Unable to decode role mapping response", err.Error())
-		return nil, diags
-
-	}
-	if roleMapping, ok := roleMappings[roleMappingName]; ok {
-		roleMapping.Name = roleMappingName
+	if roleMapping, ok := res[roleMappingName]; ok {
 		return &roleMapping, diags
 	}
 
@@ -362,18 +371,24 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
 	}
-	res, err := esClient.Security.DeleteRoleMapping(roleMappingName, esClient.Security.DeleteRoleMapping.WithContext(ctx))
+
+	_, err = typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
 		diags.AddError("Unable to delete role mapping", err.Error())
 		return diags
 	}
-	defer res.Body.Close()
-	return diagutil.CheckErrorFromFW(res, "Unable to delete role mapping")
+
+	return diags
 }
 
 func CreateAPIKey(apiClient *clients.ElasticsearchScopedClient, apikey *models.APIKey) (*models.APIKeyCreateResponse, fwdiag.Diagnostics) {
