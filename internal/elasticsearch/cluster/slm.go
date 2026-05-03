@@ -315,10 +315,8 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 
 	if c := slm.Config; c != nil {
 		// expand_wildcards is not returned by the typed API; preserve from state
-		if v, ok := d.GetOk("expand_wildcards"); ok {
-			if err := d.Set("expand_wildcards", v.(string)); err != nil {
-				return diag.FromErr(err)
-			}
+		if err := d.Set("expand_wildcards", d.Get("expand_wildcards")); err != nil {
+			return diag.FromErr(err)
 		}
 		if c.IncludeGlobalState != nil {
 			if err := d.Set("include_global_state", *c.IncludeGlobalState); err != nil {
