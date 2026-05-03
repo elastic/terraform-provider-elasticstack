@@ -21,7 +21,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -34,8 +34,7 @@ func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T)
 		Description: types.StringValue(""),
 	}
 
-	diags := d.fromAPIModel(ctx, &models.Role{
-		Name:        "role-a",
+	diags := d.fromAPIModel(ctx, &estypes.Role{
 		Description: nil,
 	})
 	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
