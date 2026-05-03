@@ -301,15 +301,11 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 				return diag.FromErr(err)
 			}
 		}
-		if slm.Retention.MaxCount != 0 {
-			if err := d.Set("max_count", slm.Retention.MaxCount); err != nil {
-				return diag.FromErr(err)
-			}
+		if err := d.Set("max_count", slm.Retention.MaxCount); err != nil {
+			return diag.FromErr(err)
 		}
-		if slm.Retention.MinCount != 0 {
-			if err := d.Set("min_count", slm.Retention.MinCount); err != nil {
-				return diag.FromErr(err)
-			}
+		if err := d.Set("min_count", slm.Retention.MinCount); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
