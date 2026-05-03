@@ -19,7 +19,6 @@ package models
 
 import (
 	"encoding/json"
-	"time"
 )
 
 type Transform struct {
@@ -82,34 +81,7 @@ type TransformSettings struct {
 	Unattended         *bool    `json:"unattended,omitempty"`
 }
 
-type PutTransformParams struct {
-	DeferValidation bool
-	Timeout         time.Duration
-	Enabled         bool
-}
-
-type UpdateTransformParams struct {
-	DeferValidation bool
-	Timeout         time.Duration
-	Enabled         bool
-	ApplyEnabled    bool
-}
-
 type GetTransformResponse struct {
 	Count      json.Number `json:"count"`
 	Transforms []Transform `json:"transforms"`
-}
-
-type TransformStats struct {
-	ID    string `json:"id"`
-	State string `json:"state"`
-}
-
-type GetTransformStatsResponse struct {
-	Count          json.Number      `json:"count"`
-	TransformStats []TransformStats `json:"transforms"`
-}
-
-func (ts *TransformStats) IsStarted() bool {
-	return ts.State == "started" || ts.State == "indexing"
 }

@@ -12,9 +12,9 @@ The resource SHALL use the go-elasticsearch Typed API for stored script operatio
 #### Scenario: Typed API write sends stored script
 - GIVEN a stored script to create or update
 - WHEN the provider calls the Put Stored Script API
-- THEN the request SHALL be built using typed API request builders
-- AND `types.StoredScript` SHALL be used for the script body fields (`Lang`, `Source`)
-- AND manual JSON marshaling into `models.Script` SHALL NOT occur
+- THEN the request body SHALL use `types.StoredScript` for `Lang` and `Source`
+- AND because `types.StoredScript` does not include `params` or `context`, a raw-body wrapper MAY be used to include those fields
+- AND manual JSON marshaling into a legacy `models.Script` type SHALL NOT occur
 
 #### Scenario: Context parameter preserved
 - GIVEN a script resource with `context` configured

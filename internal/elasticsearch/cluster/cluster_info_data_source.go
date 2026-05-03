@@ -19,6 +19,7 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -144,9 +145,9 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	if diags.HasError() {
 		return diags
 	}
-	d.SetId(info.ClusterUUID)
+	d.SetId(info.ClusterUuid)
 
-	if err := d.Set("cluster_uuid", info.ClusterUUID); err != nil {
+	if err := d.Set("cluster_uuid", info.ClusterUuid); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("cluster_name", info.ClusterName); err != nil {
@@ -160,7 +161,16 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	version := map[string]any{}
-	version["build_date"] = info.Version.BuildDate.String()
+	var buildDate string
+	switch v := info.Version.BuildDate.(type) {
+	case string:
+		buildDate = v
+	case int64:
+		buildDate = fmt.Sprintf("%d", v)
+	default:
+		buildDate = fmt.Sprintf("%v", v)
+	}
+	version["build_date"] = buildDate
 	version["build_flavor"] = info.Version.BuildFlavor
 	version["build_hash"] = info.Version.BuildHash
 	version["build_snapshot"] = info.Version.BuildSnapshot
@@ -168,7 +178,7 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	version["lucene_version"] = info.Version.LuceneVersion
 	version["minimum_index_compatibility_version"] = info.Version.MinimumIndexCompatibilityVersion
 	version["minimum_wire_compatibility_version"] = info.Version.MinimumWireCompatibilityVersion
-	version["number"] = info.Version.Number
+	version["number"] = info.Version.Int
 	if err := d.Set("version", []any{version}); err != nil {
 		return diag.FromErr(err)
 	}

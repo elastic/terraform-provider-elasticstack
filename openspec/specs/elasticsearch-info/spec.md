@@ -47,9 +47,7 @@ data "elasticstack_elasticsearch_info" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Read API (REQ-001)
 
 The data source SHALL use the Elasticsearch cluster info API (root `GET /`) to retrieve cluster metadata. When the API returns an error, the data source SHALL surface the error to Terraform diagnostics.
@@ -99,3 +97,22 @@ The data source SHALL use the provider's configured Elasticsearch client by defa
 - GIVEN `elasticsearch_connection` is set
 - WHEN the API call runs
 - THEN the client SHALL be built from that block
+
+### Requirement: Typed client implementation for cluster info
+The data source SHALL retrieve cluster metadata using the go-elasticsearch Typed API (`elasticsearch.TypedClient.Core.Info().Do(ctx)`) instead of the raw `esapi` client. The typed API response SHALL be returned directly without manual JSON decoding into an intermediate model type.
+
+#### Scenario: Typed API success
+- GIVEN a valid Elasticsearch connection
+- WHEN the data source reads cluster info
+- THEN the provider SHALL call `Core.Info().Do(ctx)` on the typed client
+- AND the response SHALL be returned as `*core.InfoResponse`
+
+#### Scenario: Build date formatting
+- GIVEN a successful typed API response
+- WHEN the data source maps the `version.build_date` field
+- THEN the provider SHALL type-switch on the `types.DateTime` value (union of `string` and `int64`)
+- AND for a `string` value, use it directly
+- AND for an `int64` value, format it as a decimal string
+- AND for any other value, format via `fmt.Sprintf("%v", v)`
+- AND the resulting string SHALL remain a valid timestamp representation
+
