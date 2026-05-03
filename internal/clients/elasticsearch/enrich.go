@@ -20,7 +20,6 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -41,8 +40,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diag.FromErr(err)
@@ -145,8 +143,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 
 	_, err = typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return diag.FromErr(err)

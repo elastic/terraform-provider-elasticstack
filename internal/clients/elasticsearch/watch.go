@@ -21,10 +21,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -119,8 +117,7 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 
 	_, err = typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return diags // already gone, treat as success
 		}
 		diags.AddError("Unable to delete watch", err.Error())

@@ -20,15 +20,26 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
+
+// isNotFoundElasticsearchError reports whether err is an Elasticsearch API
+// error with HTTP status 404. Use this to treat a missing resource as a
+// successful no-op (e.g. idempotent deletes) or as a "not found" signal on
+// read operations.
+func isNotFoundElasticsearchError(err error) bool {
+	var esErr *types.ElasticsearchError
+	return errors.As(err, &esErr) && esErr.Status == 404
+}
 
 // doFWWrite marshals body to JSON, obtains an ES client from apiClient, calls fn
 // with the client and a reader over the serialised body, closes the response body,

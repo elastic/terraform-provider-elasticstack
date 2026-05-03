@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -240,8 +239,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return diag.Diagnostics{
