@@ -23,7 +23,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -121,20 +122,20 @@ func (a IndexConfig) Equals(b IndexConfig) bool {
 		reflect.DeepEqual(a.Filter, b.Filter)
 }
 
-func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, indices map[string]models.IndexAlias) diag.Diagnostics {
+func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, indices map[string]esTypes.AliasDefinition) diag.Diagnostics {
 	model.Name = types.StringValue(aliasName)
 
 	var writeIndex *indexModel
 	var readIndices []indexModel
 
 	for indexName, aliasData := range indices {
-		// Convert IndexAlias to indexModel
+		// Convert AliasDefinition to indexModel
 		index, err := indexFromAlias(indexName, aliasData)
 		if err != nil {
 			return err
 		}
 
-		if aliasData.IsWriteIndex {
+		if aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex {
 			writeIndex = &index
 		} else {
 			readIndices = append(readIndices, index)
@@ -164,14 +165,14 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 	return nil
 }
 
-// indexFromAlias converts a models.IndexAlias to an indexModel
-func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, diag.Diagnostics) {
+// indexFromAlias converts a esTypes.AliasDefinition to an indexModel
+func indexFromAlias(indexName string, aliasData esTypes.AliasDefinition) (indexModel, diag.Diagnostics) {
 	index := indexModel{
 		Name:          types.StringValue(indexName),
-		IsHidden:      types.BoolValue(aliasData.IsHidden),
-		IndexRouting:  typeutils.NonEmptyStringishValue(aliasData.IndexRouting),
-		Routing:       typeutils.NonEmptyStringishValue(aliasData.Routing),
-		SearchRouting: typeutils.NonEmptyStringishValue(aliasData.SearchRouting),
+		IsHidden:      types.BoolValue(aliasData.IsHidden != nil && *aliasData.IsHidden),
+		IndexRouting:  typeutils.NonEmptyStringishPointerValue(aliasData.IndexRouting),
+		Routing:       typeutils.NonEmptyStringishPointerValue(aliasData.Routing),
+		SearchRouting: typeutils.NonEmptyStringishPointerValue(aliasData.SearchRouting),
 	}
 
 	if aliasData.Filter != nil {
@@ -181,7 +182,18 @@ func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, 
 				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
 			}
 		}
-		index.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
+		var filterMap map[string]any
+		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
+			return indexModel{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
+			}
+		}
+		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
+		if nm, ok := normalized.(map[string]any); ok {
+			filterMap = nm
+		}
+		normalizedBytes, _ := json.Marshal(filterMap)
+		index.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
 	}
 
 	return index, nil

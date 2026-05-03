@@ -20,8 +20,8 @@ package alias
 import (
 	"context"
 
+	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -65,7 +65,7 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 // readAliasIntoModel populates the provided model from alias API response.
-func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]models.Index, model *tfModel) diag.Diagnostics {
+func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]esTypes.IndexAliases, model *tfModel) diag.Diagnostics {
 	// If no indices returned, the alias doesn't exist
 	if len(indices) == 0 {
 		// Set both to null to indicate the alias doesn't exist
@@ -75,9 +75,9 @@ func readAliasIntoModel(ctx context.Context, aliasName string, indices map[strin
 	}
 
 	// Extract alias data from the response
-	aliasData := make(map[string]models.IndexAlias)
-	for indexName, index := range indices {
-		if alias, exists := index.Aliases[aliasName]; exists {
+	aliasData := make(map[string]esTypes.AliasDefinition)
+	for indexName, indexAliases := range indices {
+		if alias, exists := indexAliases.Aliases[aliasName]; exists {
 			aliasData[indexName] = alias
 		}
 	}
