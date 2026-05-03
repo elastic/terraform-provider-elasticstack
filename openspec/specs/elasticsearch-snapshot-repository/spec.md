@@ -148,9 +148,7 @@ data "elasticstack_elasticsearch_snapshot_repository" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Snapshot repository CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Create or Update Snapshot Repository API (`PUT /_snapshot/<repository>`) to create and update snapshot repositories ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/put-snapshot-repo-api.html)). The resource SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_snapshot/<repository>`) to read snapshot repositories ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/get-snapshot-repo-api.html)). The resource SHALL use the Elasticsearch Delete Snapshot Repository API (`DELETE /_snapshot/<repository>`) to delete snapshot repositories ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/delete-snapshot-repo-api.html)). When Elasticsearch returns a non-success status for any create, update, read, or delete request (other than 404 on read), the resource SHALL surface the API error to Terraform diagnostics.
@@ -358,3 +356,24 @@ All attributes in the data source schema except `name` SHALL be computed. The `n
 - GIVEN no `name` is provided in the data source configuration
 - WHEN Terraform validates the configuration
 - THEN a validation error SHALL be returned
+
+### Requirement: Typed client implementation for snapshot repository CRUD
+The resource and data source SHALL use the go-elasticsearch Typed API for all snapshot repository operations. `GetSnapshotRepository` SHALL use `Snapshot.GetRepository().Do(ctx)`, `PutSnapshotRepository` SHALL use `Snapshot.CreateRepository().Do(ctx)`, and `DeleteSnapshotRepository` SHALL use `Snapshot.DeleteRepository().Do(ctx)`. Manual JSON marshaling and unmarshaling SHALL be eliminated.
+
+#### Scenario: Typed API read with union type handling
+- GIVEN a successful Get Snapshot Repository API response
+- WHEN the provider processes the response
+- THEN the typed API response (`getrepository.Response`) SHALL be type-switched over `types.Repository` union variants
+- AND each known repository type (`fs`, `url`, `gcs`, `azure`, `s3`, `hdfs`, `source`) SHALL be mapped to its corresponding schema block
+
+#### Scenario: Unknown repository type error
+- GIVEN the API returns a repository type not covered by the `types.Repository` union handling
+- WHEN read runs
+- THEN the provider SHALL return an error diagnostic and SHALL NOT panic
+
+#### Scenario: Typed API write without manual marshal
+- GIVEN a snapshot repository to create or update
+- WHEN the provider calls the Put API
+- THEN the request body SHALL be constructed using typed API request builders
+- AND manual `json.Marshal` into an intermediate `models.SnapshotRepository` SHALL NOT occur
+
