@@ -18,13 +18,13 @@
 
 ## 3. Makefile port variables
 
-- [ ] 3.1 Add `ELASTICSEARCH_PORT ?= 9200` and `KIBANA_PORT ?= 5601` near the top of the Makefile (alongside other configurable variables)
-- [ ] 3.2 Update `testacc-vs-docker` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)` and `localhost:5601` with `localhost:$(KIBANA_PORT)`
-- [ ] 3.3 Update `set-kibana-password` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
-- [ ] 3.4 Update `setup-synthetics` target: replace `localhost:5601` with `localhost:$(KIBANA_PORT)`
-- [ ] 3.5 Update `create-es-api-key` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
-- [ ] 3.6 Update `create-es-bearer-token` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
-- [ ] 3.7 Update `setup-kibana-fleet` target: replace `localhost:5601` with `localhost:$(KIBANA_PORT)`
+- [x] 3.1 Add `ELASTICSEARCH_PORT ?= 9200` and `KIBANA_PORT ?= 5601` near the top of the Makefile (alongside other configurable variables)
+- [x] 3.2 Update `testacc-vs-docker` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)` and `localhost:5601` with `localhost:$(KIBANA_PORT)`
+- [x] 3.3 Update `set-kibana-password` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
+- [x] 3.4 Update `setup-synthetics` target: replace `localhost:5601` with `localhost:$(KIBANA_PORT)`
+- [x] 3.5 Update `create-es-api-key` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
+- [x] 3.6 Update `create-es-bearer-token` target: replace `localhost:9200` with `localhost:$(ELASTICSEARCH_PORT)`
+- [x] 3.7 Update `setup-kibana-fleet` target: replace `localhost:5601` with `localhost:$(KIBANA_PORT)`
 
 ## 4. Worktrunk project config
 
