@@ -55,7 +55,7 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	}
 	data.ID = types.StringValue(compID.String())
 	data.ElasticsearchConnection = stateData.ElasticsearchConnection
-	data.Name = types.StringValue(roleMapping.Name)
+	data.Name = types.StringValue(roleMappingName)
 	data.Enabled = types.BoolValue(roleMapping.Enabled)
 
 	// Handle rules
