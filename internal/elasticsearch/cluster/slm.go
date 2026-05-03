@@ -192,16 +192,19 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if v, ok := d.GetOk("snapshot_name"); ok {
 		slm.Name = v.(string)
 	}
+	var maxCountSet, minCountSet bool
 	if v, ok := d.GetOk("expire_after"); ok {
 		slmRetention.ExpireAfter = v.(string)
 	}
 	if v, ok := d.GetOk("max_count"); ok {
 		slmRetention.MaxCount = v.(int)
+		maxCountSet = true
 	}
 	if v, ok := d.GetOk("min_count"); ok {
 		slmRetention.MinCount = v.(int)
+		minCountSet = true
 	}
-	if slmRetention.ExpireAfter != nil || slmRetention.MaxCount != 0 || slmRetention.MinCount != 0 {
+	if slmRetention.ExpireAfter != nil || maxCountSet || minCountSet {
 		slm.Retention = &slmRetention
 	}
 
@@ -249,7 +252,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	slm.Config = &slmConfig
 
-	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm, expandWildcards); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm, expandWildcards, maxCountSet, minCountSet); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())

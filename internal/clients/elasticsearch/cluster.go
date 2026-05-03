@@ -103,7 +103,11 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		s.Type = "azure"
 		repo = s
 	case "hdfs":
-		// HDFS is not part of the typed API Repository union; use raw JSON body.
+		// The go-elasticsearch Typed API's types.Repository union does not include
+		// HdfsRepository, and the getrepository Response.UnmarshalJSON only handles
+		// azure, gcs, s3, fs, url, source. HDFS snapshots require the repository-hdfs
+		// plugin, which is outside the core typed API spec. Therefore HDFS must be
+		// sent/received as raw JSON to preserve backward compatibility.
 		body := map[string]any{
 			"type":     repoType,
 			"settings": settings,
@@ -173,7 +177,8 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		}
 	}
 
-	// Fall back to raw JSON parsing for unknown types (e.g. hdfs).
+	// Fall back to raw JSON parsing for plugin-backed repository types (e.g. hdfs)
+	// that are not part of the go-elasticsearch Typed API types.Repository union.
 	var rawResp map[string]struct {
 		Type     string         `json:"type"`
 		Settings map[string]any `json:"settings"`
@@ -275,7 +280,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 	return diags
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *types.SLMPolicy, expandWildcards string) sdkdiag.Diagnostics {
+func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *types.SLMPolicy, expandWildcards string, maxCountSet bool, minCountSet bool) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
@@ -333,10 +338,10 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		if slm.Retention.ExpireAfter != nil {
 			retention["expire_after"] = slm.Retention.ExpireAfter
 		}
-		if slm.Retention.MaxCount != 0 {
+		if maxCountSet {
 			retention["max_count"] = slm.Retention.MaxCount
 		}
-		if slm.Retention.MinCount != 0 {
+		if minCountSet {
 			retention["min_count"] = slm.Retention.MinCount
 		}
 		if len(retention) > 0 {

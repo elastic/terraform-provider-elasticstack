@@ -167,6 +167,8 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 		buildDate = v
 	case int64:
 		buildDate = fmt.Sprintf("%d", v)
+	default:
+		buildDate = fmt.Sprintf("%v", v)
 	}
 	version["build_date"] = buildDate
 	version["build_flavor"] = info.Version.BuildFlavor
