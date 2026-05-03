@@ -50,12 +50,12 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 	if user.Email != nil {
 		state.Email = types.StringValue(*user.Email)
 	} else {
-		state.Email = types.StringNull()
+		state.Email = types.StringValue("")
 	}
 	if user.FullName != nil {
 		state.FullName = types.StringValue(*user.FullName)
 	} else {
-		state.FullName = types.StringNull()
+		state.FullName = types.StringValue("")
 	}
 	state.Enabled = types.BoolValue(user.Enabled)
 

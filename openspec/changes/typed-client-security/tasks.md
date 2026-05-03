@@ -1,14 +1,14 @@
 ## 1. Typed client migration — user helpers
 
-- [ ] 1.1 Rewrite `PutUser` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutUser` API
-- [ ] 1.2 Rewrite `GetUser` to use typed `Security.GetUser` API and return `*types.User`
-- [ ] 1.3 Rewrite `DeleteUser` to use typed `Security.DeleteUser` API
-- [ ] 1.4 Rewrite `EnableUser` to use typed `Security.EnableUser` API
-- [ ] 1.5 Rewrite `DisableUser` to use typed `Security.DisableUser` API
-- [ ] 1.6 Rewrite `ChangeUserPassword` to use typed `Security.ChangePassword` API
-- [ ] 1.7 Update `internal/elasticsearch/security/user/` resource files for new helper signatures and `*types.User`
-- [ ] 1.8 Update `internal/elasticsearch/security/user_data_source.go` for new `GetUser` signature and `*types.User`
-- [ ] 1.9 Update `internal/elasticsearch/security/systemuser/` resource files for new helper signatures and `*types.User`
+- [x] 1.1 Rewrite `PutUser` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutUser` API
+- [x] 1.2 Rewrite `GetUser` to use typed `Security.GetUser` API and return `*types.User`
+- [x] 1.3 Rewrite `DeleteUser` to use typed `Security.DeleteUser` API
+- [x] 1.4 Rewrite `EnableUser` to use typed `Security.EnableUser` API
+- [x] 1.5 Rewrite `DisableUser` to use typed `Security.DisableUser` API
+- [x] 1.6 Rewrite `ChangeUserPassword` to use typed `Security.ChangePassword` API
+- [x] 1.7 Update `internal/elasticsearch/security/user/` resource files for new helper signatures and `*types.User`
+- [x] 1.8 Update `internal/elasticsearch/security/user_data_source.go` for new `GetUser` signature and `*types.User`
+- [x] 1.9 Update `internal/elasticsearch/security/systemuser/` resource files for new helper signatures and `*types.User`
 
 ## 2. Typed client migration — role helpers
 
