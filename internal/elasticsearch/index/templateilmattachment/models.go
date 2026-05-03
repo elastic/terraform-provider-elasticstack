@@ -19,7 +19,9 @@ package templateilmattachment
 
 import (
 	"context"
+	"encoding/json"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -51,22 +53,44 @@ func (m *tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
 }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
-// We use flat form (index.lifecycle.name) for simpler processing; Get is called with flat_settings=true.
 func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {
 	if existingSettings == nil {
 		existingSettings = make(map[string]any)
 	}
-	existingSettings["index.lifecycle.name"] = lifecycleName
+	indexSettings, ok := existingSettings["index"].(map[string]any)
+	if !ok {
+		indexSettings = make(map[string]any)
+		existingSettings["index"] = indexSettings
+	}
+	lifecycle, ok := indexSettings["lifecycle"].(map[string]any)
+	if !ok {
+		lifecycle = make(map[string]any)
+		indexSettings["lifecycle"] = lifecycle
+	}
+	lifecycle["name"] = lifecycleName
 	return existingSettings
 }
 
-// removeILMSetting removes the index.lifecycle.name setting from the settings map (flat form).
+// removeILMSetting removes the index.lifecycle.name setting from the settings map.
 func removeILMSetting(settings map[string]any) map[string]any {
 	if settings == nil {
 		return nil
 	}
-	delete(settings, "index.lifecycle.name")
-	return pruneEmpty(settings)
+	if indexSettings, ok := settings["index"].(map[string]any); ok {
+		if lifecycle, ok := indexSettings["lifecycle"].(map[string]any); ok {
+			delete(lifecycle, "name")
+			if len(lifecycle) == 0 {
+				delete(indexSettings, "lifecycle")
+			}
+		}
+		if len(indexSettings) == 0 {
+			delete(settings, "index")
+		}
+	}
+	if len(settings) == 0 {
+		return nil
+	}
+	return settings
 }
 
 func pruneEmpty(settings map[string]any) map[string]any {
@@ -86,12 +110,20 @@ func isComponentTemplateEmpty(template *models.Template) bool {
 		len(template.Aliases) == 0
 }
 
-// extractILMSetting extracts the index.lifecycle.name setting from component template settings (flat form).
+// extractILMSetting extracts the index.lifecycle.name setting from component template settings.
 func extractILMSetting(template *models.Template) string {
 	if template == nil || template.Settings == nil {
 		return ""
 	}
-	if v, ok := template.Settings["index.lifecycle.name"].(string); ok {
+	indexSettings, ok := template.Settings["index"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	lifecycle, ok := indexSettings["lifecycle"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	if v, ok := lifecycle["name"].(string); ok {
 		return v
 	}
 	return ""
@@ -106,21 +138,42 @@ func readILMAttachment(ctx context.Context, model *tfModel, client *clients.Elas
 
 	componentTemplateName := model.getComponentTemplateName()
 
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
+	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return false, diags
 	}
 
-	if tpl == nil {
+	modelTpl, err := toModelComponentTemplateResponse(tpl)
+	if err != nil {
+		diags.AddError("Failed to parse component template", err.Error())
+		return false, diags
+	}
+
+	if modelTpl == nil {
 		return false, nil
 	}
 
-	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
+	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
 	if lifecycleName == "" {
 		return false, nil
 	}
 
 	model.LifecycleName = types.StringValue(lifecycleName)
 	return true, nil
+}
+
+func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) (*models.ComponentTemplateResponse, error) {
+	if tpl == nil {
+		return nil, nil
+	}
+	b, err := json.Marshal(tpl)
+	if err != nil {
+		return nil, err
+	}
+	var resp models.ComponentTemplateResponse
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

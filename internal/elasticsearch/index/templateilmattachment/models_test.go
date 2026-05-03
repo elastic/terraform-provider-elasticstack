@@ -37,60 +37,83 @@ func TestMergeILMSetting_EmptyExisting(t *testing.T) {
 	existing := map[string]any{}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_NilExisting(t *testing.T) {
 	result := mergeILMSetting(nil, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_PreserveExisting(t *testing.T) {
 	existing := map[string]any{
-		"index.number_of_replicas": 2,
-		"index.refresh_interval":   "30s",
+		"index": map[string]any{
+			"number_of_replicas": 2,
+			"refresh_interval":   "30s",
+		},
 	}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 3)
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
+	assert.Equal(t, 2, indexSettings["number_of_replicas"])
+	assert.Equal(t, "30s", indexSettings["refresh_interval"])
+	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
 	existing := map[string]any{
-		"index.lifecycle.name":     "old-policy",
-		"index.number_of_replicas": 2,
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "old-policy",
+			},
+			"number_of_replicas": 2,
+		},
 	}
 	result := mergeILMSetting(existing, "new-policy")
 
-	assert.Equal(t, "new-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Len(t, result, 2)
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "new-policy", lifecycle["name"])
+	assert.Equal(t, 2, indexSettings["number_of_replicas"])
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
 	settings := map[string]any{
-		"index.lifecycle.name":   "my-policy",
-		"index.number_of_shards": "1",
-		"index.refresh_interval": "30s",
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "my-policy",
+			},
+			"number_of_shards": "1",
+			"refresh_interval": "30s",
+		},
 	}
 	result := removeILMSetting(settings)
 
-	_, hasILM := result["index.lifecycle.name"]
+	indexSettings := result["index"].(map[string]any)
+	_, hasILM := indexSettings["lifecycle"]
 	assert.False(t, hasILM)
-	assert.Equal(t, "1", result["index.number_of_shards"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 2)
+	assert.Equal(t, "1", indexSettings["number_of_shards"])
+	assert.Equal(t, "30s", indexSettings["refresh_interval"])
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_EmptyAfterRemoval(t *testing.T) {
 	settings := map[string]any{
-		"index.lifecycle.name": "my-policy",
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "my-policy",
+			},
+		},
 	}
 	result := removeILMSetting(settings)
 
@@ -210,8 +233,12 @@ func TestExtractILMSetting(t *testing.T) {
 			name: "has ILM setting",
 			template: &models.Template{
 				Settings: map[string]any{
-					"index.lifecycle.name":     "my-policy",
-					"index.number_of_replicas": 2,
+					"index": map[string]any{
+						"lifecycle": map[string]any{
+							"name": "my-policy",
+						},
+						"number_of_replicas": 2,
+					},
 				},
 			},
 			expected: "my-policy",
@@ -220,7 +247,11 @@ func TestExtractILMSetting(t *testing.T) {
 			name: "ILM setting is not a string",
 			template: &models.Template{
 				Settings: map[string]any{
-					"index.lifecycle.name": 123,
+					"index": map[string]any{
+						"lifecycle": map[string]any{
+							"name": 123,
+						},
+					},
 				},
 			},
 			expected: "",

@@ -49,9 +49,15 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	componentTemplateName := compID.ResourceID
 
 	// Read existing component template
-	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
+	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
+	}
+
+	existing, err := toModelComponentTemplateResponse(existingRaw)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to parse component template", err.Error())
 		return
 	}
 

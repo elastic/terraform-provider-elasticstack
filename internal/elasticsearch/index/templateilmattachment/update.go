@@ -63,9 +63,15 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	componentTemplateName := plan.getComponentTemplateName()
 
 	// Read existing component template to preserve other settings
-	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
+	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
+	}
+
+	existing, err := toModelComponentTemplateResponse(existingRaw)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to parse component template", err.Error())
 		return
 	}
 

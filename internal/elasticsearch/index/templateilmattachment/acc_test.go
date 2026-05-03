@@ -347,35 +347,29 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 			continue
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name, false)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
 		if tpl == nil {
 			return fmt.Errorf("expected component template %s to still exist after destroy (only ILM should be removed)", name)
 		}
-		if tpl.ComponentTemplate.Template == nil {
+		if len(tpl.ComponentTemplate.Template.Settings) == 0 && tpl.ComponentTemplate.Template.Mappings == nil && len(tpl.ComponentTemplate.Template.Aliases) == 0 {
 			return fmt.Errorf("expected component template %s to still have a template section after destroy", name)
 		}
-		if tpl.ComponentTemplate.Template.Settings == nil {
+		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+		if !hasIndex {
 			return fmt.Errorf("expected component template %s to still have settings after destroy (other settings should be preserved)", name)
 		}
-		if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
+		if indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
 			return fmt.Errorf("ILM setting still exists in component template %s", name)
 		}
 		// Verify the setting we created in PreCheck was preserved (only ILM should be removed)
-		switch n := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"].(type) {
-		case string:
-			if n != "1" {
-				return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", n)
-			}
-		case float64:
-			if n != 1 {
-				return fmt.Errorf("expected index.number_of_shards to be preserved as 1 after destroy, got %v", n)
-			}
-		default:
-			got := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"]
-			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", got, got)
+		if indexSettings.NumberOfShards == nil {
+			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got nil")
+		}
+		if *indexSettings.NumberOfShards != "1" {
+			return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", *indexSettings.NumberOfShards)
 		}
 
 		// Cleanup: remove the fixture template created in PreCheck
@@ -403,17 +397,16 @@ func checkResourceDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compID.ResourceID, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compID.ResourceID, false)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
 
 		// If the template still exists, check if ILM setting is removed
 		if tpl != nil {
-			if tpl.ComponentTemplate.Template != nil && tpl.ComponentTemplate.Template.Settings != nil {
-				if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
-					return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
-				}
+			indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+			if hasIndex && indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
+				return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
 			}
 		}
 	}
@@ -428,7 +421,7 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return err
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name, false)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -437,19 +430,12 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return fmt.Errorf("component template %s does not exist", name)
 		}
 
-		if tpl.ComponentTemplate.Template == nil {
-			return fmt.Errorf("component template %s has no template section", name)
-		}
-
-		if tpl.ComponentTemplate.Template.Settings == nil {
-			return fmt.Errorf("component template %s has no settings", name)
-		}
-
-		actualPolicy, _ := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"].(string)
-		if actualPolicy == "" {
+		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+		if !hasIndex || indexSettings.Lifecycle == nil || indexSettings.Lifecycle.Name == nil {
 			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
 		}
 
+		actualPolicy := *indexSettings.Lifecycle.Name
 		if actualPolicy != expectedPolicy {
 			return fmt.Errorf("expected ILM policy %s, got %s", expectedPolicy, actualPolicy)
 		}
