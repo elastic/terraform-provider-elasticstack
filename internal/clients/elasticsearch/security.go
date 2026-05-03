@@ -18,6 +18,7 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -332,6 +333,42 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 	}
 	if roleMapping.Metadata != nil {
 		req.Metadata(roleMapping.Metadata)
+	}
+
+	// The typed client's Script type marshals template strings as objects
+	// {"source":"..."}. The ES role mapping API accepts and returns
+	// templates as plain strings by default, and sending an object may
+	// cause ES to wrap the value. Override the request body to preserve
+	// the template as a plain string, matching the old provider behaviour.
+	if len(roleMapping.RoleTemplates) > 0 {
+		body := map[string]any{
+			"enabled": roleMapping.Enabled,
+			"rules":   &roleMapping.Rules,
+		}
+		if len(roleMapping.Roles) > 0 {
+			body["roles"] = roleMapping.Roles
+		}
+		if roleMapping.Metadata != nil {
+			body["metadata"] = roleMapping.Metadata
+		}
+		templates := make([]map[string]any, len(roleMapping.RoleTemplates))
+		for i, rt := range roleMapping.RoleTemplates {
+			t := map[string]any{}
+			if rt.Format != nil {
+				t["format"] = rt.Format.String()
+			}
+			if rt.Template.Source != nil {
+				t["template"] = *rt.Template.Source
+			}
+			templates[i] = t
+		}
+		body["role_templates"] = templates
+		data, err := json.Marshal(body)
+		if err != nil {
+			diags.AddError("Unable to marshal role mapping request", err.Error())
+			return diags
+		}
+		req.Raw(bytes.NewReader(data))
 	}
 
 	_, err = req.Do(ctx)
