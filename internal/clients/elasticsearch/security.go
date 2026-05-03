@@ -21,12 +21,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -34,43 +36,63 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *models.User) fwdiag.Diagnostics {
-	return doFWWrite(apiClient, user,
-		"Unable to marshal user",
-		"Unable to create or update user",
-		"Unable to create or update a user",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Security.PutUser(user.Username, body, esClient.Security.PutUser.WithContext(ctx))
-		},
-	)
+func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *types.User, password, passwordHash *string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	req := typedClient.Security.PutUser(user.Username).
+		Enabled(user.Enabled).
+		Roles(user.Roles...)
+
+	if user.Email != nil {
+		req.Email(*user.Email)
+	}
+	if user.FullName != nil {
+		req.FullName(*user.FullName)
+	}
+	if user.Metadata != nil {
+		req.Metadata(user.Metadata)
+	}
+
+	if password != nil {
+		req.Password(*password)
+	}
+	if passwordHash != nil {
+		req.PasswordHash(*passwordHash)
+	}
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to create or update a user", err.Error())
+		return diags
+	}
+
+	return diags
 }
 
-func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*models.User, diag.Diagnostics) {
+func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*types.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	req := esClient.Security.GetUser.WithUsername(username)
-	res, err := esClient.Security.GetUser(req, esClient.Security.GetUser.WithContext(ctx))
+
+	res, err := typedClient.Security.GetUser().Username(username).Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckError(res, "Unable to get a user."); diags.HasError() {
-		return nil, diags
-	}
-
-	// unmarshal our response to proper type
-	users := make(map[string]models.User)
-	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, nil
+		}
 		return nil, diag.FromErr(err)
 	}
 
-	if user, ok := users[username]; ok {
+	if user, ok := res[username]; ok {
 		return &user, diags
 	}
 
@@ -84,26 +106,30 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
 	}
-	res, err := esClient.Security.DeleteUser(username, esClient.Security.DeleteUser.WithContext(ctx))
+
+	_, err = typedClient.Security.DeleteUser(username).Do(ctx)
 	if err != nil {
-		diags.AddError("Unable to delete user", err.Error())
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
+		diags.AddError("Unable to delete a user", err.Error())
 		return diags
 	}
-	defer res.Body.Close()
-	if fwDiags := diagutil.CheckErrorFromFW(res, "Unable to delete a user"); fwDiags.HasError() {
-		return fwDiags
-	}
+
 	return diags
 }
 
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -111,7 +137,8 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		)
 		return diags
 	}
-	res, err := esClient.Security.EnableUser(username, esClient.Security.EnableUser.WithContext(ctx))
+
+	_, err = typedClient.Security.EnableUser(username).Do(ctx)
 	if err != nil {
 		diags.AddError(
 			"Unable to enable system user",
@@ -119,16 +146,14 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		)
 		return diags
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to enable system user"); diags.HasError() {
-		return diags
-	}
+
 	return diags
 }
 
 func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -136,7 +161,8 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		)
 		return diags
 	}
-	res, err := esClient.Security.DisableUser(username, esClient.Security.DisableUser.WithContext(ctx))
+
+	_, err = typedClient.Security.DisableUser(username).Do(ctx)
 	if err != nil {
 		diags.AddError(
 			"Unable to disable system user",
@@ -144,24 +170,14 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		)
 		return diags
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to disable system user"); diags.HasError() {
-		return diags
-	}
+
 	return diags
 }
 
 func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, userPassword *models.UserPassword) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	userPasswordBytes, err := json.Marshal(userPassword)
-	if err != nil {
-		diags.AddError(
-			"Unable to marshal user password",
-			err.Error(),
-		)
-		return diags
-	}
-	esClient, err := apiClient.GetESClient()
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -169,22 +185,24 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 		)
 		return diags
 	}
-	res, err := esClient.Security.ChangePassword(
-		bytes.NewReader(userPasswordBytes),
-		esClient.Security.ChangePassword.WithUsername(username),
-		esClient.Security.ChangePassword.WithContext(ctx),
-	)
+
+	req := typedClient.Security.ChangePassword().Username(username)
+	if userPassword.Password != nil {
+		req.Password(*userPassword.Password)
+	}
+	if userPassword.PasswordHash != nil {
+		req.PasswordHash(*userPassword.PasswordHash)
+	}
+
+	_, err = req.Do(ctx)
 	if err != nil {
 		diags.AddError(
-			"Unable to change user password",
+			"Unable to change user's password",
 			err.Error(),
 		)
 		return diags
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to change user's password"); diags.HasError() {
-		return diags
-	}
+
 	return diags
 }
 
