@@ -121,9 +121,8 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnostics) {
 	req := updateapikey.NewRequest()
 
-	if model.Expiration.ValueString() != "" {
-		req.Expiration = model.Expiration.ValueString()
-	}
+	// Note: the Update API Key endpoint does not accept expiration.
+	// The old code explicitly zeroed it out before sending.
 
 	if typeutils.IsKnown(model.Metadata) {
 		var metadata map[string]any
@@ -274,9 +273,8 @@ func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*creat
 func (model tfModel) toUpdateCrossClusterAPIRequest(ctx context.Context) (*updatecrossclusterapikey.Request, diag.Diagnostics) {
 	req := updatecrossclusterapikey.NewRequest()
 
-	if model.Expiration.ValueString() != "" {
-		req.Expiration = model.Expiration.ValueString()
-	}
+	// Note: the Update Cross-Cluster API Key endpoint does not accept expiration.
+	// The old code explicitly zeroed it out before sending.
 
 	if typeutils.IsKnown(model.Metadata) {
 		var metadata map[string]any
