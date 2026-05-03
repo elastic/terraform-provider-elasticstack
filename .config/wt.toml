@@ -1,9 +1,10 @@
 pre-start = "make setup"
 
-post-start = """cp .env.template .env
-echo "ELASTICSEARCH_PORT={{ 10000 + (branch | hash_port) % 5000 }}" >> .env
-echo "KIBANA_PORT={{ 15000 + (branch | hash_port) % 5000 }}" >> .env
-echo 'ELASTICSEARCH_URL=http://localhost:${ELASTICSEARCH_PORT}' >> .env
+post-start = """set -e && \
+cp -n .env.template .env && \
+echo "ELASTICSEARCH_PORT={{ 10000 + (branch | hash_port) % 5000 }}" >> .env && \
+echo "KIBANA_PORT={{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}" >> .env && \
+echo "ELASTICSEARCH_URL=http://localhost:{{ 10000 + (branch | hash_port) % 5000 }}" >> .env
 """
 
 pre-commit = "make check-lint"
