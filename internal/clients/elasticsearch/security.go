@@ -216,16 +216,12 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	req := typedClient.Security.PutRole(name)
 
-	if len(role.Applications) > 0 {
-		req.Applications(role.Applications...)
-	}
-	if len(role.Cluster) > 0 {
-		req.Cluster(role.Cluster...)
-	}
+	req.Applications(role.Applications...)
+	req.Cluster(role.Cluster...)
 	if role.Description != nil {
 		req.Description(*role.Description)
 	}
-	if len(role.Global) > 0 {
+	if role.Global != nil {
 		globalJSON, err := json.Marshal(role.Global)
 		if err != nil {
 			diags = append(diags, diag.Diagnostic{
@@ -246,18 +242,10 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		}
 		req.Global(global)
 	}
-	if len(role.Indices) > 0 {
-		req.Indices(role.Indices...)
-	}
-	if role.Metadata != nil && len(role.Metadata) > 0 {
-		req.Metadata(role.Metadata)
-	}
-	if len(role.RemoteIndices) > 0 {
-		req.RemoteIndices(role.RemoteIndices...)
-	}
-	if len(role.RunAs) > 0 {
-		req.RunAs(role.RunAs...)
-	}
+	req.Indices(role.Indices...)
+	req.Metadata(role.Metadata)
+	req.RemoteIndices(role.RemoteIndices...)
+	req.RunAs(role.RunAs...)
 
 	_, err = req.Do(ctx)
 	if err != nil {

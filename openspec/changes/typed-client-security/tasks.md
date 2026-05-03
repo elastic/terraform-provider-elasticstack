@@ -12,11 +12,11 @@
 
 ## 2. Typed client migration — role helpers
 
-- [ ] 2.1 Rewrite `PutRole` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutRole` API
-- [ ] 2.2 Rewrite `GetRole` to use typed `Security.GetRole` API and return `*types.Role`
-- [ ] 2.3 Rewrite `DeleteRole` to use typed `Security.DeleteRole` API
-- [ ] 2.4 Update `internal/elasticsearch/security/role/` resource files for new helper signatures and `*types.Role`
-- [ ] 2.5 Update `internal/elasticsearch/security/role_data_source.go` for new `GetRole` signature and `*types.Role`
+- [x] 2.1 Rewrite `PutRole` in `internal/clients/elasticsearch/security.go` to use typed `Security.PutRole` API
+- [x] 2.2 Rewrite `GetRole` to use typed `Security.GetRole` API and return `*types.Role`
+- [x] 2.3 Rewrite `DeleteRole` to use typed `Security.DeleteRole` API
+- [x] 2.4 Update `internal/elasticsearch/security/role/` resource files for new helper signatures and `*types.Role`
+- [x] 2.5 Update `internal/elasticsearch/security/role_data_source.go` for new `GetRole` signature and `*types.Role`
 
 ## 3. Typed client migration — role mapping helpers
 

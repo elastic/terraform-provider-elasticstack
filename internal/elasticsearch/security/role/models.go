@@ -362,7 +362,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 	}
 
 	// Global
-	if role.Global != nil && len(role.Global) > 0 {
+	if role.Global != nil {
 		global, err := json.Marshal(role.Global)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
@@ -563,7 +563,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 	}
 
 	// Metadata
-	if role.Metadata != nil && len(role.Metadata) > 0 {
+	if role.Metadata != nil {
 		metadata, err := json.Marshal(role.Metadata)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
