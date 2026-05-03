@@ -23,46 +23,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/putdatalifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
-
-// durationToEsString formats a time.Duration as an Elasticsearch-compatible
-// duration string (e.g. "1m", "30s").  Go's default time.Duration.String()
-// produces "1m0s" which Elasticsearch rejects.
-func durationToEsString(d time.Duration) string {
-	if d < 0 {
-		d = -d
-	}
-	// Elasticsearch accepts durations in ms, s, m, h, d.
-	// Prefer the largest clean unit.
-	if d%time.Hour == 0 {
-		h := d / time.Hour
-		return fmt.Sprintf("%dh", h)
-	}
-	if d%time.Minute == 0 {
-		m := d / time.Minute
-		return fmt.Sprintf("%dm", m)
-	}
-	if d%time.Second == 0 {
-		s := d / time.Second
-		return fmt.Sprintf("%ds", s)
-	}
-	ms := d / time.Millisecond
-	return fmt.Sprintf("%dms", ms)
-}
 
 // DateMathIndexNameRe matches plain Elasticsearch date math index name expressions.
 // The pattern enforces:
@@ -163,14 +139,14 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	return nil
 }
 
-// GetComponentTemplate returns a component template by name. flatSettings controls the
-// response format: true = flat keys (e.g. "index.number_of_shards"), false = nested (default).
-func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string, flatSettings bool) (*types.ClusterComponentTemplate, sdkdiag.Diagnostics) {
+// GetComponentTemplate returns a component template by name.  It always requests
+// flat settings (e.g. "index.number_of_shards") from the API.
+func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, sdkdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
-	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).FlatSettings(flatSettings).Do(ctx)
+	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).FlatSettings(true).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
@@ -271,14 +247,18 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchSc
 // math expression it is URI-encoded before being sent in the API request path so the Go
 // HTTP client does not rewrite the angle brackets or braces.
 func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index *models.Index, params *models.PutIndexParams) (string, fwdiags.Diagnostics) {
-	indexBytes, err := json.Marshal(index)
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	esClient, err := apiClient.GetESClient()
+	indexBytes, err := json.Marshal(index)
 	if err != nil {
-		return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+		return "", diagutil.FrameworkDiagFromError(err)
+	}
+	var req create.Request
+	if err := json.Unmarshal(indexBytes, &req); err != nil {
+		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
 	// URI-encode the name when it is a validated date math expression so the angle
@@ -288,36 +268,26 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		indexAPIName = encodeDateMathIndexName(index.Name)
 	}
 
-	opts := []func(*esapi.IndicesCreateRequest){
-		esClient.Indices.Create.WithBody(bytes.NewReader(indexBytes)),
-		esClient.Indices.Create.WithContext(ctx),
-		esClient.Indices.Create.WithWaitForActiveShards(params.WaitForActiveShards),
-	}
+	builder := typedClient.Indices.Create(indexAPIName).
+		Request(&req).
+		WaitForActiveShards(params.WaitForActiveShards)
 	if params.MasterTimeout > 0 {
-		opts = append(opts, esClient.Indices.Create.WithMasterTimeout(params.MasterTimeout))
+		builder = builder.MasterTimeout(params.MasterTimeout.String())
 	}
 	if params.Timeout > 0 {
-		opts = append(opts, esClient.Indices.Create.WithTimeout(params.Timeout))
+		builder = builder.Timeout(params.Timeout.String())
 	}
 
-	res, err := esClient.Indices.Create(indexAPIName, opts...)
+	res, err := builder.Do(ctx)
 	if err != nil {
-		return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
-	}
-	defer res.Body.Close()
-
-	var createRes struct {
-		Index string `json:"index"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&createRes); err != nil {
-		// If the response doesn't have an index field, fall back without error
+		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	concreteName := createRes.Index
+	concreteName := res.Index
 	if concreteName == "" {
 		concreteName = index.Name
 	}
-	return concreteName, diagutil.CheckErrorFromFW(res, "Unable to create index")
+	return concreteName, nil
 }
 
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
@@ -478,84 +448,75 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	lifecycleBytes, err := json.Marshal(lifecycle)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	req := putdatalifecycle.Request{
+		DataRetention: types.Duration(lifecycle.DataRetention),
+	}
+	if lifecycle.Enabled {
+		req.Enabled = &lifecycle.Enabled
+	}
+	for _, ds := range lifecycle.Downsampling {
+		req.Downsampling = append(req.Downsampling, types.DownsamplingRound{
+			After: types.Duration(ds.After),
+			Config: types.DownsampleConfig{
+				FixedInterval: ds.FixedInterval,
+			},
+		})
 	}
 
-	opts := []func(*esapi.IndicesPutDataLifecycleRequest){
-		esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
-		esClient.Indices.PutDataLifecycle.WithContext(ctx),
-	}
+	builder := typedClient.Indices.PutDataLifecycle(dataStreamName).Request(&req)
 	if expandWildcards != "" {
-		opts = append(opts, esClient.Indices.PutDataLifecycle.WithExpandWildcards(expandWildcards))
+		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
-	res, err := esClient.Indices.PutDataLifecycle([]string{dataStreamName}, opts...)
+	_, err = builder.Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	defer res.Body.Close()
-	return diagutil.FrameworkDiagsFromSDK(diagutil.CheckError(res, fmt.Sprintf("Unable to create or update DataStreamLifecycle: %s", dataStreamName)))
+	return nil
 }
 
-func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
-	esClient, err := apiClient.GetESClient()
+func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*getdatalifecycle.Response, fwdiags.Diagnostics) {
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	opts := []func(*esapi.IndicesGetDataLifecycleRequest){
-		esClient.Indices.GetDataLifecycle.WithContext(ctx),
-	}
+	builder := typedClient.Indices.GetDataLifecycle(dataStreamName)
 	if expandWildcards != "" {
-		opts = append(opts, esClient.Indices.GetDataLifecycle.WithExpandWildcards(expandWildcards))
+		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
-	res, err := esClient.Indices.GetDataLifecycle([]string{dataStreamName}, opts...)
+	res, err := builder.Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, nil
+		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(diags)
-	}
-
-	dStreams := struct {
-		DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
-	}{}
-	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	ds := dStreams.DataStreams
-	return &ds, nil
+	return res, nil
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	opts := []func(*esapi.IndicesDeleteDataLifecycleRequest){
-		esClient.Indices.DeleteDataLifecycle.WithContext(ctx),
-	}
+	builder := typedClient.Indices.DeleteDataLifecycle(dataStreamName)
 	if expandWildcards != "" {
-		opts = append(opts, esClient.Indices.DeleteDataLifecycle.WithExpandWildcards(expandWildcards))
+		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
-	res, err := esClient.Indices.DeleteDataLifecycle([]string{dataStreamName}, opts...)
+	_, err = builder.Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil
+		}
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil
-	}
-	return diagutil.FrameworkDiagsFromSDK(diagutil.CheckError(res, fmt.Sprintf("Unable to delete DataStreamLifecycle: %s", dataStreamName)))
+	return nil
 }
 
 func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, aliasName string) (map[string]types.IndexAliases, fwdiags.Diagnostics) {
