@@ -15,12 +15,12 @@
 
 ## 2. Migrate `internal/elasticsearch/ml/anomalydetectionjob` resource files
 
-- [ ] 2.1 Replace raw `esClient.ML.PutJob` with typed client in `create.go`; build request with `types.JobConfig` directly
-- [ ] 2.2 Replace raw `esClient.ML.GetJobs` with typed client in `read.go`; decode into `types.Job` instead of custom `APIModel`
-- [ ] 2.3 Replace raw `esClient.ML.UpdateJob` with typed client in `update.go`; build update body with typed struct
-- [ ] 2.4 Replace raw `esClient.ML.CloseJob` and `esClient.ML.DeleteJob` with typed client in `delete.go`
-- [ ] 2.5 Remove raw `esapi` import and JSON marshal/unmarshal boilerplate from `anomalydetectionjob/*.go`
-- [ ] 2.6 Ensure `models_api.go` and `models_tf.go` (if any) are updated or removed in favor of typed API structs
+- [x] 2.1 Replace raw `esClient.ML.PutJob` with typed client in `create.go`; build request with `types.JobConfig` directly
+- [x] 2.2 Replace raw `esClient.ML.GetJobs` with typed client in `read.go`; decode into `types.Job` instead of custom `APIModel`
+- [x] 2.3 Replace raw `esClient.ML.UpdateJob` with typed client in `update.go`; build update body with typed struct
+- [x] 2.4 Replace raw `esClient.ML.CloseJob` and `esClient.ML.DeleteJob` with typed client in `delete.go`
+- [x] 2.5 Remove raw `esapi` import and JSON marshal/unmarshal boilerplate from `anomalydetectionjob/*.go`
+- [x] 2.6 Ensure `models_api.go` and `models_tf.go` (if any) are updated or removed in favor of typed API structs
 
 ## 3. Update downstream ML resource files that consume helpers
 
