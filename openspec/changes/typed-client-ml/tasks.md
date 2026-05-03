@@ -35,9 +35,9 @@
 
 ## 4. Clean up redundant custom models
 
-- [ ] 4.1 Remove `Datafeed`, `DatafeedCreateRequest`, `DatafeedUpdateRequest`, `DatafeedStats`, `DatafeedStatsResponse`, `MLJob`, and `MLJobStats` from `internal/models/ml.go`
-- [ ] 4.2 Verify no other packages import the removed model structs
-- [ ] 4.3 Run `go mod tidy` and `make build` to confirm everything compiles
+- [x] 4.1 Remove `Datafeed`, `DatafeedCreateRequest`, `DatafeedUpdateRequest`, `DatafeedStats`, `DatafeedStatsResponse`, `MLJob`, and `MLJobStats` from `internal/models/ml.go`
+- [x] 4.2 Verify no other packages import the removed model structs
+- [x] 4.3 Run `go mod tidy` and `make build` to confirm everything compiles
 
 ## 5. Verify behavior and tests
 
