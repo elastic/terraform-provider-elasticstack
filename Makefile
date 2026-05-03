@@ -28,6 +28,12 @@ KIBANA_PORT ?= 5601
 
 export ELASTICSEARCH_PORT KIBANA_PORT
 
+# Auto-create .env from template so docker-compose and Make targets work
+# when the repo is checked out without a committed .env (e.g. CI, fresh clone).
+# Worktrunk worktrees generate their own .env, so this only runs once.
+.env:
+	@test -f $@ || cp .env.template $@
+
 KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
 KIBANA_API_KEY_NAME ?= kibana-api-key
@@ -97,15 +103,15 @@ docker-testacc-with-token: docker-fleet
 	docker compose -f $(COMPOSE_FILE) --profile token-acceptance-tests up --quiet-pull token-acceptance-tests;
 
 .PHONY: docker-elasticsearch
-docker-elasticsearch: ## Start Elasticsearch single node cluster in docker container
+docker-elasticsearch: .env ## Start Elasticsearch single node cluster in docker container
 	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d elasticsearch
 
 .PHONY: docker-kibana
-docker-kibana:  ## Start Kibana node in docker container
+docker-kibana: .env  ## Start Kibana node in docker container
 	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d kibana
 
 .PHONY: docker-fleet
-docker-fleet: ## Start Fleet node in docker container
+docker-fleet: .env ## Start Fleet node in docker container
 	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
@@ -132,11 +138,11 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
 
 .PHONY: docker-clean
-docker-clean: ## Try to remove provisioned nodes and assigned network
+docker-clean: .env ## Try to remove provisioned nodes and assigned network
 	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
-copy-kibana-ca: ## Copy Kibana CA certificate to local machine
+copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 	@ docker compose -f $(COMPOSE_FILE) cp kibana:/certs/rootCA.pem ./kibana-ca.pem
 
 .PHONY: docs-generate
