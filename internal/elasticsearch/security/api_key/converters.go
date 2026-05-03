@@ -80,8 +80,26 @@ func toModelRoleDescriptor(descriptor types.RoleDescriptor) (models.APIKeyRoleDe
 		return models.APIKeyRoleDescriptor{}, err
 	}
 
+	// The typed client represents "global" as []GlobalPrivilege (array),
+	// but our model expects map[string]any (object). Unwrap the first
+	// element of the array so the model can unmarshal it correctly.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(jsonBytes, &raw); err != nil {
+		return models.APIKeyRoleDescriptor{}, err
+	}
+	if globalArray, ok := raw["global"]; ok && len(globalArray) > 0 && globalArray[0] == '[' {
+		var globals []json.RawMessage
+		if err := json.Unmarshal(globalArray, &globals); err == nil && len(globals) > 0 {
+			raw["global"] = globals[0]
+		}
+	}
+	fixedJSON, err := json.Marshal(raw)
+	if err != nil {
+		return models.APIKeyRoleDescriptor{}, err
+	}
+
 	var model models.APIKeyRoleDescriptor
-	if err := json.Unmarshal(jsonBytes, &model); err != nil {
+	if err := json.Unmarshal(fixedJSON, &model); err != nil {
 		return models.APIKeyRoleDescriptor{}, err
 	}
 
