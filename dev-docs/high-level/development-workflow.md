@@ -72,7 +72,7 @@ Each feature worktree becomes a subdirectory of the bare repo directory, keeping
 
 ### Environment in a feature worktree
 
-When a new worktree is created the `post-start` hook (`.config/wt.toml`) automatically copies `.env.template` to `.env` and appends per-worktree port variables derived deterministically from the branch name. The hook also sets `ELASTICSEARCH_URL`, which Docker Compose uses to configure Kibana's public base URL.
+When a new worktree is created the `post-start` hook (`.config/wt.toml`) automatically generates a `.env` from `.env.template` with per-worktree port variables derived deterministically from the branch name.
 
 The main checkout's `.env` may not contain port variables if it predates the worktrunk setup; port variables are generated only in worktrees created via `wt switch --create`.
 
