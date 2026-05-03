@@ -25,9 +25,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -115,11 +114,10 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 	if diags.HasError() {
 		return diags
 	}
-	var pipeline models.IngestPipeline
-	pipeline.Name = pipelineID
+
+	pipeline := map[string]any{}
 	if v, ok := d.GetOk("description"); ok {
-		r := v.(string)
-		pipeline.Description = &r
+		pipeline["description"] = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
 		onFailure := make([]map[string]any, len(v.([]any)))
@@ -130,7 +128,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 			}
 			onFailure[i] = item
 		}
-		pipeline.OnFailure = onFailure
+		pipeline["on_failure"] = onFailure
 	}
 	if v, ok := d.GetOk("processors"); ok {
 		procs := make([]map[string]any, len(v.([]any)))
@@ -141,17 +139,17 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 			}
 			procs[i] = item
 		}
-		pipeline.Processors = procs
+		pipeline["processors"] = procs
 	}
 	if v, ok := d.GetOk("metadata"); ok {
 		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
-		pipeline.Metadata = metadata
+		pipeline["_meta"] = metadata
 	}
 
-	if diags := elasticsearch.PutIngestPipeline(ctx, client, &pipeline); diags.HasError() {
+	if diags := elasticsearch.PutIngestPipeline(ctx, client, pipelineID, pipeline); diags.HasError() {
 		return diags
 	}
 
@@ -174,7 +172,7 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		return diags
 	}
 
-	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, &compID.ResourceID)
+	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, compID.ResourceID)
 	if pipeline == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Injest pipeline "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
@@ -183,11 +181,11 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 	if diags.HasError() {
 		return diags
 	}
-	if err := d.Set("name", pipeline.Name); err != nil {
+	if err := d.Set("name", compID.ResourceID); err != nil {
 		return diag.FromErr(err)
 	}
 	if desc := pipeline.Description; desc != nil {
-		if err := d.Set("description", desc); err != nil {
+		if err := d.Set("description", *desc); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -218,12 +216,12 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	if meta := pipeline.Metadata; meta != nil {
-		meta, err := json.Marshal(meta)
+	if meta := pipeline.Meta_; meta != nil {
+		metaBytes, err := json.Marshal(meta)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("metadata", string(meta)); err != nil {
+		if err := d.Set("metadata", string(metaBytes)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -246,7 +244,7 @@ func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.Resourc
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, &compID.ResourceID); diags.HasError() {
+	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 
