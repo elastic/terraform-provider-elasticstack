@@ -25,7 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -59,12 +59,12 @@ func ResourceDataStream() *schema.Resource {
 			),
 		},
 		"timestamp_field": {
-			Description: "Contains information about the data stream’s @timestamp field.",
+			Description: "Contains information about the data stream's @timestamp field.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
 		"indices": {
-			Description: "Array of objects containing information about the data stream’s backing indices. The last item in this array contains information about the stream’s current write index.",
+			Description: "Array of objects containing information about the data stream's backing indices. The last item in this array contains information about the stream's current write index.",
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
@@ -88,7 +88,7 @@ func ResourceDataStream() *schema.Resource {
 			Computed:    true,
 		},
 		"metadata": {
-			Description: "Custom metadata for the stream, copied from the _meta object of the stream’s matching index template.",
+			Description: "Custom metadata for the stream, copied from the _meta object of the stream's matching index template.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -98,12 +98,12 @@ func ResourceDataStream() *schema.Resource {
 			Computed:    true,
 		},
 		"template": {
-			Description: "Name of the index template used to create the data stream’s backing indices.",
+			Description: "Name of the index template used to create the data stream's backing indices.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
 		"ilm_policy": {
-			Description: "Name of the current ILM lifecycle policy in the stream’s matching index template.",
+			Description: "Name of the current ILM lifecycle policy in the stream's matching index template.",
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -200,26 +200,43 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta an
 	if err := d.Set("generation", ds.Generation); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("status", ds.Status); err != nil {
+	if err := d.Set("status", ds.Status.String()); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("template", ds.Template); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("ilm_policy", ds.IlmPolicy); err != nil {
+
+	ilmPolicy := ""
+	if ds.IlmPolicy != nil {
+		ilmPolicy = *ds.IlmPolicy
+	}
+	if err := d.Set("ilm_policy", ilmPolicy); err != nil {
 		return diag.FromErr(err)
 	}
+
 	if err := d.Set("hidden", ds.Hidden); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("system", ds.System); err != nil {
+
+	system := false
+	if ds.System != nil {
+		system = *ds.System
+	}
+	if err := d.Set("system", system); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("replicated", ds.Replicated); err != nil {
+
+	replicated := false
+	if ds.Replicated != nil {
+		replicated = *ds.Replicated
+	}
+	if err := d.Set("replicated", replicated); err != nil {
 		return diag.FromErr(err)
 	}
-	if ds.Meta != nil {
-		metadata, err := json.Marshal(ds.Meta)
+
+	if ds.Meta_ != nil {
+		metadata, err := json.Marshal(ds.Meta_)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -232,7 +249,7 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta an
 	for i, idx := range ds.Indices {
 		index := make(map[string]any)
 		index["index_name"] = idx.IndexName
-		index["index_uuid"] = idx.IndexUUID
+		index["index_uuid"] = idx.IndexUuid
 		indices[i] = index
 	}
 	if err := d.Set("indices", indices); err != nil {
