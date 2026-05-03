@@ -393,13 +393,12 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 	}
 	res, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Perform(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return nil, nil
-		}
 		return nil, sdkdiag.FromErr(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
