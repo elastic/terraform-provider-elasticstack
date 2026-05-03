@@ -56,17 +56,17 @@
 
 ## 8. Model Cleanup
 
-- [ ] 8.1 Remove `ClusterInfo` struct from `internal/models/models.go`
-- [ ] 8.2 Remove `SnapshotRepository` struct from `internal/models/models.go`
-- [ ] 8.3 Remove `SnapshotPolicy`, `SnapshortRetention`, and `SnapshotPolicyConfig` from `internal/models/models.go`
-- [ ] 8.4 Remove `Script` struct from `internal/models/models.go`
-- [ ] 8.5 Remove any unused imports from `internal/models/models.go`
-- [ ] 8.6 Verify `make build` passes after model removal
+- [x] 8.1 Remove `ClusterInfo` struct from `internal/models/models.go`
+- [x] 8.2 Remove `SnapshotRepository` struct from `internal/models/models.go`
+- [x] 8.3 Remove `SnapshotPolicy`, `SnapshortRetention`, and `SnapshotPolicyConfig` from `internal/models/models.go`
+- [x] 8.4 Remove `Script` struct from `internal/models/models.go`
+- [x] 8.5 Remove any unused imports from `internal/models/models.go`
+- [x] 8.6 Verify `make build` passes after model removal
 
 ## 9. Regression Testing
 
-- [ ] 9.1 Run `make build` and ensure clean compilation
-- [ ] 9.2 Run `make test` for unit tests
-- [ ] 9.3 Verify `make check-openspec` passes
-- [ ] 9.4 Run acceptance tests for affected resources: `script`, `snapshot_repository`, `slm`, `settings`
-- [ ] 9.5 Run acceptance test for `cluster_info` data source
+- [x] 9.1 Run `make build` and ensure clean compilation
+- [x] 9.2 Run `make test` for unit tests
+- [x] 9.3 Verify `make check-openspec` passes
+- [x] 9.4 Run acceptance tests for affected resources: `script`, `snapshot_repository`, `slm`, `settings`
+- [x] 9.5 Run acceptance test for `cluster_info` data source
