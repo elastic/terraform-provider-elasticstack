@@ -182,9 +182,9 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diags
 	}
 
-	var slm types.SLMPolicy
-	var slmConfig types.Configuration
-	var slmRetention types.Retention
+	var slm elasticsearch.SlmPolicy
+	var slmConfig elasticsearch.SlmConfig
+	var slmRetention elasticsearch.SlmRetention
 
 	slm.Name = slmID
 	slm.Repository = d.Get("repository").(string)
@@ -192,26 +192,23 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if v, ok := d.GetOk("snapshot_name"); ok {
 		slm.Name = v.(string)
 	}
-	var maxCountSet, minCountSet bool
 	if v, ok := d.GetOk("expire_after"); ok {
-		slmRetention.ExpireAfter = v.(string)
+		expireAfter := v.(string)
+		slmRetention.ExpireAfter = &expireAfter
 	}
 	if v, ok := d.GetOk("max_count"); ok {
-		slmRetention.MaxCount = v.(int)
-		maxCountSet = true
+		maxCount := v.(int)
+		slmRetention.MaxCount = &maxCount
 	}
 	if v, ok := d.GetOk("min_count"); ok {
-		slmRetention.MinCount = v.(int)
-		minCountSet = true
+		minCount := v.(int)
+		slmRetention.MinCount = &minCount
 	}
-	if slmRetention.ExpireAfter != nil || maxCountSet || minCountSet {
+	if slmRetention.ExpireAfter != nil || slmRetention.MaxCount != nil || slmRetention.MinCount != nil {
 		slm.Retention = &slmRetention
 	}
 
-	expandWildcards := "open,hidden" // default
-	if v, ok := d.GetOk("expand_wildcards"); ok {
-		expandWildcards = v.(string)
-	}
+	slmConfig.ExpandWildcards = d.Get("expand_wildcards").(string)
 	vvIgnore := d.Get("ignore_unavailable").(bool)
 	slmConfig.IgnoreUnavailable = &vvIgnore
 	vvInclude := d.Get("include_global_state").(bool)
@@ -252,7 +249,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	slm.Config = &slmConfig
 
-	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm, expandWildcards, maxCountSet, minCountSet); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -314,9 +311,10 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 	}
 
 	if c := slm.Config; c != nil {
-		// expand_wildcards is not returned by the typed API; preserve from state
-		if err := d.Set("expand_wildcards", d.Get("expand_wildcards")); err != nil {
-			return diag.FromErr(err)
+		if c.ExpandWildcards != "" {
+			if err := d.Set("expand_wildcards", c.ExpandWildcards); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 		if c.IncludeGlobalState != nil {
 			if err := d.Set("include_global_state", *c.IncludeGlobalState); err != nil {

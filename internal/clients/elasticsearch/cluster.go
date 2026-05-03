@@ -54,26 +54,27 @@ type SnapshotRepositoryInfo struct {
 }
 
 type SlmPolicy struct {
-	Name       string
-	Schedule   string
-	Repository string
-	Config     *SlmConfig
-	Retention  *SlmRetention
+	Name       string        `json:"name"`
+	Schedule   string        `json:"schedule"`
+	Repository string        `json:"repository"`
+	Config     *SlmConfig    `json:"config"`
+	Retention  *SlmRetention `json:"retention"`
 }
 
 type SlmConfig struct {
-	FeatureStates      []string
-	IgnoreUnavailable  *bool
-	IncludeGlobalState *bool
-	Indices            []string
-	Metadata           types.Metadata
-	Partial            *bool
+	FeatureStates      []string       `json:"feature_states"`
+	ExpandWildcards    string         `json:"expand_wildcards"`
+	IgnoreUnavailable  *bool          `json:"ignore_unavailable"`
+	IncludeGlobalState *bool          `json:"include_global_state"`
+	Indices            []string       `json:"indices"`
+	Metadata           types.Metadata `json:"metadata"`
+	Partial            *bool          `json:"partial"`
 }
 
 type SlmRetention struct {
-	ExpireAfter *string
-	MaxCount    *int
-	MinCount    *int
+	ExpireAfter *string `json:"expire_after"`
+	MaxCount    *int    `json:"max_count"`
+	MinCount    *int    `json:"min_count"`
 }
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) sdkdiag.Diagnostics {
@@ -303,7 +304,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 	return diags
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *types.SLMPolicy, expandWildcards string, maxCountSet bool, minCountSet bool) sdkdiag.Diagnostics {
+func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
@@ -347,25 +348,23 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		if slm.Config.Partial != nil {
 			config["partial"] = *slm.Config.Partial
 		}
-		if expandWildcards != "" {
-			config["expand_wildcards"] = expandWildcards
+		if slm.Config.ExpandWildcards != "" {
+			config["expand_wildcards"] = slm.Config.ExpandWildcards
 		}
 		if len(config) > 0 {
 			body["config"] = config
 		}
-	} else if expandWildcards != "" {
-		body["config"] = map[string]any{"expand_wildcards": expandWildcards}
 	}
 	if slm.Retention != nil {
 		retention := map[string]any{}
 		if slm.Retention.ExpireAfter != nil {
-			retention["expire_after"] = slm.Retention.ExpireAfter
+			retention["expire_after"] = *slm.Retention.ExpireAfter
 		}
-		if maxCountSet {
-			retention["max_count"] = slm.Retention.MaxCount
+		if slm.Retention.MaxCount != nil {
+			retention["max_count"] = *slm.Retention.MaxCount
 		}
-		if minCountSet {
-			retention["min_count"] = slm.Retention.MinCount
+		if slm.Retention.MinCount != nil {
+			retention["min_count"] = *slm.Retention.MinCount
 		}
 		if len(retention) > 0 {
 			body["retention"] = retention
