@@ -28,10 +28,11 @@
 
 ## 4. Worktrunk project config
 
-- [ ] 4.1 Create `.config/wt.toml` with `pre-start = "make setup"`
-- [ ] 4.2 Add `post-start` hook to `.config/wt.toml`: copy `.env.template` to `.env` then append `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL` lines using `hash_port`
-- [ ] 4.3 Add `pre-commit = "make check-lint"` to `.config/wt.toml`
-- [ ] 4.4 Add `pre-remove = "docker compose down --volumes"` to `.config/wt.toml`
+- [x] 4.1 Create `.config/wt.toml` with `pre-start = "make setup"`
+- [x] 4.2 Add `post-start` hook to `.config/wt.toml`: copy `.env.template` to `.env` then append `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL` lines using `hash_port`
+- [x] 4.3 Add `pre-commit = "make check-lint"` to `.config/wt.toml`
+- [x] 4.4 Add `pre-remove = "docker compose down --volumes"` to `.config/wt.toml`
+- [x] *(review fix)* Make `post-start` copy conditional with `cp -n`, add `set -e`, use distinct hash inputs for ES vs KB ports, and use explicit port in `ELASTICSEARCH_URL`
 
 ## 5. Developer documentation
 
