@@ -69,11 +69,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	existing, err := toModelComponentTemplateResponse(existingRaw)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse component template", err.Error())
-		return
-	}
+	existing := toModelComponentTemplateResponse(existingRaw)
 
 	// Build component template, preserving existing content if any
 	var componentTemplate models.ComponentTemplate

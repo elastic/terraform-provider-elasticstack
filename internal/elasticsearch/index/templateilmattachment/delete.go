@@ -55,11 +55,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	existing, err := toModelComponentTemplateResponse(existingRaw)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse component template", err.Error())
-		return
-	}
+	existing := toModelComponentTemplateResponse(existingRaw)
 
 	if existing == nil {
 		// Already gone
