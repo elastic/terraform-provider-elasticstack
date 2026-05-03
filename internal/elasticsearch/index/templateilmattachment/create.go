@@ -71,7 +71,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	plan.ID = types.StringValue(id.String())
 
 	// Read existing component template (if any) to preserve other settings
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
+	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return

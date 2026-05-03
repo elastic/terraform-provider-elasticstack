@@ -63,7 +63,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	componentTemplateName := plan.getComponentTemplateName()
 
 	// Read existing component template to preserve other settings
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
+	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return

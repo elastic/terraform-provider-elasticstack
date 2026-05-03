@@ -93,13 +93,6 @@ func removeILMSetting(settings map[string]any) map[string]any {
 	return settings
 }
 
-func pruneEmpty(settings map[string]any) map[string]any {
-	if len(settings) == 0 {
-		return nil
-	}
-	return settings
-}
-
 // isComponentTemplateEmpty checks if a component template has no meaningful content.
 func isComponentTemplateEmpty(template *models.Template) bool {
 	if template == nil {
@@ -138,7 +131,7 @@ func readILMAttachment(ctx context.Context, model *tfModel, client *clients.Elas
 
 	componentTemplateName := model.getComponentTemplateName()
 
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, false)
+	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return false, diags
