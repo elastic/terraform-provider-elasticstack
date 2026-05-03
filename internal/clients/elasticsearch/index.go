@@ -142,14 +142,13 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	return nil
 }
 
-// GetComponentTemplate returns a component template by name.  It always requests
-// flat settings (e.g. "index.number_of_shards") from the API.
+// GetComponentTemplate returns a component template by name.
 func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, sdkdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
-	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).FlatSettings(true).Do(ctx)
+	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
