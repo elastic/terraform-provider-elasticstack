@@ -65,7 +65,7 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 		return nil, diags
 	}
 
-	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(client, compID.ResourceID)
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, compID.ResourceID)
 	diags.Append(apiKeyDiags...)
 	if diags.HasError() {
 		return nil, diags
@@ -80,6 +80,6 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 		return nil, diags
 	}
 
-	diags.Append(model.populateFromAPI(*apiKey, version)...)
+	diags.Append(model.populateFromAPI(apiKey, version)...)
 	return &model, diags
 }
