@@ -12,5 +12,8 @@ The data source SHALL retrieve cluster metadata using the go-elasticsearch Typed
 #### Scenario: Build date formatting
 - GIVEN a successful typed API response
 - WHEN the data source maps the `version.build_date` field
-- THEN the value SHALL be formatted using the typed API's `DateTime.String()` method
+- THEN the provider SHALL type-switch on the `types.DateTime` value (union of `string` and `int64`)
+- AND for a `string` value, use it directly
+- AND for an `int64` value, format it as a decimal string
+- AND for any other value, format via `fmt.Sprintf("%v", v)`
 - AND the resulting string SHALL remain a valid timestamp representation
