@@ -44,7 +44,7 @@
 - [x] 7.1 Replace `PutDataStream` raw call with typed `Indices.CreateDataStream`.
 - [x] 7.2 Replace `GetDataStream` raw call with typed `Indices.GetDataStream`.
 - [x] 7.3 Replace `DeleteDataStream` raw call with typed `Indices.DeleteDataStream`.
-- [ ] 7.4 Remove or narrow `models.DataStream`.
+- [x] 7.4 Remove or narrow `models.DataStream`.
 
 ## 8. Typed client migration — Data stream lifecycle
 
@@ -58,7 +58,7 @@
 - [x] 9.1 Replace `PutIngestPipeline` raw call with typed `Ingest.PutPipeline`.
 - [x] 9.2 Replace `GetIngestPipeline` raw call with typed `Ingest.GetPipeline`.
 - [x] 9.3 Replace `DeleteIngestPipeline` raw call with typed `Ingest.DeletePipeline`.
-- [ ] 9.4 Remove or narrow `models.IngestPipeline`.
+- [x] 9.4 Remove or narrow `models.IngestPipeline`.
 
 ## 10. Resource and test updates
 
