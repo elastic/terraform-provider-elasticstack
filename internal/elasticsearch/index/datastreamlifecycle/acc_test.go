@@ -18,14 +18,14 @@
 package datastreamlifecycle_test
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -180,11 +180,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 						t.Fatalf("Failed to create testing client: %s", err)
 					}
 
-					esClient, err := client.GetESClient()
-					if err != nil {
-						t.Fatalf("Failed to get es client: %s", err)
-					}
-
 					lifecycle := models.LifecycleSettings{
 						DataRetention: "10d",
 						Downsampling: []models.Downsampling{
@@ -192,16 +187,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 							{After: "20d", FixedInterval: "10d"},
 						},
 					}
-					lifecycleBytes, err := json.Marshal(lifecycle)
-					if err != nil {
-						t.Fatalf("Cannot marshal lifecycle: %s", err)
-					}
-					_, err = esClient.Indices.PutDataLifecycle(
-						[]string{dsName + "-multiple-two"},
-						esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
-					)
-					if err != nil {
-						t.Fatalf("Cannot update lifecycle: %s", err)
+					diags := elasticsearch.PutDataStreamLifecycle(context.Background(), client, dsName+"-multiple-two", "", lifecycle)
+					if diags.HasError() {
+						t.Fatalf("Cannot update lifecycle: %s", diags)
 					}
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
@@ -293,33 +281,17 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
-		if err != nil {
-			return err
+		res, diags := elasticsearch.GetDataStreamLifecycle(context.Background(), client, compID.ResourceID, "")
+		if diags.HasError() {
+			return fmt.Errorf("failed to get data stream lifecycle: %v", diags)
 		}
 
-		res, err := esClient.Indices.GetDataLifecycle([]string{compID.ResourceID})
-		if err != nil {
-			return err
-		}
-
-		// for lifecycle without wildcard 404 is returned when no ds matches
-		if res.StatusCode == 404 {
+		if res == nil || len(res.DataStreams) == 0 {
 			return nil
 		}
 
-		defer res.Body.Close()
-
-		dStreams := struct {
-			DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
-		}{}
-
-		if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
-			return err
-		}
-
 		// for lifecycle with wildcard empty array is returned
-		if len(dStreams.DataStreams) > 0 {
+		if len(res.DataStreams) > 0 {
 			return fmt.Errorf("Data Stream Lifecycle (%s) still exists", compID.ResourceID)
 		}
 	}

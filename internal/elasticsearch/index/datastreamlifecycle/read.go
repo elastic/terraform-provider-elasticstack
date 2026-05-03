@@ -63,10 +63,10 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 	if diags.HasError() {
 		return nil, diags
 	}
-	if ds == nil || len(*ds) == 0 {
+	if ds == nil || len(ds.DataStreams) == 0 {
 		return nil, nil
 	}
 
-	diags.Append(model.populateFromAPI(ctx, *ds)...)
+	diags.Append(model.populateFromAPI(ctx, ds.DataStreams)...)
 	return &model, diags
 }
