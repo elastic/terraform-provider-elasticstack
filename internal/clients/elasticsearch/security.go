@@ -18,16 +18,18 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/invalidateapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -387,173 +389,129 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScop
 	return diags
 }
 
-func CreateAPIKey(apiClient *clients.ElasticsearchScopedClient, apikey *models.APIKey) (*models.APIKeyCreateResponse, fwdiag.Diagnostics) {
-	apikeyBytes, err := json.Marshal(apikey)
+func CreateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createapikey.Request) (*createapikey.Response, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	res, err := esClient.Security.CreateAPIKey(bytes.NewReader(apikeyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create apikey"); diags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(diags)
-	}
-
-	var apiKey models.APIKeyCreateResponse
-
-	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return &apiKey, nil
-}
-
-func UpdateAPIKey(apiClient *clients.ElasticsearchScopedClient, apikey models.APIKey) fwdiag.Diagnostics {
-	id := apikey.ID
-
-	apikey.Expiration = ""
-	apikey.Name = ""
-	apikey.ID = ""
-	apikeyBytes, err := json.Marshal(apikey)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	res, err := esClient.Security.UpdateAPIKey(id, esClient.Security.UpdateAPIKey.WithBody(bytes.NewReader(apikeyBytes)))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to update apikey"); diags.HasError() {
-		return diagutil.FrameworkDiagsFromSDK(diags)
-	}
-
-	return nil
-}
-
-func GetAPIKey(apiClient *clients.ElasticsearchScopedClient, id string) (*models.APIKeyResponse, fwdiag.Diagnostics) {
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req := esClient.Security.GetAPIKey.WithID(id)
-	res, err := esClient.Security.GetAPIKey(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckError(res, "Unable to get an apikey."); diags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(diags)
-	}
-
-	// unmarshal our response to proper type
-	var apiKeys struct {
-		APIKeys []models.APIKeyResponse `json:"api_keys"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	if len(apiKeys.APIKeys) != 1 {
-		return nil, fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic(
-				"Unable to find an apikey in the cluster",
-				fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-			),
-		}
-	}
-
-	apiKey := apiKeys.APIKeys[0]
-	return &apiKey, nil
-}
-
-func DeleteAPIKey(apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
-	apiKeys := struct {
-		IDs []string `json:"ids"`
-	}{
-		[]string{id},
-	}
-
-	apikeyBytes, err := json.Marshal(apiKeys)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	res, err := esClient.Security.InvalidateAPIKey(bytes.NewReader(apikeyBytes))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete an apikey"); diags.HasError() {
-		return diagutil.FrameworkDiagsFromSDK(diags)
-	}
-	return nil
-}
-
-func CreateCrossClusterAPIKey(apiClient *clients.ElasticsearchScopedClient, apikey *models.CrossClusterAPIKey) (*models.CrossClusterAPIKeyCreateResponse, fwdiag.Diagnostics) {
-	apikeyBytes, err := json.Marshal(apikey)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	res, err := esClient.Security.CreateCrossClusterAPIKey(bytes.NewReader(apikeyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to create cross cluster apikey"); diags.HasError() {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
 
-	var apiKey models.CrossClusterAPIKeyCreateResponse
-
-	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, err := typedClient.Security.CreateApiKey().Request(req).Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to create apikey", err.Error())
+		return nil, diags
 	}
 
-	return &apiKey, nil
+	return res, diags
 }
 
-func UpdateCrossClusterAPIKey(apiClient *clients.ElasticsearchScopedClient, apikey models.CrossClusterAPIKey) fwdiag.Diagnostics {
-	id := apikey.ID
+func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updateapikey.Request) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 
-	apikey.Expiration = ""
-	apikey.Name = ""
-	apikey.ID = ""
-	apikeyBytes, err := json.Marshal(apikey)
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
 	}
 
-	esClient, err := apiClient.GetESClient()
+	_, err = typedClient.Security.UpdateApiKey(id).Request(req).Do(ctx)
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+		diags.AddError("Unable to update apikey", err.Error())
+		return diags
 	}
-	res, err := esClient.Security.UpdateCrossClusterAPIKey(id, bytes.NewReader(apikeyBytes))
+
+	return diags
+}
+
+func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.ApiKey, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return nil, diags
 	}
-	defer res.Body.Close()
-	return diagutil.CheckErrorFromFW(res, "Unable to update cross cluster apikey")
+
+	res, err := typedClient.Security.GetApiKey().Id(id).Do(ctx)
+	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil, diags
+		}
+		diags.AddError("Unable to get an apikey", err.Error())
+		return nil, diags
+	}
+
+	if len(res.ApiKeys) != 1 {
+		diags.AddError(
+			"Unable to find an apikey in the cluster",
+			fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
+		)
+		return nil, diags
+	}
+
+	apiKey := res.ApiKeys[0]
+	return &apiKey, diags
+}
+
+func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	_, err = typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
+		Ids: []string{id},
+	}).Do(ctx)
+	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
+		diags.AddError("Unable to delete an apikey", err.Error())
+		return diags
+	}
+
+	return diags
+}
+
+func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return nil, diags
+	}
+
+	res, err := typedClient.Security.CreateCrossClusterApiKey().Request(req).Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to create cross cluster apikey", err.Error())
+		return nil, diags
+	}
+
+	return res, diags
+}
+
+func UpdateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updatecrossclusterapikey.Request) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	_, err = typedClient.Security.UpdateCrossClusterApiKey(id).Request(req).Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to update cross cluster apikey", err.Error())
+		return diags
+	}
+
+	return diags
 }
