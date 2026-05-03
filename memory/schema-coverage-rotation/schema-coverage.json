@@ -28,7 +28,7 @@
     "elasticstack_elasticsearch_snapshot_repository": "2026-05-02T10:38:42Z",
     "elasticstack_elasticsearch_transform": "2026-03-16T01:21:09Z",
     "elasticstack_elasticsearch_watch": "2026-05-02T10:38:42Z",
-    "elasticstack_fleet_agent_download_source": null,
+    "elasticstack_fleet_agent_download_source": "2026-05-03T10:41:06Z",
     "elasticstack_fleet_agent_policy": null,
     "elasticstack_fleet_custom_integration": null,
     "elasticstack_fleet_elastic_defend_integration_policy": null,
