@@ -1,15 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: Worktree receives generated .env on creation
-When a new worktree is created, the `post-start` hook SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending three lines: `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL`. The port values SHALL be derived from the branch name using worktrunk's `hash_port` filter, producing values in the range 10000–19999. ES and KB ports SHALL use different hash inputs so they do not collide with each other.
+When a new worktree is created, the `post-start` hook SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending three lines: `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL`. The port values SHALL be deterministically derived from the branch name and SHALL remain in the range 10000–19999. To guarantee that Elasticsearch and Kibana ports for the same worktree do not collide, `ELASTICSEARCH_PORT` SHALL be assigned from the subrange 10000–14999 and `KIBANA_PORT` SHALL be assigned from the subrange 15000–19999.
 
-#### Scenario: New worktree gets unique ES and KB ports
+#### Scenario: New worktree gets distinct ES and KB ports
 - **WHEN** a new worktree is created for branch `feature-x`
-- **THEN** `.env` in that worktree contains `ELASTICSEARCH_PORT=<hash of "feature-x">` and `KIBANA_PORT=<hash of "feature-x-kb">`, both in the range 10000–19999
+- **THEN** `.env` in that worktree contains an `ELASTICSEARCH_PORT` value in the range 10000–14999 and a `KIBANA_PORT` value in the range 15000–19999, both derived deterministically from `feature-x`
 
-#### Scenario: Two worktrees have different ports
-- **WHEN** worktrees exist for branches `feature-a` and `feature-b`
-- **THEN** their respective `.env` files contain different `ELASTICSEARCH_PORT` values and different `KIBANA_PORT` values
+#### Scenario: ES and KB ports cannot collide within a worktree
+- **WHEN** a new worktree is created for any branch
+- **THEN** the generated `ELASTICSEARCH_PORT` and `KIBANA_PORT` values are different from each other
 
 #### Scenario: .env template static values are preserved
 - **WHEN** a new worktree is created
@@ -44,15 +44,15 @@ The `pre-commit` hook SHALL run `make check-lint`. A non-zero exit code SHALL ab
 - **WHEN** `wt step commit` or `wt merge` is invoked and `make check-lint` exits zero
 - **THEN** the commit proceeds normally
 
-### Requirement: Docker stack is torn down when a worktree is removed
-The `pre-remove` hook SHALL run `docker compose down --volumes` in the worktree being removed. This runs while the worktree directory still exists so Docker Compose can resolve the correct project name from the working directory.
+### Requirement: Default Docker Compose stack is torn down when a worktree is removed
+The `pre-remove` hook SHALL run `docker compose down --volumes` in the worktree being removed to tear down the default Docker Compose stack for that worktree. This runs while the worktree directory still exists so Docker Compose can resolve the correct project name from the working directory.
 
-#### Scenario: Stack stops on worktree removal
-- **WHEN** `wt remove` is run in a worktree that has a running docker stack
-- **THEN** `docker compose down --volumes` completes before the worktree directory is deleted, stopping all containers and removing their volumes
+#### Scenario: Default stack stops on worktree removal
+- **WHEN** `wt remove` is run in a worktree that has a running default docker compose stack
+- **THEN** `docker compose down --volumes` completes before the worktree directory is deleted, stopping the default stack's containers and removing its volumes
 
-#### Scenario: Removal succeeds even if no stack is running
-- **WHEN** `wt remove` is run in a worktree with no running docker stack
+#### Scenario: Removal succeeds even if no default stack is running
+- **WHEN** `wt remove` is run in a worktree with no running default docker compose stack
 - **THEN** `docker compose down --volumes` exits cleanly (Docker Compose reports nothing to stop) and worktree removal proceeds
 
 ### Requirement: Makefile port targets use configurable variables

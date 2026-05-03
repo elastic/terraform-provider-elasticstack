@@ -11,7 +11,8 @@
 ## 2. .env.template
 
 - [ ] 2.1 Create `.env.template` from current `.env`: copy all lines except `*_CONTAINER_NAME`, `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL`
-- [ ] 2.2 Verify `.env.template` is not listed in `.gitignore`
+- [ ] 2.2 Add root `.env` to `.gitignore` while ensuring `.env.template` is not listed there
+- [ ] 2.3 Stop tracking the existing committed root `.env` so the generated per-worktree `.env` does not produce persistent Git diffs
 
 ## 3. Makefile port variables
 

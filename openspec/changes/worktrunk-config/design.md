@@ -59,7 +59,7 @@ Alternatives considered:
 
 Add `ELASTICSEARCH_PORT ?= 9200` and `KIBANA_PORT ?= 5601` near the top of the Makefile. Swap hardcoded literals to `$(ELASTICSEARCH_PORT)` / `$(KIBANA_PORT)` in affected targets. The `?=` means the Makefile is backwards-compatible when run outside a worktree without `.env` loaded.
 
-Developers running these targets inside a worktree need to export `.env` first (e.g. `export $(grep -v '^#' .env | xargs)`) or pass the vars explicitly. This is not automated — a note in dev-docs is sufficient.
+Developers running these targets inside a worktree need to export `.env` first (e.g. `set -a; . ./.env; set +a`) or pass the vars explicitly. This is not automated — a note in dev-docs is sufficient.
 
 ## Risks / Trade-offs
 
