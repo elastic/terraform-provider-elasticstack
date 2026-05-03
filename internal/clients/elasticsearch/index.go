@@ -23,10 +23,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
@@ -483,23 +485,71 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 }
 
 func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*getdatalifecycle.Response, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	builder := typedClient.Indices.GetDataLifecycle(dataStreamName)
+
+	opts := []func(*esapi.IndicesGetDataLifecycleRequest){}
 	if expandWildcards != "" {
-		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
+		opts = append(opts, esClient.Indices.GetDataLifecycle.WithExpandWildcards(expandWildcards))
 	}
-	res, err := builder.Do(ctx)
+
+	opts = append(opts, esClient.Indices.GetDataLifecycle.WithContext(ctx))
+	res, err := esClient.Indices.GetDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return res, nil
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if sdkDiags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested DataStreamLifecycle: %s", dataStreamName)); sdkDiags.HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	}
+
+	var rawResp struct {
+		DataStreams []struct {
+			Lifecycle struct {
+				DataRetention any `json:"data_retention"`
+				Downsampling  []struct {
+					After         string `json:"after"`
+					FixedInterval string `json:"fixed_interval"`
+				} `json:"downsampling"`
+				Enabled *bool `json:"enabled"`
+			} `json:"lifecycle"`
+			Name string `json:"name"`
+		} `json:"data_streams"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&rawResp); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	typedResp := &getdatalifecycle.Response{}
+	for _, ds := range rawResp.DataStreams {
+		lifecycle := &types.DataStreamLifecycleWithRollover{}
+		if v, ok := ds.Lifecycle.DataRetention.(string); ok && v != "" {
+			lifecycle.DataRetention = types.Duration(v)
+		}
+		if ds.Lifecycle.Enabled != nil {
+			lifecycle.Enabled = ds.Lifecycle.Enabled
+		}
+		for _, d := range ds.Lifecycle.Downsampling {
+			lifecycle.Downsampling = append(lifecycle.Downsampling, types.DownsamplingRound{
+				After: types.Duration(d.After),
+				Config: types.DownsampleConfig{
+					FixedInterval: d.FixedInterval,
+				},
+			})
+		}
+		typedResp.DataStreams = append(typedResp.DataStreams, types.DataStreamWithLifecycle{
+			Lifecycle: lifecycle,
+			Name:      ds.Name,
+		})
+	}
+
+	return typedResp, nil
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
