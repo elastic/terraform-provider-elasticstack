@@ -60,13 +60,12 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, 
 	}
 
 	if !model.Downsampling.IsNull() && !model.Downsampling.IsUnknown() && len(model.Downsampling.Elements()) > 0 {
-
 		downsampling := make([]downsamplingTfModel, len(model.Downsampling.Elements()))
-		if diags := model.Downsampling.ElementsAs(ctx, &downsampling, true); diags.HasError() {
-			return models.LifecycleSettings{}, diags
+		if d := model.Downsampling.ElementsAs(ctx, &downsampling, true); d.HasError() {
+			return models.LifecycleSettings{}, d
 		}
 
-		apiModel.Downsampling = make([]models.Downsampling, len(model.Downsampling.Elements()))
+		apiModel.Downsampling = make([]models.Downsampling, len(downsampling))
 		for i, ds := range downsampling {
 			apiModel.Downsampling[i] = models.Downsampling{
 				After:         ds.After.ValueString(),
@@ -86,23 +85,24 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []models.DataStrea
 	}
 
 	for _, lf := range ds {
-		if lf.Lifecycle.DataRetention != actualRetention {
-			model.DataRetention = types.StringValue(lf.Lifecycle.DataRetention)
+		apiRetention := lf.Lifecycle.DataRetention
+		if apiRetention != actualRetention {
+			model.DataRetention = types.StringValue(apiRetention)
 		}
 		var updateDownsampling bool
-		if len(lf.Lifecycle.Downsampling) != len(actualDownsampling) {
+		apiDs := lf.Lifecycle.Downsampling
+		if len(apiDs) != len(actualDownsampling) {
 			updateDownsampling = true
 		} else {
 			for i, ds := range actualDownsampling {
-				if ds.After.ValueString() != lf.Lifecycle.Downsampling[i].After || ds.FixedInterval.ValueString() != lf.Lifecycle.Downsampling[i].FixedInterval {
+				if ds.After.ValueString() != apiDs[i].After || ds.FixedInterval.ValueString() != apiDs[i].FixedInterval {
 					updateDownsampling = true
 					break
 				}
 			}
 		}
 		if updateDownsampling {
-			listValue, diags := convertDownsamplingToModel(ctx, lf.Lifecycle.Downsampling)
-			diags.Append(diags...)
+			listValue, diags := convertDownsamplingToModel(ctx, apiDs)
 			if diags.HasError() {
 				return diags
 			}
@@ -122,7 +122,5 @@ func convertDownsamplingToModel(ctx context.Context, apiDownsamplings []models.D
 		})
 	}
 
-	listValue, diags := types.ListValueFrom(ctx, downsamplingElementType(), downsamplings)
-
-	return listValue, diags
+	return types.ListValueFrom(ctx, downsamplingElementType(), downsamplings)
 }
