@@ -79,16 +79,17 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	// Handle role templates
 	// Preserve planned/state value when known to avoid representation drift
 	// caused by the typed client's Script type normalizing strings to objects.
-	if !stateData.RoleTemplates.IsNull() && !stateData.RoleTemplates.IsUnknown() {
+	switch {
+	case !stateData.RoleTemplates.IsNull() && !stateData.RoleTemplates.IsUnknown():
 		data.RoleTemplates = stateData.RoleTemplates
-	} else if len(roleMapping.RoleTemplates) > 0 {
+	case len(roleMapping.RoleTemplates) > 0:
 		templatesJSON, err := roleTemplatesToJSON(roleMapping.RoleTemplates)
 		if err != nil {
 			diags.AddError("Failed to serialize role templates", err.Error())
 			return nil, diags
 		}
 		data.RoleTemplates = jsontypes.NewNormalizedValue(templatesJSON)
-	} else {
+	default:
 		data.RoleTemplates = jsontypes.NewNormalizedNull()
 	}
 
