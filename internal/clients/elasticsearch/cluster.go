@@ -161,7 +161,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 	}
 
 	// Try typed parsing first for known types.
-	var typedResp getrepository.Response
+	typedResp := getrepository.NewResponse()
 	if err := json.Unmarshal(bodyBytes, &typedResp); err == nil {
 		if repo, ok := typedResp[name]; ok {
 			info, err := extractSnapshotRepositoryInfo(repo)
