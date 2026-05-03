@@ -57,16 +57,16 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	if diags.HasError() {
 		return diags
 	}
-	if user == nil || !user.IsSystemUser() {
+	if user == nil || !isSystemUser(user) {
 		diags.AddError("", fmt.Sprintf(`System user "%s" not found`, usernameID))
 		return diags
 	}
 
 	var userPassword models.UserPassword
-	if typeutils.IsKnown(data.Password) && (user.Password == nil || data.Password.ValueString() != *user.Password) {
+	if typeutils.IsKnown(data.Password) {
 		userPassword.Password = data.Password.ValueStringPointer()
 	}
-	if typeutils.IsKnown(data.PasswordHash) && (user.PasswordHash == nil || data.PasswordHash.ValueString() != *user.PasswordHash) {
+	if typeutils.IsKnown(data.PasswordHash) {
 		userPassword.PasswordHash = data.PasswordHash.ValueStringPointer()
 	}
 	if userPassword.Password != nil || userPassword.PasswordHash != nil {
