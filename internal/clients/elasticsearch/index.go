@@ -23,14 +23,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/putdatalifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -52,12 +51,16 @@ import (
 // accepting expressions that would be rejected as static names.
 var DateMathIndexNameRe = regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`)
 
-// encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
-// request path.  Characters inside the expression that have special meaning in a URL
-// path are percent-encoded so the Go HTTP client does not rewrite them.
-func encodeDateMathIndexName(name string) string {
-	// url.PathEscape encodes the string so it is safe for a path segment.
-	return url.PathEscape(name)
+func durationToEsString(d time.Duration) string {
+	s := d.String()
+	// Strip trailing zero components: "1m0s" → "1m", "1h0m0s" → "1h"
+	for strings.HasSuffix(s, "0s") {
+		s = strings.TrimSuffix(s, "0s")
+	}
+	for strings.HasSuffix(s, "0m") {
+		s = strings.TrimSuffix(s, "0m")
+	}
+	return s
 }
 
 func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.Policy) fwdiags.Diagnostics {
@@ -261,21 +264,14 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	// URI-encode the name when it is a validated date math expression so the angle
-	// brackets and braces are not mangled by the HTTP transport layer.
-	indexAPIName := index.Name
-	if DateMathIndexNameRe.MatchString(index.Name) {
-		indexAPIName = encodeDateMathIndexName(index.Name)
-	}
-
-	builder := typedClient.Indices.Create(indexAPIName).
+	builder := typedClient.Indices.Create(index.Name).
 		Request(&req).
 		WaitForActiveShards(params.WaitForActiveShards)
 	if params.MasterTimeout > 0 {
-		builder = builder.MasterTimeout(params.MasterTimeout.String())
+		builder = builder.MasterTimeout(durationToEsString(params.MasterTimeout))
 	}
 	if params.Timeout > 0 {
-		builder = builder.Timeout(params.Timeout.String())
+		builder = builder.Timeout(durationToEsString(params.Timeout))
 	}
 
 	res, err := builder.Do(ctx)
@@ -453,22 +449,30 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	req := putdatalifecycle.Request{
-		DataRetention: types.Duration(lifecycle.DataRetention),
+	reqBody := map[string]any{}
+	if lifecycle.DataRetention != "" {
+		reqBody["data_retention"] = lifecycle.DataRetention
 	}
 	if lifecycle.Enabled {
-		req.Enabled = &lifecycle.Enabled
+		reqBody["enabled"] = lifecycle.Enabled
 	}
-	for _, ds := range lifecycle.Downsampling {
-		req.Downsampling = append(req.Downsampling, types.DownsamplingRound{
-			After: types.Duration(ds.After),
-			Config: types.DownsampleConfig{
-				FixedInterval: ds.FixedInterval,
-			},
-		})
+	if len(lifecycle.Downsampling) > 0 {
+		ds := make([]map[string]any, len(lifecycle.Downsampling))
+		for i, d := range lifecycle.Downsampling {
+			ds[i] = map[string]any{
+				"after":          d.After,
+				"fixed_interval": d.FixedInterval,
+			}
+		}
+		reqBody["downsampling"] = ds
 	}
 
-	builder := typedClient.Indices.PutDataLifecycle(dataStreamName).Request(&req)
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	builder := typedClient.Indices.PutDataLifecycle(dataStreamName).Raw(bytes.NewReader(bodyBytes))
 	if expandWildcards != "" {
 		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
