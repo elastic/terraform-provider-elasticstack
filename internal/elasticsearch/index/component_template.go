@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -231,13 +232,23 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 		return diags
 	}
 
+	modelTpl, err := toModelComponentTemplateResponse(tpl)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if modelTpl == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compID.ResourceID))
+		d.SetId("")
+		return diags
+	}
+
 	// set the fields
-	if err := d.Set("name", tpl.Name); err != nil {
+	if err := d.Set("name", modelTpl.Name); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if tpl.ComponentTemplate.Meta != nil {
-		metadata, err := json.Marshal(tpl.ComponentTemplate.Meta)
+	if modelTpl.ComponentTemplate.Meta != nil {
+		metadata, err := json.Marshal(modelTpl.ComponentTemplate.Meta)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -246,9 +257,9 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	if tpl.ComponentTemplate.Template != nil {
+	if modelTpl.ComponentTemplate.Template != nil {
 		template, diags := flattenTemplateData(
-			tpl.ComponentTemplate.Template,
+			modelTpl.ComponentTemplate.Template,
 			extractAliasRoutingFromTemplateState(d.Get("template")),
 		)
 		if diags.HasError() {
@@ -260,7 +271,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	if err := d.Set("version", tpl.ComponentTemplate.Version); err != nil {
+	if err := d.Set("version", modelTpl.ComponentTemplate.Version); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -286,4 +297,19 @@ func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 	return diags
+}
+
+func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) (*models.ComponentTemplateResponse, error) {
+	if tpl == nil {
+		return nil, nil
+	}
+	b, err := json.Marshal(tpl)
+	if err != nil {
+		return nil, err
+	}
+	var resp models.ComponentTemplateResponse
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
