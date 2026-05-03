@@ -150,6 +150,10 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
+	if res.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return nil, sdkdiag.FromErr(fmt.Errorf("unexpected status code %d from snapshot repository API: %s", res.StatusCode, string(bodyBytes)))
+	}
 
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {

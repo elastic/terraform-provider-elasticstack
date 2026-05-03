@@ -209,10 +209,10 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if v, ok := d.GetOk("expand_wildcards"); ok {
 		expandWildcards = v.(string)
 	}
-	vv := d.Get("ignore_unavailable").(bool)
-	slmConfig.IgnoreUnavailable = &vv
-	vv = d.Get("include_global_state").(bool)
-	slmConfig.IncludeGlobalState = &vv
+	vvIgnore := d.Get("ignore_unavailable").(bool)
+	slmConfig.IgnoreUnavailable = &vvIgnore
+	vvInclude := d.Get("include_global_state").(bool)
+	slmConfig.IncludeGlobalState = &vvInclude
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
 		list := v.([]any)
