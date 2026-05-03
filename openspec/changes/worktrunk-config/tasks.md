@@ -36,4 +36,5 @@
 
 ## 5. Developer documentation
 
-- [ ] 5.1 Add a section to `dev-docs/high-level/development-workflow.md` covering worktrunk setup: install shell integration (`wt config shell install`), user config worktree path template, and how to export `.env` before running Makefile port-dependent targets in a feature worktree
+- [x] 5.1 Add a section to `dev-docs/high-level/development-workflow.md` covering worktrunk setup: install shell integration (`wt config shell install`), user config worktree path template, and how to export `.env` before running Makefile port-dependent targets in a feature worktree
+- [x] *(review fix)* Correct user config path, clarify worktree location inside bare repo, expand list of port-dependent targets, explain .env provenance, add cleanup note
