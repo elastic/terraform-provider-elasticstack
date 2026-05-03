@@ -148,7 +148,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
-	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
+	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).FlatSettings(true).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
