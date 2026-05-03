@@ -180,6 +180,14 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 						t.Fatalf("Failed to create testing client: %s", err)
 					}
 
+					skip, err := versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion)()
+					if err != nil {
+						t.Fatalf("Failed to check ES version: %s", err)
+					}
+					if skip {
+						return
+					}
+
 					lifecycle := models.LifecycleSettings{
 						DataRetention: "10d",
 						Downsampling: []models.Downsampling{
@@ -273,6 +281,14 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		return err
+	}
+
+	skip, err := versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion)()
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
 	}
 
 	for _, rs := range s.RootModule().Resources {
