@@ -28,17 +28,17 @@
 
 ## 4. Typed client migration — API key helpers
 
-- [ ] 4.1 Rewrite `CreateAPIKey` to use typed `Security.CreateApiKey` API and return `*createapikey.Response`
-- [ ] 4.2 Rewrite `GetAPIKey` to use typed `Security.GetApiKey` API and return `*types.ApiKey`
-- [ ] 4.3 Rewrite `UpdateAPIKey` to use typed `Security.UpdateApiKey` API
-- [ ] 4.4 Rewrite `DeleteAPIKey` to use typed `Security.InvalidateApiKey` API
-- [ ] 4.5 Update `internal/elasticsearch/security/api_key/` resource files for new helper signatures and typed responses
+- [x] 4.1 Rewrite `CreateAPIKey` to use typed `Security.CreateApiKey` API and return `*createapikey.Response`
+- [x] 4.2 Rewrite `GetAPIKey` to use typed `Security.GetApiKey` API and return `*types.ApiKey`
+- [x] 4.3 Rewrite `UpdateAPIKey` to use typed `Security.UpdateApiKey` API
+- [x] 4.4 Rewrite `DeleteAPIKey` to use typed `Security.InvalidateApiKey` API
+- [x] 4.5 Update `internal/elasticsearch/security/api_key/` resource files for new helper signatures and typed responses
 
 ## 5. Typed client migration — cross-cluster API key helpers
 
-- [ ] 5.1 Rewrite `CreateCrossClusterAPIKey` to use typed `Security.CreateCrossClusterApiKey` API and return `*createcrossclusterapikey.Response`
-- [ ] 5.2 Rewrite `UpdateCrossClusterAPIKey` to use typed `Security.UpdateCrossClusterApiKey` API
-- [ ] 5.3 Update `internal/elasticsearch/security/api_key/` resource files for new cross-cluster helper signatures
+- [x] 5.1 Rewrite `CreateCrossClusterAPIKey` to use typed `Security.CreateCrossClusterApiKey` API and return `*createcrossclusterapikey.Response`
+- [x] 5.2 Rewrite `UpdateCrossClusterAPIKey` to use typed `Security.UpdateCrossClusterApiKey` API
+- [x] 5.3 Update `internal/elasticsearch/security/api_key/` resource files for new cross-cluster helper signatures
 
 ## 6. Typed client migration — acceptance test helper
 

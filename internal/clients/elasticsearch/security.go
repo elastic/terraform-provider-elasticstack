@@ -30,7 +30,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -173,7 +172,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	return diags
 }
 
-func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, userPassword *models.UserPassword) fwdiag.Diagnostics {
+func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
@@ -186,11 +185,11 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 	}
 
 	req := typedClient.Security.ChangePassword().Username(username)
-	if userPassword.Password != nil {
-		req.Password(*userPassword.Password)
+	if password != nil {
+		req.Password(*password)
 	}
-	if userPassword.PasswordHash != nil {
-		req.PasswordHash(*userPassword.PasswordHash)
+	if passwordHash != nil {
+		req.PasswordHash(*passwordHash)
 	}
 
 	_, err = req.Do(ctx)

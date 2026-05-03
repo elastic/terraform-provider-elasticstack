@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -62,15 +61,15 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	var userPassword models.UserPassword
+	var password, passwordHash *string
 	if typeutils.IsKnown(data.Password) {
-		userPassword.Password = data.Password.ValueStringPointer()
+		password = data.Password.ValueStringPointer()
 	}
 	if typeutils.IsKnown(data.PasswordHash) {
-		userPassword.PasswordHash = data.PasswordHash.ValueStringPointer()
+		passwordHash = data.PasswordHash.ValueStringPointer()
 	}
-	if userPassword.Password != nil || userPassword.PasswordHash != nil {
-		diags.Append(elasticsearch.ChangeUserPassword(ctx, client, usernameID, &userPassword)...)
+	if password != nil || passwordHash != nil {
+		diags.Append(elasticsearch.ChangeUserPassword(ctx, client, usernameID, password, passwordHash)...)
 		if diags.HasError() {
 			return diags
 		}

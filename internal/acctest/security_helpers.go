@@ -18,20 +18,19 @@
 package acctest
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/json"
 	"encoding/pem"
-	"io"
 	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/gettoken"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/accesstokengranttype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
@@ -51,48 +50,31 @@ func CreateESAccessToken(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
+		t.Fatalf("failed to get Elasticsearch typed client: %v", err)
 	}
 
-	payload, err := json.Marshal(map[string]string{
-		"grant_type": "password",
-		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
-		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal token request: %v", err)
-	}
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+	grantType := accesstokengranttype.Password
 
-	resp, err := esClient.Security.GetToken(
-		bytes.NewReader(payload),
-		esClient.Security.GetToken.WithContext(t.Context()),
-	)
+	resp, err := typedClient.Security.GetToken().
+		Request(&gettoken.Request{
+			GrantType: &grantType,
+			Username:  &username,
+			Password:  &password,
+		}).
+		Do(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create Elasticsearch access token: %v", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.IsError() {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
-		}
-		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		t.Fatalf("failed to decode token response: %v", err)
-	}
-	if tokenResponse.AccessToken == "" {
+	if resp.AccessToken == "" {
 		t.Fatalf("token response did not include an access_token")
 	}
 
-	return tokenResponse.AccessToken
+	return resp.AccessToken
 }
 
 func CreateTLSMaterial(t *testing.T, commonName string) TLSMaterial {
