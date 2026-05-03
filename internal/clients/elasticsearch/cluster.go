@@ -53,6 +53,29 @@ type SnapshotRepositoryInfo struct {
 	Settings map[string]any
 }
 
+type SlmPolicy struct {
+	Name       string
+	Schedule   string
+	Repository string
+	Config     *SlmConfig
+	Retention  *SlmRetention
+}
+
+type SlmConfig struct {
+	FeatureStates      []string
+	IgnoreUnavailable  *bool
+	IncludeGlobalState *bool
+	Indices            []string
+	Metadata           types.Metadata
+	Partial            *bool
+}
+
+type SlmRetention struct {
+	ExpireAfter *string
+	MaxCount    *int
+	MinCount    *int
+}
+
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
@@ -362,13 +385,13 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	return diags
 }
 
-func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*types.SLMPolicy, sdkdiag.Diagnostics) {
+func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, sdkdiag.Diagnostics) {
 	var diags sdkdiag.Diagnostics
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
-	resp, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Do(ctx)
+	res, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Perform(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
@@ -376,8 +399,19 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 		}
 		return nil, sdkdiag.FromErr(err)
 	}
+	defer res.Body.Close()
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
 
-	if slm, ok := resp[slmName]; ok {
+	var rawResp map[string]struct {
+		Policy SlmPolicy `json:"policy"`
+	}
+	if err := json.Unmarshal(bodyBytes, &rawResp); err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	if slm, ok := rawResp[slmName]; ok {
 		return &slm.Policy, diags
 	}
 	diags = append(diags, sdkdiag.Diagnostic{
