@@ -244,10 +244,8 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		}
 		slmConfig.Metadata = metaRaw
 	}
-	if v, ok := d.GetOk("partial"); ok {
-		vv := v.(bool)
-		slmConfig.Partial = &vv
-	}
+	vvPartial := d.Get("partial").(bool)
+	slmConfig.Partial = &vvPartial
 
 	slm.Config = &slmConfig
 
