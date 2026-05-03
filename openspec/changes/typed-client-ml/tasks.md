@@ -24,14 +24,14 @@
 
 ## 3. Update downstream ML resource files that consume helpers
 
-- [ ] 3.1 Update `internal/elasticsearch/ml/datafeed/create.go` to pass typed request to `elasticsearch.PutDatafeed`
-- [ ] 3.2 Update `internal/elasticsearch/ml/datafeed/read.go` to consume typed response from `elasticsearch.GetDatafeed`
-- [ ] 3.3 Update `internal/elasticsearch/ml/datafeed/update.go` to pass typed request to `elasticsearch.UpdateDatafeed` and `elasticsearch.StartDatafeed`
-- [ ] 3.4 Update `internal/elasticsearch/ml/datafeed/delete.go` to consume typed helpers for stop and delete
-- [ ] 3.5 Update `internal/elasticsearch/ml/datafeed/state_utils.go` to consume typed response from `elasticsearch.GetDatafeedStats`
-- [ ] 3.6 Update `internal/elasticsearch/ml/jobstate/update.go` to consume typed helpers for open and close
-- [ ] 3.7 Update `internal/elasticsearch/ml/jobstate/state_utils.go` to consume typed response from `elasticsearch.GetMLJobStats`
-- [ ] 3.8 Update `internal/elasticsearch/ml/datafeed_state/*.go` to consume typed helpers for stats, start, and stop
+- [x] 3.1 Update `internal/elasticsearch/ml/datafeed/create.go` to pass typed request to `elasticsearch.PutDatafeed`
+- [x] 3.2 Update `internal/elasticsearch/ml/datafeed/read.go` to consume typed response from `elasticsearch.GetDatafeed`
+- [x] 3.3 Update `internal/elasticsearch/ml/datafeed/update.go` to pass typed request to `elasticsearch.UpdateDatafeed` and `elasticsearch.StartDatafeed`
+- [x] 3.4 Update `internal/elasticsearch/ml/datafeed/delete.go` to consume typed helpers for stop and delete
+- [x] 3.5 Update `internal/elasticsearch/ml/datafeed/state_utils.go` to consume typed response from `elasticsearch.GetDatafeedStats`
+- [x] 3.6 Update `internal/elasticsearch/ml/jobstate/update.go` to consume typed helpers for open and close
+- [x] 3.7 Update `internal/elasticsearch/ml/jobstate/state_utils.go` to consume typed response from `elasticsearch.GetMLJobStats`
+- [x] 3.8 Update `internal/elasticsearch/ml/datafeed_state/*.go` to consume typed helpers for stats, start, and stop
 
 ## 4. Clean up redundant custom models
 

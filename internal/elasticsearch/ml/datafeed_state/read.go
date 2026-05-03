@@ -68,7 +68,7 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 	}
 
 	// Update the data with current information
-	data.State = types.StringValue(datafeedStats.State)
+	data.State = types.StringValue(datafeedStats.State.String())
 
 	// Regenerate composite ID to ensure it's current
 	compID, sdkDiags := client.ID(ctx, datafeedID)

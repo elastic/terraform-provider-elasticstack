@@ -48,7 +48,7 @@ func GetDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedCl
 		return nil, nil
 	}
 
-	state := State(statsResponse.State)
+	state := State(statsResponse.State.String())
 	return &state, nil
 }
 
