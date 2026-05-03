@@ -42,21 +42,21 @@
 
 ## 6. Typed client migration — acceptance test helper
 
-- [ ] 6.1 Rewrite `CreateESAccessToken` in `internal/acctest/security_helpers.go` to use typed `Security.GetToken` API
-- [ ] 6.2 Remove raw `esapi` import and manual JSON marshaling from `security_helpers.go`
+- [x] 6.1 Rewrite `CreateESAccessToken` in `internal/acctest/security_helpers.go` to use typed `Security.GetToken` API
+- [x] 6.2 Remove raw `esapi` import and manual JSON marshaling from `security_helpers.go`
 
 ## 7. Model cleanup and verification
 
-- [ ] 7.1 Verify `models.User` is no longer used outside `security.go`, then remove from `internal/models/models.go`
-- [ ] 7.2 Verify `models.UserPassword` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.3 Verify `models.Role` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.4 Verify `models.RoleMapping` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.5 Verify `models.APIKey` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.6 Verify `models.APIKeyCreateResponse` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.7 Verify `models.APIKeyResponse` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.8 Verify `models.CrossClusterAPIKey` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.9 Verify `models.CrossClusterAPIKeyCreateResponse` is no longer used, then remove from `internal/models/models.go`
-- [ ] 7.10 Run `go mod tidy` and `make build` to confirm compilation
+- [x] 7.1 Verify `models.User` is no longer used outside `security.go`, then remove from `internal/models/models.go`
+- [x] 7.2 Verify `models.UserPassword` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.3 Verify `models.Role` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.4 Verify `models.RoleMapping` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.5 Verify `models.APIKey` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.6 Verify `models.APIKeyCreateResponse` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.7 Verify `models.APIKeyResponse` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.8 Verify `models.CrossClusterAPIKey` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.9 Verify `models.CrossClusterAPIKeyCreateResponse` is no longer used, then remove from `internal/models/models.go`
+- [x] 7.10 Run `go mod tidy` and `make build` to confirm compilation
 
 ## 8. Testing
 
