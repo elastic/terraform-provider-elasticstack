@@ -102,8 +102,12 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Da
 	}
 	data.Source = types.StringValue(script.Source)
 
-	// Params are not part of types.StoredScript; preserve from state
-	data.Params = jsontypes.NewNormalizedNull()
+	// Params are not part of types.StoredScript; preserve from prior state
+	if stateData.Params.IsNull() {
+		data.Params = jsontypes.NewNormalizedNull()
+	} else {
+		data.Params = stateData.Params
+	}
 	// Note: context is not returned by the Elasticsearch API
 	// It's only used during script creation, so we preserve it from state
 	// This is consistent with the SDKv2 implementation

@@ -301,11 +301,17 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 				return diag.FromErr(err)
 			}
 		}
-		if err := d.Set("max_count", slm.Retention.MaxCount); err != nil {
-			return diag.FromErr(err)
+		// Only set count fields if they were previously in state, because the typed
+		// API always returns 0 for missing fields and cannot distinguish unset from zero.
+		if _, ok := d.GetOk("max_count"); ok {
+			if err := d.Set("max_count", slm.Retention.MaxCount); err != nil {
+				return diag.FromErr(err)
+			}
 		}
-		if err := d.Set("min_count", slm.Retention.MinCount); err != nil {
-			return diag.FromErr(err)
+		if _, ok := d.GetOk("min_count"); ok {
+			if err := d.Set("min_count", slm.Retention.MinCount); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 
