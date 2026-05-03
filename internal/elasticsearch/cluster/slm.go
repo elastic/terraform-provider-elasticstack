@@ -209,14 +209,10 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if v, ok := d.GetOk("expand_wildcards"); ok {
 		expandWildcards = v.(string)
 	}
-	if v, ok := d.GetOk("ignore_unavailable"); ok {
-		vv := v.(bool)
-		slmConfig.IgnoreUnavailable = &vv
-	}
-	if v, ok := d.GetOk("include_global_state"); ok {
-		vv := v.(bool)
-		slmConfig.IncludeGlobalState = &vv
-	}
+	vv := d.Get("ignore_unavailable").(bool)
+	slmConfig.IgnoreUnavailable = &vv
+	vv = d.Get("include_global_state").(bool)
+	slmConfig.IncludeGlobalState = &vv
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
 		list := v.([]any)
@@ -337,9 +333,10 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 			meta := make(map[string]any)
 			for k, v := range c.Metadata {
 				var val any
-				if err := json.Unmarshal(v, &val); err == nil {
-					meta[k] = val
+				if err := json.Unmarshal(v, &val); err != nil {
+					return diag.FromErr(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
 				}
+				meta[k] = val
 			}
 			metaBytes, err := json.Marshal(meta)
 			if err != nil {

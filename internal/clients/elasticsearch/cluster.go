@@ -23,8 +23,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/snapshot/getrepository"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -99,6 +102,22 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		}
 		s.Type = "azure"
 		repo = s
+	case "hdfs":
+		// HDFS is not part of the typed API Repository union; use raw JSON body.
+		body := map[string]any{
+			"type":     repoType,
+			"settings": settings,
+		}
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req := typedClient.Snapshot.CreateRepository(name).Raw(bytes.NewReader(bodyBytes)).Verify(verify)
+		_, err = req.Do(ctx)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		return diags
 	case "source":
 		var s types.SourceOnlyRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
@@ -123,31 +142,54 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
-	resp, err := typedClient.Snapshot.GetRepository().Repository(name).Do(ctx)
+	res, err := typedClient.Snapshot.GetRepository().Repository(name).Perform(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return nil, nil
+		return nil, sdkdiag.FromErr(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, sdkdiag.FromErr(fmt.Errorf("failed to read snapshot repository response: %w", err))
+	}
+
+	// Try typed parsing first for known types.
+	var typedResp getrepository.Response
+	if err := json.Unmarshal(bodyBytes, &typedResp); err == nil {
+		if repo, ok := typedResp[name]; ok {
+			info, err := extractSnapshotRepositoryInfo(repo)
+			if err != nil {
+				return nil, sdkdiag.FromErr(err)
+			}
+			info.Name = name
+			return info, diags
 		}
-		return nil, sdkdiag.FromErr(err)
 	}
 
-	repo, ok := resp[name]
-	if !ok {
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  "Unable to find requested repository",
-			Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
-		})
-		return nil, diags
+	// Fall back to raw JSON parsing for unknown types (e.g. hdfs).
+	var rawResp map[string]struct {
+		Type     string         `json:"type"`
+		Settings map[string]any `json:"settings"`
+	}
+	if err := json.Unmarshal(bodyBytes, &rawResp); err == nil {
+		if repo, ok := rawResp[name]; ok {
+			return &SnapshotRepositoryInfo{
+				Name:     name,
+				Type:     repo.Type,
+				Settings: repo.Settings,
+			}, diags
+		}
 	}
 
-	info, err := extractSnapshotRepositoryInfo(repo)
-	if err != nil {
-		return nil, sdkdiag.FromErr(err)
-	}
-	info.Name = name
-	return info, diags
+	diags = append(diags, sdkdiag.Diagnostic{
+		Severity: sdkdiag.Error,
+		Summary:  "Unable to find requested repository",
+		Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
+	})
+	return nil, diags
 }
 
 func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryInfo, error) {
@@ -263,9 +305,10 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 			meta := make(map[string]any)
 			for k, v := range slm.Config.Metadata {
 				var val any
-				if err := json.Unmarshal(v, &val); err == nil {
-					meta[k] = val
+				if err := json.Unmarshal(v, &val); err != nil {
+					return sdkdiag.FromErr(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
 				}
+				meta[k] = val
 			}
 			config["metadata"] = meta
 		}
@@ -363,10 +406,18 @@ func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	req := typedClient.Cluster.PutSettings()
 
 	if persistent, ok := settings["persistent"].(map[string]any); ok {
-		req.Persistent(toRawMessageMap(persistent))
+		raw, err := toRawMessageMap(persistent)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req.Persistent(raw)
 	}
 	if transient, ok := settings["transient"].(map[string]any); ok {
-		req.Transient(toRawMessageMap(transient))
+		raw, err := toRawMessageMap(transient)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req.Transient(raw)
 	}
 
 	_, err = req.Do(ctx)
@@ -376,15 +427,16 @@ func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	return diags
 }
 
-func toRawMessageMap(m map[string]any) map[string]json.RawMessage {
+func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
 	result := make(map[string]json.RawMessage, len(m))
 	for k, v := range m {
 		data, err := json.Marshal(v)
-		if err == nil {
-			result[k] = data
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal setting %q: %w", k, err)
 		}
+		result[k] = data
 	}
-	return result
+	return result, nil
 }
 
 func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, sdkdiag.Diagnostics) {
@@ -399,21 +451,31 @@ func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 
 	result := make(map[string]any)
-	result["persistent"] = flattenRawMessageMap(resp.Persistent)
-	result["transient"] = flattenRawMessageMap(resp.Transient)
-	result["defaults"] = flattenRawMessageMap(resp.Defaults)
+	result["persistent"], err = flattenRawMessageMap(resp.Persistent)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	result["transient"], err = flattenRawMessageMap(resp.Transient)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	result["defaults"], err = flattenRawMessageMap(resp.Defaults)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
 	return result, diags
 }
 
-func flattenRawMessageMap(m map[string]json.RawMessage) map[string]any {
+func flattenRawMessageMap(m map[string]json.RawMessage) (map[string]any, error) {
 	result := make(map[string]any, len(m))
 	for k, v := range m {
 		var val any
-		if err := json.Unmarshal(v, &val); err == nil {
-			result[k] = val
+		if err := json.Unmarshal(v, &val); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal setting %q: %w", k, err)
 		}
+		result[k] = val
 	}
-	return result
+	return result, nil
 }
 
 func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.StoredScript, fwdiag.Diagnostics) {
