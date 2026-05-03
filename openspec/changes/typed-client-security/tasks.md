@@ -60,16 +60,16 @@
 
 ## 8. Testing
 
-- [ ] 8.1 Run unit tests for `internal/elasticsearch/security/user`
-- [ ] 8.2 Run unit tests for `internal/elasticsearch/security/role`
-- [ ] 8.3 Run unit tests for `internal/elasticsearch/security/rolemapping`
-- [ ] 8.4 Run unit tests for `internal/elasticsearch/security/api_key`
-- [ ] 8.5 Run unit tests for `internal/elasticsearch/security/systemuser`
-- [ ] 8.6 Run acceptance tests for `elasticstack_elasticsearch_security_user`
-- [ ] 8.7 Run acceptance tests for `elasticstack_elasticsearch_security_role`
-- [ ] 8.8 Run acceptance tests for `elasticstack_elasticsearch_security_role_mapping`
-- [ ] 8.9 Run acceptance tests for `elasticstack_elasticsearch_security_api_key`
-- [ ] 8.10 Run acceptance tests for `elasticstack_elasticsearch_security_system_user`
-- [ ] 8.11 Run acceptance tests for user data source
-- [ ] 8.12 Run acceptance tests for role data source
-- [ ] 8.13 Run `make check-lint` and `make check-openspec`
+- [x] 8.1 Run unit tests for `internal/elasticsearch/security/user`
+- [x] 8.2 Run unit tests for `internal/elasticsearch/security/role`
+- [x] 8.3 Run unit tests for `internal/elasticsearch/security/rolemapping`
+- [x] 8.4 Run unit tests for `internal/elasticsearch/security/api_key`
+- [x] 8.5 Run unit tests for `internal/elasticsearch/security/systemuser`
+- [x] 8.6 Run acceptance tests for `elasticstack_elasticsearch_security_user`
+- [x] 8.7 Run acceptance tests for `elasticstack_elasticsearch_security_role`
+- [x] 8.8 Run acceptance tests for `elasticstack_elasticsearch_security_role_mapping`
+- [x] 8.9 Run acceptance tests for `elasticstack_elasticsearch_security_api_key`
+- [x] 8.10 Run acceptance tests for `elasticstack_elasticsearch_security_system_user`
+- [x] 8.11 Run acceptance tests for user data source
+- [x] 8.12 Run acceptance tests for role data source
+- [x] 8.13 Run `make check-lint` and `make check-openspec`
