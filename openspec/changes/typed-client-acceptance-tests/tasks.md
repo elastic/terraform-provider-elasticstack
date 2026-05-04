@@ -12,13 +12,13 @@
 
 ## 4. Index
 
-- [ ] 4.1 Migrate `internal/elasticsearch/index/index/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed index APIs
-- [ ] 4.2 Migrate `internal/elasticsearch/index/component_template_test.go` from `GetESClient()` to `GetESTypedClient()` and typed component-template APIs
-- [ ] 4.3 Migrate `internal/elasticsearch/index/data_stream_test.go` from `GetESClient()` to `GetESTypedClient()` and typed data-stream APIs
-- [ ] 4.4 Migrate `internal/elasticsearch/index/template/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed index-template APIs
-- [ ] 4.5 Migrate `internal/elasticsearch/index/templateilmattachment/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed APIs
-- [ ] 4.6 Migrate `internal/elasticsearch/index/datastreamlifecycle/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed data-stream-lifecycle APIs
-- [ ] 4.7 Migrate `internal/elasticsearch/index/alias/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed alias APIs
+- [x] 4.1 Migrate `internal/elasticsearch/index/index/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed index APIs
+- [x] 4.2 Migrate `internal/elasticsearch/index/component_template_test.go` from `GetESClient()` to `GetESTypedClient()` and typed component-template APIs
+- [x] 4.3 Migrate `internal/elasticsearch/index/data_stream_test.go` from `GetESClient()` to `GetESTypedClient()` and typed data-stream APIs
+- [x] 4.4 Migrate `internal/elasticsearch/index/template/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed index-template APIs
+- [x] 4.5 Migrate `internal/elasticsearch/index/templateilmattachment/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed APIs
+- [x] 4.6 Migrate `internal/elasticsearch/index/datastreamlifecycle/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed data-stream-lifecycle APIs
+- [x] 4.7 Migrate `internal/elasticsearch/index/alias/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed alias APIs
 
 ## 5. Inference
 
