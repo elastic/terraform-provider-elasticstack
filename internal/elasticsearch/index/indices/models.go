@@ -378,7 +378,12 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 					}
 				}
 
-				settingsValue = int64(settingInt)
+					settingsValue = int64(settingInt)
+			}
+
+			// json.Unmarshal stores numbers as float64 in map[string]any
+			if settingFloat, ok := settingsValue.(float64); ok {
+				settingsValue = int64(settingFloat)
 			}
 
 			settingInt, ok := settingsValue.(int64)
