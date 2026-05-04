@@ -182,9 +182,9 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 				continue
 			}
 
-			compID, err := clients.CompositeIDFromStr(rs.Primary.ID)
-			if err != nil {
-				return err
+			compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+			if diags.HasError() {
+				return fmt.Errorf("failed to parse snapshot repository composite ID %q: %v", rs.Primary.ID, diags)
 			}
 			if compID.ResourceID != name {
 				continue
