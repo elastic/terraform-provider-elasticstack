@@ -82,8 +82,8 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 	stateModel.Version = types.StringValue(installedVersion)
 	stateModel.ID = types.StringValue(getPackageID(name, installedVersion))
-	if stateModel.SpaceID.IsNull() && pkg.InstallationInfo != nil && pkg.InstallationInfo.InstalledKibanaSpaceId != nil {
-		stateModel.SpaceID = types.StringValue(*pkg.InstallationInfo.InstalledKibanaSpaceId)
+	if stateModel.SpaceID.IsNull() {
+		stateModel.SpaceID = installedKibanaSpaceID(pkg)
 	}
 
 	diags = resp.State.Set(ctx, stateModel)
