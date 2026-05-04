@@ -18,9 +18,12 @@
 package index_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -95,19 +98,20 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Cluster.GetComponentTemplate.WithName(compID.ResourceID)
-		res, err := esClient.Cluster.GetComponentTemplate(req)
+		_, err = typedClient.Cluster.GetComponentTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Component template (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Component template (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

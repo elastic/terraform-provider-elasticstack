@@ -19,11 +19,14 @@ package datastreamlifecycle_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
@@ -180,9 +183,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 						t.Fatalf("Failed to create testing client: %s", err)
 					}
 
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESTypedClient()
 					if err != nil {
-						t.Fatalf("Failed to get es client: %s", err)
+						t.Fatalf("Failed to get typed es client: %s", err)
 					}
 
 					lifecycle := models.LifecycleSettings{
@@ -196,11 +199,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 					if err != nil {
 						t.Fatalf("Cannot marshal lifecycle: %s", err)
 					}
-					_, err = esClient.Indices.PutDataLifecycle(
-						[]string{dsName + "-multiple-two"},
-						esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
-					)
-					if err != nil {
+					if _, err = typedClient.Indices.PutDataLifecycle(dsName + "-multiple-two").Raw(bytes.NewReader(lifecycleBytes)).Do(context.Background()); err != nil {
 						t.Fatalf("Cannot update lifecycle: %s", err)
 					}
 				},
@@ -293,33 +292,23 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.Indices.GetDataLifecycle([]string{compID.ResourceID})
+		resp, err := typedClient.Indices.GetDataLifecycle(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			return err
-		}
-
-		// for lifecycle without wildcard 404 is returned when no ds matches
-		if res.StatusCode == 404 {
-			return nil
-		}
-
-		defer res.Body.Close()
-
-		dStreams := struct {
-			DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
-		}{}
-
-		if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
+			// for lifecycle without wildcard 404 is returned when no ds matches
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
 
 		// for lifecycle with wildcard empty array is returned
-		if len(dStreams.DataStreams) > 0 {
+		if len(resp.DataStreams) > 0 {
 			return fmt.Errorf("Data Stream Lifecycle (%s) still exists", compID.ResourceID)
 		}
 	}
