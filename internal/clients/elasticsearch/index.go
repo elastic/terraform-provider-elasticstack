@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -52,9 +51,6 @@ import (
 // accepting expressions that would be rejected as static names.
 var DateMathIndexNameRe = regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~_-]*\{[^<>]+\}>$`)
 
-// encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
-// request path.  Characters inside the expression that have special meaning in a URL
-// path are percent-encoded so the Go HTTP client does not rewrite them.
 // encodeDateMathIndexName URI-encodes a plain date math index name for use in an API
 // request path.  Characters inside the expression that have special meaning in a URL
 // path are percent-encoded so the Go HTTP client does not rewrite them.
@@ -92,8 +88,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -116,8 +111,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	}
 	_, err = typedClient.Ilm.DeleteLifecycle(policyName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -151,8 +145,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -177,8 +170,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.Elasticsear
 	}
 	_, err = typedClient.Cluster.DeleteComponentTemplate(templateName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)
@@ -211,8 +203,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	res, err := typedClient.Indices.GetIndexTemplate().Name(templateName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -236,8 +227,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchSc
 	}
 	_, err = typedClient.Indices.DeleteIndexTemplate(templateName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -274,6 +264,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	// For date-math index names we must build the request manually and set
 	// URL.RawPath so the already-encoded characters (including %2F) are not
 	// double-encoded by url.URL.String().
+	// Remove when https://github.com/elastic/go-elasticsearch/pull/1425 is available.
 	var res *create.Response
 	if DateMathIndexNameRe.MatchString(index.Name) {
 		req, err := call.HttpRequest(ctx)
@@ -281,7 +272,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 			return "", diagutil.FrameworkDiagFromError(err)
 		}
 		req.URL.RawPath = "/" + encodeDateMathIndexName(index.Name)
-		req.URL.Path = req.URL.RawPath
+		req.URL.Path = "/" + index.Name
 
 		httpRes, err := typedClient.Transport.Perform(req)
 		if err != nil {
@@ -326,8 +317,7 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 	_, err = typedClient.Indices.Delete(name).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -359,8 +349,7 @@ func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	}
 	res, err := typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -375,8 +364,7 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	_, err = typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -387,7 +375,7 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
-		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -403,7 +391,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, settings map[string]any) fwdiags.Diagnostics {
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -447,8 +435,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	}
 	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -467,8 +454,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	_, err = typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)
@@ -546,8 +532,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticse
 	}
 	_, err = builder.Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -562,8 +547,7 @@ func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	}
 	res, err := typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -586,7 +570,7 @@ type AliasAction struct {
 
 // UpdateAliasesAtomic performs atomic alias updates using multiple actions
 func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, actions []AliasAction) fwdiags.Diagnostics {
-	var aliasActions []map[string]any
+	aliasActions := make([]map[string]any, 0, len(actions))
 
 	for _, action := range actions {
 		switch action.Type {
@@ -671,8 +655,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 	res, err := typedClient.Ingest.GetPipeline().Id(name).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -696,8 +679,7 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 	_, err = typedClient.Ingest.DeletePipeline(name).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)
@@ -733,54 +715,5 @@ func NormalizeQueryFilter(v any) any {
 		return out
 	default:
 		return v
-	}
-}
-
-// IndexStateToModel converts a typed IndexState into the legacy models.Index shape
-// used by the index resource and indices data source.
-func IndexStateToModel(state types.IndexState) models.Index {
-	aliases := make(map[string]models.IndexAlias, len(state.Aliases))
-	for name, alias := range state.Aliases {
-		ia := models.IndexAlias{Name: name}
-		if alias.Filter != nil {
-			filterBytes, _ := json.Marshal(alias.Filter)
-			var filterMap map[string]any
-			_ = json.Unmarshal(filterBytes, &filterMap)
-			ia.Filter = NormalizeQueryFilter(filterMap).(map[string]any)
-		}
-		if alias.IndexRouting != nil {
-			ia.IndexRouting = *alias.IndexRouting
-		}
-		if alias.IsHidden != nil {
-			ia.IsHidden = *alias.IsHidden
-		}
-		if alias.IsWriteIndex != nil {
-			ia.IsWriteIndex = *alias.IsWriteIndex
-		}
-		if alias.Routing != nil {
-			ia.Routing = *alias.Routing
-		}
-		if alias.SearchRouting != nil {
-			ia.SearchRouting = *alias.SearchRouting
-		}
-		aliases[name] = ia
-	}
-
-	var mappings map[string]any
-	if state.Mappings != nil {
-		mappingBytes, _ := json.Marshal(state.Mappings)
-		_ = json.Unmarshal(mappingBytes, &mappings)
-	}
-
-	var settings map[string]any
-	if state.Settings != nil {
-		settingsBytes, _ := json.Marshal(state.Settings)
-		_ = json.Unmarshal(settingsBytes, &settings)
-	}
-
-	return models.Index{
-		Aliases:  aliases,
-		Mappings: mappings,
-		Settings: settings,
 	}
 }

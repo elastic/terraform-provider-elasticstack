@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+const elasticsearchClientNotConfiguredError = "elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS"
+
 // ElasticsearchScopedClient is a typed client surface for Elasticsearch
 // operations. It exposes the underlying go-elasticsearch client plus all
 // Elasticsearch-derived helper behavior that resources need: composite ID
@@ -46,16 +48,14 @@ type ElasticsearchScopedClient struct {
 	// overrides have been applied. It is used by accessor validation to
 	// distinguish missing endpoint configuration from unexpected nil states.
 	esEndpoints []string
-	// typedClient is the strongly-typed Elasticsearch client.
 	typedClient *elasticsearch.TypedClient
 }
 
 // GetESClient returns the strongly-typed Elasticsearch client.
 //
-// The returned typed client shares the same underlying transport, endpoints,
-// and configuration as the raw client it was derived from. A product check
-// may run on the typed client's first request, adding marginal latency on
-// first use.
+// The client is built from the provider's configured Elasticsearch transport
+// and endpoints. A product check may run on the typed client's first request,
+// adding marginal latency on first use.
 func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, error) {
 	hasEndpoint := false
 	for _, ep := range e.esEndpoints {
@@ -65,7 +65,7 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, e
 		}
 	}
 	if !hasEndpoint {
-		return nil, errors.New("elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
+		return nil, errors.New(elasticsearchClientNotConfiguredError)
 	}
 	if e.typedClient == nil {
 		return nil, errors.New("elasticsearch client not found")
@@ -78,11 +78,10 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, e
 // the info from the server, and subsequent callers use the cached result.
 func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
 	e.mu.Lock()
+	defer e.mu.Unlock()
 	if e.elasticsearchClusterInfo != nil {
-		e.mu.Unlock()
 		return e.elasticsearchClusterInfo, nil
 	}
-	e.mu.Unlock()
 
 	typedClient, err := e.GetESClient()
 	if err != nil {
@@ -93,9 +92,7 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Respo
 		return nil, diag.FromErr(err)
 	}
 
-	e.mu.Lock()
 	e.elasticsearchClusterInfo = res
-	e.mu.Unlock()
 
 	return res, nil
 }

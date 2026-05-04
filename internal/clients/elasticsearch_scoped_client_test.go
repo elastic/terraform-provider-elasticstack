@@ -152,10 +152,7 @@ func TestElasticsearchScopedClient_GetESClient_MissingEndpoint(t *testing.T) {
 	client, err := sc.GetESClient()
 	assert.Nil(t, client, "GetESClient must return nil client when esEndpoints is empty")
 	require.Error(t, err)
-	assert.Equal(t,
-		"elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS",
-		err.Error(),
-	)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
 }
 
 func TestElasticsearchScopedClient_GetESClient_OnlyEmptyEndpoints(t *testing.T) {
@@ -165,10 +162,7 @@ func TestElasticsearchScopedClient_GetESClient_OnlyEmptyEndpoints(t *testing.T) 
 	client, err := sc.GetESClient()
 	assert.Nil(t, client, "GetESClient must return nil client when all esEndpoints are empty strings")
 	require.Error(t, err)
-	assert.Equal(t,
-		"elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS",
-		err.Error(),
-	)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
 }
 
 // --- Scenario 7 (ES): Endpoint present, auth empty → accessor succeeds ---
