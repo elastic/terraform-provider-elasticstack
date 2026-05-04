@@ -1,15 +1,15 @@
 ## 1. Update ElasticsearchScopedClient
 
-- [ ] 1.1 Remove the raw `*elasticsearch.Client` field from `ElasticsearchScopedClient`
-- [ ] 1.2 Rename the existing `GetESTypedClient()` method to `GetESClient()` and set its return type to `*elasticsearch.TypedClient`
-- [ ] 1.3 Remove the old `GetESClient()` method that returned the raw client
-- [ ] 1.4 Rewrite `serverInfo()` to use `typedClient.Info().Do(ctx)` and unmarshal into `*types.InfoResponse`
-- [ ] 1.5 Update `internal/clients/elasticsearch_scoped_client_test.go` to assert on `*elasticsearch.TypedClient` returns
+- [x] 1.1 Remove the raw `*elasticsearch.Client` field from `ElasticsearchScopedClient`
+- [x] 1.2 Rename the existing `GetESTypedClient()` method to `GetESClient()` and set its return type to `*elasticsearch.TypedClient`
+- [x] 1.3 Remove the old `GetESClient()` method that returned the raw client
+- [x] 1.4 Rewrite `serverInfo()` to use `typedClient.Info().Do(ctx)` and unmarshal into `*types.InfoResponse`
+- [x] 1.5 Update `internal/clients/elasticsearch_scoped_client_test.go` to assert on `*elasticsearch.TypedClient` returns
 
 ## 2. Delete obsolete helpers
 
-- [ ] 2.1 Delete `internal/clients/elasticsearch/helpers.go`
-- [ ] 2.2 Verify no remaining references to `doFWWrite` or `doSDKWrite` across the codebase
+- [x] 2.1 Removed `doFWWrite` and `doSDKWrite` from `internal/clients/elasticsearch/helpers.go`
+- [x] 2.2 Verified no remaining references to `doFWWrite` or `doSDKWrite` across the codebase
 
 ## 3. Delete redundant model files
 
