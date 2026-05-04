@@ -31,15 +31,15 @@ The semantic refactor workflow SHALL support scheduled daily execution and manua
 - **THEN** the workflow SHALL start a semantic refactor analysis run subject to the pre-activation gate
 
 ### Requirement: LiteLLM-backed engine configuration
-The semantic refactor workflow SHALL run the agent through the repository's LiteLLM-backed Claude engine configuration, using model `llm-gateway/gpt-5.4`, `ANTHROPIC_BASE_URL` set to the Elastic LiteLLM endpoint, and `ANTHROPIC_API_KEY` sourced from `CLAUDE_LITELLM_PROXY_API_KEY`.
+The semantic refactor workflow SHALL run the agent through the repository's LiteLLM-backed Claude engine configuration, using model `llm-gateway/gpt-5.4`, `ANTHROPIC_BASE_URL` set to the Elastic LiteLLM endpoint, `ANTHROPIC_API_KEY` sourced from `CLAUDE_LITELLM_PROXY_API_KEY`, and a `network.allowed` contract that permits access to `elastic.litellm-prod.ai`.
 
 #### Scenario: Authored workflow uses LiteLLM engine settings
 - **WHEN** maintainers inspect the authored semantic refactor workflow source
-- **THEN** the engine configuration SHALL specify Claude with model `llm-gateway/gpt-5.4`, the Elastic LiteLLM base URL, and the `CLAUDE_LITELLM_PROXY_API_KEY` secret
+- **THEN** the engine configuration SHALL specify Claude with model `llm-gateway/gpt-5.4`, the Elastic LiteLLM base URL, a `network.allowed` entry for `elastic.litellm-prod.ai`, and the `CLAUDE_LITELLM_PROXY_API_KEY` secret
 
 #### Scenario: Compiled lock preserves LiteLLM execution settings
 - **WHEN** the workflow source is compiled
-- **THEN** the compiled lock artifact SHALL preserve the LiteLLM model, base URL, and secret-backed API key for agent execution
+- **THEN** the compiled lock artifact SHALL preserve the LiteLLM model, base URL, allowlisted host `elastic.litellm-prod.ai`, and secret-backed API key for agent execution
 
 ### Requirement: Deterministic semantic-refactor issue-slot gating
 Before agent analysis begins, deterministic repository-authored steps SHALL compute available issue slots by counting open GitHub issues with the `semantic-refactor` label and subtracting that count from a workflow-configured issue cap of `3`. The workflow SHALL expose the open-issue count, available slot count, and gate reason through pre-activation outputs, and it SHALL skip the agent job when the available slot count is zero.
