@@ -19,14 +19,19 @@ package elasticsearch
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putdatafeed"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatedatafeed"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -83,7 +88,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		AllowNoMatch(true)
 
 	if timeout > 0 {
-		req.Timeout(timeout.String())
+		req.Timeout(strconv.FormatInt(timeout.Milliseconds(), 10) + "ms")
 	}
 
 	_, err = req.Do(ctx)
@@ -125,8 +130,34 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	return nil, diags
 }
 
-// GetDatafeed retrieves a machine learning datafeed
-func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.MLDatafeed, diag.Diagnostics) {
+// MLDatafeedResponse wraps the types.MLDatafeed with a raw JSON query that
+// preserves the original form returned by Elasticsearch without re-normalisation
+// through the typed Query struct (e.g. term shorthand vs verbose value form).
+type MLDatafeedResponse struct {
+	*types.MLDatafeed
+	QueryRaw json.RawMessage
+}
+
+// rawDatafeedListResponse is a minimal struct used to decode the get-datafeeds
+// response while preserving the raw query bytes for each datafeed.
+type rawDatafeedListResponse struct {
+	Count     int                   `json:"count"`
+	Datafeeds []rawDatafeedDocument `json:"datafeeds"`
+}
+
+type rawDatafeedDocument struct {
+	DatafeedId string          `json:"datafeed_id"`
+	Query      json.RawMessage `json:"query"`
+}
+
+// GetDatafeed retrieves a machine learning datafeed.
+//
+// We use .Perform() (raw *http.Response) rather than .Do() so that the query
+// is preserved exactly as returned by Elasticsearch.  The typed types.Query
+// struct normalises term shorthand ({"term":{"f":"v"}}) to the verbose form
+// ({"term":{"f":{"value":"v"}}}) on marshal, which would produce a permanent
+// diff in Terraform state.
+func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*MLDatafeedResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
@@ -135,19 +166,54 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		return nil, diags
 	}
 
-	res, err := typedClient.Ml.GetDatafeeds().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)
+	res, err := typedClient.Ml.GetDatafeeds().DatafeedId(datafeedID).AllowNoMatch(true).Perform(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return nil, diags
-		}
 		diags.AddError("Failed to get ML datafeed", fmt.Sprintf("Unable to get ML datafeed: %s — %s", datafeedID, err.Error()))
 		return nil, diags
 	}
+	defer res.Body.Close()
 
-	for i := range res.Datafeeds {
-		if res.Datafeeds[i].DatafeedId == datafeedID {
-			return &res.Datafeeds[i], diags
+	if res.StatusCode == http.StatusNotFound {
+		return nil, diags
+	}
+	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID)); d.HasError() {
+		return nil, d
+	}
+
+	// Decode the typed response for all fields except query.
+	var typedResponse struct {
+		Count     int                `json:"count"`
+		Datafeeds []types.MLDatafeed `json:"datafeeds"`
+	}
+	// We need both typed and raw simultaneously, so decode the body twice via a
+	// buffered copy.
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		diags.AddError("Failed to read ML datafeed response", err.Error())
+		return nil, diags
+	}
+
+	if err := json.Unmarshal(body, &typedResponse); err != nil {
+		diags.AddError("Failed to decode ML datafeed response", err.Error())
+		return nil, diags
+	}
+
+	var rawResponse rawDatafeedListResponse
+	if err := json.Unmarshal(body, &rawResponse); err != nil {
+		diags.AddError("Failed to decode ML datafeed raw response", err.Error())
+		return nil, diags
+	}
+
+	for i := range typedResponse.Datafeeds {
+		if typedResponse.Datafeeds[i].DatafeedId == datafeedID {
+			resp := &MLDatafeedResponse{MLDatafeed: &typedResponse.Datafeeds[i]}
+			for j := range rawResponse.Datafeeds {
+				if rawResponse.Datafeeds[j].DatafeedId == datafeedID {
+					resp.QueryRaw = rawResponse.Datafeeds[j].Query
+					break
+				}
+			}
+			return resp, diags
 		}
 	}
 
@@ -185,6 +251,10 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 	_, err = typedClient.Ml.DeleteDatafeed(datafeedID).Force(force).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return diags
+		}
 		diags.AddError("Failed to delete ML datafeed", fmt.Sprintf("Unable to delete ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
 	}
@@ -207,7 +277,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		AllowNoMatch(true)
 
 	if timeout > 0 {
-		req.Timeout(timeout.String())
+		req.Timeout(strconv.FormatInt(timeout.Milliseconds(), 10) + "ms")
 	}
 
 	_, err = req.Do(ctx)
@@ -240,7 +310,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	}
 
 	if timeout > 0 {
-		req.Timeout(timeout.String())
+		req.Timeout(strconv.FormatInt(timeout.Milliseconds(), 10) + "ms")
 	}
 
 	_, err = req.Do(ctx)
