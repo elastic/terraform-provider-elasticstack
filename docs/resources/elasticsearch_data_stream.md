@@ -81,14 +81,14 @@ resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
 - `generation` (Number) Current generation for the data stream.
 - `hidden` (Boolean) If `true`, the data stream is hidden.
 - `id` (String) Internal identifier of the resource
-- `ilm_policy` (String) Name of the current ILM lifecycle policy in the stream’s matching index template.
-- `indices` (List of Object) Array of objects containing information about the data stream’s backing indices. The last item in this array contains information about the stream’s current write index. (see [below for nested schema](#nestedatt--indices))
-- `metadata` (String) Custom metadata for the stream, copied from the _meta object of the stream’s matching index template.
+- `ilm_policy` (String) Name of the current ILM lifecycle policy in the stream's matching index template.
+- `indices` (List of Object) Array of objects containing information about the data stream's backing indices. The last item in this array contains information about the stream's current write index. (see [below for nested schema](#nestedatt--indices))
+- `metadata` (String) Custom metadata for the stream, copied from the _meta object of the stream's matching index template.
 - `replicated` (Boolean) If `true`, the data stream is created and managed by cross-cluster replication and the local cluster can not write into this data stream or change its mappings.
 - `status` (String) Health status of the data stream.
 - `system` (Boolean) If `true`, the data stream is created and managed by an Elastic stack component and cannot be modified through normal user interaction.
-- `template` (String) Name of the index template used to create the data stream’s backing indices.
-- `timestamp_field` (String) Contains information about the data stream’s @timestamp field.
+- `template` (String) Name of the index template used to create the data stream's backing indices.
+- `timestamp_field` (String) Contains information about the data stream's @timestamp field.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
