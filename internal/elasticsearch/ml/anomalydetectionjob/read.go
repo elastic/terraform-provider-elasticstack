@@ -50,7 +50,7 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 	}
 
 	// Get the ML job using the typed client
-	res, err := typedClient.Ml.GetJobs().JobId(jobID).Do(ctx)
+	res, err := typedClient.Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {

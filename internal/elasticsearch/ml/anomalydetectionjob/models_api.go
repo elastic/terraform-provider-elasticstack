@@ -172,6 +172,9 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 		var groups []string
 		d := plan.Groups.ElementsAs(ctx, &groups, false)
 		diags.Append(d...)
+		if diags.HasError() {
+			return false, diags
+		}
 		u.Groups = groups
 		hasChanges = true
 	}
@@ -344,6 +347,7 @@ func (u *UpdateAPIModel) toUpdateJobRequest() updatejob.Request {
 func fromTypedJob(job *types.Job) *APIModel {
 	m := &APIModel{
 		JobID:                                job.JobId,
+		Groups:                               job.Groups,
 		AllowLazyOpen:                        &job.AllowLazyOpen,
 		CustomSettings:                       customSettingsFromRaw(job.CustomSettings),
 		DailyModelSnapshotRetentionAfterDays: job.DailyModelSnapshotRetentionAfterDays,

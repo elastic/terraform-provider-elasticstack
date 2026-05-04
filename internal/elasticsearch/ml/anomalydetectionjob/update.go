@@ -18,7 +18,9 @@
 package anomalydetectionjob
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -66,7 +68,7 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	// Only proceed with update if there are changes
 	if !hasChanges {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
-		resp.Diagnostics.AddWarning("No changed detected to updateble fields during an update operation", `
+		resp.Diagnostics.AddWarning("No changes detected to updatable fields during an update operation", `
 Changes to non-updateable fields should force a recreation of the anomaly detection job.
 Please report this warning to the provider developers.`)
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -85,9 +87,16 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	// Build typed request and call the typed API
-	updateReq := updateBody.toUpdateJobRequest()
-	_, err = typedClient.Ml.UpdateJob(jobID).Request(&updateReq).Do(ctx)
+	// Send the update as raw JSON so that all fields including
+	// categorization_examples_limit are included. The typed updatejob.Request
+	// uses types.AnalysisMemoryLimit which only models model_memory_limit,
+	// dropping categorization_examples_limit.
+	updateJSON, err := json.Marshal(updateBody)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to marshal ML anomaly detection job update", err.Error())
+		return
+	}
+	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return
