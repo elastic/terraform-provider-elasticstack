@@ -14,7 +14,6 @@ services:
 
   kibana_certs:
     image: alpine/mkcert:latest@sha256:a8f4f5af61908b4c79c2e9d1e5f23e747f29de174649209ebafcab03d4f6d5fd
-    container_name: ${KIBANA_CERTS_CONTAINER_NAME}
     restart: 'no'
     volumes:
       - kibana-certs:/certs
@@ -23,7 +22,7 @@ services:
     entrypoint: ash
     command: >
       -c '
-      mkcert --cert-file=/certs/kibana.crt --key-file=/certs/kibana.key kibana ${KIBANA_CONTAINER_NAME} localhost;
+      mkcert --cert-file=/certs/kibana.crt --key-file=/certs/kibana.key kibana localhost;
       chown 1000:1000 /certs/*;
       '
 

@@ -59,7 +59,7 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
 	if err != nil {
-		diags.AddError("Unable to create or update watch", err.Error())
+		diags.AddError("Unable to put watch '"+watchID+"'", err.Error())
 		return diags
 	}
 	return diags
@@ -92,7 +92,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, nil
 	}
 
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
 		return nil, d
 	}
 
