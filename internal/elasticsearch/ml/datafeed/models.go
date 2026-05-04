@@ -23,7 +23,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putdatafeed"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatedatafeed"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -198,7 +198,7 @@ func (m *Datafeed) toAPIRequestMap(ctx context.Context) (map[string]any, fwdiags
 }
 
 // FromAPIModel populates the Terraform model from a typed API response.
-func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *estypes.MLDatafeed) fwdiags.Diagnostics {
+func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLDatafeedResponse) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	m.DatafeedID = types.StringValue(apiModel.DatafeedId)
@@ -217,14 +217,21 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *estypes.MLDatafee
 		m.Indices = types.ListNull(types.StringType)
 	}
 
-	// Convert query (marshal back to JSON for the jsontypes.Normalized field).
-	// types.Query is a value type (always present) so marshal unconditionally.
-	queryJSON, err := json.Marshal(apiModel.Query)
-	if err != nil {
-		diags.AddError("Failed to marshal query", err.Error())
-		return diags
+	// Convert query. We use the raw JSON bytes returned by the Elasticsearch API
+	// (QueryRaw) rather than re-marshaling apiModel.Query (types.Query), because
+	// the typed struct normalises term shorthand to the verbose value form which
+	// would cause a permanent diff in state.
+	if len(apiModel.QueryRaw) > 0 {
+		m.Query = jsontypes.NewNormalizedValue(string(apiModel.QueryRaw))
+	} else {
+		// Fallback: marshal the typed struct (may normalise term queries).
+		queryJSON, err := json.Marshal(apiModel.Query)
+		if err != nil {
+			diags.AddError("Failed to marshal query", err.Error())
+			return diags
+		}
+		m.Query = jsontypes.NewNormalizedValue(string(queryJSON))
 	}
-	m.Query = jsontypes.NewNormalizedValue(string(queryJSON))
 
 	// Convert aggregations
 	if len(apiModel.Aggregations) > 0 {
