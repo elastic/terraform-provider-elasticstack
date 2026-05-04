@@ -23,11 +23,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"regexp"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
@@ -258,12 +260,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	indexAPIName := index.Name
-	if DateMathIndexNameRe.MatchString(index.Name) {
-		indexAPIName = encodeDateMathIndexName(index.Name)
-	}
-
-	call := typedClient.Indices.Create(indexAPIName).Raw(bytes.NewReader(indexBytes))
+	call := typedClient.Indices.Create(index.Name).Raw(bytes.NewReader(indexBytes))
 	if params.WaitForActiveShards != "" {
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
@@ -273,10 +270,48 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	if params.Timeout > 0 {
 		call = call.Timeout(durationToMsString(params.Timeout))
 	}
-	res, err := call.Do(ctx)
-	if err != nil {
-		return "", diagutil.FrameworkDiagFromError(err)
+
+	// For date-math index names we must build the request manually and set
+	// URL.RawPath so the already-encoded characters (including %2F) are not
+	// double-encoded by url.URL.String().
+	var res *create.Response
+	if DateMathIndexNameRe.MatchString(index.Name) {
+		req, err := call.HttpRequest(ctx)
+		if err != nil {
+			return "", diagutil.FrameworkDiagFromError(err)
+		}
+		req.URL.RawPath = "/" + encodeDateMathIndexName(index.Name)
+		req.URL.Path = req.URL.RawPath
+
+		httpRes, err := typedClient.Transport.Perform(req)
+		if err != nil {
+			return "", diagutil.FrameworkDiagFromError(err)
+		}
+		defer httpRes.Body.Close()
+
+		if httpRes.StatusCode >= 400 {
+			body, _ := io.ReadAll(httpRes.Body)
+			return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+				fmt.Sprintf("Unable to create index: %s", index.Name),
+				fmt.Sprintf("status: %d, body: %s", httpRes.StatusCode, string(body)),
+			)}
+		}
+		// Indices.Create response always contains the resolved index name.
+		// We cannot parse the typed response here because the typed
+		// response would try to decode an error body on non-2xx.
+		var createRes create.Response
+		if err := json.NewDecoder(httpRes.Body).Decode(&createRes); err != nil {
+			return "", diagutil.FrameworkDiagFromError(err)
+		}
+		res = &createRes
+	} else {
+		var err error
+		res, err = call.Do(ctx)
+		if err != nil {
+			return "", diagutil.FrameworkDiagFromError(err)
+		}
 	}
+
 	concreteName := res.Index
 	if concreteName == "" {
 		concreteName = index.Name
