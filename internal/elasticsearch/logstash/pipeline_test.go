@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -140,7 +139,7 @@ func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		res, err := typedClient.Logstash.GetPipeline().Id(compID.ResourceID).Perform(context.Background())
+		_, err = typedClient.Logstash.GetPipeline().Id(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			var esErr *types.ElasticsearchError
 			if errors.As(err, &esErr) && esErr.Status == 404 {
@@ -148,11 +147,7 @@ func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-		defer res.Body.Close()
-
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("logstash pipeline (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("logstash pipeline (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

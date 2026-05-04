@@ -637,7 +637,7 @@ func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState
 	if err != nil {
 		t.Fatalf("get Elasticsearch typed client: %v", err)
 	}
-	resp, err := typedClient.Indices.Get(indexName).FlatSettings(true).Do(ctx)
+	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
@@ -656,8 +656,8 @@ func primaryShardsString(settings *types.IndexSettings) string {
 	if settings == nil {
 		return ""
 	}
-	if settings.NumberOfShards != nil {
-		return strings.TrimSpace(*settings.NumberOfShards)
+	if settings.Index != nil && settings.Index.NumberOfShards != nil {
+		return strings.TrimSpace(*settings.Index.NumberOfShards)
 	}
 	return ""
 }

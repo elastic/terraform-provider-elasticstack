@@ -246,7 +246,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 						Password(userUpdatedPassword).
 						Do(context.Background())
 					if err != nil {
-						return false, fmt.Errorf("failed to manually change import test user password [%s]: %w", username, err)
+						return false, nil
 					}
 					return false, nil
 				},

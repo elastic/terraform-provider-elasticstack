@@ -25,6 +25,7 @@ import (
 	"crypto/x509/pkix"
 	_ "embed"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -34,6 +35,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -1338,6 +1340,10 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			}
 			res, err := typedClient.Enrich.GetPolicy().Name(compID.ResourceID).Do(context.Background())
 			if err != nil {
+				var esErr *types.ElasticsearchError
+				if errors.As(err, &esErr) && esErr.Status == 404 {
+					continue
+				}
 				return err
 			}
 			if len(res.Policies) != 0 {

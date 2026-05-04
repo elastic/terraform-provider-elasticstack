@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
 
@@ -380,7 +379,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return err
 		}
 
-		res, err := typedClient.Watcher.GetWatch(compID.ResourceID).Perform(context.Background())
+		_, err = typedClient.Watcher.GetWatch(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			var esErr *types.ElasticsearchError
 			if errors.As(err, &esErr) && esErr.Status == 404 {
@@ -388,13 +387,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-		status := res.StatusCode
-		if err := res.Body.Close(); err != nil {
-			return fmt.Errorf("close GetWatch response body: %w", err)
-		}
-		if status != http.StatusNotFound {
-			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }
