@@ -500,7 +500,12 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 	return nil
 }
 
-func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*models.DataStreamLifecycleResponse, fwdiags.Diagnostics) {
+func GetDataStreamLifecycle(
+	ctx context.Context,
+	apiClient *clients.ElasticsearchScopedClient,
+	dataStreamName string,
+	expandWildcards string,
+) (*models.DataStreamLifecycleResponse, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
