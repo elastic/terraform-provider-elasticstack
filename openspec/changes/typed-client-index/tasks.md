@@ -3,28 +3,28 @@
 - [x] 1.1 Replace `PutIlm` raw `esapi` call with typed `ILM.PutLifecycle` using `types.IlmPolicy` or equivalent.
 - [x] 1.2 Replace `GetIlm` raw call with typed `ILM.GetLifecycle`; map 404 → nil.
 - [x] 1.3 Replace `DeleteIlm` raw call with typed `ILM.DeleteLifecycle`.
-- [ ] 1.4 Remove `models.Policy` and `models.PolicyDefinition` if no longer used; keep conversion helpers if resources need them.
+- [x] 1.4 Remove `models.Policy` and `models.PolicyDefinition` if no longer used; keep conversion helpers if resources need them.
 
 ## 2. Typed client migration — Component templates
 
 - [x] 2.1 Replace `PutComponentTemplate` raw call with typed `Cluster.PutComponentTemplate`.
 - [x] 2.2 Replace `GetComponentTemplate` raw call with typed `Cluster.GetComponentTemplate` using `FlatSettings(true)`.
 - [x] 2.3 Replace `DeleteComponentTemplate` raw call with typed `Cluster.DeleteComponentTemplate`.
-- [ ] 2.4 Remove or narrow `models.ComponentTemplate`, `models.ComponentTemplatesResponse`, `models.ComponentTemplateResponse`.
+- [x] 2.4 Remove or narrow `models.ComponentTemplate`, `models.ComponentTemplatesResponse`, `models.ComponentTemplateResponse`.
 
 ## 3. Typed client migration — Index templates
 
 - [x] 3.1 Replace `PutIndexTemplate` raw call with typed `Indices.PutIndexTemplate`.
 - [x] 3.2 Replace `GetIndexTemplate` raw call with typed `Indices.GetIndexTemplate`.
 - [x] 3.3 Replace `DeleteIndexTemplate` raw call with typed `Indices.DeleteIndexTemplate`.
-- [ ] 3.4 Remove or narrow `models.IndexTemplate`, `models.IndexTemplatesResponse`, `models.IndexTemplateResponse`.
+- [x] 3.4 Remove or narrow `models.IndexTemplate`, `models.IndexTemplatesResponse`, `models.IndexTemplateResponse`.
 
 ## 4. Typed client migration — Index CRUD
 
 - [x] 4.1 Replace `PutIndex` raw call with typed `Indices.Create`; preserve date-math name URI encoding and timeout options.
 - [x] 4.2 Replace `DeleteIndex` raw call with typed `Indices.Delete`.
 - [x] 4.3 Replace `GetIndex` / `GetIndices` raw calls with typed `Indices.Get` using `FlatSettings(true)`; preserve 404 → nil semantics.
-- [ ] 4.4 Remove or narrow `models.Index`, `models.PutIndexParams`.
+- [x] 4.4 Remove or narrow `models.Index`, `models.PutIndexParams`.
 
 ## 5. Typed client migration — Aliases
 
@@ -32,7 +32,7 @@
 - [x] 5.2 Replace `UpdateIndexAlias` raw call with typed `Indices.PutAlias`.
 - [x] 5.3 Replace `GetAlias` raw call with typed `Indices.GetAlias`.
 - [x] 5.4 Replace `UpdateAliasesAtomic` raw call with typed `Indices.UpdateAliases`; keep the existing `AliasAction` builder.
-- [ ] 5.5 Remove or narrow `models.IndexAlias` if fully replaced by `types.Alias`.
+- [x] 5.5 Remove or narrow `models.IndexAlias` if fully replaced by `types.Alias`.
 
 ## 6. Typed client migration — Settings and mappings
 
@@ -51,7 +51,7 @@
 - [x] 8.1 Replace `PutDataStreamLifecycle` raw call with typed `Indices.PutDataLifecycle`.
 - [x] 8.2 Replace `GetDataStreamLifecycle` raw call with typed `Indices.GetDataLifecycle`.
 - [x] 8.3 Replace `DeleteDataStreamLifecycle` raw call with typed `Indices.DeleteDataLifecycle`.
-- [ ] 8.4 Remove or narrow `models.DataStreamLifecycle`, `models.LifecycleSettings`, `models.Downsampling`.
+- [x] 8.4 Remove or narrow `models.DataStreamLifecycle`, `models.LifecycleSettings`, `models.Downsampling`.
 
 ## 9. Typed client migration — Ingest pipelines
 
