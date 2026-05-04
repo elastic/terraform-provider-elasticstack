@@ -45,9 +45,9 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 - `description` (String) Description of the processor.
 - `field_map` (Map of String) Maps the document field names to the known field names of the model. Maps the document fields to the model's expected input fields.
-- `if` (String) Conditionally execute the processor.
+- `if` (String) Conditionally execute the processor
 - `ignore_failure` (Boolean) Ignore failures for the processor.
-- `input_output` (Block List, Max: 1) Input and output field mappings for the inference processor. (see [below for nested schema](#nestedblock--input_output))
+- `input_output` (Block, Optional) Input and output field mappings for the inference processor. (see [below for nested schema](#nestedblock--input_output))
 - `on_failure` (List of String) Handle failures for the processor.
 - `tag` (String) Identifier for the processor.
 - `target_field` (String) Field added to incoming documents to contain results objects.

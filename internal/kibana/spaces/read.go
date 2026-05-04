@@ -20,37 +20,27 @@ package spaces
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state dataSourceModel
+// readDataSource is the envelope read callback for the spaces data source.
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := d.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, err := apiClient.GetKibanaOapiClient()
+	oapiClient, err := kbClient.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return
+		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
+		return config, diags
 	}
 
 	// Call client API
 	spaces, fwDiags := kibanaoapi.ListSpaces(ctx, oapiClient)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
 	// Map response body to model
@@ -94,23 +84,18 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		if space.DisabledFeatures != nil {
 			rawFeatures = *space.DisabledFeatures
 		}
-		disabledFeatures, diags := types.ListValueFrom(ctx, types.StringType, rawFeatures)
-		if diags.HasError() {
-			resp.Diagnostics.Append(diags...)
-			return
+		disabledFeatures, d := types.ListValueFrom(ctx, types.StringType, rawFeatures)
+		if d.HasError() {
+			diags.Append(d...)
+			return config, diags
 		}
 
 		spaceState.DisabledFeatures = disabledFeatures
 
-		state.Spaces = append(state.Spaces, spaceState)
+		config.Spaces = append(config.Spaces, spaceState)
 	}
 
-	state.ID = types.StringValue("spaces")
+	config.ID = types.StringValue("spaces")
 
-	// Set state
-	diags = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	return config, diags
 }

@@ -169,6 +169,7 @@ type tfModel struct {
 	Mappings                           mappingsValue        `tfsdk:"mappings"`
 	SettingsRaw                        jsontypes.Normalized `tfsdk:"settings_raw"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
+	UseExisting                        types.Bool           `tfsdk:"use_existing"`
 	WaitForActiveShards                types.String         `tfsdk:"wait_for_active_shards"`
 	MasterTimeout                      customtypes.Duration `tfsdk:"master_timeout"`
 	Timeout                            customtypes.Duration `tfsdk:"timeout"`
@@ -433,8 +434,10 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 	}
 
 	var settingSet []settingsTfSet
-	if diags := model.Settings.ElementsAs(ctx, &settingSet, true); diags.HasError() {
-		return map[string]any{}, diags
+	if typeutils.IsKnown(model.Settings) {
+		if diags := model.Settings.ElementsAs(ctx, &settingSet, true); diags.HasError() {
+			return map[string]any{}, diags
+		}
 	}
 
 	if len(settingSet) == 1 {

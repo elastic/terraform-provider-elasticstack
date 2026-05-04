@@ -37,8 +37,8 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Required
 
-- `error_distance` (Number) The difference between the resulting inscribed distance from center to side and the circle’s radius (measured in meters for `geo_shape`, unit-less for `shape`)
-- `field` (String) The string-valued field to trim whitespace from.
+- `error_distance` (Number) The difference between the resulting inscribed distance from center to side and the circle's radius (measured in meters for `geo_shape`, unit-less for `shape`)
+- `field` (String) The field containing the circle geometry to convert.
 - `shape_type` (String) Which field mapping type is to be used when processing the circle.
 
 ### Optional

@@ -43,6 +43,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- Add `use_existing` to `elasticstack_elasticsearch_index` to opt in to adopting an existing index at create time, mitigating replacement races and adopt-without-import scenarios; static-setting mismatches surface as a single error without mutating the cluster. ([#966](https://github.com/elastic/terraform-provider-elasticstack/issues/966))
 - Add `is_protected` (tamper protection) to `elasticstack_fleet_agent_policy` ([#2086](https://github.com/elastic/terraform-provider-elasticstack/pull/2086))
 - Align Kibana SLO KQL schema and API mapping with object-form filters, settings, artifacts, and enabled state. ([#2495](https://github.com/elastic/terraform-provider-elasticstack/pull/2495))
 - `elasticstack_kibana_space` now correctly clears `description`, `initials`, `color`, and `image_url` when the configuration sets them to an empty string. Previously those explicit empty-string assignments were silently dropped from the outbound API request and Kibana retained the prior value. ([#2452](https://github.com/elastic/terraform-provider-elasticstack/pull/2452))

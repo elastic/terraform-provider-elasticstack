@@ -55,8 +55,8 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Convert to API update model
-	updateRequest, diags := plan.toAPIUpdateModel(ctx)
+	// Convert to API update model (raw JSON to preserve query form)
+	updateBody, diags := plan.toAPIUpdateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -69,7 +69,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Update the datafeed
-	updateDiags := elasticsearch.UpdateDatafeed(ctx, client, datafeedID, *updateRequest)
+	updateDiags := elasticsearch.UpdateDatafeed(ctx, client, datafeedID, updateBody)
 	resp.Diagnostics.Append(updateDiags...)
 	if resp.Diagnostics.HasError() {
 		return

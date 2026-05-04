@@ -28,7 +28,7 @@ on:
       uses: actions/checkout@v4
       with:
         ref: memory/kibana-spec-impact
-        path: /tmp/gh-aw/repo-memory/kibana-spec-impact
+        path: gh-aw-repo-memory/kibana-spec-impact
         fetch-depth: 1
       continue-on-error: true
     - name: Compute kibana spec impact
@@ -39,7 +39,7 @@ on:
         mkdir -p /tmp/gh-aw/agent
         go run ./scripts/kibana-spec-impact pre-activation \
           --repo . \
-          --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
+          --memory gh-aw-repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
           --target "${GITHUB_SHA:-HEAD}" \
           --issue-cap 5 \
           --report-path /tmp/gh-aw/agent/kibana-spec-impact-report.json

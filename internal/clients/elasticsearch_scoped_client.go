@@ -19,14 +19,12 @@ package clients
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -42,13 +40,39 @@ import (
 // identity checks always resolve against the scoped Elasticsearch connection.
 type ElasticsearchScopedClient struct {
 	elasticsearch            *elasticsearch.Client
-	elasticsearchClusterInfo *models.ClusterInfo
+	elasticsearchClusterInfo *info.Response
 	mu                       sync.Mutex
 	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
 	// after provider configuration, entity-local overrides, and environment
 	// overrides have been applied. It is used by accessor validation to
 	// distinguish missing endpoint configuration from unexpected nil states.
 	esEndpoints []string
+	// typedClient is the lazily-initialized strongly-typed Elasticsearch client.
+	typedClient *elasticsearch.TypedClient
+	// typedClientOnce ensures typedClient is created exactly once.
+	typedClientOnce sync.Once
+}
+
+// GetESTypedClient returns the strongly-typed Elasticsearch client.
+//
+// The typed client is lazily initialized on the first call by converting the
+// underlying *elasticsearch.Client via ToTyped(). The result is cached so that
+// subsequent calls return the same *elasticsearch.TypedClient without repeated
+// conversion. Initialization is safe for concurrent use by multiple goroutines.
+//
+// The returned typed client shares the same underlying transport, endpoints,
+// and configuration as the untyped client returned by GetESClient(). A product
+// check may run on the typed client's first request, adding marginal latency
+// on first use.
+func (e *ElasticsearchScopedClient) GetESTypedClient() (*elasticsearch.TypedClient, error) {
+	esClient, err := e.GetESClient()
+	if err != nil {
+		return nil, err
+	}
+	e.typedClientOnce.Do(func() {
+		e.typedClient = esClient.ToTyped()
+	})
+	return e.typedClient, nil
 }
 
 // GetESClient returns the underlying go-elasticsearch client. It satisfies the
@@ -73,7 +97,7 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 // serverInfo fetches and caches the Elasticsearch cluster info.
 // It is safe for concurrent use: the mutex ensures only one goroutine fetches
 // the info from the server, and subsequent callers use the cached result.
-func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -81,27 +105,18 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*models.Clu
 		return e.elasticsearchClusterInfo, nil
 	}
 
-	esClient, err := e.GetESClient()
+	typedClient, err := e.GetESTypedClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := esClient.Info(esClient.Info.WithContext(ctx))
+	res, err := typedClient.Core.Info().Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
-		return nil, diags
-	}
-
-	info := models.ClusterInfo{}
-	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	// cache info
-	e.elasticsearchClusterInfo = &info
+	e.elasticsearchClusterInfo = res
 
-	return &info, nil
+	return res, nil
 }
 
 // ClusterID returns the UUID of the connected Elasticsearch cluster. It is
@@ -112,7 +127,7 @@ func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, dia
 		return nil, diags
 	}
 
-	if uuid := info.ClusterUUID; uuid != "" && uuid != "_na_" {
+	if uuid := info.ClusterUuid; uuid != "" && uuid != "_na_" {
 		tflog.Trace(ctx, fmt.Sprintf("cluster UUID: %s", uuid))
 		return &uuid, diags
 	}
@@ -143,7 +158,7 @@ func (e *ElasticsearchScopedClient) ServerVersion(ctx context.Context) (*version
 		return nil, diags
 	}
 
-	rawVersion := info.Version.Number
+	rawVersion := info.Version.Int
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
 		return nil, diag.FromErr(err)

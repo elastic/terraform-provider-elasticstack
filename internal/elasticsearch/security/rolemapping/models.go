@@ -18,20 +18,20 @@
 package rolemapping
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type Data struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	Enabled                 types.Bool           `tfsdk:"enabled"`
-	Rules                   jsontypes.Normalized `tfsdk:"rules"`
-	Roles                   types.Set            `tfsdk:"roles"`
-	RoleTemplates           jsontypes.Normalized `tfsdk:"role_templates"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
+	entitycore.ElasticsearchConnectionField
+	ID            types.String         `tfsdk:"id"`
+	Name          types.String         `tfsdk:"name"`
+	Enabled       types.Bool           `tfsdk:"enabled"`
+	Rules         jsontypes.Normalized `tfsdk:"rules"`
+	Roles         types.Set            `tfsdk:"roles"`
+	RoleTemplates jsontypes.Normalized `tfsdk:"role_templates"`
+	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String { return d.ID }

@@ -18,37 +18,16 @@
 package outputds
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-var (
-	_ datasource.DataSource              = &outputDataSource{}
-	_ datasource.DataSourceWithConfigure = &outputDataSource{}
-)
-
+// NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return &outputDataSource{}
-}
-
-type outputDataSource struct {
-	client *clients.ProviderClientFactory
-}
-
-func (d *outputDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_fleet_output"
-}
-
-func (d *outputDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	d.client = factory
+	return entitycore.NewKibanaDataSource[outputModel](
+		entitycore.ComponentFleet,
+		"output",
+		getDataSourceSchema,
+		readDataSource,
+	)
 }

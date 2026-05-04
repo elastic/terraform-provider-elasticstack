@@ -18,65 +18,57 @@
 package enrollmenttokens
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
-func (d *enrollmentTokensDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
-	return schema.Schema{
+func getDataSourceSchema() dsschema.Schema {
+	return dsschema.Schema{
 		Description: dataSourceDescription,
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{
 				Description: "The ID of this resource.",
 				Computed:    true,
 			},
-			"policy_id": schema.StringAttribute{
+			"policy_id": dsschema.StringAttribute{
 				Description: policyIDDescription,
 				Optional:    true,
 			},
-			"space_id": schema.StringAttribute{
+			"space_id": dsschema.StringAttribute{
 				Description: spaceIDDescription,
 				Optional:    true,
 			},
-			"tokens": schema.ListNestedAttribute{
+			"tokens": dsschema.ListNestedAttribute{
 				Description: "A list of enrollment tokens.",
 				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"key_id": schema.StringAttribute{
+				NestedObject: dsschema.NestedAttributeObject{
+					Attributes: map[string]dsschema.Attribute{
+						"key_id": dsschema.StringAttribute{
 							Description: "The unique identifier of the enrollment token.",
 							Computed:    true,
 						},
-						"api_key": schema.StringAttribute{
+						"api_key": dsschema.StringAttribute{
 							Description: "The API key.",
 							Computed:    true,
 							Sensitive:   true,
 						},
-						"api_key_id": schema.StringAttribute{
+						"api_key_id": dsschema.StringAttribute{
 							Description: "The API key identifier.",
 							Computed:    true,
 						},
-						"created_at": schema.StringAttribute{
+						"created_at": dsschema.StringAttribute{
 							Description: "The time at which the enrollment token was created.",
 							Computed:    true,
 						},
-						"name": schema.StringAttribute{
+						"name": dsschema.StringAttribute{
 							Description: "The name of the enrollment token.",
 							Computed:    true,
 						},
-						"active": schema.BoolAttribute{
+						"active": dsschema.BoolAttribute{
 							Description: "Indicates if the enrollment token is active.",
 							Computed:    true,
 						},
-						"policy_id": schema.StringAttribute{
+						"policy_id": dsschema.StringAttribute{
 							Description: "The identifier of the associated agent policy.",
 							Computed:    true,
 						},
@@ -84,12 +76,9 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
 func getTokenType() attr.Type {
-	return getSchema().Attributes["tokens"].GetType().(attr.TypeWithElementType).ElementType()
+	return getDataSourceSchema().Attributes["tokens"].GetType().(attr.TypeWithElementType).ElementType()
 }

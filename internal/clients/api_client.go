@@ -23,11 +23,11 @@ import (
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -83,7 +83,7 @@ func (c *CompositeID) String() string {
 // acceptance-testing helper constructors.
 type apiClient struct {
 	elasticsearch            *elasticsearch.Client
-	elasticsearchClusterInfo *models.ClusterInfo
+	elasticsearchClusterInfo *info.Response
 	kibanaOapi               *kibanaoapi.Client
 	fleet                    *fleet.Client
 	version                  string

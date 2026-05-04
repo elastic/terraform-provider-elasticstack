@@ -20,42 +20,32 @@ package outputds
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (d *outputDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model outputModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config outputModel) (outputModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	apiClient, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := apiClient.GetFleetClient()
+	client, err := kbClient.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return config, diags
 	}
 
-	spaceID := model.SpaceID.ValueString()
-	outputs, diags := fleet.GetOutputs(ctx, client, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	spaceID := config.SpaceID.ValueString()
+	outputs, oDiags := fleet.GetOutputs(ctx, client, spaceID)
+	diags.Append(oDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	diags = model.populateFromAPI(ctx, outputs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	pDiags := (&config).populateFromAPI(ctx, outputs)
+	diags.Append(pDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	diags = resp.State.Set(ctx, &model)
-	resp.Diagnostics.Append(diags...)
+	return config, diags
 }

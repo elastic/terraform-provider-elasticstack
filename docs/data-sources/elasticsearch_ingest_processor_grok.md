@@ -59,7 +59,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `on_failure` (List of String) Handle failures for the processor.
 - `pattern_definitions` (Map of String) A map of pattern-name and pattern tuples defining custom patterns to be used by the current processor. Patterns matching existing names will override the pre-existing definition.
 - `tag` (String) Identifier for the processor.
-- `trace_match` (Boolean) when true, `_ingest._grok_match_index` will be inserted into your matched document’s metadata with the index into the pattern found in `patterns` that matched.
+- `trace_match` (Boolean) when true, `_ingest._grok_match_index` will be inserted into your matched document's metadata with the index into the pattern found in `patterns` that matched.
 
 ### Read-Only
 

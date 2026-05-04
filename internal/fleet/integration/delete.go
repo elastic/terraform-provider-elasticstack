@@ -20,6 +20,7 @@ package integration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -56,12 +57,54 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	// If space_id is set, use space-aware uninstallation
 	var spaceID string
+	spaceAware := false
 	if typeutils.IsKnown(stateModel.SpaceID) {
 		spaceID = stateModel.SpaceID.ValueString()
+		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
+		resp.Diagnostics.Append(versionDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		spaceAware = supported
 	}
 
-	diags = fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
-	resp.Diagnostics.Append(diags...)
+	if spaceAware {
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+		resp.Diagnostics.Append(getDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if isInstalledInMultipleSpaces(pkg, spaceID) {
+			deleteDiags := fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
+			resp.Diagnostics.Append(deleteDiags...)
+			return
+		}
+	}
+
+	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	resp.Diagnostics.Append(uninstallDiags...)
+}
+
+func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
+	if pkg == nil || pkg.InstallationInfo == nil {
+		return false
+	}
+
+	if !packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID) {
+		return false
+	}
+
+	otherSpaces := 0
+	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		otherSpaces = len(*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)
+	}
+	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
+	if isPrimary {
+		return otherSpaces > 0
+	}
+	// Target is in additional spaces: primary + (additional minus self) = multi.
+	return otherSpaces > 1 || pkg.InstallationInfo.InstalledKibanaSpaceId != nil
 }

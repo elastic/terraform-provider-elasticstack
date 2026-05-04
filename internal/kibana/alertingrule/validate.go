@@ -51,7 +51,10 @@ type legacyMonitorStatusParams struct {
 		Threshold string  `json:"threshold"`
 	} `json:"availability,omitempty"`
 	Filters *struct {
-		Tags []string `json:"tags,omitempty"`
+		Tags            *[]string `json:"tags,omitempty"`
+		MonitorType     *[]string `json:"monitor.type,omitempty"`
+		ObserverGeoName *[]string `json:"observer.geo.name,omitempty"`
+		URLPort         *[]string `json:"url.port,omitempty"`
 	} `json:"filters,omitempty"`
 	NumTimes                float32  `json:"numTimes"`
 	Search                  *string  `json:"search,omitempty"`
@@ -169,7 +172,7 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsTlsCreateRuleBodyAlerting{} }),
 	},
 	"xpack.uptime.alerts.monitorStatus": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting{} }),
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting{} }),
 		mustNewParamsSchemaSpec(func() any { return &legacyMonitorStatusParams{} }),
 	},
 	".es-query": {

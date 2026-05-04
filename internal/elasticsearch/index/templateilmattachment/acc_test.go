@@ -18,11 +18,8 @@
 package templateilmattachment_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -478,53 +475,7 @@ func primaryESEndpoint() string {
 
 func createESAccessToken(t *testing.T) string {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create acceptance testing client: %v", err)
-	}
-	esClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
-	}
-
-	payload, err := json.Marshal(map[string]string{
-		"grant_type": "password",
-		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
-		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal token request: %v", err)
-	}
-
-	resp, err := esClient.Security.GetToken(
-		bytes.NewReader(payload),
-		esClient.Security.GetToken.WithContext(context.Background()),
-	)
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch access token: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
-		}
-		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		t.Fatalf("failed to decode token response: %v", err)
-	}
-	if tokenResponse.AccessToken == "" {
-		t.Fatalf("token response did not include an access_token")
-	}
-
-	return tokenResponse.AccessToken
+	return acctest.CreateESAccessToken(t)
 }
 
 func checkResourceAttrExists(resourceName, attr string) resource.TestCheckFunc {

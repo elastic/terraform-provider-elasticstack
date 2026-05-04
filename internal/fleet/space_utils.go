@@ -26,6 +26,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// SpaceIDFromSet extracts the first space ID from a space_ids set attribute for use in
+// Fleet resource CREATE requests. Returns the first element of the set, or an empty string
+// if the set is null, unknown, or empty (directing API calls to the default space).
+func SpaceIDFromSet(ctx context.Context, spaceIDs types.Set) (string, diag.Diagnostics) {
+	if spaceIDs.IsNull() || spaceIDs.IsUnknown() {
+		return "", nil
+	}
+	var diags diag.Diagnostics
+	var ids []string
+	diags.Append(spaceIDs.ElementsAs(ctx, &ids, false)...)
+	if diags.HasError() || len(ids) == 0 {
+		return "", diags
+	}
+	return ids[0], diags
+}
+
 // GetOperationalSpaceFromState extracts the operational space ID from Terraform state.
 // This helper reads space_ids from state (not plan) to determine which space to use
 // for API operations, preventing errors when space_ids changes (e.g., prepending a new space).

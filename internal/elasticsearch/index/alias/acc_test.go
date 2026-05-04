@@ -18,6 +18,7 @@
 package alias_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -361,22 +362,20 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 			aliasName = compID.ResourceID
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.Indices.GetAlias(
-			esClient.Indices.GetAlias.WithName(aliasName),
-		)
+		_, err = typedClient.Indices.GetAlias().Name(aliasName).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Alias (%s) still exists", aliasName)
-		}
+		return fmt.Errorf("Alias (%s) still exists", aliasName)
 	}
 	return nil
 }

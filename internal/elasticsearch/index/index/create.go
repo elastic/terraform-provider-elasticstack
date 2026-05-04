@@ -19,14 +19,18 @@ package index
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var planModel tfModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
 	if resp.Diagnostics.HasError() {
@@ -37,6 +41,31 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
+	}
+
+	useExisting := false
+	if !planModel.UseExisting.IsNull() && !planModel.UseExisting.IsUnknown() {
+		useExisting = planModel.UseExisting.ValueBool()
+	}
+
+	if useExisting {
+		configuredName := planModel.Name.ValueString()
+		if elasticsearch.DateMathIndexNameRe.MatchString(configuredName) {
+			resp.Diagnostics.AddWarning(
+				"use_existing ignored for date math index names",
+				fmt.Sprintf("use_existing has no effect when name is a date math expression (%q); proceeding with normal index creation.", configuredName),
+			)
+		} else {
+			existingPtr, getDiags := elasticsearch.GetIndex(ctx, client, configuredName)
+			resp.Diagnostics.Append(getDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			if existingPtr != nil {
+				r.adoptExistingIndexOnCreate(ctx, resp, client, &planModel, configuredName, *existingPtr)
+				return
+			}
+		}
 	}
 
 	apiModel, diags := planModel.toAPIModel(ctx)
@@ -76,6 +105,97 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
+}
+
+func (r *Resource) adoptExistingIndexOnCreate(
+	ctx context.Context,
+	resp *resource.CreateResponse,
+	client *clients.ElasticsearchScopedClient,
+	plan *tfModel,
+	concreteName string,
+	existing models.Index,
+) {
+	mismatches, cmpDiags := compareStaticSettings(ctx, plan, existing)
+	resp.Diagnostics.Append(cmpDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if len(mismatches) > 0 {
+		resp.Diagnostics.AddError(
+			"existing index has incompatible static settings",
+			formatStaticSettingMismatchesDetail(concreteName, mismatches),
+		)
+		return
+	}
+
+	synthetic := tfModel{
+		ElasticsearchConnection: plan.ElasticsearchConnection,
+	}
+	resp.Diagnostics.Append(synthetic.populateFromAPI(ctx, concreteName, existing)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	planAPIModel, diags := plan.toAPIModel(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	syntheticAPIModel, diags := synthetic.toAPIModel(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if typeutils.IsKnown(plan.Alias) && !plan.Alias.Equal(synthetic.Alias) {
+		resp.Diagnostics.Append(r.updateAliases(ctx, client, concreteName, planAPIModel.Aliases, syntheticAPIModel.Aliases)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	resp.Diagnostics.Append(r.updateSettings(ctx, client, concreteName, planAPIModel.Settings, syntheticAPIModel.Settings)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if typeutils.IsKnown(plan.Mappings) {
+		resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, plan.Mappings, synthetic.Mappings)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	id, sdkDiags := client.ID(ctx, concreteName)
+	if sdkDiags.HasError() {
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
+	}
+
+	plan.ConcreteName = types.StringValue(concreteName)
+	plan.ID = types.StringValue(id.String())
+
+	finalModel, diags := readIndex(ctx, *plan, client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if finalModel == nil {
+		resp.Diagnostics.AddError(
+			"Index disappeared during adoption",
+			fmt.Sprintf("index %q was present for updates but not found when reading final state", concreteName),
+		)
+		return
+	}
+
+	resp.Diagnostics.AddWarning(
+		"Adopted existing Elasticsearch index",
+		fmt.Sprintf("adopted existing index %q rather than creating a new one", concreteName),
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }

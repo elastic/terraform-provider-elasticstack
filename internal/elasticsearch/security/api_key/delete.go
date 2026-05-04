@@ -42,7 +42,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteAPIKey(client, compID.ResourceID)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteAPIKey(ctx, client, compID.ResourceID)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

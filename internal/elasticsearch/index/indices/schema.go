@@ -18,16 +18,13 @@
 package indices
 
 import (
-	"context"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,16 +33,9 @@ import (
 const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
 	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
 
-func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getDataSourceSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Retrieves information about existing Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-index.html",
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Generated ID for the indices.",
@@ -443,7 +433,7 @@ func getAliasSchema() schema.SetNestedAttribute {
 }
 
 func indicesElementType() attr.Type {
-	return getSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
+	return getDataSourceSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
 func aliasElementType() attr.Type {

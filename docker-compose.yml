@@ -1,7 +1,6 @@
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-    container_name: ${ELASTICSEARCH_CONTAINER_NAME}
     volumes:
       - dev-elasticsearch:/usr/share/elasticsearch/data
     ports:
@@ -43,7 +42,6 @@ services:
       elasticsearch:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-    container_name: ${KIBANA_SETTINGS_CONTAINER_NAME}
     restart: 'no'
     command: >
       bash -c '
@@ -56,7 +54,6 @@ services:
       kibana_settings:
         condition: service_completed_successfully
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
-    container_name: ${KIBANA_CONTAINER_NAME}
     volumes:
       - dev-kibana:/usr/share/kibana/data
       - ./${KIBANA_CONFIG_FILE:-kibana.yml}:/usr/share/kibana/config/kibana.yml:ro
@@ -89,7 +86,6 @@ services:
       kibana:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-    container_name: ${FLEET_SETTINGS_CONTAINER_NAME}
     restart: on-failure:5
     environment:
       CACERT: ""
@@ -109,7 +105,6 @@ services:
       fleet_settings:
         condition: service_completed_successfully
     image: ${FLEET_IMAGE}:${STACK_VERSION}
-    container_name: ${FLEET_CONTAINER_NAME}
     restart: unless-stopped
     volumes:
       - dev-fleet:/usr/share/elastic-agent/data
@@ -133,7 +128,6 @@ services:
       fleet:
         condition: service_started
     image: golang:${GOVERSION}
-    container_name: ${ACCEPTANCE_TESTS_CONTAINER_NAME}
     working_dir: /provider
     volumes:
       - ./:/provider
@@ -151,7 +145,6 @@ services:
     depends_on:
       fleet:
         condition: service_started
-    container_name: ${TOKEN_ACCEPTANCE_TESTS_CONTAINER_NAME}
     extends:
       service: acceptance-tests
     volumes:

@@ -13,7 +13,8 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
   access = {
     search = [
       {
-        names = ["logs-*", "metrics-*"]
+        names                    = ["logs-*", "metrics-*"]
+        allow_restricted_indices = true
       }
     ]
     replication = [

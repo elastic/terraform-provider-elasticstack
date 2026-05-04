@@ -18,17 +18,12 @@
 package spaces
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Schema defines the schema for the data source.
-func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getDataSourceSchema() schema.Schema {
+	return schema.Schema{
 		Description: "Use this data source to retrieve and get information about all existing Kibana spaces. See https://www.elastic.co/guide/en/kibana/master/spaces-api-get-all.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -77,8 +72,5 @@ func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }

@@ -15,9 +15,9 @@ make docker-fleet
 
 echo "--- Collecting docker info"
 docker ps 
-docker logs terraform-elasticstack-kb 2>&1 > kibana.log
-docker logs terraform-elasticstack-es 2>&1 > es.log
-docker logs terraform-elasticstack-fleet 2>&1 > fleet.log
+docker compose -f docker-compose.yml logs kibana 2>&1 > kibana.log
+docker compose -f docker-compose.yml logs elasticsearch 2>&1 > es.log
+docker compose -f docker-compose.yml logs fleet 2>&1 > fleet.log
 
 buildkite-agent artifact upload kibana.log
 buildkite-agent artifact upload es.log

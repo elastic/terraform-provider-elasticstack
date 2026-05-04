@@ -21,10 +21,78 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// TestSpaceIDFromSet tests the helper that extracts the create-time space from a space_ids set.
+func TestSpaceIDFromSet(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    types.Set
+		wantID   string
+		wantDiag bool
+	}{
+		{
+			name:   "null set returns empty string",
+			input:  types.SetNull(types.StringType),
+			wantID: "",
+		},
+		{
+			name:   "unknown set returns empty string",
+			input:  types.SetUnknown(types.StringType),
+			wantID: "",
+		},
+		{
+			name:   "empty set returns empty string",
+			input:  types.SetValueMust(types.StringType, []attr.Value{}),
+			wantID: "",
+		},
+		{
+			name:   "single space ID is returned",
+			input:  types.SetValueMust(types.StringType, []attr.Value{types.StringValue("my-space")}),
+			wantID: "my-space",
+		},
+		{
+			name: "multiple space IDs returns the first",
+			input: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("space-a"),
+				types.StringValue("space-b"),
+			}),
+			// Sets have non-deterministic iteration order; we just verify a valid space is returned.
+			// The actual element returned depends on Go's map iteration order.
+			wantID: "", // verified separately below
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, diags := SpaceIDFromSet(t.Context(), tt.input)
+			if tt.wantDiag && !diags.HasError() {
+				t.Errorf("SpaceIDFromSet() expected diagnostics but got none")
+			}
+			if !tt.wantDiag && diags.HasError() {
+				t.Errorf("SpaceIDFromSet() unexpected diagnostics: %v", diags)
+			}
+
+			if tt.name == "multiple space IDs returns the first" {
+				// With sets, order is non-deterministic; just verify returned value is one of the inputs.
+				valid := got == "space-a" || got == "space-b"
+				if !valid {
+					t.Errorf("SpaceIDFromSet() = %q, want one of [space-a, space-b]", got)
+				}
+				return
+			}
+
+			if got != tt.wantID {
+				t.Errorf("SpaceIDFromSet() = %q, want %q", got, tt.wantID)
+			}
+		})
+	}
+}
 
 // TestGetOperationalSpaceFromState tests the helper that extracts operational space from state.
 // This is a critical function for preventing the prepend bug.

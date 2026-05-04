@@ -19,10 +19,10 @@ package watch_test
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
 
@@ -372,22 +372,19 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.Watcher.GetWatch(compID.ResourceID)
+		_, err = typedClient.Watcher.GetWatch(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-		status := res.StatusCode
-		if err := res.Body.Close(); err != nil {
-			return fmt.Errorf("close GetWatch response body: %w", err)
-		}
-		if status != http.StatusNotFound {
-			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

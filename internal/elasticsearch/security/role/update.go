@@ -88,7 +88,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	// Put the role
-	sdkDiags = elasticsearch.PutRole(ctx, client, role)
+	sdkDiags = elasticsearch.PutRole(ctx, client, roleID, role)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags

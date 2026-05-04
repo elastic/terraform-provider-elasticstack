@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -28,11 +29,11 @@ import (
 )
 
 type enrollmentTokensModel struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	PolicyID         types.String `tfsdk:"policy_id"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	Tokens           types.List   `tfsdk:"tokens"` // > enrollmentTokenModel
+	entitycore.KibanaConnectionField
+	ID       types.String `tfsdk:"id"`
+	PolicyID types.String `tfsdk:"policy_id"`
+	SpaceID  types.String `tfsdk:"space_id"`
+	Tokens   types.List   `tfsdk:"tokens"` // > enrollmentTokenModel
 }
 
 type enrollmentTokenModel struct {

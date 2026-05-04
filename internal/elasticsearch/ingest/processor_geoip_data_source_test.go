@@ -36,16 +36,54 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoip),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "field", "ip"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "target_field", "geoip"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "description", "geoip lookup"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "if", "ctx.ip != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "tag", "geoip-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoipAllAttributes),
+				),
+			},
 		},
 	})
 }
 
 const expectedJSONGeoip = `{
   "geoip": {
-		"field": "ip",
-		"first_only": true,
-		"ignore_missing": false,
-		"target_field": "geoip"
-	}
+    "ignore_failure": false,
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": false,
+    "first_only": true
+  }
+}
+`
+
+const expectedJSONGeoipAllAttributes = `{
+  "geoip": {
+    "description": "geoip lookup",
+    "if": "ctx.ip != null",
+    "ignore_failure": true,
+    "on_failure": [
+      {
+        "set": {
+          "field": "error.message",
+          "value": "geoip failed"
+        }
+      }
+    ],
+    "tag": "geoip-tag",
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": true,
+    "first_only": true
+  }
 }
 `

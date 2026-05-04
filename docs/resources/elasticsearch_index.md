@@ -4,11 +4,14 @@ page_title: "elasticstack_elasticsearch_index Resource - terraform-provider-elas
 subcategory: "Index"
 description: |-
   Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+  Set use_existing = true to tolerate or adopt an index that already exists at create time (for example after a replacement race or when adopting an out-of-band index); see the use_existing attribute description for details.
 ---
 
 # elasticstack_elasticsearch_index (Resource)
 
 Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+
+Set `use_existing` = true to tolerate or adopt an index that already exists at create time (for example after a replacement race or when adopting an out-of-band index); see the `use_existing` attribute description for details.
 
 ## Example Usage
 
@@ -130,6 +133,17 @@ If specified, this mapping can include: field names, [field data types](https://
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
+- `use_existing` (Boolean) Opt-in flag for **create-time** adoption of an index that already exists when Terraform runs create (for example after a replacement race or when managing an index created out-of-band).
+
+When `false` or unset (the default), the resource behaves as before and create always attempts a new index.
+
+After a resource is already in state, this attribute has **no create-time effect**: toggling it only changes configuration; apply does not re-run create, so it is effectively a planning no-op for lifecycle behavior.
+
+The adoption path runs only for **static** index `name` values. For date math index names, the provider emits a warning that `use_existing` does not apply and proceeds with the normal create flow.
+
+When adoption runs, every **static** index setting you **explicitly** set in configuration must match the existing index; any mismatch returns an error and the provider does not change the cluster.
+
+After a successful adopt, Terraform fully manages the index: subsequent reads, updates, and destroys follow the normal resource behavior.
 - `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (`number_of_replicas+1`). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.
 
 ### Read-Only

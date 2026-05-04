@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -366,13 +367,7 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta a
 		return diag.FromErr(err)
 	}
 
-	params := models.PutTransformParams{
-		DeferValidation: d.Get("defer_validation").(bool),
-		Enabled:         d.Get("enabled").(bool),
-		Timeout:         timeout,
-	}
-
-	if diags := elasticsearch.PutTransform(ctx, client, transform, &params); diags.HasError() {
+	if diags := elasticsearch.PutTransform(ctx, client, transform, d.Get("defer_validation").(bool), timeout, d.Get("enabled").(bool)); diags.HasError() {
 		return diags
 	}
 
@@ -465,14 +460,7 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta a
 		return diag.FromErr(err)
 	}
 
-	params := models.UpdateTransformParams{
-		DeferValidation: d.Get("defer_validation").(bool),
-		Timeout:         timeout,
-		Enabled:         d.Get("enabled").(bool),
-		ApplyEnabled:    d.HasChange("enabled"),
-	}
-
-	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, &params); diags.HasError() {
+	if diags := elasticsearch.UpdateTransform(ctx, client, updatedTransform, d.Get("defer_validation").(bool), timeout, d.Get("enabled").(bool), d.HasChange("enabled")); diags.HasError() {
 		return diags
 	}
 
@@ -789,10 +777,11 @@ func updateResourceDataFromModel(d *schema.ResourceData, transform *models.Trans
 	return nil
 }
 
-func updateResourceDataFromStats(d *schema.ResourceData, transformStats *models.TransformStats) error {
+func updateResourceDataFromStats(d *schema.ResourceData, transformStats *types.TransformStats) error {
 
 	// transform.Enabled
-	if err := d.Set("enabled", transformStats.IsStarted()); err != nil {
+	isStarted := transformStats.State == "started" || transformStats.State == "indexing"
+	if err := d.Set("enabled", isStarted); err != nil {
 		return err
 	}
 

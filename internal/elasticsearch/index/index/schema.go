@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
@@ -54,7 +55,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
+		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			"settings": schema.ListNestedBlock{
@@ -525,6 +526,12 @@ func getSchema() schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					planmodifiers.BoolUseDefaultIfUnknown(true),
 				},
+			},
+			"use_existing": schema.BoolAttribute{
+				Description: useExistingDescription,
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"wait_for_active_shards": schema.StringAttribute{
 				Description: waitForActiveShardsDescription,

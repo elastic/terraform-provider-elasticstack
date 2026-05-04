@@ -13,7 +13,8 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
   access = {
     search = [
       {
-        names = ["log-*", "metrics-*"]
+        names                    = ["log-*", "metrics-*"]
+        allow_restricted_indices = false
       }
     ]
     replication = [
@@ -26,7 +27,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
   expiration = "30d"
 
   metadata = jsonencode({
-    description = "Cross-cluster test key"
+    description = "Cross-cluster test key updated"
     environment = "test"
   })
 }

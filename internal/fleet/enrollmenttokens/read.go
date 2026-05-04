@@ -21,36 +21,25 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model enrollmentTokensModel
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config enrollmentTokensModel) (enrollmentTokensModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Config.Get(ctx, &model)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := d.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient, err := client.GetFleetClient()
+	fleetClient, err := kbClient.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return config, diags
 	}
 
 	var tokens []kbapi.EnrollmentApiKey
-	policyID := model.PolicyID.ValueString()
-	spaceID := model.SpaceID.ValueString()
+	policyID := config.PolicyID.ValueString()
+	spaceID := config.SpaceID.ValueString()
 
 	// Query enrollment tokens with space context if needed
 	if policyID == "" {
@@ -63,28 +52,26 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 			tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
 		}
 	}
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return config, diags
 	}
 
 	if policyID != "" {
-		model.ID = types.StringValue(policyID)
+		config.ID = types.StringValue(policyID)
 	} else {
 		hash, err := schemautil.StringToHash(fleetClient.URL)
 		if err != nil {
-			resp.Diagnostics.AddError(err.Error(), "")
-			return
+			diags.AddError(err.Error(), "")
+			return config, diags
 		}
-		model.ID = types.StringPointerValue(hash)
+		config.ID = types.StringPointerValue(hash)
 	}
 
-	diags = model.populateFromAPI(ctx, tokens)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	pDiags := (&config).populateFromAPI(ctx, tokens)
+	diags.Append(pDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	diags = resp.State.Set(ctx, model)
-	resp.Diagnostics.Append(diags...)
+	return config, diags
 }

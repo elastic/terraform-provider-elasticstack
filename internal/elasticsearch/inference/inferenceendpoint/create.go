@@ -64,7 +64,7 @@ func (r *inferenceEndpointResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	putDiags := elasticsearch.PutInferenceEndpoint(ctx, client, endpoint)
+	putDiags := elasticsearch.PutInferenceEndpoint(ctx, client, inferenceID, data.TaskType.ValueString(), endpoint)
 	resp.Diagnostics.Append(putDiags...)
 	if resp.Diagnostics.HasError() {
 		return

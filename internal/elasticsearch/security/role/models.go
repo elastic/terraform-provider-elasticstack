@@ -22,7 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/indexprivilege"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -76,11 +78,9 @@ type FieldSecurityData struct {
 }
 
 // toAPIModel converts the Terraform model to the API model
-func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostics) {
+func (data *Data) toAPIModel(ctx context.Context) (*estypes.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var role models.Role
-
-	role.Name = data.Name.ValueString()
+	var role estypes.Role
 
 	// Description
 	if typeutils.IsKnown(data.Description) {
@@ -96,7 +96,7 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 			return nil, diags
 		}
 
-		applications := make([]models.Application, len(applicationsList))
+		applications := make([]estypes.ApplicationPrivileges, len(applicationsList))
 		for i, app := range applicationsList {
 			var privileges, resources []string
 			diags.Append(app.Privileges.ElementsAs(ctx, &privileges, false)...)
@@ -105,10 +105,10 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 				return nil, diags
 			}
 
-			applications[i] = models.Application{
-				Name:       app.Application.ValueString(),
-				Privileges: privileges,
-				Resources:  resources,
+			applications[i] = estypes.ApplicationPrivileges{
+				Application: app.Application.ValueString(),
+				Privileges:  privileges,
+				Resources:   resources,
 			}
 		}
 		role.Applications = applications
@@ -116,7 +116,7 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 
 	// Global
 	if typeutils.IsKnown(data.Global) {
-		var global map[string]any
+		var global map[string]map[string]map[string][]string
 		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
 			return nil, diags
@@ -131,7 +131,10 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 		if diags.HasError() {
 			return nil, diags
 		}
-		role.Cluster = cluster
+		role.Cluster = make([]clusterprivilege.ClusterPrivilege, len(cluster))
+		for i, s := range cluster {
+			role.Cluster[i] = clusterprivilege.ClusterPrivilege{Name: s}
+		}
 	}
 
 	// Indices
@@ -142,11 +145,11 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 			return nil, diags
 		}
 
-		indices := make([]models.IndexPerms, len(indicesList))
+		indices := make([]estypes.IndicesPrivileges, len(indicesList))
 		for i, idx := range indicesList {
-			newIndex, diags := indexPermissionsToAPIModel(ctx, idx.CommonIndexPermsData)
-			if diags.HasError() {
-				return nil, diags
+			newIndex, d := indexPermissionsToAPIModel(ctx, idx.CommonIndexPermsData)
+			if d.HasError() {
+				return nil, d
 			}
 
 			if typeutils.IsKnown(idx.AllowRestrictedIndices) {
@@ -165,11 +168,11 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 			return nil, diags
 		}
 
-		remoteIndices := make([]models.RemoteIndexPerms, len(remoteIndicesList))
+		remoteIndices := make([]estypes.RemoteIndicesPrivileges, len(remoteIndicesList))
 		for i, remoteIdx := range remoteIndicesList {
-			idx, diags := indexPermissionsToAPIModel(ctx, remoteIdx.CommonIndexPermsData)
-			if diags.HasError() {
-				return nil, diags
+			idx, d := indexPermissionsToAPIModel(ctx, remoteIdx.CommonIndexPermsData)
+			if d.HasError() {
+				return nil, d
 			}
 			var clusters []string
 			diags.Append(remoteIdx.Clusters.ElementsAs(ctx, &clusters, false)...)
@@ -177,12 +180,14 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 				return nil, diags
 			}
 
-			newRemoteIndex := models.RemoteIndexPerms{
-				IndexPerms: idx,
-				Clusters:   clusters,
+			remoteIndices[i] = estypes.RemoteIndicesPrivileges{
+				Names:                  idx.Names,
+				Privileges:             idx.Privileges,
+				Query:                  idx.Query,
+				FieldSecurity:          idx.FieldSecurity,
+				AllowRestrictedIndices: idx.AllowRestrictedIndices,
+				Clusters:               clusters,
 			}
-
-			remoteIndices[i] = newRemoteIndex
 		}
 		role.RemoteIndices = remoteIndices
 	}
@@ -194,7 +199,15 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
 			return nil, diags
 		}
-		role.Metadata = metadata
+		role.Metadata = make(estypes.Metadata, len(metadata))
+		for k, v := range metadata {
+			raw, err := json.Marshal(v)
+			if err != nil {
+				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata value: %s", err))
+				return nil, diags
+			}
+			role.Metadata[k] = raw
+		}
 	}
 
 	// Run As
@@ -210,17 +223,22 @@ func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostic
 	return &role, diags
 }
 
-func indexPermissionsToAPIModel(ctx context.Context, data CommonIndexPermsData) (models.IndexPerms, diag.Diagnostics) {
+func indexPermissionsToAPIModel(ctx context.Context, data CommonIndexPermsData) (estypes.IndicesPrivileges, diag.Diagnostics) {
 	var names, privileges []string
 	diags := data.Names.ElementsAs(ctx, &names, false)
 	diags.Append(data.Privileges.ElementsAs(ctx, &privileges, false)...)
 	if diags.HasError() {
-		return models.IndexPerms{}, diags
+		return estypes.IndicesPrivileges{}, diags
 	}
 
-	newIndex := models.IndexPerms{
-		Names:      names,
-		Privileges: privileges,
+	newIndex := estypes.IndicesPrivileges{
+		Names: names,
+	}
+	if len(privileges) > 0 {
+		newIndex.Privileges = make([]indexprivilege.IndexPrivilege, len(privileges))
+		for i, p := range privileges {
+			newIndex.Privileges[i] = indexprivilege.IndexPrivilege{Name: p}
+		}
 	}
 
 	if typeutils.IsKnown(data.Query) {
@@ -230,23 +248,24 @@ func indexPermissionsToAPIModel(ctx context.Context, data CommonIndexPermsData) 
 
 	// Field Security
 	if typeutils.IsKnown(data.FieldSecurity) {
-		newIndex.FieldSecurity, diags = fieldSecurityToAPIModel(ctx, data.FieldSecurity)
-		if diags.HasError() {
-			return models.IndexPerms{}, diags
+		fieldSec, d := fieldSecurityToAPIModel(ctx, data.FieldSecurity)
+		if d.HasError() {
+			return estypes.IndicesPrivileges{}, d
 		}
+		newIndex.FieldSecurity = fieldSec
 	}
 
 	return newIndex, diags
 }
 
-func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.FieldSecurity, diag.Diagnostics) {
+func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*estypes.FieldSecurity, diag.Diagnostics) {
 	var fieldSec FieldSecurityData
 	diags := data.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	fieldSecurity := models.FieldSecurity{}
+	fieldSecurity := estypes.FieldSecurity{}
 	if typeutils.IsKnown(fieldSec.Grant) {
 		var grants []string
 		diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
@@ -268,7 +287,7 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 }
 
 // fromAPIModel converts the API model to the Terraform model
-func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
+func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Preserve original null values for optional attributes to distinguish between:
 	// - User doesn't set attribute (null) - should remain null even if API returns empty array
@@ -276,8 +295,6 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 	originalCluster := data.Cluster
 	originalRunAs := data.RunAs
 	originalDescription := data.Description
-
-	data.Name = types.StringValue(role.Name)
 
 	// Description
 	if role.Description != nil {
@@ -310,7 +327,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 			}
 
 			appObj, d := types.ObjectValue(getApplicationAttrTypes(), map[string]attr.Value{
-				"application": types.StringValue(app.Name),
+				"application": types.StringValue(app.Application),
 				"privileges":  privSet,
 				"resources":   resSet,
 			})
@@ -333,8 +350,12 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 	}
 
 	// Cluster
+	clusterStrings := make([]string, len(role.Cluster))
+	for i, cp := range role.Cluster {
+		clusterStrings[i] = cp.String()
+	}
 	var clusterDiags diag.Diagnostics
-	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, role.Cluster)
+	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, clusterStrings)
 	diags.Append(clusterDiags...)
 	if diags.HasError() {
 		return diags
@@ -362,7 +383,11 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 				return diags
 			}
 
-			privSet, d := types.SetValueFrom(ctx, types.StringType, index.Privileges)
+			privileges := make([]string, len(index.Privileges))
+			for j, p := range index.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -370,7 +395,17 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 
 			var queryVal jsontypes.Normalized
 			if index.Query != nil {
-				queryVal = jsontypes.NewNormalizedValue(*index.Query)
+				switch q := index.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(index.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
 			} else {
 				queryVal = jsontypes.NewNormalizedNull()
 			}
@@ -449,7 +484,11 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 				return diags
 			}
 
-			privSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Privileges)
+			privileges := make([]string, len(remoteIndex.Privileges))
+			for j, p := range remoteIndex.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -457,7 +496,17 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 
 			var queryVal jsontypes.Normalized
 			if remoteIndex.Query != nil {
-				queryVal = jsontypes.NewNormalizedValue(*remoteIndex.Query)
+				switch q := remoteIndex.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(remoteIndex.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
 			} else {
 				queryVal = jsontypes.NewNormalizedNull()
 			}

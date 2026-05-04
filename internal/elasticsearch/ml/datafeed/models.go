@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -66,183 +66,159 @@ type DelayedDataCheckConfig struct {
 
 // IndicesOptions represents the indices options for search
 type IndicesOptions struct {
-	ExpandWildcards   types.List `tfsdk:"expand_wildcards"`
-	IgnoreUnavailable types.Bool `tfsdk:"ignore_unavailable"`
-	AllowNoIndices    types.Bool `tfsdk:"allow_no_indices"`
-	IgnoreThrottled   types.Bool `tfsdk:"ignore_throttled"`
+	ExpandWildcards   ExpandWildcardsValue `tfsdk:"expand_wildcards"`
+	IgnoreUnavailable types.Bool           `tfsdk:"ignore_unavailable"`
+	AllowNoIndices    types.Bool           `tfsdk:"allow_no_indices"`
+	IgnoreThrottled   types.Bool           `tfsdk:"ignore_throttled"`
 }
 
-// ToAPIModel converts the Terraform model to an API model for creating/updating
-func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Diagnostics) {
+// toDatafeedRequest converts the Terraform model to a DatafeedRequest.
+func (m *Datafeed) toDatafeedRequest(ctx context.Context) (elasticsearch.DatafeedRequest, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	apiModel := &models.Datafeed{
-		DatafeedID: m.DatafeedID.ValueString(),
-		JobID:      m.JobID.ValueString(),
-		Indices:    typeutils.ListTypeToSliceString(ctx, m.Indices, path.Root("indices"), &diags),
+	req := elasticsearch.DatafeedRequest{
+		JobID:   m.JobID.ValueString(),
+		Indices: typeutils.ListTypeToSliceString(ctx, m.Indices, path.Root("indices"), &diags),
+	}
+	if diags.HasError() {
+		return elasticsearch.DatafeedRequest{}, diags
 	}
 
-	// Convert query
 	if typeutils.IsKnown(m.Query) {
-		var query map[string]any
-		diags.Append(m.Query.Unmarshal(&query)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		apiModel.Query = query
+		req.Query = json.RawMessage(m.Query.ValueString())
 	}
 
-	// Convert aggregations
 	if typeutils.IsKnown(m.Aggregations) {
-		var aggregations map[string]any
-		diags.Append(m.Aggregations.Unmarshal(&aggregations)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		apiModel.Aggregations = aggregations
+		req.Aggregations = json.RawMessage(m.Aggregations.ValueString())
 	}
 
-	// Convert script_fields
 	if typeutils.IsKnown(m.ScriptFields) {
-		var scriptFields map[string]any
-		err := json.Unmarshal([]byte(m.ScriptFields.ValueString()), &scriptFields)
-		if err != nil {
-			diags.AddError("Failed to unmarshal script_fields", err.Error())
-			return nil, diags
-		}
-		apiModel.ScriptFields = scriptFields
+		req.ScriptFields = json.RawMessage(m.ScriptFields.ValueString())
 	}
 
-	// Convert runtime_mappings
 	if typeutils.IsKnown(m.RuntimeMappings) {
-		var runtimeMappings map[string]any
-		diags.Append(m.RuntimeMappings.Unmarshal(&runtimeMappings)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		apiModel.RuntimeMappings = runtimeMappings
+		req.RuntimeMappings = json.RawMessage(m.RuntimeMappings.ValueString())
 	}
 
-	// Convert scroll_size
 	if typeutils.IsKnown(m.ScrollSize) {
-		scrollSize := int(m.ScrollSize.ValueInt64())
-		apiModel.ScrollSize = &scrollSize
+		v := int(m.ScrollSize.ValueInt64())
+		req.ScrollSize = &v
 	}
 
-	// Convert frequency
 	if typeutils.IsKnown(m.Frequency) {
-		apiModel.Frequency = m.Frequency.ValueStringPointer()
+		req.Frequency = m.Frequency.ValueString()
 	}
 
-	// Convert query_delay
 	if typeutils.IsKnown(m.QueryDelay) {
-		apiModel.QueryDelay = m.QueryDelay.ValueStringPointer()
+		req.QueryDelay = m.QueryDelay.ValueString()
 	}
 
-	// Convert max_empty_searches
 	if typeutils.IsKnown(m.MaxEmptySearches) {
-		maxEmptySearches := int(m.MaxEmptySearches.ValueInt64())
-		apiModel.MaxEmptySearches = &maxEmptySearches
+		v := int(m.MaxEmptySearches.ValueInt64())
+		req.MaxEmptySearches = &v
 	}
 
-	// Convert chunking_config
 	if typeutils.IsKnown(m.ChunkingConfig) {
 		var chunkingConfig ChunkingConfig
 		diags.Append(m.ChunkingConfig.As(ctx, &chunkingConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
-			return nil, diags
+			return elasticsearch.DatafeedRequest{}, diags
 		}
-
-		apiChunkingConfig := &models.ChunkingConfig{
+		cc := &elasticsearch.DatafeedChunkingConfig{
 			Mode: chunkingConfig.Mode.ValueString(),
 		}
-		// Only set TimeSpan if mode is "manual" and TimeSpan is provided
-		if chunkingConfig.Mode.ValueString() == "manual" && !chunkingConfig.TimeSpan.IsNull() && !chunkingConfig.TimeSpan.IsUnknown() {
-			apiChunkingConfig.TimeSpan = chunkingConfig.TimeSpan.ValueString()
+		if chunkingConfig.Mode.ValueString() == "manual" && typeutils.IsKnown(chunkingConfig.TimeSpan) {
+			cc.TimeSpan = chunkingConfig.TimeSpan.ValueString()
 		}
-		apiModel.ChunkingConfig = apiChunkingConfig
+		req.ChunkingConfig = cc
 	}
 
-	// Convert delayed_data_check_config
 	if typeutils.IsKnown(m.DelayedDataCheckConfig) {
 		var delayedDataCheckConfig DelayedDataCheckConfig
 		diags.Append(m.DelayedDataCheckConfig.As(ctx, &delayedDataCheckConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
-			return nil, diags
+			return elasticsearch.DatafeedRequest{}, diags
 		}
-
-		apiDelayedDataCheckConfig := &models.DelayedDataCheckConfig{
-			Enabled: delayedDataCheckConfig.Enabled.ValueBoolPointer(),
+		ddcc := &elasticsearch.DatafeedDelayedDataCheckConfig{
+			Enabled: delayedDataCheckConfig.Enabled.ValueBool(),
 		}
-
 		if typeutils.IsKnown(delayedDataCheckConfig.CheckWindow) {
-			apiDelayedDataCheckConfig.CheckWindow = delayedDataCheckConfig.CheckWindow.ValueStringPointer()
+			ddcc.CheckWindow = delayedDataCheckConfig.CheckWindow.ValueString()
 		}
-		apiModel.DelayedDataCheckConfig = apiDelayedDataCheckConfig
+		req.DelayedDataCheckConfig = ddcc
 	}
 
-	// Convert indices_options
 	if typeutils.IsKnown(m.IndicesOptions) {
 		var indicesOptions IndicesOptions
 		diags.Append(m.IndicesOptions.As(ctx, &indicesOptions, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
-			return nil, diags
+			return elasticsearch.DatafeedRequest{}, diags
 		}
-
-		apiIndicesOptions := &models.IndicesOptions{}
+		ioReq := &elasticsearch.DatafeedIndicesOptions{}
 		if typeutils.IsKnown(indicesOptions.ExpandWildcards) {
 			var expandWildcards []string
 			diags.Append(indicesOptions.ExpandWildcards.ElementsAs(ctx, &expandWildcards, false)...)
 			if diags.HasError() {
-				return nil, diags
+				return elasticsearch.DatafeedRequest{}, diags
 			}
-			apiIndicesOptions.ExpandWildcards = expandWildcards
+			ioReq.ExpandWildcards = expandWildcards
 		}
 		if typeutils.IsKnown(indicesOptions.IgnoreUnavailable) {
-			apiIndicesOptions.IgnoreUnavailable = indicesOptions.IgnoreUnavailable.ValueBoolPointer()
+			v := indicesOptions.IgnoreUnavailable.ValueBool()
+			ioReq.IgnoreUnavailable = &v
 		}
 		if typeutils.IsKnown(indicesOptions.AllowNoIndices) {
-			apiIndicesOptions.AllowNoIndices = indicesOptions.AllowNoIndices.ValueBoolPointer()
+			v := indicesOptions.AllowNoIndices.ValueBool()
+			ioReq.AllowNoIndices = &v
 		}
 		if typeutils.IsKnown(indicesOptions.IgnoreThrottled) {
-			apiIndicesOptions.IgnoreThrottled = indicesOptions.IgnoreThrottled.ValueBoolPointer()
+			v := indicesOptions.IgnoreThrottled.ValueBool()
+			ioReq.IgnoreThrottled = &v
 		}
-		apiModel.IndicesOptions = apiIndicesOptions
+		req.IndicesOptions = ioReq
 	}
 
-	return apiModel, diags
+	return req, diags
 }
 
-// FromAPIModel populates the Terraform model from an API model
-func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) fwdiags.Diagnostics {
+// FromAPIModel populates the Terraform model from a typed API response.
+func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLDatafeedResponse) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
-	m.DatafeedID = types.StringValue(apiModel.DatafeedID)
-	m.JobID = types.StringValue(apiModel.JobID)
+	m.DatafeedID = types.StringValue(apiModel.DatafeedId)
+	m.JobID = types.StringValue(apiModel.JobId)
 
-	// Convert indices
-	if len(apiModel.Indices) > 0 {
-		indicesList, diag := types.ListValueFrom(ctx, types.StringType, apiModel.Indices)
+	// Convert indices (prefer Indices, fall back to Indexes)
+	indices := apiModel.Indices
+	if len(indices) == 0 {
+		indices = apiModel.Indexes
+	}
+	if len(indices) > 0 {
+		indicesList, diag := types.ListValueFrom(ctx, types.StringType, indices)
 		diags.Append(diag...)
 		m.Indices = indicesList
 	} else {
 		m.Indices = types.ListNull(types.StringType)
 	}
 
-	// Convert query
-	if apiModel.Query != nil {
+	// Convert query. We use the raw JSON bytes returned by the Elasticsearch API
+	// (QueryRaw) rather than re-marshaling apiModel.Query (types.Query), because
+	// the typed struct normalises term shorthand to the verbose value form which
+	// would cause a permanent diff in state.
+	if len(apiModel.QueryRaw) > 0 {
+		m.Query = jsontypes.NewNormalizedValue(string(apiModel.QueryRaw))
+	} else {
+		// Fallback: marshal the typed struct (may normalise term queries).
 		queryJSON, err := json.Marshal(apiModel.Query)
 		if err != nil {
 			diags.AddError("Failed to marshal query", err.Error())
 			return diags
 		}
 		m.Query = jsontypes.NewNormalizedValue(string(queryJSON))
-	} else {
-		m.Query = jsontypes.NewNormalizedNull()
 	}
 
 	// Convert aggregations
-	if apiModel.Aggregations != nil {
+	if len(apiModel.Aggregations) > 0 {
 		aggregationsJSON, err := json.Marshal(apiModel.Aggregations)
 		if err != nil {
 			diags.AddError("Failed to marshal aggregations", err.Error())
@@ -254,7 +230,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	}
 
 	// Convert script_fields
-	if apiModel.ScriptFields != nil {
+	if len(apiModel.ScriptFields) > 0 {
 		scriptFieldsJSON, err := json.Marshal(apiModel.ScriptFields)
 		if err != nil {
 			diags.AddError("Failed to marshal script_fields", err.Error())
@@ -266,7 +242,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	}
 
 	// Convert runtime_mappings
-	if apiModel.RuntimeMappings != nil {
+	if len(apiModel.RuntimeMappings) > 0 {
 		runtimeMappingsJSON, err := json.Marshal(apiModel.RuntimeMappings)
 		if err != nil {
 			diags.AddError("Failed to marshal runtime_mappings", err.Error())
@@ -284,16 +260,36 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 		m.ScrollSize = types.Int64Null()
 	}
 
-	// Convert frequency
+	// Convert frequency (types.Duration is a string alias that marshals to JSON string)
 	if apiModel.Frequency != nil {
-		m.Frequency = types.StringValue(*apiModel.Frequency)
+		freqJSON, err := json.Marshal(apiModel.Frequency)
+		if err != nil {
+			diags.AddError("Failed to marshal frequency", err.Error())
+			return diags
+		}
+		// Unmarshal the JSON string to get the actual string value
+		var freqStr string
+		if err := json.Unmarshal(freqJSON, &freqStr); err != nil {
+			// freqJSON might be the raw value itself
+			freqStr = string(freqJSON)
+		}
+		m.Frequency = types.StringValue(freqStr)
 	} else {
 		m.Frequency = types.StringNull()
 	}
 
 	// Convert query_delay
 	if apiModel.QueryDelay != nil {
-		m.QueryDelay = types.StringValue(*apiModel.QueryDelay)
+		delayJSON, err := json.Marshal(apiModel.QueryDelay)
+		if err != nil {
+			diags.AddError("Failed to marshal query_delay", err.Error())
+			return diags
+		}
+		var delayStr string
+		if err := json.Unmarshal(delayJSON, &delayStr); err != nil {
+			delayStr = string(delayJSON)
+		}
+		m.QueryDelay = types.StringValue(delayStr)
 	} else {
 		m.QueryDelay = types.StringNull()
 	}
@@ -308,11 +304,24 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	// Convert chunking_config
 	if apiModel.ChunkingConfig != nil {
 		chunkingConfigTF := ChunkingConfig{
-			Mode: types.StringValue(apiModel.ChunkingConfig.Mode),
+			Mode: types.StringValue(apiModel.ChunkingConfig.Mode.String()),
 		}
-		// Only set TimeSpan if mode is "manual" and TimeSpan is not empty
-		if apiModel.ChunkingConfig.Mode == "manual" && apiModel.ChunkingConfig.TimeSpan != "" {
-			chunkingConfigTF.TimeSpan = types.StringValue(apiModel.ChunkingConfig.TimeSpan)
+		// Only set TimeSpan if mode is "manual" and TimeSpan is not nil/empty
+		if apiModel.ChunkingConfig.Mode.String() == "manual" && apiModel.ChunkingConfig.TimeSpan != nil {
+			tsJSON, err := json.Marshal(apiModel.ChunkingConfig.TimeSpan)
+			if err != nil {
+				diags.AddError("Failed to marshal chunking_config.time_span", err.Error())
+				return diags
+			}
+			var tsStr string
+			if err := json.Unmarshal(tsJSON, &tsStr); err != nil {
+				tsStr = string(tsJSON)
+			}
+			if tsStr != "" {
+				chunkingConfigTF.TimeSpan = types.StringValue(tsStr)
+			} else {
+				chunkingConfigTF.TimeSpan = types.StringNull()
+			}
 		} else {
 			chunkingConfigTF.TimeSpan = types.StringNull()
 		}
@@ -331,34 +340,44 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	}
 
 	// Convert delayed_data_check_config
-	if apiModel.DelayedDataCheckConfig != nil {
-		delayedDataCheckConfigTF := DelayedDataCheckConfig{
-			Enabled:     types.BoolPointerValue(apiModel.DelayedDataCheckConfig.Enabled),
-			CheckWindow: types.StringPointerValue(apiModel.DelayedDataCheckConfig.CheckWindow),
-		}
-
-		delayedDataCheckConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
-			"enabled":      types.BoolType,
-			"check_window": types.StringType,
-		}, delayedDataCheckConfigTF)
-		diags.Append(diag...)
-		m.DelayedDataCheckConfig = delayedDataCheckConfigObj
-	} else {
-		m.DelayedDataCheckConfig = types.ObjectNull(map[string]attr.Type{
-			"enabled":      types.BoolType,
-			"check_window": types.StringType,
-		})
+	// The typed API DelayedDataCheckConfig has Enabled (bool, not pointer) and CheckWindow (Duration)
+	delayedDataCheckConfigTF := DelayedDataCheckConfig{
+		Enabled: types.BoolValue(apiModel.DelayedDataCheckConfig.Enabled),
 	}
+	if apiModel.DelayedDataCheckConfig.CheckWindow != nil {
+		cwJSON, err := json.Marshal(apiModel.DelayedDataCheckConfig.CheckWindow)
+		if err != nil {
+			diags.AddError("Failed to marshal delayed_data_check_config.check_window", err.Error())
+			return diags
+		}
+		var cwStr string
+		if err := json.Unmarshal(cwJSON, &cwStr); err != nil {
+			cwStr = string(cwJSON)
+		}
+		delayedDataCheckConfigTF.CheckWindow = types.StringValue(cwStr)
+	} else {
+		delayedDataCheckConfigTF.CheckWindow = types.StringNull()
+	}
+	delayedDataCheckConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
+		"enabled":      types.BoolType,
+		"check_window": types.StringType,
+	}, delayedDataCheckConfigTF)
+	diags.Append(diag...)
+	m.DelayedDataCheckConfig = delayedDataCheckConfigObj
 
 	// Convert indices_options
 	if apiModel.IndicesOptions != nil {
 		indicesOptionsTF := IndicesOptions{}
 		if len(apiModel.IndicesOptions.ExpandWildcards) > 0 {
-			expandWildcardsList, diag := types.ListValueFrom(ctx, types.StringType, apiModel.IndicesOptions.ExpandWildcards)
+			elems := make([]attr.Value, len(apiModel.IndicesOptions.ExpandWildcards))
+			for i, s := range apiModel.IndicesOptions.ExpandWildcards {
+				elems[i] = types.StringValue(s.String())
+			}
+			expandWildcardsVal, diag := NewExpandWildcardsValue(elems)
 			diags.Append(diag...)
-			indicesOptionsTF.ExpandWildcards = expandWildcardsList
+			indicesOptionsTF.ExpandWildcards = expandWildcardsVal
 		} else {
-			indicesOptionsTF.ExpandWildcards = types.ListNull(types.StringType)
+			indicesOptionsTF.ExpandWildcards = NewExpandWildcardsNull()
 		}
 		if apiModel.IndicesOptions.IgnoreUnavailable != nil {
 			indicesOptionsTF.IgnoreUnavailable = types.BoolValue(*apiModel.IndicesOptions.IgnoreUnavailable)
@@ -377,7 +396,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 		}
 
 		indicesOptionsObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
-			"expand_wildcards":   types.ListType{ElemType: types.StringType},
+			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
 			"ignore_unavailable": types.BoolType,
 			"allow_no_indices":   types.BoolType,
 			"ignore_throttled":   types.BoolType,
@@ -386,7 +405,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 		m.IndicesOptions = indicesOptionsObj
 	} else {
 		m.IndicesOptions = types.ObjectNull(map[string]attr.Type{
-			"expand_wildcards":   types.ListType{ElemType: types.StringType},
+			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
 			"ignore_unavailable": types.BoolType,
 			"allow_no_indices":   types.BoolType,
 			"ignore_throttled":   types.BoolType,
@@ -396,54 +415,15 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) 
 	return diags
 }
 
-// toAPICreateModel converts the Terraform model to a DatafeedCreateRequest
-func (m *Datafeed) toAPICreateModel(ctx context.Context) (*models.DatafeedCreateRequest, fwdiags.Diagnostics) {
-	apiModel, diags := m.ToAPIModel(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	createRequest := &models.DatafeedCreateRequest{
-		JobID:                  apiModel.JobID,
-		Indices:                apiModel.Indices,
-		Query:                  apiModel.Query,
-		Aggregations:           apiModel.Aggregations,
-		ScriptFields:           apiModel.ScriptFields,
-		RuntimeMappings:        apiModel.RuntimeMappings,
-		ScrollSize:             apiModel.ScrollSize,
-		ChunkingConfig:         apiModel.ChunkingConfig,
-		Frequency:              apiModel.Frequency,
-		QueryDelay:             apiModel.QueryDelay,
-		DelayedDataCheckConfig: apiModel.DelayedDataCheckConfig,
-		MaxEmptySearches:       apiModel.MaxEmptySearches,
-		IndicesOptions:         apiModel.IndicesOptions,
-	}
-
-	return createRequest, diags
+// toAPICreateModel returns a DatafeedRequest for a create operation.
+func (m *Datafeed) toAPICreateModel(ctx context.Context) (elasticsearch.DatafeedRequest, fwdiags.Diagnostics) {
+	return m.toDatafeedRequest(ctx)
 }
 
-// toAPIUpdateModel converts the Terraform model to a DatafeedUpdateRequest
-func (m *Datafeed) toAPIUpdateModel(ctx context.Context) (*models.DatafeedUpdateRequest, fwdiags.Diagnostics) {
-	apiModel, diags := m.ToAPIModel(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	// Create the datafeed update request (note: job_id cannot be updated)
-	updateRequest := &models.DatafeedUpdateRequest{
-		Indices:                apiModel.Indices,
-		Query:                  apiModel.Query,
-		Aggregations:           apiModel.Aggregations,
-		ScriptFields:           apiModel.ScriptFields,
-		RuntimeMappings:        apiModel.RuntimeMappings,
-		ScrollSize:             apiModel.ScrollSize,
-		ChunkingConfig:         apiModel.ChunkingConfig,
-		Frequency:              apiModel.Frequency,
-		QueryDelay:             apiModel.QueryDelay,
-		DelayedDataCheckConfig: apiModel.DelayedDataCheckConfig,
-		MaxEmptySearches:       apiModel.MaxEmptySearches,
-		IndicesOptions:         apiModel.IndicesOptions,
-	}
-
-	return updateRequest, diags
+// toAPIUpdateModel returns a DatafeedRequest for an update operation.
+// JobID is cleared because update_datafeed does not accept job_id.
+func (m *Datafeed) toAPIUpdateModel(ctx context.Context) (elasticsearch.DatafeedRequest, fwdiags.Diagnostics) {
+	req, diags := m.toDatafeedRequest(ctx)
+	req.JobID = ""
+	return req, diags
 }

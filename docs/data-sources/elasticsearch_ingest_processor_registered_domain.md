@@ -46,9 +46,9 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 - `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
 - `on_failure` (List of String) Handle failures for the processor.
 - `tag` (String) Identifier for the processor.
-- `target_field` (String) Object field containing extracted domain components. If an `<empty string>`, the processor adds components to the document’s root.
+- `target_field` (String) Object field containing extracted domain components. If an `<empty string>`, the processor adds components to the document's root.
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource.
+- `id` (String) Internal identifier of the resource
 - `json` (String) JSON representation of this data source.

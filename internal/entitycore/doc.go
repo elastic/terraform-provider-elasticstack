@@ -18,44 +18,37 @@
 // Package entitycore provides a shared embedded core for Plugin Framework entities:
 // [ResourceBase] centralizes [resource.ResourceWithConfigure] Configure wiring, the Metadata method
 // required by [resource.Resource], and stores the configured [*clients.ProviderClientFactory]
-// for use via [ResourceBase.Client]. Data sources are covered by [DataSourceBase].
+// for use via [ResourceBase.Client]. Data sources use envelope generics.
 //
 // # Data source patterns
 //
-// There are two supported patterns for data sources:
+// Plugin Framework data sources use **envelope generics** — [NewKibanaDataSource] or
+// [NewElasticsearchDataSource] — which eliminate Read orchestration boilerplate.
+// The constructor owns config decode, scoped client resolution, and state persistence.
+// The concrete package provides only a schema factory (without connection blocks),
+// a model that embeds [KibanaConnectionField] or [ElasticsearchConnectionField], and
+// a pure read function that performs the entity-specific API call and model mapping.
 //
-//  1. **Struct-based embedding** — embed [*DataSourceBase] and implement [datasource.DataSource]
-//     directly. This is the right choice for data sources with complex Read logic
-//     (conditional early returns, custom state manipulation, or multiple API calls
-//     with branching) that don't fit a uniform pipeline.
+// Example envelope data source:
 //
-//  2. **Envelope generics** — use [NewKibanaDataSource] or [NewElasticsearchDataSource]
-//     to eliminate Read orchestration boilerplate. The constructor owns config decode,
-//     scoped client resolution, and state persistence. The concrete package provides
-//     only a schema factory (without connection blocks), a model that embeds
-//     [KibanaConnectionField] or [ElasticsearchConnectionField], and a pure read
-//     function that performs the entity-specific API call and model mapping.
+//	type myModel struct {
+//	    entitycore.KibanaConnectionField
+//	    ID types.String `tfsdk:"id"`
+//	}
 //
-//     Example envelope data source:
+//	func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
+//	    // API call and model population …
+//	    return model, nil
+//	}
 //
-//     type myModel struct {
-//     entitycore.KibanaConnectionField
-//     ID types.String `tfsdk:"id"`
-//     }
-//
-//     func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
-//     // API call and model population …
-//     return model, nil
-//     }
-//
-//     func NewDataSource() datasource.DataSource {
-//     return entitycore.NewKibanaDataSource[myModel](
-//     entitycore.ComponentKibana,
-//     "my_entity",
-//     getDataSourceSchema, // returns datasource.Schema without kibana_connection block
-//     readMyEntity,
-//     )
-//     }
+//	func NewDataSource() datasource.DataSource {
+//	    return entitycore.NewKibanaDataSource[myModel](
+//	        entitycore.ComponentKibana,
+//	        "my_entity",
+//	        getDataSourceSchema, // returns datasource.Schema without kibana_connection block
+//	        readMyEntity,
+//	    )
+//	}
 //
 // # Resource patterns
 //

@@ -34,9 +34,7 @@ resource "elasticstack_elasticsearch_security_system_user" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: System user APIs (REQ-001–REQ-003)
 
 The resource SHALL use the Elasticsearch Get user API to read system user state ([Get users API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html)). The resource SHALL use the Elasticsearch Change passwords API to update a system user's password or password hash ([Change passwords API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-change-password.html)). The resource SHALL use the Elasticsearch Enable user and Disable user APIs to toggle the enabled state of a system user ([Enable user API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-enable-user.html), [Disable user API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-disable-user.html)).
@@ -184,3 +182,13 @@ When `username` is unknown during planning, the resource SHALL preserve the prio
 - GIVEN `username` is unknown at plan time
 - WHEN the plan is computed
 - THEN the prior state value of `username` SHALL be used
+
+### Requirement: Typed client implementation for security system user
+The `elasticstack_elasticsearch_security_system_user` resource SHALL read system users and toggle their enabled state using the go-elasticsearch Typed API (`elasticsearch.TypedClient.Security.GetUser`, `Security.EnableUser`, `Security.DisableUser`, `Security.ChangePassword`) instead of the raw `esapi` client. The typed API response SHALL be used directly without manual JSON decoding into an intermediate `models.User` type.
+
+#### Scenario: Typed API success for system user resource
+- **GIVEN** a valid Elasticsearch connection
+- **WHEN** the resource performs create, read, update, or delete
+- **THEN** the provider SHALL call the typed Security user APIs
+- **AND** user data SHALL be returned as `*types.User`
+

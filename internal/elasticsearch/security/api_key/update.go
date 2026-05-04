@@ -60,13 +60,13 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 	}
 
 	// Handle cross-cluster API key update
-	crossClusterModel, modelDiags := planModel.toCrossClusterAPIModel(ctx)
+	updateRequest, modelDiags := planModel.toUpdateCrossClusterAPIRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)...)
+	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(ctx, client, planModel.KeyID.ValueString(), updateRequest)...)
 	return diags
 }
 
@@ -76,13 +76,19 @@ func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Dia
 		return diags
 	}
 
+	// Validate restriction support
+	diags.Append(r.validateRestrictionSupport(ctx, planModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Handle regular API key update
-	apiModel, modelDiags := r.buildAPIModel(ctx, planModel)
+	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(elasticsearch.UpdateAPIKey(client, apiModel)...)
+	diags.Append(elasticsearch.UpdateAPIKey(ctx, client, planModel.KeyID.ValueString(), updateRequest)...)
 	return diags
 }

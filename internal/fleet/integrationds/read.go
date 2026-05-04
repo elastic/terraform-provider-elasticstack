@@ -20,53 +20,41 @@ package integrationds
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d *integrationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model integrationDataSourceModel
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config integrationDataSourceModel) (integrationDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Config.Get(ctx, &model)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := d.client.GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := apiClient.GetFleetClient()
+	client, err := kbClient.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return config, diags
 	}
 
-	name := model.Name.ValueString()
-	prerelease := model.Prerelease.ValueBool()
-	spaceID := model.SpaceID.ValueString()
-	packages, diags := fleet.GetPackages(ctx, client, prerelease, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	name := config.Name.ValueString()
+	prerelease := config.Prerelease.ValueBool()
+	spaceID := config.SpaceID.ValueString()
+	packages, pDiags := fleet.GetPackages(ctx, client, prerelease, spaceID)
+	diags.Append(pDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	if model.ID.ValueString() == "" {
+	if config.ID.ValueString() == "" {
 		hash, err := schemautil.StringToHash(name)
 		if err != nil {
-			resp.Diagnostics.AddError(err.Error(), "")
-			return
+			diags.AddError(err.Error(), "")
+			return config, diags
 		}
-		model.ID = types.StringPointerValue(hash)
+		config.ID = types.StringPointerValue(hash)
 	}
 
-	model.populateFromAPI(name, packages)
+	(&config).populateFromAPI(name, packages)
 
-	diags = resp.State.Set(ctx, model)
-	resp.Diagnostics.Append(diags...)
+	return config, diags
 }

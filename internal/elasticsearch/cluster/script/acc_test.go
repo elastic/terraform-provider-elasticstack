@@ -21,6 +21,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -48,9 +50,11 @@ func TestAccResourceScript(t *testing.T) {
 				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_script.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 2) + params['my_modifier']"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "context", "score"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_script.test", "params"),
 				),
 			},
 			{
@@ -59,9 +63,11 @@ func TestAccResourceScript(t *testing.T) {
 				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_script.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 4) + params['changed_modifier']"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "params", `{"changed_modifier":2}`),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_script.test", "context"),
 				),
 			},
 			{
@@ -71,19 +77,21 @@ func TestAccResourceScript(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESTypedClient()
 					require.NoError(t, err)
 
-					_, err = esClient.DeleteScript(scriptID)
+					_, err = typedClient.Core.DeleteScript(scriptID).Do(context.Background())
 					require.NoError(t, err)
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_script.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 4) + params['changed_modifier']"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "params", `{"changed_modifier":2}`),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_script.test", "context"),
 				),
 			},
 		},
@@ -103,6 +111,7 @@ func TestAccResourceScriptImport(t *testing.T) {
 				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_script.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 2) + params['my_modifier']"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "context", "score"),
@@ -194,6 +203,95 @@ func TestAccResourceScriptFromSDK(t *testing.T) {
 	})
 }
 
+func TestAccResourceScriptParamsRemoval(t *testing.T) {
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_script.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "params", `{"modifier":3}`),
+					resource.TestCheckNoResourceAttr(resourceName, "context"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "params"),
+					resource.TestCheckNoResourceAttr(resourceName, "context"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceScriptExplicitConnection(t *testing.T) {
+	endpoints := scriptESEndpoints()
+	if len(endpoints) == 0 {
+		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_script.test_conn"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"script_id": config.StringVariable(scriptID),
+					"endpoints": config.ListVariable(endpointVars...),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "lang", "painless"),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.#",
+						fmt.Sprintf("%d", len(endpoints))),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.insecure", "true"),
+				),
+			},
+		},
+	})
+}
+
+func scriptESEndpoints() []string {
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	parts := strings.Split(rawEndpoints, ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
+}
+
 func checkScriptDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
@@ -206,18 +304,19 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compID.ResourceID)
+		_, err = typedClient.Core.GetScript(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

@@ -152,8 +152,8 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 
 					// Indices options
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.0", "open"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.1", "closed"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "open"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "closed"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_unavailable", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.allow_no_indices", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_throttled", "false"),
@@ -197,7 +197,7 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 
 					// Verify updated indices options
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.#", "1"), // Updated to 1
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.0", "open"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.expand_wildcards.*", "open"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_unavailable", "false"), // Updated from true
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.allow_no_indices", "true"),    // Updated from false
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices_options.ignore_throttled", "true"),    // Updated from false
@@ -411,9 +411,60 @@ func TestAccResourceDatafeedDelayedDataDisabled(t *testing.T) {
 
 					// Broader expand_wildcards coverage: "hidden" value not covered by the comprehensive test
 					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "2"),
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.0", "open"),
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.1", "hidden"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "open"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "hidden"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDatafeedExpandWildcardsAll is the primary regression test for the
+// expand_wildcards set-type change. It verifies that a datafeed configured with
+// expand_wildcards = ["all"] does not produce a perpetual plan diff after the initial
+// apply. The Elasticsearch API normalises "all" to ["open","closed","hidden"]; the
+// custom ExpandWildcardsType semantic-equality implementation must suppress the diff.
+func TestAccResourceDatafeedExpandWildcardsAll(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-ew-all-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-ew-all-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	const resourceAddr = "elasticstack_elasticsearch_ml_datafeed.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: apply with expand_wildcards = ["all"].
+			// Elasticsearch may store "all" as-is or expand it to ["open","closed","hidden"]
+			// depending on the stack version. Either way the datafeed must be created
+			// successfully and the expand_wildcards attribute must be populated.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
+					// This stack returns "all" as-is (1 element). Stacks that expand "all"
+					// to ["open","closed","hidden"] would have count 3; semantic equality
+					// handles both via SetSemanticEquals in either case.
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "all"),
+				),
+			},
+			// Step 2: re-apply the same config (still expand_wildcards = ["all"]).
+			// PlanOnly: true ensures no changes are applied; ExpectNonEmptyPlan: false
+			// (the default) causes the test to fail if Terraform detects a diff, proving
+			// that semantic equality suppresses the "all" → ["open","closed","hidden"] diff.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				PlanOnly: true,
 			},
 		},
 	})

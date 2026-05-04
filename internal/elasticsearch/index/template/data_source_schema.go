@@ -18,27 +18,18 @@
 package template
 
 import (
-	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = dataSourceSchema()
-}
-
-func dataSourceSchema() dschema.Schema {
+func getDataSourceSchema() dschema.Schema {
 	return dschema.Schema{
 		MarkdownDescription: mdDescIndexTemplateDataSource,
 		Blocks: map[string]dschema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			"data_stream":              dataSourceDataStreamBlock(),
-			"template":                 dataSourceTemplateBlock(),
+			"data_stream": dataSourceDataStreamBlock(),
+			"template":    dataSourceTemplateBlock(),
 		},
 		Attributes: map[string]dschema.Attribute{
 			"id": dschema.StringAttribute{

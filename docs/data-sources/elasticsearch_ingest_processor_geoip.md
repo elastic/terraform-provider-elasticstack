@@ -49,9 +49,14 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 ### Optional
 
 - `database_file` (String) The database filename referring to a database the module ships with (GeoLite2-City.mmdb, GeoLite2-Country.mmdb, or GeoLite2-ASN.mmdb) or a custom database in the `ingest-geoip` config directory.
+- `description` (String) Description of the processor.
 - `first_only` (Boolean) If `true` only first found geoip data will be returned, even if field contains array.
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
 - `ignore_missing` (Boolean) If `true` and `field` does not exist, the processor quietly exits without modifying the document.
+- `on_failure` (List of String) Handle failures for the processor.
 - `properties` (Set of String) Controls what properties are added to the `target_field` based on the geoip lookup.
+- `tag` (String) Identifier for the processor.
 - `target_field` (String) The field that will hold the geographical information looked up from the MaxMind database.
 
 ### Read-Only

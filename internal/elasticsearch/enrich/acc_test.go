@@ -18,19 +18,15 @@
 package enrich_test
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	_ "embed"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1209,53 +1205,7 @@ func checkEnrichPolicyTestDataSourceAttrAbsent(attr string) resource.TestCheckFu
 
 func createEnrichPolicyESAccessToken(t *testing.T) string {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create acceptance testing client: %v", err)
-	}
-	esClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
-	}
-
-	payload, err := json.Marshal(map[string]string{
-		"grant_type": "password",
-		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
-		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal token request: %v", err)
-	}
-
-	resp, err := esClient.Security.GetToken(
-		bytes.NewReader(payload),
-		esClient.Security.GetToken.WithContext(context.Background()),
-	)
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch access token: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
-		}
-		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		t.Fatalf("failed to decode token response: %v", err)
-	}
-	if tokenResponse.AccessToken == "" {
-		t.Fatalf("token response did not include an access_token")
-	}
-
-	return tokenResponse.AccessToken
+	return acctest.CreateESAccessToken(t)
 }
 
 type enrichPolicyTLSMaterial struct {
@@ -1382,24 +1332,19 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
-			esClient, err := client.GetESClient()
+			typedClient, err := client.GetESTypedClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.EnrichGetPolicy.WithName(compID.ResourceID)
-			res, err := esClient.EnrichGetPolicy(req)
+			res, err := typedClient.Enrich.GetPolicy().Name(compID.ResourceID).Do(context.Background())
 			if err != nil {
+				if acctest.IsNotFoundElasticsearchError(err) {
+					continue
+				}
 				return err
 			}
-			defer res.Body.Close()
-			if res.StatusCode == http.StatusFound {
-				var policiesResponse map[string]any
-				if err := json.NewDecoder(res.Body).Decode(&policiesResponse); err != nil {
-					return err
-				}
-				if len(policiesResponse["policies"].([]any)) != 0 {
-					return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
-				}
+			if len(res.Policies) != 0 {
+				return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
 			}
 		}
 		return nil
@@ -1413,20 +1358,19 @@ func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 			return err
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
 		indexName := fmt.Sprintf(".enrich-%s", name)
-		res, err := esClient.Indices.Exists([]string{indexName})
+		exists, err := typedClient.Indices.Exists(indexName).Do(context.Background())
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("Expected enrich index alias %s to be missing, got status %d", indexName, res.StatusCode)
+		if exists {
+			return fmt.Errorf("Expected enrich index alias %s to be missing, but it exists", indexName)
 		}
 
 		return nil

@@ -18,9 +18,7 @@
 package anomalydetectionjob
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -58,30 +56,17 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 		return
 	}
 
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	// Marshal the API model to JSON
-	body, err := json.Marshal(apiModel)
+	// Build typed request and call the typed API
+	putReq := apiModel.toPutJobRequest()
+	_, err = typedClient.Ml.PutJob(jobID).Request(&putReq).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal job configuration", err.Error())
-		return
-	}
-
-	// Create the ML job
-	res, err := esClient.ML.PutJob(jobID, bytes.NewReader(body), esClient.ML.PutJob.WithContext(ctx))
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ML anomaly detection job", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML anomaly detection job: %s", jobID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Failed to create ML anomaly detection job", fmt.Sprintf("Unable to create ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return
 	}
 
