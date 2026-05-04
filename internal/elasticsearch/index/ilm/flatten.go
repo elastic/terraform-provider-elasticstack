@@ -85,7 +85,7 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 			}
 			phase[actionName] = []any{allocateAction}
 		case "shrink":
-			shrinkAction := make(map[string]any, len(action)+1)
+			shrinkAction := make(map[string]any, len(action))
 			maps.Copy(shrinkAction, action)
 			if _, ok := shrinkAction["allow_write_after_shrink"]; !ok {
 				shrinkAction["allow_write_after_shrink"] = false
