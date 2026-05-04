@@ -35,6 +35,7 @@
     "elasticstack_fleet_integration": null,
     "elasticstack_fleet_integration_policy": null,
     "elasticstack_fleet_output": null,
+    "elasticstack_fleet_proxy": null,
     "elasticstack_fleet_server_host": null,
     "elasticstack_kibana_action_connector": null,
     "elasticstack_kibana_agentbuilder_agent": null,
