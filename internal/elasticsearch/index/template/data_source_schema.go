@@ -18,6 +18,7 @@
 package template
 
 import (
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -95,7 +96,7 @@ func dataSourceTemplateBlock() dschema.SingleNestedBlock {
 			"mappings": dschema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          esindex.MappingsType{},
 			},
 			"settings": dschema.StringAttribute{
 				MarkdownDescription: descTemplateSettings,

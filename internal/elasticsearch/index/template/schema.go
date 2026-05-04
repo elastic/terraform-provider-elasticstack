@@ -134,7 +134,7 @@ func templateBlock() schema.SingleNestedBlock {
 			"mappings": schema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          esindex.MappingsType{},
 				Validators: []validator.String{
 					esindex.StringIsJSONObject{},
 				},

@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"strings"
 
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -166,9 +166,9 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	if v, ok := attrs["mappings"]; ok && !v.IsNull() && !v.IsUnknown() {
-		norm, ok := v.(jsontypes.Normalized)
+		norm, ok := v.(esindex.MappingsValue)
 		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected jsontypes.Normalized for mappings, got %T", v))
+			diags.AddError("Internal error", fmt.Sprintf("expected index.MappingsValue for mappings, got %T", v))
 			return nil, diags
 		}
 		s := strings.TrimSpace(norm.ValueString())
