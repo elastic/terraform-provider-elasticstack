@@ -762,39 +762,6 @@ func NormalizeQueryFilter(v any) any {
 	}
 }
 
-// NormalizeMappings recursively compacts single-element string arrays in mapping
-// JSON back to plain strings for keys that Elasticsearch accepts as either a
-// string or an array (match, match_mapping_type, path_match, path_unmatch,
-// unmatch, unmatch_mapping_type).
-func NormalizeMappings(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			normalized := NormalizeMappings(vv)
-			switch k {
-			case "match", "match_mapping_type", "path_match", "path_unmatch",
-				"unmatch", "unmatch_mapping_type":
-				if arr, ok := normalized.([]any); ok && len(arr) == 1 {
-					if s, ok := arr[0].(string); ok {
-						normalized = s
-					}
-				}
-			}
-			out[k] = normalized
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = NormalizeMappings(vv)
-		}
-		return out
-	default:
-		return v
-	}
-}
-
 // IndexStateToModel converts a typed IndexState into the legacy models.Index shape
 // used by the index resource and indices data source.
 func IndexStateToModel(state types.IndexState) models.Index {

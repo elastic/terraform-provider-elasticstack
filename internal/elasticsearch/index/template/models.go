@@ -18,6 +18,7 @@
 package template
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -51,7 +52,7 @@ type DataStreamModel struct {
 //nolint:revive // Name documents the template {} block; BlockModel alone is ambiguous in this package.
 type TemplateBlockModel struct {
 	Alias             types.Set                      `tfsdk:"alias"`
-	Mappings          jsontypes.Normalized           `tfsdk:"mappings"`
+	Mappings          index.MappingsValue            `tfsdk:"mappings"`
 	Settings          customtypes.IndexSettingsValue `tfsdk:"settings"`
 	Lifecycle         types.Object                   `tfsdk:"lifecycle"`
 	DataStreamOptions types.Object                   `tfsdk:"data_stream_options"`
@@ -121,7 +122,7 @@ func DataStreamOptionsAttrTypes() map[string]attr.Type {
 func TemplateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"alias":               types.SetType{ElemType: NewAliasObjectType()},
-		"mappings":            jsontypes.NormalizedType{},
+		"mappings":            index.MappingsType{},
 		"settings":            customtypes.IndexSettingsType{},
 		"lifecycle":           types.ObjectType{AttrTypes: LifecycleAttrTypes()},
 		"data_stream_options": types.ObjectType{AttrTypes: DataStreamOptionsAttrTypes()},

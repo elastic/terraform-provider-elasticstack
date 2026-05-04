@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -168,7 +169,7 @@ type tfModel struct {
 	AnalysisFilter                     jsontypes.Normalized `tfsdk:"analysis_filter"`
 	AnalysisNormalizer                 jsontypes.Normalized `tfsdk:"analysis_normalizer"`
 	Alias                              types.Set            `tfsdk:"alias"`
-	Mappings                           mappingsValue        `tfsdk:"mappings"`
+	Mappings                           index.MappingsValue  `tfsdk:"mappings"`
 	SettingsRaw                        jsontypes.Normalized `tfsdk:"settings_raw"`
 	DeletionProtection                 types.Bool           `tfsdk:"deletion_protection"`
 	UseExisting                        types.Bool           `tfsdk:"use_existing"`
@@ -222,15 +223,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 				diag.NewErrorDiagnostic("failed to marshal index mappings", err.Error()),
 			}
 		}
-		var m map[string]any
-		if err := json.Unmarshal(mappingBytes, &m); err != nil {
-			return diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal index mappings", err.Error()),
-			}
-		}
-		m = elasticsearch.NormalizeMappings(m).(map[string]any)
-		nb, _ := json.Marshal(m)
-		model.Mappings = newMappingsValue(string(nb))
+		model.Mappings = index.NewMappingsValue(string(mappingBytes))
 	}
 
 	diags = setSettingsFromAPI(model, apiModel)

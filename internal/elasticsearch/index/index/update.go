@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -177,8 +178,8 @@ func (r *Resource) updateMappings(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
-	planMappings mappingsValue,
-	stateMappings mappingsValue,
+	planMappings index.MappingsValue,
+	stateMappings index.MappingsValue,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 

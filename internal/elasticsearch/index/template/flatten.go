@@ -24,6 +24,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -186,23 +187,16 @@ func flattenTemplateBody(ctx context.Context, t *estypes.IndexTemplateSummary) (
 		aliasSet = sv
 	}
 
-	var mappings jsontypes.Normalized
+	var mappings index.MappingsValue
 	if t.Mappings != nil {
 		b, err := json.Marshal(t.Mappings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.mappings", err.Error())
 			return types.ObjectUnknown(TemplateAttrTypes()), diags
 		}
-		var m map[string]any
-		if err := json.Unmarshal(b, &m); err != nil {
-			diags.AddError("Failed to unmarshal template.mappings", err.Error())
-			return types.ObjectUnknown(TemplateAttrTypes()), diags
-		}
-		m = elasticsearch.NormalizeMappings(m).(map[string]any)
-		nb, _ := json.Marshal(m)
-		mappings = jsontypes.NewNormalizedValue(string(nb))
+		mappings = index.NewMappingsValue(string(b))
 	} else {
-		mappings = jsontypes.NewNormalizedNull()
+		mappings = index.NewMappingsNull()
 	}
 
 	var settings customtypes.IndexSettingsValue

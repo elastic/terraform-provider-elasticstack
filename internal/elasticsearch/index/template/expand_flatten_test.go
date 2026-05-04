@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -194,7 +195,7 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	}
 	tplObj, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               types.SetNull(NewAliasObjectType()),
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
 		"data_stream_options": dsoObj,
@@ -211,7 +212,7 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	}
 	noDsoTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               types.SetNull(NewAliasObjectType()),
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
 		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),

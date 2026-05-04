@@ -25,6 +25,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -137,7 +138,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if null",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsNull(),
+				Mappings: index.NewMappingsNull(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -149,7 +150,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if unknown",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsUnknown(),
+				Mappings: index.NewMappingsUnknown(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -161,7 +162,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should unmarshall mappings if provided",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsValue(`{"a": "b"}`),
+				Mappings: index.NewMappingsValue(`{"a": "b"}`),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{

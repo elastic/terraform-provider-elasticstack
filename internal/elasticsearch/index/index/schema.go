@@ -504,7 +504,7 @@ func getSchema() schema.Schema {
 				Description: mappingsDescription,
 				Optional:    true,
 				Computed:    true,
-				CustomType:  mappingsType{},
+				CustomType:  index.MappingsType{},
 				Validators: []validator.String{
 					index.StringIsJSONObject{},
 				},
