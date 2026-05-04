@@ -205,13 +205,13 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_lifecycle" {
-				compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-				if compID.ResourceID != name {
-					continue
-				}
+				continue
 			}
 
 			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+			if compID.ResourceID != name {
+				continue
+			}
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
