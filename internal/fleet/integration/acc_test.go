@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -46,9 +47,8 @@ var (
 	// Tests that rely on the actually-installed version (as opposed to the
 	// version echoed back from the request path) require this floor.
 	minVersionInstallationInfo = version.Must(version.NewVersion("8.9.0"))
-	// minVersionSpaceAwareIntegration is the minimum version that supports
-	// space-aware kibana_assets endpoints for multi-space asset management.
-	minVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))
+
+	skipUnlessSpaceAwareIntegration = versionutils.CheckIfVersionIsUnsupported(integration.MinVersionSpaceAwareIntegration)
 )
 
 //go:embed testdata/TestAccResourceIntegrationFromSDK/main.tf
@@ -217,10 +217,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				// Force uninstall the integration
 				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-
-					fleetClient, err := client.GetFleetClient()
+					fleetClient, err := testAccFleetClient()
 					require.NoError(t, err)
 
 					ctx := context.Background()
@@ -280,10 +277,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 						return
 					}
 
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-
-					fleetClient, err := client.GetFleetClient()
+					fleetClient, err := testAccFleetClient()
 					require.NoError(t, err)
 
 					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.17.0", fleet.InstallPackageOptions{
@@ -395,11 +389,7 @@ func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 // the given package version has Kibana assets installed in the specified space.
 func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-		if err != nil {
-			return err
-		}
-		fleetClient, err := client.GetFleetClient()
+		fleetClient, err := testAccFleetClient()
 		if err != nil {
 			return err
 		}
@@ -410,7 +400,7 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 		if pkg == nil || pkg.InstallationInfo == nil {
 			return fmt.Errorf("package %s/%s not installed", name, version)
 		}
-		globalInstalled := pkg.InstallationInfo.InstallStatus == "installed"
+		globalInstalled := pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
 
 		if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			globalInstalled = true
@@ -432,6 +422,26 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 	}
 }
 
+func testAccFleetClient() (*fleet.Client, error) {
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return client.GetFleetClient()
+}
+
+func preinstallTCPDefault(t *testing.T) func() {
+	return func() {
+		fleetClient, err := testAccFleetClient()
+		require.NoError(t, err)
+		diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
+			Force: true,
+		})
+		require.Empty(t, diags)
+	}
+}
+
 // TestAccResourceIntegration_MultiSpaceInstall verifies that the same package
 // can be installed in two different Kibana spaces when both resources are
 // managed by Terraform. The package is pre-installed in the default space so
@@ -445,22 +455,13 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceAwareIntegration),
+				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
 					"space_b": config.StringVariable(spaceB),
 				},
-				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-					fleetClient, err := client.GetFleetClient()
-					require.NoError(t, err)
-					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
-						Force: true,
-					})
-					require.Empty(t, diags)
-				},
+				PreConfig: preinstallTCPDefault(t),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "version", "1.16.0"),
@@ -489,22 +490,13 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceAwareIntegration),
+				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
 					"space_b": config.StringVariable(spaceB),
 				},
-				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-					fleetClient, err := client.GetFleetClient()
-					require.NoError(t, err)
-					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
-						Force: true,
-					})
-					require.Empty(t, diags)
-				},
+				PreConfig: preinstallTCPDefault(t),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "name", "tcp"),
@@ -512,7 +504,7 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceAwareIntegration),
+				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_a_only"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -540,21 +532,12 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceAwareIntegration),
+				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
 				},
-				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-					fleetClient, err := client.GetFleetClient()
-					require.NoError(t, err)
-					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
-						Force: true,
-					})
-					require.Empty(t, diags)
-				},
+				PreConfig: preinstallTCPDefault(t),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "space_id", spaceA),
@@ -562,15 +545,13 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceAwareIntegration),
+				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
 				},
 				PreConfig: func() {
-					client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-					require.NoError(t, err)
-					fleetClient, err := client.GetFleetClient()
+					fleetClient, err := testAccFleetClient()
 					require.NoError(t, err)
 					diags := fleet.DeleteKibanaAssets(t.Context(), fleetClient, "tcp", "1.16.0", spaceA, true)
 					require.Empty(t, diags)

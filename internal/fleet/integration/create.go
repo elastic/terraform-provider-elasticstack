@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -102,66 +103,93 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 	}
 
-	// If space_id is set, use space-aware installation when supported
-	spaceID := ""
+	// Pass the requested space through to the Fleet install API.
 	if typeutils.IsKnown(planModel.SpaceID) {
-		spaceID = planModel.SpaceID.ValueString()
-		installOptions.SpaceID = spaceID
+		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
-	spaceAware := false
-	if spaceID != "" {
-		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
-		respDiags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		if respDiags.HasError() {
-			return
-		}
-		spaceAware = supported
+	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
+	respDiags.Append(diags...)
+	if respDiags.HasError() {
+		return
 	}
 
-	// Pre-flight: determine whether the package is already installed elsewhere.
-	// This is needed so we can emit a warning when we can't install space-scoped assets.
+	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, "", false)
+	if waitErr != nil {
+		respDiags.AddError(
+			"Failed to install Fleet integration package",
+			fmt.Sprintf("Package %s/%s did not reach an installed state: %s", name, version, waitErr.Error()),
+		)
+		return
+	}
+
+	spaceID := installOptions.SpaceID
 	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 	respDiags.Append(getDiags...)
 	if respDiags.HasError() {
 		return
 	}
 
-	globallyInstalled := pkg != nil && fleetPackageInstalled(pkg, "", false)
-	installedElsewhere := globallyInstalled && spaceID != "" && !fleetPackageInstalled(pkg, spaceID, true)
+	globallyInstalled := fleetPackageInstalled(pkg, "", false)
+	installedInTargetSpace := fleetPackageInstalled(pkg, spaceID, true)
+	installedElsewhere := globallyInstalled && spaceID != "" && !installedInTargetSpace
 
-	if spaceAware && installedElsewhere {
-		diags = fleet.InstallKibanaAssets(ctx, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
-		if diags.HasError() {
-			respDiags.AddWarning(
-				"Space-aware asset installation failed",
-				fmt.Sprintf("Failed to install Kibana assets for %s/%s in space %s via the space-aware endpoint (%s). Falling back to standard package installation.", name, version, spaceID, diags[0].Summary()),
-			)
-			diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
-			respDiags.Append(diags...)
-			if respDiags.HasError() {
-				return
-			}
-		} else {
-			respDiags.Append(diags...)
-		}
-	} else {
-		if installedElsewhere {
-			respDiags.AddWarning(
-				"Package already installed in a different space",
-				fmt.Sprintf("Package %s/%s is already installed in a different space. Kibana assets may not be available in space %s "+
-					"because the server does not support space-aware asset installation.", name, version, spaceID),
-			)
-		}
-		diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
+	if installedElsewhere {
+		diags = installInSpace(ctx, apiClient, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
 		respDiags.Append(diags...)
 		if respDiags.HasError() {
 			return
 		}
 	}
 
-	waitErr := asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
-		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, installOptions.SpaceID)
+	planModel.ID = types.StringValue(getPackageID(name, version))
+
+	if planModel.SpaceID.IsUnknown() {
+		planModel.SpaceID = types.StringNull()
+	}
+
+	diags = state.Set(ctx, planModel)
+	respDiags.Append(diags...)
+}
+
+func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, fleetClient *fleet.Client, name, version, spaceID string, force bool) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	spaceAware, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
+	diags.Append(versionDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !spaceAware {
+		diags.AddWarning(
+			"Package already installed in a different space",
+			fmt.Sprintf("Package %s/%s is already installed in a different space. Kibana assets may not be available in space %s "+
+				"because the server does not support space-aware asset installation.", name, version, spaceID),
+		)
+		return diags
+	}
+
+	installDiags := fleet.InstallKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
+	diags.Append(installDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, spaceID, true)
+	if waitErr != nil {
+		diags.AddError(
+			"Failed to install Fleet integration package",
+			fmt.Sprintf("Package %s/%s did not reach an installed state in space %s: %s", name, version, spaceID, waitErr.Error()),
+		)
+	}
+
+	return diags
+}
+
+func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version, spaceID string, spaceAware bool) error {
+	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 		if getDiags.HasError() {
 			return false, fmt.Errorf("failed to read package installation status: %s", getDiags[0].Summary())
 		}
@@ -169,7 +197,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 			return false, nil
 		}
 
-		if fleetPackageInstalled(pkg, installOptions.SpaceID, spaceAware) {
+		if fleetPackageInstalled(pkg, spaceID, spaceAware) {
 			return true, nil
 		}
 
@@ -182,22 +210,4 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 
 		return false, nil
 	})
-	if waitErr != nil {
-		respDiags.AddError(
-			"Failed to install Fleet integration package",
-			fmt.Sprintf("Package %s/%s did not reach an installed state: %s", name, version, waitErr.Error()),
-		)
-		return
-	}
-
-	planModel.ID = types.StringValue(getPackageID(name, version))
-
-	// Populate space_id in state
-	// If space_id is unknown (not provided by user), set to null to satisfy Terraform's requirement
-	if planModel.SpaceID.IsUnknown() {
-		planModel.SpaceID = types.StringNull()
-	}
-
-	diags = state.Set(ctx, planModel)
-	respDiags.Append(diags...)
 }

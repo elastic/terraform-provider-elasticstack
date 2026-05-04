@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -59,14 +58,11 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	var spaceID string
-	if typeutils.IsKnown(stateModel.SpaceID) {
-		spaceID = stateModel.SpaceID.ValueString()
-	}
-
 	spaceAware := false
 	if typeutils.IsKnown(stateModel.SpaceID) {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		spaceID = stateModel.SpaceID.ValueString()
+		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
+		resp.Diagnostics.Append(versionDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -81,14 +77,14 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		}
 
 		if isInstalledInMultipleSpaces(pkg, spaceID) {
-			diags = fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
-			resp.Diagnostics.Append(diags...)
+			deleteDiags := fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
+			resp.Diagnostics.Append(deleteDiags...)
 			return
 		}
 	}
 
-	diags = fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
-	resp.Diagnostics.Append(diags...)
+	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	resp.Diagnostics.Append(uninstallDiags...)
 }
 
 func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
@@ -96,14 +92,7 @@ func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
 		return false
 	}
 
-	// Verify the target space is actually part of this installation.
-	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
-		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
-	inAdditional := false
-	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
-		_, inAdditional = (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]
-	}
-	if !isPrimary && !inAdditional {
+	if !packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID) {
 		return false
 	}
 
@@ -111,6 +100,8 @@ func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
 	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
 		otherSpaces = len(*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)
 	}
+	isPrimary := pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
 	if isPrimary {
 		return otherSpaces > 0
 	}

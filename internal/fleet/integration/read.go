@@ -19,11 +19,8 @@ package integration
 
 import (
 	"context"
-	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,8 +53,8 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	spaceAware := false
 	if typeutils.IsKnown(stateModel.SpaceID) {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
+		resp.Diagnostics.Append(versionDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -88,49 +85,4 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
-}
-
-// fleetPackageInstalled determines whether Fleet reports a package as fully installed.
-// Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
-// and status casing can vary.
-func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bool) bool {
-	if pkg == nil {
-		return false
-	}
-
-	globalInstalled := false
-	if pkg.InstallationInfo != nil {
-		switch pkg.InstallationInfo.InstallStatus {
-		case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
-			globalInstalled = true
-		case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
-			return false
-		}
-	}
-	if !globalInstalled && pkg.Status != nil {
-		globalInstalled = strings.EqualFold(*pkg.Status, "installed")
-	}
-	if !globalInstalled {
-		return false
-	}
-
-	if !spaceAware || spaceID == "" {
-		return true
-	}
-
-	if pkg.InstallationInfo == nil {
-		return false
-	}
-
-	if pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID {
-		return true
-	}
-
-	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
-		if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
-			return true
-		}
-	}
-
-	return false
 }

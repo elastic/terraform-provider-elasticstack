@@ -10,20 +10,20 @@
 - [x] 2.1 Add `spaceAware` boolean parameter to `fleetPackageInstalled` signature: `func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bool) bool`
 - [x] 2.2 Implement strict space check in `fleetPackageInstalled`: match against `InstalledKibanaSpaceId` and `AdditionalSpacesInstalledKibana`
 - [x] 2.3 Preserve fallback behavior: when `spaceAware` is false or `spaceID` is empty, use existing global install status check
-- [x] 2.4 Update `Read` method to call `fleetPackageInstalled` with `spaceID` from state and `spaceAware=false` (Read will gain version awareness in task 3.2)
+- [x] 2.4 Update `Read` method to call `fleetPackageInstalled` with `spaceID` from state and version-gated `spaceAware`
 
 ## 3. Resource Logic — Version Gating (`internal/fleet/integration/resource.go`, `create.go`)
 
 - [x] 3.1 Add `MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))` constant in `resource.go`
 - [x] 3.2 In `Read`, call `client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)` when `space_id` is known to determine `spaceAware`, then pass to `fleetPackageInstalled`
-- [x] 3.3 In `create`, call `apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)` when `space_id` is known to determine `spaceAware` before install decision
+- [x] 3.3 In `create`, call `apiClient.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)` when a post-install package read shows assets may need to be added to the target space
 
 ## 4. Resource Logic — Create/Update (`internal/fleet/integration/create.go`)
 
-- [x] 4.1 Add pre-flight `GetPackage` call when `spaceAware` is true to determine `installedInTarget` and `installedElsewhere`
-- [x] 4.2 When `installedElsewhere` is true, call `fleet.InstallKibanaAssets` scoped to target space instead of `fleet.InstallPackage`
-- [x] 4.3 When `installedInTarget` is true or package not installed, use existing `fleet.InstallPackage` path
-- [x] 4.4 Update wait loop to call `fleetPackageInstalled(pkg, spaceID, spaceAware)` so it respects strict space checking on 8.15+
+- [x] 4.1 Always call `fleet.InstallPackage` first, using the configured install options and `space_id` when present
+- [x] 4.2 Wait for the package to reach a globally installed state before making space-specific asset decisions
+- [x] 4.3 After the global install wait succeeds, call `GetPackage` scoped to the target space to determine whether assets are missing there
+- [x] 4.4 When the package is installed globally but not in the target space, call `fleet.InstallKibanaAssets` and then wait with `fleetPackageInstalled(pkg, spaceID, true)` so it respects strict space checking on supported versions
 - [x] 4.5 Ensure `force` parameter from plan is passed to `InstallKibanaAssets` body when calling the kibana_assets endpoint
 
 ## 5. Resource Logic — Delete (`internal/fleet/integration/delete.go`)
@@ -40,7 +40,7 @@
 - [x] 6.2 Add `TestAccResourceIntegration_MultiSpaceInstall`: create space A and B, install same package in both, verify both succeed
 - [x] 6.3 Add `TestAccResourceIntegration_MultiSpaceDelete`: install in two spaces, destroy one resource, verify package remains installed with assets in the other space
 - [x] 6.4 Add `TestAccResourceIntegration_SpaceAwareDrift`: install in space A, manually delete kibana assets from space A via API, verify Terraform plan detects drift and wants re-creation
-- [x] 6.5 Gate multi-space tests on `minVersionSpaceAwareIntegration = 9.1.0` using existing `versionutils.CheckIfVersionIsUnsupported` pattern
+- [x] 6.5 Gate multi-space tests on `integration.MinVersionSpaceAwareIntegration` using existing `versionutils.CheckIfVersionIsUnsupported` pattern
 
 ## 7. Build, Lint, and OpenSpec Validation
 
@@ -51,6 +51,6 @@
 
 ## 8. Fallback and Warning Diagnostics
 
-- [x] 8.1 When `spaceAware` is true but `InstallKibanaAssets` returns an error, fall back to `fleet.InstallPackage` and emit a warning diagnostic
+- [x] 8.1 When `spaceAware` is true but `InstallKibanaAssets` returns an error, return the error diagnostic; regular package install has already been attempted before the space-specific asset call
 - [x] 8.2 When `spaceAware` is false and the package is already installed in a different space, emit a warning diagnostic that Kibana assets may not be available in the target space
 - [x] 8.3 ~~Handle packages with no Kibana assets in `fleetPackageInstalled` and `testAccCheckIntegrationInstalledInSpace`: treat as installed in all spaces~~ **REVERTED**: Fleet tracks spaces in `AdditionalSpacesInstalledKibana` even for packages with no Kibana assets, so `fleetPackageInstalled` must check this field rather than short-circuiting. The no-asset shortcut caused `InstallKibanaAssets` to be skipped (because `installedElsewhere` evaluated to false), leading to incorrect uninstalls in delete path.
