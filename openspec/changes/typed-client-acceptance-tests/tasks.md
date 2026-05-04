@@ -61,8 +61,8 @@
 
 ## 13. Verification
 
-- [ ] 13.1 Run `make build` and confirm zero compile errors across the entire codebase
-- [ ] 13.2 Run `make check-lint` and resolve any new lint warnings introduced by typed API usage
-- [ ] 13.3 Run `go test ./internal/...` to verify all unit tests pass
-- [ ] 13.4 Confirm no remaining `GetESClient()` calls exist in any of the listed test files
+- [x] 13.1 Run `make build` and confirm zero compile errors across the entire codebase
+- [x] 13.2 Run `make check-lint` and resolve any new lint warnings introduced by typed API usage
+- [x] 13.3 Run `go test ./internal/...` to verify all unit tests pass
+- [x] 13.4 Confirm no remaining `GetESClient()` calls exist in any of the listed test files
 - [ ] 13.5 Run CI acceptance tests to confirm full test-suite passes with the typed client
