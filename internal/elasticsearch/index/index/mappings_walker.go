@@ -106,11 +106,6 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 				return result
 			}
 
-			// semantic_text special handling: not a replacement if model_settings differs.
-			// Semantic equality handles model_settings auto-populated by Elasticsearch.
-			if stateType == semanticTextType {
-				continue
-			}
 			continue
 		} else if stateHasType || cfgHasType {
 			result.RequiresReplace = true

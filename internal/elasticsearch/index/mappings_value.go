@@ -307,14 +307,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 		return false
 	}
 
-	_, userHasModelSettings := userField["model_settings"]
-
 	for key, userVal := range userField {
-		// For semantic_text fields, allow the API to have model_settings that the user didn't specify.
-		if key == "model_settings" && userHasType && userType == SemanticTextMappingType && !userHasModelSettings {
-			continue
-		}
-
 		apiVal, ok := apiField[key]
 		if !ok {
 			return false
