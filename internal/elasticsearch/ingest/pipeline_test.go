@@ -18,9 +18,12 @@
 package ingest_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -91,18 +94,19 @@ func checkResourceIngestPipelineDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compID.ResourceID})
+		_, err = typedClient.Ingest.GetPipeline().Id(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Ingest pipeline (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Ingest pipeline (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

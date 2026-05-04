@@ -20,11 +20,12 @@ package inferenceendpoint_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -348,20 +349,21 @@ func checkInferenceEndpointDestroy(s *terraform.State) error {
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.InferenceGet(
-			esClient.InferenceGet.WithInferenceID(compID.ResourceID),
-		)
+		res, err := typedClient.Inference.Get().InferenceId(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusNotFound {
+		if len(res.Endpoints) != 0 {
 			return fmt.Errorf("inference endpoint (%s) still exists", compID.ResourceID)
 		}
 	}

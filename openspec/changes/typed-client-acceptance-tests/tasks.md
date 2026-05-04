@@ -4,11 +4,11 @@
 
 ## 2. Enrich
 
-- [ ] 2.1 Migrate `internal/elasticsearch/enrich/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed enrich APIs
+- [x] 2.1 Migrate `internal/elasticsearch/enrich/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed enrich APIs
 
 ## 3. Index Lifecycle Management (ILM)
 
-- [ ] 3.1 Migrate `internal/elasticsearch/index/ilm/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed ILM APIs
+- [x] 3.1 Migrate `internal/elasticsearch/index/ilm/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed ILM APIs
 
 ## 4. Index
 
@@ -22,11 +22,11 @@
 
 ## 5. Inference
 
-- [ ] 5.1 Migrate `internal/elasticsearch/inference/inferenceendpoint/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed inference APIs
+- [x] 5.1 Migrate `internal/elasticsearch/inference/inferenceendpoint/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed inference APIs
 
 ## 6. Logstash
 
-- [ ] 6.1 Migrate `internal/elasticsearch/logstash/pipeline_test.go` from `GetESClient()` to `GetESTypedClient()` and typed logstash-pipeline APIs
+- [x] 6.1 Migrate `internal/elasticsearch/logstash/pipeline_test.go` from `GetESClient()` to `GetESTypedClient()` and typed logstash-pipeline APIs
 
 ## 7. Security
 
@@ -44,11 +44,11 @@
 
 ## 9. Ingest
 
-- [ ] 9.1 Migrate `internal/elasticsearch/ingest/pipeline_test.go` from `GetESClient()` to `GetESTypedClient()` and typed ingest-pipeline APIs
+- [x] 9.1 Migrate `internal/elasticsearch/ingest/pipeline_test.go` from `GetESClient()` to `GetESTypedClient()` and typed ingest-pipeline APIs
 
 ## 10. Watcher
 
-- [ ] 10.1 Migrate `internal/elasticsearch/watcher/watch/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed watcher APIs
+- [x] 10.1 Migrate `internal/elasticsearch/watcher/watch/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed watcher APIs
 
 ## 11. Kibana Streams
 

@@ -19,13 +19,16 @@ package watch_test
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -372,13 +375,17 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.Watcher.GetWatch(compID.ResourceID)
+		res, err := typedClient.Watcher.GetWatch(compID.ResourceID).Perform(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
 		status := res.StatusCode

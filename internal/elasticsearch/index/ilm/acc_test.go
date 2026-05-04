@@ -18,12 +18,15 @@
 package ilm_test
 
 import (
+	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
@@ -248,19 +251,19 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
-		res, err := esClient.ILM.GetLifecycle(req)
+		_, err = typedClient.Ilm.GetLifecycle().Policy(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }
