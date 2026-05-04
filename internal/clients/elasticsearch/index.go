@@ -23,13 +23,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatalifecycle"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -500,7 +500,7 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 	return nil
 }
 
-func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*getdatalifecycle.Response, fwdiags.Diagnostics) {
+func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) (*models.DataStreamLifecycleResponse, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -510,15 +510,34 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 	if expandWildcards != "" {
 		call = call.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
-	res, err := call.Do(ctx)
+	res, err := call.Perform(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
-			return nil, nil
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		_, _ = io.Copy(io.Discard, res.Body)
+		return nil, nil
+	}
+
+	if res.StatusCode >= http.StatusMultipleChoices {
+		errorResponse := types.NewElasticsearchError()
+		if err := json.NewDecoder(res.Body).Decode(errorResponse); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
 		}
+		if errorResponse.Status == 0 {
+			errorResponse.Status = res.StatusCode
+		}
+		return nil, diagutil.FrameworkDiagFromError(errorResponse)
+	}
+
+	var response models.DataStreamLifecycleResponse
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return res, nil
+	return &response, nil
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {

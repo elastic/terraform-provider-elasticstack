@@ -20,7 +20,6 @@ package datastreamlifecycle
 import (
 	"context"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -78,7 +77,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, 
 	return apiModel, diags
 }
 
-func (model *tfModel) populateFromAPI(ctx context.Context, ds []estypes.DataStreamWithLifecycle) diag.Diagnostics {
+func (model *tfModel) populateFromAPI(ctx context.Context, ds []models.DataStreamLifecycle) diag.Diagnostics {
 	actualRetention := model.DataRetention.ValueString()
 	actualDownsampling := make([]downsamplingTfModel, len(model.Downsampling.Elements()))
 	if diags := model.Downsampling.ElementsAs(ctx, &actualDownsampling, true); diags.HasError() {
@@ -86,10 +85,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []estypes.DataStre
 	}
 
 	for _, lf := range ds {
-		apiRetention := ""
-		if s, ok := lf.Lifecycle.DataRetention.(string); ok {
-			apiRetention = s
-		}
+		apiRetention := lf.Lifecycle.DataRetention
 		if apiRetention != actualRetention {
 			model.DataRetention = types.StringValue(apiRetention)
 		}
@@ -99,14 +95,8 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []estypes.DataStre
 			updateDownsampling = true
 		} else {
 			for i, dstf := range actualDownsampling {
-				after := ""
-				fixedInterval := ""
-				if len(apiDs) > i {
-					if s, ok := apiDs[i].After.(string); ok {
-						after = s
-					}
-					fixedInterval = apiDs[i].Config.FixedInterval
-				}
+				after := apiDs[i].After
+				fixedInterval := apiDs[i].FixedInterval
 				if dstf.After.ValueString() != after || dstf.FixedInterval.ValueString() != fixedInterval {
 					updateDownsampling = true
 					break
@@ -124,17 +114,13 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []estypes.DataStre
 	return nil
 }
 
-func convertDownsamplingToModel(ctx context.Context, apiDownsamplings []estypes.DownsamplingRound) (types.List, diag.Diagnostics) {
+func convertDownsamplingToModel(ctx context.Context, apiDownsamplings []models.Downsampling) (types.List, diag.Diagnostics) {
 	var downsamplings []downsamplingTfModel
 
 	for _, apiDs := range apiDownsamplings {
-		after := ""
-		if s, ok := apiDs.After.(string); ok {
-			after = s
-		}
 		downsamplings = append(downsamplings, downsamplingTfModel{
-			After:         types.StringValue(after),
-			FixedInterval: types.StringValue(apiDs.Config.FixedInterval),
+			After:         types.StringValue(apiDs.After),
+			FixedInterval: types.StringValue(apiDs.FixedInterval),
 		})
 	}
 

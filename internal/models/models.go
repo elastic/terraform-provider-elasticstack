@@ -196,6 +196,15 @@ type LifecycleSettings struct {
 	Downsampling  []Downsampling `json:"downsampling,omitempty"`
 }
 
+type DataStreamLifecycleResponse struct {
+	DataStreams []DataStreamLifecycle `json:"data_streams"`
+}
+
+type DataStreamLifecycle struct {
+	Name      string            `json:"name"`
+	Lifecycle LifecycleSettings `json:"lifecycle"`
+}
+
 type Downsampling struct {
 	After         string `json:"after,omitempty"`
 	FixedInterval string `json:"fixed_interval,omitempty"`
