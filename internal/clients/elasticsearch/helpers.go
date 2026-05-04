@@ -39,4 +39,3 @@ func isNotFoundElasticsearchError(err error) bool {
 func durationToMsString(d time.Duration) string {
 	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
 }
-

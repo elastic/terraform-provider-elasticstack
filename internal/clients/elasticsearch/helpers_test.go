@@ -70,5 +70,3 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 		})
 	}
 }
-
-
