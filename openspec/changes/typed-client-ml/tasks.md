@@ -42,8 +42,19 @@
 ## 5. Verify behavior and tests
 
 - [ ] 5.1 Run `make check-lint` and fix any issues
-- [ ] 5.2 Run `make build` to ensure no compilation errors
-- [ ] 5.3 Run ML unit tests: `go test ./internal/elasticsearch/ml/...`
+- [x] 5.2 Run `make build` to ensure no compilation errors
+- [x] 5.3 Run ML unit tests: `go test ./internal/elasticsearch/ml/...`
 - [ ] 5.4 Run ML acceptance tests against a live Elasticsearch cluster
-- [ ] 5.5 Verify error handling for 404/not-found scenarios remains unchanged
-- [ ] 5.6 Verify force flags, timeouts, and optional parameters are still passed correctly
+- [x] 5.5 Verify error handling for 404/not-found scenarios remains unchanged
+- [x] 5.6 Verify force flags, timeouts, and optional parameters are still passed correctly
+
+## 6. Post-review bug fixes
+
+- [x] 6.1 Fix timeout string format: use `ms` suffix instead of `Go's native format` in `CloseMLJob`, `StopDatafeed`, `StartDatafeed`
+- [x] 6.2 Fix `fromTypedJob` missing `Groups` field mapping
+- [x] 6.3 Fix datafeed query normalization: use raw JSON from API to avoid term shorthand expansion
+- [x] 6.4 Fix `categorization_examples_limit` dropped on update: send update as raw JSON to include field missing from `types.AnalysisMemoryLimit`
+- [x] 6.5 Add `AllowNoMatch(true)` to `GetJobs` call in `read.go`
+- [x] 6.6 Add error guard after Groups `ElementsAs` in `BuildFromPlan`
+- [x] 6.7 Add 404 guard to `DeleteDatafeed`
+- [x] 6.8 Fix typo in update warning message: "No changed detected to updateble fields" → "No changes detected to updatable fields"
