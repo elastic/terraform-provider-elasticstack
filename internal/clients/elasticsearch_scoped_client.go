@@ -78,11 +78,11 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, e
 // the info from the server, and subsequent callers use the cached result.
 func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	if e.elasticsearchClusterInfo != nil {
+		e.mu.Unlock()
 		return e.elasticsearchClusterInfo, nil
 	}
+	e.mu.Unlock()
 
 	typedClient, err := e.GetESClient()
 	if err != nil {
@@ -92,8 +92,10 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Respo
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	// cache info
+
+	e.mu.Lock()
 	e.elasticsearchClusterInfo = res
+	e.mu.Unlock()
 
 	return res, nil
 }
