@@ -21,7 +21,7 @@
 - **THEN** it calls the typed `ILM.DeleteLifecycle` API and returns no error diagnostics on success
 
 ### Requirement: Component template helpers use typed client
-`PutComponentTemplate`, `GetComponentTemplate`, and `DeleteComponentTemplate` in `internal/clients/elasticsearch/index.go` SHALL use `GetESTypedClient()` and SHALL call the typed `Cluster.PutComponentTemplate`, `Cluster.GetComponentTemplate`, and `Cluster.DeleteComponentTemplate` APIs. `GetComponentTemplate` SHALL request `flat_settings=true` and SHALL return `nil` with no error when the template is not found.
+`PutComponentTemplate`, `GetComponentTemplate`, and `DeleteComponentTemplate` in `internal/clients/elasticsearch/index.go` SHALL use `GetESTypedClient()` and SHALL call the typed `Cluster.PutComponentTemplate`, `Cluster.GetComponentTemplate`, and `Cluster.DeleteComponentTemplate` APIs. `GetComponentTemplate` SHALL return `nil` with no error when the template is not found. `GetComponentTemplate` SHALL NOT request `flat_settings=true` because the typed response type `ComponentTemplateSummary.Settings` is `map[string]IndexSettings`; with flat settings enabled the API returns scalar values (e.g. `"3"`) where the decoder expects a nested object, causing a deserialization error.
 
 #### Scenario: Create or update component template with typed client
 - **WHEN** `PutComponentTemplate` is called with a valid template configuration
