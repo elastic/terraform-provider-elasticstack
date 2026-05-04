@@ -9,7 +9,7 @@ All functions in `internal/clients/elasticsearch/ml_job.go` SHALL use `GetESType
 
 #### Scenario: PutDatafeed uses typed client
 - **WHEN** `PutDatafeed` is invoked
-- **THEN** it calls `client.ML.PutDatafeed(...).Request(&types.DatafeedConfig{...}).Do(ctx)` instead of `esClient.ML.PutDatafeed(...)`
+- **THEN** it calls `client.ML.PutDatafeed(...).Raw(body).Do(ctx)` instead of `esClient.ML.PutDatafeed(...)`, accepting a typed `DatafeedRequest` (client-layer struct) marshalled to raw bytes so that `Query` is preserved without normalisation through `types.Query`
 
 #### Scenario: CloseMLJob uses typed client
 - **WHEN** `CloseMLJob` is invoked
@@ -21,11 +21,11 @@ All functions in `internal/clients/elasticsearch/ml_job.go` SHALL use `GetESType
 
 #### Scenario: GetDatafeed uses typed client
 - **WHEN** `GetDatafeed` is invoked
-- **THEN** it calls `client.ML.GetDatafeeds(...).Do(ctx)` and returns a typed `*types.Datafeed` instead of decoding into a custom model
+- **THEN** it calls `client.ML.GetDatafeeds(...).Perform(ctx)` (raw response) and returns `*MLDatafeedResponse` — a thin wrapper around `*types.MLDatafeed` that also carries `QueryRaw json.RawMessage` to preserve the query exactly as returned by Elasticsearch without re-normalisation
 
 #### Scenario: UpdateDatafeed uses typed client
 - **WHEN** `UpdateDatafeed` is invoked
-- **THEN** it calls `client.ML.UpdateDatafeed(...).Request(&types.DatafeedConfig{...}).Do(ctx)` instead of `esClient.ML.UpdateDatafeed(...)`
+- **THEN** it calls `client.ML.UpdateDatafeed(...).Raw(body).Do(ctx)` instead of `esClient.ML.UpdateDatafeed(...)`, accepting a typed `DatafeedRequest` (client-layer struct, `JobID` cleared) marshalled to raw bytes for the same query-preservation reason as `PutDatafeed`
 
 #### Scenario: DeleteDatafeed uses typed client
 - **WHEN** `DeleteDatafeed` is invoked
