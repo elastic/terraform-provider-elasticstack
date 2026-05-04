@@ -75,7 +75,11 @@ hook-test: ## Run hook JavaScript unit tests
 test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
-CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
+CURL_BASE_OPTS = -sS --retry 5 --retry-all-errors -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
+CURL_OPTS = $(CURL_BASE_OPTS) -X POST
+FLEET_DEFAULT_DOWNLOAD_SOURCE_ID = terraform-acc-fleet-default-download-source
+FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME = Terraform Acceptance Default Agent Download Source
+FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST = https://artifacts.elastic.co/downloads/elastic-agent
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
@@ -124,7 +128,25 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
 	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
-	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_download_sources -d '{"name":"Elastic Artifacts","host":"https://artifacts.elastic.co/downloads/","is_default":true}' || true
+	@ download_sources="$$(mktemp)"; \
+	trap 'rm -f "$$download_sources"' EXIT; \
+	status="$$(curl $(CURL_BASE_OPTS) -o "$$download_sources" -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_download_sources)"; \
+	case "$$status" in \
+		2*) ;; \
+		404) exit 0 ;; \
+		*) echo "Unexpected response listing Kibana agent download sources: HTTP $$status" >&2; exit 1 ;; \
+	esac; \
+	if jq -e '.items[]? | select(.is_default == true and (.host // "") != "")' "$$download_sources" >/dev/null; then \
+		exit 0; \
+	fi; \
+	status="$$(curl $(CURL_OPTS) -o /dev/null -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_download_sources -d '{"id":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_ID)","name":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME)","host":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST)","is_default":true}')"; \
+	case "$$status" in \
+		2*) ;; \
+		400|409) \
+			status="$$(curl $(CURL_BASE_OPTS) -X PUT -o /dev/null -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_download_sources/$(FLEET_DEFAULT_DOWNLOAD_SOURCE_ID) -d '{"name":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME)","host":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST)","is_default":true}')"; \
+			case "$$status" in 2*) ;; *) echo "Unexpected response ensuring Kibana agent download source: HTTP $$status" >&2; exit 1 ;; esac ;; \
+		*) echo "Unexpected response creating Kibana agent download source: HTTP $$status" >&2; exit 1 ;; \
+	esac
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
