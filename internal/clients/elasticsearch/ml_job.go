@@ -51,18 +51,65 @@ func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	return diags
 }
 
+// DatafeedRequest is the request body for creating or updating an ML datafeed.
+//
+// Query, Aggregations, ScriptFields, and RuntimeMappings are json.RawMessage so
+// they are embedded as-is without round-tripping through typed structs.  This is
+// required for Query in particular: types.Query.UnmarshalJSON normalises term
+// shorthand ({"term":{"f":"v"}}) to the verbose form ({"term":{"f":{"value":"v"}}}),
+// which would produce a permanent diff in Terraform state.
+type DatafeedRequest struct {
+	JobID                  string                          `json:"job_id,omitempty"`
+	Indices                []string                        `json:"indices"`
+	Query                  json.RawMessage                 `json:"query,omitempty"`
+	Aggregations           json.RawMessage                 `json:"aggregations,omitempty"`
+	ScriptFields           json.RawMessage                 `json:"script_fields,omitempty"`
+	RuntimeMappings        json.RawMessage                 `json:"runtime_mappings,omitempty"`
+	ScrollSize             *int                            `json:"scroll_size,omitempty"`
+	Frequency              string                          `json:"frequency,omitempty"`
+	QueryDelay             string                          `json:"query_delay,omitempty"`
+	MaxEmptySearches       *int                            `json:"max_empty_searches,omitempty"`
+	ChunkingConfig         *DatafeedChunkingConfig         `json:"chunking_config,omitempty"`
+	DelayedDataCheckConfig *DatafeedDelayedDataCheckConfig `json:"delayed_data_check_config,omitempty"`
+	IndicesOptions         *DatafeedIndicesOptions         `json:"indices_options,omitempty"`
+}
+
+// DatafeedChunkingConfig is the chunking configuration within a DatafeedRequest.
+type DatafeedChunkingConfig struct {
+	Mode     string `json:"mode"`
+	TimeSpan string `json:"time_span,omitempty"`
+}
+
+// DatafeedDelayedDataCheckConfig is the delayed-data-check configuration within a DatafeedRequest.
+type DatafeedDelayedDataCheckConfig struct {
+	Enabled     bool   `json:"enabled"`
+	CheckWindow string `json:"check_window,omitempty"`
+}
+
+// DatafeedIndicesOptions controls how a datafeed accesses its indices.
+type DatafeedIndicesOptions struct {
+	ExpandWildcards   []string `json:"expand_wildcards,omitempty"`
+	IgnoreUnavailable *bool    `json:"ignore_unavailable,omitempty"`
+	AllowNoIndices    *bool    `json:"allow_no_indices,omitempty"`
+	IgnoreThrottled   *bool    `json:"ignore_throttled,omitempty"`
+}
+
 // PutDatafeed creates a machine learning datafeed.
 //
-// We use .Raw() to send the request body as-is so that the query JSON is
-// preserved exactly as the user wrote it. Using .Request() would parse the
-// query through types.Query.UnmarshalJSON which normalises term shorthand to
-// verbose form, making ES store the verbose form and causing state diffs.
-func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, body []byte) diag.Diagnostics {
+// We use .Raw() to send the marshalled DatafeedRequest as-is so that Query is
+// preserved exactly as the user wrote it (see DatafeedRequest for details).
+func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		diags.AddError("Failed to marshal datafeed request", err.Error())
 		return diags
 	}
 
@@ -220,14 +267,20 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 
 // UpdateDatafeed updates a machine learning datafeed.
 //
-// We use .Raw() to send the request body as-is, for the same reason as
-// PutDatafeed: to avoid normalising the query through types.Query.
-func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, body []byte) diag.Diagnostics {
+// We use .Raw() to send the marshalled DatafeedRequest as-is (see PutDatafeed).
+// The caller must leave JobID empty — update_datafeed does not accept job_id.
+func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		diags.AddError("Failed to marshal datafeed request", err.Error())
 		return diags
 	}
 
