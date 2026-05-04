@@ -30,12 +30,17 @@ test('semantic-function-refactor workflow references the upstream baseline and d
 
 test('semantic-function-refactor workflow encodes the prompt contract for scope and issue creation', () => {
   const source = workflowSource();
-  assert.match(source, /\*\*Exclude test files\*\* from analysis/);
-  assert.match(source, /\*\*Exclude generated files\*\* and build artifacts/);
-  assert.match(source, /\*\*Exclude workflow files\*\* from analysis/);
+  assert.match(source, /\*\*Skip test files\*\*/);
+  assert.match(source, /\*\*Test files\*\*/);
+  assert.match(source, /\*\*Generated files\*\* and build artifacts/);
+  assert.match(source, /\*\*Workflow files\*\*/);
   assert.match(source, /\*\*Create one issue per distinct opportunity\*\*/);
   assert.match(source, /Create separate issues for each distinct actionable refactoring opportunity/);
   assert.match(source, /Never create more than/);
+  assert.match(source, /Use Serena for semantic analysis/);
+  assert.match(source, /Tool: activate_project/);
+  assert.match(source, /Tool: get_symbols_overview/);
+  assert.match(source, /Tool: find_symbol/);
 });
 
 test('semantic-function-refactor workflow safe outputs and compiled lock keep semantic-refactor issue metadata aligned', () => {
@@ -70,6 +75,36 @@ test('compiled lock excludes ANTHROPIC_API_KEY from AWF --env-all and uses the C
     lock,
     /id: agentic_execution[\s\S]*--exclude-env ANTHROPIC_API_KEY[\s\S]*\n\s*ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/
   );
+});
+
+test('workflow configures Serena MCP server for semantic Go analysis', () => {
+  const source = workflowSource();
+  const lock = lockSource();
+  assert.match(source, /mcp-servers:/);
+  assert.match(source, /container:\s*"ghcr\.io\/github\/serena-mcp-server:latest"/);
+  assert.match(source, /entrypoint:\s*"serena"/);
+  assert.match(source, /allowed:/);
+  assert.match(lock, /"serena":\s*\{/);
+  assert.match(lock, /"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/);
+  assert.match(lock, /"entrypoint":\s*"serena"/);
+});
+
+test('compiled lock includes Serena tools in agent allowed-tools', () => {
+  const lock = lockSource();
+  assert.match(lock, /mcp__serena__activate_project/);
+  assert.match(lock, /mcp__serena__get_symbols_overview/);
+  assert.match(lock, /mcp__serena__find_symbol/);
+  assert.match(lock, /mcp__serena__search_for_pattern/);
+  assert.match(lock, /mcp__serena__find_referencing_symbols/);
+  assert.match(lock, /mcp__serena__read_file/);
+});
+
+test('workflow configures bash tools for Go source navigation', () => {
+  const source = workflowSource();
+  assert.match(source, /tools:/);
+  assert.match(source, /bash:/);
+  assert.match(source, /find \. -name '\*\.go' ! -name '\*_test\.go' -type f/);
+  assert.match(source, /grep -r '\^func ' \. --include='\*\.go'/);
 });
 
 test('compiled lock preserves LiteLLM model and allowed domains', () => {

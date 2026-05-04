@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"35ccd9592258d8787c63cebee4529b99b9b0e626c81d2e6f20646eec70f9ea9f","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
-# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6.3.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20","digest":"sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20","digest":"sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20@sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20","digest":"sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19","digest":"sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.2.19@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0","digest":"sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28","pinned_image":"ghcr.io/github/github-mcp-server:v0.32.0@sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"73372335f017a334bf53bfcb5654bc86dc544c13f82b64817e135c90a2d283cd","compiler_version":"v0.68.3","strict":true,"agent_id":"claude","agent_model":"llm-gateway/gpt-5.4"}
+# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"373c709c69115d41ff229c7e5df9f8788daa9553","version":"v9"},{"repo":"actions/setup-node","sha":"53b83947a5a98c8d113130e565377fae1a50d02f","version":"v6.3.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"ba90f2186d7ad780ec640f364005fa24e797b360","version":"v0.68.3"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20","digest":"sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.20@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20","digest":"sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20@sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20","digest":"sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.20@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.2.19","digest":"sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.2.19@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd"},{"image":"ghcr.io/github/github-mcp-server:v0.32.0","digest":"sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28","pinned_image":"ghcr.io/github/github-mcp-server:v0.32.0@sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28"},{"image":"ghcr.io/github/serena-mcp-server:latest"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -44,6 +44,7 @@
 #   - ghcr.io/github/gh-aw-firewall/squid:0.25.20@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236
 #   - ghcr.io/github/gh-aw-mcpg:v0.2.19@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd
 #   - ghcr.io/github/github-mcp-server:v0.32.0@sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28
+#   - ghcr.io/github/serena-mcp-server:latest
 #   - node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
 
 name: "Semantic Function Refactor"
@@ -238,7 +239,6 @@ jobs:
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
-          GH_AW_GITHUB_EVENT_HEAD_COMMIT_ID: ${{ github.event.head_commit.id }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -251,14 +251,14 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_399922bddfe8258c_EOF'
+          cat << 'GH_AW_PROMPT_76340db72282b218_EOF'
           <system>
-          GH_AW_PROMPT_399922bddfe8258c_EOF
+          GH_AW_PROMPT_76340db72282b218_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_399922bddfe8258c_EOF'
+          cat << 'GH_AW_PROMPT_76340db72282b218_EOF'
           <safe-output-tools>
           Tools: create_issue(max:3), missing_tool, missing_data, noop
           </safe-output-tools>
@@ -290,20 +290,19 @@ jobs:
           {{/if}}
           </github-context>
           
-          GH_AW_PROMPT_399922bddfe8258c_EOF
+          GH_AW_PROMPT_76340db72282b218_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_399922bddfe8258c_EOF'
+          cat << 'GH_AW_PROMPT_76340db72282b218_EOF'
           </system>
           {{#runtime-import .github/workflows/semantic-function-refactor.md}}
-          GH_AW_PROMPT_399922bddfe8258c_EOF
+          GH_AW_PROMPT_76340db72282b218_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
-          GH_AW_GITHUB_ACTOR: ${{ github.actor }}
-          GH_AW_GITHUB_EVENT_HEAD_COMMIT_ID: ${{ github.event.head_commit.id }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_OPEN_ISSUES: ${{ needs.pre_activation.outputs.open_issues }}
@@ -320,7 +319,6 @@ jobs:
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
-          GH_AW_GITHUB_EVENT_HEAD_COMMIT_ID: ${{ github.event.head_commit.id }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -344,7 +342,6 @@ jobs:
                 GH_AW_GITHUB_ACTOR: process.env.GH_AW_GITHUB_ACTOR,
                 GH_AW_GITHUB_EVENT_COMMENT_ID: process.env.GH_AW_GITHUB_EVENT_COMMENT_ID,
                 GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: process.env.GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER,
-                GH_AW_GITHUB_EVENT_HEAD_COMMIT_ID: process.env.GH_AW_GITHUB_EVENT_HEAD_COMMIT_ID,
                 GH_AW_GITHUB_EVENT_ISSUE_NUMBER: process.env.GH_AW_GITHUB_EVENT_ISSUE_NUMBER,
                 GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: process.env.GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER,
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
@@ -474,15 +471,15 @@ jobs:
             const determineAutomaticLockdown = require('${{ runner.temp }}/gh-aw/actions/determine_automatic_lockdown.cjs');
             await determineAutomaticLockdown(github, context, core);
       - name: Download container images
-        run: bash "${RUNNER_TEMP}/gh-aw/actions/download_docker_images.sh" ghcr.io/github/gh-aw-firewall/agent:0.25.20@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682 ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20@sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519 ghcr.io/github/gh-aw-firewall/squid:0.25.20@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236 ghcr.io/github/gh-aw-mcpg:v0.2.19@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd ghcr.io/github/github-mcp-server:v0.32.0@sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28 node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
+        run: bash "${RUNNER_TEMP}/gh-aw/actions/download_docker_images.sh" ghcr.io/github/gh-aw-firewall/agent:0.25.20@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682 ghcr.io/github/gh-aw-firewall/api-proxy:0.25.20@sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519 ghcr.io/github/gh-aw-firewall/squid:0.25.20@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236 ghcr.io/github/gh-aw-mcpg:v0.2.19@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd ghcr.io/github/github-mcp-server:v0.32.0@sha256:2763823c63bcca718ce53850a1d7fcf2f501ec84028394f1b63ce7e9f4f9be28 ghcr.io/github/serena-mcp-server:latest node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
       - name: Write Safe Outputs Config
         run: |
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_950fa8da6daef0cb_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_3e41bdc1c931a652_EOF'
           {"create_issue":{"labels":["semantic-refactor","refactoring","code-quality","automated-analysis"],"max":3,"title_prefix":"[semantic-refactor] "},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_950fa8da6daef0cb_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_3e41bdc1c931a652_EOF
       - name: Write Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -676,7 +673,7 @@ jobs:
           export GH_AW_ENGINE="claude"
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.19'
           
-          cat << GH_AW_MCP_CONFIG_bd2e2ee2857e3eee_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
+          cat << GH_AW_MCP_CONFIG_0ef374e547b3fe85_EOF | bash "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh"
           {
             "mcpServers": {
               "github": {
@@ -707,6 +704,41 @@ jobs:
                     ]
                   }
                 }
+              },
+              "serena": {
+                "type": "stdio",
+                "container": "ghcr.io/github/serena-mcp-server:latest",
+                "entrypoint": "serena",
+                "entrypointArgs": [
+                  "start-mcp-server",
+                  "--context",
+                  "codex",
+                  "--project",
+                  "${{ github.workspace }}"
+                ],
+                "mounts": [
+                  "${{ github.workspace }}:${{ github.workspace }}:rw"
+                ],
+                "args": [
+                  "--network",
+                  "host"
+                ],
+                "tools": [
+                  "activate_project",
+                  "get_symbols_overview",
+                  "find_symbol",
+                  "search_for_pattern",
+                  "find_referencing_symbols",
+                  "read_file",
+                  "get_symbol_documentation"
+                ],
+                "guard-policies": {
+                  "write-sink": {
+                    "accept": [
+                      "*"
+                    ]
+                  }
+                }
               }
             },
             "gateway": {
@@ -716,7 +748,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_bd2e2ee2857e3eee_EOF
+          GH_AW_MCP_CONFIG_0ef374e547b3fe85_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -728,7 +760,25 @@ jobs:
       - name: Execute Claude Code CLI
         id: agentic_execution
         # Allowed tools (sorted):
-        # - Bash
+        # - Bash(cat ./**/*.go)
+        # - Bash(cat)
+        # - Bash(date)
+        # - Bash(echo)
+        # - Bash(find . -maxdepth 2 -ls)
+        # - Bash(find . -name '*.go' ! -name '*_test.go' -type f)
+        # - Bash(find . -type f -name '*.go' ! -name '*_test.go')
+        # - Bash(grep -r '^func ' . --include='*.go')
+        # - Bash(grep)
+        # - Bash(head -n * ./**/*.go)
+        # - Bash(head)
+        # - Bash(ls)
+        # - Bash(pwd)
+        # - Bash(sort)
+        # - Bash(tail)
+        # - Bash(uniq)
+        # - Bash(wc -l ./**/*.go)
+        # - Bash(wc)
+        # - Bash(yq)
         # - BashOutput
         # - Edit
         # - ExitPlanMode
@@ -795,6 +845,13 @@ jobs:
         # - mcp__github__search_pull_requests
         # - mcp__github__search_repositories
         # - mcp__github__search_users
+        # - mcp__serena__activate_project
+        # - mcp__serena__find_referencing_symbols
+        # - mcp__serena__find_symbol
+        # - mcp__serena__get_symbol_documentation
+        # - mcp__serena__get_symbols_overview
+        # - mcp__serena__read_file
+        # - mcp__serena__search_for_pattern
         timeout-minutes: 15
         run: |
           set -o pipefail
@@ -802,7 +859,7 @@ jobs:
           (umask 177 && touch /tmp/gh-aw/agent-stdio.log)
           # shellcheck disable=SC1003
           sudo -E awf --container-workdir "${GITHUB_WORKSPACE}" --mount "${RUNNER_TEMP}/gh-aw:${RUNNER_TEMP}/gh-aw:ro" --mount "${RUNNER_TEMP}/gh-aw:/host${RUNNER_TEMP}/gh-aw:ro" --tty --env-all --exclude-env ANTHROPIC_API_KEY --exclude-env GITHUB_MCP_SERVER_TOKEN --exclude-env MCP_GATEWAY_API_KEY --allow-domains '*.githubusercontent.com,anthropic.com,api.anthropic.com,api.github.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,cdn.playwright.dev,codeload.github.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,elastic.litellm-prod.ai,files.pythonhosted.org,ghcr.io,github-cloud.githubusercontent.com,github-cloud.s3.amazonaws.com,github.com,go.dev,golang.org,goproxy.io,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,lfs.github.com,objects.githubusercontent.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,pkg.go.dev,playwright.download.prss.microsoft.com,ppa.launchpad.net,proxy.golang.org,pypi.org,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,sentry.io,statsig.anthropic.com,storage.googleapis.com,sum.golang.org,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com' --log-level info --proxy-logs-dir /tmp/gh-aw/sandbox/firewall/logs --audit-dir /tmp/gh-aw/sandbox/firewall/audit --enable-host-access --image-tag 0.25.20 --skip-pull --enable-api-proxy --anthropic-api-target elastic.litellm-prod.ai \
-            -- /bin/bash -c 'export PATH="$(find /opt/hostedtoolcache -maxdepth 4 -type d -name bin 2>/dev/null | tr '\''\n'\'' '\'':'\'')$PATH"; [ -n "$GOROOT" ] && export PATH="$GOROOT/bin:$PATH" || true && claude --print --no-chrome --mcp-config /tmp/gh-aw/mcp-config/mcp-servers.json --allowed-tools Bash,BashOutput,Edit,ExitPlanMode,Glob,Grep,KillBash,LS,MultiEdit,NotebookEdit,NotebookRead,Read,Task,TodoWrite,Write,mcp__github__download_workflow_run_artifact,mcp__github__get_code_scanning_alert,mcp__github__get_commit,mcp__github__get_dependabot_alert,mcp__github__get_discussion,mcp__github__get_discussion_comments,mcp__github__get_file_contents,mcp__github__get_job_logs,mcp__github__get_label,mcp__github__get_latest_release,mcp__github__get_me,mcp__github__get_notification_details,mcp__github__get_pull_request,mcp__github__get_pull_request_comments,mcp__github__get_pull_request_diff,mcp__github__get_pull_request_files,mcp__github__get_pull_request_review_comments,mcp__github__get_pull_request_reviews,mcp__github__get_pull_request_status,mcp__github__get_release_by_tag,mcp__github__get_secret_scanning_alert,mcp__github__get_tag,mcp__github__get_workflow_run,mcp__github__get_workflow_run_logs,mcp__github__get_workflow_run_usage,mcp__github__issue_read,mcp__github__list_branches,mcp__github__list_code_scanning_alerts,mcp__github__list_commits,mcp__github__list_dependabot_alerts,mcp__github__list_discussion_categories,mcp__github__list_discussions,mcp__github__list_issue_types,mcp__github__list_issues,mcp__github__list_label,mcp__github__list_notifications,mcp__github__list_pull_requests,mcp__github__list_releases,mcp__github__list_secret_scanning_alerts,mcp__github__list_starred_repositories,mcp__github__list_tags,mcp__github__list_workflow_jobs,mcp__github__list_workflow_run_artifacts,mcp__github__list_workflow_runs,mcp__github__list_workflows,mcp__github__pull_request_read,mcp__github__search_code,mcp__github__search_issues,mcp__github__search_orgs,mcp__github__search_pull_requests,mcp__github__search_repositories,mcp__github__search_users --debug-file /tmp/gh-aw/agent-stdio.log --verbose --permission-mode bypassPermissions --output-format stream-json "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
+            -- /bin/bash -c 'export PATH="$(find /opt/hostedtoolcache -maxdepth 4 -type d -name bin 2>/dev/null | tr '\''\n'\'' '\'':'\'')$PATH"; [ -n "$GOROOT" ] && export PATH="$GOROOT/bin:$PATH" || true && claude --print --no-chrome --mcp-config /tmp/gh-aw/mcp-config/mcp-servers.json --allowed-tools '\''Bash(cat ./**/*.go),Bash(cat),Bash(date),Bash(echo),Bash(find . -maxdepth 2 -ls),Bash(find . -name '\''\'\'''\''*.go'\''\'\'''\'' ! -name '\''\'\'''\''*_test.go'\''\'\'''\'' -type f),Bash(find . -type f -name '\''\'\'''\''*.go'\''\'\'''\'' ! -name '\''\'\'''\''*_test.go'\''\'\'''\''),Bash(grep -r '\''\'\'''\''^func '\''\'\'''\'' . --include='\''\'\'''\''*.go'\''\'\'''\''),Bash(grep),Bash(head -n * ./**/*.go),Bash(head),Bash(ls),Bash(pwd),Bash(sort),Bash(tail),Bash(uniq),Bash(wc -l ./**/*.go),Bash(wc),Bash(yq),BashOutput,Edit,ExitPlanMode,Glob,Grep,KillBash,LS,MultiEdit,NotebookEdit,NotebookRead,Read,Task,TodoWrite,Write,mcp__github__download_workflow_run_artifact,mcp__github__get_code_scanning_alert,mcp__github__get_commit,mcp__github__get_dependabot_alert,mcp__github__get_discussion,mcp__github__get_discussion_comments,mcp__github__get_file_contents,mcp__github__get_job_logs,mcp__github__get_label,mcp__github__get_latest_release,mcp__github__get_me,mcp__github__get_notification_details,mcp__github__get_pull_request,mcp__github__get_pull_request_comments,mcp__github__get_pull_request_diff,mcp__github__get_pull_request_files,mcp__github__get_pull_request_review_comments,mcp__github__get_pull_request_reviews,mcp__github__get_pull_request_status,mcp__github__get_release_by_tag,mcp__github__get_secret_scanning_alert,mcp__github__get_tag,mcp__github__get_workflow_run,mcp__github__get_workflow_run_logs,mcp__github__get_workflow_run_usage,mcp__github__issue_read,mcp__github__list_branches,mcp__github__list_code_scanning_alerts,mcp__github__list_commits,mcp__github__list_dependabot_alerts,mcp__github__list_discussion_categories,mcp__github__list_discussions,mcp__github__list_issue_types,mcp__github__list_issues,mcp__github__list_label,mcp__github__list_notifications,mcp__github__list_pull_requests,mcp__github__list_releases,mcp__github__list_secret_scanning_alerts,mcp__github__list_starred_repositories,mcp__github__list_tags,mcp__github__list_workflow_jobs,mcp__github__list_workflow_run_artifacts,mcp__github__list_workflow_runs,mcp__github__list_workflows,mcp__github__pull_request_read,mcp__github__search_code,mcp__github__search_issues,mcp__github__search_orgs,mcp__github__search_pull_requests,mcp__github__search_repositories,mcp__github__search_users,mcp__serena__activate_project,mcp__serena__find_referencing_symbols,mcp__serena__find_symbol,mcp__serena__get_symbol_documentation,mcp__serena__get_symbols_overview,mcp__serena__read_file,mcp__serena__search_for_pattern'\'' --debug-file /tmp/gh-aw/agent-stdio.log --verbose --permission-mode bypassPermissions --output-format stream-json "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
         env:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
           ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
