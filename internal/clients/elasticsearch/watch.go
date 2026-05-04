@@ -92,7 +92,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, nil
 	}
 
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
 		return nil, d
 	}
 
