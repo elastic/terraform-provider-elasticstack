@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -198,6 +199,11 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 						t.Fatalf("Cannot marshal lifecycle: %s", err)
 					}
 					if _, err = typedClient.Indices.PutDataLifecycle(dsName + "-multiple-two").Raw(bytes.NewReader(lifecycleBytes)).Do(context.Background()); err != nil {
+						// HTTP 400 means the endpoint doesn't exist on this ES version; the step's
+						// SkipFunc handles skipping the assertions. Treat it as a no-op here.
+						if strings.Contains(err.Error(), "status: 400") {
+							return
+						}
 						t.Fatalf("Cannot update lifecycle: %s", err)
 					}
 				},
