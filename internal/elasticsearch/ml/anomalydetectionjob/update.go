@@ -50,13 +50,6 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML anomaly detection job: %s", jobID))
 
-	// Note: Many ML job properties cannot be updated after creation.
-	// Only certain properties like description, groups, model_plot_config,
-	// analysis_limits.model_memory_limit, renormalization_window_days,
-	// results_retention_days, custom_settings, background_persist_interval,
-	// allow_lazy_open, daily_model_snapshot_retention_after_days,
-	// and model_snapshot_retention_days can be updated.
-
 	// Create update body with only updatable fields
 	updateBody := &UpdateAPIModel{}
 	hasChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)

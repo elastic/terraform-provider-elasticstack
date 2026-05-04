@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strconv"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
@@ -39,6 +41,12 @@ import (
 func isNotFoundElasticsearchError(err error) bool {
 	var esErr *types.ElasticsearchError
 	return errors.As(err, &esErr) && esErr.Status == 404
+}
+
+// durationToMsString formats a time.Duration as a millisecond string (e.g. "5000ms")
+// for use with typed API builder methods that accept a string timeout.
+func durationToMsString(d time.Duration) string {
+	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
 }
 
 // doFWWrite marshals body to JSON, obtains an ES client from apiClient, calls fn

@@ -162,7 +162,7 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	var diags fwdiags.Diagnostics
 	hasChanges := false
 
-	if !plan.Description.Equal(state.Description) {
+	if !plan.Description.Equal(state.Description) && !plan.Description.IsNull() {
 		u.Description = new(plan.Description.ValueString())
 		hasChanges = true
 	}
