@@ -87,7 +87,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 
 	if !m.Priority.IsNull() && !m.Priority.IsUnknown() {
-		p := int(m.Priority.ValueInt64())
+		p := m.Priority.ValueInt64()
 		out.Priority = &p
 	}
 
@@ -101,7 +101,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 
 	if !m.Version.IsNull() && !m.Version.IsUnknown() {
-		v := int(m.Version.ValueInt64())
+		v := m.Version.ValueInt64()
 		out.Version = &v
 	}
 

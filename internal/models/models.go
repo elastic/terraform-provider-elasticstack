@@ -173,9 +173,9 @@ type IndexTemplate struct {
 	DataStream                      *DataStreamSettings `json:"data_stream,omitempty"`
 	IndexPatterns                   []string            `json:"index_patterns"`
 	Meta                            map[string]any      `json:"_meta,omitempty"`
-	Priority                        *int                `json:"priority,omitempty"`
+	Priority                        *int64              `json:"priority,omitempty"`
 	Template                        *Template           `json:"template,omitempty"`
-	Version                         *int                `json:"version,omitempty"`
+	Version                         *int64              `json:"version,omitempty"`
 }
 
 type DataStreamSettings struct {

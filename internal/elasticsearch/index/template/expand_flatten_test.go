@@ -19,6 +19,7 @@ package template
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -71,10 +72,12 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	ver := 7
 	pr64 := int64(pr)
 	ver64 := int64(ver)
+	metaVal, _ := json.Marshal("v")
 	tpl := &estypes.IndexTemplate{
 		ComposedOf:                      []string{"a"},
 		IgnoreMissingComponentTemplates: []string{"missing"},
 		IndexPatterns:                   []string{"ix-*"},
+		Meta_:                           estypes.Metadata{"k": metaVal},
 		Priority:                        &pr64,
 		Version:                         &ver64,
 	}
@@ -102,8 +105,8 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	if len(api.IndexPatterns) != 1 || api.IndexPatterns[0] != "ix-*" {
 		t.Fatalf("index_patterns %#v", api.IndexPatterns)
 	}
-	if api.Meta != nil {
-		t.Fatalf("expected nil meta, got %#v", api.Meta)
+	if api.Meta == nil || api.Meta["k"] != "v" {
+		t.Fatalf("meta %#v", api.Meta)
 	}
 	if api.Priority == nil || *api.Priority != 42 {
 		t.Fatalf("priority %#v", api.Priority)
