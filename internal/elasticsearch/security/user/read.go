@@ -47,8 +47,16 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 
 	// Set the fields
 	state.Username = types.StringValue(resourceID)
-	state.Email = types.StringValue(user.Email)
-	state.FullName = types.StringValue(user.FullName)
+	if user.Email != nil {
+		state.Email = types.StringValue(*user.Email)
+	} else {
+		state.Email = types.StringValue("")
+	}
+	if user.FullName != nil {
+		state.FullName = types.StringValue(*user.FullName)
+	} else {
+		state.FullName = types.StringValue("")
+	}
 	state.Enabled = types.BoolValue(user.Enabled)
 
 	// Handle metadata

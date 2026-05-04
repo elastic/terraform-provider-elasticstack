@@ -43,8 +43,8 @@ func (r *datafeedResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// Convert to API create model
-	createRequest, diags := plan.toAPICreateModel(ctx)
+	// Convert to API create model (raw JSON to preserve query form)
+	createBody, diags := plan.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -56,7 +56,7 @@ func (r *datafeedResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	createDiags := elasticsearch.PutDatafeed(ctx, client, datafeedID, *createRequest)
+	createDiags := elasticsearch.PutDatafeed(ctx, client, datafeedID, createBody)
 	resp.Diagnostics.Append(createDiags...)
 	if resp.Diagnostics.HasError() {
 		return

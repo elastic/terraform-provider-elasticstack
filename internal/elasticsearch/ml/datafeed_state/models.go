@@ -20,8 +20,8 @@ package datafeedstate
 import (
 	"time"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -57,10 +57,10 @@ func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Dia
 	return t, nil
 }
 
-func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.DatafeedStats) diag.Diagnostics {
+func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *estypes.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
+	if datafeed.State(datafeedStats.State.String()) == datafeed.StateStarted {
 		if datafeedStats.RunningState == nil {
 			diags.AddWarning(
 				"Running state was empty for a started datafeed",
@@ -70,13 +70,13 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 		}
 
 		if datafeedStats.RunningState.SearchInterval != nil {
-			start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMS, d.Start)
+			start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMs, d.Start)
 			diags.Append(timeDiags...)
 			if diags.HasError() {
 				return diags
 			}
 
-			end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMS, d.End)
+			end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMs, d.End)
 			diags.Append(timeDiags...)
 			if diags.HasError() {
 				return diags

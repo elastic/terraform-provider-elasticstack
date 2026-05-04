@@ -22,18 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
-var (
-	_ datasource.DataSource              = &dataSource{}
-	_ datasource.DataSourceWithConfigure = &dataSource{}
-)
-
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return &dataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentKibana, "spaces")}
-}
-
-// dataSource is the data source implementation.
-type dataSource struct {
-	*entitycore.DataSourceBase
+	return entitycore.NewKibanaDataSource[dataSourceModel](
+		entitycore.ComponentKibana,
+		"spaces",
+		getDataSourceSchema,
+		readDataSource,
+	)
 }

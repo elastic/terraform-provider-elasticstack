@@ -20,38 +20,26 @@ package indices
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var stateModel tfModel
-
-	diags := req.Config.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := d.client.GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config tfModel) (tfModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	// Default to "*" (all indices) when target is null or empty.
-	target := stateModel.Target.ValueString()
+	target := config.Target.ValueString()
 	if target == "" {
 		target = "*"
 	}
 
 	// Call client API
-	indexAPIModels, diags := elasticsearch.GetIndices(ctx, client, target)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	indexAPIModels, idxDiags := elasticsearch.GetIndices(ctx, esClient, target)
+	diags.Append(idxDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
 	// Map response body to model
@@ -59,24 +47,23 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	for indexName, indexAPIModel := range indexAPIModels {
 		indexStateModel := indexTfModel{}
 
-		diags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
+		pDiags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
+		diags.Append(pDiags...)
+		if diags.HasError() {
+			return config, diags
 		}
 
 		indices = append(indices, indexStateModel)
 	}
 
-	indicesList, diags := types.ListValueFrom(ctx, indicesElementType(), indices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	indicesList, listDiags := types.ListValueFrom(ctx, indicesElementType(), indices)
+	diags.Append(listDiags...)
+	if diags.HasError() {
+		return config, diags
 	}
 
-	stateModel.ID = types.StringValue(target)
-	stateModel.Indices = indicesList
+	config.ID = types.StringValue(target)
+	config.Indices = indicesList
 
-	// Set state
-	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)
+	return config, diags
 }

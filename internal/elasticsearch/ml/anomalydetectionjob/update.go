@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -51,13 +50,6 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML anomaly detection job: %s", jobID))
 
-	// Note: Many ML job properties cannot be updated after creation.
-	// Only certain properties like description, groups, model_plot_config,
-	// analysis_limits.model_memory_limit, renormalization_window_days,
-	// results_retention_days, custom_settings, background_persist_interval,
-	// allow_lazy_open, daily_model_snapshot_retention_after_days,
-	// and model_snapshot_retention_days can be updated.
-
 	// Create update body with only updatable fields
 	updateBody := &UpdateAPIModel{}
 	hasChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)
@@ -69,8 +61,8 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 	// Only proceed with update if there are changes
 	if !hasChanges {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
-		resp.Diagnostics.AddWarning("No changed detected to updateble fields during an update operation", `
-Changes to non-updateable fields should force a recreation of the anomaly detection job. 
+		resp.Diagnostics.AddWarning("No changes detected to updatable fields during an update operation", `
+Changes to non-updateable fields should force a recreation of the anomaly detection job.
 Please report this warning to the provider developers.`)
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
@@ -82,30 +74,24 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	// Marshal the update body to JSON
-	body, err := json.Marshal(updateBody)
+	// Send the update as raw JSON so that all fields including
+	// categorization_examples_limit are included. The typed updatejob.Request
+	// uses types.AnalysisMemoryLimit which only models model_memory_limit,
+	// dropping categorization_examples_limit.
+	updateJSON, err := json.Marshal(updateBody)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal job update", err.Error())
+		resp.Diagnostics.AddError("Failed to marshal ML anomaly detection job update", err.Error())
 		return
 	}
-
-	// Update the ML job
-	res, err := esClient.ML.UpdateJob(jobID, bytes.NewReader(body), esClient.ML.UpdateJob.WithContext(ctx))
+	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML anomaly detection job: %s", jobID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return
 	}
 

@@ -48,3 +48,6 @@ certs
 
 # Custom linter performance measurement artifacts
 analysis/lint-perf-output/
+
+# Local env file (template is .env.template)
+.env

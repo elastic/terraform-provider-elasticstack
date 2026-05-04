@@ -98,7 +98,7 @@ func TestAccDataSourceIngestProcessorDropInvalidOnFailure(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccDataSourceIngestProcessorDropInvalidOnFailureConfig,
-				ExpectError: regexp.MustCompile(`"on_failure\.0" contains an invalid JSON`),
+				ExpectError: regexp.MustCompile(`Failed to parse on_failure JSON`),
 			},
 		},
 	})

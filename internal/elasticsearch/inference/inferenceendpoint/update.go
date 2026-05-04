@@ -57,7 +57,7 @@ func (r *inferenceEndpointResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	updateDiags := elasticsearch.UpdateInferenceEndpoint(ctx, client, update)
+	updateDiags := elasticsearch.UpdateInferenceEndpoint(ctx, client, plan.InferenceID.ValueString(), plan.TaskType.ValueString(), update)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)

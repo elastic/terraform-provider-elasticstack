@@ -18,12 +18,14 @@
 package logstash_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -133,18 +135,19 @@ func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(compID.ResourceID))
+		_, err = typedClient.Logstash.GetPipeline().Id(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
-
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("logstash pipeline (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("logstash pipeline (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

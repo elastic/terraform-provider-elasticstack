@@ -18,6 +18,7 @@
 package cluster_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -66,10 +67,10 @@ func TestAccResourceScript(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESTypedClient()
 					require.NoError(t, err)
 
-					_, err = esClient.DeleteScript(scriptID)
+					_, err = typedClient.Core.DeleteScript(scriptID).Do(context.Background())
 					require.NoError(t, err)
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
@@ -119,18 +120,19 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compID.ResourceID)
+		_, err = typedClient.Core.GetScript(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

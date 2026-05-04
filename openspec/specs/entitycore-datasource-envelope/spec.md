@@ -60,13 +60,6 @@ The system SHALL set the Terraform state from the model returned by the concrete
 - **THEN** `resp.State.Set` SHALL NOT be called
 - **AND** the error diagnostics SHALL be appended to `resp.Diagnostics`
 
-### Requirement: Existing struct-based data sources remain functional
-The system SHALL NOT break existing data sources that embed `*DataSourceBase` and implement `Read` directly.
-
-#### Scenario: Struct-based data source continues to work
-- **WHEN** an existing data source uses struct-based embedding without the generic constructor
-- **THEN** its `Configure`, `Metadata`, and `Read` behavior SHALL remain unchanged
-
 ### Requirement: Kibana envelope enforces optional model version requirements
 
 The Kibana data source envelope SHALL allow a decoded model to optionally declare pre-read server version requirements. When the model implements the optional version-requirements interface, the envelope SHALL evaluate those requirements after resolving the scoped Kibana client and before invoking the concrete read function.
@@ -105,4 +98,33 @@ Version requirements SHALL remain optional. A Kibana data source model that only
 - **THEN** the envelope SHALL append those diagnostics to the read response
 - **AND** the concrete read function SHALL NOT be invoked
 - **AND** Terraform state SHALL NOT be set from a read result
+
+### Requirement: Envelope is the sole supported Plugin Framework data source pattern
+The system SHALL provide only the generic envelope constructors for Plugin Framework data source wiring. No struct-based alternative SHALL exist within `internal/entitycore`. All existing Plugin Framework data sources SHALL be constructed via `NewKibanaDataSource` or `NewElasticsearchDataSource`.
+
+#### Scenario: All PF data sources use envelope constructor
+- **WHEN** the provider enumerates its Plugin Framework data sources
+- **THEN** every data source SHALL be constructed via `entitycore.NewKibanaDataSource[T]` or `entitycore.NewElasticsearchDataSource[T]`
+- **AND** no data source SHALL embed `*entitycore.DataSourceBase`
+
+#### Scenario: DataSourceBase is not present in the entitycore package
+- **WHEN** developers inspect `internal/entitycore` for data source base types
+- **THEN** `DataSourceBase` SHALL NOT exist
+- **AND** only envelope constructors and connection field embeddable structs SHALL be available
+
+### Requirement: Kibana data source models embed KibanaConnectionField
+Kibana-backed envelope data source models SHALL embed `entitycore.KibanaConnectionField` (or an equivalent struct field with the `GetKibanaConnection` accessor) so the envelope can decode the `kibana_connection` block alongside entity attributes.
+
+#### Scenario: Model embedding satisfies KibanaDataSourceModel
+- **WHEN** a data source model embeds `KibanaConnectionField`
+- **THEN** the model SHALL satisfy the `KibanaDataSourceModel` type constraint
+- **AND** the envelope SHALL decode the `kibana_connection` block into that field during `Read`
+
+### Requirement: Elasticsearch data source models embed ElasticsearchConnectionField
+Elasticsearch-backed envelope data source models SHALL embed `entitycore.ElasticsearchConnectionField` (or an equivalent struct field with the `GetElasticsearchConnection` accessor) so the envelope can decode the `elasticsearch_connection` block alongside entity attributes.
+
+#### Scenario: Model embedding satisfies ElasticsearchDataSourceModel
+- **WHEN** a data source model embeds `ElasticsearchConnectionField`
+- **THEN** the model SHALL satisfy the `ElasticsearchDataSourceModel` type constraint
+- **AND** the envelope SHALL decode the `elasticsearch_connection` block into that field during `Read`
 

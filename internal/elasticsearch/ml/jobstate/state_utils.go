@@ -47,7 +47,8 @@ func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateDat
 		return nil, diags
 	}
 
-	return &currentJob.State, diags
+	stateStr := currentJob.State.String()
+	return &stateStr, diags
 }
 
 // waitForJobState waits for a job to reach the desired state

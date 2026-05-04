@@ -115,11 +115,23 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 	if err := d.Set("username", usernameID); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("email", user.Email); err != nil {
-		return diag.FromErr(err)
+	if user.Email != nil {
+		if err := d.Set("email", *user.Email); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("email", ""); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	if err := d.Set("full_name", user.FullName); err != nil {
-		return diag.FromErr(err)
+	if user.FullName != nil {
+		if err := d.Set("full_name", *user.FullName); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("full_name", ""); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if err := d.Set("roles", user.Roles); err != nil {
 		return diag.FromErr(err)

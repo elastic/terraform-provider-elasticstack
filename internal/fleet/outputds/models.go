@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -29,10 +30,10 @@ import (
 )
 
 type outputModel struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	Outputs          types.List   `tfsdk:"outputs"`
+	entitycore.KibanaConnectionField
+	ID      types.String `tfsdk:"id"`
+	SpaceID types.String `tfsdk:"space_id"`
+	Outputs types.List   `tfsdk:"outputs"`
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {

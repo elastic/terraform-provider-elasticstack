@@ -45,8 +45,8 @@ type agentModel struct {
 }
 
 type agentDataSourceModel struct {
+	entitycore.KibanaConnectionField
 	ID                  types.String `tfsdk:"id"`
-	KibanaConnection    types.List   `tfsdk:"kibana_connection"`
 	AgentID             types.String `tfsdk:"agent_id"`
 	SpaceID             types.String `tfsdk:"space_id"`
 	IncludeDependencies types.Bool   `tfsdk:"include_dependencies"`
@@ -57,25 +57,6 @@ type agentDataSourceModel struct {
 	Labels              types.Set    `tfsdk:"labels"`
 	Tools               []toolModel  `tfsdk:"tools"`
 	Instructions        types.String `tfsdk:"instructions"`
-}
-
-type toolModel struct {
-	ID                        types.String                    `tfsdk:"id"`
-	SpaceID                   types.String                    `tfsdk:"space_id"`
-	ToolID                    types.String                    `tfsdk:"tool_id"`
-	Type                      types.String                    `tfsdk:"type"`
-	Description               types.String                    `tfsdk:"description"`
-	Tags                      types.Set                       `tfsdk:"tags"`
-	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
-	Configuration             types.String                    `tfsdk:"configuration"`
-	WorkflowID                types.String                    `tfsdk:"workflow_id"`
-	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
-}
-
-// GetKibanaConnection returns the kibana_connection block value, satisfying
-// the entitycore.KibanaDataSourceModel interface required by NewKibanaDataSource.
-func (model agentDataSourceModel) GetKibanaConnection() types.List {
-	return model.KibanaConnection
 }
 
 // GetVersionRequirements returns the static minimum Kibana version requirements
@@ -90,6 +71,19 @@ func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSou
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 		},
 	}, nil
+}
+
+type toolModel struct {
+	ID                        types.String                    `tfsdk:"id"`
+	SpaceID                   types.String                    `tfsdk:"space_id"`
+	ToolID                    types.String                    `tfsdk:"tool_id"`
+	Type                      types.String                    `tfsdk:"type"`
+	Description               types.String                    `tfsdk:"description"`
+	Tags                      types.Set                       `tfsdk:"tags"`
+	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
+	Configuration             types.String                    `tfsdk:"configuration"`
+	WorkflowID                types.String                    `tfsdk:"workflow_id"`
+	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
 func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {

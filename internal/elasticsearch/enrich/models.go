@@ -20,6 +20,7 @@ package enrich
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -29,14 +30,14 @@ import (
 )
 
 type PolicyData struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	PolicyType              types.String         `tfsdk:"policy_type"`
-	Indices                 types.Set            `tfsdk:"indices"`
-	MatchField              types.String         `tfsdk:"match_field"`
-	EnrichFields            types.Set            `tfsdk:"enrich_fields"`
-	Query                   jsontypes.Normalized `tfsdk:"query"`
+	entitycore.ElasticsearchConnectionField
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	PolicyType   types.String         `tfsdk:"policy_type"`
+	Indices      types.Set            `tfsdk:"indices"`
+	MatchField   types.String         `tfsdk:"match_field"`
+	EnrichFields types.Set            `tfsdk:"enrich_fields"`
+	Query        jsontypes.Normalized `tfsdk:"query"`
 }
 
 type PolicyDataWithExecute struct {

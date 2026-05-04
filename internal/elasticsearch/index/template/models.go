@@ -18,6 +18,7 @@
 package template
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -26,7 +27,7 @@ import (
 
 // Model is the Terraform plan/state shape for the index template resource and data source.
 type Model struct {
-	ElasticsearchConnection         types.List           `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
 	ID                              types.String         `tfsdk:"id"`
 	Name                            types.String         `tfsdk:"name"`
 	ComposedOf                      types.List           `tfsdk:"composed_of"`

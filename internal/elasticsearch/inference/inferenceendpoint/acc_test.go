@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 
@@ -209,7 +208,8 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 	}
 
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	apiKey, _ := inferenceEndpointTestAPIKey()
+	apiKey, usingFakeAPIKey := inferenceEndpointTestAPIKey()
+	skipIfUsingFakeAPIKey := skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
@@ -232,6 +232,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
 			},
@@ -240,6 +241,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				Check:                    resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
 			},
 			// Re-plan after removing task_settings — still no drift.
@@ -247,6 +249,7 @@ func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
 			},
@@ -290,6 +293,7 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_task_settings"),
 				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
 			},
@@ -343,20 +347,20 @@ func checkInferenceEndpointDestroy(s *terraform.State) error {
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.InferenceGet(
-			esClient.InferenceGet.WithInferenceID(compID.ResourceID),
-		)
+		res, err := typedClient.Inference.Get().InferenceId(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusNotFound {
+		if len(res.Endpoints) != 0 {
 			return fmt.Errorf("inference endpoint (%s) still exists", compID.ResourceID)
 		}
 	}

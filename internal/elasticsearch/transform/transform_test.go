@@ -18,9 +18,12 @@
 package transform_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -254,17 +257,20 @@ func checkResourceTransformDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		esClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.TransformGetTransform.WithTransformID(compID.ResourceID)
-		res, err := esClient.TransformGetTransform(req)
+		res, err := esClient.Transform.GetTransform().TransformId(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
+		if len(res.Transforms) > 0 {
 			return fmt.Errorf("transform (%s) still exists", compID.ResourceID)
 		}
 	}

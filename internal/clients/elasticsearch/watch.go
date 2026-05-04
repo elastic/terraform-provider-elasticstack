@@ -18,13 +18,11 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -38,37 +36,52 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		diags.AddError("Unable to marshal watch body", err.Error())
 		return diags
 	}
-	return putWatchBytes(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
+	return PutWatchBodyJSON(ctx, apiClient, watch.WatchID, watch.Active, watchBodyBytes)
 }
 
 // PutWatchBodyJSON sends a pre-encoded watch document (the JSON object under the watch id) to Put Watch.
+//
+// We use .Raw() because the provider stores watch body fields (trigger, input,
+// condition, actions, metadata, transform) as normalized JSON strings in the
+// Terraform state, then unmarshals them into map[string]any for transport. The
+// typed types.Watch uses strongly-typed unboxed structs that do not align with
+// this map[string]any shape, so passing through .Raw() preserves the exact
+// JSON produced by the resource layer while still using the typed client for
+// transport.
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
-	return putWatchBytes(ctx, apiClient, watchID, active, watchBodyJSON)
-}
+	var diags fwdiag.Diagnostics
 
-func putWatchBytes(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyBytes []byte) fwdiag.Diagnostics {
-	return doFWWrite(apiClient, json.RawMessage(watchBodyBytes),
-		"Unable to marshal watch body",
-		"Unable to create or update watch",
-		"Unable to create or update watch",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Watcher.PutWatch(watchID, body,
-				esClient.Watcher.PutWatch.WithActive(active),
-				esClient.Watcher.PutWatch.WithContext(ctx))
-		},
-	)
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
+	}
+
+	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
+	if err != nil {
+		diags.AddError("Unable to put watch '"+watchID+"'", err.Error())
+		return diags
+	}
+	return diags
 }
 
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
 	}
 
-	res, err := esClient.Watcher.GetWatch(watchID, esClient.Watcher.GetWatch.WithContext(ctx))
+	// We use .Perform() (raw *http.Response) instead of .Do() which would
+	// return *getwatch.Response containing *types.Watch. The typed
+	// types.Watch has trigger/input/condition/actions as strongly-typed
+	// unboxed structs, while the provider's models.Watch stores them as
+	// map[string]any under Body (with json:"watch"). The JSON shapes do
+	// not align for a simple Marshal/Unmarshal round-trip, so we decode
+	// directly from the raw response body into models.Watch.
+	res, err := typedClient.Watcher.GetWatch(watchID).Perform(ctx)
 	if err != nil {
 		diags.AddError("Unable to get watch", err.Error())
 		return nil, diags
@@ -79,7 +92,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, nil
 	}
 
-	if d := diagutil.CheckErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
 		return nil, d
 	}
 
@@ -96,22 +109,19 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	esClient, err := apiClient.GetESClient()
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
 	}
 
-	res, err := esClient.Watcher.DeleteWatch(watchID, esClient.Watcher.DeleteWatch.WithContext(ctx))
+	_, err = typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
 	if err != nil {
+		if isNotFoundElasticsearchError(err) {
+			return diags // already gone, treat as success
+		}
 		diags.AddError("Unable to delete watch", err.Error())
 		return diags
 	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return diags // already gone, treat as success
-	}
-
-	return diagutil.CheckErrorFromFW(res, "Unable to delete watch")
+	return diags
 }

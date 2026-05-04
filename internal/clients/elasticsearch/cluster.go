@@ -25,256 +25,571 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/snapshot/getrepository"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*models.ClusterInfo, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*info.Response, sdkdiag.Diagnostics) {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, sdkdiag.FromErr(err)
 	}
-	res, err := esClient.Info(esClient.Info.WithContext(ctx))
+	res, err := typedClient.Core.Info().Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, sdkdiag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
-		return nil, diags
-	}
-
-	info := models.ClusterInfo{}
-	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
-		return nil, diag.FromErr(err)
-	}
-	return &info, diags
+	return res, diags
 }
 
-func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, repository *models.SnapshotRepository) diag.Diagnostics {
-	return doSDKWrite(apiClient, repository, "Unable to create or update the snapshot repository",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Snapshot.CreateRepository(repository.Name, body, esClient.Snapshot.CreateRepository.WithContext(ctx))
-		},
-	)
+type SnapshotRepositoryInfo struct {
+	Name     string
+	Type     string
+	Settings map[string]any
 }
 
-func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+type SlmPolicy struct {
+	Name       string        `json:"name"`
+	Schedule   string        `json:"schedule"`
+	Repository string        `json:"repository"`
+	Config     *SlmConfig    `json:"config"`
+	Retention  *SlmRetention `json:"retention"`
+}
+
+type SlmConfig struct {
+	FeatureStates      []string       `json:"feature_states"`
+	ExpandWildcards    string         `json:"expand_wildcards"`
+	IgnoreUnavailable  *bool          `json:"ignore_unavailable"`
+	IncludeGlobalState *bool          `json:"include_global_state"`
+	Indices            []string       `json:"indices"`
+	Metadata           types.Metadata `json:"metadata"`
+	Partial            *bool          `json:"partial"`
+}
+
+type SlmRetention struct {
+	ExpireAfter *string `json:"expire_after"`
+	MaxCount    *int    `json:"max_count"`
+	MinCount    *int    `json:"min_count"`
+}
+
+func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return sdkdiag.FromErr(err)
 	}
-	req := esClient.Snapshot.GetRepository.WithRepository(name)
-	res, err := esClient.Snapshot.GetRepository(req, esClient.Snapshot.GetRepository.WithContext(ctx))
+
+	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return sdkdiag.FromErr(err)
+	}
+
+	var repo types.Repository
+	switch repoType {
+	case "fs":
+		var s types.SharedFileSystemRepository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "fs"
+		repo = s
+	case "url":
+		var s types.ReadOnlyUrlRepository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "url"
+		repo = s
+	case "s3":
+		var s types.S3Repository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "s3"
+		repo = s
+	case "gcs":
+		var s types.GcsRepository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "gcs"
+		repo = s
+	case "azure":
+		var s types.AzureRepository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "azure"
+		repo = s
+	case "hdfs":
+		// The go-elasticsearch Typed API's types.Repository union does not include
+		// HdfsRepository, and the getrepository Response.UnmarshalJSON only handles
+		// azure, gcs, s3, fs, url, source. HDFS snapshots require the repository-hdfs
+		// plugin, which is outside the core typed API spec. Therefore HDFS must be
+		// sent/received as raw JSON to preserve backward compatibility.
+		body := map[string]any{
+			"type":     repoType,
+			"settings": settings,
+		}
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req := typedClient.Snapshot.CreateRepository(name).Raw(bytes.NewReader(bodyBytes)).Verify(verify)
+		_, err = req.Do(ctx)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		return diags
+	case "source":
+		var s types.SourceOnlyRepository
+		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		s.Type = "source"
+		repo = s
+	default:
+		return sdkdiag.Errorf("unsupported snapshot repository type: %s", repoType)
+	}
+
+	_, err = typedClient.Snapshot.CreateRepository(name).Request(&repo).Verify(verify).Do(ctx)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	return diags
+}
+
+func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, sdkdiag.Diagnostics) {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	res, err := typedClient.Snapshot.GetRepository().Repository(name).Perform(ctx)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get the information about snapshot repository: %s", name)); diags.HasError() {
-		return nil, diags
-	}
-	snapRepoResponse := make(map[string]models.SnapshotRepository)
-	if err := json.NewDecoder(res.Body).Decode(&snapRepoResponse); err != nil {
-		return nil, diag.FromErr(err)
+	if res.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return nil, sdkdiag.FromErr(fmt.Errorf("unexpected status code %d from snapshot repository API: %s", res.StatusCode, string(bodyBytes)))
 	}
 
-	if currentRepo, ok := snapRepoResponse[name]; ok {
-		if len(currentRepo.Name) == 0 {
-			currentRepo.Name = name
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, sdkdiag.FromErr(fmt.Errorf("failed to read snapshot repository response: %w", err))
+	}
+
+	// Try typed parsing first for known types.
+	typedResp := getrepository.NewResponse()
+	if err := json.Unmarshal(bodyBytes, &typedResp); err == nil {
+		if repo, ok := typedResp[name]; ok {
+			info, err := extractSnapshotRepositoryInfo(repo)
+			if err != nil {
+				return nil, sdkdiag.FromErr(err)
+			}
+			info.Name = name
+			return info, diags
 		}
-		return &currentRepo, diags
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
+	// Fall back to raw JSON parsing for plugin-backed repository types (e.g. hdfs)
+	// that are not part of the go-elasticsearch Typed API types.Repository union.
+	var rawResp map[string]struct {
+		Type     string         `json:"type"`
+		Settings map[string]any `json:"settings"`
+	}
+	if err := json.Unmarshal(bodyBytes, &rawResp); err == nil {
+		if repo, ok := rawResp[name]; ok {
+			return &SnapshotRepositoryInfo{
+				Name:     name,
+				Type:     repo.Type,
+				Settings: repo.Settings,
+			}, diags
+		}
+	}
+
+	diags = append(diags, sdkdiag.Diagnostic{
+		Severity: sdkdiag.Error,
 		Summary:  "Unable to find requested repository",
 		Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
 	})
 	return nil, diags
 }
 
-func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
+func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryInfo, error) {
+	var repoType string
+	var settings any
+
+	switch r := repo.(type) {
+	case types.SharedFileSystemRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.SharedFileSystemRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case types.ReadOnlyUrlRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.ReadOnlyUrlRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case types.S3Repository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.S3Repository:
+		repoType = r.Type
+		settings = r.Settings
+	case types.GcsRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.GcsRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case types.AzureRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.AzureRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case types.SourceOnlyRepository:
+		repoType = r.Type
+		settings = r.Settings
+	case *types.SourceOnlyRepository:
+		repoType = r.Type
+		settings = r.Settings
+	default:
+		return nil, fmt.Errorf("unsupported snapshot repository type: %T", repo)
 	}
-	res, err := esClient.Snapshot.DeleteRepository([]string{name}, esClient.Snapshot.DeleteRepository.WithContext(ctx))
+
+	settingsMap := make(map[string]any)
+	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		return diag.FromErr(err)
+		return nil, err
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete snapshot repository: %s", name)); diags.HasError() {
-		return diags
+	if !bytes.Equal(settingsBytes, []byte("null")) {
+		if err := json.Unmarshal(settingsBytes, &settingsMap); err != nil {
+			return nil, err
+		}
+	}
+
+	return &SnapshotRepositoryInfo{
+		Type:     repoType,
+		Settings: settingsMap,
+	}, nil
+}
+
+func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	_, err = typedClient.Snapshot.DeleteRepository(name).Do(ctx)
+	if err != nil {
+		if isNotFoundElasticsearchError(err) {
+			return diags
+		}
+		return sdkdiag.FromErr(err)
 	}
 	return diags
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slm *models.SnapshotPolicy) diag.Diagnostics {
-	return doSDKWrite(apiClient, slm, "Unable to create or update the SLM",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.SlmPutLifecycle(slm.ID, esClient.SlmPutLifecycle.WithBody(body), esClient.SlmPutLifecycle.WithContext(ctx))
-		},
-	)
+func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+
+	req := typedClient.Slm.PutLifecycle(policyID)
+
+	// Build request body manually to support expand_wildcards and accurate
+	// Retention field omission (types.Retention lacks omitempty on MaxCount/MinCount).
+	body := map[string]any{
+		"name":       slm.Name,
+		"repository": slm.Repository,
+		"schedule":   slm.Schedule,
+	}
+	if slm.Config != nil {
+		config := map[string]any{}
+		if len(slm.Config.FeatureStates) > 0 {
+			config["feature_states"] = slm.Config.FeatureStates
+		}
+		if slm.Config.IgnoreUnavailable != nil {
+			config["ignore_unavailable"] = *slm.Config.IgnoreUnavailable
+		}
+		if slm.Config.IncludeGlobalState != nil {
+			config["include_global_state"] = *slm.Config.IncludeGlobalState
+		}
+		if len(slm.Config.Indices) > 0 {
+			config["indices"] = slm.Config.Indices
+		}
+		if slm.Config.Metadata != nil {
+			meta := make(map[string]any)
+			for k, v := range slm.Config.Metadata {
+				var val any
+				if err := json.Unmarshal(v, &val); err != nil {
+					return sdkdiag.FromErr(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
+				}
+				meta[k] = val
+			}
+			config["metadata"] = meta
+		}
+		if slm.Config.Partial != nil {
+			config["partial"] = *slm.Config.Partial
+		}
+		if slm.Config.ExpandWildcards != "" {
+			config["expand_wildcards"] = slm.Config.ExpandWildcards
+		}
+		if len(config) > 0 {
+			body["config"] = config
+		}
+	}
+	if slm.Retention != nil {
+		retention := map[string]any{}
+		if slm.Retention.ExpireAfter != nil {
+			retention["expire_after"] = *slm.Retention.ExpireAfter
+		}
+		if slm.Retention.MaxCount != nil {
+			retention["max_count"] = *slm.Retention.MaxCount
+		}
+		if slm.Retention.MinCount != nil {
+			retention["min_count"] = *slm.Retention.MinCount
+		}
+		if len(retention) > 0 {
+			body["retention"] = retention
+		}
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	req.Raw(bytes.NewReader(bodyBytes))
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	return diags
 }
 
-func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, sdkdiag.Diagnostics) {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, sdkdiag.FromErr(err)
 	}
-	req := esClient.SlmGetLifecycle.WithPolicyID(slmName)
-	res, err := esClient.SlmGetLifecycle(req, esClient.SlmGetLifecycle.WithContext(ctx))
+	res, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Perform(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, sdkdiag.FromErr(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, "Unable to get SLM policy from ES API"); diags.HasError() {
-		return nil, diags
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
 	}
-	type SlmResponse = map[string]struct {
-		Policy models.SnapshotPolicy `json:"policy"`
+
+	var rawResp map[string]struct {
+		Policy SlmPolicy `json:"policy"`
 	}
-	var slmResponse SlmResponse
-	if err := json.NewDecoder(res.Body).Decode(&slmResponse); err != nil {
-		return nil, diag.FromErr(err)
+	if err := json.Unmarshal(bodyBytes, &rawResp); err != nil {
+		return nil, sdkdiag.FromErr(err)
 	}
-	if slm, ok := slmResponse[slmName]; ok {
+	if slm, ok := rawResp[slmName]; ok {
 		return &slm.Policy, diags
 	}
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
+	diags = append(diags, sdkdiag.Diagnostic{
+		Severity: sdkdiag.Error,
 		Summary:  "Unable to find the SLM policy in the response",
 		Detail:   fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, slmName),
 	})
 	return nil, diags
 }
 
-func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
+func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return sdkdiag.FromErr(err)
 	}
-	res, err := esClient.SlmDeleteLifecycle(slmName, esClient.SlmDeleteLifecycle.WithContext(ctx))
+	_, err = typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		if isNotFoundElasticsearchError(err) {
+			return diags
+		}
+		return sdkdiag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete SLM policy: %s", slmName)); diags.HasError() {
-		return diags
-	}
-
 	return diags
 }
 
-func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) diag.Diagnostics {
-	return doSDKWrite(apiClient, settings, "Unable to update cluster settings.",
-		func(esClient *elasticsearch.Client, body io.Reader) (*esapi.Response, error) {
-			return esClient.Cluster.PutSettings(body, esClient.Cluster.PutSettings.WithContext(ctx))
-		},
-	)
+func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) sdkdiag.Diagnostics {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+
+	req := typedClient.Cluster.PutSettings()
+
+	if persistent, ok := settings["persistent"].(map[string]any); ok {
+		raw, err := toRawMessageMap(persistent)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req.Persistent(raw)
+	}
+	if transient, ok := settings["transient"].(map[string]any); ok {
+		raw, err := toRawMessageMap(transient)
+		if err != nil {
+			return sdkdiag.FromErr(err)
+		}
+		req.Transient(raw)
+	}
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	return diags
 }
 
-func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diag.FromErr(err)
+func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
+	result := make(map[string]json.RawMessage, len(m))
+	for k, v := range m {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal setting %q: %w", k, err)
+		}
+		result[k] = data
 	}
-	req := esClient.Cluster.GetSettings.WithFlatSettings(true)
-	res, err := esClient.Cluster.GetSettings(req, esClient.Cluster.GetSettings.WithContext(ctx))
+	return result, nil
+}
+
+func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, sdkdiag.Diagnostics) {
+	var diags sdkdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, sdkdiag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to read cluster settings."); diags.HasError() {
+	resp, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(ctx)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+
+	result := make(map[string]any)
+	result["persistent"], err = flattenRawMessageMap(resp.Persistent)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	result["transient"], err = flattenRawMessageMap(resp.Transient)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	result["defaults"], err = flattenRawMessageMap(resp.Defaults)
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	return result, diags
+}
+
+func flattenRawMessageMap(m map[string]json.RawMessage) (map[string]any, error) {
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		var val any
+		if err := json.Unmarshal(v, &val); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal setting %q: %w", k, err)
+		}
+		result[k] = val
+	}
+	return result, nil
+}
+
+func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.StoredScript, fwdiag.Diagnostics) {
+	typedClient, err := apiClient.GetESTypedClient()
+	if err != nil {
+		var diags fwdiag.Diagnostics
+		diags.AddError("Failed to get ES client", err.Error())
 		return nil, diags
 	}
-
-	clusterSettings := make(map[string]any)
-	if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
-		return nil, diag.FromErr(err)
-	}
-	return clusterSettings, diags
-}
-
-func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*models.Script, fwdiag.Diagnostics) {
-	esClient, err := apiClient.GetESClient()
+	resp, err := typedClient.Core.GetScript(id).Do(ctx)
 	if err != nil {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
-	}
-	res, err := esClient.GetScript(id, esClient.GetScript.WithContext(ctx))
-	if err != nil {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get script", err.Error())}
-	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get stored script: %s", id)); diags.HasError() {
+		if isNotFoundElasticsearchError(err) {
+			return nil, nil
+		}
+		var diags fwdiag.Diagnostics
+		diags.AddError("Failed to get script", err.Error())
 		return nil, diags
 	}
-	var scriptResponse struct {
-		Script *models.Script `json:"script"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&scriptResponse); err != nil {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to decode script response", err.Error())}
-	}
-
-	return scriptResponse.Script, nil
+	return resp.Script, nil
 }
 
-func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, script *models.Script) fwdiag.Diagnostics {
-	req := struct {
-		Script *models.Script `json:"script"`
-	}{
-		script,
-	}
-	scriptBytes, err := json.Marshal(req)
+func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, context string, script *types.StoredScript, params map[string]any) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to marshal script", err.Error())}
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
-	}
-	res, err := esClient.PutScript(script.ID, bytes.NewReader(scriptBytes), esClient.PutScript.WithContext(ctx), esClient.PutScript.WithScriptContext(script.Context))
-	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to put script", err.Error())}
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, "Unable to put stored script"); diags.HasError() {
+		diags.AddError("Failed to get ES client", err.Error())
 		return diags
 	}
-	return nil
+
+	req := typedClient.Core.PutScript(id)
+	if context != "" {
+		req.Context(context)
+	}
+
+	// Build request body manually to support params (types.StoredScript lacks Params).
+	type storedScriptWithParams struct {
+		types.StoredScript
+		Params map[string]any `json:"params,omitempty"`
+	}
+	body := struct {
+		Script storedScriptWithParams `json:"script"`
+	}{
+		Script: storedScriptWithParams{
+			StoredScript: *script,
+			Params:       params,
+		},
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		diags.AddError("Failed to marshal script request", err.Error())
+		return diags
+	}
+	req.Raw(bytes.NewReader(bodyBytes))
+
+	_, err = req.Do(ctx)
+	if err != nil {
+		diags.AddError("Failed to put script", err.Error())
+		return diags
+	}
+	return diags
 }
 
 func DeleteScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
-	esClient, err := apiClient.GetESClient()
+	var diags fwdiag.Diagnostics
+	typedClient, err := apiClient.GetESTypedClient()
 	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
-	}
-	res, err := esClient.DeleteScript(id, esClient.DeleteScript.WithContext(ctx))
-	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to delete script", err.Error())}
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete script: %s", id)); diags.HasError() {
+		diags.AddError("Failed to get ES client", err.Error())
 		return diags
 	}
-	return nil
+	_, err = typedClient.Core.DeleteScript(id).Do(ctx)
+	if err != nil {
+		if isNotFoundElasticsearchError(err) {
+			return diags
+		}
+		diags.AddError("Failed to delete script", err.Error())
+		return diags
+	}
+	return diags
 }

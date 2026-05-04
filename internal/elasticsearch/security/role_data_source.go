@@ -22,10 +22,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -282,13 +282,16 @@ func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, met
 		}
 	}
 
-	apps := role.Applications
-	applications := flattenApplicationsData(&apps)
+	applications := flattenApplicationsData(role.Applications)
 	if err := d.Set("applications", applications); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("cluster", role.Cluster); err != nil {
+	clusterStrings := make([]string, len(role.Cluster))
+	for i, cp := range role.Cluster {
+		clusterStrings[i] = cp.String()
+	}
+	if err := d.Set("cluster", clusterStrings); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -328,12 +331,12 @@ func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, met
 	return diags
 }
 
-func flattenApplicationsData(apps *[]models.Application) []any {
-	if apps != nil {
-		oapps := make([]any, len(*apps))
-		for i, app := range *apps {
+func flattenApplicationsData(apps []types.ApplicationPrivileges) []any {
+	if len(apps) > 0 {
+		oapps := make([]any, len(apps))
+		for i, app := range apps {
 			oa := make(map[string]any)
-			oa["application"] = app.Name
+			oa["application"] = app.Application
 			oa["privileges"] = app.Privileges
 			oa["resources"] = app.Resources
 			oapps[i] = oa
@@ -343,14 +346,34 @@ func flattenApplicationsData(apps *[]models.Application) []any {
 	return make([]any, 0)
 }
 
-func flattenIndicesData(indices []models.IndexPerms) []any {
+func flattenIndicesData(indices []types.IndicesPrivileges) []any {
 	oindx := make([]any, len(indices))
 
 	for i, index := range indices {
 		oi := make(map[string]any)
 		oi["names"] = index.Names
-		oi["privileges"] = index.Privileges
-		oi["query"] = index.Query
+
+		privileges := make([]string, len(index.Privileges))
+		for j, p := range index.Privileges {
+			privileges[j] = p.String()
+		}
+		oi["privileges"] = privileges
+
+		var queryStr *string
+		if index.Query != nil {
+			switch q := index.Query.(type) {
+			case string:
+				queryStr = &q
+			default:
+				b, err := json.Marshal(index.Query)
+				if err != nil {
+					b = []byte("null")
+				}
+				s := string(b)
+				queryStr = &s
+			}
+		}
+		oi["query"] = queryStr
 		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
 
 		if index.FieldSecurity != nil {
@@ -364,15 +387,35 @@ func flattenIndicesData(indices []models.IndexPerms) []any {
 	return oindx
 }
 
-func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []any {
+func flattenRemoteIndicesData(remoteIndices []types.RemoteIndicesPrivileges) []any {
 	oRemoteIndx := make([]any, len(remoteIndices))
 
 	for i, remoteIndex := range remoteIndices {
 		oi := make(map[string]any)
 		oi["names"] = remoteIndex.Names
 		oi["clusters"] = remoteIndex.Clusters
-		oi["privileges"] = remoteIndex.Privileges
-		oi["query"] = remoteIndex.Query
+
+		privileges := make([]string, len(remoteIndex.Privileges))
+		for j, p := range remoteIndex.Privileges {
+			privileges[j] = p.String()
+		}
+		oi["privileges"] = privileges
+
+		var queryStr *string
+		if remoteIndex.Query != nil {
+			switch q := remoteIndex.Query.(type) {
+			case string:
+				queryStr = &q
+			default:
+				b, err := json.Marshal(remoteIndex.Query)
+				if err != nil {
+					b = []byte("null")
+				}
+				s := string(b)
+				queryStr = &s
+			}
+		}
+		oi["query"] = queryStr
 
 		if remoteIndex.FieldSecurity != nil {
 			fsec := make(map[string]any)

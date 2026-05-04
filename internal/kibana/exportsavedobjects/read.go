@@ -24,34 +24,22 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config dataSourceModel
-
-	// Read configuration
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := d.client.GetKibanaClient(ctx, config.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+// readDataSource is the envelope read callback for the export saved objects data source.
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	// Get Kibana client
-	oapiClient, err := client.GetKibanaOapiClient()
+	oapiClient, err := kbClient.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("unable to get Kibana client", err.Error())
-		return
+		diags.AddError("unable to get Kibana client", err.Error())
+		return config, diags
 	}
 
 	// Set default space_id if not provided
@@ -60,7 +48,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		spaceID = config.SpaceID.ValueString()
 	}
 
-	objectsList := typeutils.ListTypeToSlice(ctx, config.Objects, path.Root("objects"), &resp.Diagnostics, func(item objectModel, _ typeutils.ListMeta) struct {
+	objectsList := typeutils.ListTypeToSlice(ctx, config.Objects, path.Root("objects"), &diags, func(item objectModel, _ typeutils.ListMeta) struct {
 		//nolint:revive
 		Id   string `json:"id"`
 		Type string `json:"type"`
@@ -74,6 +62,9 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 			Type: item.Type.ValueString(),
 		}
 	})
+	if diags.HasError() {
+		return config, diags
+	}
 
 	// Set default values for boolean options
 	excludeExportDetails := true
@@ -94,34 +85,28 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	// Make the API call
-	apiResp, err := oapiClient.API.PostSavedObjectsExportWithResponse(ctx, body)
+	apiResp, err := oapiClient.API.PostSavedObjectsExportWithResponse(ctx, body, kibanaoapi.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		resp.Diagnostics.AddError("API call failed", fmt.Sprintf("Unable to export saved objects: %v", err))
-		return
+		diags.AddError("API call failed", fmt.Sprintf("Unable to export saved objects: %v", err))
+		return config, diags
 	}
 
 	if apiResp.StatusCode() != http.StatusOK {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Unexpected API response",
 			fmt.Sprintf("Unexpected status code from server: got HTTP %d, response: %s", apiResp.StatusCode(), string(apiResp.Body)),
 		)
-		return
+		return config, diags
 	}
 
 	// Create composite ID for state tracking
 	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: "export"}
 
-	// Set the state
-	var state dataSourceModel
-	state.ID = types.StringValue(compositeID.String())
-	state.SpaceID = types.StringValue(spaceID)
-	state.KibanaConnection = config.KibanaConnection
-	state.Objects = config.Objects
-	state.ExcludeExportDetails = types.BoolValue(excludeExportDetails)
-	state.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)
-	state.ExportedObjects = types.StringValue(string(apiResp.Body))
+	config.ID = types.StringValue(compositeID.String())
+	config.SpaceID = types.StringValue(spaceID)
+	config.ExcludeExportDetails = types.BoolValue(excludeExportDetails)
+	config.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)
+	config.ExportedObjects = types.StringValue(string(apiResp.Body))
 
-	// Set state
-	diags = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	return config, diags
 }

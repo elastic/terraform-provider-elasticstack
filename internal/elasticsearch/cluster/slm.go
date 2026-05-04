@@ -24,17 +24,19 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+const slmDefaultExpandWildcards = "open,hidden"
 
 func ResourceSlm() *schema.Resource {
 	slmSchema := map[string]*schema.Schema{
@@ -53,7 +55,7 @@ func ResourceSlm() *schema.Resource {
 			Description: "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
 			Type:        schema.TypeString,
 			Optional:    true,
-			Default:     "open,hidden",
+			Default:     slmDefaultExpandWildcards,
 			ValidateDiagFunc: func(value any, _ cty.Path) diag.Diagnostics {
 				validValues := []string{"all", "open", "closed", "hidden", "none"}
 
@@ -182,40 +184,37 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diags
 	}
 
-	var slm models.SnapshotPolicy
-	slm.ID = slmID
-	var slmConfig models.SnapshotPolicyConfig
-	slmRetention := models.SnapshortRetention{}
+	var slm elasticsearch.SlmPolicy
+	var slmConfig elasticsearch.SlmConfig
+	var slmRetention elasticsearch.SlmRetention
 
+	slm.Name = slmID
 	slm.Repository = d.Get("repository").(string)
 	slm.Schedule = d.Get("schedule").(string)
 	if v, ok := d.GetOk("snapshot_name"); ok {
 		slm.Name = v.(string)
 	}
 	if v, ok := d.GetOk("expire_after"); ok {
-		vv := v.(string)
-		slmRetention.ExpireAfter = &vv
+		expireAfter := v.(string)
+		slmRetention.ExpireAfter = &expireAfter
 	}
 	if v, ok := d.GetOk("max_count"); ok {
-		vv := v.(int)
-		slmRetention.MaxCount = &vv
+		maxCount := v.(int)
+		slmRetention.MaxCount = &maxCount
 	}
 	if v, ok := d.GetOk("min_count"); ok {
-		vv := v.(int)
-		slmRetention.MinCount = &vv
+		minCount := v.(int)
+		slmRetention.MinCount = &minCount
 	}
-	slm.Retention = &slmRetention
+	if slmRetention.ExpireAfter != nil || slmRetention.MaxCount != nil || slmRetention.MinCount != nil {
+		slm.Retention = &slmRetention
+	}
 
-	if v, ok := d.GetOk("expand_wildcards"); ok {
-		vv := v.(string)
-		slmConfig.ExpandWildcards = &vv
-	}
-	if v, ok := d.Get("ignore_unavailable").(bool); ok {
-		slmConfig.IgnoreUnavailable = &v
-	}
-	if v, ok := d.Get("include_global_state").(bool); ok {
-		slmConfig.IncludeGlobalState = &v
-	}
+	slmConfig.ExpandWildcards = d.Get("expand_wildcards").(string)
+	vvIgnore := d.Get("ignore_unavailable").(bool)
+	slmConfig.IgnoreUnavailable = &vvIgnore
+	vvInclude := d.Get("include_global_state").(bool)
+	slmConfig.IncludeGlobalState = &vvInclude
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
 		list := v.([]any)
@@ -237,16 +236,22 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
-		slmConfig.Metadata = metadata
+		metaRaw := make(types.Metadata)
+		for k, val := range metadata {
+			data, err := json.Marshal(val)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			metaRaw[k] = data
+		}
+		slmConfig.Metadata = metaRaw
 	}
-	if v, ok := d.GetOk("partial"); ok {
-		vv := v.(bool)
-		slmConfig.Partial = &vv
-	}
+	vvPartial := d.Get("partial").(bool)
+	slmConfig.Partial = &vvPartial
 
 	slm.Config = &slmConfig
 
-	if diags := elasticsearch.PutSlm(ctx, client, &slm); diags.HasError() {
+	if diags := elasticsearch.PutSlm(ctx, client, slmID, &slm); diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
@@ -289,61 +294,90 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 	if err := d.Set("schedule", slm.Schedule); err != nil {
 		return diag.FromErr(err)
 	}
+
+	var expireAfter string
+	var maxCount int
+	var minCount int
 	if slm.Retention != nil {
-		if v := slm.Retention.ExpireAfter; v != nil {
-			if err := d.Set("expire_after", *v); err != nil {
-				return diag.FromErr(err)
-			}
+		if slm.Retention.ExpireAfter != nil {
+			expireAfter = *slm.Retention.ExpireAfter
 		}
-		if v := slm.Retention.MaxCount; v != nil {
-			if err := d.Set("max_count", *v); err != nil {
-				return diag.FromErr(err)
-			}
+		if slm.Retention.MaxCount != nil {
+			maxCount = *slm.Retention.MaxCount
 		}
-		if v := slm.Retention.MinCount; v != nil {
-			if err := d.Set("min_count", *v); err != nil {
-				return diag.FromErr(err)
-			}
+		if slm.Retention.MinCount != nil {
+			minCount = *slm.Retention.MinCount
 		}
 	}
+	if err := d.Set("expire_after", expireAfter); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("max_count", maxCount); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("min_count", minCount); err != nil {
+		return diag.FromErr(err)
+	}
+
+	expandWildcards := slmDefaultExpandWildcards
+	includeGlobalState := true
+	ignoreUnavailable := false
+	partial := false
+	var metadata string
+	var indices []string
+	var featureStates []string
 
 	if c := slm.Config; c != nil {
-		if c.ExpandWildcards != nil {
-			if err := d.Set("expand_wildcards", *c.ExpandWildcards); err != nil {
-				return diag.FromErr(err)
-			}
+		if c.ExpandWildcards != "" {
+			expandWildcards = c.ExpandWildcards
 		}
-
 		if c.IncludeGlobalState != nil {
-			if err := d.Set("include_global_state", *c.IncludeGlobalState); err != nil {
-				return diag.FromErr(err)
-			}
+			includeGlobalState = *c.IncludeGlobalState
 		}
 		if c.IgnoreUnavailable != nil {
-			if err := d.Set("ignore_unavailable", *c.IgnoreUnavailable); err != nil {
-				return diag.FromErr(err)
-			}
+			ignoreUnavailable = *c.IgnoreUnavailable
 		}
 		if c.Partial != nil {
-			if err := d.Set("partial", *c.Partial); err != nil {
-				return diag.FromErr(err)
-			}
+			partial = *c.Partial
 		}
 		if c.Metadata != nil {
-			meta, err := json.Marshal(c.Metadata)
+			meta := make(map[string]any)
+			for k, v := range c.Metadata {
+				var val any
+				if err := json.Unmarshal(v, &val); err != nil {
+					return diag.FromErr(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
+				}
+				meta[k] = val
+			}
+			metaBytes, err := json.Marshal(meta)
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			if err := d.Set("metadata", string(meta)); err != nil {
-				return diag.FromErr(err)
-			}
+			metadata = string(metaBytes)
 		}
-		if err := d.Set("indices", c.Indices); err != nil {
-			return diag.FromErr(err)
-		}
-		if err := d.Set("feature_states", c.FeatureStates); err != nil {
-			return diag.FromErr(err)
-		}
+		indices = c.Indices
+		featureStates = c.FeatureStates
+	}
+	if err := d.Set("expand_wildcards", expandWildcards); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("include_global_state", includeGlobalState); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("ignore_unavailable", ignoreUnavailable); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("partial", partial); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("metadata", metadata); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("indices", indices); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("feature_states", featureStates); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags

@@ -202,9 +202,9 @@ const expectedJSONKVUpdatedValues = `{
 			"zone"
 		],
 		"exclude_keys": [
-			"temp",
-			"debug"
-		],
+      "debug",
+      "temp"
+    ],
 		"prefix": "meta_",
 		"trim_key": "-",
 		"trim_value": "~",
