@@ -52,12 +52,12 @@
 
 ## 11. Kibana Streams
 
-- [ ] 11.1 Migrate `internal/kibana/streams/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed APIs where equivalents exist
+- [x] 11.1 Migrate `internal/kibana/streams/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed APIs where equivalents exist
 
 ## 12. Client Tests
 
-- [ ] 12.1 Migrate `internal/clients/elasticsearch_scoped_client_test.go` from `GetESClient()` to `GetESTypedClient()` where applicable
-- [ ] 12.2 Migrate `internal/clients/provider_client_factory_test.go` from `GetESClient()` to `GetESTypedClient()` where applicable
+- [x] 12.1 Migrate `internal/clients/elasticsearch_scoped_client_test.go` from `GetESClient()` to `GetESTypedClient()` where applicable
+- [x] 12.2 Migrate `internal/clients/provider_client_factory_test.go` from `GetESClient()` to `GetESTypedClient()` where applicable
 
 ## 13. Verification
 
