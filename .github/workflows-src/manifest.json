@@ -13,6 +13,10 @@
       "output": ".github/workflows/schema-coverage-rotation.md"
     },
     {
+      "template": ".github/workflows-src/semantic-function-refactor/workflow.md.tmpl",
+      "output": ".github/workflows/semantic-function-refactor.md"
+    },
+    {
       "template": ".github/workflows-src/test/workflow.yml.tmpl",
       "output": ".github/workflows/test.yml"
     },

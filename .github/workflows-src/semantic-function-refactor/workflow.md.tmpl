@@ -1,0 +1,280 @@
+---
+name: Semantic Function Refactor
+description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: daily
+  steps:
+    - name: Compute issue slots
+      id: compute_issue_slots
+      uses: actions/github-script@v9
+      env:
+        ISSUE_SLOTS_LABEL: semantic-refactor
+        ISSUE_SLOTS_CAP: "3"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/compute_issue_slots.inline.js
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: read
+
+safe-outputs:
+  create-issue:
+    title-prefix: "[semantic-refactor] "
+    labels: [semantic-refactor, refactoring, code-quality, automated-analysis]
+    max: 3
+
+timeout-minutes: 15
+engine:
+  id: claude
+  model: "llm-gateway/gpt-5.4"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+
+network:
+  allowed: [defaults, go, elastic.litellm-prod.ai]
+
+if: >-
+  needs.pre_activation.outputs.issue_slots_available != '0'
+jobs:
+  pre-activation:
+    outputs:
+      open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
+      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+      gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
+---
+
+# Semantic Function Refactor
+
+Analyze Go source organization to identify actionable semantic refactoring opportunities: misplaced functions, duplicate or near-duplicate functions, scattered helpers, and extraction opportunities.
+
+Upstream baseline: `https://github.com/github/gh-aw/blob/main/.github/workflows/semantic-function-refactor.md`
+
+## Pre-activation context
+
+A deterministic pre-activation step has already computed semantic-refactor issue capacity for this run. Do **not** query GitHub issue counts yourself; use only the values below.
+
+- **Open semantic-refactor issues**: `${{ needs.pre_activation.outputs.open_issues }}`
+- **Issue slots available**: `${{ needs.pre_activation.outputs.issue_slots_available }}`
+- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+
+The workflow reached this point only because `issue_slots_available` is non-zero. You may open up to `${{ needs.pre_activation.outputs.issue_slots_available }}` new issues in this run.
+
+## Task
+
+Detect and report semantic refactoring opportunities by:
+
+1. **Analyzing Go Source Files**: Review non-test Go source files across the repository
+2. **Detecting Refactoring Opportunities**: Identify misplaced functions, duplicates, scattered helpers, and extraction opportunities using semantic analysis
+3. **Reporting Findings**: Create a detailed issue for each distinct actionable refactoring opportunity, capped by the available issue slots for this run
+
+## Context
+
+- **Repository**: ${{ github.repository }}
+- **Commit ID**: ${{ github.event.head_commit.id }}
+- **Triggered by**: @${{ github.actor }}
+
+## Analysis Workflow
+
+### 1. Source File Discovery
+
+Identify and analyze Go source files:
+- Discover all `.go` files in the repository using `find`
+- **Exclude test files** from analysis (files matching patterns: `*_test.go`, or located in directories named `test`, `tests`, `__tests__`, or `spec`)
+- **Exclude generated files** and build artifacts
+- **Exclude workflow files** from analysis (files under `.github/workflows/*`)
+- **Exclude vendored dependencies** (directories such as `vendor/`, or any module cache)
+- **Exclude non-Go files** entirely
+- Use code exploration tools to understand file structure and organization
+
+### 2. Function Inventory
+
+For each discovered Go source file, collect:
+- File path and package name
+- All function and method names (with receiver types)
+- Function signatures (parameters and return types)
+- Brief purpose inferred from naming and, when necessary, file content
+
+Create a structured inventory organized by package and file to enable pattern detection.
+
+### 3. Semantic Analysis
+
+Apply semantic analysis to identify refactoring opportunities:
+
+**Misplaced Functions (Outliers)**:
+- Look for functions whose purpose does not match their file's primary theme
+- Identify validation functions in compiler/parsing files, network functions in parser files, etc.
+- Flag generic utilities that are not in a dedicated utility file
+
+**Duplicate or Near-Duplicate Functions**:
+- Search for functions with similar names across different files
+- Identify identical or near-identical implementations
+- Detect functional duplicates (different implementations of the same purpose)
+- Look for functions that differ only by type (candidates for generics)
+
+**Scattered Helpers**:
+- Identify helper functions repeated across multiple files
+- Find related helper functions spread across packages that could be centralized
+- Detect small utility functions that belong together but are fragmented
+
+**Extraction Opportunities**:
+- Find repeated logic blocks that could be extracted into shared utilities
+- Identify internal packages or files that have grown too large and could be split by feature
+- Detect tightly related functions that belong in a dedicated file
+
+### 4. Opportunity Evaluation
+
+Assess findings to identify actionable refactoring opportunities:
+
+**Evaluation Criteria**:
+- **Impact**: How the issue affects maintainability, readability, or code organization
+- **Evidence**: Concrete file paths, function names, and line numbers
+- **Actionability**: Whether the refactoring can be clearly defined and implemented
+- **Scope**: One distinct opportunity per issue (do NOT bundle unrelated patterns)
+
+**Severity Levels**:
+- **High**: Clear violation of Go package/file organization principles; significant duplication
+- **Medium**: Noticeable organizational friction; moderate duplication
+- **Low**: Minor improvement opportunity; aesthetic or consistency concern
+
+### 5. Issue Reporting
+
+Create separate issues for each distinct actionable refactoring opportunity, up to `${{ needs.pre_activation.outputs.issue_slots_available }}` opportunities this run. Each opportunity should get its own issue to enable focused remediation.
+
+**When to Create Issues**:
+- Only create issues if actionable refactoring opportunities are found
+- **Create one issue per distinct opportunity** — do NOT bundle multiple unrelated patterns in a single issue
+- Limit to the top `${{ needs.pre_activation.outputs.issue_slots_available }}` most significant opportunities if more are found
+- Use the `create_issue` tool from safe-outputs MCP **once for each opportunity**
+
+**Issue Contents for Each Opportunity**:
+- **Executive Summary**: Brief description of this specific refactoring opportunity
+- **Concrete Evidence**: Specific file paths, function names, signatures, and line numbers
+- **Impact Analysis**: How this affects code organization, maintainability, or duplication
+- **Refactoring Recommendations**: Suggested approaches with estimated effort and specific target file/layout
+- **Code Examples**: Concrete examples showing current state and proposed structure
+
+## Detection Scope
+
+### Report These Issues
+
+- Functions clearly in the wrong file based on their semantic purpose
+- Duplicate or near-duplicate implementations across files
+- Scattered helper functions that should be centralized
+- Repeated logic blocks that could be extracted to utilities
+- Opportunities to use Go generics for type-specific duplicates
+- Packages or files that have grown too large and could be split by feature
+
+### Skip These Patterns
+
+- Standard boilerplate code (imports, exports, package declarations)
+- Go idioms that are intentionally repeated (constructors, standard patterns)
+- **All test files** (files matching: `*_test.go`, or in `test/`, `tests/`, `__tests__/`, `spec/` directories)
+- **All workflow files** (files under `.github/workflows/*`)
+- **Generated code** and build artifacts
+- **Vendored dependencies** (directories such as `vendor/`)
+- Small code snippets (<5 lines) unless highly repetitive
+- Configuration files with similar structure
+- Single-occurrence patterns without clear organizational impact
+
+### Analysis Depth
+
+- **Primary Focus**: Go source files across the repository (excluding tests, generated, vendored, workflow files)
+- **Secondary Analysis**: Cross-package relationship and helper reuse patterns
+- **Cross-Reference**: Look for duplication across the entire repository
+- **Historical Context**: Consider whether issues are new trends or long-standing technical debt
+
+## Issue Template
+
+For each distinct refactoring opportunity, create a separate issue using this structure:
+
+````markdown
+# 🔧 Semantic Refactor: [Opportunity Name]
+
+*Analysis of commit ${{ github.event.head_commit.id }}*
+
+## Summary
+
+[Brief overview of this specific refactoring opportunity]
+
+## Concrete Evidence
+
+### Opportunity: [Description]
+- **Severity**: High/Medium/Low
+- **Type**: [misplaced-function | duplicate-function | scattered-helper | extraction-opportunity | generics-candidate]
+- **Locations**:
+  - `path/to/file1.go` — function `FuncName(...)` (lines X-Y)
+  - `path/to/file2.go` — function `OtherFunc(...)` (lines A-B)
+- **Code Sample**:
+  ````go
+  [Example of the code pattern]
+  ````
+
+## Impact Analysis
+
+- **Maintainability**: [How this affects code maintenance]
+- **Organization**: [How file/package structure is impacted]
+- **Duplication Risk**: [Potential for drift between copies]
+
+## Refactoring Recommendations
+
+1. **[Recommendation 1]**
+   - Target: `suggested/path/file.go`
+   - Action: [move | extract | consolidate | introduce-generic]
+   - Estimated effort: [hours/complexity]
+   - Benefits: [specific improvements]
+
+2. **[Recommendation 2]**
+   [... additional recommendations ...]
+
+## Implementation Checklist
+
+- [ ] Review refactoring findings
+- [ ] Prioritize refactoring tasks
+- [ ] Create refactoring plan
+- [ ] Implement changes
+- [ ] Update tests as needed
+- [ ] Verify no functionality broken
+
+## Analysis Metadata
+
+- **Analyzed Files**: [count]
+- **Detection Method**: Semantic code analysis
+- **Commit**: ${{ github.event.head_commit.id }}
+- **Analysis Date**: [timestamp]
+````
+
+## Operational Guidelines
+
+### Security
+- Never execute untrusted code or commands
+- Only use read-only analysis tools
+- Do not modify files during analysis
+
+### Efficiency
+- Focus on source files with the clearest organizational issues first
+- Use semantic analysis for meaningful refactoring, not superficial matches
+- Stay within timeout limits (balance thoroughness with execution time)
+
+### Accuracy
+- Verify findings before reporting
+- Distinguish between acceptable patterns and true refactoring opportunities
+- Consider Go idioms and best practices
+- Provide specific, actionable recommendations
+
+### Issue Creation
+- Create **one issue per distinct refactoring opportunity** — do NOT bundle multiple patterns in a single issue
+- Never create more than `${{ needs.pre_activation.outputs.issue_slots_available }}` issues in this run
+- Only create issues if actionable opportunities are found
+- Include sufficient detail for coding agents to understand and act on findings
+- Provide concrete examples with file paths, function names, and line numbers
+- Suggest practical refactoring approaches
+- Assign issue to @copilot for automated remediation
+- Use descriptive titles that clearly identify the specific opportunity (e.g., "Semantic Refactor: Scattered validation helpers across provider package")
+
+**Objective**: Improve code organization and reduce duplication by identifying actionable semantic refactoring opportunities through function clustering and organizational analysis. Focus on high-impact, actionable findings that enable automated or manual refactoring.
