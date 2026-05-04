@@ -99,6 +99,12 @@ safe-outputs:
     max: 3
 
 tools:
+  repo-memory:
+    - id: semantic-function-refactor
+      file-glob: ["memory/semantic-function-refactor/serena-state.json"]
+      create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
   bash:
     - "find . -name '*.go' ! -name '*_test.go' -type f"
     - "find . -type f -name '*.go' ! -name '*_test.go'"
@@ -118,7 +124,7 @@ mcp-servers:
     entrypointArgs:
       - "start-mcp-server"
       - "--context"
-      - "codex"
+      - "claude-code"
       - "--project"
       - "${{ github.workspace }}"
     mounts:
@@ -135,7 +141,7 @@ mcp-servers:
 timeout-minutes: 15
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/gpt-5.5"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
@@ -191,8 +197,8 @@ Detect and report semantic refactoring opportunities by:
 
 The Serena MCP server is configured for this workspace:
 - **Workspace**: ${{ github.workspace }}
-- **Memory cache**: /tmp/gh-aw/cache-memory/serena
-- **Context**: codex
+- **Memory**: repo-memory/semantic-function-refactor/serena-state.json
+- **Context**: claude-code
 - **Language service**: Go (gopls)
 
 ## Analysis Workflow
