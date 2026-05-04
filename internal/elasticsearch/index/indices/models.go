@@ -472,6 +472,8 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 		}
 
 		model.SettingsRaw = jsontypes.NewNormalizedValue(string(settingsBytes))
+	} else {
+		model.SettingsRaw = jsontypes.NewNormalizedNull()
 	}
 
 	return nil
