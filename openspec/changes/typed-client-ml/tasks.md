@@ -44,7 +44,7 @@
 - [ ] 5.1 Run `make check-lint` and fix any issues
 - [x] 5.2 Run `make build` to ensure no compilation errors
 - [x] 5.3 Run ML unit tests: `go test ./internal/elasticsearch/ml/...`
-- [ ] 5.4 Run ML acceptance tests against a live Elasticsearch cluster
+- [x] 5.4 Run ML acceptance tests against a live Elasticsearch cluster
 - [x] 5.5 Verify error handling for 404/not-found scenarios remains unchanged
 - [x] 5.6 Verify force flags, timeouts, and optional parameters are still passed correctly
 
