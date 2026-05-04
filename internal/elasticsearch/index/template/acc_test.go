@@ -19,14 +19,12 @@ package template_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -279,8 +277,7 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Indices.GetIndexTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			var esErr *types.ElasticsearchError
-			if errors.As(err, &esErr) && esErr.Status == 404 {
+			if acctest.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err

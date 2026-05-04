@@ -20,11 +20,9 @@ package securityuser_test
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -369,8 +367,7 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Security.GetUser().Username(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			var esErr *types.ElasticsearchError
-			if errors.As(err, &esErr) && esErr.Status == 404 {
+			if acctest.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err

@@ -268,7 +268,7 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 
 		for _, setting := range listOfSettings {
 			if v, ok := res.Persistent[setting]; ok {
-				return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, setting, v)
+				return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, setting, string(v))
 			}
 		}
 	}

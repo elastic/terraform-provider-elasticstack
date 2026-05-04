@@ -20,13 +20,11 @@ package ilm_test
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
@@ -257,8 +255,7 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Ilm.GetLifecycle().Policy(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			var esErr *types.ElasticsearchError
-			if errors.As(err, &esErr) && esErr.Status == 404 {
+			if acctest.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err

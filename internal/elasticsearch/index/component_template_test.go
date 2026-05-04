@@ -19,11 +19,9 @@ package index_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -104,8 +102,7 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Cluster.GetComponentTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			var esErr *types.ElasticsearchError
-			if errors.As(err, &esErr) && esErr.Status == 404 {
+			if acctest.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err
