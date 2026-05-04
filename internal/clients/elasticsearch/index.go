@@ -257,12 +257,9 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	indexAPIName := index.Name
-	if DateMathIndexNameRe.MatchString(index.Name) {
-		indexAPIName = encodeDateMathIndexName(index.Name)
-	}
-
-	call := typedClient.Indices.Create(indexAPIName).Raw(bytes.NewReader(indexBytes))
+	// The typed client handles URL encoding of path parameters internally,
+	// so we pass the raw index name (including date-math expressions) as-is.
+	call := typedClient.Indices.Create(index.Name).Raw(bytes.NewReader(indexBytes))
 	if params.WaitForActiveShards != "" {
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
