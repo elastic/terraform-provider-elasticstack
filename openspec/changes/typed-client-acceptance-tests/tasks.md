@@ -1,6 +1,6 @@
 ## 1. Transform
 
-- [ ] 1.1 Migrate `internal/elasticsearch/transform/transform_test.go` from `GetESClient()` to `GetESTypedClient()` and typed transform APIs
+- [x] 1.1 Migrate `internal/elasticsearch/transform/transform_test.go` from `GetESClient()` to `GetESTypedClient()` and typed transform APIs
 
 ## 2. Enrich
 
