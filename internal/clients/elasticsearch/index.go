@@ -57,8 +57,9 @@ var DateMathIndexNameRe = regexp.MustCompile(`^<[^-_+][a-z0-9!$%&'()+.;=@[\]^{}~
 // request path.  Characters inside the expression that have special meaning in a URL
 // path are percent-encoded so the Go HTTP client does not rewrite them.
 func encodeDateMathIndexName(name string) string {
-	// url.PathEscape encodes the string so it is safe for a path segment.
-	return url.PathEscape(name)
+	// url.PathEscape does not encode '/' by default; we need '/' encoded too
+	// so the Go HTTP client does not split the path at that point.
+	return strings.ReplaceAll(url.PathEscape(name), "/", "%2F")
 }
 
 func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.Policy) fwdiags.Diagnostics {
@@ -257,9 +258,12 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return "", diagutil.FrameworkDiagFromError(err)
 	}
 
-	// The typed client handles URL encoding of path parameters internally,
-	// so we pass the raw index name (including date-math expressions) as-is.
-	call := typedClient.Indices.Create(index.Name).Raw(bytes.NewReader(indexBytes))
+	indexAPIName := index.Name
+	if DateMathIndexNameRe.MatchString(index.Name) {
+		indexAPIName = encodeDateMathIndexName(index.Name)
+	}
+
+	call := typedClient.Indices.Create(indexAPIName).Raw(bytes.NewReader(indexBytes))
 	if params.WaitForActiveShards != "" {
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
