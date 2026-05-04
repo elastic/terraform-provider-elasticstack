@@ -59,7 +59,7 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
 	if err != nil {
-		diags.AddError("Unable to create or update watch", err.Error())
+		diags.AddError("Unable to put watch '"+watchID+"'", err.Error())
 		return diags
 	}
 	return diags
