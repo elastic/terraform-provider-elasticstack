@@ -47,6 +47,17 @@ test('computeIssueSlots rejects invalid label', () => {
   );
 });
 
+test('computeIssueSlots works for semantic-refactor bucket', () => {
+  const result = computeIssueSlots({
+    label: 'semantic-refactor',
+    issueCap: 3,
+    openIssueCount: 2,
+  });
+  assert.equal(result.open_issues, 2);
+  assert.equal(result.issue_slots_available, 1);
+  assert.ok(result.gate_reason.includes('semantic-refactor'));
+});
+
 test('computeIssueSlots rejects invalid cap', () => {
   assert.throws(
     () => computeIssueSlots({ label: 'schema-coverage', issueCap: 'abc', openIssueCount: 0 }),
