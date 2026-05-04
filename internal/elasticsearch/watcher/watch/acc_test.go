@@ -518,7 +518,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
 		}
 
-		typedClient, err := client.GetESTypedClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}

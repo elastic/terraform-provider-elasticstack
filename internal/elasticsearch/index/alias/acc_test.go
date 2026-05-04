@@ -362,7 +362,7 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 			aliasName = compID.ResourceID
 		}
 
-		typedClient, err := client.GetESTypedClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}

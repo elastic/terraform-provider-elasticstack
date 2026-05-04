@@ -1332,7 +1332,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
-			typedClient, err := client.GetESTypedClient()
+			typedClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
@@ -1358,7 +1358,7 @@ func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 			return err
 		}
 
-		typedClient, err := client.GetESTypedClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
