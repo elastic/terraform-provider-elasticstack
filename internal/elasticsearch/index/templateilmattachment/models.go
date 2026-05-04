@@ -164,6 +164,11 @@ func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *mo
 		},
 	}
 
+	if tpl.ComponentTemplate.Version != nil {
+		version := int(*tpl.ComponentTemplate.Version)
+		resp.ComponentTemplate.Version = &version
+	}
+
 	if tpl.ComponentTemplate.Meta_ != nil {
 		metaBytes, _ := json.Marshal(tpl.ComponentTemplate.Meta_)
 		var metaMap map[string]any

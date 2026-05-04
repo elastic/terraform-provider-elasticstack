@@ -450,9 +450,7 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 	if lifecycle.DataRetention != "" {
 		reqBody["data_retention"] = lifecycle.DataRetention
 	}
-	if lifecycle.Enabled {
-		reqBody["enabled"] = lifecycle.Enabled
-	}
+	reqBody["enabled"] = lifecycle.Enabled
 	if len(lifecycle.Downsampling) > 0 {
 		ds := make([]map[string]any, len(lifecycle.Downsampling))
 		for i, d := range lifecycle.Downsampling {
