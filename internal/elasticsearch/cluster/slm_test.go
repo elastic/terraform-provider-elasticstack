@@ -18,10 +18,13 @@
 package cluster_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -212,17 +215,20 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 			}
 
 			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-			esClient, err := client.GetESClient()
+			typedClient, err := client.GetESTypedClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.SlmGetLifecycle.WithPolicyID(compID.ResourceID)
-			res, err := esClient.SlmGetLifecycle(req)
+			res, err := typedClient.Slm.GetLifecycle().PolicyId(compID.ResourceID).Do(context.Background())
 			if err != nil {
+				var esErr *types.ElasticsearchError
+				if errors.As(err, &esErr) && esErr.Status == 404 {
+					continue
+				}
 				return err
 			}
 
-			if res.StatusCode != 404 {
+			if _, ok := res[compID.ResourceID]; ok {
 				return fmt.Errorf("SLM policy (%s) still exists", compID.ResourceID)
 			}
 		}

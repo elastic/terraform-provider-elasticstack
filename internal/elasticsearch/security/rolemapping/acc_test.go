@@ -18,11 +18,13 @@
 package rolemapping_test
 
 import (
+	"context"
 	_ "embed"
+	"errors"
 	"fmt"
-	"net/http"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -176,19 +178,20 @@ func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetRoleMapping.WithName(compID.ResourceID)
-		res, err := esClient.Security.GetRoleMapping(req)
+		_, err = typedClient.Security.GetRoleMapping().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("Role mapping (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Role mapping (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

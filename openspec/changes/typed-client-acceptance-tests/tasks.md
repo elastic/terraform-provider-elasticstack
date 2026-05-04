@@ -30,17 +30,17 @@
 
 ## 7. Security
 
-- [ ] 7.1 Migrate `internal/elasticsearch/security/role/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-role APIs
-- [ ] 7.2 Migrate `internal/elasticsearch/security/rolemapping/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-role-mapping APIs
-- [ ] 7.3 Migrate `internal/elasticsearch/security/user/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-user APIs
+- [x] 7.1 Migrate `internal/elasticsearch/security/role/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-role APIs
+- [x] 7.2 Migrate `internal/elasticsearch/security/rolemapping/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-role-mapping APIs
+- [x] 7.3 Migrate `internal/elasticsearch/security/user/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed security-user APIs
 
 ## 8. Cluster
 
-- [ ] 8.1 Migrate `internal/elasticsearch/cluster/script_test.go` from `GetESClient()` to `GetESTypedClient()` and typed script APIs
-- [ ] 8.2 Migrate `internal/elasticsearch/cluster/script/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed script APIs
-- [ ] 8.3 Migrate `internal/elasticsearch/cluster/settings_test.go` from `GetESClient()` to `GetESTypedClient()` and typed cluster-settings APIs
-- [ ] 8.4 Migrate `internal/elasticsearch/cluster/slm_test.go` from `GetESClient()` to `GetESTypedClient()` and typed SLM APIs
-- [ ] 8.5 Migrate `internal/elasticsearch/cluster/snapshot_repository_test.go` from `GetESClient()` to `GetESTypedClient()` and typed snapshot-repository APIs
+- [x] 8.1 Migrate `internal/elasticsearch/cluster/script_test.go` from `GetESClient()` to `GetESTypedClient()` and typed script APIs
+- [x] 8.2 Migrate `internal/elasticsearch/cluster/script/acc_test.go` from `GetESClient()` to `GetESTypedClient()` and typed script APIs
+- [x] 8.3 Migrate `internal/elasticsearch/cluster/settings_test.go` from `GetESClient()` to `GetESTypedClient()` and typed cluster-settings APIs
+- [x] 8.4 Migrate `internal/elasticsearch/cluster/slm_test.go` from `GetESClient()` to `GetESTypedClient()` and typed SLM APIs
+- [x] 8.5 Migrate `internal/elasticsearch/cluster/snapshot_repository_test.go` from `GetESClient()` to `GetESTypedClient()` and typed snapshot-repository APIs
 
 ## 9. Ingest
 
