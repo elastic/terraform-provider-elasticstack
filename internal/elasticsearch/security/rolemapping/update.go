@@ -21,8 +21,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,18 +47,21 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Parse rules JSON
-	var rules map[string]any
+	var rules types.RoleMappingRule
 	if err := json.Unmarshal([]byte(data.Rules.ValueString()), &rules); err != nil {
 		diags.AddError("Failed to parse rules JSON", err.Error())
 		return diags
 	}
 
 	// Parse metadata JSON
-	metadata := json.RawMessage(data.Metadata.ValueString())
+	var metadata types.Metadata
+	if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
+		diags.AddError("Failed to parse metadata JSON", err.Error())
+		return diags
+	}
 
 	// Prepare role mapping
-	roleMapping := models.RoleMapping{
-		Name:     roleMappingName,
+	roleMapping := types.SecurityRoleMapping{
 		Enabled:  data.Enabled.ValueBool(),
 		Rules:    rules,
 		Metadata: metadata,
@@ -73,7 +76,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	if typeutils.IsKnown(data.RoleTemplates) {
-		var roleTemplates []map[string]any
+		var roleTemplates []types.RoleTemplate
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
 			return diags
@@ -82,7 +85,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Put role mapping
-	apiDiags := elasticsearch.PutRoleMapping(ctx, client, &roleMapping)
+	apiDiags := elasticsearch.PutRoleMapping(ctx, client, roleMappingName, &roleMapping)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return diags

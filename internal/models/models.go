@@ -24,42 +24,6 @@ import (
 	"time"
 )
 
-type User struct {
-	Username     string         `json:"-"`
-	FullName     string         `json:"full_name,omitempty"`
-	Email        string         `json:"email,omitempty"`
-	Roles        []string       `json:"roles"`
-	Password     *string        `json:"password,omitempty"`
-	PasswordHash *string        `json:"password_hash,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-	Enabled      bool           `json:"enabled"`
-}
-
-func (u *User) IsSystemUser() bool {
-	if reserved := u.Metadata["_reserved"]; reserved != nil {
-		isReserved, ok := reserved.(bool)
-		return ok && isReserved
-	}
-	return false
-}
-
-type UserPassword struct {
-	Password     *string `json:"password,omitempty"`
-	PasswordHash *string `json:"password_hash,omitempty"`
-}
-
-type Role struct {
-	Name          string             `json:"-"`
-	Description   *string            `json:"description,omitempty"`
-	Applications  []Application      `json:"applications,omitempty"`
-	Global        map[string]any     `json:"global,omitempty"`
-	Cluster       []string           `json:"cluster,omitempty"`
-	Indices       []IndexPerms       `json:"indices,omitempty"`
-	RemoteIndices []RemoteIndexPerms `json:"remote_indices,omitempty"`
-	Metadata      map[string]any     `json:"metadata,omitempty"`
-	RunAs         []string           `json:"run_as,omitempty"`
-}
-
 type APIKeyRoleDescriptor struct {
 	Name          string             `json:"-"`
 	Applications  []Application      `json:"applications,omitempty"`
@@ -76,42 +40,6 @@ type Restriction struct {
 	Workflows []string `json:"workflows,omitempty"`
 }
 
-type RoleMapping struct {
-	Name          string           `json:"-"`
-	Enabled       bool             `json:"enabled"`
-	Roles         []string         `json:"roles,omitempty"`
-	RoleTemplates []map[string]any `json:"role_templates,omitempty"`
-	Rules         map[string]any   `json:"rules"`
-	Metadata      any              `json:"metadata"`
-}
-
-type APIKey struct {
-	ID               string                          `json:"-"`
-	Name             string                          `json:"name,omitempty"`
-	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
-	Expiration       string                          `json:"expiration,omitempty"`
-	Metadata         map[string]any                  `json:"metadata,omitempty"`
-}
-
-type APIKeyCreateResponse struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name"`
-	Key        string `json:"api_key,omitempty"`
-	EncodedKey string `json:"encoded,omitempty"`
-}
-
-type APIKeyResponse struct {
-	APIKey
-	Type             string                          `json:"type,omitempty"`
-	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
-	Expiration       int64                           `json:"expiration,omitempty"`
-	ID               string                          `json:"id,omitempty"`
-	Key              string                          `json:"api_key,omitempty"`
-	EncodedKey       string                          `json:"encoded,omitempty"`
-	Invalidated      bool                            `json:"invalidated,omitempty"`
-	Access           *CrossClusterAPIKeyAccess       `json:"access,omitempty"`
-}
-
 type CrossClusterAPIKeyAccess struct {
 	Search      []CrossClusterAPIKeyAccessEntry `json:"search,omitempty"`
 	Replication []CrossClusterAPIKeyAccessEntry `json:"replication,omitempty"`
@@ -122,22 +50,6 @@ type CrossClusterAPIKeyAccessEntry struct {
 	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
 	Query                  *string        `json:"query,omitempty"`
 	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
-}
-
-type CrossClusterAPIKey struct {
-	ID         string                    `json:"-"`
-	Name       string                    `json:"name,omitempty"`
-	Expiration string                    `json:"expiration,omitempty"`
-	Access     *CrossClusterAPIKeyAccess `json:"access,omitempty"`
-	Metadata   map[string]any            `json:"metadata,omitempty"`
-}
-
-type CrossClusterAPIKeyCreateResponse struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name"`
-	Key        string `json:"api_key,omitempty"`
-	EncodedKey string `json:"encoded,omitempty"`
-	Expiration int64  `json:"expiration,omitempty"`
 }
 
 type IndexPerms struct {

@@ -21,8 +21,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"io"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -163,27 +161,18 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					body := fmt.Sprintf("{\"roles\": [\"kibana_admin\"], \"password\": \"%s\"}", initialPassword)
-
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESTypedClient()
 					if err != nil {
 						return false, err
 					}
-					resp, err := esClient.Security.PutUser(username, strings.NewReader(body))
+					_, err = typedClient.Security.PutUser(username).
+						Roles("kibana_admin").
+						Password(initialPassword).
+						Do(context.Background())
 					if err != nil {
-						return false, err
+						return false, fmt.Errorf("failed to manually create import test user [%s]: %w", username, err)
 					}
-
-					defer resp.Body.Close()
-
-					if resp.IsError() {
-						body, readErr := io.ReadAll(resp.Body)
-						if readErr != nil {
-							return false, fmt.Errorf("failed to manually create import test user [%s]: failed reading response body: %w", username, readErr)
-						}
-						return false, fmt.Errorf("failed to manually create import test user [%s]: %s", username, body)
-					}
-					return false, err
+					return false, nil
 				},
 				ResourceName: "elasticstack_elasticsearch_security_user.test",
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
@@ -246,28 +235,18 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESTypedClient()
 					if err != nil {
 						return false, err
 					}
-					body := fmt.Sprintf("{\"password\": \"%s\"}", userUpdatedPassword)
-
-					req := esClient.Security.ChangePassword.WithUsername(username)
-					resp, err := esClient.Security.ChangePassword(strings.NewReader(body), req)
+					_, err = typedClient.Security.ChangePassword().
+						Username(username).
+						Password(userUpdatedPassword).
+						Do(context.Background())
 					if err != nil {
 						return false, nil
 					}
-
-					defer resp.Body.Close()
-
-					if resp.IsError() {
-						body, readErr := io.ReadAll(resp.Body)
-						if readErr != nil {
-							return false, fmt.Errorf("failed to manually change import test user password [%s]: failed reading response body: %w", username, readErr)
-						}
-						return false, fmt.Errorf("failed to manually change import test user password [%s]: %s", username, body)
-					}
-					return false, err
+					return false, nil
 				},
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
@@ -382,21 +361,19 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetUser.WithUsername(compID.ResourceID)
-		res, err := esClient.Security.GetUser(req)
+		_, err = typedClient.Security.GetUser().Username(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		defer res.Body.Close()
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("User (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("User (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

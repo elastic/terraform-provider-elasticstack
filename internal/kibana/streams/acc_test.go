@@ -156,6 +156,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// Kibana creates this automatically when OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS
 	// is enabled, but that creation is best-effort and silently swallowed on failure.
 	// Creating it here mirrors what Kibana's own integration tests do.
+	//
+	// TODO: no typed equivalent — the /_query/view API is not exposed by the
+	// go-elasticsearch typed client; raw HTTP via GetESClient() is required here.
 	if esAPIErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esAPIErr)
 	} else if esClient, esErr := esAPIClient.GetESClient(); esErr != nil {

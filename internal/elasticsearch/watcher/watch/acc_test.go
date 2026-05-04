@@ -19,10 +19,10 @@ package watch_test
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
 
@@ -36,18 +36,22 @@ import (
 )
 
 const (
-	watchTriggerCreateExpected = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
-	watchTriggerUpdateExpected = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
-	watchInputNoneExpected     = `{"none":{}}`
-	watchConditionAlways       = `{"always":{}}`
-	watchActionsEmpty          = `{}`
-	watchMetadataEmpty         = `{}`
-	watchInputSimpleExpected   = `{"simple":{"name":"example"}}`
-	watchConditionNever        = `{"never":{}}`
-	watchActionsLogExpected    = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
-	watchMetadataExample       = `{"example_key":"example_value"}`
-	watchTransformExpected     = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
+	watchTriggerCreateExpected   = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
+	watchTriggerUpdateExpected   = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
+	watchInputNoneExpected       = `{"none":{}}`
+	watchConditionAlways         = `{"always":{}}`
+	watchActionsEmpty            = `{}`
+	watchMetadataEmpty           = `{}`
+	watchInputSimpleExpected     = `{"simple":{"name":"example"}}`
+	watchInputSecondExpected     = `{"simple":{"count":2,"environment":"staging"}}`
+	watchConditionNever          = `{"never":{}}`
+	watchConditionScriptExpected = `{"script":{"lang":"painless","source":"return true"}}`
+	watchActionsLogExpected      = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
+	watchMetadataExample         = `{"example_key":"example_value"}`
+	watchMetadataSecondExpected  = `{"env":"staging","priority":2}`
+	watchTransformExpected       = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
 		`"search_type":"query_then_fetch"}}}`
+	watchTransformScriptExpected = `{"script":{"lang":"painless","source":"return ctx.payload"}}`
 
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
@@ -102,6 +106,35 @@ func testCheckWatchTransformCleared(t *testing.T) resource.TestCheckFunc {
 			return nil
 		}
 		return fmt.Errorf("transform should be cleared in state for %s, got %q", watchResourceName, got)
+	}
+}
+
+// testCheckWatchAttrSemanticallyEqual checks that the named attribute in the
+// watch resource state is semantically equal to the expected JSON string,
+// ignoring key order and insignificant whitespace.
+func testCheckWatchAttrSemanticallyEqual(t *testing.T, attr, expected string) resource.TestCheckFunc {
+	t.Helper()
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[watchResourceName]
+		if !ok {
+			return fmt.Errorf("%s not found in state", watchResourceName)
+		}
+		got, ok := rs.Primary.Attributes[attr]
+		if !ok {
+			return fmt.Errorf("%s not found in state for %s", attr, watchResourceName)
+		}
+		wantCanon, err := canonicalJSONBytes(expected)
+		if err != nil {
+			return fmt.Errorf("canonical expected %s: %w", attr, err)
+		}
+		gotCanon, err := canonicalJSONBytes(got)
+		if err != nil {
+			return fmt.Errorf("canonical actual %s: %w", attr, err)
+		}
+		if !bytes.Equal(wantCanon, gotCanon) {
+			return fmt.Errorf("%s JSON mismatch (semantic)\nwant: %s\ngot:  %s", attr, string(wantCanon), string(gotCanon))
+		}
+		return nil
 	}
 }
 
@@ -193,6 +226,49 @@ func TestResourceWatch(t *testing.T) {
 					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "10000"),
 				),
 			},
+			{
+				// update2: verify a second distinct payload shape for input, condition, metadata, and transform.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update2"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerUpdateExpected),
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchInputSecondExpected),
+					testCheckWatchAttrSemanticallyEqual(t, "condition", watchConditionScriptExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsLogExpected),
+					testCheckWatchAttrSemanticallyEqual(t, "metadata", watchMetadataSecondExpected),
+					testCheckWatchAttrSemanticallyEqual(t, "transform", watchTransformScriptExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "15000"),
+				),
+			},
+			{
+				// defaults_reset: verify that all attributes return to defaults after a rich configuration.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults_reset"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "active", "true"),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerUpdateExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "input", watchInputNoneExpected),
+					resource.TestCheckResourceAttr(watchResourceName, "condition", watchConditionAlways),
+					resource.TestCheckResourceAttr(watchResourceName, "actions", watchActionsEmpty),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", watchMetadataEmpty),
+					testCheckWatchTransformCleared(t),
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "5000"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults_reset"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+			},
 		},
 	})
 }
@@ -265,6 +341,18 @@ func TestAccResourceWatch_redactedWebhookAuthPreserved(t *testing.T) {
 					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`127\.0\.0\.1`)),
 				),
 			},
+			{
+				// Import after update: verify that non-redacted attributes round-trip correctly.
+				// The actions attribute is excluded from import verification because Elasticsearch
+				// redacts secret values on Get Watch; there is no prior state to restore from.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "actions"},
+			},
 		},
 	})
 }
@@ -307,6 +395,64 @@ func TestAccResourceWatch_redactedScriptHeaderPreserved(t *testing.T) {
 					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`acc-script-header-3a91`)),
 					resource.TestMatchResourceAttr(watchResourceName, "actions", regexp.MustCompile(`"lang":"painless"`)),
 				),
+			},
+			{
+				// Import after update: verify that non-redacted attributes round-trip correctly.
+				// The actions attribute is excluded from import verification because Elasticsearch
+				// redacts the Authorization header on Get Watch; there is no prior state to restore from.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "actions"},
+			},
+		},
+	})
+}
+
+// TestResourceWatch_watchIDReplace verifies that changing watch_id forces resource replacement.
+func TestResourceWatch_watchIDReplace(t *testing.T) {
+	watchID1 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	watchID2 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID1)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(watchResourceName, "id"),
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID1),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
+				),
+			},
+			{
+				// Changing watch_id must trigger destroy-before-create (RequiresReplace).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID2)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(watchResourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID2),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerCreateExpected),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID2)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
 		},
 	})
@@ -372,22 +518,19 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.Watcher.GetWatch(compID.ResourceID)
+		_, err = typedClient.Watcher.GetWatch(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-		status := res.StatusCode
-		if err := res.Body.Close(); err != nil {
-			return fmt.Errorf("close GetWatch response body: %w", err)
-		}
-		if status != http.StatusNotFound {
-			return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("watch (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

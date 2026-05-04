@@ -506,7 +506,7 @@ func checkResourceSecurityAPIKeyDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		apiKey, diags := elasticsearch.GetAPIKey(client, compID.ResourceID)
+		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, compID.ResourceID)
 		if diags.HasError() {
 			return fmt.Errorf("Unable to get API key %v", diags)
 		}

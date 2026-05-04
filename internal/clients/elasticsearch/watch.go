@@ -21,10 +21,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -61,7 +59,7 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
 	if err != nil {
-		diags.AddError("Unable to create or update watch", err.Error())
+		diags.AddError("Unable to put watch '"+watchID+"'", err.Error())
 		return diags
 	}
 	return diags
@@ -94,7 +92,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		return nil, nil
 	}
 
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find watch on cluster."); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
 		return nil, d
 	}
 
@@ -119,8 +117,7 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 
 	_, err = typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return diags // already gone, treat as success
 		}
 		diags.AddError("Unable to delete watch", err.Error())

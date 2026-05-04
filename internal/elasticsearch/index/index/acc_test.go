@@ -20,9 +20,7 @@ package index_test
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"slices"
@@ -30,6 +28,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -595,22 +594,12 @@ func createElasticsearchIndexOOB(t *testing.T, name, body string) {
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
-		t.Fatalf("get Elasticsearch API client: %v", err)
+		t.Fatalf("get Elasticsearch typed client: %v", err)
 	}
-	res, err := esClient.Indices.Create(
-		name,
-		esClient.Indices.Create.WithBody(strings.NewReader(body)),
-		esClient.Indices.Create.WithContext(ctx),
-	)
-	if err != nil {
-		t.Fatalf("Indices.Create request: %v", err)
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		b, _ := io.ReadAll(res.Body)
-		t.Fatalf("Indices.Create(%q): %s", name, string(b))
+	if _, err := typedClient.Indices.Create(name).Raw(strings.NewReader(body)).Do(ctx); err != nil {
+		t.Fatalf("Indices.Create(%q): %v", name, err)
 	}
 }
 
@@ -622,108 +611,58 @@ func deleteElasticsearchIndexOOB(t *testing.T, name string) {
 		t.Logf("cleanup: acceptance elasticsearch client: %v", err)
 		return
 	}
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
-		t.Logf("cleanup: get Elasticsearch API client: %v", err)
+		t.Logf("cleanup: get Elasticsearch typed client: %v", err)
 		return
 	}
-	res, err := esClient.Indices.Delete([]string{name}, esClient.Indices.Delete.WithContext(ctx))
-	if err != nil {
-		t.Logf("cleanup: Indices.Delete: %v", err)
-		return
-	}
-	defer res.Body.Close()
-	if res.StatusCode == 404 {
-		return
-	}
-	if res.IsError() {
-		b, _ := io.ReadAll(res.Body)
-		t.Logf("cleanup: Indices.Delete(%q): %s", name, string(b))
+	if _, err := typedClient.Indices.Delete(name).Do(ctx); err != nil {
+		if acctest.IsNotFoundElasticsearchError(err) {
+			return
+		}
+		t.Logf("cleanup: Indices.Delete(%q): %v", name, err)
 	}
 }
 
-func getElasticsearchIndexDoc(t *testing.T, indexName string) map[string]any {
+func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState {
 	t.Helper()
 	ctx := context.Background()
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESTypedClient()
 	if err != nil {
-		t.Fatalf("get Elasticsearch API client: %v", err)
+		t.Fatalf("get Elasticsearch typed client: %v", err)
 	}
-	res, err := esClient.Indices.Get(
-		[]string{indexName},
-		esClient.Indices.Get.WithFlatSettings(true),
-		esClient.Indices.Get.WithContext(ctx),
-	)
+	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
 	if err != nil {
-		t.Fatalf("Indices.Get request: %v", err)
+		if acctest.IsNotFoundElasticsearchError(err) {
+			t.Fatalf("index %q not found", indexName)
+		}
+		t.Fatalf("Indices.Get(%q): %v", indexName, err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode == 404 {
-		t.Fatalf("index %q not found", indexName)
-	}
-	if res.IsError() {
-		b, _ := io.ReadAll(res.Body)
-		t.Fatalf("Indices.Get(%q): %s", indexName, string(b))
-	}
-	var top map[string]json.RawMessage
-	if err := json.NewDecoder(res.Body).Decode(&top); err != nil {
-		t.Fatalf("decode get-index response: %v", err)
-	}
-	raw, ok := top[indexName]
+	state, ok := resp[indexName]
 	if !ok {
-		t.Fatalf("index %q not present in response (have %d keys)", indexName, len(top))
+		t.Fatalf("index %q not present in response (have %d keys)", indexName, len(resp))
 	}
-	var doc map[string]any
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		t.Fatalf("unmarshal index document: %v", err)
-	}
-	return doc
+	return state
 }
 
-func primaryShardsString(settings map[string]any) string {
+func primaryShardsString(settings *types.IndexSettings) string {
 	if settings == nil {
 		return ""
 	}
-	if v, ok := settings["index.number_of_shards"]; ok {
-		return normalizeJSONNumberString(v)
-	}
-	if inner, ok := settings["index"].(map[string]any); ok {
-		if v, ok := inner["number_of_shards"]; ok {
-			return normalizeJSONNumberString(v)
-		}
+	if settings.Index != nil && settings.Index.NumberOfShards != nil {
+		return strings.TrimSpace(*settings.Index.NumberOfShards)
 	}
 	return ""
 }
 
-func normalizeJSONNumberString(v any) string {
-	switch x := v.(type) {
-	case string:
-		return strings.TrimSpace(x)
-	case float64:
-		return fmt.Sprintf("%.0f", x)
-	case json.Number:
-		if i, err := x.Int64(); err == nil {
-			return fmt.Sprintf("%d", i)
-		}
-		return x.String()
-	case int:
-		return fmt.Sprintf("%d", x)
-	case int64:
-		return fmt.Sprintf("%d", x)
-	default:
-		return strings.TrimSpace(fmt.Sprint(x))
-	}
-}
-
 func assertIndexPrimaryShards(t *testing.T, indexName, want string) {
 	t.Helper()
-	doc := getElasticsearchIndexDoc(t, indexName)
-	settings, _ := doc["settings"].(map[string]any)
-	got := primaryShardsString(settings)
+	state := getElasticsearchIndexState(t, indexName)
+	got := primaryShardsString(state.Settings)
 	if got != want {
 		t.Fatalf("index %q primary shards: want %q, got %q", indexName, want, got)
 	}
@@ -731,10 +670,9 @@ func assertIndexPrimaryShards(t *testing.T, indexName, want string) {
 
 func assertIndexAliasesExactly(t *testing.T, indexName string, want []string) {
 	t.Helper()
-	doc := getElasticsearchIndexDoc(t, indexName)
-	aliases, _ := doc["aliases"].(map[string]any)
-	got := make([]string, 0, len(aliases))
-	for k := range aliases {
+	state := getElasticsearchIndexState(t, indexName)
+	got := make([]string, 0, len(state.Aliases))
+	for k := range state.Aliases {
 		got = append(got, k)
 	}
 	sort.Strings(got)
@@ -1069,18 +1007,19 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compID.ResourceID})
+		_, err = typedClient.Indices.Get(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

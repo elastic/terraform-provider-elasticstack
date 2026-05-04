@@ -302,11 +302,11 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to get data stream lifecycle: %v", diags)
 		}
 
+		// for lifecycle with wildcard empty array is returned; nil means 404 (not found)
 		if res == nil || len(res.DataStreams) == 0 {
-			return nil
+			continue
 		}
 
-		// for lifecycle with wildcard empty array is returned
 		if len(res.DataStreams) > 0 {
 			return fmt.Errorf("Data Stream Lifecycle (%s) still exists", compID.ResourceID)
 		}

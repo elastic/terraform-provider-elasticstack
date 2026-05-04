@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 
@@ -348,20 +347,20 @@ func checkInferenceEndpointDestroy(s *terraform.State) error {
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
 
-		res, err := esClient.InferenceGet(
-			esClient.InferenceGet.WithInferenceID(compID.ResourceID),
-		)
+		res, err := typedClient.Inference.Get().InferenceId(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusNotFound {
+		if len(res.Endpoints) != 0 {
 			return fmt.Errorf("inference endpoint (%s) still exists", compID.ResourceID)
 		}
 	}

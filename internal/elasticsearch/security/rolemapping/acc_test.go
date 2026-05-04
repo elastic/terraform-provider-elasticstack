@@ -18,9 +18,9 @@
 package rolemapping_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -176,19 +176,19 @@ func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetRoleMapping.WithName(compID.ResourceID)
-		res, err := esClient.Security.GetRoleMapping(req)
+		_, err = typedClient.Security.GetRoleMapping().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if acctest.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("Role mapping (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Role mapping (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

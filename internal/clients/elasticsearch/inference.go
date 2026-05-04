@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -62,8 +61,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 
 	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		diags.AddError("Unable to get inference endpoint", err.Error())
@@ -151,8 +149,7 @@ func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 
 	_, err = typedClient.Inference.Delete(inferenceID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if isNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Unable to delete inference endpoint", err.Error())

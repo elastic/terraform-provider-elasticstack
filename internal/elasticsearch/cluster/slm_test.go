@@ -18,6 +18,7 @@
 package cluster_test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -205,24 +206,26 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_lifecycle" {
-				compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-				if compID.ResourceID != name {
-					continue
-				}
+				continue
 			}
 
 			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-			esClient, err := client.GetESClient()
+			if compID.ResourceID != name {
+				continue
+			}
+			typedClient, err := client.GetESTypedClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.SlmGetLifecycle.WithPolicyID(compID.ResourceID)
-			res, err := esClient.SlmGetLifecycle(req)
+			res, err := typedClient.Slm.GetLifecycle().PolicyId(compID.ResourceID).Do(context.Background())
 			if err != nil {
+				if acctest.IsNotFoundElasticsearchError(err) {
+					continue
+				}
 				return err
 			}
 
-			if res.StatusCode != 404 {
+			if _, ok := res[compID.ResourceID]; ok {
 				return fmt.Errorf("SLM policy (%s) still exists", compID.ResourceID)
 			}
 		}

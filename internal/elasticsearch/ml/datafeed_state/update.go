@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"time"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -96,7 +96,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	}
 
 	// Perform state transition if needed
-	inDesiredState, fwDiags := r.performStateTransition(ctx, data, datafeed.State(datafeedStats.State))
+	inDesiredState, fwDiags := r.performStateTransition(ctx, data, datafeed.State(datafeedStats.State.String()))
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -143,7 +143,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	ctx context.Context,
 	data MLDatafeedStateData,
-	datafeedStats *models.DatafeedStats,
+	datafeedStats *estypes.DatafeedStats,
 ) (*MLDatafeedStateData, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
 	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
@@ -174,7 +174,7 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	} else if statsAfterUpdate.TimingStats.SearchCount <= datafeedStats.TimingStats.SearchCount {
 		diags.AddError(
 			"Datafeed did not successfully transition to the desired state",
-			fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedID, data.State.ValueString(), statsAfterUpdate.State),
+			fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedID, data.State.ValueString(), statsAfterUpdate.State.String()),
 		)
 		return nil, diags
 	}

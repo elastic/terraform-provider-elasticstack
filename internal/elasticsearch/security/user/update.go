@@ -21,9 +21,9 @@ import (
 	"context"
 	"encoding/json"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -69,8 +69,10 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
-	var user models.User
-	user.Username = usernameID
+	user := &estypes.User{
+		Username: usernameID,
+		Enabled:  planData.Enabled.ValueBool(),
+	}
 
 	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
 	// Priority: password_wo > password > password_hash
@@ -81,26 +83,28 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
+	var password, passwordHash *string
 	switch {
 	case typeutils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)):
 		// Use write-only password - changes triggered by version change
-		password := passwordWoFromConfig.ValueString()
-		user.Password = &password
+		pw := passwordWoFromConfig.ValueString()
+		password = &pw
 	case typeutils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)):
-		password := planData.Password.ValueString()
-		user.Password = &password
+		pw := planData.Password.ValueString()
+		password = &pw
 	case typeutils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)):
-		passwordHash := planData.PasswordHash.ValueString()
-		user.PasswordHash = &passwordHash
+		ph := planData.PasswordHash.ValueString()
+		passwordHash = &ph
 	}
 
 	if typeutils.IsKnown(planData.Email) {
-		user.Email = planData.Email.ValueString()
+		email := planData.Email.ValueString()
+		user.Email = &email
 	}
 	if typeutils.IsKnown(planData.FullName) {
-		user.FullName = planData.FullName.ValueString()
+		fullName := planData.FullName.ValueString()
+		user.FullName = &fullName
 	}
-	user.Enabled = planData.Enabled.ValueBool()
 
 	roles := make([]string, 0, len(planData.Roles.Elements()))
 	diags.Append(planData.Roles.ElementsAs(ctx, &roles, false)...)
@@ -110,16 +114,25 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	user.Roles = roles
 
 	if !planData.Metadata.IsNull() && !planData.Metadata.IsUnknown() {
-		var metadata map[string]any
-		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadata)
+		var metadataMap map[string]any
+		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadataMap)
 		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())
 			return diags
 		}
+		metadata := make(estypes.Metadata, len(metadataMap))
+		for k, v := range metadataMap {
+			b, err := json.Marshal(v)
+			if err != nil {
+				diags.AddError("Failed to marshal metadata", err.Error())
+				return diags
+			}
+			metadata[k] = b
+		}
 		user.Metadata = metadata
 	}
 
-	diags.Append(elasticsearch.PutUser(ctx, client, &user)...)
+	diags.Append(elasticsearch.PutUser(ctx, client, user, password, passwordHash)...)
 	if diags.HasError() {
 		return diags
 	}

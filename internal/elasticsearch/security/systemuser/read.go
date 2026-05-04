@@ -19,8 +19,10 @@ package systemuser
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -28,6 +30,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+func isSystemUser(user *estypes.User) bool {
+	if user == nil || user.Metadata == nil {
+		return false
+	}
+	raw, ok := user.Metadata["_reserved"]
+	if !ok {
+		return false
+	}
+	var reserved bool
+	if err := json.Unmarshal(raw, &reserved); err != nil {
+		return false
+	}
+	return reserved
+}
 
 func readSystemUser(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -38,7 +55,7 @@ func readSystemUser(ctx context.Context, client *clients.ElasticsearchScopedClie
 		return state, false, diags
 	}
 
-	if user == nil || !user.IsSystemUser() {
+	if user == nil || !isSystemUser(user) {
 		tflog.Warn(ctx, fmt.Sprintf(`System user "%s" not found, removing from state`, resourceID))
 		return state, false, nil
 	}

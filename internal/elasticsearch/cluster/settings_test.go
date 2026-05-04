@@ -18,7 +18,7 @@
 package cluster_test
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -257,28 +257,18 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 			continue
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESTypedClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Cluster.GetSettings.WithFlatSettings(true)
-		res, err := esClient.Cluster.GetSettings(req)
+		res, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(context.Background())
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
-		clusterSettings := make(map[string]any)
-		if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
-			return err
-		}
-
-		if clusterSettings["persistent"] != 0 {
-			settings := clusterSettings["persistent"].(map[string]any)
-			for _, s := range listOfSettings {
-				if v, ok := settings[s]; ok {
-					return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, s, v)
-				}
+		for _, setting := range listOfSettings {
+			if v, ok := res.Persistent[setting]; ok {
+				return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, setting, string(v))
 			}
 		}
 	}
