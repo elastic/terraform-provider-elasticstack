@@ -30,4 +30,4 @@
 
 - [x] 5.1 Build passes — `go build -buildvcs=false ./...` exits with status 0
 - [x] 5.2 Lint passes — `golangci-lint-custom run --max-same-issues=0 ./...` exits with 0 issues
-- [ ] 5.3 Run targeted acceptance tests for affected resources (cluster settings, security, index, ML, transform, enrich, etc.) to confirm no behavioral regressions — requires running Elastic Stack
+- [x] 5.3 Run targeted acceptance tests for affected resources (cluster settings, security, index, ML, transform, enrich, etc.) to confirm no behavioral regressions
