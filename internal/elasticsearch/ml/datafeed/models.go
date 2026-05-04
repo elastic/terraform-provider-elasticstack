@@ -21,8 +21,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putdatafeed"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatedatafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -431,8 +429,14 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	return diags
 }
 
-// toAPICreateModel converts the Terraform model to a typed putdatafeed.Request.
-func (m *Datafeed) toAPICreateModel(ctx context.Context) (*putdatafeed.Request, fwdiags.Diagnostics) {
+// toAPICreateModel marshals the Terraform model to raw JSON bytes for a
+// datafeed create request.
+//
+// We use raw JSON (not putdatafeed.Request.FromJSON) so the query is sent
+// to Elasticsearch exactly as written in configuration. FromJSON normalises
+// the query through types.Query.UnmarshalJSON, causing ES to store the verbose
+// form and producing a state diff on every plan after the first apply.
+func (m *Datafeed) toAPICreateModel(ctx context.Context) ([]byte, fwdiags.Diagnostics) {
 	body, diags := m.toAPIRequestMap(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -444,17 +448,12 @@ func (m *Datafeed) toAPICreateModel(ctx context.Context) (*putdatafeed.Request, 
 		return nil, diags
 	}
 
-	req, err := putdatafeed.NewRequest().FromJSON(string(data))
-	if err != nil {
-		diags.AddError("Failed to build datafeed create request", err.Error())
-		return nil, diags
-	}
-
-	return req, diags
+	return data, diags
 }
 
-// toAPIUpdateModel converts the Terraform model to a typed updatedatafeed.Request.
-func (m *Datafeed) toAPIUpdateModel(ctx context.Context) (*updatedatafeed.Request, fwdiags.Diagnostics) {
+// toAPIUpdateModel marshals the Terraform model to raw JSON bytes for a
+// datafeed update request. The job_id field is removed since it is immutable.
+func (m *Datafeed) toAPIUpdateModel(ctx context.Context) ([]byte, fwdiags.Diagnostics) {
 	body, diags := m.toAPIRequestMap(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -469,11 +468,5 @@ func (m *Datafeed) toAPIUpdateModel(ctx context.Context) (*updatedatafeed.Reques
 		return nil, diags
 	}
 
-	req, err := updatedatafeed.NewRequest().FromJSON(string(data))
-	if err != nil {
-		diags.AddError("Failed to build datafeed update request", err.Error())
-		return nil, diags
-	}
-
-	return req, diags
+	return data, diags
 }

@@ -18,6 +18,7 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -27,8 +28,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putdatafeed"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatedatafeed"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -54,8 +53,13 @@ func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	return diags
 }
 
-// PutDatafeed creates a machine learning datafeed
-func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request putdatafeed.Request) diag.Diagnostics {
+// PutDatafeed creates a machine learning datafeed.
+//
+// We use .Raw() to send the request body as-is so that the query JSON is
+// preserved exactly as the user wrote it. Using .Request() would parse the
+// query through types.Query.UnmarshalJSON which normalises term shorthand to
+// verbose form, making ES store the verbose form and causing state diffs.
+func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, body []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
@@ -64,7 +68,7 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		return diags
 	}
 
-	_, err = typedClient.Ml.PutDatafeed(datafeedID).Request(&request).Do(ctx)
+	_, err = typedClient.Ml.PutDatafeed(datafeedID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML datafeed", fmt.Sprintf("Unable to create ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
@@ -220,8 +224,11 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	return nil, diags
 }
 
-// UpdateDatafeed updates a machine learning datafeed
-func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, request updatedatafeed.Request) diag.Diagnostics {
+// UpdateDatafeed updates a machine learning datafeed.
+//
+// We use .Raw() to send the request body as-is, for the same reason as
+// PutDatafeed: to avoid normalising the query through types.Query.
+func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, body []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	typedClient, err := apiClient.GetESTypedClient()
@@ -230,7 +237,7 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 		return diags
 	}
 
-	_, err = typedClient.Ml.UpdateDatafeed(datafeedID).Request(&request).Do(ctx)
+	_, err = typedClient.Ml.UpdateDatafeed(datafeedID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to update ML datafeed", fmt.Sprintf("Unable to update ML datafeed: %s — %s", datafeedID, err.Error()))
 		return diags
