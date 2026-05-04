@@ -179,13 +179,17 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_repository" {
-				compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-				if compID.ResourceID != name {
-					continue
-				}
+				continue
 			}
 
-			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+			compID, err := clients.CompositeIDFromStr(rs.Primary.ID)
+			if err != nil {
+				return err
+			}
+			if compID.ResourceID != name {
+				continue
+			}
+
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
