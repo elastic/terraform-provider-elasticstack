@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putjob"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatejob"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/appliesto"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/conditionoperator"
@@ -298,47 +297,6 @@ func (a *APIModel) toPutJobRequest() putjob.Request {
 		req.ResultsIndexName = &a.ResultsIndexName
 	}
 	req.ResultsRetentionDays = a.ResultsRetentionDays
-
-	return req
-}
-
-// toUpdateJobRequest converts an UpdateAPIModel to an updatejob.Request for the typed API client.
-func (u *UpdateAPIModel) toUpdateJobRequest() updatejob.Request {
-	req := updatejob.Request{}
-
-	req.Description = u.Description
-	if len(u.Groups) > 0 {
-		req.Groups = u.Groups
-	}
-	if u.AnalysisLimits != nil {
-		req.AnalysisLimits = &types.AnalysisMemoryLimit{
-			ModelMemoryLimit: u.AnalysisLimits.ModelMemoryLimit,
-		}
-	}
-	if u.ModelPlotConfig != nil {
-		req.ModelPlotConfig = &types.ModelPlotConfig{
-			AnnotationsEnabled: u.ModelPlotConfig.AnnotationsEnabled,
-			Enabled:            &u.ModelPlotConfig.Enabled,
-			Terms:              nonEmptyStrPtr(u.ModelPlotConfig.Terms),
-		}
-	}
-	req.AllowLazyOpen = u.AllowLazyOpen
-	if u.BackgroundPersistInterval != nil {
-		req.BackgroundPersistInterval = types.Duration(*u.BackgroundPersistInterval)
-	}
-	if u.CustomSettings != nil {
-		req.CustomSettings = make(map[string]json.RawMessage)
-		for k, v := range u.CustomSettings {
-			raw, err := json.Marshal(v)
-			if err == nil {
-				req.CustomSettings[k] = json.RawMessage(raw)
-			}
-		}
-	}
-	req.DailyModelSnapshotRetentionAfterDays = u.DailyModelSnapshotRetentionAfterDays
-	req.ModelSnapshotRetentionDays = u.ModelSnapshotRetentionDays
-	req.RenormalizationWindowDays = u.RenormalizationWindowDays
-	req.ResultsRetentionDays = u.ResultsRetentionDays
 
 	return req
 }

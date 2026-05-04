@@ -150,7 +150,7 @@ type rawDatafeedListResponse struct {
 }
 
 type rawDatafeedDocument struct {
-	DatafeedId string          `json:"datafeed_id"`
+	DatafeedID string          `json:"datafeed_id"`
 	Query      json.RawMessage `json:"query"`
 }
 
@@ -212,7 +212,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 		if typedResponse.Datafeeds[i].DatafeedId == datafeedID {
 			resp := &MLDatafeedResponse{MLDatafeed: &typedResponse.Datafeeds[i]}
 			for j := range rawResponse.Datafeeds {
-				if rawResponse.Datafeeds[j].DatafeedId == datafeedID {
+				if rawResponse.Datafeeds[j].DatafeedID == datafeedID {
 					resp.QueryRaw = rawResponse.Datafeeds[j].Query
 					break
 				}
