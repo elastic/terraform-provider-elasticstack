@@ -36,7 +36,7 @@ import (
 func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -101,7 +101,7 @@ type DatafeedIndicesOptions struct {
 func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -126,7 +126,7 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -153,7 +153,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*types.JobStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -207,7 +207,7 @@ type rawDatafeedDocument struct {
 func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*MLDatafeedResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -272,7 +272,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -297,7 +297,7 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -319,7 +319,7 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -346,7 +346,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return diags
@@ -379,7 +379,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return nil, diags

@@ -38,7 +38,7 @@ import (
 func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *types.User, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -77,7 +77,7 @@ func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*types.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -106,7 +106,7 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -128,7 +128,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -152,7 +152,7 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -176,7 +176,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError(
 			"Unable to get Elasticsearch client",
@@ -208,7 +208,7 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -262,7 +262,7 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*types.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -290,7 +290,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -315,7 +315,7 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, roleMapping *types.SecurityRoleMapping) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -383,7 +383,7 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*types.SecurityRoleMapping, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -410,7 +410,7 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -432,7 +432,7 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScop
 func CreateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createapikey.Request) (*createapikey.Response, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -450,7 +450,7 @@ func CreateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updateapikey.Request) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -468,7 +468,7 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.ApiKey, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -499,7 +499,7 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags
@@ -523,7 +523,7 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return nil, diags
@@ -541,7 +541,7 @@ func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.Elasticsea
 func UpdateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updatecrossclusterapikey.Request) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Unable to get Elasticsearch client", err.Error())
 		return diags

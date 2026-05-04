@@ -35,7 +35,7 @@ import (
 
 func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*info.Response, sdkdiag.Diagnostics) {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -78,7 +78,7 @@ type SlmRetention struct {
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -165,7 +165,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 
 func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, sdkdiag.Diagnostics) {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -288,7 +288,7 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -304,7 +304,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 
 func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -384,7 +384,7 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 
 func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, sdkdiag.Diagnostics) {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -420,7 +420,7 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 
 func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -436,7 +436,7 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -479,7 +479,7 @@ func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
 
 func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, sdkdiag.Diagnostics) {
 	var diags sdkdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -517,7 +517,7 @@ func flattenRawMessageMap(m map[string]json.RawMessage) (map[string]any, error) 
 }
 
 func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.StoredScript, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		var diags fwdiag.Diagnostics
 		diags.AddError("Failed to get ES client", err.Error())
@@ -537,7 +537,7 @@ func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, context string, script *types.StoredScript, params map[string]any) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get ES client", err.Error())
 		return diags
@@ -578,7 +578,7 @@ func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 func DeleteScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get ES client", err.Error())
 		return diags

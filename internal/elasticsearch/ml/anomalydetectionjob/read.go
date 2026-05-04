@@ -43,7 +43,7 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 		return false, diags
 	}
 
-	typedClient, err := client.GetESTypedClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
 		return false, diags

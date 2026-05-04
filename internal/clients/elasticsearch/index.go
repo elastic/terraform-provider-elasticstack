@@ -69,7 +69,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -85,7 +85,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 }
 
 func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*types.Lifecycle, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -109,7 +109,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 }
 
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -125,7 +125,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 }
 
 func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) sdkdiag.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -144,7 +144,7 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 
 // GetComponentTemplate returns a component template by name.
 func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, sdkdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -170,7 +170,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 }
 
 func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) sdkdiag.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -186,7 +186,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.Elasticsear
 }
 
 func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -204,7 +204,7 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.IndexTemplateItem, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -229,7 +229,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -297,7 +297,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -330,7 +330,7 @@ func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (map[string]types.IndexState, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -346,7 +346,7 @@ func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 }
 
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, aliases []string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -366,7 +366,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 	if err != nil {
 		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
 	}
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -382,7 +382,7 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchSc
 	if err != nil {
 		return fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
 	}
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -394,7 +394,7 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func UpdateIndexMappings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index, mappings string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -406,7 +406,7 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -418,7 +418,7 @@ func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 }
 
 func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, sdkdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -438,7 +438,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 }
 
 func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -454,7 +454,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -562,7 +562,7 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticsearc
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -582,7 +582,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticse
 }
 
 func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, aliasName string) (map[string]types.IndexAliases, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -663,7 +663,7 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -679,7 +679,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
@@ -691,7 +691,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.IngestPipeline, sdkdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, sdkdiag.FromErr(err)
 	}
@@ -716,7 +716,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return sdkdiag.FromErr(err)
 	}
