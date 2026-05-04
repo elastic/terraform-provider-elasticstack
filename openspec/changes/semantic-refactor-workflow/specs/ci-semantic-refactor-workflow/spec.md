@@ -31,11 +31,11 @@ The semantic refactor workflow SHALL support scheduled daily execution and manua
 - **THEN** the workflow SHALL start a semantic refactor analysis run subject to the pre-activation gate
 
 ### Requirement: LiteLLM-backed engine configuration
-The semantic refactor workflow SHALL run the agent through the repository's LiteLLM-backed Claude engine configuration, using model `llm-gateway/gpt-5.4`, `ANTHROPIC_BASE_URL` set to the Elastic LiteLLM endpoint, `ANTHROPIC_API_KEY` sourced from `CLAUDE_LITELLM_PROXY_API_KEY`, and a `network.allowed` contract that permits access to `elastic.litellm-prod.ai`.
+The semantic refactor workflow SHALL run the agent through the repository's LiteLLM-backed Claude engine configuration, using model `llm-gateway/gpt-5.5`, `ANTHROPIC_BASE_URL` set to the Elastic LiteLLM endpoint, `ANTHROPIC_API_KEY` sourced from `CLAUDE_LITELLM_PROXY_API_KEY`, and a `network.allowed` contract that permits access to `elastic.litellm-prod.ai`.
 
 #### Scenario: Authored workflow uses LiteLLM engine settings
 - **WHEN** maintainers inspect the authored semantic refactor workflow source
-- **THEN** the engine configuration SHALL specify Claude with model `llm-gateway/gpt-5.4`, the Elastic LiteLLM base URL, a `network.allowed` entry for `elastic.litellm-prod.ai`, and the `CLAUDE_LITELLM_PROXY_API_KEY` secret
+- **THEN** the engine configuration SHALL specify Claude with model `llm-gateway/gpt-5.5`, the Elastic LiteLLM base URL, a `network.allowed` entry for `elastic.litellm-prod.ai`, and the `CLAUDE_LITELLM_PROXY_API_KEY` secret
 
 #### Scenario: Compiled lock preserves LiteLLM execution settings
 - **WHEN** the workflow source is compiled
