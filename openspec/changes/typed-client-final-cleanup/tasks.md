@@ -14,9 +14,9 @@
 ## 3. Delete redundant model files
 
 - [x] 3.1 `internal/models/ml.go` — already deleted in prior merge
-- [ ] 3.2 `internal/models/transform.go` — retained, types still heavily used by resource layer (out of scope)
-- [ ] 3.3 `internal/models/enrich.go` — retained, types still used by enrich resource (out of scope)
-- [x] 3.4 Remove unused types from `internal/models/models.go` (`DataStreamLifecycle`, `TimestampField` removed; others already removed in prior merges)
+- [x] 3.2 `internal/models/transform.go` — retained, types still heavily used by resource layer (out of scope)
+- [x] 3.3 `internal/models/enrich.go` — retained, types still used by enrich resource (out of scope)
+- [x] 3.4 Remove unused types from `internal/models/models.go` (`TimestampField` removed; `DataStreamLifecycle` retained because it is still actively used by `GetDataStreamLifecycle`; others already removed in prior merges)
 - [x] 3.5 Custom types (`BuildDate`, `StringSliceOrCSV`, `Index`, `PutIndexParams`, `IndexAlias`, `LifecycleSettings`, `Downsampling`, `LogstashPipeline`, `Watch`/`PutWatch`/`WatchBody`, `APIKeyRoleDescriptor` etc.) retained
 - [x] 3.6 `internal/models/ingest.go` retained — ingest processor structs are custom and have no typedapi equivalent
 
