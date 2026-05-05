@@ -55,7 +55,7 @@ The resource SHALL expose an optional entity-local `kibana_connection` block usi
 
 ### Requirement: Identity and import (REQ-003)
 
-The resource SHALL expose a computed `id` attribute that is populated from the `id` field of `APMUIUploadSourceMapsResponse` after a successful upload. The `id` SHALL be preserved across plan/apply cycles using `UseStateForUnknown`. The resource SHALL support import via `ImportStatePassthroughID`, accepting the Fleet artifact `id` as the import identifier. After import, a Read SHALL populate state from the API.
+The resource SHALL expose a computed `id` attribute that is populated from the `id` field of `APMUIUploadSourceMapsResponse` after a successful upload. The `id` SHALL be preserved across plan/apply cycles using `UseStateForUnknown`. The resource SHALL support import via a space-aware composite identifier in the format `<space_id>/<artifact_id>`. When the import ID contains a `/` separator, the resource SHALL parse the left-hand side as `space_id` and the right-hand side as the Fleet artifact `id`. When the import ID contains no `/`, the resource SHALL treat the entire string as the Fleet artifact `id` and leave `space_id` unset (defaulting to the default Kibana space). After import, a Read SHALL populate the API-readable attributes `bundle_filepath`, `service_name`, and `service_version` from the Kibana artifact.
 
 #### Scenario: ID captured from upload response
 
@@ -63,11 +63,22 @@ The resource SHALL expose a computed `id` attribute that is populated from the `
 - WHEN the provider processes the `APMUIUploadSourceMapsResponse`
 - THEN `id` in state SHALL equal the `id` field from the response (non-empty string)
 
-#### Scenario: Import passthrough
+#### Scenario: Composite import with space_id
 
-- GIVEN an import with a valid Fleet artifact `id`
+- GIVEN an import with ID `"my-space/abc123"`
 - WHEN import completes
-- THEN `id` SHALL be stored in state and a read SHALL be performed to populate the API-readable attributes `bundle_filepath`, `service_name`, and `service_version`; `sourcemap_json`, `sourcemap_binary`, and `kibana_connection` SHALL NOT be reconstructed during import/read
+- THEN `space_id` SHALL be set to `"my-space"` and the Fleet artifact `id` SHALL be set to `"abc123"` in state; a Read SHALL populate `bundle_filepath`, `service_name`, and `service_version` from `GET /s/my-space/api/apm/sourcemaps`
+
+#### Scenario: Plain import without space_id
+
+- GIVEN an import with ID `"abc123"` (no `/` separator)
+- WHEN import completes
+- THEN the Fleet artifact `id` SHALL be set to `"abc123"` and `space_id` SHALL NOT be set; a Read SHALL populate `bundle_filepath`, `service_name`, and `service_version` from `GET /api/apm/sourcemaps`
+
+#### Scenario: Attributes not recovered on import
+
+- WHEN any import completes
+- THEN `sourcemap_json`, `sourcemap_binary`, and `kibana_connection` SHALL NOT be reconstructed from the API response
 
 ### Requirement: Create — multipart upload (REQ-004)
 
@@ -93,7 +104,7 @@ On create, the resource SHALL read the plan and construct a multipart/form-data 
 
 ### Requirement: Read — paginated list search (REQ-005)
 
-On read, the resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL refresh from the read response every non-sensitive attribute that the API returns for the matching artifact, including `id`, `bundle_filepath`, `service_name`, and `service_version`. The resource SHALL NOT attempt to reconstruct or refresh `sourcemap_json` or `sourcemap_binary` from the read response because the API does not return the original uploaded source map content. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
+On read, the resource SHALL read `space_id` from state (not plan) to construct the space-aware API path, preserving the space in which the artifact was created. The resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL refresh from the read response every non-sensitive attribute that the API returns for the matching artifact, including `id`, `bundle_filepath`, `service_name`, and `service_version`; `space_id` SHALL be preserved from state since the API does not return space metadata. The resource SHALL NOT attempt to reconstruct or refresh `sourcemap_json` or `sourcemap_binary` from the read response because the API does not return the original uploaded source map content. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
 
 #### Scenario: Artifact found on read
 
@@ -190,7 +201,10 @@ The acceptance test suite SHALL include:
 
 1. A test that creates a source map using `sourcemap_json` with a minimal but valid source map JSON, asserts `id` is non-empty after apply, and confirms the resource is destroyed cleanly on `terraform destroy`.
 2. A test that creates a source map using `sourcemap_binary` (base64-encoded minimal source map), asserts `id` is non-empty after apply.
-3. A test that imports an existing source map artifact by `id` and asserts the resource is in state after import.
+3. A test that imports an existing source map artifact by composite ID `<space_id>/<id>` and asserts that `space_id`, `id`, `bundle_filepath`, `service_name`, and `service_version` are correctly populated in state after import.
+4. A test that validates the `ExactlyOneOf` constraint (REQ-007): verifies that a configuration with neither `sourcemap_json` nor `sourcemap_binary` returns a validation diagnostic, and a configuration with both returns a validation diagnostic (using `ExpectError`).
+5. A test that validates `RequireReplace` semantics (REQ-008): verifies that changing `service_version` (or any other write attribute) results in a replacement plan action (using `plancheck.ExpectResourceAction` with `plancheck.ResourceActionReplace`).
+6. A test that creates a source map with a non-default `space_id`, asserts the resource is created and readable within that space, and confirms deletion removes it from that space.
 
 #### Scenario: Create with sourcemap_json acceptance test
 
@@ -198,8 +212,20 @@ The acceptance test suite SHALL include:
 - WHEN `TestAccResourceApmSourceMap_json` runs
 - THEN the resource is created, `id` is populated in state, and is destroyed without error
 
-#### Scenario: Import acceptance test
+#### Scenario: Import by composite ID acceptance test
 
-- GIVEN an existing source map `id` in state
-- WHEN `TestAccResourceApmSourceMap_import` performs an import step
-- THEN state is re-populated via Read without error
+- GIVEN an existing source map with `space_id = "my-space"` and a known Fleet artifact `id` in state
+- WHEN `TestAccResourceApmSourceMap_import` performs an import step using `"my-space/<id>"`
+- THEN state is re-populated with `space_id`, `id`, `bundle_filepath`, `service_name`, and `service_version` via Read without error
+
+#### Scenario: ExactlyOneOf validation acceptance test
+
+- GIVEN a configuration where neither `sourcemap_json` nor `sourcemap_binary` is set
+- WHEN `TestAccResourceApmSourceMap_validationNeitherSet` applies
+- THEN the provider SHALL return a validation diagnostic (`ExpectError`)
+
+#### Scenario: RequireReplace acceptance test
+
+- GIVEN an applied resource with `service_version = "1.0.0"`
+- WHEN `TestAccResourceApmSourceMap_requireReplace` plans a change to `service_version = "1.1.0"`
+- THEN the plan SHALL show a replacement action (`plancheck.ResourceActionReplace`)
