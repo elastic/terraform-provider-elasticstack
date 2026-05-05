@@ -38,7 +38,7 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -53,7 +53,7 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -68,7 +68,7 @@ func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 	case http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -85,6 +85,6 @@ func DeleteMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

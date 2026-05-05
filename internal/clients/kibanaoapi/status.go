@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -49,7 +50,7 @@ func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (ve
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		diags = reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		diags = diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 		return "", "", diags
 	}
 

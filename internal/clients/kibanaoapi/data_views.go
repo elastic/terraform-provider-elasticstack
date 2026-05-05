@@ -37,7 +37,7 @@ func GetDataViews(ctx context.Context, client *Client, spaceID string) ([]kbapi.
 	case http.StatusOK:
 		return *resp.JSON200.DataView, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -54,7 +54,7 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -69,7 +69,7 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -84,7 +84,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -101,7 +101,7 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -124,7 +124,7 @@ func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*s
 		}
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -139,6 +139,6 @@ func SetDefaultDataView(ctx context.Context, client *Client, spaceID string, req
 	case http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

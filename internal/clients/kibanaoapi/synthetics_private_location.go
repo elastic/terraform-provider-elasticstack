@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -44,7 +45,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -73,7 +74,7 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 		// Sentinel: caller should remove from state.
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -94,6 +95,6 @@ func DeletePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 		// Already gone — treat as success.
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

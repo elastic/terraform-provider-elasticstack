@@ -46,7 +46,7 @@ func CreateListIndex(ctx context.Context, client *Client, spaceID string) (bool,
 		// Data streams already exist ([docs](https://www.elastic.co/docs/api/doc/kibana/operation/operation-createlistindex#operation-createlistindex-409))
 		return true, nil
 	default:
-		return false, reportUnknownError(resp.StatusCode(), resp.Body)
+		return false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -68,7 +68,7 @@ func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listInd
 		// Data streams don't exist
 		return false, false, nil
 	default:
-		return false, false, reportUnknownError(resp.StatusCode(), resp.Body)
+		return false, false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -86,7 +86,7 @@ func DeleteListIndex(ctx context.Context, client *Client, spaceID string) diag.D
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -108,7 +108,7 @@ func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -128,7 +128,7 @@ func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -148,7 +148,7 @@ func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -165,7 +165,7 @@ func DeleteList(ctx context.Context, client *Client, spaceID string, params *kba
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -191,7 +191,7 @@ func GetListItem(ctx context.Context, client *Client, spaceID string, params *kb
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -211,7 +211,7 @@ func CreateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -231,7 +231,7 @@ func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -248,6 +248,6 @@ func DeleteListItem(ctx context.Context, client *Client, spaceID string, params 
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

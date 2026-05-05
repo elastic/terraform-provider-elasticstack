@@ -48,7 +48,7 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -72,7 +72,7 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -90,7 +90,7 @@ func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 	case http.StatusOK:
 		return GetMonitor(ctx, client, spaceID, monitorID)
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 

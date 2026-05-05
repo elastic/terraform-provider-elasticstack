@@ -37,7 +37,7 @@ func handleGetResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(statusCode, body)
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
 }
 
@@ -50,7 +50,7 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 		}
 		return &result, nil
 	default:
-		return nil, reportUnknownError(statusCode, body)
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
 }
 
@@ -59,7 +59,7 @@ func handleStatusResponse(statusCode int, body []byte, successStatusCodes ...int
 		return nil
 	}
 
-	return reportUnknownError(statusCode, body)
+	return diagutil.ReportUnknownHTTPError(statusCode, body)
 }
 
 func clientError(err error) diag.Diagnostics {

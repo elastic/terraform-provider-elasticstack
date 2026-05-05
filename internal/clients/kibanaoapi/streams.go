@@ -190,7 +190,7 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -224,7 +224,7 @@ func UpsertStream(ctx context.Context, client *Client, spaceID string, name stri
 			}
 			return &streamResp, resp.StatusCode(), nil
 		default:
-			return nil, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 		}
 	})
 }
@@ -245,7 +245,7 @@ func DeleteStream(ctx context.Context, client *Client, spaceID string, name stri
 		case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
 			return struct{}{}, resp.StatusCode(), nil
 		default:
-			return struct{}{}, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+			return struct{}{}, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 		}
 	})
 	return diags
