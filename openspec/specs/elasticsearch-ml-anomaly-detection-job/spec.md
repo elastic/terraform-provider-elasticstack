@@ -101,9 +101,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Anomaly Detection Job CRUD APIs (REQ-001–REQ-005)
 
 The resource SHALL use the Elasticsearch Put Anomaly Detection Job API to create jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html)). The resource SHALL use the Elasticsearch Update Anomaly Detection Job API to update jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-update-job.html)). The resource SHALL use the Elasticsearch Get Anomaly Detection Jobs API to read job definitions ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-get-job.html)). The resource SHALL use the Elasticsearch Close Anomaly Detection Job API before deleting a job ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-close-job.html)). The resource SHALL use the Elasticsearch Delete Anomaly Detection Job API to delete jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-delete-job.html)). When Elasticsearch returns a non-success status for any API call (except 404 on read), the resource SHALL surface the API error as a Terraform diagnostic.
@@ -349,3 +347,4 @@ The following attributes SHALL use `UseStateForUnknown` plan modifier to preserv
 - GIVEN an existing job with a known id in state
 - WHEN a plan is generated without changing job_id
 - THEN `id` SHALL remain known (not unknown) in the plan
+
