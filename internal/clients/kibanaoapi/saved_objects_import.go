@@ -25,6 +25,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -59,7 +60,7 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 
 	contentType := writer.FormDataContentType()
 
-	resp, err := client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}

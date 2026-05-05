@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -35,7 +36,7 @@ import (
 func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.PostSyntheticMonitorsWithResponse(
 		ctx, req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -57,7 +58,7 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID string) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.GetSyntheticMonitorWithResponse(
 		ctx, monitorID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -80,7 +81,7 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.PutSyntheticMonitorWithResponse(
 		ctx, monitorID, req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -113,7 +114,7 @@ func DeleteMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	path := BuildSpaceAwarePath(spaceID, "/api/synthetics/monitors")
+	path := kibanautil.BuildSpaceAwarePath(spaceID, "/api/synthetics/monitors")
 	url := strings.TrimRight(client.URL, "/") + path
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, bytes.NewReader(body))

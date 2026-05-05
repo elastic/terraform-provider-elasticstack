@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -30,7 +31,7 @@ import (
 // CreatePrivateLocation creates a new Synthetics private location via the OpenAPI client.
 // On success it returns the SyntheticsGetPrivateLocation from the POST response body.
 func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, body kbapi.PostPrivateLocationJSONRequestBody) (*kbapi.SyntheticsGetPrivateLocation, diag.Diagnostics) {
-	resp, err := client.API.PostPrivateLocationWithResponse(ctx, body, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostPrivateLocationWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed creating private location", err.Error())}
 	}
@@ -53,7 +54,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 // Returns (nil, nil) when the location is not found (HTTP 404) so the caller
 // can remove the resource from state without treating absence as an error.
 func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, locationID string) (*kbapi.SyntheticsGetPrivateLocation, diag.Diagnostics) {
-	resp, err := client.API.GetPrivateLocationWithResponse(ctx, locationID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetPrivateLocationWithResponse(ctx, locationID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			fmt.Sprintf("HTTP request failed reading private location %q", locationID),
@@ -80,7 +81,7 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 
 // DeletePrivateLocation deletes a Synthetics private location by id.
 func DeletePrivateLocation(ctx context.Context, client *Client, spaceID string, locationID string) diag.Diagnostics {
-	resp, err := client.API.DeletePrivateLocationWithResponse(ctx, locationID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeletePrivateLocationWithResponse(ctx, locationID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic(
 			fmt.Sprintf("HTTP request failed deleting private location %q", locationID),

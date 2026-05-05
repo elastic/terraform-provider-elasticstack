@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -44,7 +45,7 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		ctx,
 		rule.RuleID,
 		req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed", err.Error())}
@@ -73,7 +74,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 	resp, err := client.API.GetAlertingRuleIdWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get alerting rule", err.Error())}
@@ -102,7 +103,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		ctx,
 		rule.RuleID,
 		body,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update alerting rule", err.Error())}
@@ -160,7 +161,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	resp, err := client.API.DeleteAlertingRuleIdWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete alerting rule", err.Error())}
@@ -180,7 +181,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	resp, err := client.API.PostAlertingRuleIdEnableWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable alerting rule", err.Error())}
@@ -200,7 +201,7 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		ctx,
 		ruleID,
 		body,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable alerting rule", err.Error())}
