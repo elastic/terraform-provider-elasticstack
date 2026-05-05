@@ -14,9 +14,9 @@ resource "elasticstack_fleet_agent_policy" "test" {
 }
 
 resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
-  name                = var.policy_name
-  namespace           = "default"
-  agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
+  name            = var.policy_name
+  namespace       = "default"
+  agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
   # description omitted to verify it is cleared after the prior update step
   # enabled omitted to verify it reverts to the default value of true
   force               = true

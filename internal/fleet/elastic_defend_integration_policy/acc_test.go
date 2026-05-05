@@ -233,10 +233,10 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
-				ImportStateVerify:       true,
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateIdFunc: testImportStateIDFunc(resourceName),
+				ImportStateVerify: true,
 				// description is Optional-only (unmanaged): import starts with a blank
 				// model (all-null), so it stays null even when Kibana has a value.
 				ImportStateVerifyIgnore: []string{"force", "description"},
