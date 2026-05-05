@@ -7,11 +7,11 @@
 
 ## 2. Resource Migrations
 
-- [ ] 2.1 Migrate `security_role` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
-- [ ] 2.2 Migrate `security_role_mapping` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
-- [ ] 2.3 Migrate `security_system_user` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
-- [ ] 2.4 Migrate `cluster_script` to the Elasticsearch resource envelope and pass create and update callbacks to remove its thin Create/Update wrapper methods.
-- [ ] 2.5 Update any remaining `NewElasticsearchResource` call sites and model getter methods required by the new constructor and model constraint.
+- [x] 2.1 Migrate `security_role` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
+- [x] 2.2 Migrate `security_role_mapping` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
+- [x] 2.3 Migrate `security_system_user` to pass create and update callbacks to `NewElasticsearchResource` and remove thin Create/Update wrapper methods.
+- [x] 2.4 Migrate `cluster_script` to the Elasticsearch resource envelope and pass create and update callbacks to remove its thin Create/Update wrapper methods.
+- [x] 2.5 Update any remaining `NewElasticsearchResource` call sites and model getter methods required by the new constructor and model constraint.
 
 ## 3. Tests and Verification
 
