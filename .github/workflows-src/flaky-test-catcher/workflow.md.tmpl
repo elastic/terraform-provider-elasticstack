@@ -30,7 +30,11 @@ safe-outputs:
     title-prefix: "[flaky-test] "
     labels: [flaky-test, code-factory]
     max: 3
-  noop: {}
+  noop:
+    max: 1
+    report-as-issue: false
+checkout:
+  fetch-depth: 0
 network:
   allowed: [defaults, elastic.litellm-prod.ai]
 if: >-
@@ -80,7 +84,7 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 5. Group failing tests by their base test name, extracted via the pattern `TestAcc[^_]+` (the part before the first `_` suffix). For example, `TestAccResourceFoo_basic` and `TestAccResourceFoo_update` both belong to base test `TestAccResourceFoo`.
 6. For each affected base test name, check for an existing open issue with the `flaky-test` label and title `[flaky-test] <BaseTestName>`. Skip base tests that already have an open issue (deduplication).
 7. For each new issue to create (up to `${{ needs.pre_activation.outputs.issue_slots_available }}`):
-   a. Perform commit analysis: inspect recent commits on `main` that touched files related to the test's resource package — review commit messages and changed file paths for likely causes.
+   a. Perform commit analysis: inspect commits on `main` since the oldest failing run that touch files in the affected resource package (by path or referencing the test/resource name). For each such commit, note its SHA, message, and changed files. If any commit appears to address the failure (e.g. a fix or revert), note: "may already be addressed in `<sha>`". Frame this as "has someone already fixed this?" — not as attribution of blame.
    b. Collect a sample failure log excerpt (the most informative `--- FAIL:` block from the logs).
    c. Note the Elastic Stack versions reported in the failing job logs, if present.
    d. Create the issue using the `create-issue` safe output.
