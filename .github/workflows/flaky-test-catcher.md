@@ -254,7 +254,7 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 ## Execution steps
 
 1. Read `.agents/skills/flaky-test-catcher/SKILL.md` and follow it strictly when performing analysis.
-2. Parse `failed_run_ids` from pre-activation — it is a JSON array string (e.g. `["12345","67890"]`). These are the run IDs of failed `test.yml` workflow runs on `main` in the last 3 days.
+2. Parse `failed_run_ids` from pre-activation — it is a JSON array of numbers (e.g. `[12345, 67890]`). These are the run IDs of failed `test.yml` workflow runs on `main` in the last 3 days.
 3. For each failed run ID, fetch job logs using `gh api` and extract all `--- FAIL:` test names from the output. Collect every failing test name across all runs.
 4. Apply fail-rate classification using `total_run_count` from pre-activation:
    - **Broken**: test fails in 100% of runs (always-failing).
@@ -273,23 +273,23 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 
 - Never create more than `${{ needs.pre_activation.outputs.issue_slots_available }}` issues in a single run.
 - Label each issue `flaky-test` and `code-factory`.
-- Issue title format: `[flaky-test] <BaseTestName>`
+- Issue title format: `<BaseTestName>` (the `[flaky-test] ` prefix is added automatically by `create-issue`).
 
-Each issue body must include the following sections:
+Each issue body must include the following sections (use `##` headings to match SKILL.md):
 
-### Broken Tests
+## Broken Tests
 List the specific test function names (with subtests) that failed in 100% of sampled runs.
 
-### Flaky Tests
+## Flaky Tests
 List the specific test function names that failed in ≥ 20% but < 100% of runs, with each test's observed fail rate (e.g. `3/5 runs`).
 
-### Commit Analysis
+## Commit Analysis
 Note any commits on `main` since the oldest failing run that appear to address the failure. If a relevant fix commit is found, note: "may already be addressed in `<sha>`". If no relevant commits found, note that explicitly.
 
-### Sample Failure Output
+## Sample Failure Output
 Paste the most informative `--- FAIL:` log excerpt from the failed runs to give context to the implementer.
 
-### Affected Stack Versions
+## Affected Stack Versions
 List the Elastic Stack versions (Elasticsearch, Kibana) reported in the failing job environment, if discoverable from the logs or job metadata.
 
 ## Noop conditions

@@ -188,12 +188,14 @@ gh api "/repos/{owner}/{repo}/issues?labels=flaky-test&state=open&per_page=100"
 ```
 
 - Inspect each returned issue's `title`.
-- The title format for flaky-test issues is: `[flaky-test] {BaseTestName}`
+- The **full rendered title** for flaky-test issues is: `[flaky-test] {BaseTestName}` (the `[flaky-test] ` prefix is applied automatically by the `create-issue` safe output). When checking for duplicates, compare against this full title as it appears in GitHub.
 - If an **exact title match** exists, skip creating a new issue for that base test name.
 - Do **not** re-query or recalculate `issue_slots_available`; use only the value from pre-activation.
 - If the response contains exactly 100 results, check for a `next` link in the `Link` response header and repeat the request for subsequent pages until all open issues are fetched.
 
 ## 9. Required issue body sections
+
+**Issue title**: Pass only `{BaseTestName}` to the `create-issue` safe output — the `[flaky-test] ` prefix is added automatically.
 
 Every issue you create must contain exactly these 5 sections in this order:
 
