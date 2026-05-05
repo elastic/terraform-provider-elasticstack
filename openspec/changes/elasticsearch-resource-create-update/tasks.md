@@ -19,3 +19,12 @@
 - [x] 3.2 Add or update focused resource tests where existing coverage can verify migrated callback behavior without acceptance-test infrastructure.
 - [x] 3.3 Run targeted Go tests for `internal/entitycore` and migrated resource packages.
 - [x] 3.4 Run OpenSpec validation for `elasticsearch-resource-create-update`.
+
+**Verification (recorded for audit)**
+
+- **3.3** — `go test -count=1 ./internal/entitycore/...` and migrated packages excluding external acceptance tests (same module path; `-run` filters only apply where `TestAcc*` lives in `*_test` packages):
+  - `go test -count=1 ./internal/elasticsearch/security/role -run 'Test(V0ToV1|Data_satisfies|FromAPIModel)'`
+  - `go test -count=1 ./internal/elasticsearch/security/rolemapping -run 'Test(RoleTemplatesToJSON|Data_satisfies)'`
+  - `go test -count=1 ./internal/elasticsearch/security/systemuser -run 'TestData_satisfies'`
+  - `go test -count=1 ./internal/elasticsearch/cluster/script -run 'TestData_satisfies'`
+- **3.4** — `node_modules/.bin/openspec validate elasticsearch-resource-create-update` (with OpenSpec CLI available, e.g. after `make setup-openspec` / `npm ci`).
