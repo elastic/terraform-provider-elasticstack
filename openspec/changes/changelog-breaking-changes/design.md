@@ -50,11 +50,11 @@ The concrete problem: contributors adding content after their intended breaking 
 
 **Guard against double-errors:** The rule is guarded with `VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact)`. If `customerImpact` is already invalid (e.g., `patch`), the base validator emits an "invalid impact" error and rule C is suppressed — avoiding a confusing second error for the same root cause.
 
-### Decision 4: Error message includes end-marker hint
+### Decision 4: Error message is actionable and prescriptive
 
-**Choice:** Error message: `"### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker."`
+**Choice:** Error message: `"### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading."`
 
-**Rationale:** The error is directly actionable — it tells the author both what's wrong and the escape hatch if they have extra context they want to preserve in their PR body without it leaking into the changelog.
+**Rationale:** The error is directly actionable — it tells the author both what's wrong (the heading is only permitted with breaking impact) and the two precise remediation paths: either change the impact level to `breaking`, or remove the `### Breaking changes` heading entirely.
 
 ### Decision 5: PR template default is invalid placeholder text
 

@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Existing changelog section is validated deterministically
-The workflow SHALL parse and validate the `## Changelog` section from the pull request body using `parseChangelogSectionFull` and `validateChangelogSectionFull`. The validator SHALL require `Customer impact` to be exactly one of `none`, `fix`, `enhancement`, or `breaking` (case-sensitive). The validator SHALL require a `Summary` line when `Customer impact` is not `none`. The validator SHALL reject a `### Breaking changes` subsection that is present but empty. The validator SHALL require that subsection when `Customer impact` is `breaking`. The validator SHALL reject a `### Breaking changes` subsection when `Customer impact` is any valid value other than `breaking`; the error message SHALL be: `### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.`
+The workflow SHALL parse and validate the `## Changelog` section from the pull request body using `parseChangelogSectionFull` and `validateChangelogSectionFull`. The validator SHALL require `Customer impact` to be exactly one of `none`, `fix`, `enhancement`, or `breaking` (case-sensitive). The validator SHALL require a `Summary` line when `Customer impact` is not `none`. The validator SHALL reject a `### Breaking changes` subsection that is present but empty. The validator SHALL require that subsection when `Customer impact` is `breaking`. The validator SHALL reject a `### Breaking changes` subsection when `Customer impact` is any valid value other than `breaking`; the error message SHALL be: `### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.`
 
 When validation fails, the workflow SHALL post or update a PR comment identifying the failure reason. When validation passes, the workflow SHALL update any existing failure comment to indicate the check passed.
 
@@ -19,11 +19,11 @@ When validation fails, the workflow SHALL post or update a PR comment identifyin
 
 #### Scenario: Breaking changes with non-breaking impact fails with descriptive error
 - **WHEN** the pull request body contains `### Breaking changes` content and `Customer impact` is `fix`, `enhancement`, or `none`
-- **THEN** the workflow SHALL fail and SHALL upsert a PR comment containing the error `### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.`
+- **THEN** the workflow SHALL fail and SHALL upsert a PR comment containing the error `### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.`
 
 #### Scenario: Invalid impact value with breaking changes does not emit the breaking-impact-mismatch error
 - **WHEN** the pull request body contains `### Breaking changes` content and `Customer impact` is an unsupported value (e.g., `patch`)
-- **THEN** the workflow SHALL fail with an "invalid Customer impact" error only; it SHALL NOT also emit the error `### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.`
+- **THEN** the workflow SHALL fail with an "invalid Customer impact" error only; it SHALL NOT also emit the error `### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.`
 
 ### Requirement: Breaking changes subsection may be free-form markdown with optional end marker
 Within the `## Changelog` contract, the `### Breaking changes` subsection is permitted only when `Customer impact` is `breaking`. When present, it SHALL allow free-form markdown content, including prose, bullet lists, and fenced code blocks. Validation SHALL treat that subsection as a delimited markdown block rather than a structured schema.
