@@ -31,7 +31,7 @@ test('verify-label workflow installs Go from go.mod and exports Go paths for AWF
 test('verify-label workflow routes Claude through LiteLLM with secret-backed API key', () => {
   const source = workflowSource();
   assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
-  assert.match(source, /model: "?llm-gateway\/gpt-5\.4"?/);
+  assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
 });
@@ -40,11 +40,11 @@ test('compiled lock wires gh-aw anthropic target and Claude env for main agent a
   const lock = lockSource();
   assert.match(
     lock,
-    /id: agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*--allow-domains[^\n]*elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/gpt-5\.4/
+    /id: agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*--allow-domains[^\n]*elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
   );
   assert.match(
     lock,
-    /id: detection_agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/gpt-5\.4/
+    /id: detection_agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
   );
 });
 

@@ -42,14 +42,6 @@ safe-outputs:
     title-prefix: "[schema-coverage] "
     labels: [testing, acceptance-tests, schema-coverage]
     max: 3
-  assign-to-agent:
-    name: copilot
-    model: "gpt-5.4"
-    custom-agent: acceptance-test-improver
-    allowed: [copilot]
-    target: "*"
-    max: 3
-    github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-

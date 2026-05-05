@@ -20,15 +20,10 @@
       "version": "v8.0.1",
       "sha": "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
     },
-    "actions/github-script@v9": {
-      "repo": "actions/github-script",
-      "version": "v9",
-      "sha": "373c709c69115d41ff229c7e5df9f8788daa9553"
-    },
     "actions/github-script@v9.0.0": {
       "repo": "actions/github-script",
       "version": "v9.0.0",
-      "sha": "d746ffe35508b1917358783b479e04febd2b8f71"
+      "sha": "3a2844b7e9c422d3c10d287c895573f7108da1b3"
     },
     "actions/setup-go@v6.4.0": {
       "repo": "actions/setup-go",
@@ -55,10 +50,10 @@
       "version": "v0.71.1",
       "sha": "239aec45b78c8799417efdd5bc6d8cc036629ec1"
     },
-    "github/gh-aw/actions/setup@v0.71.3": {
+    "github/gh-aw/actions/setup@v0.71.1": {
       "repo": "github/gh-aw/actions/setup",
-      "version": "v0.71.3",
-      "sha": "2f2a6f572b9038823081cb9d408f235e1a109a0b"
+      "version": "v0.71.1",
+      "sha": "f01a9d118afa6e306f3645ca31e43f4ea8fb4d22"
     },
     "hashicorp/setup-terraform@v4.0.0": {
       "repo": "hashicorp/setup-terraform",
