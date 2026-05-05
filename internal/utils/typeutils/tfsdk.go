@@ -65,6 +65,24 @@ func ValueStringPointer(value types.String) *string {
 	return value.ValueStringPointer()
 }
 
+// NonEmptyStringPointerValue returns nil if the value is null, unknown, or empty string,
+// otherwise returns a pointer to the string value.
+func NonEmptyStringPointerValue(value types.String) *string {
+	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
+		return nil
+	}
+	s := value.ValueString()
+	return &s
+}
+
+// Float64PointerValue returns nil if unknown, otherwise the same as value.ValueFloat64Pointer().
+func Float64PointerValue(value types.Float64) *float64 {
+	if value.IsUnknown() {
+		return nil
+	}
+	return value.ValueFloat64Pointer()
+}
+
 // ================
 // ==== Generic ===
 // ================

@@ -21,6 +21,7 @@ import (
 	"math"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -58,7 +59,7 @@ func (m tfModel) apmLatencyIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRespo
 			Environment:     ind.Environment.ValueString(),
 			TransactionType: ind.TransactionType.ValueString(),
 			TransactionName: ind.TransactionName.ValueString(),
-			Filter:          stringPtr(ind.Filter),
+			Filter:          typeutils.ValueStringPointer(ind.Filter),
 			Index:           ind.Index.ValueString(),
 			Threshold:       float64(ind.Threshold.ValueInt64()),
 		},
