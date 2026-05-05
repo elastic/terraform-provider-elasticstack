@@ -86,12 +86,6 @@ on:
           
           core.info(`Gate reason: ${result.gate_reason}`);
           
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: 'go.mod'
-        cache: false
-
 permissions:
   contents: read
   issues: read
@@ -160,6 +154,17 @@ network:
 
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
+steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
 jobs:
   pre-activation:
     outputs:
