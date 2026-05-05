@@ -20,6 +20,7 @@ package script
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/scriptlanguage"
@@ -74,6 +75,12 @@ func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	readData, readDiags := readScriptPayload(ctx, client, scriptID, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
+		var zero Data
+		return zero, diags
+	}
+
+	if readData.ScriptID.IsNull() || readData.ScriptID.IsUnknown() {
+		diags.AddError("Not Found", fmt.Sprintf("Script %q was not found after update", scriptID))
 		var zero Data
 		return zero, diags
 	}

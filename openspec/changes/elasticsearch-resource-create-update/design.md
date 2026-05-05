@@ -19,7 +19,7 @@ The duplicate wrappers are visible in `security_role`, `security_role_mapping`, 
 - Do not introduce `NewUpsertableElasticsearchResource` or a generic Create/Update embeddable.
 - Do not migrate unrelated Elasticsearch, Kibana, Fleet, or APM resources opportunistically.
 - Do not change public Terraform schemas, state formats, IDs, or API behavior.
-- Do not make create or update callbacks optional; resources that do not fit the envelope should continue to use `ResourceBase` directly.
+- Do not make create or update callbacks optional; resources that do not fit the envelope should continue to use `ResourceBase` directly **or** embed `ElasticsearchResource` while supplying non-nil placeholder callbacks from `PlaceholderElasticsearchWriteCallbacks` and overriding `Create` and `Update` on the concrete type when the envelope prelude cannot supply required inputs (for example write-only attributes read from `Config`). The `security_user` resource follows this pattern.
 
 ## Decisions
 
