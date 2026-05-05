@@ -60,15 +60,7 @@ mcp-servers:
     env:
       PATH: "/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin"
       GOROOT: "/usr/local/go"
-    allowed:
-      - "activate_project"
-      - "get_symbols_overview"
-      - "find_symbol"
-      - "search_for_pattern"
-      - "find_referencing_symbols"
-      - "read_file"
-      - "get_symbol_documentation"
-
+      
 timeout-minutes: 15
 engine:
   id: claude
