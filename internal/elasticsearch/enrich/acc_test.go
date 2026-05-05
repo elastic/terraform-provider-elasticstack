@@ -138,6 +138,13 @@ func TestAccResourceEnrichPolicyQueryOmitted(t *testing.T) {
 					checkEnrichPolicyQueryNull("elasticstack_elasticsearch_enrich_policy.policy"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
 		},
 	})
 }
