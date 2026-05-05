@@ -81,7 +81,7 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.GetSpacesSpaceIdWithResponse(ctx, id)
 	if err != nil {
-		return nil, diagutil.SDKDiagFromError(err)
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -105,7 +105,7 @@ func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceRe
 func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpaceJSONRequestBody) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.PostSpacesSpaceWithResponse(ctx, body)
 	if err != nil {
-		return nil, diagutil.SDKDiagFromError(err)
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -127,7 +127,7 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutSpacesSpaceIdJSONRequestBody) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.PutSpacesSpaceIdWithResponse(ctx, id, body)
 	if err != nil {
-		return nil, diagutil.SDKDiagFromError(err)
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -149,7 +149,7 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 func DeleteSpace(ctx context.Context, client *Client, id string) sdkdiag.Diagnostics {
 	resp, err := client.API.DeleteSpacesSpaceIdWithResponse(ctx, id)
 	if err != nil {
-		return diagutil.SDKDiagFromError(err)
+		return sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {

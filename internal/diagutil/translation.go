@@ -77,19 +77,6 @@ func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	}
 }
 
-func SDKDiagFromError(err error) sdkdiag.Diagnostics {
-	if err == nil {
-		return nil
-	}
-	return sdkdiag.Diagnostics{
-		{
-			Severity: sdkdiag.Error,
-			Summary:  err.Error(),
-			Detail:   "",
-		},
-	}
-}
-
 func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
 	for _, diag := range diags {
 		if diag.Severity == sdkdiag.Error {
