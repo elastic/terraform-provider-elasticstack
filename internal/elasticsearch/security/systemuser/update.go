@@ -47,7 +47,7 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 		return zero, diags
 	}
 	if user == nil || !isSystemUser(user) {
-		diags.AddError("", fmt.Sprintf(`System user "%s" not found`, usernameID))
+		diags.AddError("Not Found", fmt.Sprintf(`System user "%s" not found`, usernameID))
 		var zero Data
 		return zero, diags
 	}

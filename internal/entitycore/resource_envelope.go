@@ -97,12 +97,18 @@ type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 // that fail if invoked. Use when a concrete resource type still defines its own
 // Create and Update methods that override the envelope so Terraform never calls
 // these placeholders.
+const (
+	placeholderWriteCallbackSummary = "Elasticsearch envelope"
+	placeholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; " +
+		"the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource."
+)
+
 func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (ElasticsearchCreateFunc[T], ElasticsearchUpdateFunc[T]) {
 	fn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ T) (T, diag.Diagnostics) {
 		var diags diag.Diagnostics
 		diags.AddError(
-			"Elasticsearch envelope",
-			"Internal error: write callback placeholder was invoked; the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource.",
+			placeholderWriteCallbackSummary,
+			placeholderWriteCallbackDetail,
 		)
 		var zero T
 		return zero, diags

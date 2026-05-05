@@ -26,10 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func getSchemaFactory() schema.Schema {
-	return GetSchema()
-}
-
 func GetSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,

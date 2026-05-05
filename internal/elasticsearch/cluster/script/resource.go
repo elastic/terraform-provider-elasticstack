@@ -41,7 +41,7 @@ func newScriptResource() *scriptResource {
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
 			entitycore.ComponentElasticsearch,
 			"script",
-			getSchemaFactory,
+			GetSchema,
 			readScript,
 			deleteScript,
 			writeScript,

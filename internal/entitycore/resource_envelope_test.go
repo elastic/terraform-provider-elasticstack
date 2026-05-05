@@ -34,13 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Strings must match PlaceholderElasticsearchWriteCallbacks in resource_envelope.go.
-const (
-	testPlaceholderWriteCallbackSummary = "Elasticsearch envelope"
-	testPlaceholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; " +
-		"the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource."
-)
-
 // testResourceModel satisfies ElasticsearchResourceModel for envelope tests.
 type testResourceModel struct {
 	ID                      types.String `tfsdk:"id"`
@@ -812,8 +805,8 @@ func TestNewElasticsearchResource_Create_placeholderCallbackError(t *testing.T) 
 
 	require.True(t, resp.Diagnostics.HasError())
 	err0 := resp.Diagnostics.Errors()[0]
-	require.Equal(t, testPlaceholderWriteCallbackSummary, err0.Summary())
-	require.Equal(t, testPlaceholderWriteCallbackDetail, err0.Detail())
+	require.Equal(t, placeholderWriteCallbackSummary, err0.Summary())
+	require.Equal(t, placeholderWriteCallbackDetail, err0.Detail())
 }
 
 func TestNewElasticsearchResource_Create_shortCircuitUnknownWriteID(t *testing.T) {
@@ -1176,8 +1169,8 @@ func TestNewElasticsearchResource_Update_placeholderCallbackError(t *testing.T) 
 
 	require.True(t, resp.Diagnostics.HasError())
 	err0 := resp.Diagnostics.Errors()[0]
-	require.Equal(t, testPlaceholderWriteCallbackSummary, err0.Summary())
-	require.Equal(t, testPlaceholderWriteCallbackDetail, err0.Detail())
+	require.Equal(t, placeholderWriteCallbackSummary, err0.Summary())
+	require.Equal(t, placeholderWriteCallbackDetail, err0.Detail())
 }
 
 func TestNewElasticsearchResource_CreateAndUpdate_concreteOverridesWin(t *testing.T) {
