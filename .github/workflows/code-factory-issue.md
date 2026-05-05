@@ -3,19 +3,44 @@
 name: Code Factory Issue Intake
 timeout-minutes: 30
 description: >-
-  Reacts to trusted qualifying `code-factory` issue events, suppresses duplicate linked pull
-  requests, and delegates implementation to an agent that creates exactly one linked PR per issue.
+  Reacts to trusted qualifying `code-factory` issue events or internal workflow dispatch requests,
+  suppresses duplicate linked pull requests, and delegates implementation to an agent that creates
+  exactly one linked PR per issue.
 on:
   issues:
     types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to implement'
+        required: true
+        type: number
+      issue_repo:
+        description: 'Repository containing the issue (owner/repo)'
+        required: true
+        type: string
+      source_workflow:
+        description: 'Source workflow that triggered this dispatch'
+        required: false
+        type: string
   status-comment: true
   permissions:
     contents: read
     issues: write
     pull-requests: read
   steps:
+    - name: Determine intake mode
+      id: determine_intake_mode
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const mode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';
+          core.setOutput('intake_mode', mode);
+          core.info(`Intake mode: ${mode}`);
     - name: Qualify trigger event
       id: qualify_trigger
+      if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -395,14 +420,146 @@ on:
           
     - name: Capture issue context
       id: capture_issue_context
+      if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
+          core.setOutput('issue_number', context.payload.issue?.number ?? '');
+          core.setOutput('issue_title', context.payload.issue?.title ?? '');
           core.setOutput('issue_body', context.payload.issue?.body ?? '');
+    - name: Validate dispatch inputs
+      id: validate_dispatch_inputs
+      if: steps.determine_intake_mode.outputs.intake_mode == 'dispatch'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Dispatch-mode helpers for code-factory issue intake.
+           */
+          'use strict';
+          
+          /**
+           * @param {{ dispatchIssueNumber: string, dispatchIssueRepo: string, currentRepository: string }} params
+           * @returns {{ event_eligible: boolean, event_eligible_reason: string, issue_number?: number }}
+           */
+          function validateDispatchInputs({ dispatchIssueNumber, dispatchIssueRepo, currentRepository }) {
+            if (dispatchIssueRepo !== currentRepository) {
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Dispatch input issue_repo '${dispatchIssueRepo}' does not match current repository '${currentRepository}'. Cross-repository dispatch is not supported.`,
+              };
+            }
+          
+            const num = parseInt(dispatchIssueNumber, 10);
+            if (
+              !dispatchIssueNumber ||
+              Number.isNaN(num) ||
+              num <= 0 ||
+              String(num) !== String(dispatchIssueNumber).trim()
+            ) {
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Dispatch input issue_number '${dispatchIssueNumber || '(empty)'}' is not a valid positive integer.`,
+              };
+            }
+          
+            return {
+              event_eligible: true,
+              event_eligible_reason: `Dispatch intake validated: issue #${num} in repository '${currentRepository}'.`,
+              issue_number: num,
+            };
+          }
+          
+          /**
+           * @param {{ eventName: string, payload: { issue?: { number?: number, title?: string, body?: string } } }} params
+           * @returns {{ issue_number: number | null, issue_title: string, issue_body: string }}
+           */
+          function normalizeIssueEventContext({ eventName, payload }) {
+            if (eventName !== 'issues') {
+              return { issue_number: null, issue_title: '', issue_body: '' };
+            }
+            return {
+              issue_number: payload.issue?.number ?? null,
+              issue_title: payload.issue?.title ?? '',
+              issue_body: payload.issue?.body ?? '',
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              validateDispatchInputs,
+              normalizeIssueEventContext,
+            };
+          }
+          
+          const currentRepository = `${context.repo.owner}/${context.repo.repo}`;
+          const dispatchIssueNumber = context.payload.inputs?.issue_number ?? '';
+          const dispatchIssueRepo = context.payload.inputs?.issue_repo ?? '';
+          
+          const result = validateDispatchInputs({
+            dispatchIssueNumber,
+            dispatchIssueRepo,
+            currentRepository,
+          });
+          
+          core.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');
+          core.setOutput('event_eligible_reason', result.event_eligible_reason);
+          if (result.issue_number != null) {
+            core.setOutput('issue_number', String(result.issue_number));
+          }
+          
+          if (result.event_eligible) {
+            core.info(`Dispatch validated: ${result.event_eligible_reason}`);
+          } else {
+            core.setFailed(`Dispatch rejected: ${result.event_eligible_reason}`);
+          }
+          
+    - name: Fetch live issue
+      id: fetch_live_issue
+      if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+        steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { owner, repo } = context.repo;
+          const issueNumber = parseInt(context.payload.inputs?.issue_number, 10);
+          
+          if (!issueNumber || issueNumber <= 0) {
+            core.setOutput('issue_number', '');
+            core.setOutput('issue_title', '');
+            core.setOutput('issue_body', '');
+            core.setOutput('fetch_error', 'Invalid issue number in dispatch inputs.');
+            core.setFailed('Cannot fetch live issue: invalid issue number.');
+          } else {
+            try {
+              const { data } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              });
+              core.setOutput('issue_number', String(data.number));
+              core.setOutput('issue_title', data.title ?? '');
+              core.setOutput('issue_body', data.body ?? '');
+              core.setOutput('fetch_error', '');
+              core.info(`Fetched live issue #${data.number}: ${data.title}`);
+            } catch (err) {
+              core.setOutput('issue_number', '');
+              core.setOutput('issue_title', '');
+              core.setOutput('issue_body', '');
+              core.setOutput('fetch_error', err.message);
+              core.setFailed(`Failed to fetch issue #${issueNumber}: ${err.message}`);
+            }
+          }
+          
     - name: Check actor trust
       id: check_actor_trust
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+        steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -798,8 +955,14 @@ on:
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
-        steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true'
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -1162,7 +1325,23 @@ on:
           const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
           
           const { owner, repo } = context.repo;
-          const issueNumber = context.payload.issue?.number;
+          const intakeMode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';
+          let issueNumber;
+          
+          if (intakeMode === 'dispatch') {
+            issueNumber = parseInt(context.payload.inputs?.issue_number, 10) || null;
+          } else {
+            issueNumber = context.payload.issue?.number || null;
+          }
+          
+          if (!issueNumber) {
+            core.setOutput('duplicate_pr_found', 'false');
+            core.setOutput('duplicate_pr_url', '');
+            core.setOutput('gate_reason', 'No issue number available for duplicate PR check.');
+            core.info('Duplicate PR check skipped: issue number is not available.');
+            return;
+          }
+          
           const expectedBranch = issueBranchName(issueNumber);
           
           const pulls = await github.paginate(github.rest.pulls.list, {
@@ -1197,6 +1376,7 @@ on:
     - name: Remove trigger label
       id: remove_trigger_label
       if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
@@ -1273,15 +1453,47 @@ on:
             core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
           }
           
+    - name: Normalize context
+      id: normalize_context
+      if: always()
+      run: |
+        INTAKE_MODE="${{ steps.determine_intake_mode.outputs.intake_mode }}"
+        echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
+
+        if [ "${INTAKE_MODE}" = "issue-event" ]; then
+          echo "issue_number=${{ steps.capture_issue_context.outputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${{ steps.capture_issue_context.outputs.issue_title }}" >> "$GITHUB_OUTPUT"
+          echo "issue_body=${{ steps.capture_issue_context.outputs.issue_body }}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${{ steps.qualify_trigger.outputs.event_eligible }}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${{ steps.qualify_trigger.outputs.event_eligible_reason }}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=${{ steps.check_actor_trust.outputs.actor_trusted }}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=${{ steps.check_actor_trust.outputs.actor_trusted_reason }}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed=${{ steps.remove_trigger_label.outputs.trigger_label_removed }}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed_reason=${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "issue_number=${{ steps.fetch_live_issue.outputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${{ steps.fetch_live_issue.outputs.issue_title }}" >> "$GITHUB_OUTPUT"
+          echo "issue_body=${{ steps.fetch_live_issue.outputs.issue_body }}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${{ steps.validate_dispatch_inputs.outputs.event_eligible }}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=Dispatch intake bypasses actor trust check." >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed=false" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed_reason=Trigger label removal is not required for dispatch intake." >> "$GITHUB_OUTPUT"
+        fi
+
+        echo "duplicate_pr_found=${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}" >> "$GITHUB_OUTPUT"
+        echo "duplicate_pr_url=${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}" >> "$GITHUB_OUTPUT"
+      shell: bash
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
       uses: actions/github-script@v9
       env:
-        EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
-        EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
-        ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-        ACTOR_TRUSTED_REASON: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED: ${{ steps.normalize_context.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON: ${{ steps.normalize_context.outputs.actor_trusted_reason }}
         DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
         DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
         DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
@@ -1708,15 +1920,18 @@ permissions:
 jobs:
   pre-activation:
     outputs:
-      event_eligible: ${{ steps.qualify_trigger.outputs.event_eligible }}
-      event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
-      issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
-      actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-      actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      intake_mode: ${{ steps.normalize_context.outputs.intake_mode }}
+      issue_number: ${{ steps.normalize_context.outputs.issue_number }}
+      issue_title: ${{ steps.normalize_context.outputs.issue_title }}
+      issue_body: ${{ steps.normalize_context.outputs.issue_body }}
+      event_eligible: ${{ steps.normalize_context.outputs.event_eligible }}
+      event_eligible_reason: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+      actor_trusted: ${{ steps.normalize_context.outputs.actor_trusted }}
+      actor_trusted_reason: ${{ steps.normalize_context.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
-      trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
-      trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      trigger_label_removed: ${{ steps.normalize_context.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.normalize_context.outputs.trigger_label_removed_reason }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:
@@ -1744,11 +1959,12 @@ You implement exactly one GitHub issue labeled `code-factory`. The triggering is
 
 ## Pre-activation context
 
-Deterministic pre-activation has already decided that this issue event is eligible, the actor is trusted, and there is no open linked `code-factory` pull request for the issue.
+Deterministic pre-activation has already decided that this intake is eligible, the actor is trusted (or dispatch bypasses trust), and there is no open linked `code-factory` pull request for the issue.
 
 - **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
-- **Issue number**: `${{ github.event.issue.number }}`
-- **Issue title**: `${{ github.event.issue.title }}`
+- **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
+- **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
+- **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
 - **Issue body**:
 
   ```markdown
@@ -1757,7 +1973,7 @@ Deterministic pre-activation has already decided that this issue event is eligib
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`
-- **Required branch**: `code-factory/issue-${{ github.event.issue.number }}`
+- **Required branch**: `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 
 ## Test environment
 
@@ -1784,22 +2000,22 @@ issue content alone - do not block the run waiting for documentation.
 
 ## Task
 
-Implement the triggering issue on branch `code-factory/issue-${{ github.event.issue.number }}` and create exactly one linked pull request labeled `code-factory`.
+Implement the triggering issue on branch `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}` and create exactly one linked pull request labeled `code-factory`.
 
 1. Read the issue title and body carefully and treat them as authoritative.
-2. Create or update the implementation on branch `code-factory/issue-${{ github.event.issue.number }}`.
+2. Create or update the implementation on branch `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`.
 3. Verify your changes with `make build` and by ensuring targeted acceptance tests pass.
 4. Open exactly one pull request for that branch using the `create-pull-request` safe output.
-5. Preserve canonical issue linkage metadata for deterministic reruns by including `Closes #${{ github.event.issue.number }}` in the PR body - this is the stable identifier that prevents duplicate PR creation on future workflow runs.
+5. Preserve canonical issue linkage metadata for deterministic reruns by including `Closes #${{ needs.pre_activation.outputs.issue_number }}` in the PR body - this is the stable identifier that prevents duplicate PR creation on future workflow runs.
 6. Keep the pull request labeled `code-factory`.
 
 ## Pull request contract
 
 The linked pull request must:
 
-- use branch `code-factory/issue-${{ github.event.issue.number }}`
+- use branch `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 - be the only open `code-factory` pull request for this issue
-- include explicit issue linkage via `Closes #${{ github.event.issue.number }}` in the PR body
+- include explicit issue linkage via `Closes #${{ needs.pre_activation.outputs.issue_number }}` in the PR body
 - stay focused on implementing the triggering issue only
 
 ## Guardrails
