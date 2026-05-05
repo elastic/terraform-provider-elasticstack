@@ -44,35 +44,19 @@ func (e EqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinV
 }
 
 func (e EqlRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPIEqlRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIEqlRule](rule)
 }
 
 func (e EqlRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPIEqlRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return updateFromEqlRule(ctx, &value, d)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIEqlRule](rule, func(v *kbapi.SecurityDetectionsAPIEqlRule) diag.Diagnostics {
+		return updateFromEqlRule(ctx, v, d)
+	})
 }
 
 func (e EqlRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPIEqlRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPIEqlRule](response, func(v kbapi.SecurityDetectionsAPIEqlRule) string {
+		return v.Id.String()
+	})
 }
 
 func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
