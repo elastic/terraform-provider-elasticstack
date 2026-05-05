@@ -334,6 +334,7 @@ jobs:
                 '',
                 '### Breaking changes',
                 '<free-form markdown>  (required when Customer impact is "breaking")',
+                '<!-- /breaking-changes -->',
                 '```',
                 '',
                 'Or add the `no-changelog` label to bypass this check.',
