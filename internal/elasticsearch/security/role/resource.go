@@ -40,7 +40,6 @@ type roleResource struct {
 }
 
 func newRoleResource() *roleResource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Data]()
 	return &roleResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
 			entitycore.ComponentElasticsearch,
@@ -48,8 +47,8 @@ func newRoleResource() *roleResource {
 			getSchemaFactory,
 			readRole,
 			deleteRole,
-			createFn,
-			updateFn,
+			writeRole,
+			writeRole,
 		),
 	}
 }

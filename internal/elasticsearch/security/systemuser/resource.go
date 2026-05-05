@@ -37,7 +37,6 @@ type systemUserResource struct {
 }
 
 func newSystemUserResource() *systemUserResource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Data]()
 	return &systemUserResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
 			entitycore.ComponentElasticsearch,
@@ -45,8 +44,8 @@ func newSystemUserResource() *systemUserResource {
 			GetSchema,
 			readSystemUser,
 			deleteSystemUser,
-			createFn,
-			updateFn,
+			writeSystemUser,
+			writeSystemUser,
 		),
 	}
 }

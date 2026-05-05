@@ -21,13 +21,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,38 +35,30 @@ var (
 	MinSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
 )
 
-func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data Data
+func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	roleID := data.Name.ValueString()
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	roleID := resourceID
 
 	id, sdkDiags := client.ID(ctx, roleID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	// Check version requirements
 	if typeutils.IsKnown(data.Description) {
 		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
-			return diags
+			var zero Data
+			return zero, diags
 		}
 	}
 
@@ -76,7 +67,8 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if len(remoteIndicesList) > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String()))
-			return diags
+			var zero Data
+			return zero, diags
 		}
 	}
 
@@ -84,33 +76,31 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	role, modelDiags := data.toAPIModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	// Put the role
 	sdkDiags = elasticsearch.PutRole(ctx, client, roleID, role)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	readData, readDiags := readRoleForUpdate(ctx, r, data)
+	readData, found, readDiags := readRole(ctx, client, roleID, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	if readData == nil {
+	if !found {
 		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleID))
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	diags.Append(state.Set(ctx, readData)...)
-	return diags
-}
-
-func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
+	return readData, diags
 }
