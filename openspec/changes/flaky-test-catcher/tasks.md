@@ -1,8 +1,8 @@
 ## 1. Pre-activation JS Script
 
-- [ ] 1.1 Create `.github/workflows-src/flaky-test-catcher/scripts/check_ci_failures.inline.js` — queries workflow runs on `main` in the last 3 days, filters `conclusion == 'failure'`, outputs `has_ci_failures`, `failed_run_ids` (JSON), `total_run_count`, `open_issues`, `issue_slots_available`, `gate_reason`
-- [ ] 1.2 Add shared JS logic to `.github/workflows-src/lib/` if any reusable issue-slot or CI-run query logic is extracted (otherwise inline in the script)
-- [ ] 1.3 Write unit tests for the pre-activation script logic in `.github/workflows-src/lib/flaky-test-catcher.test.mjs`
+- [x] 1.1 Create `.github/workflows-src/flaky-test-catcher/scripts/check_ci_failures.inline.js` — queries workflow runs on `main` in the last 3 days, filters `conclusion == 'failure'`, outputs `has_ci_failures`, `failed_run_ids` (JSON), `total_run_count`, `open_issues`, `issue_slots_available`, `gate_reason`
+- [x] 1.2 Add shared JS logic to `.github/workflows-src/lib/` if any reusable issue-slot or CI-run query logic is extracted (otherwise inline in the script)
+- [x] 1.3 Write unit tests for the pre-activation script logic in `.github/workflows-src/lib/flaky-test-catcher.test.mjs`
 
 ## 2. Workflow Template
 
