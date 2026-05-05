@@ -21,6 +21,6 @@
 
 ## 5. Validation
 
-- [ ] 5.1 Run `make workflow-test` and confirm pre-activation JS unit tests pass
-- [ ] 5.2 Run `make check-lint` to confirm the new workflow and manifests pass all lint checks
+- [x] 5.1 Run `make workflow-test` and confirm pre-activation JS unit tests pass
+- [x] 5.2 Run `make check-lint` to confirm the new workflow and manifests pass all lint checks
 - [ ] 5.3 Trigger the workflow manually via `workflow_dispatch` on a branch and confirm pre-activation outputs are correct in the Actions log
