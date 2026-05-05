@@ -8,8 +8,9 @@
   - `steps` block with `compute_issue_slots` action using `x-script-include: scripts/compute_issue_slots.inline.js`
   - `jobs.pre-activation` with outputs `open_issues`, `issue_slots_available`, `gate_reason`
   - Body section `## Pre-activation context` parameterized with label and cap via `${{ github.aw.import-inputs.* }}`
-- [ ] 1.5 Update `.github/workflows-src/manifest.json` to include the new shared component entry with output path `.github/workflows/shared/issue-slots.md`
-- [ ] 1.6 Verify `make workflow-generate` produces `.github/workflows/shared/issue-slots.md` correctly (script is inlined, no `x-script-include` remains in output)
+- [ ] 1.5 Update `scripts/compile-workflow-sources/compiler.go` to create parent output directories via `os.MkdirAll` before `os.WriteFile`, so shared workflows can be generated under new paths like `.github/workflows/shared/`
+- [ ] 1.6 Update `.github/workflows-src/manifest.json` to include the new shared component entry with output path `.github/workflows/shared/issue-slots.md`
+- [ ] 1.7 Verify `make workflow-generate` produces `.github/workflows/shared/issue-slots.md` correctly (script is inlined, no `x-script-include` remains in output)
 
 ## 2. Consumer Workflow — duplicate-code-detector
 

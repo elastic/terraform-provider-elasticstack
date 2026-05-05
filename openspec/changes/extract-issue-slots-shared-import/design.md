@@ -9,7 +9,7 @@ The repository maintains three Agentic Workflows that use a "issue slot" pattern
 
 There are three identical copies of `scripts/compute_issue_slots.inline.js` — one per workflow directory — each including the shared `lib/issue-slots.js` via the custom compiler's `//include:` directive. The customization per workflow is purely the `ISSUE_SLOTS_LABEL` and `ISSUE_SLOTS_CAP` env vars passed to `actions/github-script`.
 
-GH AW supports parameterized shared imports (`import-schema` + `uses`/`with`) that merge `steps`, `jobs`, `safe-outputs`, `mcp-servers`, and body content. This is the canonical mechanism for deduplicating workflow components. The repository already imports `shared/mcp/serena.md` as an example.
+GH AW supports parameterized shared imports (`import-schema` + `uses`/`with`) that merge `steps`, `jobs`, `safe-outputs`, `mcp-servers`, and body content. This is the canonical mechanism for deduplicating workflow components, documented at `https://github.github.com/gh-aw/reference/imports/` and demonstrated by upstream examples such as `github/gh-aw`'s `shared/mcp/serena.md`.
 
 The custom workflow-source compiler (`scripts/compile-workflow-sources/`) expands `x-script-include:` into inline `script: |` blocks when generating `.github/workflows/*.md` files. This still works for shared components because the compiler processes each template independently before `gh aw compile` merges imports.
 

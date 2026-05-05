@@ -130,6 +130,9 @@ func CompileWorkflow(opts CompileOptions) (CompileResult, error) {
 		}, nil
 	}
 
+	if err := os.MkdirAll(filepath.Dir(opts.OutputPath), 0o755); err != nil {
+		return CompileResult{}, err
+	}
 	if err := os.WriteFile(opts.OutputPath, []byte(generatedContent), 0o644); err != nil {
 		return CompileResult{}, err
 	}
