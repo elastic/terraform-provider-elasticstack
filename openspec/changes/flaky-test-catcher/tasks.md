@@ -11,7 +11,7 @@
 
 ## 3. Agent Skill Document
 
-- [ ] 3.1 Create `.agents/skills/flaky-test-catcher/SKILL.md` defining the analysis protocol: how to query `.github/workflows/test.yml` runs via `gh api`, how to fetch job logs (`gh api .../jobs/{id}/logs`), the `--- FAIL:` extraction pattern, the fail-rate formula and thresholds (broken = 100%, flaky ≥ 20%), the base-test-name grouping rule (`TestAcc[^_]+`), the commit analysis steps, and the required issue body sections
+- [x] 3.1 Create `.agents/skills/flaky-test-catcher/SKILL.md` defining the analysis protocol: how to query `.github/workflows/test.yml` runs via `gh api`, how to fetch job logs (`gh api .../jobs/{id}/logs`), the `--- FAIL:` extraction pattern, the fail-rate formula and thresholds (broken = 100%, flaky ≥ 20%), the base-test-name grouping rule (`TestAcc[^_]+`), the commit analysis steps, and the required issue body sections
 
 ## 4. Compiled Output and Manifest
 
