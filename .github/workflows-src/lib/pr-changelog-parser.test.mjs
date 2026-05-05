@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const {
   extractBreakingChanges,
+  extractChangelogSection,
   parseChangelogSection,
   parseChangelogSectionFull,
   validateChangelogSection,
@@ -430,6 +431,118 @@ test('parseChangelogSection: does not include content from sections after ## Cha
   assert.ok(section !== null);
   // The summary must be the one in Changelog, not text from later sections
   assert.equal(section.summary, 'Add support for cross-cluster replication');
+});
+
+// ---------------------------------------------------------------------------
+// End marker support
+// ---------------------------------------------------------------------------
+
+const BODY_BREAKING_WITH_END_MARKER = `
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+
+### Breaking changes
+
+Content before marker.
+<!-- /breaking-changes -->
+Content after marker.
+`.trimStart();
+
+const BODY_BREAKING_WITH_END_MARKER_EXTRA_WHITESPACE = `
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+
+### Breaking changes
+
+Content before marker.
+<!--  /breaking-changes  -->
+Content after marker.
+`.trimStart();
+
+const BODY_BREAKING_WITH_END_MARKER_IN_BACKTICK_FENCE = `
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+
+### Breaking changes
+
+\`\`\`markdown
+<!-- /breaking-changes -->
+\`\`\`
+
+Content after fence.
+`.trimStart();
+
+const BODY_BREAKING_WITH_END_MARKER_IN_TILDE_FENCE = `
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+
+### Breaking changes
+
+~~~markdown
+<!-- /breaking-changes -->
+~~~
+
+Content after fence.
+`.trimStart();
+
+const BODY_BREAKING_WITH_END_MARKER_BEFORE_HEADING = `
+## Description
+
+Some description.
+
+<!-- /breaking-changes -->
+
+## Changelog
+
+Customer impact: breaking
+Summary: Remove deprecated attribute
+
+### Breaking changes
+
+Actual breaking change content.
+`.trimStart();
+
+test('extractBreakingChanges: end marker stops extraction mid-content', () => {
+  const content = extractBreakingChanges(BODY_BREAKING_WITH_END_MARKER);
+  assert.ok(content !== null, 'should extract content');
+  assert.ok(content.includes('Content before marker.'), 'should include content before marker');
+  assert.ok(!content.includes('Content after marker.'), 'should not include content after marker');
+});
+
+test('extractBreakingChanges: end marker with extra internal whitespace is recognised', () => {
+  const content = extractBreakingChanges(BODY_BREAKING_WITH_END_MARKER_EXTRA_WHITESPACE);
+  assert.ok(content !== null, 'should extract content');
+  assert.ok(content.includes('Content before marker.'), 'should include content before marker');
+  assert.ok(!content.includes('Content after marker.'), 'should not include content after marker');
+});
+
+test('extractBreakingChanges: end marker inside backtick-fenced block is not treated as stop', () => {
+  const content = extractBreakingChanges(BODY_BREAKING_WITH_END_MARKER_IN_BACKTICK_FENCE);
+  assert.ok(content !== null, 'should extract content');
+  assert.ok(content.includes('<!-- /breaking-changes -->'), 'should include end marker inside fenced block');
+  assert.ok(content.includes('Content after fence.'), 'should include content after fenced block');
+});
+
+test('extractBreakingChanges: end marker inside tilde-fenced block is not treated as stop', () => {
+  const content = extractBreakingChanges(BODY_BREAKING_WITH_END_MARKER_IN_TILDE_FENCE);
+  assert.ok(content !== null, 'should extract content');
+  assert.ok(content.includes('<!-- /breaking-changes -->'), 'should include end marker inside fenced block');
+  assert.ok(content.includes('Content after fence.'), 'should include content after fenced block');
+});
+
+test('extractBreakingChanges: end marker before heading is ignored', () => {
+  const section = extractChangelogSection(BODY_BREAKING_WITH_END_MARKER_BEFORE_HEADING);
+  const content = extractBreakingChanges(section);
+  assert.ok(content !== null, 'should extract content');
+  assert.ok(content.includes('Actual breaking change content.'), 'should include breaking changes content');
 });
 
 // ---------------------------------------------------------------------------
