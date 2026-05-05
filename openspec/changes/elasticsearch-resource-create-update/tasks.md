@@ -27,4 +27,4 @@
   - `go test -count=1 ./internal/elasticsearch/security/rolemapping -run 'Test(RoleTemplatesToJSON|Data_satisfies)'`
   - `go test -count=1 ./internal/elasticsearch/security/systemuser -run 'TestData_satisfies'`
   - `go test -count=1 ./internal/elasticsearch/cluster/script -run 'TestData_satisfies'`
-- **3.4** — `node_modules/.bin/openspec validate elasticsearch-resource-create-update` (with OpenSpec CLI available, e.g. after `make setup-openspec` / `npm ci`).
+- **3.4** — `node_modules/.bin/openspec validate elasticsearch-resource-create-update --type change --strict` (OpenSpec CLI from `make setup-openspec` / `npm ci`). Repo-wide spec check: `make check-openspec` (`openspec validate --all`).

@@ -37,7 +37,8 @@ import (
 // Strings must match PlaceholderElasticsearchWriteCallbacks in resource_envelope.go.
 const (
 	testPlaceholderWriteCallbackSummary = "Elasticsearch envelope"
-	testPlaceholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource."
+	testPlaceholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; " +
+		"the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource."
 )
 
 // testResourceModel satisfies ElasticsearchResourceModel for envelope tests.
