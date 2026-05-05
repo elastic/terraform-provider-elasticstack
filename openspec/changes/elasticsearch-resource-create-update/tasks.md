@@ -15,7 +15,7 @@
 
 ## 3. Tests and Verification
 
-- [ ] 3.1 Update entitycore resource envelope unit tests for Create and Update success paths, callback diagnostics, client resolution failures, and type/interface assertions.
-- [ ] 3.2 Add or update focused resource tests where existing coverage can verify migrated callback behavior without acceptance-test infrastructure.
-- [ ] 3.3 Run targeted Go tests for `internal/entitycore` and migrated resource packages.
-- [ ] 3.4 Run OpenSpec validation for `elasticsearch-resource-create-update`.
+- [x] 3.1 Update entitycore resource envelope unit tests for Create and Update success paths, callback diagnostics, client resolution failures, and type/interface assertions.
+- [x] 3.2 Add or update focused resource tests where existing coverage can verify migrated callback behavior without acceptance-test infrastructure.
+- [x] 3.3 Run targeted Go tests for `internal/entitycore` and migrated resource packages.
+- [x] 3.4 Run OpenSpec validation for `elasticsearch-resource-create-update`.
