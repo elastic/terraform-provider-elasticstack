@@ -11,7 +11,6 @@ The fix is to poll `GetMLJobStats` after `CloseJob` returns, waiting until the j
 - Reuse existing polling infrastructure (`asyncutils`, `GetMLJobStats`) without introducing new abstractions.
 
 **Non-Goals:**
-- Retry logic on `DeleteJob` itself — the root cause is a missing wait, not a need to retry.
 - Changes to the job state resource or datafeed resources.
 - Timeout configuration for the new wait — the existing Terraform delete-operation context provides the bound.
 
@@ -19,7 +18,9 @@ The fix is to poll `GetMLJobStats` after `CloseJob` returns, waiting until the j
 
 **Polling location**: Add `WaitForMLJobClosed` to `internal/clients/elasticsearch/ml_job.go` (alongside `GetMLJobStats`, `OpenMLJob`, `CloseMLJob`) and call it from `anomalydetectionjob/delete.go`. This keeps the helper co-located with other ML job client functions and avoids duplicating the polling logic inline.
 
-**Alternative considered — retry DeleteJob on 409**: Could catch the 409 and retry `DeleteJob` with a short backoff. Rejected: it treats the symptom rather than the cause. If the polling wait is in place, the 409 cannot occur.
+**Retry DeleteJob with force=true on first failure**: The polling wait eliminates the 409 race in the normal case, but if the wait times out (e.g. context nearing expiry) the job may still be open when DeleteJob is called. A single retry with `force=true` handles this edge case without masking legitimate errors — the retry error is still surfaced as a Terraform diagnostic if it also fails.
+
+**Alternative considered — retry DeleteJob on 409 only**: Could catch only the 409 and retry. Rejected in favour of a broader retry on any first-failure, since other transient errors can also occur and `force=true` is safe when the intent is deletion.
 
 **Alternative considered — inline poll in delete.go**: Could put the `asyncutils.WaitForStateTransition` call directly in `delete.go`. Rejected: the helper belongs in the client layer alongside `GetMLJobStats`. Keeping it there makes it reusable and keeps delete.go focused on orchestration.
 
