@@ -198,3 +198,25 @@ func NonNilSlice[T any](s []T) []T {
 func TimeToStringValue(t time.Time) types.String {
 	return types.StringValue(FormatStrictDateTime(t))
 }
+
+// FlattenMap recursively flattens a nested map into a single-level map with dot-separated keys.
+// For example, {"index": {"key": 1}} becomes {"index.key": 1}.
+func FlattenMap(m map[string]any) map[string]any {
+	out := make(map[string]any)
+	var flattener func(string, map[string]any, map[string]any)
+	flattener = func(k string, src, dst map[string]any) {
+		if len(k) > 0 {
+			k += "."
+		}
+		for key, v := range src {
+			switch inner := v.(type) {
+			case map[string]any:
+				flattener(k+key, inner, dst)
+			default:
+				dst[k+key] = v
+			}
+		}
+	}
+	flattener("", m, out)
+	return out
+}
