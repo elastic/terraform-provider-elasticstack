@@ -313,7 +313,10 @@ steps:
     run: make setup
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/claude-sonnet-4-6"
+  args:
+    - "--effort"
+    - "high"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
