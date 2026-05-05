@@ -19,7 +19,7 @@ On delete, the resource SHALL first attempt to close the job by calling the Clos
 - **WHEN** polling the job stats returns no result (job not found)
 - **THEN** the resource SHALL treat the job as closed and proceed to Delete Job
 
-#### Scenario: Delete succeeds after polling confirms closed state
+#### Scenario: Delete is called after polling confirms closed state
 
 - **WHEN** the job reaches `closed` state and Delete Job is called
-- **THEN** the Delete Job API SHALL succeed (no version conflict)
+- **THEN** the resource SHALL call Delete Job only after observing `closed` state, and SHALL not fail with a version conflict caused by the close/delete race

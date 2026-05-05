@@ -8,7 +8,7 @@
 
 ## 3. Spec update
 
-- [ ] 3.1 Apply the delta spec: update REQ-021 in `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md` to require polling for `closed` state after `CloseJob` returns and before `DeleteJob` is called
+- [ ] 3.1 Apply the delta spec: update REQ-021–REQ-022 in `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md` to require polling for `closed` state after `CloseJob` returns and before `DeleteJob` is called
 
 ## 4. Verification
 
