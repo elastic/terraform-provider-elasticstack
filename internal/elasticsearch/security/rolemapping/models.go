@@ -34,4 +34,5 @@ type Data struct {
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
 }
 
-func (d Data) GetID() types.String { return d.ID }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Name }

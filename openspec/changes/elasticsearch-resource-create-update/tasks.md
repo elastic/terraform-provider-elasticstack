@@ -1,9 +1,9 @@
 ## 1. Entitycore Envelope
 
-- [ ] 1.1 Extend `ElasticsearchResourceModel` with a plan-safe resource identity accessor used by Create and Update.
-- [ ] 1.2 Add required create and update callback types to `NewElasticsearchResource`.
-- [ ] 1.3 Implement `Create` and `Update` on `ElasticsearchResource[T]` with plan decode, resource ID derivation, scoped Elasticsearch client resolution, callback invocation, diagnostics handling, and returned-model state persistence.
-- [ ] 1.4 Update entitycore package documentation to describe the complete Elasticsearch resource envelope and callback contract.
+- [x] 1.1 Extend `ElasticsearchResourceModel` with a plan-safe resource identity accessor used by Create and Update.
+- [x] 1.2 Add required create and update callback types to `NewElasticsearchResource`.
+- [x] 1.3 Implement `Create` and `Update` on `ElasticsearchResource[T]` with plan decode, resource ID derivation, scoped Elasticsearch client resolution, callback invocation, diagnostics handling, and returned-model state persistence.
+- [x] 1.4 Update entitycore package documentation to describe the complete Elasticsearch resource envelope and callback contract.
 
 ## 2. Resource Migrations
 
