@@ -143,6 +143,49 @@ Customer impact: breaking
 Summary: Remove deprecated attribute
 `.trimStart();
 
+const BODY_FIX_WITH_BREAKING_SECTION = `
+## Changelog
+
+Customer impact: fix
+Summary: A fix with breaking section
+
+### Breaking changes
+
+Some content.
+`.trimStart();
+
+const BODY_ENHANCEMENT_WITH_BREAKING_SECTION = `
+## Changelog
+
+Customer impact: enhancement
+Summary: An enhancement with breaking section
+
+### Breaking changes
+
+Some content.
+`.trimStart();
+
+const BODY_NONE_WITH_BREAKING_SECTION = `
+## Changelog
+
+Customer impact: none
+
+### Breaking changes
+
+Some content.
+`.trimStart();
+
+const BODY_INVALID_IMPACT_WITH_BREAKING_SECTION = `
+## Changelog
+
+Customer impact: patch
+Summary: Some change with breaking section
+
+### Breaking changes
+
+Some content.
+`.trimStart();
+
 const BODY_SUMMARY_EMPTY_VALUE = `
 ## Changelog
 
@@ -348,6 +391,61 @@ test('validateChangelogSectionFull: invalid when Customer impact is breaking but
     result.errors.some((e) => e.includes('breaking') && e.includes('Breaking changes')),
     'error should mention breaking and Breaking changes'
   );
+});
+
+// ---------------------------------------------------------------------------
+// Rule C: ### Breaking changes requires Customer impact: breaking
+// ---------------------------------------------------------------------------
+
+test('validateChangelogSectionFull: invalid when Customer impact: fix and ### Breaking changes is present', () => {
+  const parsed = parseChangelogSectionFull(BODY_FIX_WITH_BREAKING_SECTION);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
+    'error should mention Breaking changes and breaking impact with end marker hint'
+  );
+});
+
+test('validateChangelogSectionFull: invalid when Customer impact: enhancement and ### Breaking changes is present', () => {
+  const parsed = parseChangelogSectionFull(BODY_ENHANCEMENT_WITH_BREAKING_SECTION);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
+    'error should mention Breaking changes and breaking impact with end marker hint'
+  );
+});
+
+test('validateChangelogSectionFull: invalid when Customer impact: none and ### Breaking changes is present', () => {
+  const parsed = parseChangelogSectionFull(BODY_NONE_WITH_BREAKING_SECTION);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
+    'error should mention Breaking changes and breaking impact with end marker hint'
+  );
+});
+
+test('validateChangelogSectionFull: invalid impact with ### Breaking changes only emits invalid impact error, not rule C', () => {
+  const parsed = parseChangelogSectionFull(BODY_INVALID_IMPACT_WITH_BREAKING_SECTION);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.includes('Invalid Customer impact')),
+    'error should mention invalid Customer impact'
+  );
+  assert.ok(
+    !result.errors.some((e) => e.includes('end marker')),
+    'rule C error should NOT be emitted for unsupported impact values'
+  );
+});
+
+test('validateChangelogSectionFull: valid when Customer impact: breaking and ### Breaking changes has content', () => {
+  const parsed = parseChangelogSectionFull(BODY_BREAKING_FULL);
+  const result = validateChangelogSectionFull(parsed);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
 });
 
 // ---------------------------------------------------------------------------
