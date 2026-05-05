@@ -1,0 +1,3 @@
+languages:
+  go:
+    go-mod-file: "./go.mod"
