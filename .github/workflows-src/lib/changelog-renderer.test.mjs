@@ -304,6 +304,41 @@ test('Customer impact: none PR without Breaking changes block has no breakingCha
 // normalizeBulletPrefix — no-space edge case
 // ---------------------------------------------------------------------------
 
+// Regression: Customer impact: none + ### Breaking changes still works at release time
+// because release-time rendering skips the breaking-impact match check.
+test('Customer impact: none PR with Breaking changes block is excluded and breakingChanges preserved', () => {
+  const body = [
+    '## Changelog',
+    'Customer impact: none',
+    '',
+    '### Breaking changes',
+    'This is a legacy internal change with breaking implications.',
+  ].join('\n');
+
+  const pr = makePR({
+    number: 56,
+    url: 'https://github.com/org/repo/pull/56',
+    body,
+  });
+
+  const result = renderChangelogSection([pr]);
+
+  assert.equal(result.success, true);
+  assert.equal(result.excluded.length, 1, 'PR should be in excluded');
+  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.ok(
+    result.excluded[0].breakingChanges &&
+    result.excluded[0].breakingChanges.includes('legacy internal change'),
+    'excluded entry must carry breakingChanges when present',
+  );
+  // Breaking changes from none PRs are still rendered in the section body
+  assert.ok(result.sectionBody.includes('### Breaking changes'), 'sectionBody must still have ### Breaking changes');
+  assert.ok(
+    result.sectionBody.includes('legacy internal change'),
+    'sectionBody must include the breaking change prose',
+  );
+});
+
 test('normalizeBulletPrefix: normalizes bullet with no space after dash', () => {
   assert.equal(normalizeBulletPrefix('-fix bug'), '- fix bug');
 });

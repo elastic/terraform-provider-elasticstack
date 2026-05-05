@@ -402,8 +402,10 @@ test('validateChangelogSectionFull: invalid when Customer impact: fix and ### Br
   const result = validateChangelogSectionFull(parsed);
   assert.equal(result.valid, false);
   assert.ok(
-    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
-    'error should mention Breaking changes and breaking impact with end marker hint'
+    result.errors.some(
+      (e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('remove'),
+    ),
+    'error should mention Breaking changes and instruct to change impact or remove heading'
   );
 });
 
@@ -412,8 +414,10 @@ test('validateChangelogSectionFull: invalid when Customer impact: enhancement an
   const result = validateChangelogSectionFull(parsed);
   assert.equal(result.valid, false);
   assert.ok(
-    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
-    'error should mention Breaking changes and breaking impact with end marker hint'
+    result.errors.some(
+      (e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('remove'),
+    ),
+    'error should mention Breaking changes and instruct to change impact or remove heading'
   );
 });
 
@@ -422,8 +426,10 @@ test('validateChangelogSectionFull: invalid when Customer impact: none and ### B
   const result = validateChangelogSectionFull(parsed);
   assert.equal(result.valid, false);
   assert.ok(
-    result.errors.some((e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('end marker')),
-    'error should mention Breaking changes and breaking impact with end marker hint'
+    result.errors.some(
+      (e) => e.includes('Breaking changes') && e.includes('breaking') && e.includes('remove'),
+    ),
+    'error should mention Breaking changes and instruct to change impact or remove heading'
   );
 });
 
@@ -436,7 +442,7 @@ test('validateChangelogSectionFull: invalid impact with ### Breaking changes onl
     'error should mention invalid Customer impact'
   );
   assert.ok(
-    !result.errors.some((e) => e.includes('end marker')),
+    !result.errors.some((e) => e.includes('Breaking changes') && e.includes('remove')),
     'rule C error should NOT be emitted for unsupported impact values'
   );
 });

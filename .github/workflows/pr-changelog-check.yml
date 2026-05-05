@@ -254,7 +254,7 @@ jobs:
                 VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
                 parsed.customerImpact !== 'breaking'
               ) {
-                errors.push('### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.');
+                errors.push('### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.');
               }
             
               return { valid: errors.length === 0, errors };
@@ -334,7 +334,7 @@ jobs:
                 '',
                 '### Breaking changes',
                 '<free-form markdown>  (required when Customer impact is "breaking")',
-                '<!-- /breaking-changes -->',
+                '<!-- /breaking-changes -->  (optional — ends the block early)',
                 '```',
                 '',
                 'Or add the `no-changelog` label to bypass this check.',

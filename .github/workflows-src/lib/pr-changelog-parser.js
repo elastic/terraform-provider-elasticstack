@@ -230,7 +230,7 @@ function validateChangelogSectionFull(parsed, options = {}) {
     VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
     parsed.customerImpact !== 'breaking'
   ) {
-    errors.push('### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.');
+    errors.push('### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.');
   }
 
   return { valid: errors.length === 0, errors };
