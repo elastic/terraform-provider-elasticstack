@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -713,7 +714,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 
 	resourceID := clients.CompositeID{
 		ClusterID:  space,
-		ResourceID: derefString(api.Id),
+		ResourceID: schemautil.Deref(api.Id),
 	}
 
 	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
@@ -1230,13 +1231,6 @@ func (v *tfModelV0) newBrowserMonitorRequest(
 		Timeout:           int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:              kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
 	}, dg
-}
-
-func derefString(v *string) string {
-	if v == nil {
-		return ""
-	}
-	return *v
 }
 
 func derefSlice[T any](v *[]T) []T {

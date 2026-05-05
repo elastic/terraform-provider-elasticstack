@@ -250,11 +250,11 @@ func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes
 func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
 	tfAlias := aliasTfModel{
 		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(derefString(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(derefBool(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(derefBool(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(derefString(apiModel.Routing)),
-		SearchRouting: types.StringValue(derefString(apiModel.SearchRouting)),
+		IndexRouting:  types.StringValue(schemautil.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(schemautil.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(schemautil.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(schemautil.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(schemautil.Deref(apiModel.SearchRouting)),
 	}
 
 	if apiModel.Filter != nil {
@@ -279,20 +279,6 @@ func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, di
 	}
 
 	return tfAlias, nil
-}
-
-func derefString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func derefBool(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estypes.IndexState) diag.Diagnostics {

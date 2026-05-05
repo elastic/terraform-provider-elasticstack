@@ -176,14 +176,10 @@ func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
 	return inv
 }
 
+// DefaultIfNil returns the dereferenced value of the pointer, or the zero
+// value of T if the pointer is nil. Deprecated: use Deref instead.
 func DefaultIfNil[T any](value *T) T {
-	var result T
-
-	if value != nil {
-		result = *value
-	}
-
-	return result
+	return Deref(value)
 }
 
 // Returns an empty slice if s is a slice represented by nil (no backing array).
