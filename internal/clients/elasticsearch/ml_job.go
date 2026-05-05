@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -165,7 +166,7 @@ func WaitForMLJobClosed(ctx context.Context, apiClient *clients.ElasticsearchSco
 		if stats == nil {
 			return true, nil
 		}
-		return stats.State.String() == "closed", nil
+		return stats.State == jobstate.Closed, nil
 	}
 
 	// Check immediately before entering the poll loop so that jobs already in
