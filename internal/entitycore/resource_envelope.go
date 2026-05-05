@@ -201,6 +201,14 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 ) diag.Diagnostics {
 	var model T
 	var diags diag.Diagnostics
+	if op == nil {
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"The create or update callback passed to NewElasticsearchResource must not be nil.",
+		)
+		return diags
+	}
+
 	diags.Append(plan.Get(ctx, &model)...)
 	if diags.HasError() {
 		return diags
@@ -218,14 +226,6 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
 	diags.Append(connDiags...)
 	if diags.HasError() {
-		return diags
-	}
-
-	if op == nil {
-		diags.AddError(
-			"Elasticsearch envelope configuration error",
-			"The create or update callback passed to NewElasticsearchResource must not be nil.",
-		)
 		return diags
 	}
 

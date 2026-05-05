@@ -696,6 +696,93 @@ func TestNewElasticsearchResource_Create_nilWriteCallback(t *testing.T) {
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Elasticsearch envelope configuration error")
 }
 
+func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	t.Run("Create_precedesClientError", func(t *testing.T) {
+		t.Parallel()
+		var nilCreate ElasticsearchCreateFunc[testResourceModel]
+		r := NewElasticsearchResource[testResourceModel](
+			ComponentElasticsearch,
+			"test_entity",
+			getTestResourceSchema,
+			testReadFuncFound,
+			testDeleteFunc,
+			nilCreate,
+			testWriteFuncFound,
+		)
+		r.client = nonNilTestFactory()
+
+		plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+		resp := resource.CreateResponse{State: tfsdk.State{
+			Raw:    tftypes.NewValue(testResourceObjectType(), nil),
+			Schema: testResourceSchemaWithConnectionBlock(),
+		}}
+		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Elasticsearch envelope configuration error")
+		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
+	})
+
+	t.Run("Create_precedesInvalidWriteID", func(t *testing.T) {
+		t.Parallel()
+		var nilCreate ElasticsearchCreateFunc[testResourceModel]
+		r := NewElasticsearchResource[testResourceModel](
+			ComponentElasticsearch,
+			"test_entity",
+			getTestResourceSchema,
+			testReadFuncFound,
+			testDeleteFunc,
+			nilCreate,
+			testWriteFuncFound,
+		)
+		r.client = newTestConfiguredFactory(t)
+
+		objType := testResourceObjectType()
+		objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"name":                     tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		})
+		plan := tfsdk.Plan{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock()}
+		resp := resource.CreateResponse{State: tfsdk.State{
+			Raw:    tftypes.NewValue(objType, nil),
+			Schema: testResourceSchemaWithConnectionBlock(),
+		}}
+		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Elasticsearch envelope configuration error")
+		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid resource identifier")
+	})
+
+	t.Run("Update_precedesClientError", func(t *testing.T) {
+		t.Parallel()
+		var nilUpdate ElasticsearchUpdateFunc[testResourceModel]
+		r := NewElasticsearchResource[testResourceModel](
+			ComponentElasticsearch,
+			"test_entity",
+			getTestResourceSchema,
+			testReadFuncFound,
+			testDeleteFunc,
+			testWriteFuncFound,
+			nilUpdate,
+		)
+		r.client = nonNilTestFactory()
+
+		plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+		prior := makeTestResourceState(t, "cluster/user1")
+		resp := resource.UpdateResponse{State: prior}
+		r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior}, &resp)
+
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Elasticsearch envelope configuration error")
+		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
+	})
+}
+
 func TestNewElasticsearchResource_Create_placeholderCallbackError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
