@@ -205,12 +205,14 @@ function parseChangelogSectionFull(body) {
  * Validate a full parsed changelog section (including empty breaking-changes detection).
  *
  * @param {ReturnType<typeof parseChangelogSectionFull>|null} parsed
+ * @param {{ enforceBreakingImpactMatch?: boolean }} [options]
  * @returns {{ valid: boolean, errors: string[] }}
  */
-function validateChangelogSectionFull(parsed) {
+function validateChangelogSectionFull(parsed, options = {}) {
   const base = validateChangelogSection(parsed);
   if (!parsed) return base;
 
+  const { enforceBreakingImpactMatch = true } = options;
   const errors = [...base.errors];
 
   if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
@@ -222,6 +224,7 @@ function validateChangelogSectionFull(parsed) {
   }
 
   if (
+    enforceBreakingImpactMatch &&
     parsed.breakingChangesHeadingPresent &&
     parsed.customerImpact &&
     VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
