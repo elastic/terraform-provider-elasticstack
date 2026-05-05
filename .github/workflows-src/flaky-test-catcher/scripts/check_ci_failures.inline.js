@@ -17,6 +17,7 @@ const allRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
   repo,
   workflow_id: 'test.yml',
   branch: 'main',
+  status: 'completed',
   created: `>=${cutoffDate.toISOString().split('T')[0]}`,
   per_page: 100,
 });
@@ -32,7 +33,7 @@ const issues = await github.paginate(github.rest.issues.listForRepo, {
   per_page: 100,
 });
 
-const openIssueCount = issues.filter(item => !item.pull_request).length;
+const openIssueCount = filterIssues(issues).length;
 
 const issueSlots = computeIssueSlots({
   label: ISSUE_LABEL,
