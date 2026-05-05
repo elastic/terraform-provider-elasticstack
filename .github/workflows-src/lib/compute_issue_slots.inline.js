@@ -1,4 +1,4 @@
-//include: ../../lib/issue-slots.js
+//include: issue-slots.js
 
 const ISSUE_LABEL = process.env.ISSUE_SLOTS_LABEL;
 const ISSUE_CAP = process.env.ISSUE_SLOTS_CAP;

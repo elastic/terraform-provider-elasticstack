@@ -15,7 +15,7 @@ on:
         ISSUE_SLOTS_CAP: "3"
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/compute_issue_slots.inline.js
+        x-script-include: ../lib/compute_issue_slots.inline.js
 
 permissions:
   contents: read

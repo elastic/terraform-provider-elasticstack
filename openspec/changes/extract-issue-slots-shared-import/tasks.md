@@ -1,18 +1,18 @@
 ## 1. Create shared script
 
-- [ ] 1.1 Create `.github/workflows-src/lib/compute_issue_slots.inline.js` with the same content as the existing per-workflow copies (i.e. `//include: issue-slots.js` at the top, followed by the script body)
+- [x] 1.1 Create `.github/workflows-src/lib/compute_issue_slots.inline.js` with the same content as the existing per-workflow copies (i.e. `//include: issue-slots.js` at the top, followed by the script body)
 
 ## 2. Update consumer templates
 
-- [ ] 2.1 Update `x-script-include:` in `.github/workflows-src/duplicate-code-detector/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
-- [ ] 2.2 Update `x-script-include:` in `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
-- [ ] 2.3 Update `x-script-include:` in `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
+- [x] 2.1 Update `x-script-include:` in `.github/workflows-src/duplicate-code-detector/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
+- [x] 2.2 Update `x-script-include:` in `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
+- [x] 2.3 Update `x-script-include:` in `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` from `scripts/compute_issue_slots.inline.js` to `../lib/compute_issue_slots.inline.js`
 
 ## 3. Delete per-workflow script files
 
-- [ ] 3.1 Delete `.github/workflows-src/duplicate-code-detector/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
-- [ ] 3.2 Delete `.github/workflows-src/semantic-function-refactor/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
-- [ ] 3.3 Delete `.github/workflows-src/schema-coverage-rotation/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
+- [x] 3.1 Delete `.github/workflows-src/duplicate-code-detector/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
+- [x] 3.2 Delete `.github/workflows-src/semantic-function-refactor/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
+- [x] 3.3 Delete `.github/workflows-src/schema-coverage-rotation/scripts/compute_issue_slots.inline.js` and the now-empty `scripts/` directory
 
 ## 4. Validate
 
