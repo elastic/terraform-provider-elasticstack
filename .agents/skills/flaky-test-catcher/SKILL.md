@@ -46,14 +46,16 @@ Ignore infrastructure jobs (e.g. lint, build, generate) — they do not produce 
 
 ### 3.3 Fetch the log for each failing job
 
+The GitHub API log endpoint returns a ZIP archive. Use the `gh` CLI to stream plain-text logs for a job:
+
 ```bash
-gh api /repos/{owner}/{repo}/actions/jobs/{job_id}/logs | grep '^--- FAIL:'
+gh run view --job {job_id} --log | grep '^--- FAIL:'
 ```
 
 **Log size warning**: Job logs can be very large (10 MB+). Do **not** load the full log into context. Instead:
-- Stream or truncate the log output.
+- Stream the log output through `grep` so only matching lines are retained.
 - Scan only for lines matching the `--- FAIL:` pattern (see §4).
-- Use the concrete example above to extract only matching lines; use `grep -B3 -A3` or similar when you also need surrounding context for the "Sample Failure Output" issue section.
+- Use `grep -B3 -A3` or similar when you also need surrounding context for the "Sample Failure Output" issue section.
 - Capture a small surrounding context (3–5 lines before/after each `--- FAIL:` line) for the "Sample Failure Output" issue section.
 
 ### 3.4 Pagination
