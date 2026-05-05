@@ -4,23 +4,48 @@
  */
 
 /**
+ * Conclusions that represent meaningful completed runs for the purpose of
+ * computing fail rates. Cancelled and skipped runs are excluded because they
+ * don't reflect a real test outcome and would dilute the denominator.
+ */
+const COUNTABLE_CONCLUSIONS = new Set(['success', 'failure', 'timed_out', 'neutral', 'action_required']);
+
+/**
  * Classifies an array of workflow run objects into failed runs and total count.
  *
+ * Only runs with countable conclusions (success, failure, timed_out, neutral,
+ * action_required) are included in `totalRunCount`. Cancelled and skipped runs
+ * are omitted from the total to avoid understating fail rates.
+ *
  * Runs are pre-filtered by date via the GitHub API `created` parameter, so
- * this function does not re-filter by date. It filters only by conclusion.
+ * this function does not re-filter by date.
  *
  * @param {Array<{ id: number, conclusion: string | null }>} runs - Workflow run objects
  * @returns {{ failedRunIds: number[], totalRunCount: number }}
  */
 function classifyRuns(runs) {
-  const failedRunIds = runs
-    .filter(run => run.conclusion === 'failure')
-    .map(run => run.id);
+  const failedRunIds = [];
+  let totalRunCount = 0;
+  for (const run of runs) {
+    if (COUNTABLE_CONCLUSIONS.has(run.conclusion)) {
+      totalRunCount++;
+    }
+    if (run.conclusion === 'failure') {
+      failedRunIds.push(run.id);
+    }
+  }
+  return { failedRunIds, totalRunCount };
+}
 
-  return {
-    failedRunIds,
-    totalRunCount: runs.length,
-  };
+/**
+ * Filters a list of GitHub issues/PR items, returning only real issues.
+ * The GitHub issues API may return pull requests; this removes them.
+ *
+ * @param {Array<{ pull_request?: object }>} items - Items from listForRepo
+ * @returns {Array<{ pull_request?: object }>}
+ */
+function filterIssues(items) {
+  return items.filter(item => !item.pull_request);
 }
 
 /**
@@ -54,5 +79,5 @@ function computeGate(failedRunIds, issueSlots) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { classifyRuns, computeGate };
+  module.exports = { classifyRuns, computeGate, filterIssues };
 }
