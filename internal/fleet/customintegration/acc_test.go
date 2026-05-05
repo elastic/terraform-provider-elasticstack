@@ -395,7 +395,7 @@ func TestAccFleetCustomIntegration_KibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.insecure", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.0"),
-				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_custom_integration.test", "kibana_connection.0.")...)...),
+				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_custom_integration.test")...)...),
 			},
 		},
 	})
@@ -528,14 +528,17 @@ func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
-			// Step 3: Plan-only with a different space_id — the space_id attribute has
-			// RequiresReplace(), so the plan must be non-empty (a replacement is expected).
+			// Step 3: Plan-only with a different space_id on the custom integration only —
+			// the elasticstack_kibana_space resource stays unchanged (same space_id as
+			// steps 1-2), so the non-empty plan is caused exclusively by the custom
+			// integration's RequiresReplace() modifier firing on the changed space_id.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id_replace"),
 				ConfigVariables: config.Variables{
 					"package_path": config.StringVariable(zipPath),
-					"space_id":     config.StringVariable("acc-test-space-customintegration-b"),
+					"space_id":     config.StringVariable(spaceID),
+					"new_space_id": config.StringVariable("acc-test-space-customintegration-b"),
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
