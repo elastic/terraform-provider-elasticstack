@@ -88,6 +88,9 @@ function extractBreakingChanges(changelogSection) {
       } else if (fenceType === '~' && /^~~~/.test(line)) {
         fenceType = null;
       }
+      if (fenceType === null && /^\s*<!--\s*\/breaking-changes\s*-->\s*$/.test(line)) {
+        break;
+      }
       if (fenceType === null && /^#{2,3}\s/.test(line)) {
         break;
       }
