@@ -1,3 +1,11 @@
+# `ci-flaky-test-catcher` — broken and flaky test detection workflow
+
+Workflow implementation: repository-authored source under `.github/workflows-src/flaky-test-catcher/`, compiled to `.github/workflows/flaky-test-catcher.md`.
+
+## Purpose
+
+Define requirements for a GitHub Agentic Workflow that scans recent `main` CI failures, classifies acceptance test failures as broken (100% fail rate) or flaky (≥ 20% fail rate), and opens bounded, actionable GitHub issues per affected test group for automated remediation.
+
 ## ADDED Requirements
 
 ### Requirement: Workflow triggers
@@ -14,7 +22,7 @@ The flaky-test-catcher workflow SHALL run on a daily schedule and SHALL support 
 ---
 
 ### Requirement: Pre-activation CI failure scan
-The pre-activation job SHALL query the GitHub Actions API for all workflow runs of the Build/Lint/Test workflow on `main` within the last 3 days and identify those with `conclusion == 'failure'`.
+The pre-activation job SHALL query the GitHub Actions API for all workflow runs of the `.github/workflows/test.yml` workflow on `main` within the last 3 days and identify those with `conclusion == 'failure'`.
 
 #### Scenario: Failures present
 - **WHEN** one or more workflow runs on `main` in the last 3 days have `conclusion == 'failure'`

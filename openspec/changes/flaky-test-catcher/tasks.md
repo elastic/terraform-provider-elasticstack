@@ -7,11 +7,11 @@
 ## 2. Workflow Template
 
 - [ ] 2.1 Create `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` with YAML frontmatter: trigger (`workflow_dispatch` + daily schedule), `engine`, `permissions` (`contents: read`, `issues: write`, `actions: read`), `safe-outputs` (`create-issue` with labels `flaky-test` + `code-factory`, cap 3; `noop`), `network` (`defaults`), pre-activation job wiring, agent `if` gate
-- [ ] 2.2 Write the agent prompt (markdown body after `---`) covering: skill reference, pre-activation context usage, log fetching via `gh api`, `--- FAIL:` extraction, fail-rate classification (broken ≥ 100%, flaky ≥ 20%), resource grouping, commit analysis (messages + changed file paths), dedup against existing `flaky-test` issues, issue creation rules and body format, `noop` conditions
+- [ ] 2.2 Write the agent prompt (markdown body after `---`) covering: skill reference, pre-activation context usage, log fetching via `gh api`, `--- FAIL:` extraction, fail-rate classification (broken = 100%, flaky ≥ 20%), base-test-name grouping via `TestAcc[^_]+`, commit analysis (messages + changed file paths), dedup against existing `flaky-test` issues, issue creation rules and body format, `noop` conditions
 
 ## 3. Agent Skill Document
 
-- [ ] 3.1 Create `.agents/skills/flaky-test-catcher/SKILL.md` defining the analysis protocol: how to fetch logs (`gh api .../jobs/{id}/logs`), the `--- FAIL:` extraction pattern, the fail-rate formula and thresholds, the resource-name extraction rule (`TestAcc<Resource>Resource_*` → `elasticstack_<resource>`), the commit analysis steps, and the required issue body sections
+- [ ] 3.1 Create `.agents/skills/flaky-test-catcher/SKILL.md` defining the analysis protocol: how to query `.github/workflows/test.yml` runs via `gh api`, how to fetch job logs (`gh api .../jobs/{id}/logs`), the `--- FAIL:` extraction pattern, the fail-rate formula and thresholds (broken = 100%, flaky ≥ 20%), the base-test-name grouping rule (`TestAcc[^_]+`), the commit analysis steps, and the required issue body sections
 
 ## 4. Compiled Output and Manifest
 
