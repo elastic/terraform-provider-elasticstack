@@ -4,7 +4,7 @@
 
 ## 2. Delete fix
 
-- [ ] 2.1 Update `internal/elasticsearch/ml/anomalydetectionjob/delete.go` to call `WaitForMLJobClosed` after `CloseJob` and before `DeleteJob`; surface diagnostics errors if the wait fails
+- [ ] 2.1 Update `internal/elasticsearch/ml/anomalydetectionjob/delete.go` to call `WaitForMLJobClosed` after `CloseJob` (log warning and continue if wait fails), then call `DeleteJob`; if `DeleteJob` fails, retry once with `force=true` and surface the retry error as a diagnostic if that also fails
 
 ## 3. Spec update
 

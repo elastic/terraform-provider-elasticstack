@@ -2,24 +2,26 @@
 
 ### Requirement: Delete — close before delete (REQ-021–REQ-022)
 
-On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API with `force=true` and `allow_no_match=true`. If the close call fails, the resource SHALL log a warning and continue. After the Close Job API call returns (whether it succeeded or failed), the resource SHALL poll the job's state via the Get Job Stats API until the job reports `closed` state or is no longer found, before calling the Delete Job API. This polling SHALL be bounded by the Terraform operation context (i.e. the delete timeout). The resource SHALL then call the Delete Anomaly Detection Job API. A non-success response from the Delete API SHALL be surfaced as an error diagnostic.
+On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API with `force=true` and `allow_no_match=true`. If the close call fails, the resource SHALL log a warning and continue. After the Close Job API call returns (whether it succeeded or failed), the resource SHALL poll the job's state via the Get Job Stats API until the job reports `closed` state or is no longer found, before calling the Delete Job API. This polling SHALL be bounded by the Terraform operation context (i.e. the delete timeout). If polling fails, the resource SHALL log a warning and continue to deletion.
 
-#### Scenario: Close succeeds before delete
+The resource SHALL then call the Delete Anomaly Detection Job API. If the first delete attempt fails, the resource SHALL retry once with `force=true`. If the retry also fails, the error SHALL be surfaced as a Terraform diagnostic.
 
-- **WHEN** delete is called on an open anomaly detection job
-- **THEN** the resource SHALL call Close Job, then poll until the job is `closed`, then call Delete Job
+#### Scenario: Normal delete succeeds
 
-#### Scenario: Close returns error; polling confirms job is already closed
+- **WHEN** the job is `closed` (or not found) before delete is called
+- **THEN** the resource SHALL call Delete Job and it SHALL succeed without `force`
 
-- **WHEN** the Close Job API call returns an error
-- **THEN** the resource SHALL log a warning, poll until the job reports `closed` state, and then call Delete Job
+#### Scenario: First delete fails — retry with force succeeds
 
-#### Scenario: Polling confirms job not found before delete
+- **WHEN** the initial Delete Job call fails (e.g. job is still open due to polling timeout)
+- **THEN** the resource SHALL retry Delete Job with `force=true` and treat a success response as the job being deleted
 
-- **WHEN** polling the job stats returns no result (job not found)
-- **THEN** the resource SHALL treat the job as closed and proceed to Delete Job
+#### Scenario: Both delete attempts fail
 
-#### Scenario: Delete is called after polling confirms closed state
+- **WHEN** both the initial Delete Job and the `force=true` retry fail
+- **THEN** the resource SHALL surface the retry error as a Terraform diagnostic
 
-- **WHEN** the job reaches `closed` state and Delete Job is called
-- **THEN** the resource SHALL call Delete Job only after observing `closed` state, and SHALL not fail with a version conflict caused by the close/delete race
+#### Scenario: Delete called regardless of polling outcome
+
+- **WHEN** the polling wait fails for any reason
+- **THEN** the resource SHALL still call the Delete Job API (not skip it)
