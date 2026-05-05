@@ -1,5 +1,5 @@
 const { owner, repo } = context.repo;
-const issueNumber = parseInt(context.payload.inputs?.issue_number, 10);
+const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
 
 if (!issueNumber || issueNumber <= 0) {
   core.setOutput('issue_number', '');

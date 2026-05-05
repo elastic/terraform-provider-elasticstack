@@ -463,6 +463,7 @@ test('code-factory-issue workflow template includes normalized context outputs',
   assert.match(workflowTmpl, /issue_number:/);
   assert.match(workflowTmpl, /issue_title:/);
   assert.match(workflowTmpl, /name: Normalize context/);
+  assert.match(workflowTmpl, /source_workflow:/);
 });
 
 test('code-factory-issue workflow template drives prompt from normalized outputs', () => {
@@ -492,6 +493,19 @@ test('code-factory-issue workflow template includes dispatch validation and live
   assert.match(workflowTmpl, /x-script-include: scripts\/validate_dispatch_inputs\.inline\.js/);
   assert.match(workflowTmpl, /name: Fetch live issue/);
   assert.match(workflowTmpl, /x-script-include: scripts\/fetch_live_issue\.inline\.js/);
+  assert.match(workflowTmpl, /INPUT_ISSUE_NUMBER:/);
+});
+
+test('code-factory-issue workflow template guards agent job with issue_number non-empty', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_number != ''/);
+});
+
+test('code-factory-issue workflow template normalize_context uses env vars', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /env:\s*\n\s+INTAKE_MODE:/);
+  assert.match(workflowTmpl, /ISSUE_BODY_EVENT:/);
+  assert.match(workflowTmpl, /GITHUB_OUTPUT_EOF/);
 });
 
 test('code-factory-issue validate_dispatch_inputs.inline.js includes dispatch helper', () => {

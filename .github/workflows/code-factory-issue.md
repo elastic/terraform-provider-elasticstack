@@ -513,7 +513,7 @@ on:
           if (result.event_eligible) {
             core.info(`Dispatch validated: ${result.event_eligible_reason}`);
           } else {
-            core.setFailed(`Dispatch rejected: ${result.event_eligible_reason}`);
+            core.info(`Dispatch rejected: ${result.event_eligible_reason}`);
           }
           
     - name: Fetch live issue
@@ -521,12 +521,14 @@ on:
       if: >-
         steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
         steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+      env:
+        INPUT_ISSUE_NUMBER: ${{ steps.validate_dispatch_inputs.outputs.issue_number }}
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const { owner, repo } = context.repo;
-          const issueNumber = parseInt(context.payload.inputs?.issue_number, 10);
+          const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
           
           if (!issueNumber || issueNumber <= 0) {
             core.setOutput('issue_number', '');
@@ -1456,34 +1458,61 @@ on:
     - name: Normalize context
       id: normalize_context
       if: always()
+      env:
+        INTAKE_MODE: ${{ steps.determine_intake_mode.outputs.intake_mode }}
+        ISSUE_NUMBER_EVENT: ${{ steps.capture_issue_context.outputs.issue_number }}
+        ISSUE_TITLE_EVENT: ${{ steps.capture_issue_context.outputs.issue_title }}
+        ISSUE_BODY_EVENT: ${{ steps.capture_issue_context.outputs.issue_body }}
+        EVENT_ELIGIBLE_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        TRIGGER_LABEL_REMOVED_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+        TRIGGER_LABEL_REMOVED_REASON_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+        ISSUE_NUMBER_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_number }}
+        ISSUE_TITLE_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_title }}
+        ISSUE_BODY_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_body }}
+        EVENT_ELIGIBLE_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}
+        SOURCE_WORKFLOW: ${{ github.event.inputs.source_workflow }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       run: |
-        INTAKE_MODE="${{ steps.determine_intake_mode.outputs.intake_mode }}"
         echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
 
         if [ "${INTAKE_MODE}" = "issue-event" ]; then
-          echo "issue_number=${{ steps.capture_issue_context.outputs.issue_number }}" >> "$GITHUB_OUTPUT"
-          echo "issue_title=${{ steps.capture_issue_context.outputs.issue_title }}" >> "$GITHUB_OUTPUT"
-          echo "issue_body=${{ steps.capture_issue_context.outputs.issue_body }}" >> "$GITHUB_OUTPUT"
-          echo "event_eligible=${{ steps.qualify_trigger.outputs.event_eligible }}" >> "$GITHUB_OUTPUT"
-          echo "event_eligible_reason=${{ steps.qualify_trigger.outputs.event_eligible_reason }}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted=${{ steps.check_actor_trust.outputs.actor_trusted }}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted_reason=${{ steps.check_actor_trust.outputs.actor_trusted_reason }}" >> "$GITHUB_OUTPUT"
-          echo "trigger_label_removed=${{ steps.remove_trigger_label.outputs.trigger_label_removed }}" >> "$GITHUB_OUTPUT"
-          echo "trigger_label_removed_reason=${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}" >> "$GITHUB_OUTPUT"
+          echo "issue_number=${ISSUE_NUMBER_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${ISSUE_TITLE_EVENT}" >> "$GITHUB_OUTPUT"
+          {
+            echo "issue_body<<GITHUB_OUTPUT_EOF"
+            echo "${ISSUE_BODY_EVENT}"
+            echo "GITHUB_OUTPUT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=${ACTOR_TRUSTED_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=${ACTOR_TRUSTED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
         else
-          echo "issue_number=${{ steps.fetch_live_issue.outputs.issue_number }}" >> "$GITHUB_OUTPUT"
-          echo "issue_title=${{ steps.fetch_live_issue.outputs.issue_title }}" >> "$GITHUB_OUTPUT"
-          echo "issue_body=${{ steps.fetch_live_issue.outputs.issue_body }}" >> "$GITHUB_OUTPUT"
-          echo "event_eligible=${{ steps.validate_dispatch_inputs.outputs.event_eligible }}" >> "$GITHUB_OUTPUT"
-          echo "event_eligible_reason=${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}" >> "$GITHUB_OUTPUT"
+          echo "issue_number=${ISSUE_NUMBER_DISPATCH}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${ISSUE_TITLE_DISPATCH}" >> "$GITHUB_OUTPUT"
+          {
+            echo "issue_body<<GITHUB_OUTPUT_EOF"
+            echo "${ISSUE_BODY_DISPATCH}"
+            echo "GITHUB_OUTPUT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${EVENT_ELIGIBLE_DISPATCH}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_DISPATCH}" >> "$GITHUB_OUTPUT"
           echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
           echo "actor_trusted_reason=Dispatch intake bypasses actor trust check." >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed=false" >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed_reason=Trigger label removal is not required for dispatch intake." >> "$GITHUB_OUTPUT"
+          echo "source_workflow=${SOURCE_WORKFLOW}" >> "$GITHUB_OUTPUT"
         fi
 
-        echo "duplicate_pr_found=${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}" >> "$GITHUB_OUTPUT"
-        echo "duplicate_pr_url=${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}" >> "$GITHUB_OUTPUT"
+        echo "duplicate_pr_found=${DUPLICATE_PR_FOUND}" >> "$GITHUB_OUTPUT"
+        echo "duplicate_pr_url=${DUPLICATE_PR_URL}" >> "$GITHUB_OUTPUT"
       shell: bash
     - name: Finalize gate reason
       id: finalize_gate
@@ -1865,7 +1894,8 @@ on:
 if: >-
   needs.pre_activation.outputs.event_eligible == 'true' &&
   needs.pre_activation.outputs.actor_trusted == 'true' &&
-  needs.pre_activation.outputs.duplicate_pr_found != 'true'
+  needs.pre_activation.outputs.duplicate_pr_found != 'true' &&
+  needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Setup Go
     uses: actions/setup-go@v6
@@ -1932,6 +1962,7 @@ jobs:
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       trigger_label_removed: ${{ steps.normalize_context.outputs.trigger_label_removed }}
       trigger_label_removed_reason: ${{ steps.normalize_context.outputs.trigger_label_removed_reason }}
+      source_workflow: ${{ steps.normalize_context.outputs.source_workflow }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:

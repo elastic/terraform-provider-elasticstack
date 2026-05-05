@@ -19,5 +19,5 @@ if (result.issue_number != null) {
 if (result.event_eligible) {
   core.info(`Dispatch validated: ${result.event_eligible_reason}`);
 } else {
-  core.setFailed(`Dispatch rejected: ${result.event_eligible_reason}`);
+  core.info(`Dispatch rejected: ${result.event_eligible_reason}`);
 }
