@@ -78,7 +78,9 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
-		queryStr = string(queryBytes)
+		if string(queryBytes) != "null" {
+			queryStr = string(queryBytes)
+		}
 	}
 
 	return &models.EnrichPolicy{
