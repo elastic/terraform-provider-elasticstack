@@ -95,7 +95,7 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[semantic-refactor] "
-    labels: [semantic-refactor, refactoring, code-quality, automated-analysis]
+    labels: [semantic-refactor, refactoring, code-quality, automated-analysis, code-factory]
     max: 3
 
 tools:

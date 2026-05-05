@@ -89,5 +89,5 @@ Each semantic refactor issue created by the workflow SHALL include a concise sum
 
 #### Scenario: Issue titles and labels identify the workflow output
 - **WHEN** the workflow creates a semantic refactor issue
-- **THEN** the issue SHALL carry the configured title prefix `[semantic-refactor] ` and the `semantic-refactor` label
+- **THEN** the issue SHALL carry the configured title prefix `[semantic-refactor] ` and the labels `semantic-refactor` and `code-factory`
 
