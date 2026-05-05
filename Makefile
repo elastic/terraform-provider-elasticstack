@@ -1,4 +1,4 @@
-include .env
+-include .env
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
