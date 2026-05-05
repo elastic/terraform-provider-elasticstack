@@ -149,9 +149,9 @@ func elasticsearchConnectionBlockType() tftypes.Type {
 	return tftypes.List{ElementType: nestedObjType}
 }
 
-func newTestConfiguredFactory(t *testing.T) *clients.ProviderClientFactory {
+func newTestConfiguredFactory(ctx context.Context, t *testing.T) *clients.ProviderClientFactory {
 	t.Helper()
-	factory, diags := clients.NewProviderClientFactoryFromFramework(context.Background(), config.ProviderConfiguration{}, "test")
+	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{}, "test")
 	require.False(t, diags.HasError(), "failed to create test factory: %v", diags)
 	require.NotNil(t, factory)
 	return factory
@@ -277,7 +277,7 @@ func TestNewElasticsearchResource_Read_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := newResourceEnvelopeWithFactory(t, factory)
 
 	state := makeTestResourceState(t, "cluster/user1")
@@ -299,7 +299,7 @@ func TestNewElasticsearchResource_Read_notFound(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -327,7 +327,7 @@ func TestNewElasticsearchResource_Read_shortCircuitStateGetError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	readCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -372,7 +372,7 @@ func TestNewElasticsearchResource_Read_shortCircuitCompositeIDError(t *testing.T
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	readCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -434,7 +434,7 @@ func TestNewElasticsearchResource_Read_shortCircuitReadFuncError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -465,7 +465,7 @@ func TestNewElasticsearchResource_Delete_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	deleteCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -495,7 +495,7 @@ func TestNewElasticsearchResource_Delete_shortCircuitStateGetError(t *testing.T)
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	deleteCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -539,7 +539,7 @@ func TestNewElasticsearchResource_Delete_shortCircuitCompositeIDError(t *testing
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	deleteCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -600,7 +600,7 @@ func TestNewElasticsearchResource_Delete_appendsDeleteFuncDiagnostics(t *testing
 	t.Parallel()
 	ctx := context.Background()
 
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -643,7 +643,7 @@ func (r *overridingEnvelopeTestResource) Update(context.Context, resource.Update
 func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := newResourceEnvelopeWithFactory(t, factory)
 
 	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
@@ -668,7 +668,7 @@ func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 func TestNewElasticsearchResource_Create_nilWriteCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	var nilCreate ElasticsearchCreateFunc[testResourceModel]
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -738,7 +738,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 			nilCreate,
 			testWriteFuncFound,
 		)
-		r.client = newTestConfiguredFactory(t)
+		r.client = newTestConfiguredFactory(ctx, t)
 
 		objType := testResourceObjectType()
 		objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -786,7 +786,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 func TestNewElasticsearchResource_Create_placeholderCallbackError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	createFn, updateFn := PlaceholderElasticsearchWriteCallbacks[testResourceModel]()
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -819,7 +819,7 @@ func TestNewElasticsearchResource_Create_placeholderCallbackError(t *testing.T) 
 func TestNewElasticsearchResource_Create_shortCircuitUnknownWriteID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	createCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -888,7 +888,7 @@ func TestNewElasticsearchResource_Create_shortCircuitClientError(t *testing.T) {
 func TestNewElasticsearchResource_Create_shortCircuitCallbackError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -920,7 +920,7 @@ func TestNewElasticsearchResource_Create_shortCircuitCallbackError(t *testing.T)
 func TestNewElasticsearchResource_Update_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := newResourceEnvelopeWithFactory(t, factory)
 
 	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
@@ -941,7 +941,7 @@ func TestNewElasticsearchResource_Update_happyPath(t *testing.T) {
 func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	createCalled := false
 	updateCalled := false
 	r := NewElasticsearchResource[testResourceModel](
@@ -976,7 +976,7 @@ func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testi
 func TestNewElasticsearchResource_Update_nilWriteCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	var nilUpdate ElasticsearchUpdateFunc[testResourceModel]
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -1003,7 +1003,7 @@ func TestNewElasticsearchResource_Update_nilWriteCallback(t *testing.T) {
 func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	writeCalled := false
 	writeFn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 		writeCalled = true
@@ -1053,7 +1053,7 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 func TestNewElasticsearchResource_Update_shortCircuitUnknownWriteID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	updateCalled := false
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
@@ -1121,7 +1121,7 @@ func TestNewElasticsearchResource_Update_shortCircuitClientError(t *testing.T) {
 func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -1154,7 +1154,7 @@ func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T)
 func TestNewElasticsearchResource_Update_placeholderCallbackError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	factory := newTestConfiguredFactory(t)
+	factory := newTestConfiguredFactory(ctx, t)
 	createFn, updateFn := PlaceholderElasticsearchWriteCallbacks[testResourceModel]()
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
