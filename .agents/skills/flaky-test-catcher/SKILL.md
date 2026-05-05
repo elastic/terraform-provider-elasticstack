@@ -46,14 +46,14 @@ Ignore infrastructure jobs (e.g. lint, build, generate) — they do not produce 
 
 ### 3.3 Fetch the log for each failing job
 
-```
-gh api /repos/{owner}/{repo}/actions/jobs/{job_id}/logs
+```bash
+gh api /repos/{owner}/{repo}/actions/jobs/{job_id}/logs | grep '^--- FAIL:'
 ```
 
 **Log size warning**: Job logs can be very large (10 MB+). Do **not** load the full log into context. Instead:
 - Stream or truncate the log output.
 - Scan only for lines matching the `--- FAIL:` pattern (see §4).
-- A practical approach: pipe through `grep '^\-\-\- FAIL:'` or use `head`/`tail` to limit what enters context.
+- Use the concrete example above to extract only matching lines; use `grep -B3 -A3` or similar when you also need surrounding context for the "Sample Failure Output" issue section.
 - Capture a small surrounding context (3–5 lines before/after each `--- FAIL:` line) for the "Sample Failure Output" issue section.
 
 ### 3.4 Pagination
@@ -81,6 +81,8 @@ Examples of matching lines:
 - **Ignore** bare `FAIL` lines without the `---` prefix; those are package-level failure markers, not individual test failures.
 
 Collect all extracted test names across all runs and all jobs. A test may appear multiple times (once per run where it failed) — track counts.
+
+**Same-run deduplication**: If the same test name appears in multiple failing jobs within a single run (e.g. multiple shards both failing the same test), count it **only once** for that run. Deduplication is by run ID, not job ID — use a set per run when accumulating test names.
 
 ## 5. Fail-rate formula and thresholds
 
@@ -118,6 +120,8 @@ Examples:
 | `TestAccSomeResource_basic` | `TestAccSomeResource` |
 
 **One issue per base test name.** All scenario variants (subtests/suffixes) belonging to the same base name are consolidated into a single issue. List each specific variant inside the issue body.
+
+**Fallback for non-`TestAcc` tests**: All acceptance tests in this project follow the `TestAcc` prefix convention. If a non-`TestAcc` test name appears in the logs, treat everything up to the first `_` (or the full name if no `_`) as the base name.
 
 ## 7. Commit analysis steps
 
@@ -173,6 +177,8 @@ Check if any file in `files[].filename` matches patterns like:
 
 Frame the analysis as "has this been fixed yet?" — not as blame attribution.
 
+**Do not suppress issue creation**: Even if a fix commit is found, always proceed with creating the issue and include the fix-detection note in the Commit Analysis section. The issue serves as the remediation trigger regardless.
+
 ## 8. Issue deduplication
 
 Before creating an issue for a base test name, check whether one already exists:
@@ -185,6 +191,7 @@ gh api "/repos/{owner}/{repo}/issues?labels=flaky-test&state=open&per_page=100"
 - The title format for flaky-test issues is: `[flaky-test] {BaseTestName}`
 - If an **exact title match** exists, skip creating a new issue for that base test name.
 - Do **not** re-query or recalculate `issue_slots_available`; use only the value from pre-activation.
+- If the response contains exactly 100 results, check for a `next` link in the `Link` response header and repeat the request for subsequent pages until all open issues are fetched.
 
 ## 9. Required issue body sections
 
@@ -219,6 +226,8 @@ List each test function name that failed in ≥ 20% but < 100% of runs, with the
 - Use `❌` for broken tests (100% fail rate).
 - Use `⚠️` for flaky tests (20%–99% fail rate), and always include the fraction and percentage.
 - Keep "Sample Failure Output" to the most informative excerpt; do not paste hundreds of lines.
+
+**Cap enforcement**: Before creating each issue, verify that the number of issues created so far in this run has not reached `issue_slots_available`. Stop creating issues once the cap is reached, even if additional base test names remain.
 
 ## 10. Noop conditions
 

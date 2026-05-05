@@ -105,7 +105,7 @@ List the specific test function names (with subtests) that failed in 100% of sam
 List the specific test function names that failed in ≥ 20% but < 100% of runs, with each test's observed fail rate (e.g. `3/5 runs`).
 
 ### Commit Analysis
-Summarize recent commits on `main` that touched files in the affected resource package. Include commit SHAs (short), messages, and changed file paths. Note any commits that appear likely to have introduced the regression.
+Note any commits on `main` since the oldest failing run that appear to address the failure. If a relevant fix commit is found, note: "may already be addressed in `<sha>`". If no relevant commits found, note that explicitly.
 
 ### Sample Failure Output
 Paste the most informative `--- FAIL:` log excerpt from the failed runs to give context to the implementer.
