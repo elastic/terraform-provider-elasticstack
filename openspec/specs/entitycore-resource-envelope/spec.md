@@ -1,7 +1,9 @@
 # entitycore-resource-envelope Specification
 
 ## Purpose
-TBD - created by archiving change elasticsearch-resource-envelope. Update Purpose after archive.
+
+The entitycore resource envelope centralizes common Terraform Plugin Framework behavior for Elasticsearch-backed resources that share the standard connection block, lifecycle preludes, model contract, composite ID handling, and opt-in import convention.
+
 ## Requirements
 ### Requirement: Envelope constructor produces shared Elasticsearch resource behavior
 
