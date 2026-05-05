@@ -237,9 +237,13 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				ImportState:             true,
 				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				// description is Optional-only (unmanaged): import starts with a blank
+				// model (all-null), so it stays null even when Kibana has a value.
+				ImportStateVerifyIgnore: []string{"force", "description"},
 			},
 			// Step 4: Remove description and omit enabled to verify defaults are restored.
+			// description is Optional-only (unmanaged): omitting it keeps null in state
+			// regardless of the server value, matching the repo pattern for unmanaged fields.
 			// Also exercises the force attribute.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
