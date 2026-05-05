@@ -149,9 +149,18 @@ By default, the resource SHALL use the provider-level Elasticsearch client. When
 
 ### Requirement: Query mapping (REQ-013–REQ-015)
 
-When `query` is set in configuration, the resource SHALL send it as a parsed JSON object in the `query` field of the Put request body. When `query` is null or not configured, the resource SHALL omit the `query` field from the Put request body entirely. On read, when the API response includes a `query` field that is non-null and non-empty and whose JSON-marshaled form is not the literal bytes `null`, the resource SHALL store it in state as a normalized JSON string; otherwise `query` SHALL be stored as null.
+When `query` is set in configuration, the resource SHALL send it as a parsed JSON object
+in the `query` field of the Put request body. When `query` is null or not configured, the
+resource SHALL omit the `query` field from the Put request body entirely. On read, when
+the API response includes a `query` field that is non-null and non-empty **and whose
+JSON-marshaled form is not the literal bytes `null`**, the resource SHALL store it in
+state as a normalized JSON string; otherwise `query` SHALL be stored as null.
 
-Specifically, when `json.Marshal` applied to the `*types.Query` value returned by the go-elasticsearch typed client produces the bytes `null` (which occurs when the client deserializes an explicit `"query": null` in the API response into a non-nil pointer to a zero-value struct), the provider SHALL treat this identically to an absent `query` field and SHALL store `null` in Terraform state.
+Specifically, when `json.Marshal` applied to the `*types.Query` value returned by the
+go-elasticsearch typed client produces the bytes `null` (which occurs when the client
+deserializes an explicit `"query": null` in the API response into a non-nil pointer to a
+zero-value struct), the provider SHALL treat this identically to an absent `query` field
+and SHALL store `null` in Terraform state.
 
 #### Scenario: Query sent as JSON object
 
