@@ -13,6 +13,10 @@
       "output": ".github/workflows/schema-coverage-rotation.md"
     },
     {
+      "template": ".github/workflows-src/flaky-test-catcher/workflow.md.tmpl",
+      "output": ".github/workflows/flaky-test-catcher.md"
+    },
+    {
       "template": ".github/workflows-src/semantic-function-refactor/workflow.md.tmpl",
       "output": ".github/workflows/semantic-function-refactor.md"
     },
