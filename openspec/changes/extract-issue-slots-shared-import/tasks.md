@@ -16,7 +16,7 @@
 
 ## 4. Validate
 
-- [ ] 4.1 Run `make workflow-generate` and confirm it succeeds with no errors
-- [ ] 4.2 Run `make check-workflows` and confirm all generated artifacts are up to date
-- [ ] 4.3 Confirm no `compute_issue_slots.inline.js` files remain under consumer `scripts/` directories
-- [ ] 4.4 Commit the change
+- [x] 4.1 Run `make workflow-generate` and confirm it succeeds with no errors
+- [x] 4.2 Run `make check-workflows` and confirm all generated artifacts are up to date
+- [x] 4.3 Confirm no `compute_issue_slots.inline.js` files remain under consumer `scripts/` directories
+- [x] 4.4 Commit the change (nothing new to commit — regenerated outputs were already clean)
