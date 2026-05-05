@@ -99,6 +99,11 @@ safe-outputs:
     max: 3
 
 tools:
+  mount-as-clis: true
+  github:
+    mode: gh-proxy
+    toolsets: [default, issues]
+  edit:
   repo-memory:
     - id: semantic-function-refactor
       file-glob: ["memory/semantic-function-refactor/serena-state.json"]
@@ -129,15 +134,7 @@ mcp-servers:
     env:
       PATH: "/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin"
       GOROOT: "/usr/local/go"
-    allowed:
-      - "activate_project"
-      - "get_symbols_overview"
-      - "find_symbol"
-      - "search_for_pattern"
-      - "find_referencing_symbols"
-      - "read_file"
-      - "get_symbol_documentation"
-
+      
 timeout-minutes: 15
 engine:
   id: claude
