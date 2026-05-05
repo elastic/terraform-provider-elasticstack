@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -68,11 +69,24 @@ func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.D
 		// Continue with deletion even if close fails, as the job might already be closed
 	}
 
-	// Delete the ML job
+	// Wait for the job to reach closed state before deleting. Elasticsearch uses
+	// optimistic concurrency control on .ml-config: if CloseJob's state
+	// transition commits after DeleteJob reads the seqNo but before it writes,
+	// the delete fails with HTTP 409 version_conflict_engine_exception.
+	if err := elasticsearch.WaitForMLJobClosed(ctx, client, jobID); err != nil {
+		tflog.Warn(ctx, fmt.Sprintf("Failed to wait for ML job %s to close before deletion: %s", jobID, err.Error()))
+		// Continue with deletion even if the wait fails.
+	}
+
+	// Delete the ML job. If the first attempt fails, retry once with force=true.
 	_, err = typedClient.Ml.DeleteJob(jobID).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete ML anomaly detection job", fmt.Sprintf("Unable to delete ML anomaly detection job: %s — %s", jobID, err.Error()))
-		return
+		tflog.Warn(ctx, fmt.Sprintf("Initial delete of ML job %s failed, retrying with force=true: %s", jobID, err.Error()))
+		_, retryErr := typedClient.Ml.DeleteJob(jobID).Force(true).Do(ctx)
+		if retryErr != nil {
+			resp.Diagnostics.AddError("Failed to delete ML anomaly detection job", fmt.Sprintf("Unable to delete ML anomaly detection job: %s — %s", jobID, retryErr.Error()))
+			return
+		}
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML anomaly detection job: %s", jobID))
