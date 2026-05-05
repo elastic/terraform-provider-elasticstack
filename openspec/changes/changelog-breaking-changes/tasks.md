@@ -1,6 +1,6 @@
 ## 1. Parser: end marker support
 
-- [ ] 1.1 In `extractBreakingChanges` in `pr-changelog-parser.js`, add a check inside the `inBreaking` loop: when `fenceType === null` and the line matches `/^<!--\s*\/breaking-changes\s*-->/`, break out of the loop (before the heading check)
+- [ ] 1.1 In `extractBreakingChanges` in `pr-changelog-parser.js`, add a check inside the `inBreaking` loop: when `fenceType === null` and the line matches `/^\s*<!--\s*\/breaking-changes\s*-->\s*$/`, break out of the loop (before the heading check). The full-line anchor prevents partial matches; `\s*` before `<!--` and after `-->` allows indentation and trailing whitespace; `\s*` around `/breaking-changes` allows internal spacing.
 - [ ] 1.2 Add tests to `pr-changelog-parser.test.mjs` for `extractBreakingChanges` end marker behaviour:
   - End marker stops extraction mid-content (content before marker included, content after excluded)
   - End marker with extra internal whitespace (`<!--  /breaking-changes  -->`) is recognised

@@ -21,14 +21,14 @@ When validation fails, the workflow SHALL post or update a PR comment identifyin
 - **WHEN** the pull request body contains `### Breaking changes` content and `Customer impact` is `fix`, `enhancement`, or `none`
 - **THEN** the workflow SHALL fail and SHALL upsert a PR comment containing the error `### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.`
 
-#### Scenario: Invalid impact value with breaking changes does not emit rule-C error
+#### Scenario: Invalid impact value with breaking changes does not emit the breaking-impact-mismatch error
 - **WHEN** the pull request body contains `### Breaking changes` content and `Customer impact` is an unsupported value (e.g., `patch`)
-- **THEN** the workflow SHALL fail with an "invalid Customer impact" error only; it SHALL NOT also emit the rule-C error about breaking impact
+- **THEN** the workflow SHALL fail with an "invalid Customer impact" error only; it SHALL NOT also emit the error `### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.`
 
 ### Requirement: Breaking changes subsection may be free-form markdown with optional end marker
-Within the `## Changelog` contract, the optional `### Breaking changes` subsection SHALL allow free-form markdown content, including prose, bullet lists, and fenced code blocks. Validation SHALL treat that subsection as a delimited markdown block rather than a structured schema.
+Within the `## Changelog` contract, the `### Breaking changes` subsection is permitted only when `Customer impact` is `breaking`. When present, it SHALL allow free-form markdown content, including prose, bullet lists, and fenced code blocks. Validation SHALL treat that subsection as a delimited markdown block rather than a structured schema.
 
-The subsection SHALL end at the first of: (a) the HTML comment `<!-- /breaking-changes -->` (case-sensitive, internal whitespace flexible, matching `<!--\s*\/breaking-changes\s*-->`), provided it appears outside a fenced code block; (b) the next `##`- or `###`-level heading outside a fenced code block; or (c) the end of the `## Changelog` section. When `<!-- /breaking-changes -->` appears before `### Breaking changes`, or inside a fenced code block, it SHALL be ignored.
+The subsection SHALL end at the first of: (a) an end marker line, (b) the next `##`- or `###`-level heading outside a fenced code block, or (c) the end of the `## Changelog` section. An end marker line is a line whose full content, after stripping any leading and trailing whitespace, satisfies the pattern `<!--\s*/breaking-changes\s*-->` (case-sensitive) — that is, the line contains nothing except the HTML comment with optional internal whitespace around `/breaking-changes`; it is recognised only when it appears outside a fenced code block and after the `### Breaking changes` heading. In implementation terms this corresponds to the anchored regex `/^\s*<!--\s*\/breaking-changes\s*-->\s*$/`. A marker appearing before the `### Breaking changes` heading, or inside a fenced code block, SHALL be ignored.
 
 #### Scenario: Breaking changes block contains fenced code
 - **WHEN** the pull request body includes `### Breaking changes` with fenced code blocks or migration prose

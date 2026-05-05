@@ -27,9 +27,9 @@ The concrete problem: contributors adding content after their intended breaking 
 
 ### Decision 1: End marker as HTML comment `<!-- /breaking-changes -->`
 
-**Choice:** An HTML comment using a closing-tag convention (`/breaking-changes`), whitespace-flexible internally (`<!--\s*\/breaking-changes\s*-->`), matched by literal regex.
+**Choice:** An HTML comment using a closing-tag convention (`/breaking-changes`), recognised via the anchored regex `/^\s*<!--\s*\/breaking-changes\s*-->\s*$/` (case-sensitive). This allows optional leading/trailing whitespace on the line (indented markers) and optional internal whitespace around the tag name, while requiring the whole line to be nothing but the marker.
 
-**Rationale:** HTML comments are invisible in rendered GitHub Markdown, so the marker doesn't pollute the PR body's display. The `/<name>` convention mirrors common HTML/XML idioms and is visually clear about being a closing delimiter. Whitespace flexibility (`<!--   /breaking-changes   -->`) reduces friction for contributors who add spaces by habit.
+**Rationale:** HTML comments are invisible in rendered GitHub Markdown, so the marker doesn't pollute the PR body's display. The `/<name>` convention mirrors common HTML/XML idioms and is visually clear about being a closing delimiter. Full-line anchoring (`^...$`) prevents accidental matches on lines that merely contain the marker alongside other content. Internal whitespace flexibility (`\s*` around the tag name) is a practical allowance for contributors who add spaces by habit; case-sensitivity is preserved to match HTML comment semantics.
 
 **Alternatives considered:**
 - `<!-- end-breaking-changes -->` — slightly wordier, same properties. Rejected for brevity.
