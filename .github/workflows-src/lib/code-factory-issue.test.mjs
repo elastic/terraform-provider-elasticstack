@@ -18,7 +18,7 @@ const {
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./code-factory-issue.js');
-const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL } = require('../code-factory-issue/intake-constants.js');
+const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL, DUPLICATE_LINKAGE_MODE } = require('../code-factory-issue/intake-constants.js');
 
 const workflowPath = path.resolve(__dirname, '../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../workflows/code-factory-issue.lock.yml');
@@ -401,21 +401,23 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 });
 
 test('issueBranchName matches deterministic branch naming', () => {
+  assert.equal(DUPLICATE_LINKAGE_MODE, 'closes-literal');
   assert.equal(issueBranchName(42), 'code-factory/issue-42');
 });
 
-test('code-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
-  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+test('code-factory-issue exports align with shared createFactoryIssueModule binding', () => {
+  const { createFactoryIssueModule } = require('./factory-issue-shared.js');
   const {
     ISSUE_BRANCH_PREFIX: prefix,
     FACTORY_LABEL: label,
+    DUPLICATE_LINKAGE_MODE: duplicateLinkageMode,
     ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
   } = require('../code-factory-issue/intake-constants.js');
-  const bound = createFactoryIssueIntake({
+  const bound = createFactoryIssueModule({
     branchPrefix: prefix,
     factoryLabel: label,
     issueOpenedNotEligibleReason: openedReason,
-    duplicateLinkageMode: 'closes-literal',
+    duplicateLinkageMode,
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
@@ -451,7 +453,7 @@ test('code-factory-issue inline scripts include intake constants before shared h
   const expectedHeader = [
     /^\/\/include: \.\.\/intake-constants\.js\n/,
     /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
-    /^\/\/include: \.\.\/\.\.\/lib\/code-factory-issue\.gh\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-module\.gh\.js\n/,
   ];
   for (const name of [
     'qualify_trigger.inline.js',
