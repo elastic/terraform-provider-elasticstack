@@ -93,13 +93,20 @@ On create, the resource SHALL read the plan and construct a multipart/form-data 
 
 ### Requirement: Read — paginated list search (REQ-005)
 
-On read, the resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL confirm `id` in state matches; no other attributes are refreshed from the read response as the API does not return the original source map content. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
+On read, the resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL refresh from the read response every non-sensitive attribute that the API returns for the matching artifact, including `id`, `bundle_filepath`, `service_name`, and `service_version`. The resource SHALL NOT attempt to reconstruct or refresh `sourcemap_json` or `sourcemap_binary` from the read response because the API does not return the original uploaded source map content. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
 
 #### Scenario: Artifact found on read
 
 - GIVEN a source map with a known `id` exists in Kibana
 - WHEN read runs
-- THEN the resource SHALL remain in state with `id` set
+- THEN the resource SHALL remain in state with `id`, `bundle_filepath`, `service_name`, and `service_version` set from the matching Kibana artifact
+
+#### Scenario: Import recovers remote metadata
+
+- GIVEN a resource is imported with only an `id` in state
+- WHEN read runs and finds the matching source map in Kibana
+- THEN the resource SHALL populate `bundle_filepath`, `service_name`, and `service_version` from the read response
+- AND the resource SHALL NOT populate `sourcemap_json` or `sourcemap_binary`
 
 #### Scenario: Artifact not found removes from state
 
