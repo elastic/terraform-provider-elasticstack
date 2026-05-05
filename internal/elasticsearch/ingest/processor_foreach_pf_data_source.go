@@ -30,27 +30,21 @@ import (
 
 type processorForeachModel struct {
 	CommonProcessorModel
-	ID            types.String         `tfsdk:"id"`
-	JSON          types.String         `tfsdk:"json"`
 	Field         types.String         `tfsdk:"field"`
 	Processor     jsontypes.Normalized `tfsdk:"processor"`
 	IgnoreMissing types.Bool           `tfsdk:"ignore_missing"`
 }
 
-func (m *processorForeachModel) TypeName() string    { return "foreach" }
-func (m *processorForeachModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorForeachModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorForeachModel) TypeName() string { return "foreach" }
 
 func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorForeachBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -70,11 +64,6 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 		body.IgnoreMissing = false
 	} else {
 		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
-
-	// Ensure ignore_failure default is reflected in state.
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

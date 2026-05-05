@@ -23,33 +23,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type processorDropModel struct {
 	CommonProcessorModel
-	ID   types.String `tfsdk:"id"`
-	JSON types.String `tfsdk:"json"`
 }
 
-func (m *processorDropModel) TypeName() string    { return "drop" }
-func (m *processorDropModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorDropModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorDropModel) TypeName() string { return "drop" }
 
 func (m *processorDropModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorDropBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
-	}
-	body.CommonProcessorBody = commonBody
-
-	// Ensure ignore_failure default is reflected in state.
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

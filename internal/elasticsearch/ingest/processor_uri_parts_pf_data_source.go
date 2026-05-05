@@ -28,28 +28,22 @@ import (
 
 type processorURIPartsModel struct {
 	CommonProcessorModel
-	ID                 types.String `tfsdk:"id"`
-	JSON               types.String `tfsdk:"json"`
 	Field              types.String `tfsdk:"field"`
 	TargetField        types.String `tfsdk:"target_field"`
 	KeepOriginal       types.Bool   `tfsdk:"keep_original"`
 	RemoveIfSuccessful types.Bool   `tfsdk:"remove_if_successful"`
 }
 
-func (m *processorURIPartsModel) TypeName() string    { return "uri_parts" }
-func (m *processorURIPartsModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorURIPartsModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorURIPartsModel) TypeName() string { return "uri_parts" }
 
 func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorURIPartsBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -68,10 +62,6 @@ func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 		body.RemoveIfSuccessful = false
 	} else {
 		body.RemoveIfSuccessful = m.RemoveIfSuccessful.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

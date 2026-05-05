@@ -28,25 +28,19 @@ import (
 
 type processorFailModel struct {
 	CommonProcessorModel
-	ID      types.String `tfsdk:"id"`
-	JSON    types.String `tfsdk:"json"`
 	Message types.String `tfsdk:"message"`
 }
 
-func (m *processorFailModel) TypeName() string    { return "fail" }
-func (m *processorFailModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorFailModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorFailModel) TypeName() string { return "fail" }
 
 func (m *processorFailModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorFailBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Message) {
 		body.Message = m.Message.ValueString()

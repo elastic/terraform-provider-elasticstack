@@ -30,8 +30,6 @@ import (
 
 type processorCommunityIDModel struct {
 	CommonProcessorModel
-	ID              types.String `tfsdk:"id"`
-	JSON            types.String `tfsdk:"json"`
 	SourceIP        types.String `tfsdk:"source_ip"`
 	SourcePort      types.Int64  `tfsdk:"source_port"`
 	DestinationIP   types.String `tfsdk:"destination_ip"`
@@ -45,9 +43,7 @@ type processorCommunityIDModel struct {
 	IgnoreMissing   types.Bool   `tfsdk:"ignore_missing"`
 }
 
-func (m *processorCommunityIDModel) TypeName() string    { return "community_id" }
-func (m *processorCommunityIDModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorCommunityIDModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorCommunityIDModel) TypeName() string { return "community_id" }
 
 func intPtr(v int64) *int {
 	i := int(v)
@@ -58,12 +54,10 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorCommunityIDBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.SourceIP) {
 		body.SourceIP = m.SourceIP.ValueString()

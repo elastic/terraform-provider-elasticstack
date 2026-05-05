@@ -33,28 +33,22 @@ import (
 
 type processorScriptModel struct {
 	CommonProcessorModel
-	ID       types.String         `tfsdk:"id"`
-	JSON     types.String         `tfsdk:"json"`
 	Lang     types.String         `tfsdk:"lang"`
 	ScriptID types.String         `tfsdk:"script_id"`
 	Source   types.String         `tfsdk:"source"`
 	Params   jsontypes.Normalized `tfsdk:"params"`
 }
 
-func (m *processorScriptModel) TypeName() string    { return "script" }
-func (m *processorScriptModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorScriptModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorScriptModel) TypeName() string { return "script" }
 
 func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorScriptBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Lang) {
 		body.Lang = m.Lang.ValueString()
@@ -72,11 +66,6 @@ func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 			return nil, diags
 		}
 		body.Params = params
-	}
-
-	// Ensure ignore_failure default is reflected in state.
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

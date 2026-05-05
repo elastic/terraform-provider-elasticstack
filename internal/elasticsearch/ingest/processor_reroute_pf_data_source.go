@@ -28,27 +28,21 @@ import (
 
 type processorRerouteModel struct {
 	CommonProcessorModel
-	ID          types.String `tfsdk:"id"`
-	JSON        types.String `tfsdk:"json"`
 	Destination types.String `tfsdk:"destination"`
 	Dataset     types.String `tfsdk:"dataset"`
 	Namespace   types.String `tfsdk:"namespace"`
 }
 
-func (m *processorRerouteModel) TypeName() string    { return "reroute" }
-func (m *processorRerouteModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorRerouteModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorRerouteModel) TypeName() string { return "reroute" }
 
 func (m *processorRerouteModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorRerouteBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Destination) {
 		body.Destination = m.Destination.ValueString()
@@ -58,10 +52,6 @@ func (m *processorRerouteModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if IsKnown(m.Namespace) {
 		body.Namespace = m.Namespace.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

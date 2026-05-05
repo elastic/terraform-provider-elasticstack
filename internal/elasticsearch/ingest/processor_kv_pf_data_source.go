@@ -28,11 +28,7 @@ import (
 
 type processorKVModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.String `tfsdk:"field"`
-	TargetField   types.String `tfsdk:"target_field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 	FieldSplit    types.String `tfsdk:"field_split"`
 	ValueSplit    types.String `tfsdk:"value_split"`
 	IncludeKeys   types.Set    `tfsdk:"include_keys"`
@@ -43,9 +39,7 @@ type processorKVModel struct {
 	StripBrackets types.Bool   `tfsdk:"strip_brackets"`
 }
 
-func (m *processorKVModel) TypeName() string    { return "kv" }
-func (m *processorKVModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorKVModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorKVModel) TypeName() string { return "kv" }
 
 func stringSetValue(set types.Set, diags *diag.Diagnostics) []string {
 	if !IsKnown(set) {
@@ -56,9 +50,9 @@ func stringSetValue(set types.Set, diags *diag.Diagnostics) []string {
 		str, ok := elem.(types.String)
 		if !ok || !IsKnown(str) {
 			if !ok {
-				diags.AddError("Invalid list element type", "expected types.String")
+				diags.AddError("Invalid set element type", "expected types.String")
 			} else {
-				diags.AddError("Unknown list element", "list elements cannot be unknown")
+				diags.AddError("Unknown set element", "set elements cannot be unknown")
 			}
 			continue
 		}
@@ -71,25 +65,12 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorKVBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
 	if IsKnown(m.FieldSplit) {
 		body.FieldSplit = m.FieldSplit.ValueString()
 	}
@@ -112,10 +93,6 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 		body.StripBrackets = false
 	} else {
 		body.StripBrackets = m.StripBrackets.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

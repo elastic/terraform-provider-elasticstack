@@ -30,28 +30,22 @@ import (
 
 type processorAppendModel struct {
 	CommonProcessorModel
-	ID              types.String `tfsdk:"id"`
-	JSON            types.String `tfsdk:"json"`
 	Field           types.String `tfsdk:"field"`
 	Value           types.List   `tfsdk:"value"`
 	AllowDuplicates types.Bool   `tfsdk:"allow_duplicates"`
 	MediaType       types.String `tfsdk:"media_type"`
 }
 
-func (m *processorAppendModel) TypeName() string    { return "append" }
-func (m *processorAppendModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorAppendModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorAppendModel) TypeName() string { return "append" }
 
 func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorAppendBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -83,11 +77,6 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 
 	if IsKnown(m.MediaType) {
 		body.MediaType = m.MediaType.ValueString()
-	}
-
-	// Ensure ignore_failure default is reflected in state.
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

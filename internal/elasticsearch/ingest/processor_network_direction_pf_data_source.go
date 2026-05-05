@@ -28,8 +28,6 @@ import (
 
 type processorNetworkDirectionModel struct {
 	CommonProcessorModel
-	ID                    types.String `tfsdk:"id"`
-	JSON                  types.String `tfsdk:"json"`
 	SourceIP              types.String `tfsdk:"source_ip"`
 	DestinationIP         types.String `tfsdk:"destination_ip"`
 	TargetField           types.String `tfsdk:"target_field"`
@@ -38,20 +36,16 @@ type processorNetworkDirectionModel struct {
 	IgnoreMissing         types.Bool   `tfsdk:"ignore_missing"`
 }
 
-func (m *processorNetworkDirectionModel) TypeName() string    { return "network_direction" }
-func (m *processorNetworkDirectionModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorNetworkDirectionModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorNetworkDirectionModel) TypeName() string { return "network_direction" }
 
 func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorNetworkDirectionBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.SourceIP) {
 		body.SourceIP = m.SourceIP.ValueString()

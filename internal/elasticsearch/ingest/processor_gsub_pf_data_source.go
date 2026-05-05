@@ -28,51 +28,28 @@ import (
 
 type processorGsubModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.String `tfsdk:"field"`
-	Pattern       types.String `tfsdk:"pattern"`
-	Replacement   types.String `tfsdk:"replacement"`
-	TargetField   types.String `tfsdk:"target_field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
+	Pattern     types.String `tfsdk:"pattern"`
+	Replacement types.String `tfsdk:"replacement"`
 }
 
-func (m *processorGsubModel) TypeName() string    { return "gsub" }
-func (m *processorGsubModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorGsubModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorGsubModel) TypeName() string { return "gsub" }
 
 func (m *processorGsubModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorGsubBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
 	if IsKnown(m.Pattern) {
 		body.Pattern = m.Pattern.ValueString()
 	}
 	if IsKnown(m.Replacement) {
 		body.Replacement = m.Replacement.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

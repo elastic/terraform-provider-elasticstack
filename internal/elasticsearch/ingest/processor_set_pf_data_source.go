@@ -31,8 +31,6 @@ import (
 
 type processorSetModel struct {
 	CommonProcessorModel
-	ID               types.String `tfsdk:"id"`
-	JSON             types.String `tfsdk:"json"`
 	Field            types.String `tfsdk:"field"`
 	Value            types.String `tfsdk:"value"`
 	CopyFrom         types.String `tfsdk:"copy_from"`
@@ -41,20 +39,16 @@ type processorSetModel struct {
 	MediaType        types.String `tfsdk:"media_type"`
 }
 
-func (m *processorSetModel) TypeName() string    { return "set" }
-func (m *processorSetModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorSetModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorSetModel) TypeName() string { return "set" }
 
 func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorSetBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()

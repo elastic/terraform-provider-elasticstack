@@ -28,27 +28,21 @@ import (
 
 type processorDotExpanderModel struct {
 	CommonProcessorModel
-	ID       types.String `tfsdk:"id"`
-	JSON     types.String `tfsdk:"json"`
 	Field    types.String `tfsdk:"field"`
 	Path     types.String `tfsdk:"path"`
 	Override types.Bool   `tfsdk:"override"`
 }
 
-func (m *processorDotExpanderModel) TypeName() string    { return "dot_expander" }
-func (m *processorDotExpanderModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorDotExpanderModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorDotExpanderModel) TypeName() string { return "dot_expander" }
 
 func (m *processorDotExpanderModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorDotExpanderBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -61,10 +55,6 @@ func (m *processorDotExpanderModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Override = false
 	} else {
 		body.Override = m.Override.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags
