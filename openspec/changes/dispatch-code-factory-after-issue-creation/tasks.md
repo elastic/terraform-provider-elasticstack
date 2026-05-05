@@ -1,9 +1,9 @@
 ## 1. Extend `code-factory` intake for dispatch mode
 
-- [ ] 1.1 Update `.github/workflows-src/code-factory-issue/workflow.md.tmpl` to add a `workflow_dispatch` entrypoint with typed single-issue inputs and to drive the prompt from normalized intake outputs instead of direct `github.event.issue.*` references
-- [ ] 1.2 Add deterministic pre-activation logic and any shared helper code needed to resolve normalized intake context for both issue-event and dispatch-triggered runs, including live issue fetch for dispatch mode and current-repository validation
-- [ ] 1.3 Preserve and adapt duplicate linked-PR suppression so it applies identically to both issue-event and dispatch-triggered `code-factory` runs
-- [ ] 1.4 Update `code-factory` workflow tests under `.github/workflows-src/lib/` to cover dispatch intake, normalized context resolution, and continued manual issue-event behavior
+- [x] 1.1 Update `.github/workflows-src/code-factory-issue/workflow.md.tmpl` to add a `workflow_dispatch` entrypoint with typed single-issue inputs and to drive the prompt from normalized intake outputs instead of direct `github.event.issue.*` references
+- [x] 1.2 Add deterministic pre-activation logic and any shared helper code needed to resolve normalized intake context for both issue-event and dispatch-triggered runs, including live issue fetch for dispatch mode and current-repository validation
+- [x] 1.3 Preserve and adapt duplicate linked-PR suppression so it applies identically to both issue-event and dispatch-triggered `code-factory` runs
+- [x] 1.4 Update `code-factory` workflow tests under `.github/workflows-src/lib/` to cover dispatch intake, normalized context resolution, and continued manual issue-event behavior
 
 ## 2. Add deterministic producer-side dispatch fan-out
 
