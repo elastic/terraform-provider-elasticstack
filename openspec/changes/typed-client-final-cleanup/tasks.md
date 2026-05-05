@@ -8,7 +8,7 @@
 
 ## 2. Delete obsolete helpers
 
-- [x] 2.1 Removed `doFWWrite` and `doSDKWrite` from `internal/clients/elasticsearch/helpers.go`
+- [x] 2.1 Removed `doFWWrite` and `doSDKWrite` from `internal/clients/elasticsearch/helpers.go`; retained `isNotFoundElasticsearchError` and `durationToMsString` which are still used across the codebase
 - [x] 2.2 Verified no remaining references to `doFWWrite` or `doSDKWrite` across the codebase
 
 ## 3. Delete redundant model files

@@ -15,15 +15,19 @@
 - **THEN** it does NOT contain a field of type `*elasticsearch.Client` from `github.com/elastic/go-elasticsearch/v8`
 
 ### Requirement: Obsolete helper functions deleted
-`internal/clients/elasticsearch/helpers.go` SHALL be removed entirely, and no equivalent `doFWWrite` or `doSDKWrite` functions SHALL exist elsewhere in the codebase.
+`doFWWrite` and `doSDKWrite` SHALL be removed from `internal/clients/elasticsearch/helpers.go` and SHALL not exist elsewhere in the codebase. The file itself is retained because it still contains actively used utilities (`isNotFoundElasticsearchError`, `durationToMsString`).
 
-#### Scenario: Helpers file is absent
-- **WHEN** checking for `internal/clients/elasticsearch/helpers.go`
-- **THEN** the file does not exist
+#### Scenario: Obsolete helpers are removed
+- **WHEN** inspecting `internal/clients/elasticsearch/helpers.go`
+- **THEN** it does not contain `doFWWrite` or `doSDKWrite`
 
 #### Scenario: Helper functions are not recreated
 - **WHEN** searching the codebase for `doFWWrite` or `doSDKWrite`
 - **THEN** no references exist outside of version control history
+
+#### Scenario: Retained helpers are still actively used
+- **WHEN** searching the codebase for `isNotFoundElasticsearchError` or `durationToMsString`
+- **THEN** references exist in compiling source files
 
 ### Requirement: Redundant model types removed
 `internal/models/ml.go` SHALL be deleted, and its types SHALL not be referenced by any compiling code.
