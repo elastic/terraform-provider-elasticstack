@@ -67,7 +67,7 @@ The resource SHALL expose a computed `id` attribute that is populated from the `
 
 - GIVEN an import with a valid Fleet artifact `id`
 - WHEN import completes
-- THEN `id` SHALL be stored in state and a read SHALL be performed to populate all other attributes
+- THEN `id` SHALL be stored in state and a read SHALL be performed to populate the API-readable attributes `bundle_filepath`, `service_name`, and `service_version`; `sourcemap_json`, `sourcemap_binary`, and `kibana_connection` SHALL NOT be reconstructed during import/read
 
 ### Requirement: Create — multipart upload (REQ-004)
 

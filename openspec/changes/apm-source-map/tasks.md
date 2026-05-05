@@ -18,7 +18,7 @@
 - [ ] 3.1 Add acceptance test `TestAccResourceApmSourceMap_json` in `internal/apm/source_map/acc_test.go`: create a source map using `sourcemap_json`; assert `id` is set and non-empty; delete and confirm state removed.
 - [ ] 3.2 Add acceptance test `TestAccResourceApmSourceMap_binary` in `internal/apm/source_map/acc_test.go`: create a source map using `sourcemap_binary` (base64-encoded minimal source map); assert `id` is set and non-empty.
 - [ ] 3.3 Add acceptance test for import: import by `id`; assert read populates state correctly.
-- [ ] 3.4 Add acceptance test for space-aware operations (following the pattern in `internal/apm/agent_configuration/acc_test.go`): create a source map in a non-default space using `space_id`; assert the resource is created and readable within that space; confirm deletion removes it from that space.
+- [ ] 3.4 Add acceptance test for space-aware operations by mirroring an existing resource acceptance test that already verifies non-default-space CRUD: create a source map in a non-default space using `space_id`; assert the resource is created and readable within that space; confirm deletion removes it from that space.
 - [ ] 3.5 Add unit tests for the multipart form construction helper (source map content encoding, field names, boundary).
 - [ ] 3.6 Add unit tests for the read pagination loop (mock: id found on page 1; id found on page N; id not found → resource removed from state).
 

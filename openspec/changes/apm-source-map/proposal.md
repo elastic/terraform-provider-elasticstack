@@ -24,14 +24,14 @@ resource "elasticstack_apm_source_map" "example" {
 }
 ```
 
-Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. Both are write-only (sensitive content); only `id` is read back from the API.
+Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. Both are write-only (sensitive content) and are not read back from the API; `id`, `bundle_filepath`, `service_name`, and `service_version` can be recovered during read/import from the source-map artifact metadata.
 
 ### CRUD semantics
 
 | Operation | Behavior |
 |-----------|----------|
 | Create    | `POST /api/apm/sourcemaps` (multipart/form-data) via `kibanautil.BuildSpaceAwarePath`; captures `id` from `APMUIUploadSourceMapsResponse` |
-| Read      | `GET /api/apm/sourcemaps` via `kibanautil.BuildSpaceAwarePath`; find artifact by state `id`; remove from state if not found (404 equivalent) |
+| Read      | `GET /api/apm/sourcemaps` via `kibanautil.BuildSpaceAwarePath`; find artifact by state `id`; repopulate `bundle_filepath`, `service_name`, and `service_version` from the artifact body; remove from state if not found (404 equivalent) |
 | Update    | Not supported — all write attributes have `RequireReplace`; Terraform destroys and recreates |
 | Delete    | `DELETE /api/apm/sourcemaps/{id}` via `kibanautil.BuildSpaceAwarePath` |
 
