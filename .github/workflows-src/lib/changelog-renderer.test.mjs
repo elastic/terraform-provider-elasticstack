@@ -249,10 +249,11 @@ test('mixed batch renders correct combined output for fix, no-changelog, none, a
 // Customer impact: none with ### Breaking changes — excluded entry includes breakingChanges
 // ---------------------------------------------------------------------------
 
-test('Customer impact: none PR with Breaking changes block is excluded but carries breakingChanges', () => {
+test('Customer impact: breaking PR with Breaking changes block is included and breakingChanges rendered', () => {
   const body = [
     '## Changelog',
-    'Customer impact: none',
+    'Customer impact: breaking',
+    'Summary: An internal refactor removes an undocumented field',
     '',
     '### Breaking changes',
     'This internal refactor technically removes an undocumented field.',
@@ -268,15 +269,15 @@ test('Customer impact: none PR with Breaking changes block is excluded but carri
   const result = renderChangelogSection([pr]);
 
   assert.equal(result.success, true);
-  assert.equal(result.included.length, 0, 'PR should not be in included');
-  assert.equal(result.excluded.length, 1, 'PR should be in excluded');
-  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.equal(result.included.length, 1, 'PR should be in included');
+  assert.equal(result.excluded.length, 0, 'PR should not be in excluded');
+  assert.equal(result.included[0].summary, 'An internal refactor removes an undocumented field');
   assert.ok(
-    result.excluded[0].breakingChanges !== undefined && result.excluded[0].breakingChanges !== null,
-    'excluded entry must carry breakingChanges when present',
+    result.included[0].breakingChanges !== undefined && result.included[0].breakingChanges !== null,
+    'included entry must carry breakingChanges when present',
   );
   assert.ok(
-    result.excluded[0].breakingChanges.includes('undocumented field'),
+    result.included[0].breakingChanges.includes('undocumented field'),
     'breakingChanges must contain the prose from the PR',
   );
   // Breaking changes from this PR are still rendered in the section body

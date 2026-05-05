@@ -178,7 +178,8 @@ test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking
       labels: [],
       body: [
         '## Changelog',
-        'Customer impact: none',
+        'Customer impact: breaking',
+        'Summary: A breaking change',
         '',
         '### Breaking changes',
         'A new required env var `FOO` must be set.',
@@ -193,7 +194,7 @@ test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking
     changelogPath,
     fs,
   });
-  assert.equal(out.included.length, 0);
+  assert.equal(out.included.length, 1);
   assert.equal(out.hasPRs, true);
   assert.equal(out.hasUserFacingChanges, true);
   const text = readFileSync(changelogPath, 'utf8');
