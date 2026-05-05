@@ -15,9 +15,9 @@
 
 ## 4. Compiled Output and Manifest
 
-- [ ] 4.1 Run `make compile-workflows` (or `go run ./scripts/compile-workflow-sources`) to generate `.github/workflows/flaky-test-catcher.md` from the template
-- [ ] 4.2 Add the new entry to `.github/workflows-src/manifest.json`: `{ "template": ".github/workflows-src/flaky-test-catcher/workflow.md.tmpl", "output": ".github/workflows/flaky-test-catcher.md" }`
-- [ ] 4.3 Verify the compiled `.github/workflows/flaky-test-catcher.md` matches the template (no inline JS discrepancies, correct `x-script-include` references resolved)
+- [x] 4.1 Run `make compile-workflows` (or `go run ./scripts/compile-workflow-sources`) to generate `.github/workflows/flaky-test-catcher.md` from the template
+- [x] 4.2 Add the new entry to `.github/workflows-src/manifest.json`: `{ "template": ".github/workflows-src/flaky-test-catcher/workflow.md.tmpl", "output": ".github/workflows/flaky-test-catcher.md" }`
+- [x] 4.3 Verify the compiled `.github/workflows/flaky-test-catcher.md` matches the template (no inline JS discrepancies, correct `x-script-include` references resolved)
 
 ## 5. Validation
 
