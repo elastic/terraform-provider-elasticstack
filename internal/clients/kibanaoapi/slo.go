@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -53,7 +54,7 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -80,7 +81,7 @@ func checkSloEnableDisableResponse(statusCode int, body []byte) diag.Diagnostics
 	case http.StatusOK, http.StatusNoContent:
 		return nil
 	default:
-		return reportUnknownError(statusCode, body)
+		return diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
 }
 
@@ -105,7 +106,7 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -130,7 +131,7 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 			"The SLO with ID "+sloID+" was not found in space "+spaceID+".",
 		)}
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -152,7 +153,7 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -178,7 +179,7 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 

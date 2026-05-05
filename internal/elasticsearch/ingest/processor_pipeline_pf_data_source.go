@@ -28,32 +28,22 @@ import (
 
 type processorPipelineModel struct {
 	CommonProcessorModel
-	ID   types.String `tfsdk:"id"`
-	JSON types.String `tfsdk:"json"`
 	Name types.String `tfsdk:"name"`
 }
 
-func (m *processorPipelineModel) TypeName() string    { return "pipeline" }
-func (m *processorPipelineModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorPipelineModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorPipelineModel) TypeName() string { return "pipeline" }
 
 func (m *processorPipelineModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorPipelineBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Name) {
 		body.Name = m.Name.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

@@ -28,44 +28,25 @@ import (
 
 type processorEnrichModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.String `tfsdk:"field"`
-	TargetField   types.String `tfsdk:"target_field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 	PolicyName    types.String `tfsdk:"policy_name"`
 	Override      types.Bool   `tfsdk:"override"`
 	MaxMatches    types.Int64  `tfsdk:"max_matches"`
 	ShapeRelation types.String `tfsdk:"shape_relation"`
 }
 
-func (m *processorEnrichModel) TypeName() string    { return "enrich" }
-func (m *processorEnrichModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorEnrichModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorEnrichModel) TypeName() string { return "enrich" }
 
 func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorEnrichBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
 	if IsKnown(m.PolicyName) {
 		body.PolicyName = m.PolicyName.ValueString()
 	}
@@ -83,10 +64,6 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if IsKnown(m.ShapeRelation) {
 		body.ShapeRelation = m.ShapeRelation.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

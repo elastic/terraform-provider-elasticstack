@@ -56,7 +56,7 @@ func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.C
 		return
 	}
 
-	typedClient, err := client.GetESTypedClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return

@@ -87,7 +87,10 @@ on:
           
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/claude-sonnet-4-6"
+  args:
+    - "--effort"
+    - "high"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
@@ -107,16 +110,8 @@ tools:
 safe-outputs:
   create-issue:
     title-prefix: "[schema-coverage] "
-    labels: [testing, acceptance-tests, schema-coverage]
+    labels: [testing, acceptance-tests, schema-coverage, code-factory]
     max: 3
-  assign-to-agent:
-    name: copilot
-    model: "gpt-5.4"
-    custom-agent: acceptance-test-improver
-    allowed: [copilot]
-    target: "*"
-    max: 3
-    github-token: ${{ secrets.GH_AW_AGENT_TOKEN }}
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
@@ -207,13 +202,6 @@ Issue content must include:
 - Attributes with poor coverage.
 - Prioritized top 5 gaps (or fewer if less exist).
 - Concrete acceptance-test additions that would close those gaps.
-
-Do NOT include instructions in the issue body that override the acceptance-test-improver agent's behavior (for example, do not tell it to skip tests, skip builds, or change its workflow).
-
-For each issue created, you MUST call `assign-to-agent` with:
-- `name: copilot`
-- `custom_agent: acceptance-test-improver`
-- the temporary ID returned by the `create-issue` safe output
 
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 

@@ -43,35 +43,19 @@ func (s SavedQueryRuleProcessor) ToUpdateProps(ctx context.Context, client clien
 }
 
 func (s SavedQueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPISavedQueryRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPISavedQueryRule](rule)
 }
 
 func (s SavedQueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPISavedQueryRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromSavedQueryRule(ctx, &value)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPISavedQueryRule](rule, func(v *kbapi.SecurityDetectionsAPISavedQueryRule) diag.Diagnostics {
+		return d.updateFromSavedQueryRule(ctx, v)
+	})
 }
 
 func (s SavedQueryRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPISavedQueryRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPISavedQueryRule](response, func(v kbapi.SecurityDetectionsAPISavedQueryRule) string {
+		return v.Id.String()
+	})
 }
 
 func (d Data) toSavedQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

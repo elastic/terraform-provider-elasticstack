@@ -30,51 +30,28 @@ import (
 
 type processorCircleModel struct {
 	CommonProcessorModel
-	ID            types.String  `tfsdk:"id"`
-	JSON          types.String  `tfsdk:"json"`
-	Field         types.String  `tfsdk:"field"`
-	TargetField   types.String  `tfsdk:"target_field"`
-	IgnoreMissing types.Bool    `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 	ErrorDistance types.Float64 `tfsdk:"error_distance"`
 	ShapeType     types.String  `tfsdk:"shape_type"`
 }
 
-func (m *processorCircleModel) TypeName() string    { return "circle" }
-func (m *processorCircleModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorCircleModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorCircleModel) TypeName() string { return "circle" }
 
 func (m *processorCircleModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorCircleBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
 	if IsKnown(m.ErrorDistance) {
 		body.ErrorDistance = m.ErrorDistance.ValueFloat64()
 	}
 	if IsKnown(m.ShapeType) {
 		body.ShapeType = m.ShapeType.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

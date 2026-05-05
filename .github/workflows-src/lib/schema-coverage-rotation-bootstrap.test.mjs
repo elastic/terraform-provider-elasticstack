@@ -52,7 +52,7 @@ test('schema-coverage rotation workflow installs Node from package.json and allo
 test('schema-coverage rotation workflow uses Claude through LiteLLM with secret-backed API key and tool timeout', () => {
   const source = workflowSource();
   assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
-  assert.match(source, /model: "?llm-gateway\/gpt-5\.4"?/);
+  assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
   assert.match(source, /tools:\s*\n\s*timeout:\s*300/m);
@@ -63,7 +63,7 @@ test('compiled schema-coverage rotation lock sets Claude tool budget and Anthrop
   assert.match(lock, /GH_AW_TOOL_TIMEOUT:\s*300/);
   assert.match(
     lock,
-    /id: agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai\/[\s\S]*ANTHROPIC_MODEL:\s*llm-gateway\/gpt-5\.4/
+    /id: agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai\/[\s\S]*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
   );
   assert.match(
     lock,
@@ -75,7 +75,7 @@ test('compiled schema-coverage rotation lock sets Claude tool budget and Anthrop
   );
   assert.match(
     lock,
-    /id: detection_agentic_execution[\s\S]*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai\/[\s\S]*ANTHROPIC_MODEL:\s*llm-gateway\/gpt-5\.4/
+    /id: detection_agentic_execution[\s\S]*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai\/[\s\S]*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
   );
 });
 

@@ -4,7 +4,7 @@
 TBD - created by archiving change worktrunk-config. Update Purpose after archive.
 ## Requirements
 ### Requirement: Worktree receives generated .env on creation
-When a new worktree is created, the `post-start` hook SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending three lines: `ELASTICSEARCH_PORT`, `KIBANA_PORT`, and `ELASTICSEARCH_URL`. The port values SHALL be deterministically derived from the branch name and SHALL remain in the range 10000–19999. To guarantee that Elasticsearch and Kibana ports for the same worktree do not collide, `ELASTICSEARCH_PORT` SHALL be assigned from the subrange 10000–14999 and `KIBANA_PORT` SHALL be assigned from the subrange 15000–19999.
+When a new worktree is created, the `post-start` hook SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending acceptance-test environment variables. The generated `.env` SHALL define `ELASTICSEARCH_PORT`, `KIBANA_PORT`, `ELASTICSEARCH_URL`, `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, and `KIBANA_USERNAME`. The port values SHALL be deterministically derived from the branch name and SHALL remain in the range 10000–19999. To guarantee that Elasticsearch and Kibana ports for the same worktree do not collide, `ELASTICSEARCH_PORT` SHALL be assigned from the subrange 10000–14999 and `KIBANA_PORT` SHALL be assigned from the subrange 15000–19999. The generated `.env` SHALL NOT define `TF_ACC`.
 
 #### Scenario: New worktree gets distinct ES and KB ports
 - **WHEN** a new worktree is created for branch `feature-x`
@@ -17,6 +17,15 @@ When a new worktree is created, the `post-start` hook SHALL generate a `.env` fi
 #### Scenario: .env template static values are preserved
 - **WHEN** a new worktree is created
 - **THEN** the generated `.env` contains all values from `.env.template` (e.g. `STACK_VERSION`, `ELASTICSEARCH_PASSWORD`, `GOVERSION`) unchanged
+
+#### Scenario: Acceptance test connection variables are ready without manual export edits
+- **WHEN** a new worktree is created
+- **THEN** the generated `.env` contains `ELASTICSEARCH_ENDPOINTS=http://localhost:<ELASTICSEARCH_PORT>`, `ELASTICSEARCH_USERNAME=elastic`, `KIBANA_ENDPOINT=http://localhost:<KIBANA_PORT>`, and `KIBANA_USERNAME=elastic`
+- **AND** a developer can run `TF_ACC=1 go test ...` after exporting `.env` without separately defining those variables
+
+#### Scenario: TF_ACC remains opt-in
+- **WHEN** a new worktree is created
+- **THEN** the generated `.env` does not define `TF_ACC`
 
 ### Requirement: Docker Compose stacks are isolated per worktree
 The `docker-compose.yml` file SHALL NOT contain any `container_name:` directives. Docker Compose SHALL derive container names from the project name (the worktree directory name), ensuring containers and volumes are namespaced per worktree.

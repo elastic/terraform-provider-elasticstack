@@ -51,7 +51,7 @@ func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([
 	case http.StatusOK:
 		return resp.JSON200.Items, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -70,7 +70,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 	case http.StatusOK:
 		return resp.JSON200.Items, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -101,7 +101,7 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 		return result.Items, nil
 	default:
 		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+		return nil, diagutil.ReportUnknownHTTPError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
@@ -118,7 +118,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -137,7 +137,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -152,7 +152,7 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -173,7 +173,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -190,7 +190,7 @@ func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.Ou
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -207,7 +207,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -222,7 +222,7 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -237,7 +237,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -254,7 +254,7 @@ func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -271,7 +271,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -286,7 +286,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -301,7 +301,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -318,7 +318,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string, space
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -339,7 +339,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -359,7 +359,7 @@ func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spac
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -378,7 +378,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -400,7 +400,7 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -419,7 +419,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -442,7 +442,7 @@ func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, s
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -463,7 +463,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -480,7 +480,7 @@ func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spac
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -500,7 +500,7 @@ func CreateAgentDownloadSource(
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -521,7 +521,7 @@ func UpdateAgentDownloadSource(
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -538,7 +538,7 @@ func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, s
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -553,7 +553,7 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -572,7 +572,7 @@ func GetPackage(ctx context.Context, client *Client, name, version, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -607,7 +607,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 	case http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -629,11 +629,11 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 		if msg == fmt.Sprintf("%s is not installed", name) {
 			return nil
 		}
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -654,7 +654,7 @@ func InstallKibanaAssets(ctx context.Context, client *Client, name, version stri
 	case http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -683,7 +683,7 @@ func DeleteKibanaAssets(ctx context.Context, client *Client, name, version strin
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -715,11 +715,11 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 			if retryResp.StatusCode() == http.StatusOK {
 				return retryResp.JSON200.Items, nil
 			}
-			return nil, reportUnknownError(retryResp.StatusCode(), retryResp.Body)
+			return nil, diagutil.ReportUnknownHTTPError(retryResp.StatusCode(), retryResp.Body)
 		}
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -736,7 +736,7 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -751,7 +751,7 @@ func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -766,7 +766,7 @@ func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, b
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -783,7 +783,7 @@ func DeleteProxy(ctx context.Context, client *Client, spaceID, proxyID string) d
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -864,7 +864,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	case http.StatusOK, http.StatusCreated:
 		// intentional fall-through
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 
 	// The response body does not have a typed JSON200 field; unmarshal manually.

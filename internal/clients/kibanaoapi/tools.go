@@ -22,13 +22,14 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // GetTool reads a specific tool from the API.
 func GetTool(ctx context.Context, client *Client, spaceID string, toolID string) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -37,7 +38,7 @@ func GetTool(ctx context.Context, client *Client, spaceID string, toolID string)
 
 // CreateTool creates a new tool.
 func CreateTool(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderToolsJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderToolsWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostAgentBuilderToolsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -46,7 +47,7 @@ func CreateTool(ctx context.Context, client *Client, spaceID string, req kbapi.P
 
 // UpdateTool updates an existing tool.
 func UpdateTool(ctx context.Context, client *Client, spaceID string, toolID string, req kbapi.PutAgentBuilderToolsToolidJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -55,7 +56,7 @@ func UpdateTool(ctx context.Context, client *Client, spaceID string, toolID stri
 
 // DeleteTool deletes an existing tool.
 func DeleteTool(ctx context.Context, client *Client, spaceID string, toolID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return clientError(err)
 	}

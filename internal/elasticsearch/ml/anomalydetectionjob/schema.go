@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -45,15 +46,18 @@ import (
 const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
 	"It must start and end with alphanumeric characters"
 
-func (r *anomalyDetectionJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
+func (r *anomalyDetectionJobResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = GetSchema(ctx)
 }
 
-func GetSchema() schema.Schema {
+func GetSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Delete: true,
+			}),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -458,39 +462,39 @@ func GetSchema() schema.Schema {
 	}
 }
 
-func getAnalysisConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisConfigAttrTypes(ctx context.Context) map[string]attr.Type {
+	return GetSchema(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getDetectorAttrTypes() map[string]attr.Type {
-	analysisConfigAttrs := getAnalysisConfigAttrTypes()
+func getDetectorAttrTypes(ctx context.Context) map[string]attr.Type {
+	analysisConfigAttrs := getAnalysisConfigAttrTypes(ctx)
 	detectorsList := analysisConfigAttrs["detectors"].(types.ListType)
 	detectorsObj := detectorsList.ElemType.(types.ObjectType)
 	return detectorsObj.AttrTypes
 }
 
-func getCustomRuleAttrTypes() map[string]attr.Type {
-	detectorAttrs := getDetectorAttrTypes()
+func getCustomRuleAttrTypes(ctx context.Context) map[string]attr.Type {
+	detectorAttrs := getDetectorAttrTypes(ctx)
 	customRulesList := detectorAttrs["custom_rules"].(types.ListType)
 	customRulesObj := customRulesList.ElemType.(types.ObjectType)
 	return customRulesObj.AttrTypes
 }
 
-func getRuleConditionAttrTypes() map[string]attr.Type {
-	customRuleAttrs := getCustomRuleAttrTypes()
+func getRuleConditionAttrTypes(ctx context.Context) map[string]attr.Type {
+	customRuleAttrs := getCustomRuleAttrTypes(ctx)
 	conditionsList := customRuleAttrs["conditions"].(types.ListType)
 	conditionsObj := conditionsList.ElemType.(types.ObjectType)
 	return conditionsObj.AttrTypes
 }
 
-func getAnalysisLimitsAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisLimitsAttrTypes(ctx context.Context) map[string]attr.Type {
+	return GetSchema(ctx).Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getDataDescriptionAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getDataDescriptionAttrTypes(ctx context.Context) map[string]attr.Type {
+	return GetSchema(ctx).Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getModelPlotConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getModelPlotConfigAttrTypes(ctx context.Context) map[string]attr.Type {
+	return GetSchema(ctx).Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

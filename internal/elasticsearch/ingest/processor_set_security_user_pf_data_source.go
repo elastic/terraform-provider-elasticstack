@@ -28,26 +28,20 @@ import (
 
 type processorSetSecurityUserModel struct {
 	CommonProcessorModel
-	ID         types.String `tfsdk:"id"`
-	JSON       types.String `tfsdk:"json"`
 	Field      types.String `tfsdk:"field"`
 	Properties types.Set    `tfsdk:"properties"`
 }
 
-func (m *processorSetSecurityUserModel) TypeName() string    { return "set_security_user" }
-func (m *processorSetSecurityUserModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorSetSecurityUserModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorSetSecurityUserModel) TypeName() string { return "set_security_user" }
 
 func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorSetSecurityUserBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -67,10 +61,6 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 			elems = append(elems, str.ValueString())
 		}
 		body.Properties = elems
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

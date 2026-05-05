@@ -39,7 +39,7 @@ func GetExceptionList(ctx context.Context, client *Client, spaceID string, param
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -54,7 +54,7 @@ func CreateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -69,7 +69,7 @@ func UpdateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -86,7 +86,7 @@ func DeleteExceptionList(ctx context.Context, client *Client, spaceID string, pa
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -103,7 +103,7 @@ func GetExceptionListItem(ctx context.Context, client *Client, spaceID string, p
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -118,7 +118,7 @@ func CreateExceptionListItem(ctx context.Context, client *Client, spaceID string
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -133,7 +133,7 @@ func UpdateExceptionListItem(ctx context.Context, client *Client, spaceID string
 	case http.StatusOK:
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -150,6 +150,6 @@ func DeleteExceptionListItem(ctx context.Context, client *Client, spaceID string
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

@@ -25,14 +25,62 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// CommonProcessorModel holds the fields shared by every ingest processor data
-// source. Embed this struct in concrete processor models.
+// CommonProcessorModel holds the PF schema state shared by every ingest
+// processor data source. Embed this struct in concrete processor models.
 type CommonProcessorModel struct {
+	ID            types.String `tfsdk:"id"`
+	JSON          types.String `tfsdk:"json"`
 	Description   types.String `tfsdk:"description"`
 	If            types.String `tfsdk:"if"`
 	IgnoreFailure types.Bool   `tfsdk:"ignore_failure"`
 	OnFailure     types.List   `tfsdk:"on_failure"`
 	Tag           types.String `tfsdk:"tag"`
+}
+
+func (m *CommonProcessorModel) SetID(id string)     { m.ID = types.StringValue(id) }
+func (m *CommonProcessorModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+
+// WithTargetField holds the field attributes shared by processors that write to
+// a target field.
+type WithTargetField struct {
+	Field       types.String `tfsdk:"field"`
+	TargetField types.String `tfsdk:"target_field"`
+}
+
+func (m WithTargetField) toTargetFieldBody() WithTargetFieldBody {
+	var body WithTargetFieldBody
+
+	if IsKnown(m.Field) {
+		body.Field = m.Field.ValueString()
+	}
+	if IsKnown(m.TargetField) {
+		body.TargetField = m.TargetField.ValueString()
+	}
+
+	return body
+}
+
+// WithIgnorableTargetField holds the target field attributes shared by
+// processors that can ignore missing input fields.
+type WithIgnorableTargetField struct {
+	WithTargetField
+	IgnoreMissing types.Bool `tfsdk:"ignore_missing"`
+}
+
+func (m *WithIgnorableTargetField) toIgnorableTargetFieldBody(defaultIgnoreMissing bool) WithIgnorableTargetFieldBody {
+	body := WithIgnorableTargetFieldBody{
+		WithTargetFieldBody: m.toTargetFieldBody(),
+	}
+
+	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
+		// Normalize computed defaults while building the body so state matches the JSON.
+		m.IgnoreMissing = types.BoolValue(defaultIgnoreMissing)
+		body.IgnoreMissing = defaultIgnoreMissing
+	} else {
+		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
+	}
+
+	return body
 }
 
 // CommonProcessorSchemaAttributes returns the schema attributes that are common

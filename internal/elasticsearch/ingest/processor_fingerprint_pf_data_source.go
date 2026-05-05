@@ -31,8 +31,6 @@ import (
 
 type processorFingerprintModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
 	Fields        types.List   `tfsdk:"fields"`
 	TargetField   types.String `tfsdk:"target_field"`
 	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
@@ -40,20 +38,16 @@ type processorFingerprintModel struct {
 	Method        types.String `tfsdk:"method"`
 }
 
-func (m *processorFingerprintModel) TypeName() string    { return "fingerprint" }
-func (m *processorFingerprintModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorFingerprintModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorFingerprintModel) TypeName() string { return "fingerprint" }
 
 func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorFingerprintBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Fields) {
 		elems := make([]string, 0, len(m.Fields.Elements()))

@@ -72,11 +72,11 @@ Each feature worktree becomes a subdirectory of the bare repo directory, keeping
 
 ### Environment in a feature worktree
 
-When a new worktree is created the `post-start` hook (`.config/wt.toml`) automatically generates a `.env` from `.env.template` with per-worktree port variables derived deterministically from the branch name.
+When a new worktree is created the `post-start` hook (`.config/wt.toml`) automatically generates a `.env` from `.env.template` with per-worktree port variables derived deterministically from the branch name, plus the acceptance-test connection variables (`ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, `KIBANA_USERNAME`). `TF_ACC` is intentionally not written so acceptance mode remains opt-in.
 
 The main checkout's `.env` may not contain port variables if it predates the worktrunk setup; port variables are generated only in worktrees created via `wt switch --create`.
 
-Before running Makefile targets that talk directly to Elasticsearch or Kibana on `localhost`, export the worktree's `.env` so the port variables are visible to Make:
+Before running Makefile targets that talk directly to Elasticsearch or Kibana on `localhost`, or before running acceptance tests directly with `go test`, export the worktree's `.env` so the generated connection variables are visible in your shell:
 
 ```bash
 set -a; . ./.env; set +a
@@ -87,6 +87,9 @@ make setup-synthetics
 make create-es-api-key
 make create-es-bearer-token
 make setup-kibana-fleet
+
+# Or run acceptance tests directly:
+TF_ACC=1 go test -v ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1
 ```
 
 Targets that use `docker compose` (for example `make docker-elasticsearch`, `make docker-kibana`, and `make docker-fleet`) automatically read `.env` from the current directory, so they do not require the export step.

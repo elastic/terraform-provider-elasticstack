@@ -213,7 +213,7 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				continue
 			}
-			typedClient, err := client.GetESTypedClient()
+			typedClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}

@@ -161,7 +161,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESTypedClient()
+					typedClient, err := client.GetESClient()
 					if err != nil {
 						return false, err
 					}
@@ -235,7 +235,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESTypedClient()
+					typedClient, err := client.GetESClient()
 					if err != nil {
 						return false, err
 					}
@@ -361,7 +361,7 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESTypedClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}

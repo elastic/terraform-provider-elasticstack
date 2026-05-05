@@ -195,6 +195,17 @@ def main() -> int:
         state = str(review.get("state") or "UNKNOWN").upper()
         reviews_by_state[state] = reviews_by_state.get(state, 0) + 1
 
+    # Most-recent review state per reviewer (later entries win).
+    latest_state_by_login: dict[str, str] = {}
+    for review in reviews:
+        login = str(review.get("user", {}).get("login") or "")
+        state = str(review.get("state") or "UNKNOWN").upper()
+        if login:
+            latest_state_by_login[login] = state
+    approved_by_logins: list[str] = sorted(
+        login for login, state in latest_state_by_login.items() if state == "APPROVED"
+    )
+
     unresolved_threads = [
         thread for thread in normalized_threads if not thread["isResolved"]
     ]
@@ -220,6 +231,7 @@ def main() -> int:
             "reviews": {
                 "total": len(reviews),
                 "byState": reviews_by_state,
+                "approvedByLogins": approved_by_logins,
             },
             "issueComments": {
                 "total": len(issue_comments),

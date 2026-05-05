@@ -60,6 +60,7 @@ function buildFailureCommentBody(marker, errors) {
     '',
     '### Breaking changes',
     '<free-form markdown>  (required when Customer impact is "breaking")',
+    '<!-- /breaking-changes -->  (optional — ends the block early)',
     '```',
     '',
     'Or add the `no-changelog` label to bypass this check.',

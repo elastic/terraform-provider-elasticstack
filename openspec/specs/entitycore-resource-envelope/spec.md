@@ -1,27 +1,29 @@
 # entitycore-resource-envelope Specification
 
 ## Purpose
-TBD - created by archiving change elasticsearch-resource-envelope. Update Purpose after archive.
+
+The entitycore resource envelope centralizes common Terraform Plugin Framework behavior for Elasticsearch-backed resources that share the standard connection block, lifecycle preludes, model contract, composite ID handling, and opt-in import convention.
+
 ## Requirements
-### Requirement: Envelope constructor produces a valid Resource
+### Requirement: Envelope constructor produces shared Elasticsearch resource behavior
 
-The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns a value satisfying `resource.Resource`.
+The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
-#### Scenario: Constructor returns valid resource
+#### Scenario: Constructor returns complete resource envelope
 
-- **WHEN** `NewElasticsearchResource[T](component, name, schemaFactory, readFunc, deleteFunc)` is called with non-nil callbacks
-- **THEN** the returned value SHALL satisfy `resource.Resource`
-- **AND** the returned value SHALL satisfy `resource.ResourceWithConfigure`
-- **AND** the returned value SHALL NOT satisfy `resource.ResourceWithImportState` (import is opt-in for concrete resources)
+- **WHEN** `NewElasticsearchResource[T](component, name, schemaFactory, readFunc, deleteFunc, createFunc, updateFunc)` is called with non-nil callbacks
+- **THEN** the returned value SHALL provide the shared Metadata, Schema, Create, Read, Update, Delete, and Configure methods
+- **AND** the returned value SHALL satisfy `resource.Resource`
+- **AND** concrete resources embedding the returned value SHALL NOT need thin Create or Update wrappers when their behavior fits the callback contract
 
 ### Requirement: Envelope owns Configure and Metadata
 
-The system SHALL implement `Configure` and `Metadata` on the envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read and Delete preludes.
+The system SHALL implement `Configure` and `Metadata` on the envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
 
 #### Scenario: Configure stores the provider client factory
 
 - **WHEN** `Configure` receives provider data that converts successfully to `*clients.ProviderClientFactory`
-- **THEN** the envelope SHALL retain that factory for use by subsequent Read and Delete calls
+- **THEN** the envelope SHALL retain that factory for use by subsequent Read, Create, Update, and Delete calls
 
 #### Scenario: Configure does not store a client after diagnostic failure
 
@@ -78,6 +80,53 @@ The system SHALL implement `Read` by deserializing the prior state into the gene
 - **AND** the concrete read function SHALL NOT be invoked
 - **AND** state SHALL remain untouched
 
+### Requirement: Envelope owns the Create and Update preludes
+
+The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the planned model into `T`, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, and invoking the corresponding concrete callback. The concrete create and update callbacks SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`.
+
+#### Scenario: Successful create sets state from returned model
+
+- **WHEN** the concrete create function returns `(model, nil)`
+- **THEN** `resp.State.Set` SHALL be called with the returned model `T`
+- **AND** response diagnostics SHALL contain no errors
+
+#### Scenario: Successful update sets state from returned model
+
+- **WHEN** the concrete update function returns `(model, nil)`
+- **THEN** `resp.State.Set` SHALL be called with the returned model `T`
+- **AND** response diagnostics SHALL contain no errors
+
+#### Scenario: Create function error short-circuits state mutation
+
+- **WHEN** the concrete create function returns error diagnostics
+- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
+- **AND** `resp.State.Set` SHALL NOT be called
+
+#### Scenario: Update function error short-circuits state mutation
+
+- **WHEN** the concrete update function returns error diagnostics
+- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
+- **AND** `resp.State.Set` SHALL NOT be called
+
+#### Scenario: Client resolution failure short-circuits create
+
+- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Create`
+- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
+- **AND** the concrete create function SHALL NOT be invoked
+- **AND** state SHALL remain untouched
+
+#### Scenario: Client resolution failure short-circuits update
+
+- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Update`
+- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
+- **AND** the concrete update function SHALL NOT be invoked
+- **AND** state SHALL remain untouched
+
+#### Scenario: Create and update may use the same callback
+
+- **WHEN** a concrete Elasticsearch resource has identical create and update API behavior
+- **THEN** the resource SHALL be able to pass the same callback as both the create and update callback
+
 ### Requirement: Envelope owns the Delete prelude
 
 The system SHALL implement `Delete` by deserializing the prior state into the generic model `T`, parsing the composite ID with `clients.CompositeIDFromStrFw`, resolving the scoped Elasticsearch client from the model's connection block, and invoking the concrete delete function with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`.
@@ -113,7 +162,7 @@ The system SHALL require concrete resources to supply a non-nil delete callback.
 - **WHEN** the delete callback is supplied as a function that returns `nil` diagnostics without performing an API call
 - **THEN** the envelope SHALL invoke that callback during `Delete` and proceed normally, removing the resource from state
 
-### Requirement: Envelope does not implement ImportState
+### Requirement: Envelope keeps ImportState opt-in
 
 The system SHALL NOT implement `ImportState` on the envelope. Import support SHALL remain opt-in for concrete resources, matching the provider-wide convention. Concrete resources that support import SHALL implement `ImportState` themselves, typically as a passthrough on the `id` attribute.
 
@@ -132,11 +181,11 @@ The system SHALL NOT implement `ImportState` on the envelope. Import support SHA
 
 ### Requirement: Model type constraint exposes ID and connection block
 
-The system SHALL define a type constraint `ElasticsearchResourceModel` requiring `GetID() types.String` and `GetElasticsearchConnection() types.List`. Concrete `Data` types SHALL satisfy this constraint by declaring value-receiver getter methods over their existing `ID` and `ElasticsearchConnection` fields.
+The system SHALL define a type constraint `ElasticsearchResourceModel` requiring `GetID() types.String`, `GetResourceID() types.String`, and `GetElasticsearchConnection() types.List`. Concrete `Data` types SHALL satisfy this constraint by declaring value-receiver getter methods over their existing `ID`, natural write identity, and `ElasticsearchConnection` fields.
 
 #### Scenario: Concrete model satisfies the constraint
 
-- **WHEN** a concrete `Data` struct declares `GetID() types.String` returning `d.ID` and `GetElasticsearchConnection() types.List` returning `d.ElasticsearchConnection`
+- **WHEN** a concrete `Data` struct declares `GetID() types.String` returning `d.ID`, `GetResourceID() types.String` returning its plan-safe write identity field, and `GetElasticsearchConnection() types.List` returning `d.ElasticsearchConnection`
 - **THEN** that struct SHALL satisfy `ElasticsearchResourceModel`
 - **AND** SHALL be usable as the type parameter to `NewElasticsearchResource[T]`
 

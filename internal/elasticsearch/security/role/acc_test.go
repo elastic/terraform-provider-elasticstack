@@ -369,7 +369,7 @@ func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
-	typedClient, err := client.GetESTypedClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		t.Fatalf("failed to get Elasticsearch typed client: %v", err)
 	}
@@ -391,7 +391,7 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESTypedClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}

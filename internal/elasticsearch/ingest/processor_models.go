@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // CommonProcessorBody holds the JSON-tagged fields shared by every ingest
@@ -34,24 +35,39 @@ type CommonProcessorBody struct {
 	Tag           string           `json:"tag,omitempty"`
 }
 
+type WithTargetFieldBody struct {
+	Field       string `json:"field"`
+	TargetField string `json:"target_field,omitempty"`
+}
+
+type WithIgnorableTargetFieldBody struct {
+	WithTargetFieldBody
+	IgnoreMissing bool `json:"ignore_missing"`
+}
+
 // toCommonProcessorBody translates a CommonProcessorModel into a
 // CommonProcessorBody. It returns any diagnostics collected while parsing
 // on_failure JSON values.
-func toCommonProcessorBody(model CommonProcessorModel) (CommonProcessorBody, diag.Diagnostics) {
+func (m *CommonProcessorModel) toCommonProcessorBody() (CommonProcessorBody, diag.Diagnostics) {
 	var body CommonProcessorBody
 	var diags diag.Diagnostics
 
-	if IsKnown(model.Description) {
-		body.Description = model.Description.ValueString()
+	if IsKnown(m.Description) {
+		body.Description = m.Description.ValueString()
 	}
-	if IsKnown(model.If) {
-		body.If = model.If.ValueString()
+	if IsKnown(m.If) {
+		body.If = m.If.ValueString()
 	}
-	if IsKnown(model.IgnoreFailure) {
-		body.IgnoreFailure = model.IgnoreFailure.ValueBool()
+	if IsKnown(m.IgnoreFailure) {
+		body.IgnoreFailure = m.IgnoreFailure.ValueBool()
+	} else {
+		// Normalize computed defaults while building the body so state matches the JSON.
+		m.IgnoreFailure = types.BoolValue(false)
 	}
-	if IsKnown(model.OnFailure) {
-		for _, elem := range model.OnFailure.Elements() {
+	if IsKnown(m.OnFailure) {
+		elements := m.OnFailure.Elements()
+		body.OnFailure = make([]map[string]any, 0, len(elements))
+		for _, elem := range elements {
 			norm, ok := elem.(jsontypes.Normalized)
 			if !ok {
 				diags.AddError("Invalid on_failure element type", "expected jsontypes.Normalized")
@@ -69,8 +85,8 @@ func toCommonProcessorBody(model CommonProcessorModel) (CommonProcessorBody, dia
 			body.OnFailure = append(body.OnFailure, item)
 		}
 	}
-	if IsKnown(model.Tag) {
-		body.Tag = model.Tag.ValueString()
+	if IsKnown(m.Tag) {
+		body.Tag = m.Tag.ValueString()
 	}
 
 	return body, diags
@@ -110,17 +126,13 @@ type processorForeachBody struct {
 // processorBytesBody is the JSON body for the bytes processor.
 type processorBytesBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorCircleBody is the JSON body for the circle processor.
 type processorCircleBody struct {
 	CommonProcessorBody
-	Field         string  `json:"field"`
-	TargetField   string  `json:"target_field,omitempty"`
-	IgnoreMissing bool    `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 	ErrorDistance float64 `json:"error_distance"`
 	ShapeType     string  `json:"shape_type"`
 }
@@ -144,10 +156,8 @@ type processorCommunityIDBody struct {
 // processorConvertBody is the JSON body for the convert processor.
 type processorConvertBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
-	Type          string `json:"type"`
+	WithIgnorableTargetFieldBody
+	Type string `json:"type"`
 }
 
 // processorCSVBody is the JSON body for the csv processor.
@@ -165,8 +175,7 @@ type processorCSVBody struct {
 // processorDateBody is the JSON body for the date processor.
 type processorDateBody struct {
 	CommonProcessorBody
-	Field        string   `json:"field"`
-	TargetField  string   `json:"target_field,omitempty"`
+	WithTargetFieldBody
 	Formats      []string `json:"formats"`
 	Timezone     string   `json:"timezone,omitempty"`
 	Locale       string   `json:"locale,omitempty"`
@@ -205,9 +214,7 @@ type processorDotExpanderBody struct {
 // processorEnrichBody is the JSON body for the enrich processor.
 type processorEnrichBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 	PolicyName    string `json:"policy_name"`
 	Override      bool   `json:"override"`
 	MaxMatches    int    `json:"max_matches"`
@@ -233,12 +240,10 @@ type processorFingerprintBody struct {
 // processorGeoIPBody is the JSON body for the geoip processor.
 type processorGeoIPBody struct {
 	CommonProcessorBody
-	Field         string   `json:"field"`
-	TargetField   string   `json:"target_field,omitempty"`
-	IgnoreMissing bool     `json:"ignore_missing"`
-	DatabaseFile  string   `json:"database_file,omitempty"`
-	Properties    []string `json:"properties,omitempty"`
-	FirstOnly     bool     `json:"first_only"`
+	WithIgnorableTargetFieldBody
+	DatabaseFile string   `json:"database_file,omitempty"`
+	Properties   []string `json:"properties,omitempty"`
+	FirstOnly    bool     `json:"first_only"`
 }
 
 // processorGrokBody is the JSON body for the grok processor.
@@ -255,19 +260,15 @@ type processorGrokBody struct {
 // processorGsubBody is the JSON body for the gsub processor.
 type processorGsubBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
-	Pattern       string `json:"pattern"`
-	Replacement   string `json:"replacement"`
+	WithIgnorableTargetFieldBody
+	Pattern     string `json:"pattern"`
+	Replacement string `json:"replacement"`
 }
 
 // processorHTMLStripBody is the JSON body for the html_strip processor.
 type processorHTMLStripBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorInferenceInputOutputBody is the JSON body for the inference input_output.
@@ -288,16 +289,14 @@ type processorInferenceBody struct {
 // processorJoinBody is the JSON body for the join processor.
 type processorJoinBody struct {
 	CommonProcessorBody
-	Field       string `json:"field"`
-	Separator   string `json:"separator"`
-	TargetField string `json:"target_field,omitempty"`
+	WithTargetFieldBody
+	Separator string `json:"separator"`
 }
 
 // processorJSONBody is the JSON body for the json processor.
 type processorJSONBody struct {
 	CommonProcessorBody
-	Field                     string `json:"field"`
-	TargetField               string `json:"target_field,omitempty"`
+	WithTargetFieldBody
 	AddToRoot                 *bool  `json:"add_to_root,omitempty"`
 	AddToRootConflictStrategy string `json:"add_to_root_conflict_strategy,omitempty"`
 	AllowDuplicateKeys        *bool  `json:"allow_duplicate_keys,omitempty"`
@@ -306,9 +305,7 @@ type processorJSONBody struct {
 // processorKVBody is the JSON body for the kv processor.
 type processorKVBody struct {
 	CommonProcessorBody
-	Field         string   `json:"field"`
-	TargetField   string   `json:"target_field,omitempty"`
-	IgnoreMissing bool     `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 	FieldSplit    string   `json:"field_split"`
 	ValueSplit    string   `json:"value_split"`
 	IncludeKeys   []string `json:"include_keys,omitempty"`
@@ -322,9 +319,7 @@ type processorKVBody struct {
 // processorLowercaseBody is the JSON body for the lowercase processor.
 type processorLowercaseBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorNetworkDirectionBody is the JSON body for the network_direction processor.
@@ -347,9 +342,7 @@ type processorPipelineBody struct {
 // processorRegisteredDomainBody is the JSON body for the registered_domain processor.
 type processorRegisteredDomainBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorRemoveBody is the JSON body for the remove processor.
@@ -362,9 +355,7 @@ type processorRemoveBody struct {
 // processorRenameBody is the JSON body for the rename processor.
 type processorRenameBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorRerouteBody is the JSON body for the reroute processor.
@@ -396,17 +387,14 @@ type processorSetSecurityUserBody struct {
 // processorSortBody is the JSON body for the sort processor.
 type processorSortBody struct {
 	CommonProcessorBody
-	Field       string `json:"field"`
-	Order       string `json:"order,omitempty"`
-	TargetField string `json:"target_field,omitempty"`
+	WithTargetFieldBody
+	Order string `json:"order,omitempty"`
 }
 
 // processorSplitBody is the JSON body for the split processor.
 type processorSplitBody struct {
 	CommonProcessorBody
-	Field            string `json:"field"`
-	TargetField      string `json:"target_field,omitempty"`
-	IgnoreMissing    bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 	Separator        string `json:"separator"`
 	PreserveTrailing bool   `json:"preserve_trailing"`
 }
@@ -414,42 +402,33 @@ type processorSplitBody struct {
 // processorTrimBody is the JSON body for the trim processor.
 type processorTrimBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorUppercaseBody is the JSON body for the uppercase processor.
 type processorUppercaseBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorURIPartsBody is the JSON body for the uri_parts processor.
 type processorURIPartsBody struct {
 	CommonProcessorBody
-	Field              string `json:"field"`
-	TargetField        string `json:"target_field,omitempty"`
-	KeepOriginal       bool   `json:"keep_original"`
-	RemoveIfSuccessful bool   `json:"remove_if_successful"`
+	WithTargetFieldBody
+	KeepOriginal       bool `json:"keep_original"`
+	RemoveIfSuccessful bool `json:"remove_if_successful"`
 }
 
 // processorURLDecodeBody is the JSON body for the urldecode processor.
 type processorURLDecodeBody struct {
 	CommonProcessorBody
-	Field         string `json:"field"`
-	TargetField   string `json:"target_field,omitempty"`
-	IgnoreMissing bool   `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 }
 
 // processorUserAgentBody is the JSON body for the user_agent processor.
 type processorUserAgentBody struct {
 	CommonProcessorBody
-	Field             string   `json:"field"`
-	TargetField       string   `json:"target_field,omitempty"`
-	IgnoreMissing     bool     `json:"ignore_missing"`
+	WithIgnorableTargetFieldBody
 	RegexFile         string   `json:"regex_file,omitempty"`
 	Properties        []string `json:"properties,omitempty"`
 	ExtractDeviceType *bool    `json:"extract_device_type,omitempty"`

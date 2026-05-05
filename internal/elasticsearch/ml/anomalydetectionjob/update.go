@@ -74,7 +74,7 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	typedClient, err := client.GetESTypedClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return

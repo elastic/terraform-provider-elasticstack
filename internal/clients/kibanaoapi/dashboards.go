@@ -54,7 +54,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -73,7 +73,7 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kb
 	case http.StatusCreated:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -92,7 +92,7 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	case http.StatusOK:
 		return resp, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -113,6 +113,6 @@ func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

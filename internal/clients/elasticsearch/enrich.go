@@ -33,7 +33,7 @@ import (
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -94,7 +94,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -136,7 +136,7 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -155,7 +155,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}

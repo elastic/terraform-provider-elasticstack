@@ -54,7 +54,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diag.FromErr(err)
 	}
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -91,7 +91,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -138,7 +138,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -194,7 +194,7 @@ func UpdateTransform(
 		return diag.FromErr(err)
 	}
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -232,7 +232,7 @@ func UpdateTransform(
 func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -257,7 +257,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -279,7 +279,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}

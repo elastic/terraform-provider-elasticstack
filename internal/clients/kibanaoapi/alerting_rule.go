@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,7 +45,7 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		ctx,
 		rule.RuleID,
 		req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed", err.Error())}
@@ -64,7 +66,7 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			fmt.Sprintf("Status code [%d], Saved object [%s/%s] conflict (Rule ID already exists in this Space)", resp.StatusCode(), spaceID, rule.RuleID),
 		)}
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -72,7 +74,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 	resp, err := client.API.GetAlertingRuleIdWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get alerting rule", err.Error())}
@@ -90,7 +92,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -101,7 +103,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		ctx,
 		rule.RuleID,
 		body,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update alerting rule", err.Error())}
@@ -151,7 +153,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 		return returnedRule, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -159,7 +161,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	resp, err := client.API.DeleteAlertingRuleIdWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete alerting rule", err.Error())}
@@ -171,7 +173,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -179,7 +181,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	resp, err := client.API.PostAlertingRuleIdEnableWithResponse(
 		ctx,
 		ruleID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable alerting rule", err.Error())}
@@ -189,7 +191,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	case http.StatusNoContent, http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -199,7 +201,7 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		ctx,
 		ruleID,
 		body,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable alerting rule", err.Error())}
@@ -209,7 +211,7 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 	case http.StatusNoContent, http.StatusOK:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 

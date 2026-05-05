@@ -28,45 +28,29 @@ import (
 
 type processorGeoIPModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.String `tfsdk:"field"`
-	TargetField   types.String `tfsdk:"target_field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
-	DatabaseFile  types.String `tfsdk:"database_file"`
-	Properties    types.Set    `tfsdk:"properties"`
-	FirstOnly     types.Bool   `tfsdk:"first_only"`
+	WithIgnorableTargetField
+	DatabaseFile types.String `tfsdk:"database_file"`
+	Properties   types.Set    `tfsdk:"properties"`
+	FirstOnly    types.Bool   `tfsdk:"first_only"`
 }
 
-func (m *processorGeoIPModel) TypeName() string    { return "geoip" }
-func (m *processorGeoIPModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorGeoIPModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorGeoIPModel) TypeName() string { return "geoip" }
 
 func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorGeoIPBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
 	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
 		m.TargetField = types.StringValue("geoip")
 		body.TargetField = "geoip"
 	} else {
 		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
 	}
 	if IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
@@ -92,10 +76,6 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 		body.FirstOnly = true
 	} else {
 		body.FirstOnly = m.FirstOnly.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

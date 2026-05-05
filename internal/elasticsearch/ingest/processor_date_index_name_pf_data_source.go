@@ -30,8 +30,6 @@ import (
 
 type processorDateIndexNameModel struct {
 	CommonProcessorModel
-	ID              types.String `tfsdk:"id"`
-	JSON            types.String `tfsdk:"json"`
 	Field           types.String `tfsdk:"field"`
 	IndexNamePrefix types.String `tfsdk:"index_name_prefix"`
 	DateRounding    types.String `tfsdk:"date_rounding"`
@@ -41,20 +39,16 @@ type processorDateIndexNameModel struct {
 	IndexNameFormat types.String `tfsdk:"index_name_format"`
 }
 
-func (m *processorDateIndexNameModel) TypeName() string    { return "date_index_name" }
-func (m *processorDateIndexNameModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorDateIndexNameModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorDateIndexNameModel) TypeName() string { return "date_index_name" }
 
 func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorDateIndexNameBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()

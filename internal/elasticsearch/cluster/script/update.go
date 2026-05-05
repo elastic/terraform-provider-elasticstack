@@ -20,40 +20,30 @@ package script
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/scriptlanguage"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data Data
+func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	scriptID := data.ScriptID.ValueString()
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	scriptID := resourceID
 
 	id, sdkDiags := client.ID(ctx, scriptID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	script := types.StoredScript{
+	script := estypes.StoredScript{
 		Lang:   scriptlanguage.ScriptLanguage{Name: data.Lang.ValueString()},
 		Source: data.Source.ValueString(),
 	}
@@ -65,7 +55,8 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 			err := json.Unmarshal([]byte(paramsStr), &params)
 			if err != nil {
 				diags.AddError("Error unmarshaling script params", err.Error())
-				return diags
+				var zero Data
+				return zero, diags
 			}
 		}
 	}
@@ -77,33 +68,31 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 
 	diags.Append(elasticsearch.PutScript(ctx, client, scriptID, scriptContext, &script, params)...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	// Read the script back from Elasticsearch to populate state
-	readData, readDiags := r.read(ctx, scriptID, data)
+	readData, readDiags := readScriptPayload(ctx, client, scriptID, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	// Preserve connection and ID from the original data
-	readData.ElasticsearchConnection = data.ElasticsearchConnection
-	readData.ID = fwtypes.StringValue(id.String())
+	if readData.ScriptID.IsNull() || readData.ScriptID.IsUnknown() {
+		diags.AddError("Not Found", fmt.Sprintf("Script %q was not found after update", scriptID))
+		var zero Data
+		return zero, diags
+	}
 
-	// Preserve context from the original data as it's not returned by the API
+	readData.ElasticsearchConnection = data.ElasticsearchConnection
+	readData.ID = types.StringValue(id.String())
+
 	readData.Context = data.Context
 
-	// Preserve params from original data if API didn't return them
 	if readData.Params.IsNull() && !data.Params.IsNull() {
 		readData.Params = data.Params
 	}
 
-	diags.Append(state.Set(ctx, &readData)...)
-	return diags
-}
-
-func (r *scriptResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
+	return readData, diags
 }

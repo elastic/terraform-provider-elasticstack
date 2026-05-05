@@ -28,43 +28,24 @@ import (
 
 type processorUserAgentModel struct {
 	CommonProcessorModel
-	ID                types.String `tfsdk:"id"`
-	JSON              types.String `tfsdk:"json"`
-	Field             types.String `tfsdk:"field"`
-	TargetField       types.String `tfsdk:"target_field"`
-	IgnoreMissing     types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 	RegexFile         types.String `tfsdk:"regex_file"`
 	Properties        types.Set    `tfsdk:"properties"`
 	ExtractDeviceType types.Bool   `tfsdk:"extract_device_type"`
 }
 
-func (m *processorUserAgentModel) TypeName() string    { return "user_agent" }
-func (m *processorUserAgentModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorUserAgentModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorUserAgentModel) TypeName() string { return "user_agent" }
 
 func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorUserAgentBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
 	if IsKnown(m.RegexFile) {
 		body.RegexFile = m.RegexFile.ValueString()
 	}
@@ -87,10 +68,6 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.ExtractDeviceType) {
 		v := m.ExtractDeviceType.ValueBool()
 		body.ExtractDeviceType = &v
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

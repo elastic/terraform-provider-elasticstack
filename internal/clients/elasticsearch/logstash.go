@@ -33,7 +33,7 @@ import (
 func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -64,7 +64,7 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -108,7 +108,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESTypedClient()
+	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}

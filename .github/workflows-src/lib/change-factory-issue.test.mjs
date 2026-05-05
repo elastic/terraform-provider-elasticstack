@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
   changeFactoryIssueBranchName,
+  issueBranchName,
   qualifyTriggerEvent,
   actorTrustWhenSenderMissing,
   checkActorTrust,
@@ -18,7 +19,7 @@ const {
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./change-factory-issue.js');
-const { ISSUE_BRANCH_PREFIX } = require('../change-factory-issue/intake-constants.js');
+const { ISSUE_BRANCH_PREFIX, DUPLICATE_LINKAGE_MODE } = require('../change-factory-issue/intake-constants.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
 const workflowTemplatePath = path.resolve(__dirname, '../change-factory-issue/workflow.md.tmpl');
@@ -43,18 +44,20 @@ function makePullRequest(overrides = {}) {
   };
 }
 
-test('change-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
-  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+test('change-factory-issue exports align with shared createFactoryIssueModule binding', () => {
+  const { createFactoryIssueModule } = require('./factory-issue-shared.js');
   const {
     ISSUE_BRANCH_PREFIX: prefix,
     FACTORY_LABEL: label,
+    DUPLICATE_LINKAGE_MODE: duplicateLinkageMode,
     ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
   } = require('../change-factory-issue/intake-constants.js');
-  const bound = createFactoryIssueIntake({
+  const bound = createFactoryIssueModule({
     branchPrefix: prefix,
     factoryLabel: label,
     issueOpenedNotEligibleReason: openedReason,
-    duplicateLinkageMode: 'github-keywords',
+    duplicateLinkageMode,
+    issueBranchNameAliases: ['changeFactoryIssueBranchName'],
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
@@ -66,6 +69,7 @@ test('change-factory-issue exports align with shared createFactoryIssueIntake bi
     checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
     bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
   );
+  assert.equal(changeFactoryIssueBranchName(7), bound.changeFactoryIssueBranchName(7));
 });
 
 test('qualifyTriggerEvent accepts issues.labeled with the change-factory label', () => {
@@ -488,6 +492,8 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 
 test('changeFactoryIssueBranchName stays aligned with workflow template prefix', () => {
   assert.equal(ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
+  assert.equal(DUPLICATE_LINKAGE_MODE, 'github-keywords');
+  assert.equal(issueBranchName(42), 'change-factory/issue-42');
   assert.equal(changeFactoryIssueBranchName(42), 'change-factory/issue-42');
 
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
@@ -732,16 +738,16 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
   assert.doesNotMatch(prompt, /\u2026|\u2014|\u2018|\u2019|\u201c|\u201d/, 'prompt must use ASCII punctuation');
 });
 
-test('check_duplicate_pr.inline.js resolves expected branch via changeFactoryIssueBranchName', () => {
+test('check_duplicate_pr.inline.js resolves expected branch via shared issueBranchName', () => {
   const source = readFileSync(path.join(scriptsDir, 'check_duplicate_pr.inline.js'), 'utf8');
-  assert.match(source, /const expectedBranch = changeFactoryIssueBranchName\(issueNumber\);/);
+  assert.match(source, /const expectedBranch = issueBranchName\(issueNumber\);/);
 });
 
 test('change-factory-issue inline scripts include shared intake helpers in dependency order', () => {
   const expectedHeader = [
     /^\/\/include: \.\.\/intake-constants\.js\n/,
     /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
-    /^\/\/include: \.\.\/\.\.\/lib\/change-factory-issue\.gh\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-module\.gh\.js\n/,
   ];
   for (const name of inlineScripts) {
     const source = readFileSync(path.join(scriptsDir, name), 'utf8');

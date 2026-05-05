@@ -18,7 +18,6 @@
 package kibanaoapi
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -125,21 +124,4 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	return t.next.RoundTrip(req)
-}
-
-// BuildSpaceAwarePath constructs an API path with space awareness.
-// If spaceID is empty or "default", returns the basePath unchanged.
-// Otherwise, prepends "/s/{spaceID}" to the basePath.
-func BuildSpaceAwarePath(spaceID, basePath string) string {
-	if spaceID != "" && spaceID != "default" {
-		return fmt.Sprintf("/s/%s%s", spaceID, basePath)
-	}
-	return basePath
-}
-
-func SpaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
-	return func(_ context.Context, req *http.Request) error {
-		req.URL.Path = BuildSpaceAwarePath(spaceID, req.URL.Path)
-		return nil
-	}
 }

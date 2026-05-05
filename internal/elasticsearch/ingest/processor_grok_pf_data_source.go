@@ -31,8 +31,6 @@ import (
 
 type processorGrokModel struct {
 	CommonProcessorModel
-	ID                 types.String `tfsdk:"id"`
-	JSON               types.String `tfsdk:"json"`
 	Field              types.String `tfsdk:"field"`
 	Patterns           types.List   `tfsdk:"patterns"`
 	PatternDefinitions types.Map    `tfsdk:"pattern_definitions"`
@@ -41,20 +39,16 @@ type processorGrokModel struct {
 	IgnoreMissing      types.Bool   `tfsdk:"ignore_missing"`
 }
 
-func (m *processorGrokModel) TypeName() string    { return "grok" }
-func (m *processorGrokModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorGrokModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorGrokModel) TypeName() string { return "grok" }
 
 func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorGrokBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()

@@ -227,6 +227,10 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 	zipPathV100 := buildMinimalIntegrationZip(t, pkgNameV100, "1.0.0")
 	zipPathV101 := buildMinimalIntegrationZip(t, pkgNameV101, "1.0.1")
 
+	// step1Checksum captures the checksum from step 1 so we can assert that it
+	// changes after the package is updated in step 3.
+	var step1Checksum string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		Steps: []resource.TestStep{
@@ -242,6 +246,14 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_fleet_custom_integration.test"]
+						if rs == nil {
+							return fmt.Errorf("resource elasticstack_fleet_custom_integration.test not found in state")
+						}
+						step1Checksum = rs.Primary.Attributes["checksum"]
+						return nil
+					},
 				),
 			},
 			// Step 2: Plan-only step — second apply must produce no changes (plan is clean).
@@ -274,6 +286,18 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					func(_ *terraform.State) error {
 						return checkPackageNotInstalledInFleet(pkgNameV100, "1.0.0", "")
+					},
+					// Assert the checksum changed after switching to a different archive.
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_fleet_custom_integration.test"]
+						if rs == nil {
+							return fmt.Errorf("resource elasticstack_fleet_custom_integration.test not found in state")
+						}
+						step3Checksum := rs.Primary.Attributes["checksum"]
+						if step3Checksum == step1Checksum {
+							return fmt.Errorf("expected checksum to change after package update, got unchanged value: %s", step3Checksum)
+						}
+						return nil
 					},
 				),
 			},
@@ -332,8 +356,46 @@ func TestAccFleetCustomIntegration_Gzip(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccFleetCustomIntegration_KibanaConnection exercises the kibana_connection
+// block by configuring an explicit endpoint, auth, and insecure=true on the
+// resource-scoped Kibana client. The test verifies that resource creation succeeds
+// and all core computed attributes are returned when the connection block is present.
+func TestAccFleetCustomIntegration_KibanaConnection(t *testing.T) {
+	pkgName := "testcustomkbconpkg"
+	zipPath := buildMinimalIntegrationZip(t, pkgName, "1.0.0")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			preCheckMinKibanaVersion(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		CheckDestroy: checkCustomIntegrationDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				}),
+				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.insecure", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.0"),
+				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_custom_integration.test")...)...),
 			},
 		},
 	})
@@ -440,7 +502,7 @@ func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
-			// Upload the package into a non-default Kibana space and verify
+			// Step 1: Upload the package into a non-default Kibana space and verify
 			// all Fleet API calls are routed to /s/{space_id}/api/fleet/epm/packages.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -455,6 +517,32 @@ func TestAccFleetCustomIntegration_SpaceID(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
+			// Step 2: Plan-only with unchanged config — verify the plan is empty (idempotency).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+					"space_id":     config.StringVariable(spaceID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// Step 3: Plan-only with a different space_id on the custom integration only —
+			// the elasticstack_kibana_space resource stays unchanged (same space_id as
+			// steps 1-2), so the non-empty plan is caused exclusively by the custom
+			// integration's RequiresReplace() modifier firing on the changed space_id.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id_replace"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+					"space_id":     config.StringVariable(spaceID),
+					"new_space_id": config.StringVariable("acc-test-space-customintegration-b"),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
 		},
 	})
 }
@@ -467,9 +555,8 @@ func TestAccFleetCustomIntegration_Timeouts(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t); preCheckMinKibanaVersion(t) },
 		CheckDestroy: checkCustomIntegrationDestroy,
 		Steps: []resource.TestStep{
-			// Verify that the resource operates normally when an explicit timeouts block
-			// is configured. The timeout is set generously (20m) to confirm the block is
-			// accepted and wired through to the context deadline without affecting behaviour.
+			// Step 1: Create with distinct create (15m) and update (25m) timeouts.
+			// Verify the resource is created successfully with the timeout block accepted.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("timeouts"),
@@ -478,7 +565,26 @@ func TestAccFleetCustomIntegration_Timeouts(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "package_version"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+			// Step 2: Update — change skip_data_stream_rollover to trigger a re-upload,
+			// exercising the update timeout (25m) path.
+			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("timeouts_update"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				},
+				PreConfig: func() {
+					time.Sleep(15 * time.Second)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},

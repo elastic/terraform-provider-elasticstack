@@ -22,13 +22,14 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // GetAgent reads a specific agent from the API.
 func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -37,7 +38,7 @@ func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*mo
 
 // CreateAgent creates a new agent.
 func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderAgentsJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -46,7 +47,7 @@ func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.
 
 // UpdateAgent updates an existing agent.
 func UpdateAgent(ctx context.Context, client *Client, spaceID string, agentID string, req kbapi.PutAgentBuilderAgentsIdJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, clientError(err)
 	}
@@ -55,7 +56,7 @@ func UpdateAgent(ctx context.Context, client *Client, spaceID string, agentID st
 
 // DeleteAgent deletes an existing agent.
 func DeleteAgent(ctx context.Context, client *Client, spaceID, agentID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return clientError(err)
 	}

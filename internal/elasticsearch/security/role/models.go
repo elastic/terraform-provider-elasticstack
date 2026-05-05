@@ -583,4 +583,5 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 }
 
 func (data Data) GetID() types.String                    { return data.ID }
+func (data Data) GetResourceID() types.String            { return data.Name }
 func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }

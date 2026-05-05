@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -504,11 +505,11 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
 	tfAlias := aliasTfModel{
 		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(derefString(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(derefBool(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(derefBool(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(derefString(apiModel.Routing)),
-		SearchRouting: types.StringValue(derefString(apiModel.SearchRouting)),
+		IndexRouting:  types.StringValue(schemautil.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(schemautil.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(schemautil.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(schemautil.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(schemautil.Deref(apiModel.SearchRouting)),
 	}
 
 	if apiModel.Filter != nil {
@@ -535,20 +536,6 @@ func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, di
 	return tfAlias, nil
 }
 
-func derefString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func derefBool(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
-}
-
 func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics) {
 	var model models.Index
 
@@ -557,11 +544,11 @@ func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics
 		for name, alias := range state.Aliases {
 			indexAlias := models.IndexAlias{
 				Name:          name,
-				IndexRouting:  derefString(alias.IndexRouting),
-				IsHidden:      derefBool(alias.IsHidden),
-				IsWriteIndex:  derefBool(alias.IsWriteIndex),
-				Routing:       derefString(alias.Routing),
-				SearchRouting: derefString(alias.SearchRouting),
+				IndexRouting:  schemautil.Deref(alias.IndexRouting),
+				IsHidden:      schemautil.Deref(alias.IsHidden),
+				IsWriteIndex:  schemautil.Deref(alias.IsWriteIndex),
+				Routing:       schemautil.Deref(alias.Routing),
+				SearchRouting: schemautil.Deref(alias.SearchRouting),
 			}
 			if alias.Filter != nil {
 				filterBytes, err := json.Marshal(alias.Filter)

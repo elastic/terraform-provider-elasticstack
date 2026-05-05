@@ -92,3 +92,22 @@ func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 	}
 	return diags
 }
+
+func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
+	return fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
+			string(body),
+		),
+	}
+}
+
+func ReportUnknownHTTPErrorSDK(statusCode int, body []byte) sdkdiag.Diagnostics {
+	return sdkdiag.Diagnostics{
+		sdkdiag.Diagnostic{
+			Severity: sdkdiag.Error,
+			Summary:  fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
+			Detail:   string(body),
+		},
+	}
+}

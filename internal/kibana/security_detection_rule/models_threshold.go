@@ -43,35 +43,19 @@ func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, client clien
 }
 
 func (th ThresholdRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIThresholdRule](rule)
 }
 
 func (th ThresholdRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromThresholdRule(ctx, &value)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIThresholdRule](rule, func(v *kbapi.SecurityDetectionsAPIThresholdRule) diag.Diagnostics {
+		return d.updateFromThresholdRule(ctx, v)
+	})
 }
 
 func (th ThresholdRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPIThresholdRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPIThresholdRule](response, func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
+		return v.Id.String()
+	})
 }
 
 func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

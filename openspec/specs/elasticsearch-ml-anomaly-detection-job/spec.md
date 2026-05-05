@@ -101,9 +101,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Anomaly Detection Job CRUD APIs (REQ-001–REQ-005)
 
 The resource SHALL use the Elasticsearch Put Anomaly Detection Job API to create jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html)). The resource SHALL use the Elasticsearch Update Anomaly Detection Job API to update jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-update-job.html)). The resource SHALL use the Elasticsearch Get Anomaly Detection Jobs API to read job definitions ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-get-job.html)). The resource SHALL use the Elasticsearch Close Anomaly Detection Job API before deleting a job ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-close-job.html)). The resource SHALL use the Elasticsearch Delete Anomaly Detection Job API to delete jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-delete-job.html)). When Elasticsearch returns a non-success status for any API call (except 404 on read), the resource SHALL surface the API error as a Terraform diagnostic.
@@ -218,25 +216,29 @@ On read, when the Get Anomaly Detection Jobs API returns HTTP 404, the resource 
 
 ### Requirement: Delete — close before delete (REQ-021–REQ-022)
 
-On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API. If the close call fails or returns a non-200/non-409 status (409 meaning the job is already closed), the resource SHALL log a warning and continue with deletion. The resource SHALL then call the Delete Anomaly Detection Job API. A non-success response from the Delete API SHALL be surfaced as an error diagnostic.
+On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API with `force=true` and `allow_no_match=true`. If the close call fails, the resource SHALL log a warning and continue. After the Close Job API call returns (whether it succeeded or failed), the resource SHALL poll the job's state via the Get Job Stats API until the job reports `closed` state or is no longer found, before calling the Delete Job API. This polling SHALL be bounded by the Terraform operation context (i.e. the delete timeout). If polling fails, the resource SHALL log a warning and continue to deletion.
 
-#### Scenario: Close succeeds before delete
+The resource SHALL then call the Delete Anomaly Detection Job API. If the first delete attempt fails, the resource SHALL retry once with `force=true`. If the retry also fails, the error SHALL be surfaced as a Terraform diagnostic.
 
-- GIVEN an open anomaly detection job
-- WHEN delete runs
-- THEN the resource SHALL call Close Job before calling Delete Job
+#### Scenario: Normal delete succeeds
 
-#### Scenario: Close returns 409 (already closed)
+- **WHEN** the job is `closed` (or not found) before delete is called
+- **THEN** the resource SHALL call Delete Job and it SHALL succeed without `force`
 
-- GIVEN a closed anomaly detection job (close returns HTTP 409)
-- WHEN delete runs
-- THEN the resource SHALL treat 409 as success and proceed to delete
+#### Scenario: First delete fails — retry with force succeeds
 
-#### Scenario: Close fails with unexpected error
+- **WHEN** the initial Delete Job call fails (e.g. job is still open due to polling timeout)
+- **THEN** the resource SHALL retry Delete Job with `force=true` and treat a success response as the job being deleted
 
-- GIVEN a close call that fails with a transport error
-- WHEN delete runs
-- THEN the resource SHALL log a warning and SHALL still call Delete Job
+#### Scenario: Both delete attempts fail
+
+- **WHEN** both the initial Delete Job and the `force=true` retry fail
+- **THEN** the resource SHALL surface the retry error as a Terraform diagnostic
+
+#### Scenario: Delete called regardless of polling outcome
+
+- **WHEN** the polling wait fails for any reason
+- **THEN** the resource SHALL still call the Delete Job API (not skip it)
 
 ### Requirement: job_id validation (REQ-023)
 
@@ -345,3 +347,4 @@ The following attributes SHALL use `UseStateForUnknown` plan modifier to preserv
 - GIVEN an existing job with a known id in state
 - WHEN a plan is generated without changing job_id
 - THEN `id` SHALL remain known (not unknown) in the plan
+

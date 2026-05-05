@@ -60,7 +60,7 @@ func CreateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownError(resp.StatusCode(), resp.Body)
+		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -79,7 +79,7 @@ func UpdateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownError(resp.StatusCode(), resp.Body)
+		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -95,7 +95,7 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -106,7 +106,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
@@ -190,7 +190,7 @@ func DeleteConnector(ctx context.Context, client *Client, connectorID string, sp
 	}
 
 	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 
 	return nil

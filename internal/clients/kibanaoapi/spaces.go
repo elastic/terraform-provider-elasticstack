@@ -46,7 +46,7 @@ func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwd
 		}
 		return *resp.JSON200, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -72,7 +72,7 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -81,13 +81,7 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.GetSpacesSpaceIdWithResponse(ctx, id)
 	if err != nil {
-		return nil, sdkdiag.Diagnostics{
-			{
-				Severity: sdkdiag.Error,
-				Summary:  "Error calling Kibana Spaces API",
-				Detail:   err.Error(),
-			},
-		}
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -103,7 +97,7 @@ func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceRe
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -111,13 +105,7 @@ func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceRe
 func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpaceJSONRequestBody) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.PostSpacesSpaceWithResponse(ctx, body)
 	if err != nil {
-		return nil, sdkdiag.Diagnostics{
-			{
-				Severity: sdkdiag.Error,
-				Summary:  "Error calling Kibana Spaces API",
-				Detail:   err.Error(),
-			},
-		}
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -131,7 +119,7 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -139,13 +127,7 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutSpacesSpaceIdJSONRequestBody) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.PutSpacesSpaceIdWithResponse(ctx, id, body)
 	if err != nil {
-		return nil, sdkdiag.Diagnostics{
-			{
-				Severity: sdkdiag.Error,
-				Summary:  "Error calling Kibana Spaces API",
-				Detail:   err.Error(),
-			},
-		}
+		return nil, sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -159,7 +141,7 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -167,13 +149,7 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 func DeleteSpace(ctx context.Context, client *Client, id string) sdkdiag.Diagnostics {
 	resp, err := client.API.DeleteSpacesSpaceIdWithResponse(ctx, id)
 	if err != nil {
-		return sdkdiag.Diagnostics{
-			{
-				Severity: sdkdiag.Error,
-				Summary:  "Error calling Kibana Spaces API",
-				Detail:   err.Error(),
-			},
-		}
+		return sdkdiag.FromErr(err)
 	}
 
 	switch resp.StatusCode() {
@@ -182,6 +158,6 @@ func DeleteSpace(ctx context.Context, client *Client, id string) sdkdiag.Diagnos
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }

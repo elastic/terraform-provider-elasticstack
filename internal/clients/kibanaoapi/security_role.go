@@ -25,6 +25,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -116,7 +117,7 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -150,7 +151,7 @@ func PutSecurityRole(ctx context.Context, client *Client, name string, params kb
 	case http.StatusOK, http.StatusNoContent:
 		return nil
 	default:
-		return reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -173,6 +174,6 @@ func DeleteSecurityRole(ctx context.Context, client *Client, name string) sdkdia
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
 	}
 }

@@ -30,27 +30,21 @@ import (
 
 type processorSortModel struct {
 	CommonProcessorModel
-	ID          types.String `tfsdk:"id"`
-	JSON        types.String `tfsdk:"json"`
 	Field       types.String `tfsdk:"field"`
 	Order       types.String `tfsdk:"order"`
 	TargetField types.String `tfsdk:"target_field"`
 }
 
-func (m *processorSortModel) TypeName() string    { return "sort" }
-func (m *processorSortModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorSortModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorSortModel) TypeName() string { return "sort" }
 
 func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorSortBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -63,10 +57,6 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

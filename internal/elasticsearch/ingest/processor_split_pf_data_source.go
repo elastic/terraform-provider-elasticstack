@@ -28,42 +28,23 @@ import (
 
 type processorSplitModel struct {
 	CommonProcessorModel
-	ID               types.String `tfsdk:"id"`
-	JSON             types.String `tfsdk:"json"`
-	Field            types.String `tfsdk:"field"`
-	TargetField      types.String `tfsdk:"target_field"`
-	IgnoreMissing    types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 	Separator        types.String `tfsdk:"separator"`
 	PreserveTrailing types.Bool   `tfsdk:"preserve_trailing"`
 }
 
-func (m *processorSplitModel) TypeName() string    { return "split" }
-func (m *processorSplitModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorSplitModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorSplitModel) TypeName() string { return "split" }
 
 func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorSplitBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
 	if IsKnown(m.Separator) {
 		body.Separator = m.Separator.ValueString()
 	}
@@ -72,10 +53,6 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 		body.PreserveTrailing = false
 	} else {
 		body.PreserveTrailing = m.PreserveTrailing.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

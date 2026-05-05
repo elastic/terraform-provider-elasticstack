@@ -191,7 +191,7 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 				continue
 			}
 
-			typedClient, err := client.GetESTypedClient()
+			typedClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}

@@ -286,8 +286,16 @@ Orchestrate an implementation loop around a single OpenSpec change.
 
     **End condition for the PR polling loop**:
     - continue polling after the label is applied
-    - end successfully only when CI is green and the `verify-openspec` workflow has **approved** the PR for the current head commit, not merely completed
-    - if 20 minutes pass after the most recent `verify-openspec` label application and approval has still not arrived, stop the loop and report that timeout state to the user
+    - end successfully only when **all three** of the following are true for the current head commit:
+      1. CI is green (all required checks passed)
+      2. The `reviews` list from `check-pr-state.py` contains an APPROVE review from the `verify-openspec` workflow — look for an entry with `state: "APPROVED"` and a `user.login` of `github-actions[bot]` (or the account the verify-openspec workflow uses) submitted **after** the most recent `verify-openspec` label was applied
+      3. No other reviewer has posted a blocking CHANGES_REQUESTED since that approval
+    - **Do NOT treat any of the following as loop-completion**:
+      - `summary.pr.reviewDecision` becoming `"APPROVED"` — this reflects all reviews including bots like Macroscope that approve independently of verify-openspec
+      - `summary.reviews.approvedByLogins` containing only a non-verify-openspec account (e.g. Macroscope or a human reviewer)
+      - The `verify-openspec` workflow check run showing as passed/green — a passing check run is NOT the same as an APPROVE review; verify-openspec must have submitted an APPROVE review to the PR
+    - To confirm verify-openspec approval: scan the `reviews` array (not just the summary) for an entry where `state == "APPROVED"` and the author is the verify-openspec automation, submitted after the label was applied. Use `summary.reviews.approvedByLogins` as a quick filter, then inspect the full `reviews` list to confirm the author and timing.
+    - if 20 minutes pass after the most recent `verify-openspec` label application and a qualifying APPROVE review has still not arrived, stop the loop and report that timeout state to the user
     - also stop early if a failure or review issue cannot be resolved without user input
 
 13. **Report final outcome**

@@ -257,7 +257,7 @@ func checkResourceTransformDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESTypedClient()
+		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}

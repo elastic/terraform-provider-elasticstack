@@ -7,6 +7,10 @@ KB_PORT={{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}
 grep -q "^ELASTICSEARCH_PORT=" .env || echo "ELASTICSEARCH_PORT=$PORT" >> .env
 grep -q "^KIBANA_PORT=" .env || echo "KIBANA_PORT=$KB_PORT" >> .env
 grep -q "^ELASTICSEARCH_URL=" .env || echo "ELASTICSEARCH_URL=http://localhost:$PORT" >> .env
+grep -q "^ELASTICSEARCH_ENDPOINTS=" .env || echo "ELASTICSEARCH_ENDPOINTS=http://localhost:$PORT" >> .env
+grep -q "^ELASTICSEARCH_USERNAME=" .env || echo "ELASTICSEARCH_USERNAME=elastic" >> .env
+grep -q "^KIBANA_ENDPOINT=" .env || echo "KIBANA_ENDPOINT=http://localhost:$KB_PORT" >> .env
+grep -q "^KIBANA_USERNAME=" .env || echo "KIBANA_USERNAME=elastic" >> .env
 """
 
 pre-commit = "make check-lint"

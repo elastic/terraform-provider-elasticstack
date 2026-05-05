@@ -36,6 +36,8 @@ Targeted acceptance test runs commonly require the following environment variabl
 - `KIBANA_ENDPOINT` (default: `http://localhost:5601`)
 - `TF_ACC=1`
 
+In a worktrunk-created worktree, `.config/wt.toml` generates `.env` with all of the common acceptance variables above except `TF_ACC`, so after exporting `.env` you can usually run `TF_ACC=1 go test ...` directly.
+
 Example targeted run:
 
 ```bash

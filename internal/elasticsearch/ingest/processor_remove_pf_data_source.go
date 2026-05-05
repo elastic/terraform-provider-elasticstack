@@ -28,26 +28,20 @@ import (
 
 type processorRemoveModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.Set    `tfsdk:"field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
+	Field         types.Set  `tfsdk:"field"`
+	IgnoreMissing types.Bool `tfsdk:"ignore_missing"`
 }
 
-func (m *processorRemoveModel) TypeName() string    { return "remove" }
-func (m *processorRemoveModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorRemoveModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorRemoveModel) TypeName() string { return "remove" }
 
 func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorRemoveBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		elems := make([]string, 0, len(m.Field.Elements()))

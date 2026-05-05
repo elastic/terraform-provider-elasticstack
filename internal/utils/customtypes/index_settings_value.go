@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strings"
 
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -189,8 +190,8 @@ func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSett
 	}
 
 	return reflect.DeepEqual(
-		normalizeIndexSettings(flattenMap(o)),
-		normalizeIndexSettings(flattenMap(n)),
+		normalizeIndexSettings(schemautil.FlattenMap(o)),
+		normalizeIndexSettings(schemautil.FlattenMap(n)),
 	), diags
 }
 
@@ -263,7 +264,7 @@ func CanonicalIndexSettingsJSON(raw string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("settings must be a JSON object")
 	}
-	flatNorm := normalizeIndexSettings(flattenMap(m))
+	flatNorm := normalizeIndexSettings(schemautil.FlattenMap(m))
 	nested := unflattenDottedMap(flatNorm)
 	b, err := marshalSettingsJSONSorted(nested)
 	if err != nil {
@@ -348,30 +349,6 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 		}
 	}
 	return root
-}
-
-// flattenMap flattens nested maps into dotted keys (port of tfsdkutils.flattenMap).
-// Map iteration order is undefined; conflicting keys are resolved deterministically later in
-// normalizeIndexSettings (nested / dotted sources win over flat siblings — see comment there).
-func flattenMap(m map[string]any) map[string]any {
-	out := make(map[string]any)
-
-	var flattener func(string, map[string]any, map[string]any)
-	flattener = func(k string, src, dst map[string]any) {
-		if len(k) > 0 {
-			k += "."
-		}
-		for key, val := range src {
-			switch inner := val.(type) {
-			case map[string]any:
-				flattener(k+key, inner, dst)
-			default:
-				dst[k+key] = val
-			}
-		}
-	}
-	flattener("", m, out)
-	return out
 }
 
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.

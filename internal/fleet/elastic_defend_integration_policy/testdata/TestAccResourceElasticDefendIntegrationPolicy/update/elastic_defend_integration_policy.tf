@@ -25,10 +25,14 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   policy = {
     windows = {
       events = {
-        process = true
-        network = true
-        file    = false
-        dns     = false
+        process             = true
+        network             = true
+        file                = false
+        dns                 = false
+        dll_and_driver_load = false
+        registry            = true
+        security            = true
+        authentication      = true
       }
       malware = {
         mode          = "detect"
@@ -45,6 +49,33 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
       behavior_protection = {
         mode               = "detect"
         reputation_service = false
+      }
+      popup = {
+        malware = {
+          message = ""
+          enabled = false
+        }
+        ransomware = {
+          message = "Ransomware blocked"
+          enabled = true
+        }
+        memory_protection = {
+          message = "Memory alert"
+          enabled = true
+        }
+        behavior_protection = {
+          message = ""
+          enabled = false
+        }
+      }
+      antivirus_registration = {
+        mode    = "sync_with_malware_prevent"
+        enabled = false
+      }
+      attack_surface_reduction = {
+        credential_hardening = {
+          enabled = false
+        }
       }
       logging = {
         file = "error"
@@ -65,6 +96,20 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
       behavior_protection = {
         mode               = "prevent"
         reputation_service = false
+      }
+      popup = {
+        malware = {
+          message = ""
+          enabled = false
+        }
+        memory_protection = {
+          message = "Mac memory alert"
+          enabled = true
+        }
+        behavior_protection = {
+          message = ""
+          enabled = false
+        }
       }
       logging = {
         file = "error"
@@ -88,6 +133,20 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
       behavior_protection = {
         mode               = "prevent"
         reputation_service = false
+      }
+      popup = {
+        malware = {
+          message = ""
+          enabled = false
+        }
+        memory_protection = {
+          message = "Linux memory alert"
+          enabled = true
+        }
+        behavior_protection = {
+          message = ""
+          enabled = false
+        }
       }
       logging = {
         file = "error"

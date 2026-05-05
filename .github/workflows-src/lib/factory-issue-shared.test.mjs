@@ -13,6 +13,7 @@ const {
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
+  createFactoryIssueModule,
 } = require('./factory-issue-shared.js');
 
 test('factoryParseOptionalTriStateFromEnv treats missing and empty as null', () => {
@@ -143,7 +144,7 @@ test('factoryActorTrustWhenSenderMissing matches stable contract', () => {
   assert.match(result.actor_trusted_reason, /sender login is missing/);
 });
 
-test('factoryCheckDuplicatePR keeps raw html_url for closes-literal mode when duplicate html_url is missing', () => {
+test('factoryCheckDuplicatePR coalesces html_url for closes-literal mode when duplicate html_url is missing', () => {
   const result = factoryCheckDuplicatePR({
     issueNumber: 42,
     pullRequests: [{
@@ -159,8 +160,8 @@ test('factoryCheckDuplicatePR keeps raw html_url for closes-literal mode when du
     duplicateLinkageMode: 'closes-literal',
   });
   assert.equal(result.duplicate_pr_found, true);
-  assert.equal(result.duplicate_pr_url, undefined);
-  assert.match(result.gate_reason, /\(undefined\)/);
+  assert.equal(result.duplicate_pr_url, null);
+  assert.match(result.gate_reason, /\(unknown URL\)/);
 });
 
 test('factoryCheckDuplicatePR coalesces html_url for github-keywords mode when duplicate html_url is missing', () => {
@@ -205,7 +206,7 @@ test('createFactoryIssueIntake: duplicateLinkageMode selects duplicate PR URL ha
     html_url: undefined,
   };
   const c = code.checkDuplicatePR({ issueNumber: 9, pullRequests: [pr] });
-  assert.equal(c.duplicate_pr_url, undefined);
+  assert.equal(c.duplicate_pr_url, null);
   const p = {
     ...pr,
     head_branch: 'change-factory/issue-9',
@@ -213,4 +214,28 @@ test('createFactoryIssueIntake: duplicateLinkageMode selects duplicate PR URL ha
   };
   const ch = change.checkDuplicatePR({ issueNumber: 9, pullRequests: [p] });
   assert.equal(ch.duplicate_pr_url, null);
+});
+
+test('createFactoryIssueModule binds shared exports and branch aliases', () => {
+  const mod = createFactoryIssueModule({
+    branchPrefix: 'demo-factory/issue-',
+    factoryLabel: 'demo-factory',
+    issueOpenedNotEligibleReason: 'not eligible',
+    duplicateLinkageMode: 'closes-literal',
+    issueBranchNameAliases: ['demoFactoryIssueBranchName'],
+  });
+
+  assert.equal(mod.issueBranchName(42), 'demo-factory/issue-42');
+  assert.equal(mod.demoFactoryIssueBranchName(42), 'demo-factory/issue-42');
+  assert.deepEqual(mod.actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
+  assert.equal(mod.parseOptionalTriStateFromEnv('true'), true);
+  assert.deepEqual(mod.parseFinalizeGateEnv({}), factoryParseFinalizeGateEnv({}));
+
+  const event = mod.qualifyTriggerEvent({
+    eventName: 'issues',
+    eventAction: 'labeled',
+    labelName: 'demo-factory',
+    issueLabels: [],
+  });
+  assert.equal(event.event_eligible, true);
 });

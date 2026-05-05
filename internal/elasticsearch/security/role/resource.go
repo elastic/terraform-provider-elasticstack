@@ -47,6 +47,8 @@ func newRoleResource() *roleResource {
 			getSchemaFactory,
 			readRole,
 			deleteRole,
+			writeRole,
+			writeRole,
 		),
 	}
 }

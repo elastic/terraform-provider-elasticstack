@@ -88,6 +88,9 @@ function extractBreakingChanges(changelogSection) {
       } else if (fenceType === '~' && /^~~~/.test(line)) {
         fenceType = null;
       }
+      if (fenceType === null && /^\s*<!--\s*\/breaking-changes\s*-->\s*$/.test(line)) {
+        break;
+      }
       if (fenceType === null && /^#{2,3}\s/.test(line)) {
         break;
       }
@@ -202,12 +205,14 @@ function parseChangelogSectionFull(body) {
  * Validate a full parsed changelog section (including empty breaking-changes detection).
  *
  * @param {ReturnType<typeof parseChangelogSectionFull>|null} parsed
+ * @param {{ enforceBreakingImpactMatch?: boolean }} [options]
  * @returns {{ valid: boolean, errors: string[] }}
  */
-function validateChangelogSectionFull(parsed) {
+function validateChangelogSectionFull(parsed, options = {}) {
   const base = validateChangelogSection(parsed);
   if (!parsed) return base;
 
+  const { enforceBreakingImpactMatch = true } = options;
   const errors = [...base.errors];
 
   if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
@@ -216,6 +221,16 @@ function validateChangelogSectionFull(parsed) {
 
   if (parsed.customerImpact === 'breaking' && !parsed.breakingChangesHeadingPresent) {
     errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
+  }
+
+  if (
+    enforceBreakingImpactMatch &&
+    parsed.breakingChangesHeadingPresent &&
+    parsed.customerImpact &&
+    VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
+    parsed.customerImpact !== 'breaking'
+  ) {
+    errors.push('### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.');
   }
 
   return { valid: errors.length === 0, errors };

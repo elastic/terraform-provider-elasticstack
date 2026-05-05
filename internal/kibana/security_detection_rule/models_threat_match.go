@@ -45,35 +45,19 @@ func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clie
 }
 
 func (t ThreatMatchRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPIThreatMatchRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIThreatMatchRule](rule)
 }
 
 func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPIThreatMatchRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromThreatMatchRule(ctx, &value)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIThreatMatchRule](rule, func(v *kbapi.SecurityDetectionsAPIThreatMatchRule) diag.Diagnostics {
+		return d.updateFromThreatMatchRule(ctx, v)
+	})
 }
 
 func (t ThreatMatchRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPIThreatMatchRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPIThreatMatchRule](response, func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
+		return v.Id.String()
+	})
 }
 
 func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

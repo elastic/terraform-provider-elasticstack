@@ -28,27 +28,21 @@ import (
 
 type processorJoinModel struct {
 	CommonProcessorModel
-	ID          types.String `tfsdk:"id"`
-	JSON        types.String `tfsdk:"json"`
 	Field       types.String `tfsdk:"field"`
 	Separator   types.String `tfsdk:"separator"`
 	TargetField types.String `tfsdk:"target_field"`
 }
 
-func (m *processorJoinModel) TypeName() string    { return "join" }
-func (m *processorJoinModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorJoinModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorJoinModel) TypeName() string { return "join" }
 
 func (m *processorJoinModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorJoinBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -58,10 +52,6 @@ func (m *processorJoinModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

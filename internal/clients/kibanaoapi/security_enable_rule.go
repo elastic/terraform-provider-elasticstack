@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -51,7 +52,9 @@ func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value s
 		"request_body": string(bodyBytes),
 	})
 
-	resp, err := client.API.PerformRulesBulkActionWithBodyWithResponse(ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json", bytes.NewReader(bodyBytes), SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PerformRulesBulkActionWithBodyWithResponse(
+		ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json",
+		bytes.NewReader(bodyBytes), kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to enable rules by tag", err.Error())}
 	}
@@ -82,7 +85,9 @@ func DisableRulesByTag(ctx context.Context, client *Client, spaceID, key, value 
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal bulk action request", err.Error())}
 	}
 
-	resp, err := client.API.PerformRulesBulkActionWithBodyWithResponse(ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json", bytes.NewReader(bodyBytes), SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PerformRulesBulkActionWithBodyWithResponse(
+		ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json",
+		bytes.NewReader(bodyBytes), kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to disable rules by tag", err.Error())}
 	}
@@ -107,7 +112,7 @@ func CheckRulesEnabledByTag(ctx context.Context, client *Client, spaceID, key, v
 		PerPage: &perPage,
 	}
 
-	resp, err := client.API.FindRulesWithResponse(ctx, params, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.FindRulesWithResponse(ctx, params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return false, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to query rules by tag", err.Error())}
 	}

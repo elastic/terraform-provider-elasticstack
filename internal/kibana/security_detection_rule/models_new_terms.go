@@ -45,35 +45,19 @@ func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, client clients
 }
 
 func (n NewTermsRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPINewTermsRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPINewTermsRule](rule)
 }
 
 func (n NewTermsRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPINewTermsRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromNewTermsRule(ctx, &value)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPINewTermsRule](rule, func(v *kbapi.SecurityDetectionsAPINewTermsRule) diag.Diagnostics {
+		return d.updateFromNewTermsRule(ctx, v)
+	})
 }
 
 func (n NewTermsRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPINewTermsRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPINewTermsRule](response, func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
+		return v.Id.String()
+	})
 }
 
 func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

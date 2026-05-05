@@ -30,8 +30,6 @@ import (
 
 type processorCSVModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
 	Field         types.String `tfsdk:"field"`
 	TargetFields  types.List   `tfsdk:"target_fields"`
 	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
@@ -41,20 +39,16 @@ type processorCSVModel struct {
 	EmptyValue    types.String `tfsdk:"empty_value"`
 }
 
-func (m *processorCSVModel) TypeName() string    { return "csv" }
-func (m *processorCSVModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorCSVModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorCSVModel) TypeName() string { return "csv" }
 
 func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorCSVBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()

@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
+const elasticsearchClientNotConfiguredError = "elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS"
+
 // ElasticsearchScopedClient is a typed client surface for Elasticsearch
 // operations. It exposes the underlying go-elasticsearch client plus all
 // Elasticsearch-derived helper behavior that resources need: composite ID
@@ -39,7 +41,6 @@ import (
 // It deliberately does not expose Kibana or Fleet state so that all version and
 // identity checks always resolve against the scoped Elasticsearch connection.
 type ElasticsearchScopedClient struct {
-	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *info.Response
 	mu                       sync.Mutex
 	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
@@ -47,37 +48,15 @@ type ElasticsearchScopedClient struct {
 	// overrides have been applied. It is used by accessor validation to
 	// distinguish missing endpoint configuration from unexpected nil states.
 	esEndpoints []string
-	// typedClient is the lazily-initialized strongly-typed Elasticsearch client.
 	typedClient *elasticsearch.TypedClient
-	// typedClientOnce ensures typedClient is created exactly once.
-	typedClientOnce sync.Once
 }
 
-// GetESTypedClient returns the strongly-typed Elasticsearch client.
+// GetESClient returns the strongly-typed Elasticsearch client.
 //
-// The typed client is lazily initialized on the first call by converting the
-// underlying *elasticsearch.Client via ToTyped(). The result is cached so that
-// subsequent calls return the same *elasticsearch.TypedClient without repeated
-// conversion. Initialization is safe for concurrent use by multiple goroutines.
-//
-// The returned typed client shares the same underlying transport, endpoints,
-// and configuration as the untyped client returned by GetESClient(). A product
-// check may run on the typed client's first request, adding marginal latency
-// on first use.
-func (e *ElasticsearchScopedClient) GetESTypedClient() (*elasticsearch.TypedClient, error) {
-	esClient, err := e.GetESClient()
-	if err != nil {
-		return nil, err
-	}
-	e.typedClientOnce.Do(func() {
-		e.typedClient = esClient.ToTyped()
-	})
-	return e.typedClient, nil
-}
-
-// GetESClient returns the underlying go-elasticsearch client. It satisfies the
-// ESClient sink interface used by internal/clients/elasticsearch/ helpers.
-func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error) {
+// The client is built from the provider's configured Elasticsearch transport
+// and endpoints. A product check may run on the typed client's first request,
+// adding marginal latency on first use.
+func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, error) {
 	hasEndpoint := false
 	for _, ep := range e.esEndpoints {
 		if ep != "" {
@@ -86,12 +65,12 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 		}
 	}
 	if !hasEndpoint {
-		return nil, errors.New("elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
+		return nil, errors.New(elasticsearchClientNotConfiguredError)
 	}
-	if e.elasticsearch == nil {
+	if e.typedClient == nil {
 		return nil, errors.New("elasticsearch client not found")
 	}
-	return e.elasticsearch, nil
+	return e.typedClient, nil
 }
 
 // serverInfo fetches and caches the Elasticsearch cluster info.
@@ -100,20 +79,19 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
 	if e.elasticsearchClusterInfo != nil {
 		return e.elasticsearchClusterInfo, nil
 	}
 
-	typedClient, err := e.GetESTypedClient()
+	typedClient, err := e.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := typedClient.Core.Info().Do(ctx)
+	res, err := typedClient.Info().Do(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	// cache info
+
 	e.elasticsearchClusterInfo = res
 
 	return res, nil
@@ -205,11 +183,14 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 // from the Elasticsearch-related fields of an *apiClient. This is the canonical
 // adapter used by the factory and by NewAcceptanceTestingElasticsearchScopedClient.
 func elasticsearchScopedClientFromAPIClient(a *apiClient) *ElasticsearchScopedClient {
-	return &ElasticsearchScopedClient{
-		elasticsearch:            a.elasticsearch,
+	sc := &ElasticsearchScopedClient{
 		elasticsearchClusterInfo: a.elasticsearchClusterInfo,
 		esEndpoints:              a.esEndpoints,
 	}
+	if a.elasticsearch != nil {
+		sc.typedClient = a.elasticsearch.ToTyped()
+	}
+	return sc
 }
 
 // NewAcceptanceTestingElasticsearchScopedClient builds an

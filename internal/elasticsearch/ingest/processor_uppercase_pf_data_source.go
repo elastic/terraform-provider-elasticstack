@@ -23,49 +23,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type processorUppercaseModel struct {
 	CommonProcessorModel
-	ID            types.String `tfsdk:"id"`
-	JSON          types.String `tfsdk:"json"`
-	Field         types.String `tfsdk:"field"`
-	TargetField   types.String `tfsdk:"target_field"`
-	IgnoreMissing types.Bool   `tfsdk:"ignore_missing"`
+	WithIgnorableTargetField
 }
 
-func (m *processorUppercaseModel) TypeName() string    { return "uppercase" }
-func (m *processorUppercaseModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorUppercaseModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorUppercaseModel) TypeName() string { return "uppercase" }
 
 func (m *processorUppercaseModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorUppercaseBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
-
-	if IsKnown(m.Field) {
-		body.Field = m.Field.ValueString()
-	}
-	if IsKnown(m.TargetField) {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
 	return body, diags
 }

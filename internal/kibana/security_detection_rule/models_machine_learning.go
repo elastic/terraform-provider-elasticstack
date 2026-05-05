@@ -53,35 +53,19 @@ func (m MachineLearningRuleProcessor) ToUpdateProps(
 }
 
 func (m MachineLearningRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPIMachineLearningRule)
-	return ok
+	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIMachineLearningRule](rule)
 }
 
 func (m MachineLearningRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPIMachineLearningRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromMachineLearningRule(ctx, &value)
+	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIMachineLearningRule](rule, func(v *kbapi.SecurityDetectionsAPIMachineLearningRule) diag.Diagnostics {
+		return d.updateFromMachineLearningRule(ctx, v)
+	})
 }
 
 func (m MachineLearningRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPIMachineLearningRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
+	return extractRuleID[kbapi.SecurityDetectionsAPIMachineLearningRule](response, func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
+		return v.Id.String()
+	})
 }
 
 func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

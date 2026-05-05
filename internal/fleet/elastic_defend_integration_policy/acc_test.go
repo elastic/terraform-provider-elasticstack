@@ -42,7 +42,7 @@ const (
 )
 
 // TestAccResourceElasticDefendIntegrationPolicy covers create, update, import,
-// and refresh-after-out-of-band-delete for the Elastic Defend resource.
+// and description round-trip behavior for the Elastic Defend resource.
 func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -50,7 +50,8 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create
+			// Step 1: Create with full policy settings including events, popups,
+			// antivirus_registration, and attack_surface_reduction.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
@@ -69,10 +70,16 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					testCheckSpaceIDsIfSupported(resourceName),
+					// Windows events
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.network", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.file", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.dns", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.dll_and_driver_load", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.registry", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.security", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.authentication", "false"),
+					// Windows malware
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.blocklist", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.notify_user", "true"),
@@ -81,14 +88,37 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.reputation_service", "true"),
+					// Windows popup
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.message", "Malware detected"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.enabled", "false"),
+					// Windows antivirus_registration
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "enabled"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.enabled", "true"),
+					// Windows attack_surface_reduction
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.attack_surface_reduction.credential_hardening.enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.logging.file", "info"),
+					// Mac events
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.file", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.reputation_service", "true"),
+					// Mac popup
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.message", "Mac malware alert"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.logging.file", "warning"),
+					// Linux events
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.network", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.file", "true"),
@@ -99,6 +129,13 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.reputation_service", "true"),
+					// Linux popup
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.malware.message", "Linux malware alert"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.malware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.memory_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.memory_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.behavior_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.logging.file", "warning"),
 				),
 			},
@@ -118,10 +155,16 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
 					resource.TestCheckResourceAttr(resourceName, "preset", "EDRComplete"),
 					testCheckSpaceIDsIfSupported(resourceName),
+					// Windows events
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.network", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.file", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.dns", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.dll_and_driver_load", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.registry", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.security", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.authentication", "true"),
+					// Windows malware
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.blocklist", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.notify_user", "false"),
@@ -130,7 +173,22 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.reputation_service", "false"),
+					// Windows popup
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.message", "Ransomware blocked"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.message", "Memory alert"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.enabled", "false"),
+					// Windows antivirus_registration
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "sync_with_malware_prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.enabled", "false"),
+					// Windows attack_surface_reduction
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.attack_surface_reduction.credential_hardening.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.logging.file", "error"),
+					// Mac events
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.network", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.file", "false"),
@@ -138,7 +196,15 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.reputation_service", "false"),
+					// Mac popup
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.message", "Mac memory alert"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.logging.file", "error"),
+					// Linux events
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.network", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.file", "false"),
@@ -149,6 +215,13 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.reputation_service", "false"),
+					// Linux popup
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.malware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.malware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.memory_protection.message", "Linux memory alert"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.memory_protection.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.popup.behavior_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.logging.file", "error"),
 				),
 			},
@@ -160,11 +233,35 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateIdFunc: testImportStateIDFunc(resourceName),
+				ImportStateVerify: true,
+				// description is Optional-only (unmanaged): import starts with a blank
+				// model (all-null), so it stays null even when Kibana has a value.
+				ImportStateVerifyIgnore: []string{"force", "description"},
+			},
+			// Step 4: Remove description and omit enabled to verify defaults are restored.
+			// description is Optional-only (unmanaged): omitting it keeps null in state
+			// regardless of the server value, matching the repo pattern for unmanaged fields.
+			// Also exercises the force attribute.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_removed"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "description"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "force", "true"),
+					testCheckSpaceIDsIfSupported(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.message", "Ransomware blocked"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "sync_with_malware_prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.attack_surface_reduction.credential_hardening.enabled", "false"),
+				),
 			},
 		},
 	})
@@ -192,6 +289,82 @@ func TestAccResourceElasticDefendIntegrationPolicyDisappears(t *testing.T) {
 					deleteDefendPolicyOutOfBand(resourceName),
 				),
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyPopupDefaults verifies that the
+// Windows popup block is populated with computed default values (message="",
+// enabled=false) when not explicitly configured in the Terraform config, and
+// that antivirus_registration and attack_surface_reduction also apply their
+// schema defaults.
+func TestAccResourceElasticDefendIntegrationPolicyPopupDefaults(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					// Windows popup is Computed+Default at the parent level; all sub-block
+					// values default to message="" and enabled=false when not overridden.
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.ransomware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.enabled", "false"),
+					// Windows antivirus_registration defaults
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "disabled"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.enabled", "false"),
+					// Windows attack_surface_reduction defaults
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.attack_surface_reduction.credential_hardening.enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyKibanaConnection verifies that
+// the resource can be created when an entity-local kibana_connection block is
+// supplied instead of relying on the provider-level Kibana configuration.
+func TestAccResourceElasticDefendIntegrationPolicyKibanaConnection(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					append([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "name", policyName),
+						resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
+						resource.TestCheckResourceAttr(resourceName, "kibana_connection.#", "1"),
+						resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.endpoints.#", "1"),
+						resource.TestCheckResourceAttrSet(resourceName, "kibana_connection.0.endpoints.0"),
+					}, acctest.KibanaConnectionAuthChecks(resourceName)...)...,
+				),
 			},
 		},
 	})

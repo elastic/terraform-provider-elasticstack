@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -85,7 +85,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	}
 
 	// Make the API call
-	apiResp, err := oapiClient.API.PostSavedObjectsExportWithResponse(ctx, body, kibanaoapi.SpaceAwarePathRequestEditor(spaceID))
+	apiResp, err := oapiClient.API.PostSavedObjectsExportWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		diags.AddError("API call failed", fmt.Sprintf("Unable to export saved objects: %v", err))
 		return config, diags

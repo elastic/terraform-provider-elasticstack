@@ -20,44 +20,34 @@ package rolemapping
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data Data
+func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	roleMappingName := data.Name.ValueString()
-
-	client, frameworkDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(frameworkDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	roleMappingName := resourceID
 
 	// Parse rules JSON
 	var rules types.RoleMappingRule
 	if err := json.Unmarshal([]byte(data.Rules.ValueString()), &rules); err != nil {
 		diags.AddError("Failed to parse rules JSON", err.Error())
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	// Parse metadata JSON
 	var metadata types.Metadata
 	if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 		diags.AddError("Failed to parse metadata JSON", err.Error())
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
 	// Prepare role mapping
@@ -71,7 +61,8 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	if typeutils.IsKnown(data.Roles) {
 		roleMapping.Roles = typeutils.SetTypeAs[string](ctx, data.Roles, path.Root("roles"), &diags)
 		if diags.HasError() {
-			return diags
+			var zero Data
+			return zero, diags
 		}
 	}
 
@@ -79,7 +70,8 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 		var roleTemplates []types.RoleTemplate
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
-			return diags
+			var zero Data
+			return zero, diags
 		}
 		roleMapping.RoleTemplates = roleTemplates
 	}
@@ -88,24 +80,22 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	apiDiags := elasticsearch.PutRoleMapping(ctx, client, roleMappingName, &roleMapping)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	// Read the updated role mapping to ensure consistent result
 	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return diags
+		var zero Data
+		return zero, diags
 	}
 
-	if readData != nil {
-		diags.Append(state.Set(ctx, readData)...)
+	if readData == nil {
+		diags.AddError("Not Found", fmt.Sprintf("Role mapping %q was not found after update", roleMappingName))
+		var zero Data
+		return zero, diags
 	}
 
-	return diags
-}
-
-func (r *roleMappingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
+	return *readData, diags
 }

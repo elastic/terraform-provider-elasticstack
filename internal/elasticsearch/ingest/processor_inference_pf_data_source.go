@@ -28,28 +28,22 @@ import (
 
 type processorInferenceModel struct {
 	CommonProcessorModel
-	ID          types.String `tfsdk:"id"`
-	JSON        types.String `tfsdk:"json"`
 	ModelID     types.String `tfsdk:"model_id"`
 	InputOutput types.Object `tfsdk:"input_output"`
 	FieldMap    types.Map    `tfsdk:"field_map"`
 	TargetField types.String `tfsdk:"target_field"`
 }
 
-func (m *processorInferenceModel) TypeName() string    { return "inference" }
-func (m *processorInferenceModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorInferenceModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorInferenceModel) TypeName() string { return "inference" }
 
 func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorInferenceBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.ModelID) {
 		body.ModelID = m.ModelID.ValueString()

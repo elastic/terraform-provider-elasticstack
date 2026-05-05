@@ -30,8 +30,6 @@ import (
 
 type processorJSONModel struct {
 	CommonProcessorModel
-	ID                        types.String `tfsdk:"id"`
-	JSON                      types.String `tfsdk:"json"`
 	Field                     types.String `tfsdk:"field"`
 	TargetField               types.String `tfsdk:"target_field"`
 	AddToRoot                 types.Bool   `tfsdk:"add_to_root"`
@@ -39,20 +37,16 @@ type processorJSONModel struct {
 	AllowDuplicateKeys        types.Bool   `tfsdk:"allow_duplicate_keys"`
 }
 
-func (m *processorJSONModel) TypeName() string    { return "json" }
-func (m *processorJSONModel) SetID(id string)     { m.ID = types.StringValue(id) }
-func (m *processorJSONModel) SetJSON(json string) { m.JSON = types.StringValue(json) }
+func (m *processorJSONModel) TypeName() string { return "json" }
 
 func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorJSONBody{}
 
-	commonBody, d := toCommonProcessorBody(m.CommonProcessorModel)
-	diags.Append(d...)
+	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.CommonProcessorBody = commonBody
 
 	if IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
@@ -70,10 +64,6 @@ func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.AllowDuplicateKeys) {
 		v := m.AllowDuplicateKeys.ValueBool()
 		body.AllowDuplicateKeys = &v
-	}
-
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
 	}
 
 	return body, diags

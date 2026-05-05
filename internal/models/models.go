@@ -196,18 +196,18 @@ type LifecycleSettings struct {
 	Downsampling  []Downsampling `json:"downsampling,omitempty"`
 }
 
-type Downsampling struct {
-	After         string `json:"after,omitempty"`
-	FixedInterval string `json:"fixed_interval,omitempty"`
+type DataStreamLifecycleResponse struct {
+	DataStreams []DataStreamLifecycle `json:"data_streams"`
 }
 
 type DataStreamLifecycle struct {
 	Name      string            `json:"name"`
-	Lifecycle LifecycleSettings `json:"lifecycle,omitzero"`
+	Lifecycle LifecycleSettings `json:"lifecycle"`
 }
 
-type TimestampField struct {
-	Name string `json:"name"`
+type Downsampling struct {
+	After         string `json:"after,omitempty"`
+	FixedInterval string `json:"fixed_interval,omitempty"`
 }
 
 type LogstashPipeline struct {
