@@ -48,9 +48,9 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 
 	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
 		m.TargetField = types.StringValue("geoip")
-		body.WithIgnorableTargetFieldBody.TargetField = "geoip"
+		body.TargetField = "geoip"
 	} else {
-		body.WithIgnorableTargetFieldBody.TargetField = m.TargetField.ValueString()
+		body.TargetField = m.TargetField.ValueString()
 	}
 	if IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
