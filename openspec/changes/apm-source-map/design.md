@@ -35,7 +35,6 @@ The API does not expose an update endpoint; any change to source map content or 
 
 - Exposing read-only artifact metadata fields (`identifier`, `encodedSha256`, `relativeUrl`, etc.) in state — only `id` is needed for lifecycle management.
 - Supporting concurrent management of multiple source maps for the same service/version combination (the API permits it; Terraform state would be distinct resources).
-- Kibana space support for source maps (the APM sourcemaps endpoint is not space-scoped in the current API).
 
 ## Decisions
 
@@ -43,7 +42,8 @@ The API does not expose an update endpoint; any change to source map content or 
 |-------|----------|
 | Source map input | Exactly one of `sourcemap_json` or `sourcemap_binary` required; validated at config time via `ExactlyOneOf`. Both use `sensitive = true` to keep content out of logs. |
 | Binary encoding | `sourcemap_binary` accepts base64-encoded content (standard encoding); the implementation decodes it before constructing the multipart form body. This avoids embedding raw binary in Terraform config/state. |
-| RequireReplace | All write attributes (`bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`) use `RequireReplace` plan modifier — no update path. |
+| RequireReplace | All write attributes (`bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`, `space_id`) use `RequireReplace` plan modifier — no update path. |
+| Space awareness | An optional `space_id` attribute is supported. All API paths (`POST /api/apm/sourcemaps`, `GET /api/apm/sourcemaps`, `DELETE /api/apm/sourcemaps/{id}`) are constructed via `kibanautil.BuildSpaceAwarePath(spaceID, basePath)`. When `space_id` is empty or `"default"`, the path is unchanged (default space). |
 | Read loop | `GET /api/apm/sourcemaps` returns a paginated list. The resource iterates all pages (using the `page`/`perPage` parameters) until the artifact whose `id` matches state is found or all pages exhausted. If not found, the resource removes itself from state. |
 | Import | Support import via the Fleet artifact `id` (passthrough import). |
 | Kibana client | Follow `internal/apm/agent_configuration` pattern: optional `kibana_connection` block; resolve `*clients.KibanaScopedClient` from provider; use `GetKibanaOapiClient()` for all operations; API version `2023-10-31`. |

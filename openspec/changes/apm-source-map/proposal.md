@@ -19,6 +19,8 @@ resource "elasticstack_apm_source_map" "example" {
   service_version  = <required, string>   # Service version the source map applies to
   sourcemap_json   = <optional, string>   # Source map as a JSON string; mutually exclusive with sourcemap_binary
   sourcemap_binary = <optional, string>   # Source map as a base64-encoded string; mutually exclusive with sourcemap_json
+  space_id         = <optional, string>   # Kibana space ID; omit or set to "default" for the default space
+  kibana_connection = <optional, block>   # Entity-local Kibana connection override
 }
 ```
 
@@ -28,10 +30,10 @@ Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. Both are writ
 
 | Operation | Behavior |
 |-----------|----------|
-| Create    | `POST /api/apm/sourcemaps` (multipart/form-data); captures `id` from `APMUIUploadSourceMapsResponse` |
-| Read      | `GET /api/apm/sourcemaps`; find artifact by state `id`; remove from state if not found (404 equivalent) |
+| Create    | `POST /api/apm/sourcemaps` (multipart/form-data) via `kibanautil.BuildSpaceAwarePath`; captures `id` from `APMUIUploadSourceMapsResponse` |
+| Read      | `GET /api/apm/sourcemaps` via `kibanautil.BuildSpaceAwarePath`; find artifact by state `id`; remove from state if not found (404 equivalent) |
 | Update    | Not supported — all write attributes have `RequireReplace`; Terraform destroys and recreates |
-| Delete    | `DELETE /api/apm/sourcemaps/{id}` |
+| Delete    | `DELETE /api/apm/sourcemaps/{id}` via `kibanautil.BuildSpaceAwarePath` |
 
 ## Capabilities
 

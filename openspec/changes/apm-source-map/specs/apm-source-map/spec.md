@@ -16,6 +16,8 @@ resource "elasticstack_apm_source_map" "example" {
   service_version  = <required, string>   # Service version the source map applies to
   sourcemap_json   = <optional, sensitive, string>  # Source map content as a JSON string; mutually exclusive with sourcemap_binary
   sourcemap_binary = <optional, sensitive, string>  # Source map content as a base64-encoded string; mutually exclusive with sourcemap_json
+  space_id         = <optional, string>   # Kibana space ID; omit or set to "default" for the default space
+  kibana_connection = <optional, block>   # Entity-local Kibana connection override
 }
 ```
 
@@ -137,9 +139,37 @@ Exactly one of `sourcemap_json` or `sourcemap_binary` SHALL be set. Setting both
 - WHEN Terraform validates configuration
 - THEN the provider SHALL return a validation diagnostic
 
+### Requirement: Space-aware API operations (REQ-010)
+
+The resource SHALL accept an optional `space_id` attribute (string, `RequireReplace`). All API paths — `POST /api/apm/sourcemaps`, `GET /api/apm/sourcemaps`, and `DELETE /api/apm/sourcemaps/{id}` — SHALL be constructed using `kibanautil.BuildSpaceAwarePath(spaceID, basePath)`. When `space_id` is empty or `"default"`, the path SHALL remain unchanged (default Kibana space). When `space_id` is a non-default value, the path SHALL be prefixed with `/s/{space_id}`.
+
+#### Scenario: Create in a non-default space
+
+- GIVEN `space_id = "my-space"` is set in the configuration
+- WHEN create runs
+- THEN the upload request SHALL be sent to `POST /s/my-space/api/apm/sourcemaps`
+
+#### Scenario: Read in a non-default space
+
+- GIVEN `space_id = "my-space"` is set in state
+- WHEN read runs
+- THEN the list request SHALL be sent to `GET /s/my-space/api/apm/sourcemaps`
+
+#### Scenario: Delete in a non-default space
+
+- GIVEN `space_id = "my-space"` is set in state
+- WHEN delete runs
+- THEN the delete request SHALL be sent to `DELETE /s/my-space/api/apm/sourcemaps/{id}`
+
+#### Scenario: Default space omits space prefix
+
+- GIVEN `space_id` is not set or is `"default"`
+- WHEN any API operation runs
+- THEN the request path SHALL NOT include the `/s/{space_id}` prefix
+
 ### Requirement: RequireReplace on write attributes (REQ-008)
 
-The attributes `bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, and `sourcemap_binary` SHALL each use the `RequireReplace` plan modifier so that any change to these attributes triggers a destroy-then-create cycle.
+The attributes `bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`, and `space_id` SHALL each use the `RequireReplace` plan modifier so that any change to these attributes triggers a destroy-then-create cycle.
 
 #### Scenario: Change in service_version triggers replacement
 
