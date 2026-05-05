@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -57,6 +58,8 @@ type TFModel struct {
 	JobType         types.String `tfsdk:"job_type"`
 	JobVersion      types.String `tfsdk:"job_version"`
 	ModelSnapshotID types.String `tfsdk:"model_snapshot_id"`
+
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
 // AnalysisConfigTFModel represents the analysis configuration
@@ -472,7 +475,7 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				d := originalDetector.CustomRules.ElementsAs(ctx, &originalCustomRules, false)
 				diags.Append(d...)
 			}
-			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes()}
+			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes(ctx)}
 
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
@@ -518,13 +521,13 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			}
 
 			if len(customRulesTF) > 0 {
-				customRulesListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, customRulesTF)
+				customRulesListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getCustomRuleAttrTypes(ctx)}, customRulesTF)
 				diags.Append(d...)
 				detectorsTF[i].CustomRules = customRulesListValue
 			} else if len(detector.CustomRules) == 0 {
 				// Preserve user's empty list vs null distinction
 				detectorsTF[i].CustomRules = originalDetector.CustomRules
-				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
+				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes(ctx)})
 			}
 		}
 		analysisConfigTF.Detectors = detectorsTF
@@ -555,7 +558,7 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 
 func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiDataDescription == nil {
-		return types.ObjectNull(getDataDescriptionAttrTypes())
+		return types.ObjectNull(getDataDescriptionAttrTypes(ctx))
 	}
 
 	dataDescriptionTF := DataDescriptionTFModel{
@@ -563,14 +566,14 @@ func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataD
 		TimeFormat: typeutils.NonEmptyStringishValue(apiDataDescription.TimeFormat),
 	}
 
-	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(), dataDescriptionTF)
+	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(ctx), dataDescriptionTF)
 	diags.Append(d...)
 	return dataDescriptionObjectValue
 }
 
 func (plan *TFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits *AnalysisLimitsAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiLimits == nil {
-		return types.ObjectNull(getAnalysisLimitsAttrTypes())
+		return types.ObjectNull(getAnalysisLimitsAttrTypes(ctx))
 	}
 
 	analysisLimitsTF := AnalysisLimitsTFModel{
@@ -583,14 +586,14 @@ func (plan *TFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits
 		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeNull()
 	}
 
-	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(), analysisLimitsTF)
+	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(ctx), analysisLimitsTF)
 	diags.Append(d...)
 	return analysisLimitsObjectValue
 }
 
 func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModelPlotConfig *ModelPlotConfigAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiModelPlotConfig == nil {
-		return types.ObjectNull(getModelPlotConfigAttrTypes())
+		return types.ObjectNull(getModelPlotConfigAttrTypes(ctx))
 	}
 
 	modelPlotConfigTF := ModelPlotConfigTFModel{
@@ -600,7 +603,7 @@ func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModel
 
 	modelPlotConfigTF.AnnotationsEnabled = types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)
 
-	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(), modelPlotConfigTF)
+	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(ctx), modelPlotConfigTF)
 	diags.Append(d...)
 	return modelPlotConfigObjectValue
 }

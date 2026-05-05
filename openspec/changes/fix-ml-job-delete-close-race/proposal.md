@@ -6,6 +6,7 @@ The `elasticstack_elasticsearch_ml_anomaly_detection_job` delete path calls `Clo
 
 - Add a `WaitForMLJobClosed` polling helper to `internal/clients/elasticsearch/ml_job.go` that blocks until a job's stats report `closed` state (or the job is gone).
 - Call `WaitForMLJobClosed` in `internal/elasticsearch/ml/anomalydetectionjob/delete.go` between the `CloseJob` and `DeleteJob` API calls.
+- Add a `timeouts` block to the `elasticstack_elasticsearch_ml_anomaly_detection_job` resource supporting a configurable `delete` timeout (default 20 minutes), so the polling wait bound is user-controllable.
 - Update REQ-021 in the `elasticsearch-ml-anomaly-detection-job` spec to require polling for `closed` state after `CloseJob` returns and before `DeleteJob` is called.
 
 ## Capabilities
@@ -21,7 +22,7 @@ None.
 ## Impact
 
 - `internal/clients/elasticsearch/ml_job.go`: new exported `WaitForMLJobClosed` function.
-- `internal/elasticsearch/ml/anomalydetectionjob/delete.go`: insert wait between close and delete.
+- `internal/elasticsearch/ml/anomalydetectionjob/delete.go`: insert wait between close and delete; read the configurable delete timeout.
+- `internal/elasticsearch/ml/anomalydetectionjob/schema.go` + `models_tf.go`: add `timeouts` block (Delete only).
 - `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md`: update REQ-021.
-- No API or schema changes.
-- No new dependencies — reuses `asyncutils.WaitForStateTransition` and `GetMLJobStats` already in the codebase.
+- No new dependencies — reuses `asyncutils.WaitForStateTransition`, `GetMLJobStats`, and the existing `terraform-plugin-framework-timeouts` library already in the codebase.
