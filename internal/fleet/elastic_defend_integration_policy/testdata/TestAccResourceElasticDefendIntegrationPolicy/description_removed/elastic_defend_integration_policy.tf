@@ -17,7 +17,9 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   name                = var.policy_name
   namespace           = "default"
   agent_policy_id     = elasticstack_fleet_agent_policy.test.policy_id
-  enabled             = true
+  # description omitted to verify it is cleared after the prior update step
+  # enabled omitted to verify it reverts to the default value of true
+  force               = true
   integration_version = "8.14.0"
   preset              = "EDRComplete"
 
@@ -26,41 +28,41 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
       events = {
         process             = true
         network             = true
-        file                = true
-        dns                 = true
-        dll_and_driver_load = true
-        registry            = false
-        security            = false
-        authentication      = false
+        file                = false
+        dns                 = false
+        dll_and_driver_load = false
+        registry            = true
+        security            = true
+        authentication      = true
       }
       malware = {
-        mode          = "prevent"
-        blocklist     = true
-        notify_user   = true
-        on_write_scan = true
+        mode          = "detect"
+        blocklist     = false
+        notify_user   = false
+        on_write_scan = false
       }
       ransomware = {
-        mode = "prevent"
-      }
-      memory_protection = {
         mode = "detect"
       }
+      memory_protection = {
+        mode = "prevent"
+      }
       behavior_protection = {
-        mode               = "prevent"
-        reputation_service = true
+        mode               = "detect"
+        reputation_service = false
       }
       popup = {
         malware = {
-          message = "Malware detected"
-          enabled = true
+          message = ""
+          enabled = false
         }
         ransomware = {
-          message = ""
-          enabled = false
+          message = "Ransomware blocked"
+          enabled = true
         }
         memory_protection = {
-          message = ""
-          enabled = false
+          message = "Memory alert"
+          enabled = true
         }
         behavior_protection = {
           message = ""
@@ -68,41 +70,42 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         }
       }
       antivirus_registration = {
-        mode    = "enabled"
-        enabled = true
+        mode    = "sync_with_malware_prevent"
+        enabled = false
       }
       attack_surface_reduction = {
         credential_hardening = {
-          enabled = true
+          enabled = false
         }
       }
       logging = {
-        file = "info"
+        file = "error"
       }
     }
     mac = {
       events = {
         process = true
-        file    = true
+        network = false
+        file    = false
       }
       malware = {
-        mode = "prevent"
+        mode = "detect"
       }
       memory_protection = {
-        mode = "prevent"
+        mode = "detect"
       }
       behavior_protection = {
-        mode               = "detect"
-        reputation_service = true
+        mode               = "prevent"
+        reputation_service = false
       }
       popup = {
         malware = {
-          message = "Mac malware alert"
-          enabled = true
-        }
-        memory_protection = {
           message = ""
           enabled = false
+        }
+        memory_protection = {
+          message = "Mac memory alert"
+          enabled = true
         }
         behavior_protection = {
           message = ""
@@ -110,36 +113,36 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         }
       }
       logging = {
-        file = "warning"
+        file = "error"
       }
     }
     linux = {
       events = {
         process      = true
-        network      = true
-        file         = true
-        session_data = true
-        tty_io       = false
+        network      = false
+        file         = false
+        session_data = false
+        tty_io       = true
       }
       malware = {
-        mode      = "detect"
-        blocklist = true
+        mode      = "prevent"
+        blocklist = false
       }
       memory_protection = {
-        mode = "prevent"
+        mode = "detect"
       }
       behavior_protection = {
-        mode               = "detect"
-        reputation_service = true
+        mode               = "prevent"
+        reputation_service = false
       }
       popup = {
         malware = {
-          message = "Linux malware alert"
-          enabled = true
-        }
-        memory_protection = {
           message = ""
           enabled = false
+        }
+        memory_protection = {
+          message = "Linux memory alert"
+          enabled = true
         }
         behavior_protection = {
           message = ""
@@ -147,7 +150,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         }
       }
       logging = {
-        file = "warning"
+        file = "error"
       }
     }
   }
