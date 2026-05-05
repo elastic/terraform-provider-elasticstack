@@ -221,6 +221,15 @@ function validateChangelogSectionFull(parsed) {
     errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
   }
 
+  if (
+    parsed.breakingChangesHeadingPresent &&
+    parsed.customerImpact &&
+    VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
+    parsed.customerImpact !== 'breaking'
+  ) {
+    errors.push('### Breaking changes section requires Customer impact: breaking; use <!-- /breaking-changes --> as an end marker.');
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
