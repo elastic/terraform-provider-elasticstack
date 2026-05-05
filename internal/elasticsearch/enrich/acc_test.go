@@ -1385,8 +1385,12 @@ func checkEnrichPolicyQueryNull(resourceName string) resource.TestCheckFunc {
 		}
 
 		value, ok := rs.Primary.Attributes["query"]
-		if !ok || value == "" || value == "null" {
+		if !ok || value == "" {
 			return nil
+		}
+
+		if value == "null" {
+			return fmt.Errorf("Expected query to be null (TF null), got the string %q — the null-as-string bug is present", value)
 		}
 
 		return fmt.Errorf("Expected query to be null, got %q", value)
