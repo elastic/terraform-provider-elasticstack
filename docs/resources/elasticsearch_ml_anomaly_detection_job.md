@@ -95,6 +95,7 @@ This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyp
 - `renormalization_window_days` (Number) Advanced configuration option. The period over which adjustments to the score are applied, as new data is seen.
 - `results_index_name` (String) A text string that affects the name of the machine learning results index.
 - `results_retention_days` (Number) Advanced configuration option. The period of time (in days) that results are retained.
+- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
 
@@ -228,3 +229,11 @@ Optional:
 - `annotations_enabled` (Boolean) If true, enables calculation and storage of the model change annotations for each entity that is being analyzed.
 - `enabled` (Boolean) If true, enables calculation and storage of the model bounds for each entity that is being analyzed.
 - `terms` (String) Limits data collection to this comma separated list of partition or by field values. If terms are not specified or it is an empty string, no filtering is applied.
+
+
+<a id="nestedblock--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
