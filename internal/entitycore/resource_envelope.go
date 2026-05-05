@@ -113,7 +113,8 @@ func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (Ela
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
 // Schema, Create, Read, Update, and Delete. Concrete resources supply a schema
 // factory (without elasticsearch_connection block), read, delete, create, and
-// update callbacks.
+// update callbacks. All callbacks must be non-nil; otherwise Create or Update
+// surface a configuration error diagnostic instead of invoking the callback.
 func NewElasticsearchResource[T ElasticsearchResourceModel](
 	component Component,
 	name string,
@@ -217,6 +218,14 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
 	diags.Append(connDiags...)
 	if diags.HasError() {
+		return diags
+	}
+
+	if op == nil {
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"The create or update callback passed to NewElasticsearchResource must not be nil.",
+		)
 		return diags
 	}
 
