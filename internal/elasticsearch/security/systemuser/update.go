@@ -79,6 +79,18 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 		}
 	}
 
-	data.ID = types.StringValue(id.String())
-	return data, diags
+	refreshed, found, readDiags := readSystemUser(ctx, client, usernameID, data)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		var zero Data
+		return zero, diags
+	}
+	if !found {
+		diags.AddError("Not Found", fmt.Sprintf(`System user "%s" not found after update`, usernameID))
+		var zero Data
+		return zero, diags
+	}
+
+	refreshed.ID = types.StringValue(id.String())
+	return refreshed, diags
 }

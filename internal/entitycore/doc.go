@@ -75,47 +75,8 @@
 //     concrete resources add that when needed. Resources that still override
 //     Create or Update (for example when the update path needs Config or prior
 //     state in addition to Plan) may pass [PlaceholderElasticsearchWriteCallbacks]
-//     until their logic is migrated into envelope callbacks.
-//
-//	Example envelope resource:
-//
-//		type myResource struct {
-//			*entitycore.ElasticsearchResource[Data]
-//		}
-//
-//		func readMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
-//			// API call and model population …
-//			return state, true, nil
-//		}
-//
-//		func deleteMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) diag.Diagnostics {
-//			// API call to delete …
-//			return nil
-//		}
-//
-//		func createMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
-//			// API create and model mapping …
-//			return plan, nil
-//		}
-//
-//		func updateMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
-//			// API update and model mapping …
-//			return plan, nil
-//		}
-//
-//		func newMyResource() *myResource {
-//			return &myResource{
-//				ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-//					entitycore.ComponentElasticsearch,
-//					"my_entity",
-//					getResourceSchema, // returns resource.Schema without elasticsearch_connection block
-//					readMyEntity,
-//					deleteMyEntity,
-//					createMyEntity,
-//					updateMyEntity,
-//				),
-//			}
-//		}
+//     until their logic is migrated into envelope callbacks. Constructor shape and
+//     callback types are defined on [NewElasticsearchResource] in resource_envelope.go.
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
