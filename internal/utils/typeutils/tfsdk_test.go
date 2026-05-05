@@ -169,7 +169,7 @@ func TestNonEmptyStringPointerValue(t *testing.T) {
 		{name: "converts unknown", input: types.StringUnknown(), want: nil},
 		{name: "converts null", input: types.StringNull(), want: nil},
 		{name: "converts empty", input: types.StringValue(""), want: nil},
-		{name: "converts value", input: types.StringValue("value"), want: new("value")},
+		{name: "converts value", input: types.StringValue("value"), want: func() *string { s := "value"; return &s }()},
 	}
 
 	for _, tt := range tests {
@@ -192,8 +192,8 @@ func TestFloat64PointerValue(t *testing.T) {
 	}{
 		{name: "converts unknown", input: types.Float64Unknown(), want: nil},
 		{name: "converts null", input: types.Float64Null(), want: nil},
-		{name: "converts zero", input: types.Float64Value(0), want: new(0.0)},
-		{name: "converts value", input: types.Float64Value(3.14), want: new(3.14)},
+		{name: "converts zero", input: types.Float64Value(0), want: func() *float64 { f := 0.0; return &f }()},
+		{name: "converts value", input: types.Float64Value(3.14), want: func() *float64 { f := 3.14; return &f }()},
 	}
 
 	for _, tt := range tests {
