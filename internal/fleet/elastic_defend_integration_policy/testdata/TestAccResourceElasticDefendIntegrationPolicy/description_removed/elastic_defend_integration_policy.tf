@@ -17,7 +17,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   name            = var.policy_name
   namespace       = "default"
   agent_policy_id = elasticstack_fleet_agent_policy.test.policy_id
-  # description omitted to verify it is cleared after the prior update step
+  # description intentionally omitted so it is left unmanaged in this step
   # enabled omitted to verify it reverts to the default value of true
   force               = true
   integration_version = "8.14.0"

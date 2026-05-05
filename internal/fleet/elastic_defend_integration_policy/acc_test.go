@@ -42,7 +42,7 @@ const (
 )
 
 // TestAccResourceElasticDefendIntegrationPolicy covers create, update, import,
-// description round-trip, and refresh-after-out-of-band-delete for the Elastic Defend resource.
+// and description round-trip behavior for the Elastic Defend resource.
 func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -337,8 +337,8 @@ func TestAccResourceElasticDefendIntegrationPolicyPopupDefaults(t *testing.T) {
 }
 
 // TestAccResourceElasticDefendIntegrationPolicyKibanaConnection verifies that
-// the resource can be created and imported when an entity-local kibana_connection
-// block is supplied instead of relying on the provider-level Kibana configuration.
+// the resource can be created when an entity-local kibana_connection block is
+// supplied instead of relying on the provider-level Kibana configuration.
 func TestAccResourceElasticDefendIntegrationPolicyKibanaConnection(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
