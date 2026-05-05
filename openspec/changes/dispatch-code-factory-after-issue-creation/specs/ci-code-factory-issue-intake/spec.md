@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Workflow activates the implementation agent only for qualifying `code-factory` issue events
-The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events, and it SHALL also support internal single-issue activation through `workflow_dispatch`. For issue-event intake, eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `code-factory`, and `issues.opened` when the issue already includes the `code-factory` label at creation time.
+The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events. For issue-event intake, eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `code-factory`, and `issues.opened` when the issue already includes the `code-factory` label at creation time.
 
 #### Scenario: Label applied after issue creation
 - **WHEN** an `issues.labeled` event is received and `github.event.label.name` is `code-factory`
@@ -11,16 +11,12 @@ The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events
 - **WHEN** an `issues.opened` event is received and the issue's initial labels include `code-factory`
 - **THEN** the workflow SHALL treat the event as eligible to activate the implementation agent
 
-#### Scenario: Internal workflow dispatch requests issue intake
-- **WHEN** the workflow is triggered by `workflow_dispatch` with a valid issue number for the current repository
-- **THEN** the workflow SHALL treat that dispatch as eligible to activate the implementation agent subject to its dispatch-mode deterministic gates
-
 #### Scenario: Non-trigger issue event is ignored
 - **WHEN** an `issues` event is received without the `code-factory` label in the qualifying position for that event type
 - **THEN** the workflow SHALL NOT activate the implementation agent for that event
 
 ### Requirement: Trigger actor must be trusted
-Before agent activation, the workflow SHALL determine whether the triggering actor is trusted for issue-event intake. The actor SHALL be trusted if the sender is `github-actions[bot]`; otherwise the workflow SHALL query repository collaborator permissions and SHALL require effective repository permission `write`, `maintain`, or `admin`. This trust policy applies to issue-event intake and SHALL NOT be required for repository-authored `workflow_dispatch` intake.
+Before agent activation, the workflow SHALL determine whether the triggering actor is trusted for issue-event intake. The actor SHALL be trusted if the sender is `github-actions[bot]`; otherwise the workflow SHALL query repository collaborator permissions and SHALL require effective repository permission `write`, `maintain`, or `admin`. This trust policy applies only to issue-event intake and SHALL NOT be required for repository-authored `workflow_dispatch` intake.
 
 #### Scenario: GitHub Actions opens a labeled issue
 - **WHEN** the sender is `github-actions[bot]` and the event otherwise qualifies for `code-factory` issue intake
@@ -70,6 +66,13 @@ When the deterministic gate passes, the workflow agent SHALL treat the resolved 
 
 ## ADDED Requirements
 
+### Requirement: Workflow activates the implementation agent for valid internal dispatch requests
+The workflow SHALL support internal single-issue activation through `workflow_dispatch` when the dispatch provides valid current-repository issue identity and the run passes its dispatch-mode deterministic gates.
+
+#### Scenario: Internal workflow dispatch requests issue intake
+- **WHEN** the workflow is triggered by `workflow_dispatch` with a valid issue number for the current repository
+- **THEN** the workflow SHALL treat that dispatch as eligible to activate the implementation agent subject to its dispatch-mode deterministic gates
+
 ### Requirement: Dispatch intake resolves live issue context from workflow inputs
 For `workflow_dispatch` intake, the workflow SHALL accept enough typed input to identify one issue in the current repository and SHALL resolve the live issue title and body from GitHub before activating the implementation agent. The workflow SHALL use the live issue as the canonical source of scope rather than trusting issue body or title text passed through dispatch inputs.
 
@@ -91,3 +94,14 @@ The workflow SHALL normalize issue intake into downstream-consumable outputs tha
 #### Scenario: Dispatch intake exposes normalized outputs
 - **WHEN** the workflow is triggered from `workflow_dispatch`
 - **THEN** the workflow SHALL publish the same normalized outputs for the resolved issue number, title, body, intake mode, and gate reason
+
+### Requirement: Trigger label removal remains issue-event-only
+The workflow SHALL keep `code-factory` trigger-label removal scoped to the manual issue-event path. Dispatch-triggered runs SHALL NOT require the target issue to carry the `code-factory` label, and the workflow SHALL NOT treat the absence of that label on dispatch-targeted issues as an error.
+
+#### Scenario: Manual issue-event run removes the trigger label when proceeding
+- **WHEN** an eligible trusted issue-event run proceeds past deterministic gates and the issue carries the `code-factory` label
+- **THEN** the workflow SHALL remove the `code-factory` label before agent activation as defined by the base intake behavior
+
+#### Scenario: Dispatch-targeted issue has no `code-factory` label
+- **WHEN** the workflow is triggered by `workflow_dispatch` for an issue that does not carry the `code-factory` label
+- **THEN** the workflow SHALL continue normally and SHALL NOT require trigger-label removal for that run

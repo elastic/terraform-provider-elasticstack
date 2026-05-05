@@ -21,7 +21,7 @@ Each semantic refactor issue created by the workflow SHALL include a concise sum
 #### Scenario: Issue titles and labels identify the workflow output
 - **WHEN** the workflow creates a semantic refactor issue
 - **THEN** the issue SHALL carry the configured title prefix `[semantic-refactor] ` and the label `semantic-refactor`
-- **AND** the issue SHALL NOT rely on a `code-factory` label for implementation handoff
+- **AND** the issue SHALL NOT include the `code-factory` label
 
 ## ADDED Requirements
 
