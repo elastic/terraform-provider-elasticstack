@@ -3,7 +3,7 @@ import test from 'node:test';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { classifyRuns, computeGate } = require('./flaky-test-catcher.js');
+const { classifyRuns, computeGate, filterIssues } = require('./flaky-test-catcher.js');
 
 // ---------------------------------------------------------------------------
 // classifyRuns
@@ -15,7 +15,7 @@ test('classifyRuns returns empty failedRunIds and zero count for empty input', (
   assert.equal(result.totalRunCount, 0);
 });
 
-test('classifyRuns counts all runs and identifies failed ones', () => {
+test('classifyRuns counts only countable runs and identifies failed ones', () => {
   const runs = [
     { id: 1, conclusion: 'success' },
     { id: 2, conclusion: 'failure' },
@@ -24,7 +24,8 @@ test('classifyRuns counts all runs and identifies failed ones', () => {
   ];
   const result = classifyRuns(runs);
   assert.deepEqual(result.failedRunIds, [2, 3]);
-  assert.equal(result.totalRunCount, 4);
+  // cancelled is not countable, so totalRunCount is 3
+  assert.equal(result.totalRunCount, 3);
 });
 
 test('classifyRuns returns no failed IDs when all runs succeed', () => {
@@ -48,24 +49,46 @@ test('classifyRuns returns all IDs when all runs fail', () => {
   assert.equal(result.totalRunCount, 3);
 });
 
-test('classifyRuns treats in-progress (null conclusion) runs as non-failures', () => {
+test('classifyRuns excludes null-conclusion (in-progress) runs from totalRunCount', () => {
   const runs = [
     { id: 30, conclusion: null },
     { id: 31, conclusion: 'failure' },
   ];
   const result = classifyRuns(runs);
   assert.deepEqual(result.failedRunIds, [31]);
-  assert.equal(result.totalRunCount, 2);
+  assert.equal(result.totalRunCount, 1);
 });
 
-test('classifyRuns treats skipped runs as non-failures', () => {
+test('classifyRuns excludes skipped runs from totalRunCount', () => {
   const runs = [
     { id: 40, conclusion: 'skipped' },
     { id: 41, conclusion: 'success' },
   ];
   const result = classifyRuns(runs);
   assert.deepEqual(result.failedRunIds, []);
+  assert.equal(result.totalRunCount, 1);
+});
+
+test('classifyRuns excludes cancelled runs from totalRunCount', () => {
+  const runs = [
+    { id: 50, conclusion: 'cancelled' },
+    { id: 51, conclusion: 'cancelled' },
+    { id: 52, conclusion: 'failure' },
+    { id: 53, conclusion: 'success' },
+  ];
+  const result = classifyRuns(runs);
+  assert.deepEqual(result.failedRunIds, [52]);
   assert.equal(result.totalRunCount, 2);
+});
+
+test('classifyRuns treats timed_out runs as non-failures but counts them', () => {
+  const runs = [
+    { id: 60, conclusion: 'timed_out' },
+    { id: 61, conclusion: 'failure' },
+  ];
+  const result = classifyRuns(runs);
+  assert.deepEqual(result.failedRunIds, [61]);
+  assert.equal(result.totalRunCount, 2); // timed_out is countable but not a failure
 });
 
 // ---------------------------------------------------------------------------
@@ -124,9 +147,53 @@ test('computeGate with many failures and all slots available', () => {
   assert.ok(result.gate_reason.includes('5 failed run'));
 });
 
-test('computeGate gate_reason mentions slot info when failures and slots available', () => {
+test('computeGate gate_reason forwards full issueSlots gate_reason text', () => {
   const result = computeGate([99], slotsAvailable);
   assert.equal(result.has_ci_failures, 'true');
-  // Should forward the slot gate_reason text
-  assert.ok(result.gate_reason.includes('slot'));
+  assert.ok(result.gate_reason.includes(slotsAvailable.gate_reason));
+});
+
+test('computeGate with failures and exactly 1 slot available', () => {
+  const slots = {
+    open_issues: 2,
+    issue_slots_available: 1,
+    gate_reason: '1 slot(s) available: 2 open flaky-test issue(s), cap is 3.',
+  };
+  const result = computeGate([42], slots);
+  assert.equal(result.has_ci_failures, 'true');
+  assert.ok(result.gate_reason.includes('1 failed run'));
+  assert.ok(result.gate_reason.includes('1 slot'));
+});
+
+// ---------------------------------------------------------------------------
+// filterIssues
+// ---------------------------------------------------------------------------
+
+test('filterIssues returns empty array for empty input', () => {
+  assert.deepEqual(filterIssues([]), []);
+});
+
+test('filterIssues keeps all items without pull_request field', () => {
+  const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  assert.equal(filterIssues(items).length, 3);
+});
+
+test('filterIssues removes all items with pull_request set', () => {
+  const items = [
+    { id: 1, pull_request: { url: 'https://...' } },
+    { id: 2, pull_request: {} },
+  ];
+  assert.deepEqual(filterIssues(items), []);
+});
+
+test('filterIssues keeps only real issues in a mixed list', () => {
+  const items = [
+    { id: 1 },
+    { id: 2, pull_request: { url: 'https://...' } },
+    { id: 3 },
+    { id: 4, pull_request: {} },
+  ];
+  const result = filterIssues(items);
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(i => i.id), [1, 3]);
 });
