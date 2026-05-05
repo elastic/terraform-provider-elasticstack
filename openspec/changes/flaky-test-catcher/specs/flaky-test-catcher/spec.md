@@ -86,12 +86,16 @@ The agent SHALL compute a fail rate for each test as `fail_count / total_run_cou
 
 ---
 
-### Requirement: Resource grouping
-The agent SHALL group failing tests by Terraform resource name. The resource name SHALL be derived by stripping the `TestAcc` prefix and the trailing `_<scenario>` suffix from the test function name, then converting to snake_case Terraform naming.
+### Requirement: Test grouping by base test name
+The agent SHALL group failing tests by their base test name, defined as the portion of the test function name matching `TestAcc[^_]+` (i.e., everything up to but not including the first `_`). Scenario variants of the same test SHALL be grouped into one issue.
 
-#### Scenario: Multiple tests map to one resource
-- **WHEN** `TestAccElasticsearchIndexResource_basic` and `TestAccElasticsearchIndexResource_update` both appear as failing
-- **THEN** they are grouped under a single issue for `elasticstack_elasticsearch_index`
+#### Scenario: Multiple scenario variants map to one group
+- **WHEN** `TestAccResourceAgentConfiguration_alternateEnvironment` and `TestAccResourceAgentConfiguration_minimal` both appear as failing
+- **THEN** they are grouped under a single issue titled `[flaky-test] TestAccResourceAgentConfiguration`
+
+#### Scenario: Test with no underscore suffix
+- **WHEN** `TestAccResourceAgentConfiguration` appears as failing (no `_scenario` suffix)
+- **THEN** it maps to the issue title `[flaky-test] TestAccResourceAgentConfiguration` unchanged
 
 ---
 

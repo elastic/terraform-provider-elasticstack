@@ -4,7 +4,7 @@ The repo uses a compiled agentic workflow system where source templates live in 
 
 Agentic workflows (`*.md` output) follow a two-job pattern: a deterministic **pre-activation** job (pure `actions/github-script` steps) produces gating outputs, and the **agent** job runs conditionally on those outputs. The `schema-coverage-rotation` workflow is the established reference for this pattern.
 
-The repo has a large acceptance test matrix: ~22 Elastic Stack versions × 2 shards, run for every push to `main`. Tests are written in Go (`--- FAIL: TestName`) and named after the Terraform resource they cover (`TestAccElasticsearchIndexResource_*`).
+The repo has a large acceptance test matrix: ~22 Elastic Stack versions × 2 shards, run for every push to `main`. Tests are written in Go (`--- FAIL: TestName`) and named after the Terraform resource they cover (e.g., `TestAccResourceAgentConfiguration`, `TestAccResourceAgentConfiguration_minimal`).
 
 ## Goals / Non-Goals
 
@@ -45,13 +45,15 @@ The repo has a large acceptance test matrix: ~22 Elastic Stack versions × 2 sha
 
 **Alternative considered**: Parse successful run logs to count actual test attempts per test. Rejected: too expensive (downloading logs from every run, including successful ones).
 
-### Group issues by resource, not by test function
+### Group issues by base test name (`TestAcc[^_]+`)
 
-**Decision**: One issue per Terraform resource (e.g., `elasticstack_elasticsearch_index`), listing all failing test functions within it.
+**Decision**: One issue per base test name (the portion of the test function name before the first `_`), listing all scenario variants within it.
 
-**Rationale**: Issues are actioned by `code-factory` which works at the resource level. One issue per test would create noise and hit the issue cap quickly for resources with multiple flaky tests.
+**Rationale**: Issues are actioned by `code-factory` which works at a coherent unit of test logic. One issue per scenario variant would create noise and hit the issue cap quickly. The base test name is derivable purely from the test name string already present in the failure log — no file lookup or package mapping needed.
 
-**Extraction rule**: Strip the `TestAcc` prefix and the `_<scenario>` suffix. `TestAccElasticsearchIndexResource_basic` → `elasticstack_elasticsearch_index`.
+**Extraction rule**: Apply the regex `TestAcc[^_]+` to the failing test name. `TestAccResourceAgentConfiguration_alternateEnvironment` → `TestAccResourceAgentConfiguration`. Issue title: `[flaky-test] TestAccResourceAgentConfiguration`.
+
+**Alternative considered**: Group by Go package (extractable from the `FAIL <pkg>` line in test output). Rejected for the initial implementation: requires parsing a second line type from the log and the package path is less directly human-readable as an issue title. Can be revisited if the base-name grouping proves too fine-grained.
 
 ### Commit-based fix detection: messages + changed file paths
 
