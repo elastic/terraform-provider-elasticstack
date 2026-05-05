@@ -386,15 +386,16 @@ func TestAccFleetCustomIntegration_KibanaConnection(t *testing.T) {
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
 					"package_path": config.StringVariable(zipPath),
 				}),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.insecure", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "kibana_connection.0.endpoints.0"),
-				),
+				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_custom_integration.test", "kibana_connection.0.")...)...),
 			},
 		},
 	})
