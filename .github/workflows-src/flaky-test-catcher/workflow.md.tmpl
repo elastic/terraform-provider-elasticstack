@@ -23,7 +23,7 @@ engine:
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   contents: read
-  issues: write
+  issues: read
   actions: read
 safe-outputs:
   create-issue:
