@@ -35,9 +35,9 @@ resource "elasticstack_apm_source_map" "example_json" {
 # scoped to a non-default Kibana space.
 # The sourcemap_binary value is write-only and never read back from the API.
 resource "elasticstack_apm_source_map" "example_space" {
-  service_name     = "my-frontend"
-  service_version  = "2.0.0"
-  bundle_filepath  = "/static/js/main.chunk.js"
+  service_name    = "my-frontend"
+  service_version = "2.0.0"
+  bundle_filepath = "/static/js/main.chunk.js"
   # base64-encoded source map content ({"version":3,"file":"main.chunk.js","sources":["src/index.js"],"mappings":"AAAA"})
   sourcemap_binary = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoibWFpbi5jaHVuay5qcyIsInNvdXJjZXMiOlsic3JjL2luZGV4LmpzIl0sIm1hcHBpbmdzIjoiQUFBQSJ9"
   space_id         = "my-space"
