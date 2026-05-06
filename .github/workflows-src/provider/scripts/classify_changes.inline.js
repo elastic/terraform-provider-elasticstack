@@ -3,26 +3,27 @@
 let changedFiles = [];
 
 if (context.eventName === 'pull_request') {
-  const files = await github.paginate(github.rest.pulls.listFiles, {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: context.payload.pull_request.number,
-    per_page: 100,
-  });
-  changedFiles = files.map((f) => f.filename);
+  try {
+    const files = await github.paginate(github.rest.pulls.listFiles, {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      pull_number: context.payload.pull_request.number,
+      per_page: 100,
+    });
+    changedFiles = files.map((f) => f.filename);
+  } catch (err) {
+    core.warning(`Failed to list PR files: ${err.message}; defaulting to provider_changes=true.`);
+    core.setOutput('provider_changes', 'true');
+    return;
+  }
 } else if (context.eventName === 'push') {
-  const commits = context.payload.commits || [];
-  for (const commit of commits) {
-    changedFiles.push(...(commit.added || []));
-    changedFiles.push(...(commit.modified || []));
-    changedFiles.push(...(commit.removed || []));
-  }
-  if (changedFiles.length === 0) {
-    core.info('Push event has no file list in commits payload (may be a force-push or API limitation); defaulting to provider_changes=true (conservative).');
-  }
+  core.setOutput('provider_changes', 'true');
+  core.info('Push event: unconditionally running provider CI.');
+  return;
 } else {
   // workflow_dispatch or other events: conservative default
   core.setOutput('provider_changes', 'true');
+  core.info(`${context.eventName}: defaulting to provider_changes=true.`);
   return;
 }
 
