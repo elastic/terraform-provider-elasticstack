@@ -164,7 +164,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "malformed lifecycle setting returns error",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{
 					"bad-index": {
@@ -205,7 +205,7 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 	t.Run("empty indices slice is a no-op", func(t *testing.T) {
 		t.Parallel()
 		callCount := 0
-		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, _ *http.Request) {
 			callCount++
 			w.WriteHeader(http.StatusOK)
 		})
