@@ -51,8 +51,8 @@
 
 ## 8. Workflow Tests
 
-- [ ] 8.1 Update `make workflow-test` test fixtures or test cases that reference `test.yml`, the `Build/Lint/Test` workflow name, the `preflight` job, the `test-validation` job, or `ready_for_review` handling to match the new workflow files and job names
-- [ ] 8.2 Add workflow test coverage for the new `gate` job logic in `provider.yml` and `workflows.yml` (legitimate skip succeeds, failure fails gate)
+- [x] 8.1 Update `make workflow-test` test fixtures or test cases that reference `test.yml`, the `Build/Lint/Test` workflow name, the `preflight` job, the `test-validation` job, or `ready_for_review` handling to match the new workflow files and job names
+- [x] 8.2 Add workflow test coverage for the new `gate` job logic in `provider.yml` and `workflows.yml` (legitimate skip succeeds, failure fails gate)
 
 ## 9. Build Verification
 
