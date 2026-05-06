@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 var (
@@ -32,12 +33,21 @@ var (
 )
 
 type mlDatafeedStateResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[MLDatafeedStateData]
 }
 
 func newMLDatafeedStateResource() *mlDatafeedStateResource {
+	createFunc, updateFunc := entitycore.PlaceholderElasticsearchWriteCallbacks[MLDatafeedStateData]()
 	return &mlDatafeedStateResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_datafeed_state"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData](
+			entitycore.ComponentElasticsearch,
+			"ml_datafeed_state",
+			func() rschema.Schema { return GetSchema(context.Background()) },
+			readMLDatafeedState,
+			deleteMLDatafeedState,
+			createFunc,
+			updateFunc,
+		),
 	}
 }
 

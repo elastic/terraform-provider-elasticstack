@@ -20,35 +20,61 @@ package datafeedstate
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *mlDatafeedStateResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data MLDatafeedStateData
-	diags := req.State.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+// readMLDatafeedState is the envelope read callback. It reads datafeed stats
+// and returns the updated model. During import, computed attributes without
+// a stored value are set to their zero/null defaults.
+func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state MLDatafeedStateData) (MLDatafeedStateData, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Check if the datafeed exists by getting its stats
+	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, resourceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
-	readData, diags := r.read(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if datafeedStats == nil {
+		return state, false, diags
 	}
 
-	if readData == nil {
-		resp.State.RemoveResource(ctx)
-		return
+	// Update the data with current information
+	state.State = types.StringValue(datafeedStats.State.String())
+
+	// Regenerate composite ID to ensure it's current
+	compID, sdkDiags := client.ID(ctx, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	state.ID = types.StringValue(compID.String())
+
+	diags.Append(state.SetStartAndEndFromAPI(datafeedStats)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	// Set defaults for computed attributes if they're not already set (e.g., during import)
+	if state.Force.IsNull() {
+		state.Force = types.BoolValue(false)
+	}
+	if state.Timeout.IsNull() {
+		state.Timeout = customtypes.NewDurationValue("30s")
+	}
+
+	return state, true, diags
 }
 
+// read is the internal helper used by the update path to read datafeed stats
+// given a model that already has the ElasticsearchConnection populated.
 func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
 	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
 	if diags.HasError() {
