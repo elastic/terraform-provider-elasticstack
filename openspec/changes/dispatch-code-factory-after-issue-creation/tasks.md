@@ -7,10 +7,10 @@
 
 ## 2. Add deterministic producer-side dispatch fan-out
 
-- [ ] 2.1 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
-- [ ] 2.2 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
-- [ ] 2.3 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
-- [ ] 2.4 Extract and test any shared helper logic needed to parse the temporary issue ID map and construct dispatch payloads deterministically
+- [x] 2.1 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
+- [x] 2.2 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
+- [x] 2.3 Add repository-authored post-safe_outputs dispatch logic for `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` that parses `temporary-id-map.json` and dispatches one `code-factory` run per created issue
+- [x] 2.4 Extract and test any shared helper logic needed to parse the temporary issue ID map and construct dispatch payloads deterministically
 
 ## 3. Remove producer-side `code-factory` label handoff
 
