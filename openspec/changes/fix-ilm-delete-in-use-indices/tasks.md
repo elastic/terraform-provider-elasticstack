@@ -1,8 +1,8 @@
 ## 1. ES client helpers
 
-- [ ] 1.1 Add `GetIndicesWithILMPolicy` to `internal/clients/elasticsearch/index.go` — queries `GET /_all/_settings/index.lifecycle.name?flat_settings=true`, parses response and returns index names whose `index.lifecycle.name` matches the given policy.
-- [ ] 1.2 Add `ClearILMPolicyFromIndices` to `internal/clients/elasticsearch/index.go` — issues `PUT /{indices}/_settings` with `{"index.lifecycle.name": null}`.
-- [ ] 1.3 Add unit tests for both helpers or verify via acceptance test coverage.
+- [x] 1.1 Add `GetIndicesWithILMPolicy` to `internal/clients/elasticsearch/index.go` — queries `GET /_all/_settings/index.lifecycle.name?flat_settings=true`, parses response and returns index names whose `index.lifecycle.name` matches the given policy.
+- [x] 1.2 Add `ClearILMPolicyFromIndices` to `internal/clients/elasticsearch/index.go` — issues `PUT /{indices}/_settings` with `{"index.lifecycle.name": null}`.
+- [x] 1.3 Add unit tests for both helpers or verify via acceptance test coverage.
 
 ## 2. ILM resource Delete handler
 
