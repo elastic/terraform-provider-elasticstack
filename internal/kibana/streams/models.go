@@ -58,6 +58,11 @@ type streamQueryModel struct {
 	Evidence      types.List    `tfsdk:"evidence"`
 }
 
+func (m streamModel) GetID() types.String             { return m.ID }
+func (m streamModel) GetResourceID() types.String     { return m.Name }
+func (m streamModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m streamModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
 // streamType returns the stream type discriminator based on which config block is set.
 func (m *streamModel) streamType() string {
 	switch {
