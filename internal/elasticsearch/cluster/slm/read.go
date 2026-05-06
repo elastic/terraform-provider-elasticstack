@@ -98,46 +98,42 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			data.Partial = types.BoolValue(false)
 		}
 
-		// Indices: if API returned no indices and state has null/unknown, keep null to avoid plan mismatch.
-		// If state has an empty list, keep the empty list (don't regress to null).
-		if len(c.Indices) == 0 {
-			stateIndicesEmpty := !state.Indices.IsNull() && !state.Indices.IsUnknown() && len(state.Indices.Elements()) == 0
-			if state.Indices.IsNull() || state.Indices.IsUnknown() {
-				data.Indices = types.ListNull(types.StringType)
-			} else if stateIndicesEmpty {
-				data.Indices = state.Indices // preserve empty list
-			} else {
-				// state had elements but API now returns empty — return empty list
-				data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
-			}
-		} else {
+		// Indices: if API returned no indices, preserve the state value to avoid plan mismatch.
+		// null/unknown state → null; empty list state → empty list; non-empty state → empty list.
+		switch {
+		case len(c.Indices) > 0:
 			indicesList, listDiags := types.ListValueFrom(ctx, types.StringType, c.Indices)
 			diags.Append(listDiags...)
 			if diags.HasError() {
 				return state, false, diags
 			}
 			data.Indices = indicesList
+		case state.Indices.IsNull() || state.Indices.IsUnknown():
+			data.Indices = types.ListNull(types.StringType)
+		case len(state.Indices.Elements()) == 0:
+			data.Indices = state.Indices // preserve empty list
+		default:
+			// state had elements but API now returns empty — return empty list
+			data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
 		}
 
-		// FeatureStates: if API returned none and state has null/unknown, keep null.
-		// If state has an empty set, keep the empty set (don't regress to null).
-		if len(c.FeatureStates) == 0 {
-			stateEmpty := !state.FeatureStates.IsNull() && !state.FeatureStates.IsUnknown() && len(state.FeatureStates.Elements()) == 0
-			if state.FeatureStates.IsNull() || state.FeatureStates.IsUnknown() {
-				data.FeatureStates = types.SetNull(types.StringType)
-			} else if stateEmpty {
-				data.FeatureStates = state.FeatureStates // preserve empty set
-			} else {
-				// state had elements but API now returns empty — return empty set
-				data.FeatureStates, _ = types.SetValueFrom(ctx, types.StringType, []string{})
-			}
-		} else {
+		// FeatureStates: if API returned none, preserve the state value to avoid plan mismatch.
+		// null/unknown state → null; empty set state → empty set; non-empty state → empty set.
+		switch {
+		case len(c.FeatureStates) > 0:
 			featureStatesSet, setDiags := types.SetValueFrom(ctx, types.StringType, c.FeatureStates)
 			diags.Append(setDiags...)
 			if diags.HasError() {
 				return state, false, diags
 			}
 			data.FeatureStates = featureStatesSet
+		case state.FeatureStates.IsNull() || state.FeatureStates.IsUnknown():
+			data.FeatureStates = types.SetNull(types.StringType)
+		case len(state.FeatureStates.Elements()) == 0:
+			data.FeatureStates = state.FeatureStates // preserve empty set
+		default:
+			// state had elements but API now returns empty — return empty set
+			data.FeatureStates, _ = types.SetValueFrom(ctx, types.StringType, []string{})
 		}
 
 		// Metadata
