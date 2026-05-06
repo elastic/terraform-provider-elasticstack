@@ -4,17 +4,10 @@
 'use strict';
 
 /**
- * @param {{ dispatchIssueNumber: string, dispatchIssueRepo: string, currentRepository: string }} params
+ * @param {{ dispatchIssueNumber: string, currentRepository: string }} params
  * @returns {{ event_eligible: boolean, event_eligible_reason: string, issue_number?: number }}
  */
-function validateDispatchInputs({ dispatchIssueNumber, dispatchIssueRepo, currentRepository }) {
-  if (dispatchIssueRepo !== currentRepository) {
-    return {
-      event_eligible: false,
-      event_eligible_reason: `Dispatch input issue_repo '${dispatchIssueRepo}' does not match current repository '${currentRepository}'. Cross-repository dispatch is not supported.`,
-    };
-  }
-
+function validateDispatchInputs({ dispatchIssueNumber, currentRepository }) {
   const num = parseInt(dispatchIssueNumber, 10);
   if (
     !dispatchIssueNumber ||

@@ -76,7 +76,7 @@ test('validate_dispatch_inputs: accepts valid dispatch inputs', async () => {
   const { core } = await runInlineScript('validate_dispatch_inputs.inline.js', {
     context: {
       repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' },
-      payload: { inputs: { issue_number: '42', issue_repo: 'elastic/terraform-provider-elasticstack' } },
+      payload: { inputs: { issue_number: '42' } },
     },
   });
 
@@ -86,25 +86,11 @@ test('validate_dispatch_inputs: accepts valid dispatch inputs', async () => {
   assert.equal(core.failures.length, 0);
 });
 
-test('validate_dispatch_inputs: rejects cross-repo dispatch cleanly', async () => {
-  const { core } = await runInlineScript('validate_dispatch_inputs.inline.js', {
-    context: {
-      repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' },
-      payload: { inputs: { issue_number: '42', issue_repo: 'wrong/repo' } },
-    },
-  });
-
-  assert.equal(core.outputs.event_eligible, 'false');
-  assert.match(core.outputs.event_eligible_reason, /Cross-repository dispatch is not supported/);
-  assert.equal(core.failures.length, 0, 'should not call core.setFailed');
-  assert.ok(core.logs.some((l) => l.includes('Dispatch rejected')));
-});
-
 test('validate_dispatch_inputs: rejects invalid issue number cleanly', async () => {
   const { core } = await runInlineScript('validate_dispatch_inputs.inline.js', {
     context: {
       repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' },
-      payload: { inputs: { issue_number: 'abc', issue_repo: 'elastic/terraform-provider-elasticstack' } },
+      payload: { inputs: { issue_number: 'abc' } },
     },
   });
 

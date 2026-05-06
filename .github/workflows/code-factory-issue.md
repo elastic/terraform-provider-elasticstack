@@ -15,10 +15,6 @@ on:
         description: 'Issue number to implement'
         required: true
         type: number
-      issue_repo:
-        description: 'Repository containing the issue (owner/repo)'
-        required: true
-        type: string
       source_workflow:
         description: 'Source workflow that triggered this dispatch'
         required: false
@@ -441,17 +437,10 @@ on:
           'use strict';
           
           /**
-           * @param {{ dispatchIssueNumber: string, dispatchIssueRepo: string, currentRepository: string }} params
+           * @param {{ dispatchIssueNumber: string, currentRepository: string }} params
            * @returns {{ event_eligible: boolean, event_eligible_reason: string, issue_number?: number }}
            */
-          function validateDispatchInputs({ dispatchIssueNumber, dispatchIssueRepo, currentRepository }) {
-            if (dispatchIssueRepo !== currentRepository) {
-              return {
-                event_eligible: false,
-                event_eligible_reason: `Dispatch input issue_repo '${dispatchIssueRepo}' does not match current repository '${currentRepository}'. Cross-repository dispatch is not supported.`,
-              };
-            }
-          
+          function validateDispatchInputs({ dispatchIssueNumber, currentRepository }) {
             const num = parseInt(dispatchIssueNumber, 10);
             if (
               !dispatchIssueNumber ||
@@ -496,11 +485,9 @@ on:
           
           const currentRepository = `${context.repo.owner}/${context.repo.repo}`;
           const dispatchIssueNumber = context.payload.inputs?.issue_number ?? '';
-          const dispatchIssueRepo = context.payload.inputs?.issue_repo ?? '';
           
           const result = validateDispatchInputs({
             dispatchIssueNumber,
-            dispatchIssueRepo,
             currentRepository,
           });
           

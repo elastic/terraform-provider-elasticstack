@@ -5,10 +5,9 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { validateDispatchInputs, normalizeIssueEventContext } = require('./code-factory-dispatch.js');
 
-test('validateDispatchInputs accepts matching repository and valid issue number', () => {
+test('validateDispatchInputs accepts valid issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '42',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -17,22 +16,9 @@ test('validateDispatchInputs accepts matching repository and valid issue number'
   assert.equal(result.issue_number, 42);
 });
 
-test('validateDispatchInputs rejects cross-repository dispatch', () => {
-  const result = validateDispatchInputs({
-    dispatchIssueNumber: '42',
-    dispatchIssueRepo: 'someone/else',
-    currentRepository: 'elastic/terraform-provider-elasticstack',
-  });
-
-  assert.equal(result.event_eligible, false);
-  assert.match(result.event_eligible_reason, /Cross-repository dispatch is not supported/);
-  assert.equal(result.issue_number, undefined);
-});
-
 test('validateDispatchInputs rejects non-numeric issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: 'abc',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -43,7 +29,6 @@ test('validateDispatchInputs rejects non-numeric issue number', () => {
 test('validateDispatchInputs rejects zero issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '0',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -54,7 +39,6 @@ test('validateDispatchInputs rejects zero issue number', () => {
 test('validateDispatchInputs rejects negative issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '-1',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -65,7 +49,6 @@ test('validateDispatchInputs rejects negative issue number', () => {
 test('validateDispatchInputs rejects empty issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -76,7 +59,6 @@ test('validateDispatchInputs rejects empty issue number', () => {
 test('validateDispatchInputs rejects decimal issue number', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '3.14',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 
@@ -87,7 +69,6 @@ test('validateDispatchInputs rejects decimal issue number', () => {
 test('validateDispatchInputs rejects issue number with leading zeros mismatch', () => {
   const result = validateDispatchInputs({
     dispatchIssueNumber: '007',
-    dispatchIssueRepo: 'elastic/terraform-provider-elasticstack',
     currentRepository: 'elastic/terraform-provider-elasticstack',
   });
 

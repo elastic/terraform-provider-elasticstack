@@ -89,7 +89,6 @@ function dispatchCodeFactory(entries, sourceWorkflow, workflowFile = 'code-facto
       'gh', 'workflow', 'run', workflowFile,
       '--repo', entry.repo,
       '--field', `issue_number=${entry.number}`,
-      '--field', `issue_repo=${entry.repo}`,
       '--field', `source_workflow=${sourceWorkflow}`,
     ];
 

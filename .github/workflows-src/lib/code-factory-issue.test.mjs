@@ -453,7 +453,6 @@ test('code-factory-issue workflow template includes workflow_dispatch trigger', 
   const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
   assert.match(workflowTmpl, /workflow_dispatch:/);
   assert.match(workflowTmpl, /issue_number:/);
-  assert.match(workflowTmpl, /issue_repo:/);
   assert.match(workflowTmpl, /source_workflow:/);
 });
 
@@ -543,17 +542,6 @@ test('code-factory-issue inline scripts include intake constants before shared h
       offset += m.index + m[0].length;
     }
   }
-});
-
-test('validate_dispatch_inputs.inline.js rejects cross-repo dispatch', () => {
-  const { validateDispatchInputs } = require('./code-factory-dispatch.js');
-  const result = validateDispatchInputs({
-    dispatchIssueNumber: '42',
-    dispatchIssueRepo: 'wrong/repo',
-    currentRepository: 'elastic/terraform-provider-elasticstack',
-  });
-  assert.equal(result.event_eligible, false);
-  assert.match(result.event_eligible_reason, /Cross-repository dispatch is not supported/);
 });
 
 test('code-factory-issue finalize_gate.inline.js uses shared parseFinalizeGateEnv path', () => {

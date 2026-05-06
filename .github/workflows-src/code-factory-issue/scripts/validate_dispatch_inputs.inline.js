@@ -2,11 +2,9 @@
 
 const currentRepository = `${context.repo.owner}/${context.repo.repo}`;
 const dispatchIssueNumber = context.payload.inputs?.issue_number ?? '';
-const dispatchIssueRepo = context.payload.inputs?.issue_repo ?? '';
 
 const result = validateDispatchInputs({
   dispatchIssueNumber,
-  dispatchIssueRepo,
   currentRepository,
 });
 
