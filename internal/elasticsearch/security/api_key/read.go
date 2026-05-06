@@ -20,12 +20,42 @@ package apikey
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// readAPIKey is the package-level read callback shared with the envelope and
+// the concrete Read override.
+func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID)
+	diags.Append(apiKeyDiags...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+	if apiKey == nil {
+		return state, false, diags
+	}
+
+	ver, sdkDiags := client.ServerVersion(ctx)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	diags.Append(state.populateFromAPI(apiKey, ver)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	return state, true, diags
+}
+
+// Read overrides the envelope's Read to add private-state cluster-version caching.
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel tfModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
@@ -33,53 +63,33 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	finalModel, diags := r.read(ctx, stateModel)
+	compID, diags := clients.CompositeIDFromStrFw(stateModel.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if finalModel == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, stateModel.GetElasticsearchConnection())
+	resp.Diagnostics.Append(connDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(r.saveClusterVersion(ctx, stateModel, resp.Private)...)
-}
-
-func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	compID, diags := model.GetID()
-	if diags.HasError() {
-		return nil, diags
+	finalModel, found, readDiags := readAPIKey(ctx, client, compID.ResourceID, stateModel)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return nil, diags
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
 	}
 
-	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, compID.ResourceID)
-	diags.Append(apiKeyDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if apiKey == nil {
-		return nil, diags
+	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	version, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	diags.Append(model.populateFromAPI(apiKey, version)...)
-	return &model, diags
+	resp.Diagnostics.Append(saveClusterVersion(ctx, client, resp.Private)...)
 }
