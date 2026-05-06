@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func stringIsJSONObject(i any, s string) (warnings []string, errors []error) {
+func stringIsJSONObject(i any, s string) (warnings []string, errors []error) { //nolint:unparam
 	iStr, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %s to be string", s))
