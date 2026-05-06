@@ -14,9 +14,9 @@
 
 ## 3. Remove producer-side `code-factory` label handoff
 
-- [ ] 3.1 Remove `code-factory` from semantic refactor created-issue labels in `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` and update related tests/assertions
-- [ ] 3.2 Remove `code-factory` from schema coverage created-issue labels in `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` and update related tests/assertions
-- [ ] 3.3 Remove `code-factory` from flaky test catcher created-issue labels in `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` and update related tests/assertions
+- [x] 3.1 Remove `code-factory` from semantic refactor created-issue labels in `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` and update related tests/assertions
+- [x] 3.2 Remove `code-factory` from schema coverage created-issue labels in `.github/workflows-src/schema-coverage-rotation/workflow.md.tmpl` and update related tests/assertions
+- [x] 3.3 Remove `code-factory` from flaky test catcher created-issue labels in `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` and update related tests/assertions
 
 ## 4. Regenerate and verify workflow artifacts
 

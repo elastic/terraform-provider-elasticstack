@@ -207,7 +207,7 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[flaky-test] "
-    labels: [flaky-test, code-factory]
+    labels: [flaky-test]
     max: 3
   noop:
     max: 1
@@ -302,7 +302,7 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 ## Issue creation rules
 
 - Never create more than `${{ needs.pre_activation.outputs.issue_slots_available }}` issues in a single run.
-- Label each issue `flaky-test` and `code-factory`.
+- Label each issue `flaky-test`.
 - Issue title format: `<BaseTestName>` (the `[flaky-test] ` prefix is added automatically by `create-issue`).
 
 Each issue body must include the following sections (use `##` headings to match SKILL.md):

@@ -95,7 +95,7 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[semantic-refactor] "
-    labels: [semantic-refactor, refactoring, code-quality, automated-analysis, code-factory]
+    labels: [semantic-refactor, refactoring, code-quality, automated-analysis]
     max: 3
   jobs:
     dispatch-code-factory:
