@@ -89,7 +89,7 @@ The system SHALL implement `Create` by deserializing the plan into the generic m
 
 The system SHALL implement `Read` by deserializing the prior state into the generic model `T`, resolving `resourceID` and `spaceID` using the composite-ID-or-fallback rule, resolving the scoped Kibana client, validating that `resourceID` is non-empty, and invoking the read callback. The read callback SHALL be invoked with `(context, *clients.KibanaScopedClient, resourceID string, spaceID string, T)`.
 
-The composite-ID-or-fallback rule SHALL be: attempt `CompositeIDFromStrFw(model.GetID())`. On success, use `compID.ResourceID` as `resourceID` and `compID.ClusterID` as `spaceID`. On failure, use `model.GetResourceID().ValueString()` as `resourceID` and `model.GetSpaceID().ValueString()` as `spaceID`.
+The composite-ID-or-fallback rule SHALL be: attempt to parse `model.GetID()` as a composite ID. The parse result (nil on failure) SHALL be inspected, but any diagnostics returned by the parse function SHALL be discarded — parse failure is treated as a non-error "not composite" signal, not as an error condition. On successful parse, use `compID.ResourceID` as `resourceID` and `compID.ClusterID` as `spaceID`. On parse failure, use `model.GetResourceID().ValueString()` as `resourceID` and `model.GetSpaceID().ValueString()` as `spaceID`.
 
 #### Scenario: Successful read sets state from returned model
 
@@ -176,6 +176,24 @@ The system SHALL implement `Delete` using the same composite-ID-or-fallback iden
 - **WHEN** `GetKibanaClient` returns error diagnostics
 - **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
 - **AND** the delete callback SHALL NOT be invoked
+
+---
+
+### Requirement: Nil create or update callback surfaces a configuration error diagnostic
+
+The system SHALL check that the `createFunc` and `updateFunc` callbacks are non-nil before invoking them. If either is nil at invocation time, the envelope SHALL append a configuration error diagnostic and SHALL NOT invoke the nil callback. This nil check SHALL take precedence over all other pre-invocation checks (such as spaceID validation and client resolution).
+
+#### Scenario: Nil create callback produces configuration error before other checks
+
+- **WHEN** `NewKibanaResource` is called with a nil `createFunc` and `Create` is invoked
+- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
+- **AND** no other Create prelude checks (spaceID, client resolution) SHALL produce diagnostics
+
+#### Scenario: Nil update callback produces configuration error before other checks
+
+- **WHEN** `NewKibanaResource` is called with a nil `updateFunc` and `Update` is invoked
+- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
+- **AND** no other Update prelude checks (resourceID, client resolution) SHALL produce diagnostics
 
 ---
 

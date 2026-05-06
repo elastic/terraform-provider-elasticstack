@@ -35,7 +35,7 @@ Two structural differences make a direct port non-trivial:
 
 ### Decision: Composite-ID-or-fallback for Read/Update/Delete resource identity
 
-**Chosen:** For Read, Update, and Delete, the envelope first attempts `CompositeIDFromStrFw(model.GetID())`. On success, it uses `compID.ResourceID` and `compID.ClusterID` as `resourceID` and `spaceID`. On failure, it falls back to `model.GetResourceID()` and `model.GetSpaceID()`.
+**Chosen:** For Read, Update, and Delete, the envelope first attempts `CompositeIDFromStr(model.GetID())` (or its `Fw` variant) to parse the state ID as a composite. Both functions return error diagnostics on parse failure. Crucially, the envelope discards those diagnostics — treating the failure purely as a "not composite" signal — and falls back to `model.GetResourceID()` and `model.GetSpaceID()`. This matches the pattern already used by `getMaintenanceWindowIDAndSpaceID()` and `securitylist.Read`, which discard the parse error with `_`.
 
 **Rationale:** This handles all current resource patterns uniformly:
 - Streams: `ID = "<space>/<name>"` → composite parse succeeds → `name` + `space`.
