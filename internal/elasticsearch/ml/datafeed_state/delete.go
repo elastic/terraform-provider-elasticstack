@@ -31,8 +31,8 @@ import (
 
 // deleteMLDatafeedState is the envelope delete callback and the single
 // implementation of conditional-stop behavior. It stops the datafeed if it is
-// currently started, then returns without error so the envelope removes the
-// resource from state.
+// currently started, then returns without error so Terraform drops the resource
+// from state.
 func deleteMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data MLDatafeedStateData) diag.Diagnostics {
 	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, resourceID)
 	if fwDiags.HasError() {
