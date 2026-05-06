@@ -193,7 +193,7 @@ func TestAccResourceDataStreamFromSDK(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				Config:          testAccDataStreamUpgradeConfig(dsName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
@@ -214,26 +214,6 @@ func TestAccResourceDataStreamFromSDK(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccDataStreamUpgradeConfig(dsName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name           = %q
-  index_patterns = ["%s*"]
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds" {
-  name = %q
-
-  depends_on = [elasticstack_elasticsearch_index_template.test_ds_template]
-}
-`, dsName, dsName, dsName)
 }
 
 func checkResourceDataStreamDestroy(s *terraform.State) error {
