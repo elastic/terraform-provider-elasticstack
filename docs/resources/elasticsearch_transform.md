@@ -84,9 +84,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 
 ### Required
 
-- `destination` (Block List, Min: 1, Max: 1) The destination for the transform. (see [below for nested schema](#nestedblock--destination))
 - `name` (String) Name of the transform you wish to create.
-- `source` (Block List, Min: 1, Max: 1) The source of the data for the transform. (see [below for nested schema](#nestedblock--source))
 
 ### Optional
 
@@ -95,8 +93,9 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `deduce_mappings` (Boolean) Specifies whether the transform should deduce the destination index mappings from the transform config.
 - `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`
 - `description` (String) Free text description of the transform.
+- `destination` (Block List) The destination for the transform. (see [below for nested schema](#nestedblock--destination))
 - `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Controls whether the transform should be started or stopped. Default is `false` (stopped).
 - `frequency` (String) The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.
 - `latest` (String) The latest method transforms the data by finding the latest document for each unique key. JSON definition expected. Either 'pivot' or 'latest' must be present.
@@ -104,8 +103,9 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `metadata` (String) Defines optional transform metadata.
 - `num_failure_retries` (Number) Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.
 - `pivot` (String) The pivot method transforms the data by aggregating and grouping it. JSON definition expected. Either 'pivot' or 'latest' must be present.
-- `retention_policy` (Block List, Max: 1) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
-- `sync` (Block List, Max: 1) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
+- `retention_policy` (Block List) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
+- `source` (Block List) The source of the data for the transform. (see [below for nested schema](#nestedblock--source))
+- `sync` (Block List) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
 - `timeout` (String) Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
 - `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.
 
@@ -138,19 +138,6 @@ Optional:
 
 
 
-<a id="nestedblock--source"></a>
-### Nested Schema for `source`
-
-Required:
-
-- `indices` (List of String) The source indices for the transform.
-
-Optional:
-
-- `query` (String) A query clause that retrieves a subset of data from the source index.
-- `runtime_mappings` (String) Definitions of search-time runtime fields that can be used by the transform.
-
-
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
 
@@ -175,9 +162,9 @@ Optional:
 <a id="nestedblock--retention_policy"></a>
 ### Nested Schema for `retention_policy`
 
-Required:
+Optional:
 
-- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to set the retention policy. This is currently the only supported option. (see [below for nested schema](#nestedblock--retention_policy--time))
+- `time` (Block List) Specifies that the transform uses a time field to set the retention policy. (see [below for nested schema](#nestedblock--retention_policy--time))
 
 <a id="nestedblock--retention_policy--time"></a>
 ### Nested Schema for `retention_policy.time`
@@ -189,12 +176,25 @@ Required:
 
 
 
-<a id="nestedblock--sync"></a>
-### Nested Schema for `sync`
+<a id="nestedblock--source"></a>
+### Nested Schema for `source`
 
 Required:
 
-- `time` (Block List, Min: 1, Max: 1) Specifies that the transform uses a time field to synchronize the source and destination indices. This is currently the only supported option. (see [below for nested schema](#nestedblock--sync--time))
+- `indices` (List of String) The source indices for the transform.
+
+Optional:
+
+- `query` (String) A query clause that retrieves a subset of data from the source index.
+- `runtime_mappings` (String) Definitions of search-time runtime fields that can be used by the transform.
+
+
+<a id="nestedblock--sync"></a>
+### Nested Schema for `sync`
+
+Optional:
+
+- `time` (Block List) Specifies that the transform uses a time field to synchronize the source and destination indices. (see [below for nested schema](#nestedblock--sync--time))
 
 <a id="nestedblock--sync--time"></a>
 ### Nested Schema for `sync.time`
