@@ -36,6 +36,10 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	var diags fwdiags.Diagnostics
 
 	jobID := resourceID
+	if jobID == "" {
+		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+		return diags
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML anomaly detection job: %s", jobID))
 

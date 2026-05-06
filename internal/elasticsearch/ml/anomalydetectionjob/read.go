@@ -34,6 +34,10 @@ func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchS
 	var diags fwdiags.Diagnostics
 
 	jobID := resourceID
+	if jobID == "" {
+		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+		return state, false, diags
+	}
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
 
 	typedClient, err := client.GetESClient()
