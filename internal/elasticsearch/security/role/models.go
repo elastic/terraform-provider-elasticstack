@@ -25,7 +25,6 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/indexprivilege"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -419,13 +418,13 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(index.FieldSecurity.Grant))
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Grant))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(index.FieldSecurity.Except))
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
@@ -513,13 +512,13 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 
 			var fieldSecObj types.Object
 			if remoteIndex.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(remoteIndex.FieldSecurity.Grant))
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(remoteIndex.FieldSecurity.Except))
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags

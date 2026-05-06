@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -220,7 +221,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 
 	logstashPipeline.PipelineID = pipelineID
 	logstashPipeline.Description = d.Get("description").(string)
-	logstashPipeline.LastModified = schemautil.FormatStrictDateTime(time.Now().UTC())
+	logstashPipeline.LastModified = typeutils.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
 
 	var pipelineMetadata map[string]any

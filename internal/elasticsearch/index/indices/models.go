@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -250,11 +251,11 @@ func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes
 func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
 	tfAlias := aliasTfModel{
 		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(schemautil.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(schemautil.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(schemautil.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(schemautil.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(schemautil.Deref(apiModel.SearchRouting)),
+		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
 	}
 
 	if apiModel.Filter != nil {

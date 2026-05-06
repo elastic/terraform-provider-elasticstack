@@ -15,28 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integration
+package typeutils_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
-type integrationModel struct {
-	ID                        types.String `tfsdk:"id"`
-	KibanaConnection          types.List   `tfsdk:"kibana_connection"`
-	Name                      types.String `tfsdk:"name"`
-	Version                   types.String `tfsdk:"version"`
-	Force                     types.Bool   `tfsdk:"force"`
-	Prerelease                types.Bool   `tfsdk:"prerelease"`
-	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
-	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
-	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
-	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
-	SpaceID                   types.String `tfsdk:"space_id"`
+func TestFormatStrictDateTime(t *testing.T) {
+	t.Parallel()
+
+	ts := time.Date(2024, 3, 15, 10, 30, 45, 123000000, time.UTC)
+	got := typeutils.FormatStrictDateTime(ts)
+	require.Equal(t, "2024-03-15T10:30:45.123Z", got)
 }
 
-func getPackageID(name string, version string) string {
-	hash, _ := typeutils.StringToHash(name + version)
-	return *hash
+func TestTimeToStringValue(t *testing.T) {
+	t.Parallel()
+
+	ts := time.Date(2024, 3, 15, 10, 30, 45, 123000000, time.UTC)
+	got := typeutils.TimeToStringValue(ts)
+	require.Equal(t, types.StringValue("2024-03-15T10:30:45.123Z"), got)
 }

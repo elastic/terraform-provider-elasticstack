@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package tfsdkutils
+package typeutils_test
 
 import (
 	"testing"
@@ -24,37 +24,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFlattenMap(t *testing.T) {
+func TestStringToHash(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		in  map[string]any
-		out map[string]any
-	}{
-		{
-			map[string]any{"key1": map[string]any{"key2": 1}},
-			map[string]any{"key1.key2": 1},
-		},
-		{
-			map[string]any{"key1": map[string]any{"key2": map[string]any{"key3": 1}}},
-			map[string]any{"key1.key2.key3": 1},
-		},
-		{
-			map[string]any{"key1": 1},
-			map[string]any{"key1": 1},
-		},
-		{
-			map[string]any{"key1": "test"},
-			map[string]any{"key1": "test"},
-		},
-		{
-			map[string]any{"key1": map[string]any{"key2": 1, "key3": "test", "key4": []int{1, 2, 3}}},
-			map[string]any{"key1.key2": 1, "key1.key3": "test", "key1.key4": []int{1, 2, 3}},
-		},
-	}
+	t.Run("same input produces same hash", func(t *testing.T) {
+		t.Parallel()
+		h1, err1 := typeutils.StringToHash("hello")
+		h2, err2 := typeutils.StringToHash("hello")
+		require.NoError(t, err1)
+		require.NoError(t, err2)
+		require.Equal(t, *h1, *h2)
+	})
 
-	for _, tc := range tests {
-		res := typeutils.FlattenMap(tc.in)
-		require.Equal(t, tc.out, res)
-	}
+	t.Run("different input produces different hash", func(t *testing.T) {
+		t.Parallel()
+		h1, _ := typeutils.StringToHash("hello")
+		h2, _ := typeutils.StringToHash("world")
+		require.NotEqual(t, *h1, *h2)
+	})
+
+	t.Run("returns known SHA-1 hex", func(t *testing.T) {
+		t.Parallel()
+		h, err := typeutils.StringToHash("abc")
+		require.NoError(t, err)
+		require.Equal(t, "a9993e364706816aba3e25717850c26c9cd0d89d", *h)
+	})
 }

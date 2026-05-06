@@ -22,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -46,7 +46,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	}
 
 	if config.ID.ValueString() == "" {
-		hash, err := schemautil.StringToHash(name)
+		hash, err := typeutils.StringToHash(name)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return config, diags

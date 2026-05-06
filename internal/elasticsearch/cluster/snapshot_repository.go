@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -388,7 +389,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) 
 
 func expandFsSettings(source, target map[string]any) {
 	for k, v := range source {
-		if !schemautil.IsEmpty(v) {
+		if !typeutils.IsEmpty(v) {
 			target[k] = v
 		}
 	}
@@ -458,7 +459,7 @@ func flattenRepoSettings(r *elasticsearch.SnapshotRepositoryInfo, s map[string]*
 
 	// make sure the schema contains the fetched setting
 	for k, v := range r.Settings {
-		if schemaDef, ok := s[k]; ok && !schemautil.IsEmpty(v) {
+		if schemaDef, ok := s[k]; ok && !typeutils.IsEmpty(v) {
 			switch schemaDef.Type {
 			case schema.TypeInt, schema.TypeFloat:
 				switch val := v.(type) {
