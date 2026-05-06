@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -65,7 +64,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*outputSSLAPIModel
 
 	return &outputSSLAPIModel{
 		Certificate:            sslModel.Certificate.ValueStringPointer(),
-		CertificateAuthorities: schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
+		CertificateAuthorities: typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 		Key:                    sslModel.Key.ValueStringPointer(),
 		VerificationMode:       verificationMode,
 	}, diags
@@ -111,7 +110,7 @@ func sslToObjectValue(
 		VerificationMode: typeutils.StringishPointerValue(verificationMode),
 	}
 
-	if cas := schemautil.Deref(certificateAuthorities); len(cas) > 0 {
+	if cas := typeutils.Deref(certificateAuthorities); len(cas) > 0 {
 		sslModel.CertificateAuthorities = typeutils.SliceToListTypeString(ctx, cas, path.Root("ssl").AtName("certificate_authorities"), &diags)
 	} else {
 		sslModel.CertificateAuthorities = types.ListNull(types.StringType)

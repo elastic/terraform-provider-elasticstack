@@ -25,11 +25,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 func DiffJSONSuppress(_, old, newValue string, _ *schema.ResourceData) bool {
-	result, _ := schemautil.JSONBytesEqual([]byte(old), []byte(newValue))
+	result, _ := typeutils.JSONBytesEqual([]byte(old), []byte(newValue))
 	return result
 }
 
@@ -41,7 +41,7 @@ func DiffIndexSettingSuppress(_, old, newValue string, _ *schema.ResourceData) b
 	if err := json.Unmarshal([]byte(newValue), &n); err != nil {
 		return false
 	}
-	return reflect.DeepEqual(normalizeIndexSettings(schemautil.FlattenMap(o)), normalizeIndexSettings(schemautil.FlattenMap(n)))
+	return reflect.DeepEqual(normalizeIndexSettings(typeutils.FlattenMap(o)), normalizeIndexSettings(typeutils.FlattenMap(n)))
 }
 
 func normalizeIndexSettings(m map[string]any) map[string]any {

@@ -29,7 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -62,7 +62,7 @@ func checkResourceJSONAttrKey(key, expectedJSON string) resource.TestCheckFunc {
 			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
 		}
 
-		if eq, jsonErr := schemautil.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
+		if eq, jsonErr := typeutils.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
 			if jsonErr != nil {
 				return fmt.Errorf(
 					"%s: Attribute '%s' expected %#v, got %#v: %w",

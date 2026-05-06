@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package tfsdkutils
+package typeutils_test
 
 import (
 	"testing"
@@ -24,37 +24,57 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFlattenMap(t *testing.T) {
+func TestJSONBytesEqual(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		in  map[string]any
-		out map[string]any
+		name    string
+		a, b    []byte
+		want    bool
+		wantErr bool
 	}{
 		{
-			map[string]any{"key1": map[string]any{"key2": 1}},
-			map[string]any{"key1.key2": 1},
+			name: "identical JSON",
+			a:    []byte(`{"a":1,"b":2}`),
+			b:    []byte(`{"a":1,"b":2}`),
+			want: true,
 		},
 		{
-			map[string]any{"key1": map[string]any{"key2": map[string]any{"key3": 1}}},
-			map[string]any{"key1.key2.key3": 1},
+			name: "semantically equivalent with different key order",
+			a:    []byte(`{"a":1,"b":2}`),
+			b:    []byte(`{"b":2,"a":1}`),
+			want: true,
 		},
 		{
-			map[string]any{"key1": 1},
-			map[string]any{"key1": 1},
+			name: "different values",
+			a:    []byte(`{"a":1}`),
+			b:    []byte(`{"a":2}`),
+			want: false,
 		},
 		{
-			map[string]any{"key1": "test"},
-			map[string]any{"key1": "test"},
+			name:    "invalid JSON in a",
+			a:       []byte(`not json`),
+			b:       []byte(`{}`),
+			wantErr: true,
 		},
 		{
-			map[string]any{"key1": map[string]any{"key2": 1, "key3": "test", "key4": []int{1, 2, 3}}},
-			map[string]any{"key1.key2": 1, "key1.key3": "test", "key1.key4": []int{1, 2, 3}},
+			name:    "invalid JSON in b",
+			a:       []byte(`{}`),
+			b:       []byte(`not json`),
+			wantErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		res := typeutils.FlattenMap(tc.in)
-		require.Equal(t, tc.out, res)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := typeutils.JSONBytesEqual(tt.a, tt.b)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
+			}
+		})
 	}
 }

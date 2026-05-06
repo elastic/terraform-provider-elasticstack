@@ -32,7 +32,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -714,7 +713,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 
 	resourceID := clients.CompositeID{
 		ClusterID:  space,
-		ResourceID: schemautil.Deref(api.Id),
+		ResourceID: typeutils.Deref(api.Id),
 	}
 
 	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
@@ -736,8 +735,8 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		Locations:        v.Locations,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
-		Tags:             synthetics.StringSliceValue(schemautil.Deref(api.Tags)),
-		Labels:           typeutils.MapValueFrom(ctx, schemautil.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
+		Tags:             synthetics.StringSliceValue(typeutils.Deref(api.Tags)),
+		Labels:           typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
 		Alert:            alertV0,
 		APMServiceName:   types.StringPointerValue(api.ServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
@@ -885,11 +884,11 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 }
 
 func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
-	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, schemautil.Deref(api.SslSupportedProtocols), path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, typeutils.Deref(api.SslSupportedProtocols), path.Root(p).AtName("ssl_supported_protocols"), &dg)
 	return tfSSLConfig{
 		SslVerificationMode:       types.StringPointerValue(api.SslVerificationMode),
 		SslSupportedProtocols:     sslSupportedProtocols,
-		SslCertificateAuthorities: synthetics.StringSliceValue(schemautil.Deref(api.SslCertificateAuthorities)),
+		SslCertificateAuthorities: synthetics.StringSliceValue(typeutils.Deref(api.SslCertificateAuthorities)),
 		SslCertificate:            types.StringPointerValue(api.SslCertificate),
 		SslKey:                    types.StringPointerValue(api.SslKey),
 		SslKeyPassphrase:          types.StringPointerValue(api.SslKeyPassphrase),
