@@ -69,7 +69,20 @@ type tfModel struct {
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+func (model tfModel) GetID() types.String {
+	return model.ID
+}
+
+func (model tfModel) GetResourceID() types.String {
+	return model.Name
+}
+
+func (model tfModel) GetElasticsearchConnection() types.List {
+	return model.ElasticsearchConnection
+}
+
+// compositeID parses the composite ID string and returns a CompositeID.
+func (model tfModel) compositeID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)

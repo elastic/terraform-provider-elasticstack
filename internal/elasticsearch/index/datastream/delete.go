@@ -15,19 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package datastream
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// deleteAPIKey is the package-level delete callback passed to the
-// ElasticsearchResource envelope. The envelope handles state removal after a
-// successful delete.
-func deleteAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
-	return elasticsearch.DeleteAPIKey(ctx, client, resourceID)
+func deleteDataStream(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
+	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteDataStream(ctx, client, resourceID))
 }

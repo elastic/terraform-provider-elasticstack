@@ -178,6 +178,64 @@ func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
 }
 
+func TestAccResourceDataStreamFromSDK(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the data stream with the last provider version where it was built on the SDK.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config:          testAccDataStreamUpgradeConfig(dsName),
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
+				),
+			},
+			{
+				// Upgrade to the Plugin Framework resource.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+				),
+			},
+		},
+	})
+}
+
+func testAccDataStreamUpgradeConfig(dsName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
+  name           = %q
+  index_patterns = ["%s*"]
+  data_stream {}
+}
+
+resource "elasticstack_elasticsearch_data_stream" "test_ds" {
+  name = %q
+
+  depends_on = [elasticstack_elasticsearch_index_template.test_ds_template]
+}
+`, dsName, dsName, dsName)
+}
+
 func checkResourceDataStreamDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {

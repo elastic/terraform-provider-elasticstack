@@ -26,9 +26,11 @@ import (
 )
 
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	schema0 := getSchema(0)
+	schema1 := getSchema(1)
 	return map[int64]resource.StateUpgrader{
 		0: {
-			PriorSchema: new(r.getSchema(0)),
+			PriorSchema: &schema0,
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				var model tfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
@@ -44,7 +46,7 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 			},
 		},
 		1: {
-			PriorSchema: new(r.getSchema(1)),
+			PriorSchema: &schema1,
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				var model tfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
