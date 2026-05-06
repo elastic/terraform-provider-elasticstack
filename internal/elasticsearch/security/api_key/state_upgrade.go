@@ -21,11 +21,11 @@ import (
 	"context"
 	"maps"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 func schemaWithConnection(version int64) schema.Schema {
