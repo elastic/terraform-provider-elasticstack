@@ -158,6 +158,59 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 	})
 }
 
+// TestAccResourceApmSourceMap_plainImport tests that a source map created in the
+// default space (no space_id) can be imported using just the artifact id (no
+// space prefix), and that space_id is empty after the import.
+func TestAccResourceApmSourceMap_plainImport(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resourceName := "elasticstack_apm_source_map.test"
+
+	vars := config.Variables{
+		"service_name":    config.StringVariable(serviceName),
+		"service_version": config.StringVariable("1.0.0"),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: create the resource in the default space (no space_id).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", ""),
+					resource.TestCheckResourceAttr(resourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(resourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "bundle_filepath", "/static/js/test.min.js"),
+				),
+			},
+			// Step 2: import using just the artifact id (plain, no space prefix).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables:          vars,
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"sourcemap_json", "sourcemap_binary", "kibana_connection"},
+				ImportStateIdFunc:        testAccApmSourceMapPlainImportID(resourceName),
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					if v, ok := states[0].Attributes["space_id"]; ok && v != "" {
+						return fmt.Errorf("expected space_id to be empty after plain import, got %q", v)
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 // TestAccResourceApmSourceMap_space verifies that creating a source map with a
 // non-default space_id routes all CRUD operations to that space.
 func TestAccResourceApmSourceMap_space(t *testing.T) {
