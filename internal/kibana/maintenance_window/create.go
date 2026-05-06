@@ -45,7 +45,7 @@ func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 	}
 
 	if !isSupported {
-		diags.AddError("Unsupported server version", "Maintenance windows are not supported until Elastic Stack v9.0. Upgrade the target server to use this resource")
+		diags.AddError("Unsupported server version", "Maintenance windows require Elastic Stack v9.1.0 or later. Upgrade the target server to use this resource.")
 		return Model{}, diags
 	}
 
@@ -69,11 +69,6 @@ func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	if readMaintenanceWindowResponse == nil {
-		diags.AddError("Maintenance window not found after create", "The maintenance window was created but could not be read back.")
 		return Model{}, diags
 	}
 

@@ -74,11 +74,6 @@ func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 		return Model{}, diags
 	}
 
-	if readMaintenanceWindowResponse == nil {
-		diags.AddError("Maintenance window not found after update", "The maintenance window was updated but could not be read back.")
-		return Model{}, diags
-	}
-
 	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
 	if diags.HasError() {
 		return Model{}, diags
