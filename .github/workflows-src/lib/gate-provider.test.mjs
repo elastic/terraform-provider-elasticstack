@@ -120,3 +120,15 @@ test('all cancelled → failed', () => {
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
 });
+
+test('failure takes priority over unexpected skip', () => {
+  const result = gateProvider({
+    classifyResult: 'true',
+    buildResult: 'failure',
+    lintResult: 'skipped',
+    testResult: 'success',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /failed or were cancelled/);
+  assert.doesNotMatch(result.reason, /Unexpected skip/);
+});
