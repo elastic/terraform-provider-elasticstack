@@ -22,13 +22,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // deleteDatafeed stops and deletes the datafeed. It satisfies the entitycore
 // elasticsearchDeleteFunc[Datafeed] signature.
-func deleteDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Datafeed) fwdiags.Diagnostics {
+func deleteDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Datafeed) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	datafeedID := resourceID
@@ -56,8 +55,8 @@ func maybeStopDatafeed(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	datafeedID string,
-) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
+) (bool, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
 	// Check current state
 	currentState, stateDiags := GetDatafeedState(ctx, client, datafeedID)

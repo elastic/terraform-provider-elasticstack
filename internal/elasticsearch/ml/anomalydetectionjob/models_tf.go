@@ -63,14 +63,14 @@ type TFModel struct {
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetID() types.String { return m.ID }
+func (plan TFModel) GetID() types.String { return plan.ID }
 
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
 // Returns the plan-safe write identity (job_id).
-func (m TFModel) GetResourceID() types.String { return m.JobID }
+func (plan TFModel) GetResourceID() types.String { return plan.JobID }
 
 // GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+func (plan TFModel) GetElasticsearchConnection() types.List { return plan.ElasticsearchConnection }
 
 // AnalysisConfigTFModel represents the analysis configuration
 type AnalysisConfigTFModel struct {
