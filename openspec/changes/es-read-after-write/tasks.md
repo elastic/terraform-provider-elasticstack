@@ -8,10 +8,10 @@
 
 ## 2. Concrete callbacks: remove inline read-after-write
 
-- [ ] 2.1 `elasticsearch/security/role/update.go` — remove `readRole` call and not-found handling; ensure composite ID is still set on the returned model before returning
-- [ ] 2.2 `elasticsearch/cluster/script/update.go` — remove `readScriptPayload` call, field-carrying block, and not-found check; ensure composite ID is still set on the returned model before returning
-- [ ] 2.3 `elasticsearch/security/rolemapping/update.go` — remove `readRoleMappingResource` call and nil check; return the plan model directly (rolemapping's `readFunc` computes the composite ID itself so no ID setup is needed)
-- [ ] 2.4 `elasticsearch/security/systemuser/update.go` — remove `readSystemUser` call and not-found handling; ensure composite ID is still set on the returned model before returning
+- [ ] 2.1 `internal/elasticsearch/security/role/update.go` — remove `readRole` call and not-found handling; ensure composite ID is still set on the returned model before returning
+- [ ] 2.2 `internal/elasticsearch/cluster/script/update.go` — remove `readScriptPayload` call, field-carrying block, and not-found check; ensure composite ID is still set on the returned model before returning
+- [ ] 2.3 `internal/elasticsearch/security/rolemapping/update.go` — remove `readRoleMappingResource` call and nil check; return the plan model directly (rolemapping's `readFunc` computes the composite ID itself so no ID setup is needed)
+- [ ] 2.4 `internal/elasticsearch/security/systemuser/update.go` — remove `readSystemUser` call and not-found handling; ensure composite ID is still set on the returned model before returning
 
 ## 3. Spec and godoc
 
