@@ -19,9 +19,6 @@ package cluster
 
 import _ "embed"
 
-//go:embed descriptions/settings_resource.md
-var settingsResourceDescription string
-
 //go:embed descriptions/slm_resource.md
 var slmResourceDescription string
 
