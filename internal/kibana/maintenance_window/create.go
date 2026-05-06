@@ -20,60 +20,45 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var planMaintenanceWindow Model
-
-	diags := req.Plan.Get(ctx, &planMaintenanceWindow)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan Model) (Model, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	// Generate API request body from plan
-	body, diags := planMaintenanceWindow.toAPICreateRequest(ctx)
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, bodyDiags := plan.toAPICreateRequest(ctx)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
 	isSupported, sdkDiags := client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
 	if !isSupported {
-		resp.Diagnostics.AddError("Unsupported server version", "Maintenance windows are not supported until Elastic Stack v9.0. Upgrade the target server to use this resource")
-		return
+		diags.AddError("Unsupported server version", "Maintenance windows are not supported until Elastic Stack v9.0. Upgrade the target server to use this resource")
+		return Model{}, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return Model{}, diags
 	}
 
-	spaceID := planMaintenanceWindow.SpaceID.ValueString()
-	createMaintenanceWindowResponse, diags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, spaceID, body)
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createMaintenanceWindowResponse, createDiags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, spaceID, body)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
 	/*
@@ -81,26 +66,24 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
 	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
-	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
 	if readMaintenanceWindowResponse == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		diags.AddError("Maintenance window not found after create", "The maintenance window was created but could not be read back.")
+		return Model{}, diags
 	}
 
-	diags = planMaintenanceWindow.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
-	planMaintenanceWindow.ID = types.StringValue(maintenanceWindowID)
-	planMaintenanceWindow.SpaceID = types.StringValue(spaceID)
+	plan.ID = types.StringValue(maintenanceWindowID)
+	plan.SpaceID = types.StringValue(spaceID)
 
-	diags = resp.State.Set(ctx, planMaintenanceWindow)
-	resp.Diagnostics.Append(diags...)
+	return plan, diags
 }

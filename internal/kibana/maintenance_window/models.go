@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -61,6 +60,13 @@ type ScheduleRecurring struct {
 	OnMonthDay  types.List   `tfsdk:"on_month_day"`
 	OnMonth     types.List   `tfsdk:"on_month"`
 }
+
+/* INTERFACE METHODS */
+
+func (m Model) GetID() types.String           { return m.ID }
+func (m Model) GetResourceID() types.String   { return m.ID }
+func (m Model) GetSpaceID() types.String      { return m.SpaceID }
+func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 /* CREATE */
 
@@ -152,22 +158,6 @@ func (model Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenan
 	body.Scope = model.Scope.toAPIRequest()
 
 	return body, diags
-}
-
-/* DELETE */
-
-func (model Model) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
-	maintenanceWindowID = model.ID.ValueString()
-	spaceID = model.SpaceID.ValueString()
-
-	resourceID := model.ID.ValueString()
-	maybeCompositeID, _ := clients.CompositeIDFromStr(resourceID)
-	if maybeCompositeID != nil {
-		maintenanceWindowID = maybeCompositeID.ResourceID
-		spaceID = maybeCompositeID.ClusterID
-	}
-
-	return
 }
 
 /* RESPONSE HANDLER */
