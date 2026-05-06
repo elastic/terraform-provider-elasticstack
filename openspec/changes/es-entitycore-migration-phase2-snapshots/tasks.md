@@ -34,7 +34,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 `make build`
-- [ ] 5.2 `make check-lint`
-- [ ] 5.3 Acceptance tests: SLM + snapshot repository
-- [ ] 5.4 `openspec validate es-entitycore-migration-phase2-snapshots --strict`
+- [x] 5.1 `make build`
+- [x] 5.2 `make check-lint`
+- [x] 5.3 Acceptance tests: SLM + snapshot repository
+- [x] 5.4 `openspec validate es-entitycore-migration-phase2-snapshots --strict`
