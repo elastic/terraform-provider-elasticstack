@@ -13,7 +13,7 @@ resource "elasticstack_fleet_output" "test_output" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name                 = var.policy_name
+  name                 = "Policy ${var.policy_name}"
   namespace            = "default"
   description          = "Test Agent Policy with Output IDs"
   monitor_logs         = false

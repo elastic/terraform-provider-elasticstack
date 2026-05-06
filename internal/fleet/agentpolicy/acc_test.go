@@ -520,7 +520,7 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_output_ids"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
@@ -538,7 +538,7 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_output_ids"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
