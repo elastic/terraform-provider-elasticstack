@@ -136,7 +136,8 @@ func getSchema() schema.Schema {
 				},
 			},
 			"num_failure_retries": schema.Int64Attribute{
-				MarkdownDescription: "Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.",
+				MarkdownDescription: "Defines the number of retries on a recoverable failure before the transform task is marked as failed. " +
+					"The default value is the cluster-level setting num_transform_failure_retries.",
 				Optional:            true,
 				Validators: []validator.Int64{
 					int64validator.Between(-1, 100),
