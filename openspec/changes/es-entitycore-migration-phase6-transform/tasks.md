@@ -56,8 +56,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run `make build`.
-- [ ] 7.2 Run `make check-lint`.
-- [ ] 7.3 Run `make check-openspec`.
-- [ ] 7.4 Run focused tests for `internal/elasticsearch/transform`.
-- [ ] 7.5 Run acceptance tests for `transform` if infrastructure is available.
+- [x] 7.1 Run `make build`.
+- [x] 7.2 Run `make check-lint`.
+- [x] 7.3 Run `make check-openspec`.
+- [x] 7.4 Run focused tests for `internal/elasticsearch/transform`.
+- [x] 7.5 Run acceptance tests for `transform` if infrastructure is available.
