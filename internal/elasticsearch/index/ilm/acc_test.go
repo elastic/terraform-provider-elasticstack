@@ -27,8 +27,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/stretchr/testify/require"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -890,4 +892,69 @@ func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resour
 
 		return resource.TestCheckResourceAttr(resourceName, attribute, "1d")(s)
 	}
+}
+
+// TestAccResourceILM_deleteWithReferencedIndex validates that an ILM policy
+// can be destroyed even when a regular index still references it via
+// index.lifecycle.name. The Delete handler clears the reference before
+// calling the ES Delete Lifecycle API.
+func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	indexName := "test-ilm-idx-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create the ILM policy and a regular index.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_index", "name", indexName),
+				),
+			},
+			// Step 2: Assign the ILM policy to the index via the ES API.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					require.NoError(t, err)
+					ctx := context.Background()
+
+					diags := esclient.UpdateIndexSettings(ctx, client, indexName, map[string]any{
+						"index.lifecycle.name": policyName,
+					})
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+				),
+			},
+			// Step 3: Apply a config that omits the ILM policy. Terraform plans to
+			// destroy it, and the Delete handler clears index.lifecycle.name from
+			// the index first, so the destroy succeeds.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("destroy"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_index", "name", indexName),
+				),
+			},
+		},
+	})
 }
