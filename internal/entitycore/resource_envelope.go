@@ -61,10 +61,11 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 // ElasticsearchCreateFunc performs the create after the envelope decodes the
 // plan, checks the write identity, resolves the scoped Elasticsearch client,
 // and passes the planned model. The callback should call the remote create
-// API, set the composite ID on the returned model (e.g. via client.ID()),
-// include any create-only field values, and return the model. The envelope
-// invokes readFunc after a successful callback and sets state from the read
-// result; the callback must not call readFunc.
+// API, set the composite ID on the returned model when readFunc expects to
+// carry it through (e.g. via client.ID()), include any create-only field
+// values, and return the model. The envelope invokes readFunc after a
+// successful callback and sets state from the read result; the callback must
+// not call readFunc.
 type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -74,9 +75,10 @@ type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 
 // ElasticsearchUpdateFunc performs the update with the same prelude as
 // [ElasticsearchCreateFunc]. The callback should call the remote update API,
-// set the composite ID on the returned model, and return it. The envelope
-// invokes readFunc after a successful callback and sets state from the read
-// result; the callback must not call readFunc.
+// set the composite ID on the returned model when readFunc expects to carry
+// it through, and return it. The envelope invokes readFunc after a successful
+// callback and sets state from the read result; the callback must not call
+// readFunc.
 type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -240,6 +242,14 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
 	diags.Append(connDiags...)
 	if diags.HasError() {
+		return diags
+	}
+
+	if r.readFunc == nil {
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"The read callback passed to NewElasticsearchResource must not be nil.",
+		)
 		return diags
 	}
 
