@@ -117,7 +117,7 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }
 
@@ -151,7 +151,7 @@ func PutSecurityRole(ctx context.Context, client *Client, name string, params kb
 	case http.StatusOK, http.StatusNoContent:
 		return nil
 	default:
-		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }
 
@@ -174,6 +174,6 @@ func DeleteSecurityRole(ctx context.Context, client *Client, name string) sdkdia
 	case http.StatusNotFound:
 		return nil
 	default:
-		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }

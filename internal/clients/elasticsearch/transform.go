@@ -105,7 +105,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if d := diagutil.CheckHTTPError(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); d.HasError() {
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get requested transform: %s", *name))); d.HasError() {
 		return nil, d
 	}
 

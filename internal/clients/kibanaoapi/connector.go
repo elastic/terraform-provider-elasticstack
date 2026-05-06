@@ -106,7 +106,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
