@@ -129,7 +129,12 @@ func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.Elasticsear
 		}
 		var value string
 		if err := json.Unmarshal(raw, &value); err != nil {
-			continue
+			return nil, fwdiags.Diagnostics{
+				fwdiags.NewErrorDiagnostic(
+					"Unable to parse index lifecycle setting",
+					fmt.Sprintf("index %q has malformed index.lifecycle.name: %s", indexName, err),
+				),
+			}
 		}
 		if value == policyName {
 			matching = append(matching, indexName)
@@ -154,7 +159,7 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
+	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).IgnoreUnavailable(true).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
