@@ -20,11 +20,11 @@
 
 ## 4. Existing tests
 
-- [ ] 4.1 Run `go test ./internal/elasticsearch/index/ilm/...` — all unit tests pass.
-- [ ] 4.2 Run `go test ./internal/clients/elasticsearch/...` — all unit tests pass.
-- [ ] 4.3 Run fleet integration acceptance tests (`TestAccResourceIntegration`, `TestAccResourceIndexTemplateIlmAttachment_fleet`) to confirm no regressions.
+- [x] 4.1 Run `go test ./internal/elasticsearch/index/ilm/...` — all unit tests pass.
+- [x] 4.2 Run `go test ./internal/clients/elasticsearch/...` — all unit tests pass.
+- [x] 4.3 Run fleet integration acceptance tests (`TestAccResourceIntegration`, `TestAccResourceIndexTemplateIlmAttachment_fleet`) to confirm no regressions.
 
 ## 5. Sync and archive
 
-- [ ] 5.1 Sync the delta spec changes into `openspec/specs/elasticsearch-index-lifecycle/spec.md` using the OpenSpec sync workflow.
+- [x] 5.1 Sync the delta spec changes into `openspec/specs/elasticsearch-index-lifecycle/spec.md` using the OpenSpec sync workflow.
 - [ ] 5.2 Archive the change with `openspec archive change fix-ilm-delete-in-use-indices`.
