@@ -249,7 +249,7 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "space_id", ""),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_custom_integration.test", "space_id"),
 					func(s *terraform.State) error {
 						rs := s.RootModule().Resources["elasticstack_fleet_custom_integration.test"]
 						if rs == nil {
