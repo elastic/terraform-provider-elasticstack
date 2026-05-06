@@ -20,5 +20,5 @@
 
 ## 4. Regenerate and verify workflow artifacts
 
-- [ ] 4.1 Regenerate workflow markdown and compiled lock artifacts for `code-factory-issue`, `semantic-function-refactor`, `schema-coverage-rotation`, and `flaky-test-catcher`
-- [ ] 4.2 Run the relevant workflow-source/unit test suites and any OpenSpec validation needed to verify the new dispatch-handoff contracts
+- [x] 4.1 Regenerate workflow markdown and compiled lock artifacts for `code-factory-issue`, `semantic-function-refactor`, `schema-coverage-rotation`, and `flaky-test-catcher`
+- [x] 4.2 Run the relevant workflow-source/unit test suites and any OpenSpec validation needed to verify the new dispatch-handoff contracts
