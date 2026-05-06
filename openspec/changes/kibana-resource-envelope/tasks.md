@@ -1,18 +1,18 @@
 ## 1. Envelope Core
 
-- [ ] 1.1 Define `KibanaResourceModel` interface (`GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`) in `internal/entitycore/`
-- [ ] 1.2 Define `KibanaCreateFunc[T]`, `KibanaUpdateFunc[T]`, `kibanaReadFunc[T]`, `kibanaDeleteFunc[T]` callback function types
-- [ ] 1.3 Implement `KibanaResource[T]` struct embedding `*ResourceBase` with schema factory and four callback fields
-- [ ] 1.4 Implement `NewKibanaResource[T]` constructor
-- [ ] 1.5 Implement `Schema` method — inject `kibana_connection` block (parallel to `ElasticsearchResource.Schema`)
-- [ ] 1.6 Implement the composite-ID-or-fallback helper: call `CompositeIDFromStr(GetID())` (or the `Fw` variant) and inspect the returned `*CompositeID` — discard any returned diagnostics (parse failure is a non-error "not composite" signal, same pattern as `getMaintenanceWindowIDAndSpaceID`); fall back to `GetResourceID()` + `GetSpaceID()` when the result is nil
-- [ ] 1.7 Implement `Create` — decode plan, validate `spaceID` non-empty, resolve `KibanaClient`, invoke `createFunc(ctx, client, spaceID, plan)`, persist state
-- [ ] 1.8 Implement `Read` — decode state, resolve identity via composite-ID-or-fallback, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `readFunc(ctx, client, resourceID, spaceID, model)`, found/not-found branching
-- [ ] 1.9 Implement `Update` — decode plan and prior state, resolve identity via composite-ID-or-fallback on plan model, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `updateFunc(ctx, client, resourceID, spaceID, plan, prior)`, persist state
-- [ ] 1.10 Implement `Delete` — decode state, resolve identity via composite-ID-or-fallback, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `deleteFunc(ctx, client, resourceID, spaceID, model)`
-- [ ] 1.11 Implement `PlaceholderKibanaWriteCallbacks[T]()` returning error-surfacing `KibanaCreateFunc[T]` and `KibanaUpdateFunc[T]`
-- [ ] 1.12 Add `var _ resource.Resource = (*KibanaResource[KibanaResourceModel])(nil)` compile-time assertion
-- [ ] 1.13 Update `entitycore/doc.go` to document the Kibana resource envelope pattern alongside the existing Elasticsearch and data-source patterns
+- [x] 1.1 Define `KibanaResourceModel` interface (`GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`) in `internal/entitycore/`
+- [x] 1.2 Define `KibanaCreateFunc[T]`, `KibanaUpdateFunc[T]`, `kibanaReadFunc[T]`, `kibanaDeleteFunc[T]` callback function types
+- [x] 1.3 Implement `KibanaResource[T]` struct embedding `*ResourceBase` with schema factory and four callback fields
+- [x] 1.4 Implement `NewKibanaResource[T]` constructor
+- [x] 1.5 Implement `Schema` method — inject `kibana_connection` block (parallel to `ElasticsearchResource.Schema`)
+- [x] 1.6 Implement the composite-ID-or-fallback helper: call `CompositeIDFromStr(GetID())` (or the `Fw` variant) and inspect the returned `*CompositeID` — discard any returned diagnostics (parse failure is a non-error "not composite" signal, same pattern as `getMaintenanceWindowIDAndSpaceID`); fall back to `GetResourceID()` + `GetSpaceID()` when the result is nil
+- [x] 1.7 Implement `Create` — decode plan, validate `spaceID` non-empty, resolve `KibanaClient`, invoke `createFunc(ctx, client, spaceID, plan)`, persist state
+- [x] 1.8 Implement `Read` — decode state, resolve identity via composite-ID-or-fallback, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `readFunc(ctx, client, resourceID, spaceID, model)`, found/not-found branching
+- [x] 1.9 Implement `Update` — decode plan and prior state, resolve identity via composite-ID-or-fallback on plan model, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `updateFunc(ctx, client, resourceID, spaceID, plan, prior)`, persist state
+- [x] 1.10 Implement `Delete` — decode state, resolve identity via composite-ID-or-fallback, validate `resourceID` non-empty, resolve `KibanaClient`, invoke `deleteFunc(ctx, client, resourceID, spaceID, model)`
+- [x] 1.11 Implement `PlaceholderKibanaWriteCallbacks[T]()` returning error-surfacing `KibanaCreateFunc[T]` and `KibanaUpdateFunc[T]`
+- [x] 1.12 Add `var _ resource.Resource = (*KibanaResource[KibanaResourceModel])(nil)` compile-time assertion
+- [x] 1.13 Update `entitycore/doc.go` to document the Kibana resource envelope pattern alongside the existing Elasticsearch and data-source patterns
 
 ## 2. Envelope Unit Tests
 
