@@ -183,7 +183,7 @@ func TestAccResourceApmSourceMap_plainImport(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "space_id", ""),
+					resource.TestCheckNoResourceAttr(resourceName, "space_id"),
 					resource.TestCheckResourceAttr(resourceName, "service_name", serviceName),
 					resource.TestCheckResourceAttr(resourceName, "service_version", "1.0.0"),
 					resource.TestCheckResourceAttr(resourceName, "bundle_filepath", "/static/js/test.min.js"),
