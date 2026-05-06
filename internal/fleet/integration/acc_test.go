@@ -616,6 +616,10 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 
 					diags := esclient.PutDataStream(ctx, client, "logs-system.syslog-default")
 					require.Empty(t, diags)
+
+					indices, fwDiags := esclient.GetIndicesWithILMPolicy(ctx, client, "test-fleet-ilm-policy")
+					require.False(t, fwDiags.HasError(), "unexpected error getting indices with ILM policy: %v", fwDiags.Errors())
+					require.NotEmpty(t, indices, "expected at least one backing index with index.lifecycle.name = test-fleet-ilm-policy")
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),

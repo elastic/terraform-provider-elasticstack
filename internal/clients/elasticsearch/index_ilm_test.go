@@ -61,11 +61,11 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name          string
-		policyName    string
-		handler       http.HandlerFunc
-		wantIndices   []string
-		wantHasError  bool
+		name         string
+		policyName   string
+		handler      http.HandlerFunc
+		wantIndices  []string
+		wantHasError bool
 	}{
 		{
 			name:       "no indices match",
@@ -90,7 +90,17 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "some indices match",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/_all/_settings/index.lifecycle.name" {
+					w.WriteHeader(http.StatusBadRequest)
+					fmt.Fprintf(w, `{"error":"unexpected path: %s"}`, r.URL.Path)
+					return
+				}
+				if r.URL.Query().Get("flat_settings") != "true" {
+					w.WriteHeader(http.StatusBadRequest)
+					fmt.Fprintf(w, `{"error":"expected flat_settings=true"}`)
+					return
+				}
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{
 					".ds-logs-test-default-2026.01.01-000001": {
