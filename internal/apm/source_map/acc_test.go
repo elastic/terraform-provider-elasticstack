@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const testAccApmSourceMapResourceName = "elasticstack_apm_source_map.test"
+
 // TestAccResourceApmSourceMap_json tests creating a source map using
 // sourcemap_json, asserts id is set and non-empty, and confirms clean destroy.
 func TestAccResourceApmSourceMap_json(t *testing.T) {
@@ -46,11 +48,11 @@ func TestAccResourceApmSourceMap_json(t *testing.T) {
 					"service_version": config.StringVariable("1.0.0"),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "bundle_filepath", "/static/js/test.min.js"),
-					testCheckApmSourceMapIDNonEmpty("elasticstack_apm_source_map.test"),
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
+					testCheckApmSourceMapIDNonEmpty(testAccApmSourceMapResourceName),
 				),
 			},
 		},
@@ -73,11 +75,11 @@ func TestAccResourceApmSourceMap_binary(t *testing.T) {
 					"service_version": config.StringVariable("1.0.0"),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "bundle_filepath", "/static/js/test.min.js"),
-					testCheckApmSourceMapIDNonEmpty("elasticstack_apm_source_map.test"),
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
+					testCheckApmSourceMapIDNonEmpty(testAccApmSourceMapResourceName),
 				),
 			},
 		},
@@ -92,7 +94,7 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := fmt.Sprintf("apm-import-%s", suffix)
 
-	resourceName := "elasticstack_apm_source_map.test"
+	resourceName := testAccApmSourceMapResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -164,7 +166,7 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 func TestAccResourceApmSourceMap_plainImport(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
-	resourceName := "elasticstack_apm_source_map.test"
+	resourceName := testAccApmSourceMapResourceName
 
 	vars := config.Variables{
 		"service_name":    config.StringVariable(serviceName),
@@ -218,7 +220,7 @@ func TestAccResourceApmSourceMap_space(t *testing.T) {
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := fmt.Sprintf("apm-sm-%s", suffix)
 
-	resourceName := "elasticstack_apm_source_map.test"
+	resourceName := testAccApmSourceMapResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -319,8 +321,8 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 					"service_name": config.StringVariable(serviceName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
-					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
 				),
 			},
 			// Step 2: plan with service_version = "1.1.0" — must show replacement.
@@ -333,13 +335,13 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(
-							"elasticstack_apm_source_map.test",
+							testAccApmSourceMapResourceName,
 							plancheck.ResourceActionDestroyBeforeCreate,
 						),
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.1.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.1.0"),
 				),
 			},
 		},
