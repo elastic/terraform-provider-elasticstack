@@ -225,6 +225,14 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 // reports found==true, the returned model is persisted via resp.State.Set;
 // when found==false, the resource is removed from state.
 func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if r.readFunc == nil {
+		resp.Diagnostics.AddError(
+			"Kibana envelope configuration error",
+			"The read callback passed to NewKibanaResource must not be nil.",
+		)
+		return
+	}
+
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -310,6 +318,14 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 // Delete implements [resource.Resource] with the standard prelude, then
 // delegates to the concrete deleteFunc.
 func (r *KibanaResource[T]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if r.deleteFunc == nil {
+		resp.Diagnostics.AddError(
+			"Kibana envelope configuration error",
+			"The delete callback passed to NewKibanaResource must not be nil.",
+		)
+		return
+	}
+
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

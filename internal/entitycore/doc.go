@@ -52,7 +52,7 @@
 //
 // # Resource patterns
 //
-// Resources have the same two patterns:
+// Resources have three patterns:
 //
 //  1. **Struct-based embedding** — embed [*ResourceBase] and implement [resource.Resource]
 //     directly. This is the right choice when Create and Update flows diverge
