@@ -15,4 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index
+package componenttemplate
+
+import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
+
+// deleteComponentTemplate is the envelope delete callback.
+func deleteComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
+	var diags diag.Diagnostics
+	sdkDiags := elasticsearch.DeleteComponentTemplate(ctx, client, resourceID)
+	if sdkDiags != nil && sdkDiags.HasError() {
+		for _, d := range sdkDiags {
+			diags.AddError(d.Summary, d.Detail)
+		}
+	}
+	return diags
+}
