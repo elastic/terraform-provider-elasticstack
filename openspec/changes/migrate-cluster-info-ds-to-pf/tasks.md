@@ -9,7 +9,7 @@
 
 - [ ] 2.1 Implement `readDataSource(ctx, esClient, config)` callback signature: `func(context.Context, *clients.ElasticsearchScopedClient, clusterInfoDataSourceModel) (clusterInfoDataSourceModel, diag.Diagnostics)`
 - [ ] 2.2 Inside callback, call `elasticsearch.GetClusterInfo(ctx, esClient)` and handle errors
-- [ ] 2.3 Set the returned model's `ID = types.StringValue(id.String())` using `esClient.ID(ctx, info.ClusterUuid)`
+- [ ] 2.3 Set the returned model's `ID = types.StringValue(info.ClusterUuid)` directly
 - [ ] 2.4 Map `cluster_name`, `cluster_uuid`, `name`, `tagline` from API response to model fields
 - [ ] 2.5 Build `versionDataSourceModel` with build-date type-switch logic (string/int64/fallback) and wrap in `types.ListValue` with exactly one element
 - [ ] 2.6 Return populated model and diagnostics

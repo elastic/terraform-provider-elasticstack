@@ -27,9 +27,9 @@ Four Elasticsearch data sources (`enrich_policy`, `indices`, `index_template`, `
 
 ### Decision: `id` is set from `cluster_uuid` in the read callback
 
-**Chosen:** The `readDataSource` callback sets `model.ID = types.StringValue(id.String())` where `id` comes from `esClient.ID(ctx, info.ClusterUuid)`.
+**Chosen:** The `readDataSource` callback sets `model.ID = types.StringValue(info.ClusterUuid)` directly.
 
-**Rationale:** This matches the current behavior where `d.SetId(info.ClusterUuid)` is set directly. The envelope does not touch `id`; the callback owns it.
+**Rationale:** This matches the current behavior where `d.SetId(info.ClusterUuid)` is called. `esClient.ID()` produces a composite `<cluster_uuid>/<resource_id>` — passing `info.ClusterUuid` as the resource id would yield `<cluster_uuid>/<cluster_uuid>`, which conflicts with the legacy identity. The envelope does not touch `id`; the callback owns it.
 
 ### Decision: Build-date type-switch logic moves into the callback unchanged
 

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Cluster settings resource uses the entitycore envelope for Schema and Read
-The `elasticstack_elasticsearch_cluster_settings` resource SHALL embed `*entitycore.ElasticsearchResource[Data]`. The envelope SHALL own Schema and Read.
+The `elasticstack_elasticsearch_cluster_settings` resource SHALL embed `*entitycore.ElasticsearchResource[tfModel]`. The envelope SHALL own Schema and Read.
 
 #### Scenario: Resource is registered as a PF resource
 - **WHEN** the provider initializes
