@@ -16,23 +16,23 @@
 
 ## 2. Envelope Unit Tests
 
-- [ ] 2.1 Add `testKibanaResourceModel` satisfying `KibanaResourceModel` for envelope tests (user-ID variant: `GetResourceID()` returns `m.Name`)
-- [ ] 2.2 Test `NewKibanaResource` type assertions: satisfies `resource.Resource`, `resource.ResourceWithConfigure`, does NOT satisfy `resource.ResourceWithImportState`
-- [ ] 2.3 Test `Metadata` produces the correct Terraform type name
-- [ ] 2.4 Test `Schema` injects `kibana_connection` block and does not mutate the factory return value
-- [ ] 2.5 Test `Configure` — nil provider data, valid factory, invalid provider data
-- [ ] 2.6 Test `Create` happy path — model decoded, spaceID validated, client resolved, callback invoked, state persisted
-- [ ] 2.7 Test `Create` short-circuits: empty spaceID, client resolution failure, callback error
-- [ ] 2.8 Test `Create` with nil and placeholder write callbacks
-- [ ] 2.9 Test `Read` happy path (found) — composite ID parse path (user-ID resource)
-- [ ] 2.10 Test `Read` happy path (found) — fallback path (plain-UUID resource)
-- [ ] 2.11 Test `Read` not-found removes resource from state
-- [ ] 2.12 Test `Read` short-circuits: state decode error, empty resourceID, client resolution failure, read callback error
-- [ ] 2.13 Test `Update` happy path — both plan and prior state decoded, callback receives both
-- [ ] 2.14 Test `Update` short-circuits: empty resourceID, client resolution failure, callback error
-- [ ] 2.15 Test `Update` with nil and placeholder write callbacks
-- [ ] 2.16 Test `Delete` happy path
-- [ ] 2.17 Test `Delete` short-circuits: state decode error, empty resourceID, client resolution failure, delete callback error
+- [x] 2.1 Add `testKibanaResourceModel` satisfying `KibanaResourceModel` for envelope tests (user-ID variant: `GetResourceID()` returns `m.Name`)
+- [x] 2.2 Test `NewKibanaResource` type assertions: satisfies `resource.Resource`, `resource.ResourceWithConfigure`, does NOT satisfy `resource.ResourceWithImportState`
+- [x] 2.3 Test `Metadata` produces the correct Terraform type name
+- [x] 2.4 Test `Schema` injects `kibana_connection` block and does not mutate the factory return value
+- [x] 2.5 Test `Configure` — nil provider data, valid factory, invalid provider data
+- [x] 2.6 Test `Create` happy path — model decoded, spaceID validated, client resolved, callback invoked, state persisted
+- [x] 2.7 Test `Create` short-circuits: empty spaceID, client resolution failure, callback error
+- [x] 2.8 Test `Create` with nil and placeholder write callbacks
+- [x] 2.9 Test `Read` happy path (found) — composite ID parse path (user-ID resource)
+- [x] 2.10 Test `Read` happy path (found) — fallback path (plain-UUID resource)
+- [x] 2.11 Test `Read` not-found removes resource from state
+- [x] 2.12 Test `Read` short-circuits: state decode error, empty resourceID, client resolution failure, read callback error
+- [x] 2.13 Test `Update` happy path — both plan and prior state decoded, callback receives both
+- [x] 2.14 Test `Update` short-circuits: empty resourceID, client resolution failure, callback error
+- [x] 2.15 Test `Update` with nil and placeholder write callbacks
+- [x] 2.16 Test `Delete` happy path
+- [x] 2.17 Test `Delete` short-circuits: state decode error, empty resourceID, client resolution failure, delete callback error
 
 ## 3. Streams Migration (User-ID POC)
 
