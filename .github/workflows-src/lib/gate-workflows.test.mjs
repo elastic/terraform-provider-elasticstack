@@ -83,3 +83,21 @@ test('classify=false, test=success → passed', () => {
   assert.equal(result.passed, true);
   assert.match(result.reason, /Workflow tests succeeded/);
 });
+
+test('classify=false, test=failure → failed', () => {
+  const result = gateWorkflows({
+    classifyResult: 'false',
+    testResult: 'failure',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /failure/);
+});
+
+test('classify=false, test=cancelled → failed', () => {
+  const result = gateWorkflows({
+    classifyResult: 'false',
+    testResult: 'cancelled',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /cancelled/);
+});
