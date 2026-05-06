@@ -88,9 +88,13 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	// Write the sourcemap as a file field.
+	fileContentType := "application/json"
+	if !plan.SourcemapBinary.IsNull() && !plan.SourcemapBinary.IsUnknown() {
+		fileContentType = "application/octet-stream"
+	}
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition", `form-data; name="sourcemap"; filename="sourcemap.js.map"`)
-	h.Set("Content-Type", "application/json")
+	h.Set("Content-Type", fileContentType)
 	filePart, partErr := mw.CreatePart(h)
 	if partErr != nil {
 		resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("creating file part: %s", partErr.Error()))
@@ -140,7 +144,7 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	if updatedState == nil {
-		// Artifact was uploaded but cannot be read back; store what we have.
+		tflog.Warn(ctx, "apm source map was uploaded but could not be read back immediately; storing plan state")
 		resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 		return
 	}

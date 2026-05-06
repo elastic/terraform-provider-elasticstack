@@ -98,8 +98,13 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 			return nil, diags
 		}
 
-		if apiResp.JSON200 == nil || apiResp.JSON200.Artifacts == nil {
-			// Empty or nil body — artifact not found.
+		if apiResp.JSON200 == nil {
+			diags.AddError("Unexpected response from APM source map list", "Received HTTP 200 but response body could not be parsed as JSON.")
+			return nil, diags
+		}
+
+		if apiResp.JSON200.Artifacts == nil {
+			// Empty artifact list — artifact not found.
 			return nil, diags
 		}
 

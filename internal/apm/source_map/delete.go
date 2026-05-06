@@ -20,6 +20,7 @@ package sourcemap
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -54,12 +55,16 @@ func (r *resourceSourceMap) Delete(ctx context.Context, req resource.DeleteReque
 		ctx,
 		artifactID,
 		&kbapi.DeleteSourceMapParams{
-			ElasticApiVersion: kbapi.DeleteSourceMapParamsElasticApiVersion(elasticAPIVersion),
+			ElasticApiVersion: kbapi.N20231031,
 		},
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete APM source map", err.Error())
+		return
+	}
+
+	if apiResp.HTTPResponse.StatusCode == http.StatusNotFound {
 		return
 	}
 
