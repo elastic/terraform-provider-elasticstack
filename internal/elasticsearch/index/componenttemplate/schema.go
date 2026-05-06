@@ -54,7 +54,10 @@ func templateAttrTypes() map[string]attr.Type {
 // The elasticsearch_connection block is NOT included here; the envelope injects it.
 func getSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.",
+		MarkdownDescription: "Creates or updates a component template. Component templates are building blocks for constructing index templates " +
+			"that specify index mappings, settings, and aliases. See the " +
+			"[component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) " +
+			"for more details.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -85,12 +88,16 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "Template to be applied. It may optionally include an aliases, mappings, or settings configuration.",
 				Attributes: map[string]schema.Attribute{
 					"mappings": schema.StringAttribute{
-						MarkdownDescription: "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						MarkdownDescription: "Mapping for fields in the index. Should be specified as a JSON object of field mappings. " +
+							"See the [explicit mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) " +
+							"for more details.",
 						Optional:            true,
 						CustomType:          jsontypes.NormalizedType{},
 					},
 					"settings": schema.StringAttribute{
-						MarkdownDescription: "Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.",
+						MarkdownDescription: "Configuration options for the index. See the " +
+							"[index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) " +
+							"for more details.",
 						Optional:            true,
 						CustomType:          jsontypes.NormalizedType{},
 					},
@@ -101,7 +108,9 @@ func getSchema() schema.Schema {
 						NestedObject: schema.NestedBlockObject{
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									MarkdownDescription: "The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.",
+									MarkdownDescription: "The alias name. Index alias names support date math. See the " +
+										"[date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) " +
+										"for more details.",
 									Required:            true,
 								},
 								"filter": schema.StringAttribute{
