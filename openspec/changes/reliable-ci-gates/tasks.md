@@ -26,9 +26,9 @@
 
 ## 4. OpenSpec Workflow Source Template
 
-- [ ] 4.1 Create `.github/workflows-src/openspec/` directory and `workflow.yml.tmpl` with the same triggers as provider.yml
-- [ ] 4.2 Add `validate` job: always runs, sets up Node 24 with npm cache, runs `npm ci`, runs `make check-openspec` with `OPENSPEC_TELEMETRY=0`
-- [ ] 4.3 Add `gate` job: `if: always()`, depends on `[validate]`; succeeds when `validate` succeeded; fails when `validate` failed or cancelled
+- [x] 4.1 Create `.github/workflows-src/openspec/` directory and `workflow.yml.tmpl` with the same triggers as provider.yml
+- [x] 4.2 Add `validate` job: always runs, sets up Node 24 with npm cache, runs `npm ci`, runs `make check-openspec` with `OPENSPEC_TELEMETRY=0`
+- [x] 4.3 Add `gate` job: `if: always()`, depends on `[validate]`; succeeds when `validate` succeeded; fails when `validate` failed or cancelled
 
 ## 5. Workflows Workflow Source Template
 
