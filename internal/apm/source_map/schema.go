@@ -86,7 +86,8 @@ func (r *resourceSourceMap) Schema(_ context.Context, _ resource.SchemaRequest, 
 					"binary": schema.StringAttribute{
 						Optional:            true,
 						Sensitive:           true,
-						MarkdownDescription: "The source map content as a base64-encoded string (standard encoding). Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.",
+						MarkdownDescription: "The source map content as a base64-encoded string (standard encoding). " +
+						"Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.",
 						Validators: []validator.String{
 							stringvalidator.ExactlyOneOf(
 								path.MatchRelative().AtParent().AtName("json"),

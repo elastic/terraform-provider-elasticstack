@@ -23,18 +23,18 @@ import (
 
 // SourceMap holds the state for the elasticstack_apm_source_map resource.
 type SourceMap struct {
-	KibanaConnection types.List    `tfsdk:"kibana_connection"`
-	ID               types.String  `tfsdk:"id"`
-	BundleFilepath   types.String  `tfsdk:"bundle_filepath"`
-	ServiceName      types.String  `tfsdk:"service_name"`
-	ServiceVersion   types.String  `tfsdk:"service_version"`
-	Sourcemap        *SourcemapAttr `tfsdk:"sourcemap"`
-	SpaceID          types.String  `tfsdk:"space_id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	ID               types.String `tfsdk:"id"`
+	BundleFilepath   types.String `tfsdk:"bundle_filepath"`
+	ServiceName      types.String `tfsdk:"service_name"`
+	ServiceVersion   types.String `tfsdk:"service_version"`
+	Sourcemap        *Attr        `tfsdk:"sourcemap"`
+	SpaceID          types.String `tfsdk:"space_id"`
 }
 
-// SourcemapAttr holds the nested sourcemap content attributes.
+// Attr holds the nested sourcemap content attributes.
 // Exactly one of JSON, Binary, or File must be set.
-type SourcemapAttr struct {
+type Attr struct {
 	JSON   types.String `tfsdk:"json"`
 	Binary types.String `tfsdk:"binary"`
 	File   *FileAttr    `tfsdk:"file"`
