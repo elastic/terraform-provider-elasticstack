@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
+	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
@@ -167,6 +168,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
+		sourcemap.NewSourceMapResource,
 		importsavedobjects.NewResource,
 		alertingrule.NewResource,
 		dataview.NewResource,
