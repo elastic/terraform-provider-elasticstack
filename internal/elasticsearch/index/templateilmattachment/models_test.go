@@ -25,6 +25,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestModelGetters(t *testing.T) {
+	model := tfModel{
+		ID:                      types.StringValue("cluster-uuid/logs-system.syslog@custom"),
+		IndexTemplate:           types.StringValue("logs-system.syslog"),
+		LifecycleName:           types.StringValue("my-policy"),
+		ElasticsearchConnection: types.ListNull(types.ObjectType{}),
+	}
+	assert.Equal(t, types.StringValue("cluster-uuid/logs-system.syslog@custom"), model.GetID())
+	assert.Equal(t, types.StringValue("logs-system.syslog@custom"), model.GetResourceID())
+	assert.Equal(t, types.ListNull(types.ObjectType{}), model.GetElasticsearchConnection())
+}
+
 func TestGetComponentTemplateName(t *testing.T) {
 	model := tfModel{
 		IndexTemplate: types.StringValue("logs-system.syslog"),
