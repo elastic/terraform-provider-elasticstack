@@ -22,8 +22,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -61,8 +60,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":         index.ResourceDataStream(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
-			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
-			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
+"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
 
