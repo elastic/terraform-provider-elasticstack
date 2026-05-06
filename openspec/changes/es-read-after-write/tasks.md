@@ -15,5 +15,5 @@
 
 ## 3. Spec and godoc
 
-- [ ] 3.1 Update the `ElasticsearchCreateFunc` and `ElasticsearchUpdateFunc` type godocs to document the narrowed contract: callbacks call the API and return the written model with composite ID set (where readFunc carries it through) and any create-only fields populated; they must not call readFunc
-- [ ] 3.2 Run `make check-openspec` to confirm the delta spec passes validation
+- [x] 3.1 Update the `ElasticsearchCreateFunc` and `ElasticsearchUpdateFunc` type godocs to document the narrowed contract: callbacks call the API and return the written model with composite ID set (where readFunc carries it through) and any create-only fields populated; they must not call readFunc
+- [x] 3.2 Run `make check-openspec` to confirm the delta spec passes validation
