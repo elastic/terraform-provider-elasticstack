@@ -9,10 +9,10 @@
 
 ## 2. Inline Scripts
 
-- [ ] 2.1 Create `.github/workflows-src/provider/scripts/classify_changes.inline.js` that reads PR file list (pull_request) or defaults to `provider_changes=true` (push/dispatch), using `classifyChanges` from `../../lib/classify-changes.js`
-- [ ] 2.2 Create `.github/workflows-src/provider/scripts/gate.inline.js` that reads `classify`, `build`, `lint`, and `test` job results and calls `gateProvider` from `../../lib/gate-provider.js`
-- [ ] 2.3 Create `.github/workflows-src/workflows/scripts/classify_changes.inline.js` that reads PR file list (pull_request) or defaults to `workflow_changes=true` (push/dispatch), setting `workflow_changes=true` when any file is under `.github/`
-- [ ] 2.4 Create `.github/workflows-src/workflows/scripts/gate.inline.js` that reads `classify` and `test` job results and calls `gateWorkflows` from `../../lib/gate-workflows.js`
+- [x] 2.1 Create `.github/workflows-src/provider/scripts/classify_changes.inline.js` that reads PR file list (pull_request) or defaults to `provider_changes=true` (push/dispatch), using `classifyChanges` from `../../lib/classify-changes.js`
+- [x] 2.2 Create `.github/workflows-src/provider/scripts/gate.inline.js` that reads `classify`, `build`, `lint`, and `test` job results and calls `gateProvider` from `../../lib/gate-provider.js`
+- [x] 2.3 Create `.github/workflows-src/workflows/scripts/classify_changes.inline.js` that reads PR file list (pull_request) or defaults to `workflow_changes=true` (push/dispatch), setting `workflow_changes=true` when any file is under `.github/`
+- [x] 2.4 Create `.github/workflows-src/workflows/scripts/gate.inline.js` that reads `classify` and `test` job results and calls `gateWorkflows` from `../../lib/gate-workflows.js`
 
 ## 3. Provider Workflow Source Template
 
