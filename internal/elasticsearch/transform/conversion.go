@@ -221,6 +221,9 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 
 	model := state
 
+	// Name — always set from the API response to ensure it is populated on import reads.
+	model.Name = basetypes.NewStringValue(transform.Name)
+
 	// Description
 	model.Description = basetypes.NewStringValue(transform.Description)
 

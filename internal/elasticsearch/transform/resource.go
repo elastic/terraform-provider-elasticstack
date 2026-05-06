@@ -21,6 +21,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -185,6 +186,15 @@ func (r *transformResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 // ImportState implements passthrough import on the composite id attribute.
+// It also extracts the transform name from the composite ID so Read can use it.
 func (r *transformResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+
+	compID, sdkDiags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), compID.ResourceID)...)
 }
