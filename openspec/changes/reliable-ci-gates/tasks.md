@@ -1,11 +1,11 @@
 ## 1. Library Scripts
 
-- [ ] 1.1 Update `classifyChanges` in `.github/workflows-src/lib/classify-changes.js` to extend the non-impacting path set: `CHANGELOG.md`, `openspec/**`, `.agents/**`, and `.github/**` except `.github/workflows/provider.yml`
-- [ ] 1.2 Add unit tests in the corresponding `.test.mjs` file covering the new skip paths (CHANGELOG, `.agents/`, `.github/` non-workflow, `.github/workflows/provider.yml` triggers CI, mixed changes trigger CI)
-- [ ] 1.3 Create `.github/workflows-src/lib/gate-provider.js` implementing provider gate logic: succeeds when all jobs passed or all were legitimately skipped (`provider_changes=false`); fails otherwise
-- [ ] 1.4 Add unit tests for `gate-provider.js` covering: all-pass, all-skipped-legitimately, unexpected skip, any failure
-- [ ] 1.5 Create `.github/workflows-src/lib/gate-workflows.js` implementing workflows gate logic: succeeds when test passed or was legitimately skipped (`workflow_changes=false`); fails otherwise
-- [ ] 1.6 Add unit tests for `gate-workflows.js` covering: test passed, test skipped legitimately, unexpected skip, test failed
+- [x] 1.1 Update `classifyChanges` in `.github/workflows-src/lib/classify-changes.js` to extend the non-impacting path set: `CHANGELOG.md`, `openspec/**`, `.agents/**`, and `.github/**` except `.github/workflows/provider.yml`
+- [x] 1.2 Add unit tests in the corresponding `.test.mjs` file covering the new skip paths (CHANGELOG, `.agents/`, `.github/` non-workflow, `.github/workflows/provider.yml` triggers CI, mixed changes trigger CI)
+- [x] 1.3 Create `.github/workflows-src/lib/gate-provider.js` implementing provider gate logic: succeeds when all jobs passed or all were legitimately skipped (`provider_changes=false`); fails otherwise
+- [x] 1.4 Add unit tests for `gate-provider.js` covering: all-pass, all-skipped-legitimately, unexpected skip, any failure
+- [x] 1.5 Create `.github/workflows-src/lib/gate-workflows.js` implementing workflows gate logic: succeeds when test passed or was legitimately skipped (`workflow_changes=false`); fails otherwise
+- [x] 1.6 Add unit tests for `gate-workflows.js` covering: test passed, test skipped legitimately, unexpected skip, test failed
 
 ## 2. Inline Scripts
 
