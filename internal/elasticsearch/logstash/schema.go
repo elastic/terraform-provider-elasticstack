@@ -85,8 +85,8 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Sets the pipeline default value for ecs_compatibility, " +
 					"a setting that is available to plugins that implement an ECS compatibility " +
 					"mode for use with the Elastic Common Schema.",
-				Optional:            true,
-				Computed:            true,
+				Optional: true,
+				Computed: true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("disabled", "v1", "v8"),
 				},

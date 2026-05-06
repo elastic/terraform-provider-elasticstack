@@ -18,9 +18,9 @@
 package snapshot_repository
 
 import (
-	"maps"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"maps"
 )
 
 func commonAttrTypes() map[string]attr.Type {

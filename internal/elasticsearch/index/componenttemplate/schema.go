@@ -91,15 +91,15 @@ func getSchema() schema.Schema {
 						MarkdownDescription: "Mapping for fields in the index. Should be specified as a JSON object of field mappings. " +
 							"See the [explicit mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) " +
 							"for more details.",
-						Optional:            true,
-						CustomType:          jsontypes.NormalizedType{},
+						Optional:   true,
+						CustomType: jsontypes.NormalizedType{},
 					},
 					"settings": schema.StringAttribute{
 						MarkdownDescription: "Configuration options for the index. See the " +
 							"[index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) " +
 							"for more details.",
-						Optional:            true,
-						CustomType:          jsontypes.NormalizedType{},
+						Optional:   true,
+						CustomType: jsontypes.NormalizedType{},
 					},
 				},
 				Blocks: map[string]schema.Block{
@@ -111,7 +111,7 @@ func getSchema() schema.Schema {
 									MarkdownDescription: "The alias name. Index alias names support date math. See the " +
 										"[date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) " +
 										"for more details.",
-									Required:            true,
+									Required: true,
 								},
 								"filter": schema.StringAttribute{
 									MarkdownDescription: "Query used to limit documents the alias can access.",

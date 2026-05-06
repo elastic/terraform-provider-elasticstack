@@ -18,7 +18,6 @@
 package snapshot_repository
 
 import (
-	"maps"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -26,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"maps"
 )
 
 func GetSchema() schema.Schema {
@@ -114,8 +114,8 @@ func fsAttribute() schema.Attribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. " +
 			"This filesystem must be accessible to all master and data nodes in the cluster.",
-		Optional:            true,
-		Attributes:          attrs,
+		Optional:   true,
+		Attributes: attrs,
 	}
 }
 
