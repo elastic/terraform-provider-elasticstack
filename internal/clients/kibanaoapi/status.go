@@ -50,7 +50,7 @@ func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (ve
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		diags = diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		diags = diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 		return "", "", diags
 	}
 

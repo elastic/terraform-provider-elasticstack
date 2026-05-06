@@ -24,26 +24,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
-
-func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.IsError() {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
 
 func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
@@ -60,24 +41,6 @@ func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
 	return diags
 }
 
-func CheckHTTPError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.StatusCode >= 400 {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
-
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
@@ -88,7 +51,6 @@ func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 			return diags
 		}
 		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
-		return diags
 	}
 	return diags
 }
@@ -99,15 +61,5 @@ func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 			fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
 			string(body),
 		),
-	}
-}
-
-func ReportUnknownHTTPErrorSDK(statusCode int, body []byte) sdkdiag.Diagnostics {
-	return sdkdiag.Diagnostics{
-		sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
-			Detail:   string(body),
-		},
 	}
 }

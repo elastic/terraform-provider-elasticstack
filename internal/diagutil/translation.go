@@ -77,15 +77,6 @@ func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	}
 }
 
-func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
-	for _, diag := range diags {
-		if diag.Severity == sdkdiag.Error {
-			return fmt.Errorf("%s: %s", diag.Summary, diag.Detail)
-		}
-	}
-	return nil
-}
-
 func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 	for _, diag := range diags {
 		if diag.Severity() == fwdiag.SeverityError {
