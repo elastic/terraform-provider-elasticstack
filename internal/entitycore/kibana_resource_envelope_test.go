@@ -613,3 +613,335 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
 	})
 }
+
+// =============================================================================
+// Subtask 2.9: Read happy path (found) — composite ID parse path
+// =============================================================================
+
+func TestNewKibanaResource_Read_happyPath_compositeID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := newTestKibanaResourceEnvelopeWithFactory(t, factory)
+
+	state := makeTestKibanaResourceState(t, "default/my-stream", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testKibanaResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "default/my-stream", result.ID.ValueString())
+	require.Equal(t, "my-stream", result.Name.ValueString())
+	require.Equal(t, "default", result.SpaceID.ValueString())
+}
+
+// =============================================================================
+// Subtask 2.10: Read happy path (found) — fallback path (plain-UUID resource)
+// =============================================================================
+
+func TestNewKibanaResource_Read_happyPath_fallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	var receivedResourceID, receivedSpaceID string
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			receivedResourceID = resourceID
+			receivedSpaceID = spaceID
+			return model, true, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(t, "abc-uuid", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "readFunc should be called")
+	require.Equal(t, "abc-uuid", receivedResourceID, "fallback should use GetResourceID")
+	require.Equal(t, "default", receivedSpaceID, "fallback should use GetSpaceID")
+}
+
+// =============================================================================
+// Additional C: resolveResourceIdentity with "/"-containing ID
+// =============================================================================
+
+func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	var receivedResourceID, receivedSpaceID string
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			receivedResourceID = resourceID
+			receivedSpaceID = spaceID
+			return model, true, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	// ID looks like a composite ID, but Name (GetResourceID) is different.
+	// The composite path should win.
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                tftypes.String,
+			"name":              tftypes.String,
+			"space_id":          tftypes.String,
+			"kibana_connection": connBlockType,
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "foo/bar"),
+		"name":              tftypes.NewValue(tftypes.String, "different-name"),
+		"space_id":          tftypes.NewValue(tftypes.String, "different-space"),
+		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "readFunc should be called")
+	require.Equal(t, "bar", receivedResourceID, "composite ID resourceID should win")
+	require.Equal(t, "foo", receivedSpaceID, "composite ID spaceID should win")
+}
+
+// =============================================================================
+// Subtask 2.11: Read not-found removes resource from state
+// =============================================================================
+
+func TestNewKibanaResource_Read_notFound(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			return testKibanaResourceModel{}, false, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(t, "default/my-stream", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "expected state to be removed")
+}
+
+// =============================================================================
+// Subtask 2.12: Read short-circuits
+// =============================================================================
+
+func TestNewKibanaResource_Read_shortCircuitStateGetError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModel{}, false, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                tftypes.String,
+			"name":              tftypes.String,
+			"space_id":          tftypes.String,
+			"kibana_connection": kibanaConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "default/my-stream"),
+		"name":              tftypes.NewValue(tftypes.String, "my-stream"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+	})
+	badSchema := getTestKibanaResourceSchema()
+	state := tfsdk.State{Raw: objValue, Schema: badSchema}
+
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, readCalled, "readFunc should not be called when state.Get fails")
+}
+
+func TestNewKibanaResource_Read_shortCircuitEmptyResourceID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModel{}, false, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	// Composite parse fails (no slash) and GetResourceID returns empty.
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                tftypes.String,
+			"name":              tftypes.String,
+			"space_id":          tftypes.String,
+			"kibana_connection": connBlockType,
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "plain-id-no-composite"),
+		"name":              tftypes.NewValue(tftypes.String, ""),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid resource identifier")
+	require.False(t, readCalled, "readFunc should not be called when resourceID is empty")
+}
+
+func TestNewKibanaResource_Read_shortCircuitClientError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := nonNilTestFactory()
+	readCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModel{}, false, nil
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(t, "default/my-stream", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
+	require.False(t, readCalled, "readFunc should not be called when client resolution fails")
+}
+
+func TestNewKibanaResource_Read_shortCircuitReadFuncError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			diags.AddError("read error", "something went wrong")
+			return testKibanaResourceModel{}, false, diags
+		},
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(t, "default/my-stream", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "read error")
+	require.False(t, resp.State.Raw.IsNull(), "state should not be removed when readFunc returns an error")
+}
+
+func TestNewKibanaResource_Read_nilReadCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var nilRead kibanaReadFunc[testKibanaResourceModel]
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		nilRead,
+		testKibanaDeleteFunc,
+		testKibanaCreateFuncFound,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(t, "default/my-stream", "default")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Kibana envelope configuration error")
+}
