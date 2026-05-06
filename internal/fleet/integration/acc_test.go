@@ -577,16 +577,6 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 // destroying an ILM policy succeeds even when a Fleet-managed backing index
 // still references it. Regression test for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/1999.
-//
-// When a Fleet integration is installed it creates index templates, component
-// templates and ingest pipelines. If data is ingested into a data stream that
-// matches those templates, Elasticsearch creates backing indices. When an ILM
-// policy is attached to the Fleet-managed template (via
-// elasticstack_elasticsearch_index_template_ilm_attachment) those backing indices
-// carry the ILM policy reference. On terraform destroy, Fleet successfully
-// uninstalls the package, but the backing indices remain. The ILM resource's
-// Delete handler now clears index.lifecycle.name from those indices before
-// deleting the policy, so the destroy succeeds.
 func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -625,9 +615,7 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
 				),
 			},
-			// Step 3: Destroy the ILM policy. The Delete handler first clears
-			// index.lifecycle.name from any indices that reference the policy, so
-			// the destroy succeeds even though a backing index still exists.
+			// Step 3: Destroy the ILM policy (Delete clears references first).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),

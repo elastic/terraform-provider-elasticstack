@@ -896,8 +896,7 @@ func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resour
 
 // TestAccResourceILM_deleteWithReferencedIndex validates that an ILM policy
 // can be destroyed even when a regular index still references it via
-// index.lifecycle.name. The Delete handler clears the reference before
-// calling the ES Delete Lifecycle API.
+// index.lifecycle.name.
 func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	indexName := "test-ilm-idx-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -941,9 +940,7 @@ func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
 				),
 			},
-			// Step 3: Apply a config that omits the ILM policy. Terraform plans to
-			// destroy it, and the Delete handler clears index.lifecycle.name from
-			// the index first, so the destroy succeeds.
+			// Step 3: Destroy the ILM policy (Delete clears references first).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("destroy"),
