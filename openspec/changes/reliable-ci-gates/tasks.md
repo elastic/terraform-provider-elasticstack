@@ -32,10 +32,10 @@
 
 ## 5. Workflows Workflow Source Template
 
-- [ ] 5.1 Create `.github/workflows-src/workflows/` directory and `workflow.yml.tmpl` with the same triggers as provider.yml
-- [ ] 5.2 Add `classify` job: always runs, uses `classify_changes.inline.js`, outputs `workflow_changes`
-- [ ] 5.3 Add `test` job: depends on `classify`, condition `workflow_changes == 'true'`, sets up Go and Node 24, runs `make vendor`, runs `make workflow-test` then `make hook-test`
-- [ ] 5.4 Add `gate` job: `if: always()`, depends on `[classify, test]`, uses `gate.inline.js`
+- [x] 5.1 Create `.github/workflows-src/workflows/` directory and `workflow.yml.tmpl` with the same triggers as provider.yml
+- [x] 5.2 Add `classify` job: always runs, uses `classify_changes.inline.js`, outputs `workflow_changes`
+- [x] 5.3 Add `test` job: depends on `classify`, condition `workflow_changes == 'true'`, sets up Go and Node 24, runs `make vendor`, runs `make workflow-test` then `make hook-test`
+- [x] 5.4 Add `gate` job: `if: always()`, depends on `[classify, test]`, uses `gate.inline.js`
 
 ## 6. Manifest and Compilation
 
