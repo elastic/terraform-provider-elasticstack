@@ -19,15 +19,27 @@ package apikey
 
 import (
 	"context"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
+func schemaWithConnection(version int64) schema.Schema {
+	s := getSchema(version)
+	blocks := make(map[string]schema.Block, len(s.Blocks)+1)
+	maps.Copy(blocks, s.Blocks)
+	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
+	s.Blocks = blocks
+	return s
+}
+
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
-	schema0 := getSchema(0)
-	schema1 := getSchema(1)
+	schema0 := schemaWithConnection(0)
+	schema1 := schemaWithConnection(1)
 	return map[int64]resource.StateUpgrader{
 		0: {
 			PriorSchema: &schema0,
