@@ -39,8 +39,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run `make build`.
-- [ ] 7.2 Run `make check-lint`.
-- [ ] 7.3 Run `make check-openspec`.
-- [ ] 7.4 Run focused unit tests for both packages.
-- [ ] 7.5 Run acceptance tests for `ml_anomaly_detection_job` and `ml_datafeed` if infrastructure is available.
+- [x] 7.1 Run `make build`.
+- [x] 7.2 Run `make check-lint`.
+- [x] 7.3 Run `make check-openspec`.
+- [x] 7.4 Run focused unit tests for both packages.
+- [x] 7.5 Run acceptance tests for `ml_anomaly_detection_job` and `ml_datafeed` if infrastructure is available.
