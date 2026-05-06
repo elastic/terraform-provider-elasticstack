@@ -225,7 +225,11 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	model.Name = basetypes.NewStringValue(transform.Name)
 
 	// Description
-	model.Description = basetypes.NewStringValue(transform.Description)
+	if transform.Description != "" {
+		model.Description = basetypes.NewStringValue(transform.Description)
+	} else {
+		model.Description = basetypes.NewStringNull()
+	}
 
 	// Source
 	if transform.Source != nil {
@@ -286,7 +290,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			}
 			dst.Aliases = aliases
 		} else {
-			dst.Aliases = []tfModelAlias{}
+			dst.Aliases = nil
 		}
 
 		model.Destination = []tfModelDestination{dst}
@@ -329,7 +333,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 		}
 		model.Sync = []tfModelSync{{Time: []tfModelSyncTime{syncTime}}}
 	} else {
-		model.Sync = []tfModelSync{}
+		model.Sync = nil
 	}
 
 	// RetentionPolicy
@@ -340,7 +344,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 		}
 		model.RetentionPolicy = []tfModelRetention{{Time: []tfModelRetentionTime{retTime}}}
 	} else {
-		model.RetentionPolicy = []tfModelRetention{}
+		model.RetentionPolicy = nil
 	}
 
 	// Settings
