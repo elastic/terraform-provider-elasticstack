@@ -20,6 +20,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	maps0 "maps"
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -37,25 +38,25 @@ import (
 
 type snapshotRepositoryDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
-	Type types.String `tfsdk:"type"`
-	Fs   types.List   `tfsdk:"fs"`
-	Url  types.List   `tfsdk:"url"`
-	Gcs  types.List   `tfsdk:"gcs"`
-	Azure types.List  `tfsdk:"azure"`
-	S3   types.List   `tfsdk:"s3"`
-	Hdfs types.List   `tfsdk:"hdfs"`
+	ID    types.String `tfsdk:"id"`
+	Name  types.String `tfsdk:"name"`
+	Type  types.String `tfsdk:"type"`
+	Fs    types.List   `tfsdk:"fs"`
+	Url   types.List   `tfsdk:"url"`
+	Gcs   types.List   `tfsdk:"gcs"`
+	Azure types.List   `tfsdk:"azure"`
+	S3    types.List   `tfsdk:"s3"`
+	Hdfs  types.List   `tfsdk:"hdfs"`
 }
 
 type fsDataSourceModel struct {
-	ChunkSize                 types.String `tfsdk:"chunk_size"`
-	Compress                  types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec    types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec     types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly                  types.Bool   `tfsdk:"readonly"`
-	MaxNumberOfSnapshots      types.Int64  `tfsdk:"max_number_of_snapshots"`
-	Location                  types.String `tfsdk:"location"`
+	ChunkSize              types.String `tfsdk:"chunk_size"`
+	Compress               types.Bool   `tfsdk:"compress"`
+	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
+	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
+	Readonly               types.Bool   `tfsdk:"readonly"`
+	MaxNumberOfSnapshots   types.Int64  `tfsdk:"max_number_of_snapshots"`
+	Location               types.String `tfsdk:"location"`
 }
 
 type urlDataSourceModel struct {
@@ -323,9 +324,7 @@ func getDataSourceSchema() schema.Schema {
 func mergeAttrMaps(maps ...map[string]schema.Attribute) map[string]schema.Attribute {
 	result := make(map[string]schema.Attribute)
 	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+		maps0.Copy(result, m)
 	}
 	return result
 }
