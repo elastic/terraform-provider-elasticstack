@@ -49,8 +49,6 @@ certs
 # Custom linter performance measurement artifacts
 analysis/lint-perf-output/
 
-# Agent harness runtime files
-.agents/
 
 # Local env file (template is .env.template)
 .env

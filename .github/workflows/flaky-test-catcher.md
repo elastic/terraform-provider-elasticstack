@@ -207,11 +207,42 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[flaky-test] "
-    labels: [flaky-test, code-factory]
+    labels: [flaky-test]
     max: 3
   noop:
     max: 1
     report-as-issue: false
+  jobs:
+    dispatch-code-factory:
+      needs: safe_outputs
+      description: "Dispatch code-factory for each created issue"
+      permissions:
+        actions: write
+        contents: read
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v6
+          with:
+            persist-credentials: false
+            sparse-checkout: .github/workflows-src/lib
+            sparse-checkout-cone-mode: true
+            fetch-depth: 1
+        - name: Download safe-outputs artifact
+          uses: actions/download-artifact@v8
+          with:
+            name: safe-outputs-items
+            path: /tmp/gh-aw/safe-outputs
+            if-no-files-found: warn
+        - name: Dispatch code-factory runs
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_REPOSITORY: ${{ github.repository }}
+            SOURCE_WORKFLOW: flaky-test-catcher
+          run: |
+            node .github/workflows-src/lib/producer-dispatch.js \
+              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
+              "$SOURCE_WORKFLOW"
 checkout:
   fetch-depth: 0
 network:
@@ -272,7 +303,7 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 ## Issue creation rules
 
 - Never create more than `${{ needs.pre_activation.outputs.issue_slots_available }}` issues in a single run.
-- Label each issue `flaky-test` and `code-factory`.
+- Label each issue `flaky-test`.
 - Issue title format: `<BaseTestName>` (the `[flaky-test] ` prefix is added automatically by `create-issue`).
 
 Each issue body must include the following sections (use `##` headings to match SKILL.md):
@@ -298,3 +329,6 @@ Call `noop` with a concise explanation when:
 - All affected base tests already have an open `flaky-test` issue (nothing new to open).
 - All test failures are below the 20% fail-rate threshold (noise only, no actionable signal).
 - No `--- FAIL:` patterns were found in any of the failed run logs.
+
+## Dispatch
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.

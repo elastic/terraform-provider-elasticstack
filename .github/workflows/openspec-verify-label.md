@@ -313,7 +313,7 @@ steps:
     run: make setup
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
+  model: "llm-gateway/claude-opus-4-6"
   args:
     - "--effort"
     - "high"

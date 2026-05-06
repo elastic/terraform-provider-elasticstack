@@ -89,5 +89,17 @@ Each semantic refactor issue created by the workflow SHALL include a concise sum
 
 #### Scenario: Issue titles and labels identify the workflow output
 - **WHEN** the workflow creates a semantic refactor issue
-- **THEN** the issue SHALL carry the configured title prefix `[semantic-refactor] ` and the labels `semantic-refactor` and `code-factory`
+- **THEN** the issue SHALL carry the configured title prefix `[semantic-refactor] ` and the label `semantic-refactor`
+- **AND** the issue SHALL NOT include the `code-factory` label
+
+### Requirement: Created semantic-refactor issues are explicitly dispatched to `code-factory`
+After safe-output issue creation completes, the workflow SHALL explicitly dispatch the `code-factory` workflow once for each issue created in the current run rather than relying on producer-side `code-factory` labels to trigger implementation intake.
+
+#### Scenario: One created issue dispatches one implementation run
+- **WHEN** the workflow creates one semantic refactor issue in a run
+- **THEN** it SHALL dispatch exactly one `code-factory` workflow run for that issue
+
+#### Scenario: Three created issues dispatch three implementation runs
+- **WHEN** the workflow creates three semantic refactor issues in a run
+- **THEN** it SHALL dispatch exactly three independent `code-factory` workflow runs, one per created issue
 

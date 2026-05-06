@@ -47,9 +47,9 @@ test('semantic-function-refactor workflow safe outputs and compiled lock keep se
   const source = workflowSource();
   const lock = lockSource();
   assert.match(source, /title-prefix:\s*"\[semantic-refactor\] "/);
-  assert.match(source, /labels:\s*\[semantic-refactor, refactoring, code-quality, automated-analysis, code-factory\]/);
+  assert.match(source, /labels:\s*\[semantic-refactor, refactoring, code-quality, automated-analysis\]/);
   assert.match(source, /max:\s*3/);
-  assert.match(lock, /"create_issue":\{"labels":\["semantic-refactor","refactoring","code-quality","automated-analysis","code-factory"\],"max":3,"title_prefix":"\[semantic-refactor\] "\}/);
+  assert.match(lock, /"create_issue":\{"labels":\["semantic-refactor","refactoring","code-quality","automated-analysis"\],"max":3,"title_prefix":"\[semantic-refactor\] "\}/);
   assert.match(lock, /Maximum 3 issue\(s\) can be created/);
 });
 
@@ -112,4 +112,14 @@ test('compiled lock preserves LiteLLM model and allowed domains', () => {
   assert.match(lock, /llm-gateway\/claude-sonnet-4-6/);
   assert.match(lock, /elastic\.litellm-prod\.ai/);
   assert.match(lock, /GH_AW_INFO_ALLOWED_DOMAINS:[\s\S]*elastic\.litellm-prod\.ai/);
+});
+
+test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
+  const source = workflowSource();
+  const lock = lockSource();
+  assert.match(source, /dispatch_code_factory/);
+  assert.match(source, /Dispatch/);
+  assert.match(lock, /dispatch_code_factory/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch_code_factory"/);
 });

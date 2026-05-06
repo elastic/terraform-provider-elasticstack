@@ -3,7 +3,23 @@
 //include: ../../lib/factory-issue-module.gh.js
 
 const { owner, repo } = context.repo;
-const issueNumber = context.payload.issue?.number;
+const intakeMode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';
+let issueNumber;
+
+if (intakeMode === 'dispatch') {
+  issueNumber = parseInt(context.payload.inputs?.issue_number, 10) || null;
+} else {
+  issueNumber = context.payload.issue?.number || null;
+}
+
+if (!issueNumber) {
+  core.setOutput('duplicate_pr_found', 'false');
+  core.setOutput('duplicate_pr_url', '');
+  core.setOutput('gate_reason', 'No issue number available for duplicate PR check.');
+  core.info('Duplicate PR check skipped: issue number is not available.');
+  return;
+}
+
 const expectedBranch = issueBranchName(issueNumber);
 
 const pulls = await github.paginate(github.rest.pulls.list, {

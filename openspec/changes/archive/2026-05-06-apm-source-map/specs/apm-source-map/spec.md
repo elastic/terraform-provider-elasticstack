@@ -133,13 +133,19 @@ On read, the resource SHALL read `space_id` from state (not plan) to construct t
 
 ### Requirement: Delete (REQ-006)
 
-On delete, the resource SHALL call `DeleteSourceMapWithResponse` with the state `id` as the path parameter.
+On delete, the resource SHALL call `DeleteSourceMapWithResponse` with the state `id` as the path parameter. A `404 Not Found` response SHALL be treated as an idempotent success (the artifact is already gone); all other non-success statuses SHALL surface an error to Terraform diagnostics.
 
 #### Scenario: Delete by id
 
 - GIVEN a state `id` of a valid Fleet artifact
 - WHEN delete runs
 - THEN `DELETE /api/apm/sourcemaps/{id}` SHALL be called with that `id`
+
+#### Scenario: 404 on delete is idempotent
+
+- GIVEN the Kibana API returns HTTP 404 for a delete request
+- WHEN the provider handles the response
+- THEN the resource SHALL be removed from state without an error (idempotent success)
 
 ### Requirement: Validation — exactly one source map input (REQ-007)
 
@@ -203,7 +209,7 @@ The acceptance test suite SHALL include:
 2. A test that creates a source map using `sourcemap_binary` (base64-encoded minimal source map), asserts `id` is non-empty after apply.
 3. A test that imports an existing source map artifact by composite ID `<space_id>/<id>` and asserts that `space_id`, `id`, `bundle_filepath`, `service_name`, and `service_version` are correctly populated in state after import.
 4. A test that validates the `ExactlyOneOf` constraint (REQ-007): verifies that a configuration with neither `sourcemap_json` nor `sourcemap_binary` returns a validation diagnostic, and a configuration with both returns a validation diagnostic (using `ExpectError`).
-5. A test that validates `RequireReplace` semantics (REQ-008): verifies that changing `service_version` (or any other write attribute) results in a replacement plan action (using `plancheck.ExpectResourceAction` with `plancheck.ResourceActionReplace`).
+5. A test that validates `RequireReplace` semantics (REQ-008): verifies that changing `service_version` (or any other write attribute) results in a destroy-before-create replacement plan action (using `plancheck.ExpectResourceAction` with `plancheck.ResourceActionDestroyBeforeCreate`).
 6. A test that creates a source map with a non-default `space_id`, asserts the resource is created and readable within that space, and confirms deletion removes it from that space.
 
 #### Scenario: Create with sourcemap_json acceptance test
@@ -228,4 +234,4 @@ The acceptance test suite SHALL include:
 
 - GIVEN an applied resource with `service_version = "1.0.0"`
 - WHEN `TestAccResourceApmSourceMap_requireReplace` plans a change to `service_version = "1.1.0"`
-- THEN the plan SHALL show a replacement action (`plancheck.ResourceActionReplace`)
+- THEN the plan SHALL show a destroy-before-create replacement action (`plancheck.ResourceActionDestroyBeforeCreate`)
