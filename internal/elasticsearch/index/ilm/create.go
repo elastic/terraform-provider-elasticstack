@@ -20,68 +20,44 @@ package ilm
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan tfModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+// createILM is the envelope create callback. It expands the plan into a Policy, applies
+// version-gating, PUTs the ILM policy, and returns the model with the composite ID set.
+// The envelope invokes readILM after this returns and sets state from the read result.
+func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	sv, sdkDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return tfModel{}, diags
 	}
 
-	policy, diags := policyFromModel(ctx, &plan, sv)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	policy, policyDiags := policyFromModel(ctx, &plan, sv)
+	diags.Append(policyDiags...)
+	if diags.HasError() {
+		return tfModel{}, diags
 	}
 	policy.Name = plan.Name.ValueString()
 
-	resp.Diagnostics.Append(elasticsearch.PutIlm(ctx, client, policy)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(elasticsearch.PutIlm(ctx, client, policy)...)
+	if diags.HasError() {
+		return tfModel{}, diags
 	}
 
 	id, sdkDiags := client.ID(ctx, plan.Name.ValueString())
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return tfModel{}, diags
 	}
 
-	prior := plan
-	prior.ID = types.StringValue(id.String())
-
-	ilmDef, diags := elasticsearch.GetIlm(ctx, client, plan.Name.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if ilmDef == nil {
-		tflog.Warn(ctx, "ILM policy missing after create readback", map[string]any{"policy_name": plan.Name.ValueString()})
-		resp.Diagnostics.AddError("ILM policy missing after create", plan.Name.ValueString())
-		return
-	}
-	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, plan.Name.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, out)...)
+	out := plan
+	out.ID = types.StringValue(id.String())
+	return out, diags
 }
