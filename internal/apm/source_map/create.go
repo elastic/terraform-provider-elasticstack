@@ -23,7 +23,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"mime/multipart"
-	"net/textproto"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -85,15 +84,9 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		}
 	}
 
-	// Write the sourcemap as a file field.
-	fileContentType := "application/json"
-	if !plan.SourcemapBinary.IsNull() && !plan.SourcemapBinary.IsUnknown() {
-		fileContentType = "application/octet-stream"
-	}
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", `form-data; name="sourcemap"; filename="sourcemap.js.map"`)
-	h.Set("Content-Type", fileContentType)
-	filePart, partErr := mw.CreatePart(h)
+	// Write the sourcemap as a file part. Always use application/octet-stream
+	// so Kibana treats the content as a raw buffer rather than parsing it as JSON.
+	filePart, partErr := mw.CreateFormFile("sourcemap", "sourcemap.js.map")
 	if partErr != nil {
 		resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("creating file part: %s", partErr.Error()))
 		return
