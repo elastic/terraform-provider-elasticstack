@@ -126,6 +126,46 @@ func (a IndexConfig) Equals(b IndexConfig) bool {
 		reflect.DeepEqual(a.Filter, b.Filter)
 }
 
+// aliasDefinitionToConfig converts an Elasticsearch API AliasDefinition directly to an IndexConfig.
+func aliasDefinitionToConfig(indexName string, aliasData esTypes.AliasDefinition) (IndexConfig, diag.Diagnostics) {
+	config := IndexConfig{
+		Name:         indexName,
+		IsWriteIndex: aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex,
+		IsHidden:     aliasData.IsHidden != nil && *aliasData.IsHidden,
+	}
+
+	if aliasData.IndexRouting != nil {
+		config.IndexRouting = *aliasData.IndexRouting
+	}
+	if aliasData.Routing != nil {
+		config.Routing = *aliasData.Routing
+	}
+	if aliasData.SearchRouting != nil {
+		config.SearchRouting = *aliasData.SearchRouting
+	}
+	if aliasData.Filter != nil {
+		filterBytes, err := json.Marshal(aliasData.Filter)
+		if err != nil {
+			return IndexConfig{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
+			}
+		}
+		var filterMap map[string]any
+		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
+			return IndexConfig{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
+			}
+		}
+		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
+		if nm, ok := normalized.(map[string]any); ok {
+			filterMap = nm
+		}
+		config.Filter = filterMap
+	}
+
+	return config, nil
+}
+
 func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, indices map[string]esTypes.AliasDefinition) diag.Diagnostics {
 	model.Name = types.StringValue(aliasName)
 

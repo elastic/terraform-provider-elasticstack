@@ -45,8 +45,13 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	// Build current index map from API response
 	currentIndexMap := make(map[string]IndexConfig)
 	for indexName, indexAliases := range currentIndices {
-		if _, exists := indexAliases.Aliases[aliasName]; exists {
-			currentIndexMap[indexName] = IndexConfig{Name: indexName}
+		if aliasDef, exists := indexAliases.Aliases[aliasName]; exists {
+			config, configDiags := aliasDefinitionToConfig(indexName, aliasDef)
+			diags.Append(configDiags...)
+			if diags.HasError() {
+				return plan, diags
+			}
+			currentIndexMap[indexName] = config
 		}
 	}
 
