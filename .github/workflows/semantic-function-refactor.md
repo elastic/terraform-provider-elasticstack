@@ -86,6 +86,12 @@ on:
           
           core.info(`Gate reason: ${result.gate_reason}`);
           
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: 'go.mod'
+        cache: false
+
 permissions:
   contents: read
   issues: read
@@ -97,37 +103,6 @@ safe-outputs:
     title-prefix: "[semantic-refactor] "
     labels: [semantic-refactor, refactoring, code-quality, automated-analysis]
     max: 3
-  jobs:
-    dispatch-code-factory:
-      needs: safe_outputs
-      description: "Dispatch code-factory for each created issue"
-      permissions:
-        actions: write
-        contents: read
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v6
-          with:
-            persist-credentials: false
-            sparse-checkout: .github/workflows-src/lib
-            sparse-checkout-cone-mode: true
-            fetch-depth: 1
-        - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8
-          with:
-            name: safe-outputs-items
-            path: /tmp/gh-aw/safe-outputs
-            if-no-files-found: warn
-        - name: Dispatch code-factory runs
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GITHUB_REPOSITORY: ${{ github.repository }}
-            SOURCE_WORKFLOW: semantic-function-refactor
-          run: |
-            node .github/workflows-src/lib/producer-dispatch.js \
-              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-              "$SOURCE_WORKFLOW"
 
 tools:
   repo-memory:
@@ -151,15 +126,15 @@ mcp-servers:
     args:
       - "--network"
       - "host"
-    entrypoint: "serena"
+    entrypoint: "/bin/bash"
     entrypointArgs:
-      - "start-mcp-server"
-      - "--context"
-      - "claude-code"
-      - "--project"
-      - "${{ github.workspace }}"
+      - "${{ github.workspace }}/.github/workflows/serena-go-init.sh"
     mounts:
       - "${{ github.workspace }}:${{ github.workspace }}:rw"
+      - "/opt/hostedtoolcache:/opt/hostedtoolcache:ro"
+    env:
+      PATH: "/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin"
+      GOROOT: "/usr/local/go"
     allowed:
       - "activate_project"
       - "get_symbols_overview"
@@ -172,10 +147,7 @@ mcp-servers:
 timeout-minutes: 15
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
-  args:
-    - "--effort"
-    - "high"
+  model: "llm-gateway/gpt-5.5"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
@@ -517,8 +489,5 @@ Args: { "file_path": "pkg/workflow/compiler.go" }
 - Provide concrete examples with file paths, function names, and line numbers
 - Suggest practical refactoring approaches
 - Use descriptive titles that clearly identify the specific opportunity (e.g., "Semantic Refactor: Scattered validation helpers across provider package")
-
-### Dispatch
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code organization and reduce duplication by identifying actionable semantic refactoring opportunities through Serena semantic function clustering and duplicate detection. Focus on high-impact, actionable findings that enable automated or manual refactoring.
