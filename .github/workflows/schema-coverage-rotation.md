@@ -112,6 +112,36 @@ safe-outputs:
     title-prefix: "[schema-coverage] "
     labels: [testing, acceptance-tests, schema-coverage, code-factory]
     max: 3
+  jobs:
+    dispatch-code-factory:
+      needs: safe_outputs
+      description: "Dispatch code-factory for each created issue"
+      permissions:
+        actions: write
+        contents: read
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v6
+          with:
+            persist-credentials: false
+            sparse-checkout: .github/workflows-src/lib
+            sparse-checkout-cone-mode: true
+            fetch-depth: 1
+        - name: Download safe-outputs artifact
+          uses: actions/download-artifact@v8
+          with:
+            name: safe-outputs-items
+            path: /tmp/gh-aw/safe-outputs
+            if-no-files-found: warn
+        - name: Dispatch code-factory runs
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SOURCE_WORKFLOW: schema-coverage-rotation
+          run: |
+            node .github/workflows-src/lib/producer-dispatch.js \
+              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
+              "$SOURCE_WORKFLOW"
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
