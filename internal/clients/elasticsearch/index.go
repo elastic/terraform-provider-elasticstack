@@ -104,6 +104,9 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 }
 
+// GetIndicesWithILMPolicy returns the names of all indices whose
+// index.lifecycle.name setting equals the given policyName.
+// It queries GET /_all/_settings/index.lifecycle.name with flat_settings=true.
 func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -144,6 +147,9 @@ func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.Elasticsear
 	return matching, nil
 }
 
+// ClearILMPolicyFromIndices removes the ILM policy reference from the
+// provided indices by setting index.lifecycle.name to null.
+// It issues PUT /{indices}/_settings.
 func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indices []string) fwdiags.Diagnostics {
 	if len(indices) == 0 {
 		return nil
@@ -159,7 +165,7 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).IgnoreUnavailable(true).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
+	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
