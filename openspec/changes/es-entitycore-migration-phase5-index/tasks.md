@@ -17,8 +17,8 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `make build`.
+- [x] 4.1 Run `make build`.
 - [ ] 4.2 Run `make check-lint`.
-- [ ] 4.3 Run `make check-openspec`.
+- [x] 4.3 Run `make check-openspec`.
 - [ ] 4.4 Run focused tests for the index package.
 - [ ] 4.5 Run acceptance tests for `index` if infrastructure is available.
