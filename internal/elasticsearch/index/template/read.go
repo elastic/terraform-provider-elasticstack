@@ -30,16 +30,16 @@ import (
 // callback. The second return value is true when the template exists; false on 404.
 // ID and ElasticsearchConnection are copied from prior to the returned model.
 func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, name string, prior Model) (Model, bool, diag.Diagnostics) {
-	tppl, diags := elasticsearch.GetIndexTemplate(ctx, client, name)
+	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, name)
 	if diags.HasError() {
 		return Model{}, false, diags
 	}
-	if tppl == nil {
+	if tpl == nil {
 		return Model{}, false, diags
 	}
 
 	var out Model
-	diags.Append(out.fromAPIModel(ctx, tppl.Name, &tppl.IndexTemplate)...)
+	diags.Append(out.fromAPIModel(ctx, tpl.Name, &tpl.IndexTemplate)...)
 	if diags.HasError() {
 		return Model{}, false, diags
 	}
