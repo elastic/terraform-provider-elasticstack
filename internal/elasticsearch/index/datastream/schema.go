@@ -58,7 +58,7 @@ func GetSchema() schema.Schema {
 						"cannot start with -, _, +",
 					),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@\[\]^{}~_-]+$`),
+						regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
 						dataStreamNameAllowedCharsError,
 					),
 				},
