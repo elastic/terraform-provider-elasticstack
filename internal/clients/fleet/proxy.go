@@ -31,7 +31,7 @@ import (
 func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kbapi.FleetProxyItem, diag.Diagnostics) {
 	resp, err := client.API.GetFleetProxiesItemidWithResponse(ctx, proxyID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -48,7 +48,7 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetProxiesJSONRequestBody) (*kbapi.FleetProxyItem, diag.Diagnostics) {
 	resp, err := client.API.PostFleetProxiesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -63,7 +63,7 @@ func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi
 func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, body kbapi.PutFleetProxiesItemidJSONRequestBody) (*kbapi.FleetProxyItem, diag.Diagnostics) {
 	resp, err := client.API.PutFleetProxiesItemidWithResponse(ctx, proxyID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -78,7 +78,7 @@ func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, b
 func DeleteProxy(ctx context.Context, client *Client, spaceID, proxyID string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetProxiesItemidWithResponse(ctx, proxyID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)

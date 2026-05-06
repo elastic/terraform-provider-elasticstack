@@ -20,7 +20,6 @@ package kibanaoapi
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,16 +51,4 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
-}
-
-func handleStatusResponse(statusCode int, body []byte, successStatusCodes ...int) diag.Diagnostics {
-	if slices.Contains(successStatusCodes, statusCode) {
-		return nil
-	}
-
-	return diagutil.ReportUnknownHTTPError(statusCode, body)
-}
-
-func clientError(err error) diag.Diagnostics {
-	return diagutil.FrameworkDiagFromError(err)
 }
