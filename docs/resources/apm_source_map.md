@@ -18,29 +18,46 @@ provider "elasticstack" {
 }
 
 # Example 1: Upload a source map using inline JSON content.
-# The sourcemap_json value is write-only and never read back from the API.
+# sourcemap.json is write-only and never read back from the API.
 resource "elasticstack_apm_source_map" "example_json" {
   service_name    = "my-frontend"
   service_version = "1.0.0"
   bundle_filepath = "/static/js/main.chunk.js"
-  sourcemap_json = jsonencode({
-    version  = 3
-    file     = "main.chunk.js"
-    sources  = ["src/index.js"]
-    mappings = "AAAA"
-  })
+  sourcemap = {
+    json = jsonencode({
+      version  = 3
+      file     = "main.chunk.js"
+      sources  = ["src/index.js"]
+      mappings = "AAAA"
+    })
+  }
 }
 
 # Example 2: Upload a source map using base64-encoded binary content,
 # scoped to a non-default Kibana space.
-# The sourcemap_binary value is write-only and never read back from the API.
+# sourcemap.binary is write-only and never read back from the API.
 resource "elasticstack_apm_source_map" "example_space" {
   service_name    = "my-frontend"
   service_version = "2.0.0"
   bundle_filepath = "/static/js/main.chunk.js"
-  # base64-encoded source map content ({"version":3,"file":"main.chunk.js","sources":["src/index.js"],"mappings":"AAAA"})
-  sourcemap_binary = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoibWFpbi5jaHVuay5qcyIsInNvdXJjZXMiOlsic3JjL2luZGV4LmpzIl0sIm1hcHBpbmdzIjoiQUFBQSJ9"
-  space_id         = "my-space"
+  sourcemap = {
+    # base64-encoded source map content ({"version":3,"file":"main.chunk.js","sources":["src/index.js"],"mappings":"AAAA"})
+    binary = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoibWFpbi5jaHVuay5qcyIsInNvdXJjZXMiOlsic3JjL2luZGV4LmpzIl0sIm1hcHBpbmdzIjoiQUFBQSJ9"
+  }
+  space_id = "my-space"
+}
+
+# Example 3: Upload a source map from a local file.
+# sourcemap.file.checksum is computed automatically from the file contents.
+resource "elasticstack_apm_source_map" "example_file" {
+  service_name    = "my-frontend"
+  service_version = "3.0.0"
+  bundle_filepath = "/static/js/main.chunk.js"
+  sourcemap = {
+    file = {
+      path = "/path/to/main.chunk.js.map"
+    }
+  }
 }
 ```
 
@@ -52,17 +69,38 @@ resource "elasticstack_apm_source_map" "example_space" {
 - `bundle_filepath` (String) The absolute path of the final bundle as used in the web application (e.g. `/static/js/main.chunk.js`). Must match the path used during the build.
 - `service_name` (String) The name of the APM service that the source map applies to. Must match the `service.name` field in APM events.
 - `service_version` (String) The version of the APM service that the source map applies to. Must match the `service.version` field in APM events.
+- `sourcemap` (Attributes) The source map content. Exactly one of `json`, `binary`, or `file.path` must be set. (see [below for nested schema](#nestedatt--sourcemap))
 
 ### Optional
 
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `sourcemap_binary` (String, Sensitive) The source map content as a base64-encoded string (standard encoding). Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. The value is write-only and is not read back from the API.
-- `sourcemap_json` (String, Sensitive) The source map content as a JSON string. Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. The value is write-only and is not read back from the API.
 - `space_id` (String) The Kibana space ID in which to manage the source map. Omit or set to `"default"` for the default space. When set, all API operations are prefixed with `/s/{space_id}`.
 
 ### Read-Only
 
 - `id` (String) The Fleet artifact ID returned by the APM source map upload API. Used to track the resource across plan/apply cycles.
+
+<a id="nestedatt--sourcemap"></a>
+### Nested Schema for `sourcemap`
+
+Optional:
+
+- `binary` (String, Sensitive) The source map content as a base64-encoded string (standard encoding). Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.
+- `file` (Attributes) Upload a source map from a local file path. (see [below for nested schema](#nestedatt--sourcemap--file))
+- `json` (String, Sensitive) The source map content as a JSON string. Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.
+
+<a id="nestedatt--sourcemap--file"></a>
+### Nested Schema for `sourcemap.file`
+
+Required:
+
+- `path` (String) Absolute or relative path to the source map file on the local filesystem.
+
+Read-Only:
+
+- `checksum` (String) SHA256 hex digest of the uploaded sourcemap.
+
+
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`
