@@ -33,8 +33,8 @@ const customSuffix = "@custom"
 
 // readILMAttachment is the envelope read callback. It derives the index_template
 // attribute from the component template name when importing (index_template unknown),
-// calls Get Component Template with flat_settings=true, and returns found=false when
-// the template or the ILM setting is absent.
+// calls Get Component Template, and returns found=false when the template or the
+// ILM setting is absent.
 func readILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 

@@ -22,6 +22,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -50,6 +51,9 @@ func (m tfModel) GetID() types.String { return m.ID }
 
 // GetResourceID returns the derived component template name used as the write identity.
 func (m tfModel) GetResourceID() types.String {
+	if !typeutils.IsKnown(m.IndexTemplate) || m.IndexTemplate.ValueString() == "" {
+		return types.StringUnknown()
+	}
 	return types.StringValue(m.IndexTemplate.ValueString() + "@custom")
 }
 
