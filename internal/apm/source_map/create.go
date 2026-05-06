@@ -33,8 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-const elasticAPIVersion = "2023-10-31"
-
 func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan SourceMap
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
