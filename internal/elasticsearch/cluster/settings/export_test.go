@@ -35,8 +35,8 @@ func ExportedExpandSettings(ctx context.Context, list types.List) (map[string]an
 }
 
 // ExportedUpdateRemovedSettings exposes updateRemovedSettings for white-box testing.
-func ExportedUpdateRemovedSettings(name string, old, new, target map[string]any) {
-	updateRemovedSettings(name, old, new, target)
+func ExportedUpdateRemovedSettings(name string, oldSettings, newSettings, target map[string]any) {
+	updateRemovedSettings(name, oldSettings, newSettings, target)
 }
 
 // ExportedFlattenSettings exposes flattenSettings for white-box testing.
@@ -118,8 +118,16 @@ func MakeSettingsListWithValueList(name string, vals []string) types.List {
 
 // MakeSettingsListWithDuplicateName builds a list with two settings sharing the same name.
 func MakeSettingsListWithDuplicateName(name, v1, v2 string) types.List {
-	s1 := settingModel{Name: types.StringValue(name), Value: types.StringValue(v1), ValueList: types.ListValueMust(types.StringType, []attr.Value{})}
-	s2 := settingModel{Name: types.StringValue(name), Value: types.StringValue(v2), ValueList: types.ListValueMust(types.StringType, []attr.Value{})}
+	s1 := settingModel{
+		Name:      types.StringValue(name),
+		Value:     types.StringValue(v1),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
+	}
+	s2 := settingModel{
+		Name:      types.StringValue(name),
+		Value:     types.StringValue(v2),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
+	}
 	return makeSettingsListFromModels([]settingModel{s1, s2})
 }
 

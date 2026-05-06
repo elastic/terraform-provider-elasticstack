@@ -110,13 +110,13 @@ func TestExpandSettings_NeitherValueNorValueList_Error(t *testing.T) {
 }
 
 func TestUpdateRemovedSettings_RemovesDeletedKeys(t *testing.T) {
-	old := map[string]any{"keep": "v1", "remove": "v2"}
-	new := map[string]any{"keep": "v1"}
+	oldSettings := map[string]any{"keep": "v1", "remove": "v2"}
+	newSettings := map[string]any{"keep": "v1"}
 	target := map[string]any{
 		"persistent": map[string]any{"keep": "v1"},
 	}
 
-	settings.ExportedUpdateRemovedSettings("persistent", old, new, target)
+	settings.ExportedUpdateRemovedSettings("persistent", oldSettings, newSettings, target)
 
 	cat := target["persistent"].(map[string]any)
 	if _, ok := cat["remove"]; !ok {
@@ -128,11 +128,11 @@ func TestUpdateRemovedSettings_RemovesDeletedKeys(t *testing.T) {
 }
 
 func TestUpdateRemovedSettings_EqualSetsNoChange(t *testing.T) {
-	old := map[string]any{"a": "1"}
-	new := map[string]any{"a": "1"}
+	oldSettings := map[string]any{"a": "1"}
+	newSettings := map[string]any{"a": "1"}
 	target := map[string]any{}
 
-	settings.ExportedUpdateRemovedSettings("persistent", old, new, target)
+	settings.ExportedUpdateRemovedSettings("persistent", oldSettings, newSettings, target)
 
 	if len(target) != 0 {
 		t.Errorf("expected no changes for equal settings, target=%v", target)

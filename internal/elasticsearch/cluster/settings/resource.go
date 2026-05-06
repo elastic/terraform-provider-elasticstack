@@ -19,6 +19,7 @@ package settings
 
 import (
 	"context"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -141,19 +142,17 @@ func (r *clusterSettingsResource) Update(ctx context.Context, req resource.Updat
 
 	// Start from the new settings and add null entries for removed keys.
 	apiSettings := make(map[string]any)
-	for k, v := range newSettings {
-		apiSettings[k] = v
-	}
+	maps.Copy(apiSettings, newSettings)
 	for _, category := range []string{"persistent", "transient"} {
-		old, _ := oldSettings[category].(map[string]any)
-		new, _ := newSettings[category].(map[string]any)
-		if old == nil {
-			old = make(map[string]any)
+		oldCat, _ := oldSettings[category].(map[string]any)
+		newCat, _ := newSettings[category].(map[string]any)
+		if oldCat == nil {
+			oldCat = make(map[string]any)
 		}
-		if new == nil {
-			new = make(map[string]any)
+		if newCat == nil {
+			newCat = make(map[string]any)
 		}
-		updateRemovedSettings(category, old, new, apiSettings)
+		updateRemovedSettings(category, oldCat, newCat, apiSettings)
 	}
 
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
