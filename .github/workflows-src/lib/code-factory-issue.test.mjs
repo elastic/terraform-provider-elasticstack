@@ -505,7 +505,8 @@ test('code-factory-issue workflow template normalize_context uses env vars', () 
   const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
   assert.match(workflowTmpl, /env:\s*\n\s+INTAKE_MODE:/);
   assert.match(workflowTmpl, /ISSUE_BODY_EVENT:/);
-  assert.match(workflowTmpl, /GITHUB_OUTPUT_EOF/);
+  assert.match(workflowTmpl, /EOF_DELIM=/);
+  assert.doesNotMatch(workflowTmpl, /GITHUB_OUTPUT_EOF/);
 });
 
 test('code-factory-issue validate_dispatch_inputs.inline.js includes dispatch helper', () => {

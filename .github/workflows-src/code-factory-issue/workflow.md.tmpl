@@ -131,14 +131,15 @@ on:
         DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       run: |
         echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
+        EOF_DELIM="EOF_$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)"
 
         if [ "${INTAKE_MODE}" = "issue-event" ]; then
           echo "issue_number=${ISSUE_NUMBER_EVENT}" >> "$GITHUB_OUTPUT"
           echo "issue_title=${ISSUE_TITLE_EVENT}" >> "$GITHUB_OUTPUT"
           {
-            echo "issue_body<<GITHUB_OUTPUT_EOF"
+            echo "issue_body<<${EOF_DELIM}"
             printf '%s\n' "${ISSUE_BODY_EVENT}"
-            echo "GITHUB_OUTPUT_EOF"
+            echo "${EOF_DELIM}"
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
           echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
@@ -150,9 +151,9 @@ on:
           echo "issue_number=${ISSUE_NUMBER_DISPATCH}" >> "$GITHUB_OUTPUT"
           echo "issue_title=${ISSUE_TITLE_DISPATCH}" >> "$GITHUB_OUTPUT"
           {
-            echo "issue_body<<GITHUB_OUTPUT_EOF"
+            echo "issue_body<<${EOF_DELIM}"
             printf '%s\n' "${ISSUE_BODY_DISPATCH}"
-            echo "GITHUB_OUTPUT_EOF"
+            echo "${EOF_DELIM}"
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_DISPATCH}" >> "$GITHUB_OUTPUT"
           echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_DISPATCH}" >> "$GITHUB_OUTPUT"
