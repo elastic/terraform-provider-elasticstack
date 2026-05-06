@@ -75,6 +75,13 @@ function dispatchCodeFactory(entries, sourceWorkflow, workflowFile = 'code-facto
     throw new Error('GH_TOKEN or GITHUB_TOKEN environment variable is required');
   }
 
+  const allowedRepo = process.env.GITHUB_REPOSITORY;
+  for (const entry of entries) {
+    if (allowedRepo && entry.repo !== allowedRepo) {
+      throw new Error(`Refusing to dispatch to ${entry.repo}: not the current repository (${allowedRepo})`);
+    }
+  }
+
   const env = { ...process.env, GH_TOKEN: ghToken };
 
   for (const entry of entries) {
@@ -106,15 +113,7 @@ function main() {
     process.exit(1);
   }
 
-  const allowedRepo = process.env.GITHUB_REPOSITORY;
   const entries = parseTemporaryIdMap(mapPath);
-  if (allowedRepo) {
-    for (const entry of entries) {
-      if (entry.repo !== allowedRepo) {
-        throw new Error(`Refusing to dispatch to ${entry.repo}: not the current repository (${allowedRepo})`);
-      }
-    }
-  }
   if (entries.length === 0) {
     // eslint-disable-next-line no-console
     console.log('No created issues found; nothing to dispatch.');

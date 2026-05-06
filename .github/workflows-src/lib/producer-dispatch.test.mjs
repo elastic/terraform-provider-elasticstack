@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const require = createRequire(import.meta.url);
-const { parseTemporaryIdMap } = require('./producer-dispatch.js');
+const { parseTemporaryIdMap, dispatchCodeFactory } = require('./producer-dispatch.js');
 
 function withTempFile(name, content) {
   const dir = mkdtempSync(join(tmpdir(), 'producer-dispatch-test-'));
@@ -134,4 +134,62 @@ test('parseTemporaryIdMap throws for entry that is a primitive', () => {
   );
   assert.throws(() => parseTemporaryIdMap(path), /Entry "issue-1" must be an object/);
   cleanup();
+});
+
+// ---------------------------------------------------------------------------
+// dispatchCodeFactory
+// ---------------------------------------------------------------------------
+
+test('dispatchCodeFactory throws when GH_TOKEN and GITHUB_TOKEN are absent', () => {
+  const origGh = process.env.GH_TOKEN;
+  const origGitHub = process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  try {
+    assert.throws(
+      () => dispatchCodeFactory([{ repo: 'elastic/test', number: 1 }], 'test'),
+      /GH_TOKEN or GITHUB_TOKEN/
+    );
+  } finally {
+    if (origGh !== undefined) process.env.GH_TOKEN = origGh;
+    if (origGitHub !== undefined) process.env.GITHUB_TOKEN = origGitHub;
+  }
+});
+
+test('dispatchCodeFactory throws for cross-repo dispatch when GITHUB_REPOSITORY is set', () => {
+  const origRepo = process.env.GITHUB_REPOSITORY;
+  process.env.GITHUB_REPOSITORY = 'elastic/allowed';
+  const origToken = process.env.GH_TOKEN;
+  process.env.GH_TOKEN = 'test-token';
+  try {
+    assert.throws(
+      () => dispatchCodeFactory([{ repo: 'elastic/different', number: 1 }], 'test'),
+      /not the current repository/
+    );
+  } finally {
+    if (origRepo !== undefined) process.env.GITHUB_REPOSITORY = origRepo;
+    else delete process.env.GITHUB_REPOSITORY;
+    if (origToken !== undefined) process.env.GH_TOKEN = origToken;
+    else delete process.env.GH_TOKEN;
+  }
+});
+
+test('dispatchCodeFactory allows same-repo dispatch when GITHUB_REPOSITORY is set', () => {
+  const origRepo = process.env.GITHUB_REPOSITORY;
+  process.env.GITHUB_REPOSITORY = 'elastic/terraform-provider-elasticstack';
+  const origToken = process.env.GH_TOKEN;
+  process.env.GH_TOKEN = 'test-token';
+  try {
+    // With no spawnSync mock this would actually try to run gh; the test verifies
+    // cross-repo guard allows matching repo before shell execution.
+    assert.throws(
+      () => dispatchCodeFactory([{ repo: 'elastic/terraform-provider-elasticstack', number: 1 }], 'test'),
+      /Failed to dispatch/  // gh CLI won't exist in test env
+    );
+  } finally {
+    if (origRepo !== undefined) process.env.GITHUB_REPOSITORY = origRepo;
+    else delete process.env.GITHUB_REPOSITORY;
+    if (origToken !== undefined) process.env.GH_TOKEN = origToken;
+    else delete process.env.GH_TOKEN;
+  }
 });
