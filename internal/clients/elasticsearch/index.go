@@ -104,6 +104,63 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 }
 
+func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	res, err := typedClient.Indices.GetSettings().Index("_all").Name("index.lifecycle.name").FlatSettings(true).Do(ctx)
+	if err != nil {
+		if isNotFoundElasticsearchError(err) {
+			return nil, nil
+		}
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	var matching []string
+	for indexName, state := range res {
+		if state.Settings == nil || state.Settings.IndexSettings == nil {
+			continue
+		}
+		raw, ok := state.Settings.IndexSettings["index.lifecycle.name"]
+		if !ok {
+			continue
+		}
+		var value string
+		if err := json.Unmarshal(raw, &value); err != nil {
+			continue
+		}
+		if value == policyName {
+			matching = append(matching, indexName)
+		}
+	}
+
+	return matching, nil
+}
+
+func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indices []string) fwdiags.Diagnostics {
+	if len(indices) == 0 {
+		return nil
+	}
+
+	settingsBytes, err := json.Marshal(map[string]any{"index.lifecycle.name": nil})
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return nil
+}
+
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
