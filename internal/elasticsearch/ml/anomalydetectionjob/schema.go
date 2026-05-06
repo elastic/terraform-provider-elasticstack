@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -39,23 +38,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
 	"It must start and end with alphanumeric characters"
 
-func (r *anomalyDetectionJobResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema(ctx)
-}
-
-func GetSchema(ctx context.Context) schema.Schema {
+// getSchema returns the resource schema without the elasticsearch_connection
+// block, which is injected by the entitycore envelope.
+func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+			"timeouts": timeouts.Block(context.Background(), timeouts.Opts{
 				Delete: true,
 			}),
 		},
@@ -462,8 +456,8 @@ func GetSchema(ctx context.Context) schema.Schema {
 	}
 }
 
-func getAnalysisConfigAttrTypes(ctx context.Context) map[string]attr.Type {
-	return GetSchema(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisConfigAttrTypes(_ context.Context) map[string]attr.Type {
+	return getSchema().Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getDetectorAttrTypes(ctx context.Context) map[string]attr.Type {
@@ -487,14 +481,14 @@ func getRuleConditionAttrTypes(ctx context.Context) map[string]attr.Type {
 	return conditionsObj.AttrTypes
 }
 
-func getAnalysisLimitsAttrTypes(ctx context.Context) map[string]attr.Type {
-	return GetSchema(ctx).Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisLimitsAttrTypes(_ context.Context) map[string]attr.Type {
+	return getSchema().Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getDataDescriptionAttrTypes(ctx context.Context) map[string]attr.Type {
-	return GetSchema(ctx).Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getDataDescriptionAttrTypes(_ context.Context) map[string]attr.Type {
+	return getSchema().Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getModelPlotConfigAttrTypes(ctx context.Context) map[string]attr.Type {
-	return GetSchema(ctx).Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getModelPlotConfigAttrTypes(_ context.Context) map[string]attr.Type {
+	return getSchema().Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

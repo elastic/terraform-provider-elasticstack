@@ -62,6 +62,16 @@ type TFModel struct {
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
+// GetID implements entitycore.ElasticsearchResourceModel.
+func (m TFModel) GetID() types.String { return m.ID }
+
+// GetResourceID implements entitycore.ElasticsearchResourceModel.
+// Returns the plan-safe write identity (job_id).
+func (m TFModel) GetResourceID() types.String { return m.JobID }
+
+// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
+func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+
 // AnalysisConfigTFModel represents the analysis configuration
 type AnalysisConfigTFModel struct {
 	BucketSpan                 types.String                       `tfsdk:"bucket_span"`
