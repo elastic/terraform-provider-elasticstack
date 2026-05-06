@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deleteMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) diag.Diagnostics {
+func deleteMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()

@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, plan, prior Model) (Model, diag.Diagnostics) {
+func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, plan, _ Model) (Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	serverVersion, sdkDiags := client.ServerVersion(ctx)

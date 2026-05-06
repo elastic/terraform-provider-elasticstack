@@ -48,13 +48,13 @@
 
 ## 4. Maintenance Window Migration (API-UUID POC)
 
-- [ ] 4.1 Add `GetResourceID() types.String` (returns `m.ID`), `GetSpaceID() types.String`, and `GetKibanaConnection() types.List` value-receiver methods to maintenance window `Model`
-- [ ] 4.2 Change `Resource` struct to embed `*entitycore.KibanaResource[Model]` instead of `*entitycore.ResourceBase`
-- [ ] 4.3 Update `newResource()` to call `entitycore.NewKibanaResource[Model]` with the schema factory and extracted callback functions
-- [ ] 4.4 Extract the Create body into a `KibanaCreateFunc[Model]` — receives `(ctx, client, spaceID, plan)`; UUID from API response is set on the returned model
-- [ ] 4.5 Extract the Read body into a `kibanaReadFunc[Model]` — receives `(ctx, client, resourceID, spaceID, model)`; removes `getMaintenanceWindowIDAndSpaceID()` call (envelope handles composite-ID-or-fallback)
-- [ ] 4.6 Extract the Update body into a `KibanaUpdateFunc[Model]` — receives `(ctx, client, resourceID, spaceID, plan, prior)`
-- [ ] 4.7 Extract the Delete body into a `kibanaDeleteFunc[Model]` — receives `(ctx, client, resourceID, spaceID, model)`; removes `getMaintenanceWindowIDAndSpaceID()` call
-- [ ] 4.8 Remove `getMaintenanceWindowIDAndSpaceID()` helper if no longer needed
-- [ ] 4.9 Remove now-redundant `resource.go` CRUD method stubs and inline boilerplate
-- [ ] 4.10 Verify `make build` passes and existing maintenance window acceptance tests pass
+- [x] 4.1 Add `GetResourceID() types.String` (returns `m.ID`), `GetSpaceID() types.String`, and `GetKibanaConnection() types.List` value-receiver methods to maintenance window `Model`
+- [x] 4.2 Change `Resource` struct to embed `*entitycore.KibanaResource[Model]` instead of `*entitycore.ResourceBase`
+- [x] 4.3 Update `newResource()` to call `entitycore.NewKibanaResource[Model]` with the schema factory and extracted callback functions
+- [x] 4.4 Extract the Create body into a `KibanaCreateFunc[Model]` — receives `(ctx, client, spaceID, plan)`; UUID from API response is set on the returned model
+- [x] 4.5 Extract the Read body into a `kibanaReadFunc[Model]` — receives `(ctx, client, resourceID, spaceID, model)`; removes `getMaintenanceWindowIDAndSpaceID()` call (envelope handles composite-ID-or-fallback)
+- [x] 4.6 Extract the Update body into a `KibanaUpdateFunc[Model]` — receives `(ctx, client, resourceID, spaceID, plan, prior)`
+- [x] 4.7 Extract the Delete body into a `kibanaDeleteFunc[Model]` — receives `(ctx, client, resourceID, spaceID, model)`; removes `getMaintenanceWindowIDAndSpaceID()` call
+- [x] 4.8 Remove `getMaintenanceWindowIDAndSpaceID()` helper if no longer needed
+- [x] 4.9 Remove now-redundant `resource.go` CRUD method stubs and inline boilerplate
+- [x] 4.10 Verify `make build` passes and existing maintenance window acceptance tests pass
