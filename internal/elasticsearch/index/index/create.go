@@ -105,9 +105,16 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	planModel.ID = types.StringValue(id.String())
 	planModel.ConcreteName = types.StringValue(concreteName)
 
-	finalModel, diags := readIndex(ctx, planModel, client)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError(
+			"Index not found after create",
+			fmt.Sprintf("index %q was not found after creation", concreteName),
+		)
 		return
 	}
 
@@ -189,12 +196,12 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	plan.ConcreteName = types.StringValue(concreteName)
 	plan.ID = types.StringValue(id.String())
 
-	finalModel, diags := readIndex(ctx, *plan, client)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, *plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if finalModel == nil {
+	if !found {
 		resp.Diagnostics.AddError(
 			"Index disappeared during adoption",
 			fmt.Sprintf("index %q was present for updates but not found when reading final state", concreteName),

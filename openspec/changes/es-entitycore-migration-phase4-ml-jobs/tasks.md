@@ -20,22 +20,22 @@
 
 ## 4. Datafeed — model and schema
 
-- [ ] 4.1 Add `GetID()`, `GetResourceID()`, and `GetElasticsearchConnection()` value-receiver methods to `Datafeed` in `internal/elasticsearch/ml/datafeed/models.go`.
-- [ ] 4.2 Convert `func (r *datafeedResource) Schema` to a package-level factory `func getSchema() schema.Schema` omitting the `elasticsearch_connection` block.
+- [x] 4.1 Add `GetID()`, `GetResourceID()`, and `GetElasticsearchConnection()` value-receiver methods to `Datafeed` in `internal/elasticsearch/ml/datafeed/models.go`.
+- [x] 4.2 Convert `func (r *datafeedResource) Schema` to a package-level factory `func getSchema() schema.Schema` omitting the `elasticsearch_connection` block.
 
 ## 5. Datafeed — callback extraction
 
-- [ ] 5.1 Extract `readDatafeed(ctx, client, resourceID, state) (Datafeed, bool, diag.Diagnostics)`.
-- [ ] 5.2 Extract `createDatafeed(ctx, client, resourceID, plan) (Datafeed, diag.Diagnostics)` (remove read-after-write and state.Set; just create, set ID, and return).
-- [ ] 5.3 Extract `updateDatafeed(ctx, client, resourceID, plan) (Datafeed, diag.Diagnostics)` (remove read-after-write and state.Set; stop/update/start, set ID, and return).
-- [ ] 5.4 Extract `deleteDatafeed(ctx, client, resourceID, state) diag.Diagnostics`.
+- [x] 5.1 Extract `readDatafeed(ctx, client, resourceID, state) (Datafeed, bool, diag.Diagnostics)`.
+- [x] 5.2 Extract `createDatafeed(ctx, client, resourceID, plan) (Datafeed, diag.Diagnostics)` (remove read-after-write and state.Set; just create, set ID, and return).
+- [x] 5.3 Extract `updateDatafeed(ctx, client, resourceID, plan) (Datafeed, diag.Diagnostics)` (remove read-after-write and state.Set; stop/update/start, set ID, and return).
+- [x] 5.4 Extract `deleteDatafeed(ctx, client, resourceID, state) diag.Diagnostics`.
 
 ## 6. Datafeed — resource struct migration
 
-- [ ] 6.1 Change `datafeedResource` struct to embed `*entitycore.ElasticsearchResource[Datafeed]`.
-- [ ] 6.2 Construct it with `NewElasticsearchResource` using all four real callbacks.
-- [ ] 6.3 Keep `ImportState` on the concrete type unchanged.
-- [ ] 6.4 Remove the old `Create`, `Read`, `Update`, and `Delete` receiver methods.
+- [x] 6.1 Change `datafeedResource` struct to embed `*entitycore.ElasticsearchResource[Datafeed]`.
+- [x] 6.2 Construct it with `NewElasticsearchResource` using all four real callbacks.
+- [x] 6.3 Keep `ImportState` on the concrete type unchanged.
+- [x] 6.4 Remove the old `Create`, `Read`, `Update`, and `Delete` receiver methods.
 
 ## 7. Verification
 
