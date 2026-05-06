@@ -20,6 +20,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -69,7 +70,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "no indices match",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{
 					".ds-logs-test-default-2026.01.01-000001": {
@@ -89,7 +90,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "some indices match",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{
 					".ds-logs-test-default-2026.01.01-000001": {
@@ -114,7 +115,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "empty response",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{}`)
 			},
@@ -123,7 +124,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		{
 			name:       "index without lifecycle setting is skipped",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{
 					"index-without-ilm": {
@@ -137,6 +138,44 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 				}`)
 			},
 			wantIndices: []string{"index-with-ilm"},
+		},
+		{
+			name:       "http 404 returns empty",
+			policyName: "my-policy",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprintf(w, `{"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index"}],"type":"index_not_found_exception","status":404}}`)
+			},
+			wantIndices:  nil,
+			wantHasError: false,
+		},
+		{
+			name:       "http 500 returns error",
+			policyName: "my-policy",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, `{"error":{"type":"exception","reason":"something went wrong"},"status":500}`)
+			},
+			wantIndices:  nil,
+			wantHasError: true,
+		},
+		{
+			name:       "malformed lifecycle setting returns error",
+			policyName: "my-policy",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprintf(w, `{
+					"bad-index": {
+						"settings": {
+							"index.lifecycle.name": 12345
+						}
+					}
+				}`)
+			},
+			wantIndices:  nil,
+			wantHasError: true,
 		},
 	}
 
@@ -185,9 +224,8 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_settings") {
 				capturedPath = r.URL.Path
-				buf := make([]byte, r.ContentLength)
-				_, _ = r.Body.Read(buf)
-				capturedBody = string(buf)
+				body, _ := io.ReadAll(r.Body)
+				capturedBody = string(body)
 			}
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"acknowledged":true}`)
@@ -199,5 +237,24 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 		require.False(t, diags.HasError(), "unexpected error diagnostics: %v", diags.Errors())
 		require.Equal(t, "/index-1,index-2/_settings", capturedPath)
 		require.Contains(t, capturedBody, `"index.lifecycle.name":null`)
+	})
+
+	t.Run("http 500 returns error", func(t *testing.T) {
+		t.Parallel()
+		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_settings") {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, `{"error":{"type":"exception","reason":"something went wrong"},"status":500}`)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"acknowledged":true}`)
+		})
+		defer srv.Close()
+
+		apiClient := newMockScopedClient(t, srv)
+		diags := ClearILMPolicyFromIndices(context.Background(), apiClient, []string{"index-1"})
+		require.True(t, diags.HasError(), "expected error diagnostics")
 	})
 }
