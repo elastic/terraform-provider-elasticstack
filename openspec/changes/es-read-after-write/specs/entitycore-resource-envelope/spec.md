@@ -20,13 +20,13 @@ The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]
 
 - **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
 - **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** `resp.State.Set` SHALL NOT be called
+- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
 
 #### Scenario: Resource not found after update produces error
 
 - **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
 - **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** `resp.State.Set` SHALL NOT be called
+- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
 
 #### Scenario: readFunc error after create short-circuits state mutation
 
