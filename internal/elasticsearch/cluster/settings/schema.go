@@ -18,18 +18,20 @@
 package settings
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func getSchema() schema.Schema {
-	settingNestedAttr := schema.SetNestedAttribute{
+	// settingBlock defines a single key/value setting entry as a block, preserving
+	// the original HCL block syntax: setting { name = "..." value = "..." }.
+	settingBlock := schema.SetNestedBlock{
 		MarkdownDescription: "Defines the settings in the cluster.",
-		Required:            true,
-		NestedObject: schema.NestedAttributeObject{
+		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{
 					MarkdownDescription: "The name of the setting to set and track.",
@@ -38,29 +40,26 @@ func getSchema() schema.Schema {
 				"value": schema.StringAttribute{
 					MarkdownDescription: "The value of the setting to set and track.",
 					Optional:            true,
-					Computed:            true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.UseStateForUnknown(),
-					},
 				},
 				"value_list": schema.ListAttribute{
 					MarkdownDescription: "The list of values to be set for the key, where the list is required.",
 					Optional:            true,
-					Computed:            true,
 					ElementType:         types.StringType,
-					PlanModifiers: []planmodifier.List{
-						listplanmodifier.UseStateForUnknown(),
-					},
 				},
 			},
 		},
 	}
 
+	// settingsBlock wraps settingBlock inside persistent/transient with a max of
+	// one block occurrence to preserve the original MaxItems:1 SDK constraint.
 	settingsBlock := schema.ListNestedBlock{
 		MarkdownDescription: "Settings block containing individual setting entries.",
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
 		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"setting": settingNestedAttr,
+			Blocks: map[string]schema.Block{
+				"setting": settingBlock,
 			},
 		},
 	}

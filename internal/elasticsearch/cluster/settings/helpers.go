@@ -88,7 +88,7 @@ func expandSettings(ctx context.Context, settingsList types.List) (map[string]an
 		if _, exists := result[name]; exists {
 			diags.AddError(
 				fmt.Sprintf(`Unable to set "%s"`, name),
-				fmt.Sprintf(`Found setting "%s" have been already configured.`, name),
+				fmt.Sprintf(`Setting "%s" has already been configured.`, name),
 			)
 			return nil, diags
 		}
