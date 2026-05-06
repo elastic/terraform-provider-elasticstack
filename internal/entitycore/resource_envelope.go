@@ -59,11 +59,12 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 ) diag.Diagnostics
 
 // ElasticsearchCreateFunc performs the create after the envelope decodes the
-// plan, checks the write identity, resolves the scoped Elasticsearch client, and
-// passes the planned model. It returns the model to persist in state.
-//
-// The callback must not call readFunc; the envelope handles read-after-write
-// internally.
+// plan, checks the write identity, resolves the scoped Elasticsearch client,
+// and passes the planned model. The callback should call the remote create
+// API, set the composite ID on the returned model (e.g. via client.ID()),
+// include any create-only field values, and return the model. The envelope
+// invokes readFunc after a successful callback and sets state from the read
+// result; the callback must not call readFunc.
 type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -72,10 +73,10 @@ type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 ) (T, diag.Diagnostics)
 
 // ElasticsearchUpdateFunc performs the update with the same prelude as
-// [ElasticsearchCreateFunc].
-//
-// The callback must not call readFunc; the envelope handles read-after-write
-// internally.
+// [ElasticsearchCreateFunc]. The callback should call the remote update API,
+// set the composite ID on the returned model, and return it. The envelope
+// invokes readFunc after a successful callback and sets state from the read
+// result; the callback must not call readFunc.
 type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
