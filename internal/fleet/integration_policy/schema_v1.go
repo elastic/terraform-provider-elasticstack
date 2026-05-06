@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -168,7 +167,7 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 	for streamID, streamData := range apiStreams {
 		streamModel := integrationPolicyInputStreamModel{
 			Enabled: types.BoolPointerValue(streamData.Enabled),
-			Vars:    typeutils.MapToNormalizedType(schemautil.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), &diags),
+			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), &diags),
 		}
 
 		streams[streamID] = streamModel

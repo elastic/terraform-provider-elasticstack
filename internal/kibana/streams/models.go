@@ -19,10 +19,13 @@ package streams
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,16 +39,16 @@ const (
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
-	ID               types.String        `tfsdk:"id"`
-	KibanaConnection types.List          `tfsdk:"kibana_connection"`
-	SpaceID          types.String        `tfsdk:"space_id"`
-	Name             types.String        `tfsdk:"name"`
-	Description      types.String        `tfsdk:"description"`
-	WiredConfig      *wiredConfigModel   `tfsdk:"wired_config"`
-	ClassicConfig    *classicConfigModel `tfsdk:"classic_config"`
-	QueryConfig      *queryConfigModel   `tfsdk:"query_config"`
-	Dashboards       types.List          `tfsdk:"dashboards"`
-	Queries          []streamQueryModel  `tfsdk:"queries"`
+	entitycore.KibanaConnectionField
+	ID            types.String        `tfsdk:"id"`
+	SpaceID       types.String        `tfsdk:"space_id"`
+	Name          types.String        `tfsdk:"name"`
+	Description   types.String        `tfsdk:"description"`
+	WiredConfig   *wiredConfigModel   `tfsdk:"wired_config"`
+	ClassicConfig *classicConfigModel `tfsdk:"classic_config"`
+	QueryConfig   *queryConfigModel   `tfsdk:"query_config"`
+	Dashboards    types.List          `tfsdk:"dashboards"`
+	Queries       []streamQueryModel  `tfsdk:"queries"`
 }
 
 // streamQueryModel is the Terraform model for an attached ES|QL query.
@@ -56,6 +59,26 @@ type streamQueryModel struct {
 	Esql          types.String  `tfsdk:"esql"`
 	SeverityScore types.Float64 `tfsdk:"severity_score"`
 	Evidence      types.List    `tfsdk:"evidence"`
+}
+
+func (m streamModel) GetID() types.String         { return m.ID }
+func (m streamModel) GetResourceID() types.String { return m.Name }
+func (m streamModel) GetSpaceID() types.String    { return m.SpaceID }
+
+var streamsMinVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+
+// GetVersionRequirements returns the minimum Kibana version required for
+// Streams. This satisfies the optional
+// entitycore.WithVersionRequirements interface, allowing the
+// generic Kibana resource envelope to enforce the requirement before invoking
+// lifecycle callbacks.
+func (m streamModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
+	return []entitycore.DataSourceVersionRequirement{
+		{
+			MinVersion:   *streamsMinVersion,
+			ErrorMessage: fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", streamsMinVersion),
+		},
+	}, nil
 }
 
 // streamType returns the stream type discriminator based on which config block is set.
@@ -148,6 +171,7 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagnostics) kibanaoapi.StreamUpsertRequest {
 	// Initialise all required array fields as empty slices, not nil.
 	// The API rejects requests where these are absent or null.
+	streamType := m.streamType()
 	req := kibanaoapi.StreamUpsertRequest{
 		Dashboards: []string{},
 		Rules:      []string{},
@@ -156,11 +180,11 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 
 	// Build stream definition
 	req.Stream = kibanaoapi.StreamDefinition{
-		Type:        m.streamType(),
+		Type:        streamType,
 		Description: m.Description.ValueString(),
 	}
 
-	switch m.streamType() {
+	switch streamType {
 	case streamTypeWired:
 		req.Stream.Ingest = m.WiredConfig.toAPIIngest(diags)
 	case streamTypeClassic:

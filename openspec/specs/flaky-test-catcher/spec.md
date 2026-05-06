@@ -129,17 +129,15 @@ The agent SHALL check for existing open GitHub issues labelled `flaky-test` whos
 ---
 
 ### Requirement: Issue creation
-The agent SHALL create one GitHub issue per affected resource (up to `issue_slots_available`). Each issue SHALL be labelled `flaky-test` and `code-factory`, and SHALL include: broken test list, flaky test list with fail rates, commit analysis result, a sample failure excerpt, and the affected stack versions.
+The agent SHALL create one GitHub issue per affected resource (up to `issue_slots_available`). Each issue SHALL be labelled `flaky-test`, and SHALL include: broken test list, flaky test list with fail rates, commit analysis result, a sample failure excerpt, and the affected stack versions.
 
 #### Scenario: Issue created for resource with broken and flaky tests
 - **WHEN** `elasticstack_elasticsearch_index` has both broken and flaky tests
-- **THEN** an issue titled `[flaky-test] elasticstack_elasticsearch_index` is created with sections for Broken Tests, Flaky Tests, Commit Analysis, Sample Failure Output, and Affected Stack Versions, labelled `flaky-test` and `code-factory`
+- **THEN** an issue titled `[flaky-test] elasticstack_elasticsearch_index` is created with sections for Broken Tests, Flaky Tests, Commit Analysis, Sample Failure Output, and Affected Stack Versions, labelled `flaky-test`
 
 #### Scenario: Issue cap enforced
 - **WHEN** the agent has already created `issue_slots_available` issues in this run
 - **THEN** no further issues are created regardless of remaining affected resources
-
----
 
 ### Requirement: No-op when nothing actionable
 The agent SHALL call `noop` with a descriptive reason when the analysis completes without creating any issues (e.g., all affected resources already have open issues, or all failures are below the 20% threshold).
@@ -147,4 +145,15 @@ The agent SHALL call `noop` with a descriptive reason when the analysis complete
 #### Scenario: All resources already tracked
 - **WHEN** every resource with qualifying failures already has an open `flaky-test` issue
 - **THEN** the agent calls `noop` with the reason "all affected resources already have open issues"
+
+### Requirement: Created flaky-test issues are explicitly dispatched to `code-factory`
+After safe-output issue creation completes, the workflow SHALL explicitly dispatch the `code-factory` workflow once for each flaky-test issue created in the current run rather than relying on a producer-side `code-factory` label to activate implementation intake.
+
+#### Scenario: One created flaky-test issue dispatches one implementation run
+- **WHEN** the workflow creates one flaky-test issue in a run
+- **THEN** it SHALL dispatch exactly one `code-factory` workflow run for that issue
+
+#### Scenario: Multiple created flaky-test issues dispatch multiple implementation runs
+- **WHEN** the workflow creates multiple flaky-test issues in a run
+- **THEN** it SHALL dispatch exactly one independent `code-factory` workflow run per created issue
 

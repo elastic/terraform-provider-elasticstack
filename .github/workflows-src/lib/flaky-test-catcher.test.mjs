@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const { classifyRuns, computeGate, filterIssues } = require('./flaky-test-catcher.js');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const workflowPath = path.resolve(__dirname, '../../workflows/flaky-test-catcher.md');
+const lockPath = path.resolve(__dirname, '../../workflows/flaky-test-catcher.lock.yml');
 
 // ---------------------------------------------------------------------------
 // classifyRuns
@@ -196,4 +204,15 @@ test('filterIssues keeps only real issues in a mixed list', () => {
   const result = filterIssues(items);
   assert.equal(result.length, 2);
   assert.deepEqual(result.map(i => i.id), [1, 3]);
+});
+
+test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
+  const source = readFileSync(workflowPath, 'utf8');
+  const lock = readFileSync(lockPath, 'utf8');
+  assert.match(source, /dispatch_code_factory/);
+  assert.match(source, /Dispatch/);
+  assert.match(lock, /dispatch_code_factory/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /"labels":\["flaky-test"\]/);
 });

@@ -20,7 +20,7 @@ package ingest_test
 import (
 	"fmt"
 
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -42,7 +42,7 @@ func CheckResourceJSON(name, key, value string) resource.TestCheckFunc {
 		if !ok {
 			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
 		}
-		if eq, jsonErr := schemautil.JSONBytesEqual([]byte(value), []byte(v)); !eq {
+		if eq, jsonErr := typeutils.JSONBytesEqual([]byte(value), []byte(v)); !eq {
 			if jsonErr != nil {
 				return fmt.Errorf(
 					"%s: Attribute '%s' expected %#v, got %#v: %w",

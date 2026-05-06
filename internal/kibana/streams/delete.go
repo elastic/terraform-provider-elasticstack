@@ -22,41 +22,25 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel streamModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteStream(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model streamModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	// Classic streams cannot be deleted via the API. Remove from Terraform state only.
-	if stateModel.ClassicConfig != nil {
-		return
-	}
-
-	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if model.ClassicConfig != nil {
+		return diags
 	}
 
 	kibanaClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
+		diags.AddError("Unable to get Kibana client", err.Error())
+		return diags
 	}
 
-	resp.Diagnostics.Append(
-		kibanaoapi.DeleteStream(ctx, kibanaClient, composite.ClusterID, composite.ResourceID)...,
+	diags.Append(
+		kibanaoapi.DeleteStream(ctx, kibanaClient, spaceID, resourceID)...,
 	)
+	return diags
 }

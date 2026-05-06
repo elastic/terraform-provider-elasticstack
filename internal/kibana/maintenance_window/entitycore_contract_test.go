@@ -30,13 +30,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
+func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
-	field, ok := rt.FieldByName("ResourceBase")
+	field, ok := rt.FieldByName("KibanaResource")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[Model]](), field.Type)
 }
 
 func TestResource_importState_passthroughCompoundID(t *testing.T) {

@@ -246,6 +246,10 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_custom_integration.test", "space_id"),
 					func(s *terraform.State) error {
 						rs := s.RootModule().Resources["elasticstack_fleet_custom_integration.test"]
 						if rs == nil {
@@ -318,7 +322,24 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
-			// Step 5: Verify ignore_mapping_update_errors=true uploads successfully.
+			// Step 5: Reset skip_data_stream_rollover back to false and assert "false".
+			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPathV101),
+				},
+				PreConfig: func() {
+					time.Sleep(15 * time.Second)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+			// Step 6: Verify ignore_mapping_update_errors=true uploads successfully.
 			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -332,6 +353,23 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+			// Step 7: Reset ignore_mapping_update_errors back to false and assert "false".
+			// PreConfig waits for Fleet's upload rate limit (10s) to reset.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPathV101),
+				},
+				PreConfig: func() {
+					time.Sleep(15 * time.Second)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "false"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
@@ -567,6 +605,8 @@ func TestAccFleetCustomIntegration_Timeouts(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "timeouts.create", "15m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "timeouts.update", "25m"),
 				),
 			},
 			// Step 2: Update — change skip_data_stream_rollover to trigger a re-upload,

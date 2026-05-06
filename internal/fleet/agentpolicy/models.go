@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -183,10 +182,10 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	} else {
 		model.UnenrollmentTimeout = customtypes.NewDurationNull()
 	}
-	if schemautil.Deref(data.GlobalDataTags) != nil {
+	if typeutils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		var map0 = make(map[string]globalDataTagsItemModel)
-		for _, v := range schemautil.Deref(data.GlobalDataTags) {
+		for _, v := range typeutils.Deref(data.GlobalDataTags) {
 			maybeFloat, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue1()
 			if err != nil {
 				maybeString, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue0()

@@ -18,14 +18,10 @@
 package maintenancewindow
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -35,8 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getSchema() schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: "Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -167,8 +163,5 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }

@@ -92,3 +92,14 @@ test('schema-coverage rotation prompt documents deterministic toolchain without 
   assert.match(section, /Do \*\*not\*\* install alternate Go or Node versions/);
   assert.doesNotMatch(section, /scripts\/schema-coverage-rotation/);
 });
+
+test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
+  const source = workflowSource();
+  const lock = lockSource();
+  assert.match(source, /dispatch_code_factory/);
+  assert.match(source, /Dispatch/);
+  assert.match(lock, /dispatch_code_factory/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /"labels":\["testing","acceptance-tests","schema-coverage"\]/);
+});

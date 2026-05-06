@@ -26,7 +26,7 @@ import (
 	"sort"
 	"strings"
 
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -190,8 +190,8 @@ func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSett
 	}
 
 	return reflect.DeepEqual(
-		normalizeIndexSettings(schemautil.FlattenMap(o)),
-		normalizeIndexSettings(schemautil.FlattenMap(n)),
+		normalizeIndexSettings(typeutils.FlattenMap(o)),
+		normalizeIndexSettings(typeutils.FlattenMap(n)),
 	), diags
 }
 
@@ -264,7 +264,7 @@ func CanonicalIndexSettingsJSON(raw string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("settings must be a JSON object")
 	}
-	flatNorm := normalizeIndexSettings(schemautil.FlattenMap(m))
+	flatNorm := normalizeIndexSettings(typeutils.FlattenMap(m))
 	nested := unflattenDottedMap(flatNorm)
 	b, err := marshalSettingsJSONSorted(nested)
 	if err != nil {
