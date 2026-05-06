@@ -1,10 +1,10 @@
 ## 1. Model and Schema
 
-- [ ] 1.1 Define `snapshotRepositoryDataSourceModel` struct embedding `entitycore.ElasticsearchConnectionField` with `tfsdk`-tagged fields: `ID`, `Name`, `Type`, and one list-nested field per repository type (`Fs`, `Url`, `Gcs`, `Azure`, `S3`, `Hdfs`)
-- [ ] 1.2 Define nested model structs for each repository type (e.g., `fsDataSourceModel`, `s3DataSourceModel`, etc.) with `tfsdk`-tagged computed fields matching the current SDK schema
-- [ ] 1.3 Create `getDataSourceSchema()` returning `schema.Schema` with Plugin Framework attributes: `id` (computed string), `name` (required string), `type` (computed string), and computed list nested attributes for each repository type
-- [ ] 1.4 Ensure common settings (chunk_size, compress, max_snapshot_bytes_per_sec, max_restore_bytes_per_sec, readonly) are present in each type block where applicable
-- [ ] 1.5 Ensure `fs` and `url` blocks include `max_number_of_snapshots`; `s3` block does NOT include `endpoint`
+- [x] 1.1 Define `snapshotRepositoryDataSourceModel` struct embedding `entitycore.ElasticsearchConnectionField` with `tfsdk`-tagged fields: `ID`, `Name`, `Type`, and one list-nested field per repository type (`Fs`, `Url`, `Gcs`, `Azure`, `S3`, `Hdfs`)
+- [x] 1.2 Define nested model structs for each repository type (e.g., `fsDataSourceModel`, `s3DataSourceModel`, etc.) with `tfsdk`-tagged computed fields matching the current SDK schema
+- [x] 1.3 Create `getDataSourceSchema()` returning `schema.Schema` with Plugin Framework attributes: `id` (computed string), `name` (required string), `type` (computed string), and computed list nested attributes for each repository type
+- [x] 1.4 Ensure common settings (chunk_size, compress, max_snapshot_bytes_per_sec, max_restore_bytes_per_sec, readonly) are present in each type block where applicable
+- [x] 1.5 Ensure `fs` and `url` blocks include `max_number_of_snapshots`; `s3` block does NOT include `endpoint`
 
 ## 2. Read Callback
 
