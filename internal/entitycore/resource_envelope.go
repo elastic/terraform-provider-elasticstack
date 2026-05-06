@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -60,6 +61,9 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 // ElasticsearchCreateFunc performs the create after the envelope decodes the
 // plan, checks the write identity, resolves the scoped Elasticsearch client, and
 // passes the planned model. It returns the model to persist in state.
+//
+// The callback must not call readFunc; the envelope handles read-after-write
+// internally.
 type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -69,6 +73,9 @@ type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 
 // ElasticsearchUpdateFunc performs the update with the same prelude as
 // [ElasticsearchCreateFunc].
+//
+// The callback must not call readFunc; the envelope handles read-after-write
+// internally.
 type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -235,13 +242,27 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 		return diags
 	}
 
-	resultModel, callDiags := op(ctx, client, writeID.ValueString(), model)
+	writtenModel, callDiags := op(ctx, client, writeID.ValueString(), model)
 	diags.Append(callDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(state.Set(ctx, &resultModel)...)
+	stateModel, found, readDiags := r.readFunc(ctx, client, writeID.ValueString(), writtenModel)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !found {
+		diags.AddError(
+			"Resource not found",
+			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeID.ValueString()),
+		)
+		return diags
+	}
+
+	diags.Append(state.Set(ctx, &stateModel)...)
 	return diags
 }
 
