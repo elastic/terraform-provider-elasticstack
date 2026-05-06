@@ -72,9 +72,9 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return "fs", fsToSettings(fs), diags
 	}
-	if !data.Url.IsNull() && !data.Url.IsUnknown() {
-		var u UrlSettings
-		diags.Append(data.Url.As(ctx, &u, basetypes.ObjectAsOptions{})...)
+	if !data.URL.IsNull() && !data.URL.IsUnknown() {
+		var u URLSettings
+		diags.Append(data.URL.As(ctx, &u, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
@@ -138,7 +138,7 @@ func fsToSettings(fs FsSettings) map[string]any {
 	return m
 }
 
-func urlToSettings(u UrlSettings) map[string]any {
+func urlToSettings(u URLSettings) map[string]any {
 	m := map[string]any{
 		"url":      u.URL.ValueString(),
 		"compress": u.Compress.ValueBool(),
@@ -147,10 +147,10 @@ func urlToSettings(u UrlSettings) map[string]any {
 	setIfNotEmpty(m, "chunk_size", u.ChunkSize.ValueString())
 	setIfNotEmpty(m, "max_snapshot_bytes_per_sec", u.MaxSnapshotBytesPerSec.ValueString())
 	setIfNotEmpty(m, "max_restore_bytes_per_sec", u.MaxRestoreBytesPerSec.ValueString())
-	if !u.HttpMaxRetries.IsNull() && !u.HttpMaxRetries.IsUnknown() {
-		m["http_max_retries"] = u.HttpMaxRetries.ValueInt64()
+	if !u.HTTPMaxRetries.IsNull() && !u.HTTPMaxRetries.IsUnknown() {
+		m["http_max_retries"] = u.HTTPMaxRetries.ValueInt64()
 	}
-	setIfNotEmpty(m, "http_socket_timeout", u.HttpSocketTimeout.ValueString())
+	setIfNotEmpty(m, "http_socket_timeout", u.HTTPSocketTimeout.ValueString())
 	if !u.MaxNumberOfSnapshots.IsNull() && !u.MaxNumberOfSnapshots.IsUnknown() {
 		m["max_number_of_snapshots"] = u.MaxNumberOfSnapshots.ValueInt64()
 	}
@@ -198,7 +198,7 @@ func s3ToSettings(s3 S3Settings) map[string]any {
 	setIfNotEmpty(m, "client", s3.Client.ValueString())
 	setIfNotEmpty(m, "base_path", s3.BasePath.ValueString())
 	setIfNotEmpty(m, "buffer_size", s3.BufferSize.ValueString())
-	setIfNotEmpty(m, "canned_acl", s3.CannedAcl.ValueString())
+	setIfNotEmpty(m, "canned_acl", s3.CannedACL.ValueString())
 	setIfNotEmpty(m, "storage_class", s3.StorageClass.ValueString())
 	setIfNotEmpty(m, "chunk_size", s3.ChunkSize.ValueString())
 	setIfNotEmpty(m, "max_snapshot_bytes_per_sec", s3.MaxSnapshotBytesPerSec.ValueString())

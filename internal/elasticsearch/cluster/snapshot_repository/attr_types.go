@@ -18,6 +18,7 @@
 package snapshot_repository
 
 import (
+	"maps"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,12 +39,10 @@ func commonStdAttrTypes() map[string]attr.Type {
 	}
 }
 
-func mergeAttrTypes(maps ...map[string]attr.Type) map[string]attr.Type {
+func mergeAttrTypes(mps ...map[string]attr.Type) map[string]attr.Type {
 	result := make(map[string]attr.Type)
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+	for _, m := range mps {
+		maps.Copy(result, m)
 	}
 	return result
 }

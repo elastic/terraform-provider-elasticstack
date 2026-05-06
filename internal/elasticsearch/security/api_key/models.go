@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -79,16 +78,6 @@ func (model tfModel) GetResourceID() types.String {
 
 func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
-}
-
-// compositeID parses the composite ID string and returns a CompositeID.
-func (model tfModel) compositeID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
-	}
-
-	return compID, nil
 }
 
 func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {

@@ -28,7 +28,7 @@ type Data struct {
 	Name                    types.String `tfsdk:"name"`
 	Verify                  types.Bool   `tfsdk:"verify"`
 	Fs                      types.Object `tfsdk:"fs"`
-	Url                     types.Object `tfsdk:"url"`
+	URL                     types.Object `tfsdk:"url"`
 	Azure                   types.Object `tfsdk:"azure"`
 	Gcs                     types.Object `tfsdk:"gcs"`
 	S3                      types.Object `tfsdk:"s3"`
@@ -50,11 +50,11 @@ type FsSettings struct {
 	MaxNumberOfSnapshots   types.Int64  `tfsdk:"max_number_of_snapshots"`
 }
 
-// UrlSettings is used for the `url` block.
-type UrlSettings struct {
+// URLSettings is used for the `url` block.
+type URLSettings struct {
 	URL                    types.String `tfsdk:"url"`
-	HttpMaxRetries         types.Int64  `tfsdk:"http_max_retries"`
-	HttpSocketTimeout      types.String `tfsdk:"http_socket_timeout"`
+	HTTPMaxRetries         types.Int64  `tfsdk:"http_max_retries"`
+	HTTPSocketTimeout      types.String `tfsdk:"http_socket_timeout"`
 	ChunkSize              types.String `tfsdk:"chunk_size"`
 	Compress               types.Bool   `tfsdk:"compress"`
 	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
@@ -96,7 +96,7 @@ type S3Settings struct {
 	BasePath               types.String `tfsdk:"base_path"`
 	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
 	BufferSize             types.String `tfsdk:"buffer_size"`
-	CannedAcl              types.String `tfsdk:"canned_acl"`
+	CannedACL              types.String `tfsdk:"canned_acl"`
 	StorageClass           types.String `tfsdk:"storage_class"`
 	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
 	ChunkSize              types.String `tfsdk:"chunk_size"`

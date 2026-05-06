@@ -50,7 +50,7 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 
 	// Clear all type blocks then populate the correct one
 	data.Fs = types.ObjectNull(fsAttrTypes())
-	data.Url = types.ObjectNull(urlAttrTypes())
+	data.URL = types.ObjectNull(urlAttrTypes())
 	data.Gcs = types.ObjectNull(gcsAttrTypes())
 	data.Azure = types.ObjectNull(azureAttrTypes())
 	data.S3 = types.ObjectNull(s3AttrTypes())
@@ -65,12 +65,12 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 		}
 		data.Fs = fs
 	case "url":
-		u, uDiags := settingsToUrl(ctx, repo, state)
+		u, uDiags := settingsToURL(ctx, repo, state)
 		diags.Append(uDiags...)
 		if diags.HasError() {
 			return state, false, diags
 		}
-		data.Url = u
+		data.URL = u
 	case "gcs":
 		gcs, gcsDiags := settingsToGcs(ctx, repo)
 		diags.Append(gcsDiags...)
@@ -196,21 +196,21 @@ func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 	return types.ObjectValueFrom(ctx, fsAttrTypes(), fs)
 }
 
-func settingsToUrl(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
+func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
 	compressFallback := true
-	if !state.Url.IsNull() && !state.Url.IsUnknown() {
-		var stateUrl UrlSettings
-		if diags := state.Url.As(ctx, &stateUrl, basetypes.ObjectAsOptions{}); !diags.HasError() {
-			compressFallback = stateUrl.Compress.ValueBool()
+	if !state.URL.IsNull() && !state.URL.IsUnknown() {
+		var stateURL URLSettings
+		if diags := state.URL.As(ctx, &stateURL, basetypes.ObjectAsOptions{}); !diags.HasError() {
+			compressFallback = stateURL.Compress.ValueBool()
 		}
 	}
 
-	u := UrlSettings{
+	u := URLSettings{
 		URL:                    types.StringValue(strSetting(s, "url")),
-		HttpMaxRetries:         types.Int64Value(int64Setting(s, "http_max_retries", 5)),
-		HttpSocketTimeout:      types.StringValue(strSetting(s, "http_socket_timeout")),
+		HTTPMaxRetries:         types.Int64Value(int64Setting(s, "http_max_retries", 5)),
+		HTTPSocketTimeout:      types.StringValue(strSetting(s, "http_socket_timeout")),
 		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
 		Compress:               types.BoolValue(boolSetting(s, "compress", compressFallback)),
 		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
@@ -261,7 +261,7 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		BasePath:               types.StringValue(strSetting(s, "base_path")),
 		ServerSideEncryption:   types.BoolValue(boolSetting(s, "server_side_encryption", false)),
 		BufferSize:             types.StringValue(strSetting(s, "buffer_size")),
-		CannedAcl:              types.StringValue(strSetting(s, "canned_acl")),
+		CannedACL:              types.StringValue(strSetting(s, "canned_acl")),
 		StorageClass:           types.StringValue(strSetting(s, "storage_class")),
 		PathStyleAccess:        types.BoolValue(boolSetting(s, "path_style_access", false)),
 		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),

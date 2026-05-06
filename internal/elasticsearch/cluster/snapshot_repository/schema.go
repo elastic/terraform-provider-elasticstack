@@ -18,6 +18,7 @@
 package snapshot_repository
 
 import (
+	"maps"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -111,7 +112,8 @@ func fsAttribute() schema.Attribute {
 		},
 	})
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster.",
+		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. " +
+			"This filesystem must be accessible to all master and data nodes in the cluster.",
 		Optional:            true,
 		Attributes:          attrs,
 	}
@@ -291,12 +293,10 @@ func hdfsAttribute() schema.Attribute {
 }
 
 // mergeAttributes merges multiple attribute maps into one.
-func mergeAttributes(maps ...map[string]schema.Attribute) map[string]schema.Attribute {
+func mergeAttributes(mps ...map[string]schema.Attribute) map[string]schema.Attribute {
 	result := make(map[string]schema.Attribute)
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+	for _, m := range mps {
+		maps.Copy(result, m)
 	}
 	return result
 }

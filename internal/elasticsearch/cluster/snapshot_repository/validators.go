@@ -91,7 +91,7 @@ func (v validateConfigExactlyOneType) ValidateResource(ctx context.Context, req 
 	if !data.Fs.IsNull() && !data.Fs.IsUnknown() {
 		set++
 	}
-	if !data.Url.IsNull() && !data.Url.IsUnknown() {
+	if !data.URL.IsNull() && !data.URL.IsUnknown() {
 		set++
 	}
 	if !data.Gcs.IsNull() && !data.Gcs.IsUnknown() {
