@@ -13,10 +13,10 @@
 
 ## 3. Acceptance test
 
-- [ ] 3.1 Create/update `internal/fleet/integration/testdata/TestAccResourceIntegration_destroyWithILMCrossDependency/create/main.tf` (already exists from repro test).
-- [ ] 3.2 Update `internal/fleet/integration/acc_test.go` `TestAccResourceIntegration_destroyWithILMCrossDependency` to expect **success** on ILM policy destroy instead of `ExpectError`, confirming the fix.
-- [ ] 3.3 Add targeted acceptance test for ILM resource itself that creates a policy, an index with the policy reference, and asserts the ILM resource deletes successfully.
-- [ ] 3.4 Run the test against the local stack (`make docker-fleet`) and confirm it passes.
+- [x] 3.1 Create/update `internal/fleet/integration/testdata/TestAccResourceIntegration_destroyWithILMCrossDependency/create/main.tf` (already exists from repro test).
+- [x] 3.2 Update `internal/fleet/integration/acc_test.go` `TestAccResourceIntegration_destroyWithILMCrossDependency` to expect **success** on ILM policy destroy instead of `ExpectError`, confirming the fix.
+- [x] 3.3 Add targeted acceptance test for ILM resource itself that creates a policy, an index with the policy reference, and asserts the ILM resource deletes successfully.
+- [x] 3.4 Run the test against the local stack (`make docker-fleet`) and confirm it passes.
 
 ## 4. Existing tests
 
