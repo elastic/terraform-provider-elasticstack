@@ -86,12 +86,6 @@ on:
           
           core.info(`Gate reason: ${result.gate_reason}`);
           
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: 'go.mod'
-        cache: false
-
 permissions:
   contents: read
   issues: read
@@ -157,15 +151,15 @@ mcp-servers:
     args:
       - "--network"
       - "host"
-    entrypoint: "/bin/bash"
+    entrypoint: "serena"
     entrypointArgs:
-      - "${{ github.workspace }}/.github/workflows/serena-go-init.sh"
+      - "start-mcp-server"
+      - "--context"
+      - "claude-code"
+      - "--project"
+      - "${{ github.workspace }}"
     mounts:
       - "${{ github.workspace }}:${{ github.workspace }}:rw"
-      - "/opt/hostedtoolcache:/opt/hostedtoolcache:ro"
-    env:
-      PATH: "/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin"
-      GOROOT: "/usr/local/go"
     allowed:
       - "activate_project"
       - "get_symbols_overview"
