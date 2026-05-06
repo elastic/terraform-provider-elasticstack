@@ -20,7 +20,7 @@ package cluster
 import (
 	"context"
 	"fmt"
-	maps0 "maps"
+	"maps"
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -42,11 +42,11 @@ type snapshotRepositoryDataSourceModel struct {
 	Name  types.String `tfsdk:"name"`
 	Type  types.String `tfsdk:"type"`
 	Fs    types.List   `tfsdk:"fs"`
-	Url   types.List   `tfsdk:"url"`
-	Gcs   types.List   `tfsdk:"gcs"`
+	URL   types.List   `tfsdk:"url"`
+	GCS   types.List   `tfsdk:"gcs"`
 	Azure types.List   `tfsdk:"azure"`
 	S3    types.List   `tfsdk:"s3"`
-	Hdfs  types.List   `tfsdk:"hdfs"`
+	HDFS  types.List   `tfsdk:"hdfs"`
 }
 
 type fsDataSourceModel struct {
@@ -66,9 +66,9 @@ type urlDataSourceModel struct {
 	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
 	Readonly               types.Bool   `tfsdk:"readonly"`
 	MaxNumberOfSnapshots   types.Int64  `tfsdk:"max_number_of_snapshots"`
-	Url                    types.String `tfsdk:"url"`
-	HttpMaxRetries         types.Int64  `tfsdk:"http_max_retries"`
-	HttpSocketTimeout      types.String `tfsdk:"http_socket_timeout"`
+	URL                    types.String `tfsdk:"url"`
+	HTTPMaxRetries         types.Int64  `tfsdk:"http_max_retries"`
+	HTTPSocketTimeout      types.String `tfsdk:"http_socket_timeout"`
 }
 
 type gcsDataSourceModel struct {
@@ -105,7 +105,7 @@ type s3DataSourceModel struct {
 	BasePath               types.String `tfsdk:"base_path"`
 	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
 	BufferSize             types.String `tfsdk:"buffer_size"`
-	CannedAcl              types.String `tfsdk:"canned_acl"`
+	CannedACL              types.String `tfsdk:"canned_acl"`
 	StorageClass           types.String `tfsdk:"storage_class"`
 	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
 }
@@ -116,7 +116,7 @@ type hdfsDataSourceModel struct {
 	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
 	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
 	Readonly               types.Bool   `tfsdk:"readonly"`
-	Uri                    types.String `tfsdk:"uri"`
+	URI                    types.String `tfsdk:"uri"`
 	Path                   types.String `tfsdk:"path"`
 	LoadDefaults           types.Bool   `tfsdk:"load_defaults"`
 }
@@ -321,10 +321,10 @@ func getDataSourceSchema() schema.Schema {
 	}
 }
 
-func mergeAttrMaps(maps ...map[string]schema.Attribute) map[string]schema.Attribute {
+func mergeAttrMaps(mapsToMerge ...map[string]schema.Attribute) map[string]schema.Attribute {
 	result := make(map[string]schema.Attribute)
-	for _, m := range maps {
-		maps0.Copy(result, m)
+	for _, m := range mapsToMerge {
+		maps.Copy(result, m)
 	}
 	return result
 }
@@ -405,21 +405,21 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.Fs = listValue
 	case "url":
-		model := flattenUrlSettings(currentRepo.Settings)
+		model := flattenURLSettings(currentRepo.Settings)
 		listValue, listDiags := types.ListValueFrom(ctx, urlElementType(), []urlDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
-		config.Url = listValue
+		config.URL = listValue
 	case "gcs":
-		model := flattenGcsSettings(currentRepo.Settings)
+		model := flattenGCSSettings(currentRepo.Settings)
 		listValue, listDiags := types.ListValueFrom(ctx, gcsElementType(), []gcsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
-		config.Gcs = listValue
+		config.GCS = listValue
 	case "azure":
 		model := flattenAzureSettings(currentRepo.Settings)
 		listValue, listDiags := types.ListValueFrom(ctx, azureElementType(), []azureDataSourceModel{model})
@@ -437,13 +437,13 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.S3 = listValue
 	case "hdfs":
-		model := flattenHdfsSettings(currentRepo.Settings)
+		model := flattenHDFSSettings(currentRepo.Settings)
 		listValue, listDiags := types.ListValueFrom(ctx, hdfsElementType(), []hdfsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
-		config.Hdfs = listValue
+		config.HDFS = listValue
 	default:
 		diags.AddError(
 			"API responded with unsupported type of the snapshot repository.",
@@ -469,7 +469,7 @@ func flattenFsSettings(settings map[string]any) fsDataSourceModel {
 	}
 }
 
-func flattenUrlSettings(settings map[string]any) urlDataSourceModel {
+func flattenURLSettings(settings map[string]any) urlDataSourceModel {
 	return urlDataSourceModel{
 		ChunkSize:              stringSetting(settings, "chunk_size"),
 		Compress:               boolSetting(settings, "compress"),
@@ -477,13 +477,13 @@ func flattenUrlSettings(settings map[string]any) urlDataSourceModel {
 		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
 		Readonly:               boolSetting(settings, "readonly"),
 		MaxNumberOfSnapshots:   int64Setting(settings, "max_number_of_snapshots"),
-		Url:                    stringSetting(settings, "url"),
-		HttpMaxRetries:         int64Setting(settings, "http_max_retries"),
-		HttpSocketTimeout:      stringSetting(settings, "http_socket_timeout"),
+		URL:                    stringSetting(settings, "url"),
+		HTTPMaxRetries:         int64Setting(settings, "http_max_retries"),
+		HTTPSocketTimeout:      stringSetting(settings, "http_socket_timeout"),
 	}
 }
 
-func flattenGcsSettings(settings map[string]any) gcsDataSourceModel {
+func flattenGCSSettings(settings map[string]any) gcsDataSourceModel {
 	return gcsDataSourceModel{
 		ChunkSize:              stringSetting(settings, "chunk_size"),
 		Compress:               boolSetting(settings, "compress"),
@@ -522,20 +522,20 @@ func flattenS3Settings(settings map[string]any) s3DataSourceModel {
 		BasePath:               stringSetting(settings, "base_path"),
 		ServerSideEncryption:   boolSetting(settings, "server_side_encryption"),
 		BufferSize:             stringSetting(settings, "buffer_size"),
-		CannedAcl:              stringSetting(settings, "canned_acl"),
+		CannedACL:              stringSetting(settings, "canned_acl"),
 		StorageClass:           stringSetting(settings, "storage_class"),
 		PathStyleAccess:        boolSetting(settings, "path_style_access"),
 	}
 }
 
-func flattenHdfsSettings(settings map[string]any) hdfsDataSourceModel {
+func flattenHDFSSettings(settings map[string]any) hdfsDataSourceModel {
 	return hdfsDataSourceModel{
 		ChunkSize:              stringSetting(settings, "chunk_size"),
 		Compress:               boolSetting(settings, "compress"),
 		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
 		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
 		Readonly:               boolSetting(settings, "readonly"),
-		Uri:                    stringSetting(settings, "uri"),
+		URI:                    stringSetting(settings, "uri"),
 		Path:                   stringSetting(settings, "path"),
 		LoadDefaults:           boolSetting(settings, "load_defaults"),
 	}

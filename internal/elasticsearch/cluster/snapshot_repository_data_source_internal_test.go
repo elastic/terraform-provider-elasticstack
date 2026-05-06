@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFlattenGcsSettings(t *testing.T) {
+func TestFlattenGCSSettings(t *testing.T) {
 	settings := map[string]any{
 		"bucket":                     "my-bucket",
 		"client":                     "my-client",
@@ -35,7 +35,7 @@ func TestFlattenGcsSettings(t *testing.T) {
 		"max_restore_bytes_per_sec":  "20mb",
 		"readonly":                   "true",
 	}
-	model := flattenGcsSettings(settings)
+	model := flattenGCSSettings(settings)
 
 	assert.Equal(t, types.StringValue("my-bucket"), model.Bucket)
 	assert.Equal(t, types.StringValue("my-client"), model.Client)
@@ -47,8 +47,8 @@ func TestFlattenGcsSettings(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.Readonly)
 }
 
-func TestFlattenGcsSettings_Nulls(t *testing.T) {
-	model := flattenGcsSettings(map[string]any{})
+func TestFlattenGCSSettings_Nulls(t *testing.T) {
+	model := flattenGCSSettings(map[string]any{})
 
 	assert.True(t, model.Bucket.IsNull())
 	assert.True(t, model.Client.IsNull())
@@ -79,6 +79,7 @@ func TestFlattenAzureSettings(t *testing.T) {
 	assert.Equal(t, types.BoolValue(false), model.Compress)
 	assert.Equal(t, types.BoolValue(false), model.Readonly)
 	assert.Equal(t, types.StringValue("1024"), model.ChunkSize)
+
 }
 
 func TestFlattenS3Settings(t *testing.T) {
@@ -101,7 +102,7 @@ func TestFlattenS3Settings(t *testing.T) {
 	assert.Equal(t, types.StringValue("backups"), model.BasePath)
 	assert.Equal(t, types.BoolValue(true), model.ServerSideEncryption)
 	assert.Equal(t, types.StringValue("5mb"), model.BufferSize)
-	assert.Equal(t, types.StringValue("private"), model.CannedAcl)
+	assert.Equal(t, types.StringValue("private"), model.CannedACL)
 	assert.Equal(t, types.StringValue("standard"), model.StorageClass)
 	assert.Equal(t, types.BoolValue(false), model.PathStyleAccess)
 	assert.Equal(t, types.BoolValue(true), model.Compress)
@@ -128,9 +129,9 @@ func TestFlattenHdfsSettings(t *testing.T) {
 		"readonly":      false,
 		"chunk_size":    "32",
 	}
-	model := flattenHdfsSettings(settings)
+	model := flattenHDFSSettings(settings)
 
-	assert.Equal(t, types.StringValue("hdfs://host:8020/"), model.Uri)
+	assert.Equal(t, types.StringValue("hdfs://host:8020/"), model.URI)
 	assert.Equal(t, types.StringValue("/repo"), model.Path)
 	assert.Equal(t, types.BoolValue(true), model.LoadDefaults)
 	assert.Equal(t, types.BoolValue(false), model.Compress)
