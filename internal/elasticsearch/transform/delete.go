@@ -17,13 +17,17 @@
 
 package transform
 
-import _ "embed"
+import (
+	"context"
 
-//go:embed transform.md
-var transformDescription string
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+)
 
-//go:embed descriptions/defer_validation.md
-var deferValidationDescription string
-
-//go:embed descriptions/timeout.md
-var timeoutDescription string
+// deleteTransform deletes the transform with force=true.
+func deleteTransform(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) fwdiag.Diagnostics {
+	sdkDiags := elasticsearch.DeleteTransform(ctx, client, &resourceID)
+	return diagutil.FrameworkDiagsFromSDK(sdkDiags)
+}

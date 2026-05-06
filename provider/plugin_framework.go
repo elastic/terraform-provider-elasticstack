@@ -27,7 +27,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastream"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
@@ -45,6 +48,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
@@ -178,6 +182,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		index.NewResource,
 		monitor.NewResource,
 		apikey.NewResource,
+		componenttemplate.NewResource,
+		datastream.NewDataStreamResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
 		template.NewResource,
@@ -200,6 +206,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		inferenceendpoint.NewInferenceEndpointResource,
 		watch.NewWatchResource,
 		script.NewScriptResource,
+		transform.NewTransformResource,
+		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		ingest.NewIngestPipelineResource,
