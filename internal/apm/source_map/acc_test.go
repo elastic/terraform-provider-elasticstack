@@ -495,7 +495,7 @@ func testAccApmSourceMapPlainImportID(resourceName string) resource.ImportStateI
 // registers cleanup, and returns the file path.
 func writeTempSourceMapFile(t *testing.T) string {
 	t.Helper()
-	f, err := os.CreateTemp("", "tf-acc-sourcemap-*.json")
+	f, err := os.CreateTemp(t.TempDir(), "tf-acc-sourcemap-*.json")
 	if err != nil {
 		t.Fatalf("failed to create temp source map file: %s", err)
 	}
