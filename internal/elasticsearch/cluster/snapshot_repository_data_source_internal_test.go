@@ -18,11 +18,90 @@
 package cluster
 
 import (
+	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestFlattenFsSettings(t *testing.T) {
+	settings := map[string]any{
+		"location":                   "/tmp",
+		"chunk_size":                 "1gb",
+		"compress":                   true,
+		"max_snapshot_bytes_per_sec": "20mb",
+		"max_restore_bytes_per_sec":  "10mb",
+		"readonly":                   "false",
+		"max_number_of_snapshots":    50,
+	}
+	model, err := flattenFsSettings(settings)
+	require.NoError(t, err)
+
+	assert.Equal(t, types.StringValue("/tmp"), model.Location)
+	assert.Equal(t, types.StringValue("1gb"), model.ChunkSize)
+	assert.Equal(t, types.BoolValue(true), model.Compress)
+	assert.Equal(t, types.StringValue("20mb"), model.MaxSnapshotBytesPerSec)
+	assert.Equal(t, types.StringValue("10mb"), model.MaxRestoreBytesPerSec)
+	assert.Equal(t, types.BoolValue(false), model.Readonly)
+	assert.Equal(t, types.Int64Value(50), model.MaxNumberOfSnapshots)
+}
+
+func TestFlattenFsSettings_Nulls(t *testing.T) {
+	model, err := flattenFsSettings(map[string]any{})
+	require.NoError(t, err)
+
+	assert.True(t, model.Location.IsNull())
+	assert.True(t, model.ChunkSize.IsNull())
+	assert.True(t, model.Compress.IsNull())
+	assert.True(t, model.MaxSnapshotBytesPerSec.IsNull())
+	assert.True(t, model.MaxRestoreBytesPerSec.IsNull())
+	assert.True(t, model.Readonly.IsNull())
+	assert.True(t, model.MaxNumberOfSnapshots.IsNull())
+}
+
+func TestFlattenURLSettings(t *testing.T) {
+	settings := map[string]any{
+		"url":                        "file:/tmp",
+		"chunk_size":                 "1gb",
+		"compress":                   "true",
+		"max_snapshot_bytes_per_sec": "40mb",
+		"max_restore_bytes_per_sec":  "10mb",
+		"readonly":                   false,
+		"max_number_of_snapshots":    500,
+		"http_max_retries":           3,
+		"http_socket_timeout":        "30s",
+	}
+	model, err := flattenURLSettings(settings)
+	require.NoError(t, err)
+
+	assert.Equal(t, types.StringValue("file:/tmp"), model.URL)
+	assert.Equal(t, types.StringValue("1gb"), model.ChunkSize)
+	assert.Equal(t, types.BoolValue(true), model.Compress)
+	assert.Equal(t, types.StringValue("40mb"), model.MaxSnapshotBytesPerSec)
+	assert.Equal(t, types.StringValue("10mb"), model.MaxRestoreBytesPerSec)
+	assert.Equal(t, types.BoolValue(false), model.Readonly)
+	assert.Equal(t, types.Int64Value(500), model.MaxNumberOfSnapshots)
+	assert.Equal(t, types.Int64Value(3), model.HTTPMaxRetries)
+	assert.Equal(t, types.StringValue("30s"), model.HTTPSocketTimeout)
+}
+
+func TestFlattenURLSettings_Nulls(t *testing.T) {
+	model, err := flattenURLSettings(map[string]any{})
+	require.NoError(t, err)
+
+	assert.True(t, model.URL.IsNull())
+	assert.True(t, model.ChunkSize.IsNull())
+	assert.True(t, model.Compress.IsNull())
+	assert.True(t, model.MaxSnapshotBytesPerSec.IsNull())
+	assert.True(t, model.MaxRestoreBytesPerSec.IsNull())
+	assert.True(t, model.Readonly.IsNull())
+	assert.True(t, model.MaxNumberOfSnapshots.IsNull())
+	assert.True(t, model.HTTPMaxRetries.IsNull())
+	assert.True(t, model.HTTPSocketTimeout.IsNull())
+}
 
 func TestFlattenGCSSettings(t *testing.T) {
 	settings := map[string]any{
@@ -35,7 +114,8 @@ func TestFlattenGCSSettings(t *testing.T) {
 		"max_restore_bytes_per_sec":  "20mb",
 		"readonly":                   "true",
 	}
-	model := flattenGCSSettings(settings)
+	model, err := flattenGCSSettings(settings)
+	require.NoError(t, err)
 
 	assert.Equal(t, types.StringValue("my-bucket"), model.Bucket)
 	assert.Equal(t, types.StringValue("my-client"), model.Client)
@@ -48,7 +128,8 @@ func TestFlattenGCSSettings(t *testing.T) {
 }
 
 func TestFlattenGCSSettings_Nulls(t *testing.T) {
-	model := flattenGCSSettings(map[string]any{})
+	model, err := flattenGCSSettings(map[string]any{})
+	require.NoError(t, err)
 
 	assert.True(t, model.Bucket.IsNull())
 	assert.True(t, model.Client.IsNull())
@@ -70,7 +151,8 @@ func TestFlattenAzureSettings(t *testing.T) {
 		"readonly":      false,
 		"chunk_size":    1024,
 	}
-	model := flattenAzureSettings(settings)
+	model, err := flattenAzureSettings(settings)
+	require.NoError(t, err)
 
 	assert.Equal(t, types.StringValue("my-container"), model.Container)
 	assert.Equal(t, types.StringValue("my-client"), model.Client)
@@ -79,7 +161,21 @@ func TestFlattenAzureSettings(t *testing.T) {
 	assert.Equal(t, types.BoolValue(false), model.Compress)
 	assert.Equal(t, types.BoolValue(false), model.Readonly)
 	assert.Equal(t, types.StringValue("1024"), model.ChunkSize)
+}
 
+func TestFlattenAzureSettings_Nulls(t *testing.T) {
+	model, err := flattenAzureSettings(map[string]any{})
+	require.NoError(t, err)
+
+	assert.True(t, model.Container.IsNull())
+	assert.True(t, model.Client.IsNull())
+	assert.True(t, model.BasePath.IsNull())
+	assert.True(t, model.LocationMode.IsNull())
+	assert.True(t, model.ChunkSize.IsNull())
+	assert.True(t, model.Compress.IsNull())
+	assert.True(t, model.MaxSnapshotBytesPerSec.IsNull())
+	assert.True(t, model.MaxRestoreBytesPerSec.IsNull())
+	assert.True(t, model.Readonly.IsNull())
 }
 
 func TestFlattenS3Settings(t *testing.T) {
@@ -95,7 +191,8 @@ func TestFlattenS3Settings(t *testing.T) {
 		"max_number_of_snapshots": 100,
 		"compress":                true,
 	}
-	model := flattenS3Settings(settings)
+	model, err := flattenS3Settings(settings)
+	require.NoError(t, err)
 
 	assert.Equal(t, types.StringValue("my-bucket"), model.Bucket)
 	assert.Equal(t, types.StringValue("default"), model.Client)
@@ -108,14 +205,34 @@ func TestFlattenS3Settings(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.Compress)
 }
 
+func TestFlattenS3Settings_Nulls(t *testing.T) {
+	model, err := flattenS3Settings(map[string]any{})
+	require.NoError(t, err)
+
+	assert.True(t, model.Bucket.IsNull())
+	assert.True(t, model.Client.IsNull())
+	assert.True(t, model.BasePath.IsNull())
+	assert.True(t, model.ServerSideEncryption.IsNull())
+	assert.True(t, model.BufferSize.IsNull())
+	assert.True(t, model.CannedACL.IsNull())
+	assert.True(t, model.StorageClass.IsNull())
+	assert.True(t, model.PathStyleAccess.IsNull())
+	assert.True(t, model.ChunkSize.IsNull())
+	assert.True(t, model.Compress.IsNull())
+	assert.True(t, model.MaxSnapshotBytesPerSec.IsNull())
+	assert.True(t, model.MaxRestoreBytesPerSec.IsNull())
+	assert.True(t, model.Readonly.IsNull())
+}
+
 func TestFlattenS3Settings_NoEndpoint(t *testing.T) {
 	// Ensure the S3 model does not include endpoint; this test documents
 	// the schema decision that endpoint is absent from the data source.
 	settings := map[string]any{
-		"bucket":  "b",
+		"bucket":   "b",
 		"endpoint": "http://example.com",
 	}
-	model := flattenS3Settings(settings)
+	model, err := flattenS3Settings(settings)
+	require.NoError(t, err)
 	// The endpoint key should be ignored by the flatten helper.
 	assert.Equal(t, types.StringValue("b"), model.Bucket)
 }
@@ -129,7 +246,8 @@ func TestFlattenHdfsSettings(t *testing.T) {
 		"readonly":      false,
 		"chunk_size":    "32",
 	}
-	model := flattenHDFSSettings(settings)
+	model, err := flattenHDFSSettings(settings)
+	require.NoError(t, err)
 
 	assert.Equal(t, types.StringValue("hdfs://host:8020/"), model.URI)
 	assert.Equal(t, types.StringValue("/repo"), model.Path)
@@ -137,6 +255,20 @@ func TestFlattenHdfsSettings(t *testing.T) {
 	assert.Equal(t, types.BoolValue(false), model.Compress)
 	assert.Equal(t, types.BoolValue(false), model.Readonly)
 	assert.Equal(t, types.StringValue("32"), model.ChunkSize)
+}
+
+func TestFlattenHdfsSettings_Nulls(t *testing.T) {
+	model, err := flattenHDFSSettings(map[string]any{})
+	require.NoError(t, err)
+
+	assert.True(t, model.URI.IsNull())
+	assert.True(t, model.Path.IsNull())
+	assert.True(t, model.LoadDefaults.IsNull())
+	assert.True(t, model.Compress.IsNull())
+	assert.True(t, model.Readonly.IsNull())
+	assert.True(t, model.ChunkSize.IsNull())
+	assert.True(t, model.MaxSnapshotBytesPerSec.IsNull())
+	assert.True(t, model.MaxRestoreBytesPerSec.IsNull())
 }
 
 func TestStringSetting(t *testing.T) {
@@ -147,18 +279,64 @@ func TestStringSetting(t *testing.T) {
 }
 
 func TestBoolSetting(t *testing.T) {
-	assert.Equal(t, types.BoolValue(true), boolSetting(map[string]any{"k": true}, "k"))
-	assert.Equal(t, types.BoolValue(false), boolSetting(map[string]any{"k": "false"}, "k"))
-	assert.Equal(t, types.BoolValue(true), boolSetting(map[string]any{"k": "1"}, "k"))
-	assert.True(t, boolSetting(map[string]any{"k": "nope"}, "k").IsNull())
-	assert.True(t, boolSetting(map[string]any{}, "k").IsNull())
+	b, err := boolSetting(map[string]any{"k": true}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.BoolValue(true), b)
+
+	b, err = boolSetting(map[string]any{"k": "false"}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.BoolValue(false), b)
+
+	b, err = boolSetting(map[string]any{"k": "1"}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.BoolValue(true), b)
+
+	b, err = boolSetting(map[string]any{"k": "nope"}, "k")
+	require.Error(t, err)
+	assert.True(t, b.IsNull())
+
+	b, err = boolSetting(map[string]any{}, "k")
+	require.NoError(t, err)
+	assert.True(t, b.IsNull())
 }
 
 func TestInt64Setting(t *testing.T) {
-	assert.Equal(t, types.Int64Value(42), int64Setting(map[string]any{"k": 42}, "k"))
-	assert.Equal(t, types.Int64Value(42), int64Setting(map[string]any{"k": int64(42)}, "k"))
-	assert.Equal(t, types.Int64Value(42), int64Setting(map[string]any{"k": float64(42)}, "k"))
-	assert.Equal(t, types.Int64Value(42), int64Setting(map[string]any{"k": "42"}, "k"))
-	assert.True(t, int64Setting(map[string]any{"k": "not-a-number"}, "k").IsNull())
-	assert.True(t, int64Setting(map[string]any{}, "k").IsNull())
+	i, err := int64Setting(map[string]any{"k": 42}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.Int64Value(42), i)
+
+	i, err = int64Setting(map[string]any{"k": int64(42)}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.Int64Value(42), i)
+
+	i, err = int64Setting(map[string]any{"k": float64(42)}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.Int64Value(42), i)
+
+	i, err = int64Setting(map[string]any{"k": "42"}, "k")
+	require.NoError(t, err)
+	assert.Equal(t, types.Int64Value(42), i)
+
+	i, err = int64Setting(map[string]any{"k": "not-a-number"}, "k")
+	require.Error(t, err)
+	assert.True(t, i.IsNull())
+
+	i, err = int64Setting(map[string]any{}, "k")
+	require.NoError(t, err)
+	assert.True(t, i.IsNull())
+}
+
+func TestPopulateRepositoryTypeBlocks_UnsupportedType(t *testing.T) {
+	config := snapshotRepositoryDataSourceModel{
+		Name: types.StringValue("test-repo"),
+	}
+	repo := &elasticsearch.SnapshotRepositoryInfo{
+		Type:     "unknown-plugin-type",
+		Settings: map[string]any{},
+	}
+
+	_, diags := populateRepositoryTypeBlocks(context.Background(), config, repo)
+	require.True(t, diags.HasError())
+	summary := diags.Errors()[0].Summary()
+	assert.Contains(t, summary, "unsupported type")
 }

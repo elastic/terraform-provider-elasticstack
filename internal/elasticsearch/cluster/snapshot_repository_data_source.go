@@ -394,10 +394,23 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	}
 
 	config.Type = types.StringValue(currentRepo.Type)
+	return populateRepositoryTypeBlocks(ctx, config, currentRepo)
+}
+
+func populateRepositoryTypeBlocks(
+	ctx context.Context,
+	config snapshotRepositoryDataSourceModel,
+	currentRepo *elasticsearch.SnapshotRepositoryInfo,
+) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	switch currentRepo.Type {
 	case "fs":
-		model := flattenFsSettings(currentRepo.Settings)
+		model, err := flattenFsSettings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, fsElementType(), []fsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -405,7 +418,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.Fs = listValue
 	case "url":
-		model := flattenURLSettings(currentRepo.Settings)
+		model, err := flattenURLSettings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, urlElementType(), []urlDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -413,7 +430,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.URL = listValue
 	case "gcs":
-		model := flattenGCSSettings(currentRepo.Settings)
+		model, err := flattenGCSSettings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, gcsElementType(), []gcsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -421,7 +442,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.GCS = listValue
 	case "azure":
-		model := flattenAzureSettings(currentRepo.Settings)
+		model, err := flattenAzureSettings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, azureElementType(), []azureDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -429,7 +454,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.Azure = listValue
 	case "s3":
-		model := flattenS3Settings(currentRepo.Settings)
+		model, err := flattenS3Settings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, s3ElementType(), []s3DataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -437,7 +466,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		}
 		config.S3 = listValue
 	case "hdfs":
-		model := flattenHDFSSettings(currentRepo.Settings)
+		model, err := flattenHDFSSettings(currentRepo.Settings)
+		if err != nil {
+			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
+			return config, diags
+		}
 		listValue, listDiags := types.ListValueFrom(ctx, hdfsElementType(), []hdfsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
@@ -457,88 +490,148 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 
 // -- Flatten helpers
 
-func flattenFsSettings(settings map[string]any) fsDataSourceModel {
-	return fsDataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		MaxNumberOfSnapshots:   int64Setting(settings, "max_number_of_snapshots"),
-		Location:               stringSetting(settings, "location"),
+func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
+	var m fsDataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.MaxNumberOfSnapshots, err = int64Setting(settings, "max_number_of_snapshots")
+	if err != nil {
+		return m, err
+	}
+	m.Location = stringSetting(settings, "location")
+	return m, nil
 }
 
-func flattenURLSettings(settings map[string]any) urlDataSourceModel {
-	return urlDataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		MaxNumberOfSnapshots:   int64Setting(settings, "max_number_of_snapshots"),
-		URL:                    stringSetting(settings, "url"),
-		HTTPMaxRetries:         int64Setting(settings, "http_max_retries"),
-		HTTPSocketTimeout:      stringSetting(settings, "http_socket_timeout"),
+func flattenURLSettings(settings map[string]any) (urlDataSourceModel, error) {
+	var m urlDataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.MaxNumberOfSnapshots, err = int64Setting(settings, "max_number_of_snapshots")
+	if err != nil {
+		return m, err
+	}
+	m.URL = stringSetting(settings, "url")
+	m.HTTPMaxRetries, err = int64Setting(settings, "http_max_retries")
+	if err != nil {
+		return m, err
+	}
+	m.HTTPSocketTimeout = stringSetting(settings, "http_socket_timeout")
+	return m, nil
 }
 
-func flattenGCSSettings(settings map[string]any) gcsDataSourceModel {
-	return gcsDataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		Bucket:                 stringSetting(settings, "bucket"),
-		Client:                 stringSetting(settings, "client"),
-		BasePath:               stringSetting(settings, "base_path"),
+func flattenGCSSettings(settings map[string]any) (gcsDataSourceModel, error) {
+	var m gcsDataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.Bucket = stringSetting(settings, "bucket")
+	m.Client = stringSetting(settings, "client")
+	m.BasePath = stringSetting(settings, "base_path")
+	return m, nil
 }
 
-func flattenAzureSettings(settings map[string]any) azureDataSourceModel {
-	return azureDataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		Container:              stringSetting(settings, "container"),
-		Client:                 stringSetting(settings, "client"),
-		BasePath:               stringSetting(settings, "base_path"),
-		LocationMode:           stringSetting(settings, "location_mode"),
+func flattenAzureSettings(settings map[string]any) (azureDataSourceModel, error) {
+	var m azureDataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.Container = stringSetting(settings, "container")
+	m.Client = stringSetting(settings, "client")
+	m.BasePath = stringSetting(settings, "base_path")
+	m.LocationMode = stringSetting(settings, "location_mode")
+	return m, nil
 }
 
-func flattenS3Settings(settings map[string]any) s3DataSourceModel {
-	return s3DataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		Bucket:                 stringSetting(settings, "bucket"),
-		Client:                 stringSetting(settings, "client"),
-		BasePath:               stringSetting(settings, "base_path"),
-		ServerSideEncryption:   boolSetting(settings, "server_side_encryption"),
-		BufferSize:             stringSetting(settings, "buffer_size"),
-		CannedACL:              stringSetting(settings, "canned_acl"),
-		StorageClass:           stringSetting(settings, "storage_class"),
-		PathStyleAccess:        boolSetting(settings, "path_style_access"),
+func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
+	var m s3DataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.Bucket = stringSetting(settings, "bucket")
+	m.Client = stringSetting(settings, "client")
+	m.BasePath = stringSetting(settings, "base_path")
+	m.ServerSideEncryption, err = boolSetting(settings, "server_side_encryption")
+	if err != nil {
+		return m, err
+	}
+	m.BufferSize = stringSetting(settings, "buffer_size")
+	m.CannedACL = stringSetting(settings, "canned_acl")
+	m.StorageClass = stringSetting(settings, "storage_class")
+	m.PathStyleAccess, err = boolSetting(settings, "path_style_access")
+	if err != nil {
+		return m, err
+	}
+	return m, nil
 }
 
-func flattenHDFSSettings(settings map[string]any) hdfsDataSourceModel {
-	return hdfsDataSourceModel{
-		ChunkSize:              stringSetting(settings, "chunk_size"),
-		Compress:               boolSetting(settings, "compress"),
-		MaxSnapshotBytesPerSec: stringSetting(settings, "max_snapshot_bytes_per_sec"),
-		MaxRestoreBytesPerSec:  stringSetting(settings, "max_restore_bytes_per_sec"),
-		Readonly:               boolSetting(settings, "readonly"),
-		URI:                    stringSetting(settings, "uri"),
-		Path:                   stringSetting(settings, "path"),
-		LoadDefaults:           boolSetting(settings, "load_defaults"),
+func flattenHDFSSettings(settings map[string]any) (hdfsDataSourceModel, error) {
+	var m hdfsDataSourceModel
+	var err error
+	m.ChunkSize = stringSetting(settings, "chunk_size")
+	m.Compress, err = boolSetting(settings, "compress")
+	if err != nil {
+		return m, err
 	}
+	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
+	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
+	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	m.URI = stringSetting(settings, "uri")
+	m.Path = stringSetting(settings, "path")
+	m.LoadDefaults, err = boolSetting(settings, "load_defaults")
+	if err != nil {
+		return m, err
+	}
+	return m, nil
 }
 
 func stringSetting(settings map[string]any, key string) types.String {
@@ -554,44 +647,44 @@ func stringSetting(settings map[string]any, key string) types.String {
 	}
 }
 
-func boolSetting(settings map[string]any, key string) types.Bool {
+func boolSetting(settings map[string]any, key string) (types.Bool, error) {
 	v, ok := settings[key]
 	if !ok || v == nil {
-		return types.BoolNull()
+		return types.BoolNull(), nil
 	}
 	switch val := v.(type) {
 	case bool:
-		return types.BoolValue(val)
+		return types.BoolValue(val), nil
 	case string:
 		b, err := strconv.ParseBool(val)
 		if err != nil {
-			return types.BoolNull()
+			return types.BoolNull(), fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, key)
 		}
-		return types.BoolValue(b)
+		return types.BoolValue(b), nil
 	default:
-		return types.BoolNull()
+		return types.BoolNull(), fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, key)
 	}
 }
 
-func int64Setting(settings map[string]any, key string) types.Int64 {
+func int64Setting(settings map[string]any, key string) (types.Int64, error) {
 	v, ok := settings[key]
 	if !ok || v == nil {
-		return types.Int64Null()
+		return types.Int64Null(), nil
 	}
 	switch val := v.(type) {
 	case int:
-		return types.Int64Value(int64(val))
+		return types.Int64Value(int64(val)), nil
 	case int64:
-		return types.Int64Value(val)
+		return types.Int64Value(val), nil
 	case float64:
-		return types.Int64Value(int64(val))
+		return types.Int64Value(int64(val)), nil
 	case string:
 		i, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
-			return types.Int64Null()
+			return types.Int64Null(), fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, key)
 		}
-		return types.Int64Value(i)
+		return types.Int64Value(i), nil
 	default:
-		return types.Int64Null()
+		return types.Int64Null(), fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, key)
 	}
 }
