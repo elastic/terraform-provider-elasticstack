@@ -26,8 +26,8 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Generate provider docs via `make docs` (or equivalent) after implementation; verify the resource page renders `bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`, `space_id` with descriptions and marks `sourcemap_json` / `sourcemap_binary` as sensitive.
-- [ ] 4.2 Add example Terraform configuration under `examples/resources/elasticstack_apm_source_map/` showing both `sourcemap_json` usage and a `space_id` usage example.
+- [x] 4.1 Generate provider docs via `make docs` (or equivalent) after implementation; verify the resource page renders `bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`, `space_id` with descriptions and marks `sourcemap_json` / `sourcemap_binary` as sensitive.
+- [x] 4.2 Add example Terraform configuration under `examples/resources/elasticstack_apm_source_map/` showing both `sourcemap_json` usage and a `space_id` usage example.
 
 ## 5. Verification
 
