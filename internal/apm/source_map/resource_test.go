@@ -104,9 +104,12 @@ func parseMultipart(contentType string, body []byte) (map[string][]byte, error) 
 	return result, nil
 }
 
+// unitTestSourceMapJSON is the source map JSON string used in all unit tests.
+const unitTestSourceMapJSON = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
+
 // Terraform HCL config helpers for unit tests (provider configured inline).
 
-func unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, kibanaEndpoint string) string {
+func unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, kibanaEndpoint string) string {
 	return `
 provider "elasticstack" {
   elasticsearch {}
@@ -121,7 +124,7 @@ resource "elasticstack_apm_source_map" "unit" {
   bundle_filepath = "` + bundleFilepath + `"
   service_name    = "` + serviceName + `"
   service_version = "` + serviceVersion + `"
-  sourcemap_json  = "` + jsonEscape(sourceMapJSON) + `"
+  sourcemap_json  = "` + jsonEscape(unitTestSourceMapJSON) + `"
 }
 `
 }
@@ -163,6 +166,8 @@ func jsonEscape(s string) string {
 // multipart body contains the expected field names and the raw JSON string as the
 // sourcemap file content.
 func TestSourceMapCreate_MultipartJSON(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "artifact-json-001"
 		bundleFilepath = "/static/js/app.min.js"
@@ -203,7 +208,7 @@ func TestSourceMapCreate_MultipartJSON(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []tftest.TestStep{
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "bundle_filepath", bundleFilepath),
@@ -228,7 +233,7 @@ func TestSourceMapCreate_MultipartJSON(t *testing.T) {
 
 						smContent, ok := parts["sourcemap"]
 						require.True(t, ok, "multipart body must contain 'sourcemap' file field")
-						assert.Equal(t, sourceMapJSON, string(smContent),
+						assert.JSONEq(t, sourceMapJSON, string(smContent),
 							"sourcemap field must contain the raw JSON string from sourcemap_json")
 						return nil
 					},
@@ -242,6 +247,8 @@ func TestSourceMapCreate_MultipartJSON(t *testing.T) {
 // the multipart body contains the decoded bytes (not the base64 string) as the
 // sourcemap file field content.
 func TestSourceMapCreate_MultipartBinary(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "artifact-bin-002"
 		bundleFilepath = "/static/js/app.min.js"
@@ -310,6 +317,8 @@ func TestSourceMapCreate_MultipartBinary(t *testing.T) {
 // Content-Type header contains a boundary parameter and all expected form-field
 // names are present.
 func TestSourceMapCreate_MultipartBoundaryAndFieldNames(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "artifact-boundary-003"
 		bundleFilepath = "/static/js/main.js"
@@ -350,7 +359,7 @@ func TestSourceMapCreate_MultipartBoundaryAndFieldNames(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []tftest.TestStep{
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 					func(_ *terraform.State) error {
@@ -386,6 +395,8 @@ func TestSourceMapCreate_MultipartBoundaryAndFieldNames(t *testing.T) {
 // TestSourceMapRead_FoundOnPage1 verifies that when the target artifact appears
 // in the first page, the resource is populated with the correct attributes.
 func TestSourceMapRead_FoundOnPage1(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "page1-artifact"
 		bundleFilepath = "/static/js/app.min.js"
@@ -420,7 +431,7 @@ func TestSourceMapRead_FoundOnPage1(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []tftest.TestStep{
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "bundle_filepath", bundleFilepath),
@@ -436,6 +447,8 @@ func TestSourceMapRead_FoundOnPage1(t *testing.T) {
 // only on page 2 (page 1 returns a full page of other artifacts), read still
 // finds and populates it correctly, exercising the pagination loop.
 func TestSourceMapRead_FoundOnPage2(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "page2-artifact"
 		bundleFilepath = "/static/js/app.min.js"
@@ -493,7 +506,7 @@ func TestSourceMapRead_FoundOnPage2(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []tftest.TestStep{
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "bundle_filepath", bundleFilepath),
@@ -509,6 +522,8 @@ func TestSourceMapRead_FoundOnPage2(t *testing.T) {
 // matches the state id on a refresh, the resource is removed from state without
 // error, causing a non-empty plan.
 func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "not-found-artifact"
 		bundleFilepath = "/static/js/app.min.js"
@@ -517,9 +532,12 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 		sourceMapJSON  = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
 	)
 
-	// Track how many GET calls have been made. The first GET (from inside Create)
-	// returns the artifact; all subsequent GETs (refreshes) return empty, causing
-	// the resource to be removed from state.
+	// Track how many GET calls have been made.
+	// The first two GETs return the artifact:
+	//   call 1: inside Create (after POST)
+	//   call 2: post-step refresh run by the test framework after step 1
+	// All subsequent GETs return empty, simulating the artifact disappearing and
+	// causing the resource to be removed from state on the next plan in step 2.
 	var getCallCount atomic.Int32
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -533,8 +551,8 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 			n := getCallCount.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			if n == 1 {
-				// First GET: return the artifact so Create completes normally.
+			if n <= 2 {
+				// First two GETs: return the artifact so step 1 completes cleanly.
 				_ = json.NewEncoder(w).Encode(artifactResponseJSON(targetID, bundleFilepath, serviceName, serviceVersion))
 			} else {
 				// Subsequent GETs: artifact gone, triggers removal from state.
@@ -556,7 +574,7 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 		Steps: []tftest.TestStep{
 			// Step 1: Create succeeds; first read inside Create finds the artifact.
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 				),
@@ -564,7 +582,7 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 			// Step 2: On the next plan cycle the refresh GET returns empty, so the
 			// resource is removed from state and a new create is planned.
 			{
-				Config:             unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config:             unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -578,6 +596,8 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 // framework state rather than being cleared, because read.go only updates them
 // when Body != nil).
 func TestSourceMapRead_ArtifactBodyNil(t *testing.T) {
+	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
+
 	const (
 		targetID       = "nil-body-artifact"
 		bundleFilepath = "/static/js/app.min.js"
@@ -626,7 +646,7 @@ func TestSourceMapRead_ArtifactBodyNil(t *testing.T) {
 		Steps: []tftest.TestStep{
 			// Step 1: Create succeeds; initial read returns full body.
 			{
-				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config: unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				Check: tftest.ComposeTestCheckFunc(
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "id", targetID),
 					tftest.TestCheckResourceAttr("elasticstack_apm_source_map.unit", "bundle_filepath", bundleFilepath),
@@ -637,7 +657,7 @@ func TestSourceMapRead_ArtifactBodyNil(t *testing.T) {
 			// Step 2: Refresh reads an artifact with nil body. The resource must
 			// remain in state (id still set) and the plan must be empty (no drift).
 			{
-				Config:             unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, sourceMapJSON, srv.URL),
+				Config:             unitTestConfigJSON(bundleFilepath, serviceName, serviceVersion, srv.URL),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},

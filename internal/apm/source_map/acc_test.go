@@ -23,83 +23,12 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
-
-const (
-	// minimalSourceMapJSON is a minimal but valid source map JSON used in tests.
-	minimalSourceMapJSON = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
-
-	// minimalSourceMapBase64 is the base64-encoded form of minimalSourceMapJSON.
-	minimalSourceMapBase64 = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoidGVzdC5taW4uanMiLCJzb3VyY2VzIjpbInRlc3QuanMiXSwibWFwcGluZ3MiOiJBQUFBIn0="
-)
-
-// testAccApmSourceMapConfig_json returns a Terraform config that creates a
-// source map resource using sourcemap_json.
-func testAccApmSourceMapConfig_json(serviceName, serviceVersion string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath = "/static/js/test.min.js"
-  service_name    = %q
-  service_version = %q
-  sourcemap_json  = %q
-}
-`, serviceName, serviceVersion, minimalSourceMapJSON)
-}
-
-// testAccApmSourceMapConfig_binary returns a Terraform config that creates a
-// source map resource using sourcemap_binary (base64-encoded content).
-func testAccApmSourceMapConfig_binary(serviceName, serviceVersion string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath  = "/static/js/test.min.js"
-  service_name     = %q
-  service_version  = %q
-  sourcemap_binary = %q
-}
-`, serviceName, serviceVersion, minimalSourceMapBase64)
-}
-
-// testAccApmSourceMapConfig_space returns a Terraform config that creates a
-// source map resource inside a named Kibana space.
-func testAccApmSourceMapConfig_space(serviceName, serviceVersion, spaceID string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_kibana_space" "test" {
-  space_id = %q
-  name     = %q
-}
-
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath = "/static/js/test.min.js"
-  service_name    = %q
-  service_version = %q
-  sourcemap_json  = %q
-  space_id        = elasticstack_kibana_space.test.space_id
-}
-`, spaceID, spaceID, serviceName, serviceVersion, minimalSourceMapJSON)
-}
-
-// testAccApmSourceMapConfig_jsonWithSpace returns a Terraform config creating a
-// source map with an explicit space_id (for import tests where we control the space).
-func testAccApmSourceMapConfig_jsonWithSpace(serviceName, serviceVersion, spaceID string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_kibana_space" "import_space" {
-  space_id = %q
-  name     = %q
-}
-
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath = "/static/js/test.min.js"
-  service_name    = %q
-  service_version = %q
-  sourcemap_json  = %q
-  space_id        = elasticstack_kibana_space.import_space.space_id
-}
-`, spaceID, spaceID, serviceName, serviceVersion, minimalSourceMapJSON)
-}
 
 // TestAccResourceApmSourceMap_json tests creating a source map using
 // sourcemap_json, asserts id is set and non-empty, and confirms clean destroy.
@@ -111,7 +40,11 @@ func TestAccResourceApmSourceMap_json(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.0.0"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
@@ -134,7 +67,11 @@ func TestAccResourceApmSourceMap_binary(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_binary(serviceName, "1.0.0"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
@@ -152,7 +89,8 @@ func TestAccResourceApmSourceMap_binary(t *testing.T) {
 // It also verifies that a plain (no-slash) import ID works and leaves space_id unset.
 func TestAccResourceApmSourceMap_import(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
-	spaceID := "apm-import-test"
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID := fmt.Sprintf("apm-import-%s", suffix)
 
 	resourceName := "elasticstack_apm_source_map.test"
 
@@ -162,7 +100,12 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 			// Step 1: create the resource in a named space.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_jsonWithSpace(serviceName, "1.0.0", spaceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
@@ -173,21 +116,33 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 			},
 			// Step 2: import using composite "<space_id>/<artifact_id>".
 			{
-				ProtoV6ProviderFactories:  acctest.Providers,
-				ResourceName:              resourceName,
-				ImportState:               true,
-				ImportStateVerify:         true,
-				ImportStateVerifyIgnore:   []string{"sourcemap_json", "sourcemap_binary"},
-				ImportStateIdFunc:         testAccApmSourceMapCompositeImportID(resourceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"sourcemap_json", "sourcemap_binary", "kibana_connection"},
+				ImportStateIdFunc:       testAccApmSourceMapCompositeImportID(resourceName),
 			},
 			// Step 3: import using just the artifact id (no space prefix) —
 			// results in space_id being unset (default space semantics).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ResourceName:             resourceName,
-				ImportState:              true,
-				ImportStateVerify:        false, // space_id will differ; we verify manually
-				ImportStateIdFunc:        testAccApmSourceMapPlainImportID(resourceName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: false, // space_id will differ; we verify manually
+				ImportStateIdFunc: testAccApmSourceMapPlainImportID(resourceName),
 				// After a plain import the space_id attribute is not set.
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {
@@ -217,7 +172,12 @@ func TestAccResourceApmSourceMap_space(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_space(serviceName, "1.0.0", spaceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
@@ -238,14 +198,8 @@ func TestAccResourceApmSourceMap_validationNeitherSet(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath = "/static/js/test.min.js"
-  service_name    = "my-service"
-  service_version = "1.0.0"
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)exactly one of`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ExpectError:              regexp.MustCompile(`(?i)one \(and only one\)`),
 			},
 		},
 	})
@@ -259,16 +213,8 @@ func TestAccResourceApmSourceMap_validationBothSet(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: fmt.Sprintf(`
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath  = "/static/js/test.min.js"
-  service_name     = "my-service"
-  service_version  = "1.0.0"
-  sourcemap_json   = %q
-  sourcemap_binary = %q
-}
-`, minimalSourceMapJSON, minimalSourceMapBase64),
-				ExpectError: regexp.MustCompile(`(?i)exactly one of`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ExpectError:              regexp.MustCompile(`(?i)one \(and only one\)`),
 			},
 		},
 	})
@@ -282,15 +228,8 @@ func TestAccResourceApmSourceMap_validationEmptyString(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath = "/static/js/test.min.js"
-  service_name    = "my-service"
-  service_version = "1.0.0"
-  sourcemap_json  = ""
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)at least 1`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ExpectError:              regexp.MustCompile(`(?i)at least 1`),
 			},
 		},
 	})
@@ -304,15 +243,8 @@ func TestAccResourceApmSourceMap_binaryInvalidBase64(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath  = "/static/js/test.min.js"
-  service_name     = "my-service"
-  service_version  = "1.0.0"
-  sourcemap_binary = "not-valid-base64!!!"
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)(base64|decod)`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ExpectError:              regexp.MustCompile(`(?i)(base64|decod)`),
 			},
 		},
 	})
@@ -329,7 +261,10 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 			// Step 1: apply with service_version = "1.0.0".
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.0.0"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
@@ -338,7 +273,10 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 			// Step 2: plan with service_version = "1.1.0" — must show replacement.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.1.0"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(
