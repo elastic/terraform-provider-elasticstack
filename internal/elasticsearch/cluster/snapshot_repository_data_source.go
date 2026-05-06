@@ -247,7 +247,7 @@ func getDataSourceSchema() schema.Schema {
 
 	hdfsSettings := map[string]schema.Attribute{
 		"uri": schema.StringAttribute{
-			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".",`,
+			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".`,
 			Computed:            true,
 		},
 		"path": schema.StringAttribute{

@@ -196,6 +196,19 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 				return nil, sdkdiag.FromErr(err)
 			}
 			info.Name = name
+
+			// Overlay raw settings to preserve fields omitted by typed structs
+			// (e.g. readonly on ReadOnlyUrlRepository).
+			var rawResp map[string]struct {
+				Type     string         `json:"type"`
+				Settings map[string]any `json:"settings"`
+			}
+			if err := json.Unmarshal(bodyBytes, &rawResp); err == nil {
+				if rawRepo, ok := rawResp[name]; ok {
+					info.Settings = rawRepo.Settings
+				}
+			}
+
 			return info, diags
 		}
 	}

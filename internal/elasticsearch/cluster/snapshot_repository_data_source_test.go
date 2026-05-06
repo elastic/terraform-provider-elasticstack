@@ -103,7 +103,7 @@ func TestAccDataSourceSnapRepoURL(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.compress", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_snapshot_bytes_per_sec", "40mb"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_restore_bytes_per_sec", "10mb"),
-					
+
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_number_of_snapshots", "500"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.chunk_size", "1gb"),
 				),
