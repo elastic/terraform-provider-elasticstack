@@ -615,7 +615,7 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
 				),
 			},
-			// Step 3: Destroy the ILM policy (Delete clears references first).
+			// Step 3: Destroy the ILM policy (force_destroy clears references first).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),

@@ -15,6 +15,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "example" {
   id            = <computed, string>      # <cluster_uuid>/<policy_name>
   name          = <required, string>      # force new
   metadata      = <optional, json object> # normalized JSON string
+  force_destroy = <optional + computed, bool> # default false
   modified_date = <computed, string>
 
   hot    { /* SingleNestedBlock */ }
@@ -192,9 +193,9 @@ Create and update SHALL expand the Terraform model into a full `models.Policy`, 
 
 ### Requirement: Read and delete behavior (REQ-013–REQ-016)
 
-Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`. **Before invoking the Delete Lifecycle API, Delete SHALL identify any indices whose `index.lifecycle.name` setting references the policy name and remove that reference by setting `index.lifecycle.name` to `null`.**
+Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
 
-The process for removing in-use references SHALL be:
+When `force_destroy` is `true`, Delete SHALL additionally identify any indices whose `index.lifecycle.name` setting references the policy name and remove that reference by setting `index.lifecycle.name` to `null` before invoking the Delete Lifecycle API. The scan-and-clear process SHALL be:
 
 1. Query `GET /_all/_settings/index.lifecycle.name?flat_settings=true` to obtain the `index.lifecycle.name` setting for every index.
 2. Filter to indices whose setting value equals the policy name being deleted.
@@ -203,31 +204,42 @@ The process for removing in-use references SHALL be:
 
 If the settings-clear call returns an error, Delete SHALL surface that error as a Terraform diagnostic and SHALL NOT proceed with the Delete Lifecycle API call. If the subsequent Delete Lifecycle API call returns an error (for example, because a new index referencing the policy was created during the clear step), Delete SHALL surface the Elasticsearch error verbatim.
 
-#### Scenario: ILM policy deleted while referenced by backing index
+When `force_destroy` is `false` (the default), Delete SHALL call the Delete Lifecycle API directly without scanning indices. If Elasticsearch rejects the delete because the policy is still in use, the provider SHALL surface that error verbatim.
 
-- GIVEN an ILM policy named `"my-policy"` exists
+#### Scenario: ILM policy deleted while referenced by backing index (force_destroy = true)
+
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = true`
 - AND an index `".ds-logs-test-default-2026.01.01-000001"` has `index.lifecycle.name` set to `"my-policy"`
 - WHEN Delete runs for the ILM policy resource
 - THEN the provider SHALL first set `index.lifecycle.name` to `null` on `.ds-logs-test-default-2026.01.01-000001`
 - AND then call `DELETE /_ilm/policy/my-policy`
 - AND the resource SHALL be destroyed successfully
 
-#### Scenario: No indices reference the policy
+#### Scenario: No indices reference the policy (force_destroy = true)
 
-- GIVEN an ILM policy named `"unused-policy"` exists
+- GIVEN an ILM policy named `"unused-policy"` exists with `force_destroy = true`
 - AND no index has `index.lifecycle.name` set to `"unused-policy"`
 - WHEN Delete runs for the ILM policy resource
 - THEN the provider SHALL skip the settings-clear step
 - AND call `DELETE /_ilm/policy/unused-policy` directly
 
-#### Scenario: Settings-clear fails before delete
+#### Scenario: Settings-clear fails before delete (force_destroy = true)
 
-- GIVEN an ILM policy named `"my-policy"` exists
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = true`
 - AND an index referencing the policy exists
 - AND the `PUT /_settings` call to clear the reference fails (e.g., index is closed or unavailable)
 - WHEN Delete runs
 - THEN the provider SHALL surface the settings-clear error as a Terraform diagnostic
 - AND SHALL NOT call `DELETE /_ilm/policy/my-policy`
+
+#### Scenario: ILM policy delete fails when referenced and force_destroy = false
+
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = false`
+- AND an index `"test-index"` has `index.lifecycle.name` set to `"my-policy"`
+- WHEN Delete runs for the ILM policy resource
+- THEN the provider SHALL call `DELETE /_ilm/policy/my-policy` directly
+- AND Elasticsearch SHALL reject the request because the policy is in use
+- AND the provider SHALL surface the Elasticsearch error verbatim
 
 ### Requirement: Metadata and phase/action mapping (REQ-017–REQ-021)
 

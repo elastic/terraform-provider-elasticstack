@@ -44,16 +44,18 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	indices, diags := elasticsearch.GetIndicesWithILMPolicy(ctx, client, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if len(indices) > 0 {
-		resp.Diagnostics.Append(elasticsearch.ClearILMPolicyFromIndices(ctx, client, indices)...)
+	if !state.ForceDestroy.IsNull() && state.ForceDestroy.ValueBool() {
+		indices, diags := elasticsearch.GetIndicesWithILMPolicy(ctx, client, compID.ResourceID)
+		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
+		}
+
+		if len(indices) > 0 {
+			resp.Diagnostics.Append(elasticsearch.ClearILMPolicyFromIndices(ctx, client, indices)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 	}
 

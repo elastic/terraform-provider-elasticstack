@@ -11,7 +11,8 @@ variable "index_name" {
 }
 
 resource "elasticstack_elasticsearch_index_lifecycle" "test" {
-  name = var.policy_name
+  name          = var.policy_name
+  force_destroy = true
 
   hot {
     min_age = "1h"

@@ -78,9 +78,10 @@ func TestAccResourceILM(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-				ResourceName:      "elasticstack_elasticsearch_index_lifecycle.test",
+				ImportState:           true,
+				ImportStateVerify:     true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
+				ResourceName:          "elasticstack_elasticsearch_index_lifecycle.test",
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -895,8 +896,8 @@ func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resour
 }
 
 // TestAccResourceILM_deleteWithReferencedIndex validates that an ILM policy
-// can be destroyed even when a regular index still references it via
-// index.lifecycle.name.
+// with force_destroy = true can be destroyed even when a regular index still
+// references it via index.lifecycle.name.
 func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	indexName := "test-ilm-idx-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -940,7 +941,7 @@ func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
 				),
 			},
-			// Step 3: Destroy the ILM policy (Delete clears references first).
+			// Step 3: Destroy the ILM policy (force_destroy clears references first).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("destroy"),
