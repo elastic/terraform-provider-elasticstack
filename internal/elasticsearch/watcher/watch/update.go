@@ -19,32 +19,40 @@ package watch
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	watch, watchDiags := elasticsearch.GetWatch(ctx, client, resourceID)
-	diags.Append(watchDiags...)
+	put, modelDiags := plan.toPutModel(ctx)
+	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return state, false, diags
+		return plan, diags
 	}
 
-	if watch == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Watch "%s" not found`, resourceID))
-		return state, false, nil
+	// When transform is not configured, include an empty object so Elasticsearch
+	// clears any existing transform (update semantics differ from create).
+	if plan.Transform.IsNull() || plan.Transform.IsUnknown() {
+		put.Body.Transform = map[string]any{}
 	}
 
-	diags.Append(state.fromAPIModel(ctx, watch, state.Actions)...)
+	diags.Append(elasticsearch.PutWatch(ctx, client, put)...)
 	if diags.HasError() {
-		return state, false, diags
+		return plan, diags
 	}
 
-	return state, true, diags
+	id, sdkDiags := client.ID(ctx, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
+	}
+
+	plan.ID = types.StringValue(id.String())
+	return plan, diags
 }
