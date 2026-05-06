@@ -20,10 +20,12 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -323,4 +325,51 @@ func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta an
 	}
 
 	return diags
+}
+
+func flattenRepoSettings(r *elasticsearch.SnapshotRepositoryInfo, s map[string]*schema.Schema) ([]any, error) {
+	settings := make(map[string]any)
+	result := make([]any, 1)
+
+	// make sure the schema contains the fetched setting
+	for k, v := range r.Settings {
+		if schemaDef, ok := s[k]; ok && !typeutils.IsEmpty(v) {
+			switch schemaDef.Type {
+			case schema.TypeInt, schema.TypeFloat:
+				switch val := v.(type) {
+				case int:
+					settings[k] = val
+				case int64:
+					settings[k] = int(val)
+				case float64:
+					settings[k] = int(val)
+				case string:
+					i, err := strconv.Atoi(val)
+					if err != nil {
+						return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+					}
+					settings[k] = i
+				default:
+					settings[k] = v
+				}
+			case schema.TypeBool:
+				switch val := v.(type) {
+				case bool:
+					settings[k] = val
+				case string:
+					b, err := strconv.ParseBool(val)
+					if err != nil {
+						return nil, fmt.Errorf(`failed to parse value = "%v" for setting = "%s"`, v, k)
+					}
+					settings[k] = b
+				default:
+					settings[k] = v
+				}
+			default:
+				settings[k] = v
+			}
+		}
+	}
+	result[0] = settings
+	return result, nil
 }

@@ -15,12 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster
+package slm
 
-import _ "embed"
+import (
+	"context"
 
-//go:embed descriptions/settings_resource.md
-var settingsResourceDescription string
+	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
 
-//go:embed descriptions/snapshot_repository_location_mode.md
-var snapshotRepositoryLocationModeDescription string
+func deleteSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
+	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteSlm(ctx, client, resourceID))
+}
