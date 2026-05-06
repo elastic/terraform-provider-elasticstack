@@ -108,7 +108,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Read back to ensure state consistency
-	found, diags := readILMAttachment(ctx, &plan, client)
+	updatedPlan, found, diags := readILMAttachment(ctx, client, componentTemplateName, plan)
 	resp.Diagnostics.Append(diags...)
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(
@@ -119,5 +119,5 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedPlan)...)
 }

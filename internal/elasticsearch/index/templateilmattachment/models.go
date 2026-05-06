@@ -18,17 +18,19 @@
 package templateilmattachment
 
 import (
-	"context"
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// Ensure tfModel satisfies the entitycore.ElasticsearchResourceModel interface.
+var _ interface {
+	GetID() types.String
+	GetResourceID() types.String
+	GetElasticsearchConnection() types.List
+} = tfModel{}
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
@@ -39,18 +41,20 @@ type tfModel struct {
 }
 
 // getComponentTemplateName returns the name of the @custom component template.
-func (m *tfModel) getComponentTemplateName() string {
+func (m tfModel) getComponentTemplateName() string {
 	return m.IndexTemplate.ValueString() + "@custom"
 }
 
-// GetID parses and returns the composite ID from the model.
-func (m *tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(m.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
-	}
-	return compID, nil
+// GetID returns the composite ID string for the resource.
+func (m tfModel) GetID() types.String { return m.ID }
+
+// GetResourceID returns the derived component template name used as the write identity.
+func (m tfModel) GetResourceID() types.String {
+	return types.StringValue(m.IndexTemplate.ValueString() + "@custom")
 }
+
+// GetElasticsearchConnection returns the Elasticsearch connection configuration.
+func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
 func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {
@@ -120,36 +124,6 @@ func extractILMSetting(template *models.Template) string {
 		return v
 	}
 	return ""
-}
-
-// readILMAttachment reads the component template and updates the model with the actual ILM setting.
-// It returns (true, nil) on success, (false, diags) on SDK error, and (false, nil) when the
-// template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
-// removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, model *tfModel, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	componentTemplateName := model.getComponentTemplateName()
-
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
-	if sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return false, diags
-	}
-
-	modelTpl := toModelComponentTemplateResponse(tpl)
-
-	if modelTpl == nil {
-		return false, nil
-	}
-
-	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
-	if lifecycleName == "" {
-		return false, nil
-	}
-
-	model.LifecycleName = types.StringValue(lifecycleName)
-	return true, nil
 }
 
 func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *models.ComponentTemplateResponse {

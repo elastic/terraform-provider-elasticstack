@@ -129,7 +129,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Read back to ensure state consistency
-	found, diags := readILMAttachment(ctx, &plan, client)
+	updatedPlan, found, diags := readILMAttachment(ctx, client, componentTemplateName, plan)
 	resp.Diagnostics.Append(diags...)
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(
@@ -140,5 +140,5 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedPlan)...)
 }
