@@ -80,4 +80,3 @@ func TestHandleMutateResponse(t *testing.T) {
 		assert.JSONEq(t, `{"error":"missing"}`, diags[0].Detail())
 	})
 }
-
