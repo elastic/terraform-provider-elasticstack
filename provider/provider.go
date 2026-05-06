@@ -20,7 +20,6 @@ package provider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -54,8 +53,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
-			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
+			"elasticstack_elasticsearch_cluster_settings": cluster.ResourceSettings(),
+			// elasticstack_elasticsearch_component_template migrated to Plugin Framework — see plugin_framework.go
 			// elasticstack_elasticsearch_ingest_pipeline migrated to Plugin Framework — see plugin_framework.go
 			// elasticstack_elasticsearch_logstash_pipeline migrated to Plugin Framework — see plugin_framework.go
 			// elasticstack_elasticsearch_snapshot_lifecycle migrated to Plugin Framework — see plugin_framework.go
