@@ -39,15 +39,15 @@
 
 ## 6. Manifest and Compilation
 
-- [ ] 6.1 Update `.github/workflows-src/manifest.json`: replace the `test/workflow.yml.tmpl → test.yml` entry with three entries mapping `provider/workflow.yml.tmpl → provider.yml`, `openspec/workflow.yml.tmpl → openspec.yml`, and `workflows/workflow.yml.tmpl → workflows.yml`
-- [ ] 6.2 Run `make workflow-generate` to generate `.github/workflows/provider.yml`, `.github/workflows/openspec.yml`, and `.github/workflows/workflows.yml`
-- [ ] 6.3 Verify the three generated files are syntactically valid YAML and that action references use commit SHAs
+- [x] 6.1 Update `.github/workflows-src/manifest.json`: replace the `test/workflow.yml.tmpl → test.yml` entry with three entries mapping `provider/workflow.yml.tmpl → provider.yml`, `openspec/workflow.yml.tmpl → openspec.yml`, and `workflows/workflow.yml.tmpl → workflows.yml`
+- [x] 6.2 Run `make workflow-generate` to generate `.github/workflows/provider.yml`, `.github/workflows/openspec.yml`, and `.github/workflows/workflows.yml`
+- [x] 6.3 Verify the three generated files are syntactically valid YAML and that action references use commit SHAs
 
 ## 7. Auto-Approve Script
 
-- [ ] 7.1 Remove the `generated-changelog` category struct and its registration from `scripts/auto-approve/evaluator.go` (or whichever file defines categories)
-- [ ] 7.2 Remove all unit test cases for the `generated-changelog` category from `scripts/auto-approve/evaluator_test.go` and `scripts/auto-approve/main_test.go`
-- [ ] 7.3 Run `go test ./scripts/auto-approve/...` and confirm all remaining tests pass
+- [x] 7.1 Remove the `generated-changelog` category struct and its registration from `scripts/auto-approve/evaluator.go` (or whichever file defines categories)
+- [x] 7.2 Remove all unit test cases for the `generated-changelog` category from `scripts/auto-approve/evaluator_test.go` and `scripts/auto-approve/main_test.go`
+- [x] 7.3 Run `go test ./scripts/auto-approve/...` and confirm all remaining tests pass
 
 ## 8. Workflow Tests
 
