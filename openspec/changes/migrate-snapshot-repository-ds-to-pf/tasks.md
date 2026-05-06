@@ -8,14 +8,14 @@
 
 ## 2. Read Callback
 
-- [ ] 2.1 Implement `readDataSource(ctx, esClient, config)` callback: `func(context.Context, *clients.ElasticsearchScopedClient, snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics)`
-- [ ] 2.2 Resolve `id` via `esClient.ID(ctx, repoName)` and set on model
-- [ ] 2.3 Call `elasticsearch.GetSnapshotRepository(ctx, esClient, repoName)`; handle errors
-- [ ] 2.4 If repo is nil with no error: set `id`, add warning diagnostic, return model
-- [ ] 2.5 Type-switch over the typed API response (`types.Repository` union variants) to determine repository type
-- [ ] 2.6 Flatten settings into the corresponding nested model using string-to-int/bool conversion logic
-- [ ] 2.7 Set the matching type block as a single-element list and leave all others empty
-- [ ] 2.8 If API returns an unsupported type, return error diagnostic
+- [x] 2.1 Implement `readDataSource(ctx, esClient, config)` callback: `func(context.Context, *clients.ElasticsearchScopedClient, snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics)`
+- [x] 2.2 Resolve `id` via `esClient.ID(ctx, repoName)` and set on model
+- [x] 2.3 Call `elasticsearch.GetSnapshotRepository(ctx, esClient, repoName)`; handle errors
+- [x] 2.4 If repo is nil with no error: set `id`, add warning diagnostic, return model
+- [x] 2.5 Type-switch over the typed API response (`types.Repository` union variants) to determine repository type
+- [x] 2.6 Flatten settings into the corresponding nested model using string-to-int/bool conversion logic
+- [x] 2.7 Set the matching type block as a single-element list and leave all others empty
+- [x] 2.8 If API returns an unsupported type, return error diagnostic
 
 ## 3. Envelope Wiring
 
