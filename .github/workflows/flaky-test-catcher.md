@@ -237,6 +237,7 @@ safe-outputs:
         - name: Dispatch code-factory runs
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_REPOSITORY: ${{ github.repository }}
             SOURCE_WORKFLOW: flaky-test-catcher
           run: |
             node .github/workflows-src/lib/producer-dispatch.js \

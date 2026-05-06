@@ -5,7 +5,7 @@
 'use strict';
 
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 
 /**
  * Parse and validate a temporary issue ID map produced by gh-aw safe outputs.
@@ -88,9 +88,9 @@ function dispatchCodeFactory(entries, sourceWorkflow, workflowFile = 'code-facto
 
     // eslint-disable-next-line no-console
     console.log(`Dispatching ${workflowFile} for issue #${entry.number} in ${entry.repo}`);
-    try {
-      execSync(cmd.join(' '), { env, stdio: 'inherit' });
-    } catch (err) {
+    const result = spawnSync(cmd[0], cmd.slice(1), { env, stdio: 'inherit' });
+    if (result.status !== 0) {
+      const err = new Error(result.stderr?.toString() || `Process exited with code ${result.status}`);
       throw new Error(
         `Failed to dispatch for issue #${entry.number} in ${entry.repo}: ${err.message}`
       );
@@ -106,7 +106,15 @@ function main() {
     process.exit(1);
   }
 
+  const allowedRepo = process.env.GITHUB_REPOSITORY;
   const entries = parseTemporaryIdMap(mapPath);
+  if (allowedRepo) {
+    for (const entry of entries) {
+      if (entry.repo !== allowedRepo) {
+        throw new Error(`Refusing to dispatch to ${entry.repo}: not the current repository (${allowedRepo})`);
+      }
+    }
+  }
   if (entries.length === 0) {
     // eslint-disable-next-line no-console
     console.log('No created issues found; nothing to dispatch.');
