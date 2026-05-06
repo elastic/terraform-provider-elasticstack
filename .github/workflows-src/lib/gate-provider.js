@@ -26,6 +26,7 @@ function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
 
   const allSkipped = jobResults.every((r) => r === 'skipped');
   const allSuccess = jobResults.every((r) => r === 'success');
+  const anyFailureOrCancelled = jobResults.some((r) => r === 'failure' || r === 'cancelled');
 
   if (classifyResult === 'false' && allSkipped) {
     return {
@@ -41,19 +42,18 @@ function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
     };
   }
 
+  if (anyFailureOrCancelled) {
+    return {
+      passed: false,
+      reason: `One or more jobs failed or were cancelled (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
+    };
+  }
+
   const anySkipped = jobResults.some((r) => r === 'skipped');
   if (classifyResult === 'true' && anySkipped) {
     return {
       passed: false,
       reason: `Unexpected skip: provider changes detected but one or more jobs were skipped (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
-    };
-  }
-
-  const anyFailureOrCancelled = jobResults.some((r) => r === 'failure' || r === 'cancelled');
-  if (anyFailureOrCancelled) {
-    return {
-      passed: false,
-      reason: `One or more jobs failed or were cancelled (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
     };
   }
 
