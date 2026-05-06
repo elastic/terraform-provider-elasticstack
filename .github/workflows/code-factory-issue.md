@@ -1485,7 +1485,7 @@ on:
           echo "issue_title=${ISSUE_TITLE_EVENT}" >> "$GITHUB_OUTPUT"
           {
             echo "issue_body<<GITHUB_OUTPUT_EOF"
-            echo "${ISSUE_BODY_EVENT}"
+            printf '%s\n' "${ISSUE_BODY_EVENT}"
             echo "GITHUB_OUTPUT_EOF"
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
@@ -1499,7 +1499,7 @@ on:
           echo "issue_title=${ISSUE_TITLE_DISPATCH}" >> "$GITHUB_OUTPUT"
           {
             echo "issue_body<<GITHUB_OUTPUT_EOF"
-            echo "${ISSUE_BODY_DISPATCH}"
+            printf '%s\n' "${ISSUE_BODY_DISPATCH}"
             echo "GITHUB_OUTPUT_EOF"
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_DISPATCH}" >> "$GITHUB_OUTPUT"

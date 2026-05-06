@@ -96,10 +96,12 @@ function dispatchCodeFactory(entries, sourceWorkflow, workflowFile = 'code-facto
     // eslint-disable-next-line no-console
     console.log(`Dispatching ${workflowFile} for issue #${entry.number} in ${entry.repo}`);
     const result = spawnSync(cmd[0], cmd.slice(1), { env, stdio: 'inherit' });
-    if (result.status !== 0) {
-      const err = new Error(result.stderr?.toString() || `Process exited with code ${result.status}`);
+    if (result.status !== 0 || result.error) {
+      const message = result.error?.message
+        || result.stderr?.toString()
+        || `Process exited with code ${result.status}`;
       throw new Error(
-        `Failed to dispatch for issue #${entry.number} in ${entry.repo}: ${err.message}`
+        `Failed to dispatch for issue #${entry.number} in ${entry.repo}: ${message}`
       );
     }
   }
