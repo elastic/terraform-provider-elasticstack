@@ -149,3 +149,6 @@ Call `noop` with a concise explanation when:
 - All affected base tests already have an open `flaky-test` issue (nothing new to open).
 - All test failures are below the 20% fail-rate threshold (noise only, no actionable signal).
 - No `--- FAIL:` patterns were found in any of the failed run logs.
+
+## Dispatch
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.

@@ -236,3 +236,6 @@ Issue content must include:
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 
 If at least one entity was analyzed but none has actionable gaps, you MUST call `noop` with a short reason.
+
+## Dispatch
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.

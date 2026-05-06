@@ -113,3 +113,13 @@ test('compiled lock preserves LiteLLM model and allowed domains', () => {
   assert.match(lock, /elastic\.litellm-prod\.ai/);
   assert.match(lock, /GH_AW_INFO_ALLOWED_DOMAINS:[\s\S]*elastic\.litellm-prod\.ai/);
 });
+
+test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
+  const source = workflowSource();
+  const lock = lockSource();
+  assert.match(source, /dispatch_code_factory/);
+  assert.match(source, /Dispatch/);
+  assert.match(lock, /dispatch_code_factory/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch_code_factory"/);
+});

@@ -448,4 +448,7 @@ Args: { "file_path": "pkg/workflow/compiler.go" }
 - Suggest practical refactoring approaches
 - Use descriptive titles that clearly identify the specific opportunity (e.g., "Semantic Refactor: Scattered validation helpers across provider package")
 
+### Dispatch
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+
 **Objective**: Improve code organization and reduce duplication by identifying actionable semantic refactoring opportunities through Serena semantic function clustering and duplicate detection. Focus on high-impact, actionable findings that enable automated or manual refactoring.
