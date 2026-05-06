@@ -129,7 +129,7 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRespon
 			Total          kbapi.SLOsKqlWithFiltersTotal `json:"total"`
 		}{
 			Index:          ind.Index.ValueString(),
-			DataViewId:     stringPtr(ind.DataViewID),
+			DataViewId:     typeutils.ValueStringPointer(ind.DataViewID),
 			Filter:         filterObj,
 			Good:           good,
 			Total:          total,

@@ -89,18 +89,5 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	}
 
 	data.ID = types.StringValue(id.String())
-	readData, found, readDiags := readRole(ctx, client, roleID, data)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		var zero Data
-		return zero, diags
-	}
-
-	if !found {
-		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleID))
-		var zero Data
-		return zero, diags
-	}
-
-	return readData, diags
+	return data, diags
 }

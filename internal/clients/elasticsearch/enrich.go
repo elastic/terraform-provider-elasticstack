@@ -78,7 +78,11 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
-		queryStr = string(queryBytes)
+		// The typed client can return a non-nil *types.Query that still marshals to JSON null.
+		// Avoid storing the literal string "null" in state, which would trigger replacement.
+		if string(queryBytes) != "null" {
+			queryStr = string(queryBytes)
+		}
 	}
 
 	return &models.EnrichPolicy{

@@ -70,6 +70,11 @@ func testReadFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, 
 	return model, true, nil
 }
 
+func testReadFuncDistinguishing(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+	model.Name = types.StringValue(model.Name.ValueString() + "-read")
+	return model, true, nil
+}
+
 func testDeleteFunc(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) diag.Diagnostics {
 	return nil
 }
@@ -637,7 +642,16 @@ func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	r := newResourceEnvelopeWithFactory(t, factory)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		testReadFuncDistinguishing,
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
 
 	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
 	objType := testResourceObjectType()
@@ -655,7 +669,7 @@ func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 	diags := resp.State.Get(ctx, &result)
 	require.False(t, diags.HasError())
 	require.Equal(t, "cluster/user1", result.ID.ValueString())
-	require.Equal(t, "user1", result.Name.ValueString())
+	require.Equal(t, "user1-read", result.Name.ValueString())
 }
 
 func TestNewElasticsearchResource_Create_nilWriteCallback(t *testing.T) {
@@ -910,11 +924,117 @@ func TestNewElasticsearchResource_Create_shortCircuitCallbackError(t *testing.T)
 	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when create callback fails")
 }
 
+func TestNewElasticsearchResource_Create_readAfterWriteHappyPath(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			model.Name = types.StringValue("from-readfunc")
+			return model, true, nil
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock()}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "cluster/user1", result.ID.ValueString())
+	require.Equal(t, "from-readfunc", result.Name.ValueString())
+}
+
+func TestNewElasticsearchResource_Create_notFoundAfterWrite(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			return testResourceModel{}, false, nil
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock()}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `elasticsearch_test_entity "user1" was not found after write`)
+	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when resource not found after create")
+}
+
+func TestNewElasticsearchResource_Create_readFuncError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			diags.AddError("read error", "something went wrong after create")
+			return testResourceModel{}, false, diags
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock()}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "read error")
+	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when readFunc returns errors after create")
+}
+
 func TestNewElasticsearchResource_Update_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	r := newResourceEnvelopeWithFactory(t, factory)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		testReadFuncDistinguishing,
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
 
 	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
 	prior := makeTestResourceState(t, "cluster/user1")
@@ -928,7 +1048,7 @@ func TestNewElasticsearchResource_Update_happyPath(t *testing.T) {
 	diags := resp.State.Get(ctx, &result)
 	require.False(t, diags.HasError())
 	require.Equal(t, "cluster/user1", result.ID.ValueString())
-	require.Equal(t, "user1", result.Name.ValueString())
+	require.Equal(t, "user1-read", result.Name.ValueString())
 }
 
 func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testing.T) {
@@ -1142,6 +1262,104 @@ func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T)
 	var after testResourceModel
 	require.False(t, resp.State.Get(ctx, &after).HasError())
 	require.Equal(t, "cluster/user1", after.ID.ValueString(), "state should not change when update callback returns errors")
+}
+
+func TestNewElasticsearchResource_Update_readAfterWriteHappyPath(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			model.Name = types.StringValue("from-readfunc")
+			return model, true, nil
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(t, "cluster/user1")
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior}
+
+	r.Update(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "cluster/user1", result.ID.ValueString())
+	require.Equal(t, "from-readfunc", result.Name.ValueString())
+}
+
+func TestNewElasticsearchResource_Update_notFoundAfterWrite(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			return testResourceModel{}, false, nil
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(t, "cluster/user1")
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior}
+
+	r.Update(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `elasticsearch_test_entity "user1" was not found after write`)
+	var after testResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "cluster/user1", after.ID.ValueString(), "state should not change when resource not found after update")
+}
+
+func TestNewElasticsearchResource_Update_readFuncError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel](
+		ComponentElasticsearch,
+		"test_entity",
+		getTestResourceSchema,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			diags.AddError("read error", "something went wrong after update")
+			return testResourceModel{}, false, diags
+		},
+		testDeleteFunc,
+		testWriteFuncFound,
+		testWriteFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(t, "cluster/user1")
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior}
+
+	r.Update(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "read error")
+	var after testResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "cluster/user1", after.ID.ValueString(), "state should not change when readFunc returns errors after update")
 }
 
 func TestNewElasticsearchResource_Update_placeholderCallbackError(t *testing.T) {

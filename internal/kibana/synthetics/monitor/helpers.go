@@ -42,16 +42,6 @@ func slicePtr[T any](v []T) *[]T {
 	return &v
 }
 
-// stringPtr returns nil for null, unknown, or empty-string values. This differs from
-// typeutils.ValueStringPointer, which only suppresses unknown and preserves empty strings.
-func stringPtr(v types.String) *string {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return nil
-	}
-	value := v.ValueString()
-	return &value
-}
-
 // stringEnumPtr converts a types.String to a typed enum pointer, returning nil for
 // null, unknown, or empty-string values.
 func stringEnumPtr[T ~string](v types.String) *T {
