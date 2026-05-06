@@ -51,7 +51,11 @@ func NewSourceMapResource() resource.Resource {
 // Update is not supported. All write attributes use RequireReplace, so any
 // change triggers destroy + create. This method is required by the Plugin
 // Framework interface but should never be invoked in practice.
-func (r *resourceSourceMap) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
+func (r *resourceSourceMap) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError(
+		"Unexpected Update call on elasticstack_apm_source_map",
+		"All attributes require replacement; in-place updates are not supported. This is a provider bug.",
+	)
 }
 
 // ImportState handles space-aware composite import IDs.
