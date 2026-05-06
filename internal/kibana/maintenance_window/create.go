@@ -22,8 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -35,17 +33,6 @@ func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 	body, bodyDiags := plan.toAPICreateRequest(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	isSupported, sdkDiags := client.EnforceMinVersion(ctx, version.Must(version.NewVersion("9.1.0")))
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	if !isSupported {
-		diags.AddError("Unsupported server version", "Maintenance windows require Elastic Stack v9.1.0 or later. Upgrade the target server to use this resource.")
 		return Model{}, diags
 	}
 

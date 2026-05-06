@@ -41,6 +41,27 @@ The system SHALL define a `KibanaResourceModel` interface with four value-receiv
 
 ---
 
+### Requirement: Envelope optionally enforces server version requirements
+
+The system SHALL define a `KibanaResourceWithVersionRequirements` optional interface that resource models may implement to declare minimum Kibana server version requirements. When a decoded model satisfies this interface, the generic Kibana resource envelope SHALL evaluate the requirements after scoped client resolution and before invoking the concrete lifecycle callback. The envelope SHALL enforce version requirements in Create, Read, and Update.
+
+The `KibanaResourceWithVersionRequirements` interface SHALL reuse `DataSourceVersionRequirement` for the requirement type, generalising the pattern already established by `KibanaDataSourceWithVersionRequirements`.
+
+#### Scenario: Model with version requirements short-circuits Create
+
+- **WHEN** a model implements `KibanaResourceWithVersionRequirements` and `GetVersionRequirements()` returns error diagnostics
+- **THEN** the envelope's Create method SHALL append those diagnostics and SHALL NOT invoke the create callback
+
+#### Scenario: Model with version requirements short-circuits Read
+
+- **WHEN** a model implements `KibanaResourceWithVersionRequirements` and `GetVersionRequirements()` returns error diagnostics
+- **THEN** the envelope's Read method SHALL append those diagnostics and SHALL NOT invoke the read callback
+
+#### Scenario: Model with version requirements short-circuits Update
+
+- **WHEN** a model implements `KibanaResourceWithVersionRequirements` and `GetVersionRequirements()` returns error diagnostics
+- **THEN** the envelope's Update method SHALL append those diagnostics and SHALL NOT invoke the update callback
+
 ### Requirement: Envelope injects kibana_connection block into schema
 
 The system SHALL inject the `kibana_connection` block into the schema returned by the concrete schema factory before exposing it via the `Schema` method.

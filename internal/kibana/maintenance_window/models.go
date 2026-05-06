@@ -20,9 +20,12 @@ package maintenancewindow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -67,6 +70,22 @@ func (m Model) GetID() types.String             { return m.ID }
 func (m Model) GetResourceID() types.String     { return m.ID }
 func (m Model) GetSpaceID() types.String        { return m.SpaceID }
 func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
+
+// GetVersionRequirements returns the minimum Kibana version required for
+// maintenance windows. This satisfies the optional
+// entitycore.KibanaResourceWithVersionRequirements interface, allowing the
+// generic Kibana resource envelope to enforce the requirement before invoking
+// lifecycle callbacks.
+func (m Model) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
+	return []entitycore.DataSourceVersionRequirement{
+		{
+			MinVersion:   *maintenanceWindowMinVersion,
+			ErrorMessage: fmt.Sprintf("Maintenance windows require Elastic Stack v%s or later.", maintenanceWindowMinVersion),
+		},
+	}, nil
+}
 
 /* CREATE */
 

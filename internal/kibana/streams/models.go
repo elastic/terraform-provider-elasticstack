@@ -19,10 +19,13 @@ package streams
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -62,6 +65,22 @@ func (m streamModel) GetID() types.String             { return m.ID }
 func (m streamModel) GetResourceID() types.String     { return m.Name }
 func (m streamModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m streamModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var streamsMinVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+
+// GetVersionRequirements returns the minimum Kibana version required for
+// Streams. This satisfies the optional
+// entitycore.KibanaResourceWithVersionRequirements interface, allowing the
+// generic Kibana resource envelope to enforce the requirement before invoking
+// lifecycle callbacks.
+func (m streamModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
+	return []entitycore.DataSourceVersionRequirement{
+		{
+			MinVersion:   *streamsMinVersion,
+			ErrorMessage: fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", streamsMinVersion),
+		},
+	}, nil
+}
 
 // streamType returns the stream type discriminator based on which config block is set.
 func (m *streamModel) streamType() string {

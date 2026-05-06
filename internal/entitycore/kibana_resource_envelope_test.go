@@ -1744,3 +1744,235 @@ func TestNewKibanaResource_Delete_nilDeleteCallback(t *testing.T) {
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Kibana envelope configuration error")
 }
+
+// =============================================================================
+// Version requirements
+// =============================================================================
+
+// testKibanaResourceModelWithVersionReqs implements KibanaResourceWithVersionRequirements
+// and always returns error diagnostics from GetVersionRequirements.
+type testKibanaResourceModelWithVersionReqs struct {
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+}
+
+func (m testKibanaResourceModelWithVersionReqs) GetID() types.String         { return m.ID }
+func (m testKibanaResourceModelWithVersionReqs) GetResourceID() types.String { return m.Name }
+func (m testKibanaResourceModelWithVersionReqs) GetSpaceID() types.String    { return m.SpaceID }
+func (m testKibanaResourceModelWithVersionReqs) GetKibanaConnection() types.List {
+	return m.KibanaConnection
+}
+func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+	return nil, diag.Diagnostics{
+		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
+	}
+}
+
+func TestKibanaResourceWithVersionRequirements_pointerAssertionTrue(t *testing.T) {
+	t.Parallel()
+	var m testKibanaResourceModelWithVersionReqs
+	_, ok := any(m).(KibanaResourceWithVersionRequirements)
+	require.False(t, ok, "value testKibanaResourceModelWithVersionReqs must not satisfy interface")
+	_, ok = any(&m).(KibanaResourceWithVersionRequirements)
+	require.True(t, ok, "*testKibanaResourceModelWithVersionReqs must satisfy KibanaResourceWithVersionRequirements")
+}
+
+func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
+		ComponentKibana,
+		"test_entity",
+		func() rschema.Schema {
+			s := getTestKibanaResourceSchema()
+			s.Blocks = map[string]rschema.Block{
+				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+			}
+			return s
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, bool, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, false, nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) diag.Diagnostics {
+			return nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+		func(
+			_ context.Context,
+			_ *clients.KibanaScopedClient,
+			_ string,
+			_ string,
+			_ testKibanaResourceModelWithVersionReqs,
+			_ testKibanaResourceModelWithVersionReqs,
+		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+	)
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	plan := tfsdk.Plan{
+		Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, createCalled, "createFunc must NOT be called when GetVersionRequirements returns error diags")
+	require.True(t, resp.Diagnostics.HasError(), "Create must propagate error from GetVersionRequirements")
+	summaries := make([]string, 0, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		summaries = append(summaries, d.Summary())
+	}
+	require.Contains(t, summaries, "version requirements error",
+		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
+		ComponentKibana,
+		"test_entity",
+		func() rschema.Schema {
+			s := getTestKibanaResourceSchema()
+			s.Blocks = map[string]rschema.Block{
+				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+			}
+			return s
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModelWithVersionReqs{}, false, nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) diag.Diagnostics {
+			return nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+		func(
+			_ context.Context,
+			_ *clients.KibanaScopedClient,
+			_ string,
+			_ string,
+			_ testKibanaResourceModelWithVersionReqs,
+			_ testKibanaResourceModelWithVersionReqs,
+		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+	)
+	r.client = factory
+
+	state := tfsdk.State{
+		Raw: tftypes.NewValue(testKibanaResourceObjectType(), map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, readCalled, "readFunc must NOT be called when GetVersionRequirements returns error diags")
+	require.True(t, resp.Diagnostics.HasError(), "Read must propagate error from GetVersionRequirements")
+	summaries := make([]string, 0, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		summaries = append(summaries, d.Summary())
+	}
+	require.Contains(t, summaries, "version requirements error",
+		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	updateCalled := false
+	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
+		ComponentKibana,
+		"test_entity",
+		func() rschema.Schema {
+			s := getTestKibanaResourceSchema()
+			s.Blocks = map[string]rschema.Block{
+				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+			}
+			return s
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, bool, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, false, nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) diag.Diagnostics {
+			return nil
+		},
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModelWithVersionReqs) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+		func(
+			_ context.Context,
+			_ *clients.KibanaScopedClient,
+			_ string,
+			_ string,
+			_ testKibanaResourceModelWithVersionReqs,
+			_ testKibanaResourceModelWithVersionReqs,
+		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
+			updateCalled = true
+			return testKibanaResourceModelWithVersionReqs{}, nil
+		},
+	)
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	plan := tfsdk.Plan{
+		Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	state := tfsdk.State{
+		Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.UpdateRequest{Plan: plan, State: state}
+	resp := resource.UpdateResponse{State: state}
+
+	r.Update(ctx, req, &resp)
+
+	require.False(t, updateCalled, "updateFunc must NOT be called when GetVersionRequirements returns error diags")
+	require.True(t, resp.Diagnostics.HasError(), "Update must propagate error from GetVersionRequirements")
+	summaries := make([]string, 0, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		summaries = append(summaries, d.Summary())
+	}
+	require.Contains(t, summaries, "version requirements error",
+		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}

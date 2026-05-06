@@ -22,16 +22,9 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// minVersionStreams reflects the Kibana version where the stream.type discriminator
-// field was introduced (kibana#256682). Earlier versions of the Streams API
-// (9.2.x–9.3.x) reject requests containing this field.
-var minVersionStreams = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 func createStream(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan streamModel) (streamModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -44,19 +37,6 @@ func createStream(ctx context.Context, client *clients.KibanaScopedClient, space
 				"Use `terraform import` to manage an existing classic stream instead of creating one.\n\n"+
 				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.<resource_name> '%s/%s'",
 					spaceID, plan.GetResourceID().ValueString()),
-		)
-		return streamModel{}, diags
-	}
-
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return streamModel{}, diags
-	}
-	if !supported {
-		diags.AddError(
-			"Unsupported server version",
-			fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", minVersionStreams),
 		)
 		return streamModel{}, diags
 	}
