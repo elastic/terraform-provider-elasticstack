@@ -214,4 +214,5 @@ test('workflow includes dispatch instruction and compiled lock contains dispatch
   assert.match(lock, /dispatch_code_factory/);
   assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
   assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /"labels":\["flaky-test"\]/);
 });
