@@ -18,7 +18,6 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -81,7 +80,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		}
 		// The typed client can return a non-nil *types.Query that still marshals to JSON null.
 		// Avoid storing the literal string "null" in state, which would trigger replacement.
-		if !bytes.Equal(queryBytes, []byte("null")) {
+		if string(queryBytes) != "null" {
 			queryStr = string(queryBytes)
 		}
 	}
