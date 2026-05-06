@@ -63,8 +63,8 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
-			"elasticstack_kibana_space":         kibana.ResourceSpace(),
-			"elasticstack_kibana_security_role": kibana.ResourceRole(),
+			"elasticstack_kibana_space":                      kibana.ResourceSpace(),
+			"elasticstack_kibana_security_role":              kibana.ResourceRole(),
 		},
 	}
 
