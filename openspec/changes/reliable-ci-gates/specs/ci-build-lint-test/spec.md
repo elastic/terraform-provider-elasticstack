@@ -8,7 +8,7 @@ The workflow name SHALL be `Provider CI`. The workflow file SHALL be `.github/wo
 
 - **GIVEN** a push to the `main` branch
 - **WHEN** the workflow evaluates its trigger
-- **THEN** the workflow SHALL run all jobs unconditionally (no classification)
+- **THEN** the `classify` job SHALL run and output `provider_changes=true` unconditionally, and all downstream jobs SHALL run
 
 #### Scenario: Pull request opened, synchronised, or reopened triggers workflow
 
@@ -149,7 +149,7 @@ Any change set containing a path outside this set SHALL produce `provider_change
 
 ### Requirement: Gate job
 
-The workflow SHALL include a `gate` job that always runs (`if: always()`) and depends on `classify`, `build`, `lint`, and `test`. The `gate` job SHALL be the sole required check for this workflow. The `gate` job SHALL succeed when any of the following is true:
+The workflow SHALL include a `gate` job that always runs (`if: always()`) and depends on `classify`, `build`, `lint`, and `test`. The `gate` job SHALL be the sole required check for this workflow (`provider / gate`). The `gate` job SHALL succeed when any of the following is true:
 
 - `classify` reported `provider_changes=false` and `build`, `lint`, and `test` were all skipped
 - `build`, `lint`, and `test` all completed successfully

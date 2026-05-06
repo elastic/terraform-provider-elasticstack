@@ -32,5 +32,5 @@ The `Build/Lint/Test` workflow has three active bugs — broken required checks 
 - **`.github/workflows/`**: `test.yml` deleted; `provider.yml`, `openspec.yml`, `workflows.yml` added.
 - **`.github/workflows-src/`**: `test/` directory replaced by `provider/`, `openspec/`, `workflows/` directories; `manifest.json` updated.
 - **`scripts/auto-approve/`**: `generated-changelog` category and its unit tests removed.
-- **`internal/lib/classify-changes.js`** (or equivalent): skip-path set extended.
+- **`.github/workflows-src/lib/classify-changes.js`**: skip-path set extended.
 - **GitHub branch protection**: required checks updated from `Build/Lint/Test / Build`, `Build/Lint/Test / Lint`, `Build/Lint/Test / Test Validation` to `provider / gate`, `openspec / gate`, `workflows / gate` (manual step post-deploy).

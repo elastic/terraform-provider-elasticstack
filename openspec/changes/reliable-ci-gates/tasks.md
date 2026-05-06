@@ -40,7 +40,7 @@
 ## 6. Manifest and Compilation
 
 - [ ] 6.1 Update `.github/workflows-src/manifest.json`: replace the `test/workflow.yml.tmpl → test.yml` entry with three entries mapping `provider/workflow.yml.tmpl → provider.yml`, `openspec/workflow.yml.tmpl → openspec.yml`, and `workflows/workflow.yml.tmpl → workflows.yml`
-- [ ] 6.2 Run `make compile-workflows` (or equivalent) to generate `.github/workflows/provider.yml`, `.github/workflows/openspec.yml`, and `.github/workflows/workflows.yml`
+- [ ] 6.2 Run `make workflow-generate` to generate `.github/workflows/provider.yml`, `.github/workflows/openspec.yml`, and `.github/workflows/workflows.yml`
 - [ ] 6.3 Verify the three generated files are syntactically valid YAML and that action references use commit SHAs
 
 ## 7. Auto-Approve Script

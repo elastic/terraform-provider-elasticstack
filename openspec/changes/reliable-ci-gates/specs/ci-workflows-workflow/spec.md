@@ -16,7 +16,7 @@ The workflow name SHALL be `Workflows CI`. The workflow file SHALL be `.github/w
 
 - **GIVEN** a pull request event of type `opened`, `synchronize`, or `reopened`
 - **WHEN** the workflow evaluates its trigger
-- **THEN** the `classify`, `test`, and `gate` jobs SHALL run
+- **THEN** `classify` and `gate` SHALL always run; `test` SHALL run only when `workflow_changes=true`
 
 #### Scenario: Push to main triggers workflows CI
 

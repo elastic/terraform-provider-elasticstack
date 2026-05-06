@@ -61,11 +61,9 @@ The `Build/Lint/Test` workflow (`test.yml`) is compiled from a single template a
 
 ### Extend classify skip-paths beyond `openspec/`
 
-**Decision**: `provider_changes=false` when all changed files match: `CHANGELOG.md`, `openspec/**`, `.agents/**`, or `.github/**` except `.github/workflows/test.yml` (and its successors).
+**Decision**: `provider_changes=false` when all changed files match: `CHANGELOG.md`, `openspec/**`, `.agents/**`, or `.github/**` except `.github/workflows/provider.yml`.
 
-**Rationale**: Changes to changelog, agent prompts, or non-CI `.github/` files (issue templates, dependabot config) cannot affect the provider binary or its test behaviour. The current openspec-only rule is too narrow and causes unnecessary acceptance-test runs on changelog and `.agents/` PRs.
-
-**Note on `.github/workflows/test.yml` (and successors)**: Changes to the CI workflow definition itself require a full CI run to validate the new workflow against the provider. When this change lands, the relevant file becomes `.github/workflows/provider.yml`.
+**Rationale**: Changes to changelog, agent prompts, or non-CI `.github/` files (issue templates, dependabot config) cannot affect the provider binary or its test behaviour. The current openspec-only rule is too narrow and causes unnecessary acceptance-test runs on changelog and `.agents/` PRs. Changes to `.github/workflows/provider.yml` itself require a full CI run to validate the new workflow against the provider.
 
 ## Risks / Trade-offs
 
