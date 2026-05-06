@@ -36,8 +36,8 @@ func upsertStream(ctx context.Context, apiClient *clients.KibanaScopedClient, pl
 		return nil, diags
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-	name := planModel.Name.ValueString()
+	spaceID := planModel.GetSpaceID().ValueString()
+	name := planModel.GetResourceID().ValueString()
 
 	apiReq := planModel.toAPIUpsertRequest(ctx, &diags)
 	if diags.HasError() {

@@ -43,7 +43,7 @@ func createStream(ctx context.Context, client *clients.KibanaScopedClient, space
 			"Classic streams are pre-existing Elasticsearch data streams adopted by Kibana Streams. "+
 				"Use `terraform import` to manage an existing classic stream instead of creating one.\n\n"+
 				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.<resource_name> '%s/%s'",
-					plan.SpaceID.ValueString(), plan.Name.ValueString()),
+					spaceID, plan.GetResourceID().ValueString()),
 		)
 		return streamModel{}, diags
 	}
@@ -61,7 +61,7 @@ func createStream(ctx context.Context, client *clients.KibanaScopedClient, space
 		return streamModel{}, diags
 	}
 
-	name := plan.Name.ValueString()
+	name := plan.GetResourceID().ValueString()
 	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
 	plan.ID = types.StringValue(compositeID.String())
 

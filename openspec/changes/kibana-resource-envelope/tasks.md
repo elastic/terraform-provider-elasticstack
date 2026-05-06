@@ -36,15 +36,15 @@
 
 ## 3. Streams Migration (User-ID POC)
 
-- [ ] 3.1 Add `GetResourceID() types.String` (returns `m.Name`), `GetSpaceID() types.String`, and `GetKibanaConnection() types.List` value-receiver methods to `streamModel`
-- [ ] 3.2 Change `Resource` struct to embed `*entitycore.KibanaResource[streamModel]` instead of `*entitycore.ResourceBase`
-- [ ] 3.3 Update `newResource()` to call `entitycore.NewKibanaResource[streamModel]` with the schema factory and extracted callback functions
-- [ ] 3.4 Extract the Create body into a `KibanaCreateFunc[streamModel]` — receives `(ctx, client, spaceID, plan)`; extracts name from `plan.GetResourceID()`
-- [ ] 3.5 Extract the Read body into a `kibanaReadFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, model)`; removes the internal composite ID parse (envelope handles it)
-- [ ] 3.6 Extract the Update body into a `KibanaUpdateFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, plan, prior)`
-- [ ] 3.7 Extract the Delete body into a `kibanaDeleteFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, model)`
-- [ ] 3.8 Remove now-redundant `resource.go` CRUD method stubs and inline boilerplate
-- [ ] 3.9 Verify `make build` passes and existing streams acceptance tests pass
+- [x] 3.1 Add `GetResourceID() types.String` (returns `m.Name`), `GetSpaceID() types.String`, and `GetKibanaConnection() types.List` value-receiver methods to `streamModel`
+- [x] 3.2 Change `Resource` struct to embed `*entitycore.KibanaResource[streamModel]` instead of `*entitycore.ResourceBase`
+- [x] 3.3 Update `newResource()` to call `entitycore.NewKibanaResource[streamModel]` with the schema factory and extracted callback functions
+- [x] 3.4 Extract the Create body into a `KibanaCreateFunc[streamModel]` — receives `(ctx, client, spaceID, plan)`; extracts name from `plan.GetResourceID()`
+- [x] 3.5 Extract the Read body into a `kibanaReadFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, model)`; removes the internal composite ID parse (envelope handles it)
+- [x] 3.6 Extract the Update body into a `KibanaUpdateFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, plan, prior)`
+- [x] 3.7 Extract the Delete body into a `kibanaDeleteFunc[streamModel]` — receives `(ctx, client, resourceID, spaceID, model)`
+- [x] 3.8 Remove now-redundant `resource.go` CRUD method stubs and inline boilerplate
+- [x] 3.9 Verify `make build` passes and existing streams acceptance tests pass
 
 ## 4. Maintenance Window Migration (API-UUID POC)
 
