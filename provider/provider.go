@@ -57,7 +57,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
 			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":         index.ResourceDataStream(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
