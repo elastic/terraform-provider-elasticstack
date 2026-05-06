@@ -34,12 +34,20 @@ var (
 )
 
 type aliasResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
 }
 
 func newAliasResource() *aliasResource {
 	return &aliasResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "index_alias"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
+			entitycore.ComponentElasticsearch,
+			"index_alias",
+			getSchemaFactory,
+			readAlias,
+			deleteAlias,
+			createAlias,
+			updateAlias,
+		),
 	}
 }
 
@@ -48,7 +56,6 @@ func NewAliasResource() resource.Resource {
 }
 
 func (r *aliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 

@@ -40,6 +40,10 @@ type tfModel struct {
 	ReadIndices             types.Set    `tfsdk:"read_indices"`
 }
 
+func (model tfModel) GetID() types.String                    { return model.ID }
+func (model tfModel) GetResourceID() types.String            { return model.Name }
+func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
+
 func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {
 	// Validate that write_index doesn't appear in read_indices.
 	// This can be called during plan-time validation (unknown values possible) and during apply (typically known).
