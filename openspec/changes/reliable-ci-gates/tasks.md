@@ -16,13 +16,13 @@
 
 ## 3. Provider Workflow Source Template
 
-- [ ] 3.1 Create `.github/workflows-src/provider/` directory and `workflow.yml.tmpl` with triggers: `push: branches: [main]`, `pull_request: types: [opened, synchronize, reopened]`, `workflow_dispatch`
-- [ ] 3.2 Add `classify` job to the template: always runs, uses `classify_changes.inline.js`, outputs `provider_changes`
-- [ ] 3.3 Add `build` job to the template: depends on `classify`, condition `provider_changes == 'true'`, sets up Go and Node 24, runs `make vendor` then `make build-ci` (no workflow-test or hook-test steps)
-- [ ] 3.4 Add `lint` job to the template: depends on `classify`, condition `provider_changes == 'true'`, sets up Go, Node 24, Terraform (pinned from `.terraform-version`), runs `npm ci` then `make check-lint` with `OPENSPEC_TELEMETRY=0`
-- [ ] 3.5 Add `test` matrix job to the template: copy matrix configuration, stack versions, shard strategy, fleet setup, synthetics, wait-readiness, testacc, snapshot PR comment, diagnostics, and teardown steps from `test/workflow.yml.tmpl`; update dependencies to `[classify, build]`; update condition to `provider_changes == 'true'`; remove any reference to `preflight`
-- [ ] 3.6 Add `gate` job to the template: `if: always()`, depends on `[classify, build, lint, test]`, uses `gate.inline.js`
-- [ ] 3.7 Add `auto-approve` job to the template: `if: always() && github.event_name == 'pull_request' && needs.gate.result == 'success'`, depends on `[gate]`, sets up Go, runs `go run ./scripts/auto-approve` with `contents: read` and `pull-requests: write` permissions; do NOT include the auto-merge step
+- [x] 3.1 Create `.github/workflows-src/provider/` directory and `workflow.yml.tmpl` with triggers: `push: branches: [main]`, `pull_request: types: [opened, synchronize, reopened]`, `workflow_dispatch`
+- [x] 3.2 Add `classify` job to the template: always runs, uses `classify_changes.inline.js`, outputs `provider_changes`
+- [x] 3.3 Add `build` job to the template: depends on `classify`, condition `provider_changes == 'true'`, sets up Go and Node 24, runs `make vendor` then `make build-ci` (no workflow-test or hook-test steps)
+- [x] 3.4 Add `lint` job to the template: depends on `classify`, condition `provider_changes == 'true'`, sets up Go, Node 24, Terraform (pinned from `.terraform-version`), runs `npm ci` then `make check-lint` with `OPENSPEC_TELEMETRY=0`
+- [x] 3.5 Add `test` matrix job to the template: copy matrix configuration, stack versions, shard strategy, fleet setup, synthetics, wait-readiness, testacc, snapshot PR comment, diagnostics, and teardown steps from `test/workflow.yml.tmpl`; update dependencies to `[classify, build]`; update condition to `provider_changes == 'true'`; remove any reference to `preflight`
+- [x] 3.6 Add `gate` job to the template: `if: always()`, depends on `[classify, build, lint, test]`, uses `gate.inline.js`
+- [x] 3.7 Add `auto-approve` job to the template: `if: always() && github.event_name == 'pull_request' && needs.gate.result == 'success'`, depends on `[gate]`, sets up Go, runs `go run ./scripts/auto-approve` with `contents: read` and `pull-requests: write` permissions; do NOT include the auto-merge step
 
 ## 4. OpenSpec Workflow Source Template
 
