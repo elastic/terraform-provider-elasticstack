@@ -1,7 +1,7 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate apm-source-map --type change` (or `make check-openspec` after sync).
-- [ ] 1.2 On completion of implementation, **sync** delta into `openspec/specs/apm-source-map/spec.md` or **archive** the change per project workflow.
+- [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate apm-source-map --type change` (or `make check-openspec` after sync).
+- [x] 1.2 On completion of implementation, **sync** delta into `openspec/specs/apm-source-map/spec.md` or **archive** the change per project workflow.
 
 ## 2. Implementation
 
