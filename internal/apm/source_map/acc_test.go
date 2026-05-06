@@ -1,0 +1,408 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package sourcemap_test
+
+import (
+	"fmt"
+	"regexp"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+)
+
+const (
+	// minimalSourceMapJSON is a minimal but valid source map JSON used in tests.
+	minimalSourceMapJSON = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
+
+	// minimalSourceMapBase64 is the base64-encoded form of minimalSourceMapJSON.
+	minimalSourceMapBase64 = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoidGVzdC5taW4uanMiLCJzb3VyY2VzIjpbInRlc3QuanMiXSwibWFwcGluZ3MiOiJBQUFBIn0="
+)
+
+// testAccApmSourceMapConfig_json returns a Terraform config that creates a
+// source map resource using sourcemap_json.
+func testAccApmSourceMapConfig_json(serviceName, serviceVersion string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = %q
+  service_version = %q
+  sourcemap_json  = %q
+}
+`, serviceName, serviceVersion, minimalSourceMapJSON)
+}
+
+// testAccApmSourceMapConfig_binary returns a Terraform config that creates a
+// source map resource using sourcemap_binary (base64-encoded content).
+func testAccApmSourceMapConfig_binary(serviceName, serviceVersion string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath  = "/static/js/test.min.js"
+  service_name     = %q
+  service_version  = %q
+  sourcemap_binary = %q
+}
+`, serviceName, serviceVersion, minimalSourceMapBase64)
+}
+
+// testAccApmSourceMapConfig_space returns a Terraform config that creates a
+// source map resource inside a named Kibana space.
+func testAccApmSourceMapConfig_space(serviceName, serviceVersion, spaceID string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_kibana_space" "test" {
+  space_id = %q
+  name     = %q
+}
+
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = %q
+  service_version = %q
+  sourcemap_json  = %q
+  space_id        = elasticstack_kibana_space.test.space_id
+}
+`, spaceID, spaceID, serviceName, serviceVersion, minimalSourceMapJSON)
+}
+
+// testAccApmSourceMapConfig_jsonWithSpace returns a Terraform config creating a
+// source map with an explicit space_id (for import tests where we control the space).
+func testAccApmSourceMapConfig_jsonWithSpace(serviceName, serviceVersion, spaceID string) string {
+	return fmt.Sprintf(`
+resource "elasticstack_kibana_space" "import_space" {
+  space_id = %q
+  name     = %q
+}
+
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = %q
+  service_version = %q
+  sourcemap_json  = %q
+  space_id        = elasticstack_kibana_space.import_space.space_id
+}
+`, spaceID, spaceID, serviceName, serviceVersion, minimalSourceMapJSON)
+}
+
+// TestAccResourceApmSourceMap_json tests creating a source map using
+// sourcemap_json, asserts id is set and non-empty, and confirms clean destroy.
+func TestAccResourceApmSourceMap_json(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.0.0"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "bundle_filepath", "/static/js/test.min.js"),
+					testCheckApmSourceMapIDNonEmpty("elasticstack_apm_source_map.test"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_binary tests creating a source map using
+// sourcemap_binary (base64-encoded content) and asserts id is set and non-empty.
+func TestAccResourceApmSourceMap_binary(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_binary(serviceName, "1.0.0"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_name", serviceName),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "bundle_filepath", "/static/js/test.min.js"),
+					testCheckApmSourceMapIDNonEmpty("elasticstack_apm_source_map.test"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_import tests importing a source map created in a
+// named Kibana space using the composite import ID "<space_id>/<artifact_id>".
+// It also verifies that a plain (no-slash) import ID works and leaves space_id unset.
+func TestAccResourceApmSourceMap_import(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	spaceID := "apm-import-test"
+
+	resourceName := "elasticstack_apm_source_map.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: create the resource in a named space.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_jsonWithSpace(serviceName, "1.0.0", spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttr(resourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(resourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "bundle_filepath", "/static/js/test.min.js"),
+				),
+			},
+			// Step 2: import using composite "<space_id>/<artifact_id>".
+			{
+				ProtoV6ProviderFactories:  acctest.Providers,
+				ResourceName:              resourceName,
+				ImportState:               true,
+				ImportStateVerify:         true,
+				ImportStateVerifyIgnore:   []string{"sourcemap_json", "sourcemap_binary"},
+				ImportStateIdFunc:         testAccApmSourceMapCompositeImportID(resourceName),
+			},
+			// Step 3: import using just the artifact id (no space prefix) —
+			// results in space_id being unset (default space semantics).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        false, // space_id will differ; we verify manually
+				ImportStateIdFunc:        testAccApmSourceMapPlainImportID(resourceName),
+				// After a plain import the space_id attribute is not set.
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					if v, ok := states[0].Attributes["space_id"]; ok && v != "" {
+						return fmt.Errorf("expected space_id to be empty after plain import, got %q", v)
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_space verifies that creating a source map with a
+// non-default space_id routes all CRUD operations to that space.
+func TestAccResourceApmSourceMap_space(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID := fmt.Sprintf("apm-sm-%s", suffix)
+
+	resourceName := "elasticstack_apm_source_map.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_space(serviceName, "1.0.0", spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttr(resourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(resourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "bundle_filepath", "/static/js/test.min.js"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_validationNeitherSet verifies that applying a config
+// with neither sourcemap_json nor sourcemap_binary returns a validation diagnostic.
+func TestAccResourceApmSourceMap_validationNeitherSet(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: `
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = "my-service"
+  service_version = "1.0.0"
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)exactly one of`),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_validationBothSet verifies that applying a config
+// with both sourcemap_json and sourcemap_binary returns a validation diagnostic.
+func TestAccResourceApmSourceMap_validationBothSet(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: fmt.Sprintf(`
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath  = "/static/js/test.min.js"
+  service_name     = "my-service"
+  service_version  = "1.0.0"
+  sourcemap_json   = %q
+  sourcemap_binary = %q
+}
+`, minimalSourceMapJSON, minimalSourceMapBase64),
+				ExpectError: regexp.MustCompile(`(?i)exactly one of`),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_validationEmptyString verifies that setting
+// sourcemap_json to an empty string triggers the LengthAtLeast validation.
+func TestAccResourceApmSourceMap_validationEmptyString(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: `
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = "my-service"
+  service_version = "1.0.0"
+  sourcemap_json  = ""
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)at least 1`),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_binaryInvalidBase64 verifies that setting
+// sourcemap_binary to a non-base64 string causes an error at apply time.
+func TestAccResourceApmSourceMap_binaryInvalidBase64(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: `
+resource "elasticstack_apm_source_map" "test" {
+  bundle_filepath  = "/static/js/test.min.js"
+  service_name     = "my-service"
+  service_version  = "1.0.0"
+  sourcemap_binary = "not-valid-base64!!!"
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)(base64|decod)`),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_requireReplace verifies that changing service_version
+// produces a ResourceActionDestroyBeforeCreate plan action, not an in-place update.
+func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: apply with service_version = "1.0.0".
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.0.0"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.0.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_apm_source_map.test", "id"),
+				),
+			},
+			// Step 2: plan with service_version = "1.1.0" — must show replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccApmSourceMapConfig_json(serviceName, "1.1.0"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_apm_source_map.test",
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_apm_source_map.test", "service_version", "1.1.0"),
+				),
+			},
+		},
+	})
+}
+
+// testCheckApmSourceMapIDNonEmpty is a check function that asserts the id
+// attribute is set and non-empty.
+func testCheckApmSourceMapIDNonEmpty(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		res, ok := s.RootModule().Resources[resourceName]
+		if !ok || res.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		id := res.Primary.Attributes["id"]
+		if id == "" {
+			return fmt.Errorf("expected non-empty id for %s, got empty string", resourceName)
+		}
+		return nil
+	}
+}
+
+// testAccApmSourceMapCompositeImportID returns an ImportStateIdFunc that builds
+// the "<space_id>/<artifact_id>" composite import ID from state.
+func testAccApmSourceMapCompositeImportID(resourceName string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		res, ok := s.RootModule().Resources[resourceName]
+		if !ok || res.Primary == nil {
+			return "", fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		spaceID := res.Primary.Attributes["space_id"]
+		id := res.Primary.Attributes["id"]
+		if spaceID == "" {
+			return "", fmt.Errorf("space_id is empty in state for %s", resourceName)
+		}
+		if id == "" {
+			return "", fmt.Errorf("id is empty in state for %s", resourceName)
+		}
+		return spaceID + "/" + id, nil
+	}
+}
+
+// testAccApmSourceMapPlainImportID returns an ImportStateIdFunc that uses only
+// the artifact id (no space prefix) from state.
+func testAccApmSourceMapPlainImportID(resourceName string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		res, ok := s.RootModule().Resources[resourceName]
+		if !ok || res.Primary == nil {
+			return "", fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		id := res.Primary.Attributes["id"]
+		if id == "" {
+			return "", fmt.Errorf("id is empty in state for %s", resourceName)
+		}
+		return id, nil
+	}
+}
