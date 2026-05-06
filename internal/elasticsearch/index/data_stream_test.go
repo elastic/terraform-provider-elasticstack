@@ -19,6 +19,7 @@ package index_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
@@ -178,6 +179,9 @@ func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
 }
 
+//go:embed testdata/TestAccResourceDataStreamFromSDK/create/main.tf
+var testAccResourceDataStreamFromSDKCreate string
+
 func TestAccResourceDataStreamFromSDK(t *testing.T) {
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
@@ -193,7 +197,7 @@ func TestAccResourceDataStreamFromSDK(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				Config:          testAccResourceDataStreamFromSDKCreate,
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
