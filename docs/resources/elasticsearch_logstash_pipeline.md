@@ -64,7 +64,7 @@ output "pipeline" {
 ### Optional
 
 - `description` (String) Description of the pipeline.
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `pipeline_batch_delay` (Number) Time in milliseconds to wait for each event before sending an undersized batch to pipeline workers.
 - `pipeline_batch_size` (Number) The maximum number of events an individual worker thread collects before executing filters and outputs.
 - `pipeline_ecs_compatibility` (String) Sets the pipeline default value for ecs_compatibility, a setting that is available to plugins that implement an ECS compatibility mode for use with the Elastic Common Schema.
@@ -85,7 +85,7 @@ output "pipeline" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource.
 - `last_modified` (String) Date the pipeline was last updated.
 
 <a id="nestedblock--elasticsearch_connection"></a>

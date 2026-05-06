@@ -45,20 +45,20 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 
 ### Optional
 
-- `azure` (Block List, Max: 1) Support for using Azure Blob storage as a repository for Snapshot/Restore. See the [repository Azure plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html) for more details. (see [below for nested schema](#nestedblock--azure))
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `fs` (Block List, Max: 1) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
-- `gcs` (Block List, Max: 1) Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See the [repository GCS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html) for more details. (see [below for nested schema](#nestedblock--gcs))
-- `hdfs` (Block List, Max: 1) Support for using HDFS File System as a repository for Snapshot/Restore. See the [repository HDFS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html) for more details. (see [below for nested schema](#nestedblock--hdfs))
-- `s3` (Block List, Max: 1) Support for using AWS S3 as a repository for Snapshot/Restore. See the [repository S3 plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html) for more details. (see [below for nested schema](#nestedblock--s3))
-- `url` (Block List, Max: 1) URL repository. Repositories of this type are read-only for the cluster. This means the cluster can retrieve or restore snapshots from the repository but cannot write or create snapshots in it. (see [below for nested schema](#nestedblock--url))
+- `azure` (Attributes) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedatt--azure))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `fs` (Attributes) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedatt--fs))
+- `gcs` (Attributes) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedatt--gcs))
+- `hdfs` (Attributes) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedatt--hdfs))
+- `s3` (Attributes) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedatt--s3))
+- `url` (Attributes) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedatt--url))
 - `verify` (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource
 
-<a id="nestedblock--azure"></a>
+<a id="nestedatt--azure"></a>
 ### Nested Schema for `azure`
 
 Required:
@@ -71,7 +71,7 @@ Optional:
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) Azure named client to use.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
-- `location_mode` (String) Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
+- `location_mode` (String) Location mode for the Azure repository. Primary_only or secondary_only.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `readonly` (Boolean) If true, the repository is read-only.
@@ -98,7 +98,7 @@ Optional:
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
-<a id="nestedblock--fs"></a>
+<a id="nestedatt--fs"></a>
 ### Nested Schema for `fs`
 
 Required:
@@ -115,7 +115,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedblock--gcs"></a>
+<a id="nestedatt--gcs"></a>
 ### Nested Schema for `gcs`
 
 Required:
@@ -133,7 +133,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedblock--hdfs"></a>
+<a id="nestedatt--hdfs"></a>
 ### Nested Schema for `hdfs`
 
 Required:
@@ -151,7 +151,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedblock--s3"></a>
+<a id="nestedatt--s3"></a>
 ### Nested Schema for `s3`
 
 Required:
@@ -175,7 +175,7 @@ Optional:
 - `storage_class` (String) Sets the S3 storage class for objects stored in the snapshot repository.
 
 
-<a id="nestedblock--url"></a>
+<a id="nestedatt--url"></a>
 ### Nested Schema for `url`
 
 Required:

@@ -45,44 +45,17 @@ resource "elasticstack_elasticsearch_index_template" "my_template" {
 ### Required
 
 - `name` (String) Name of the component template to create.
-- `template` (Block List, Min: 1, Max: 1) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `metadata` (String) Optional user metadata about the component template.
+- `template` (Block, Optional) Template to be applied. It may optionally include an aliases, mappings, or settings configuration. (see [below for nested schema](#nestedblock--template))
 - `version` (Number) Version number used to manage component templates externally.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource
-
-<a id="nestedblock--template"></a>
-### Nested Schema for `template`
-
-Optional:
-
-- `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
-- `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details
-- `settings` (String) Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.
-
-<a id="nestedblock--template--alias"></a>
-### Nested Schema for `template.alias`
-
-Required:
-
-- `name` (String) The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.
-
-Optional:
-
-- `filter` (String) Query used to limit documents the alias can access.
-- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.
-- `is_hidden` (Boolean) If true, the alias is hidden.
-- `is_write_index` (Boolean) If true, the index is the write index for the alias.
-- `routing` (String) Value used to route indexing and search operations to a specific shard.
-- `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
-
-
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
@@ -103,6 +76,32 @@ Optional:
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
 - `username` (String) Username to use for API authentication to Elasticsearch.
+
+
+<a id="nestedblock--template"></a>
+### Nested Schema for `template`
+
+Optional:
+
+- `alias` (Block Set) Alias to add. (see [below for nested schema](#nestedblock--template--alias))
+- `mappings` (String) Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the [explicit mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details.
+- `settings` (String) Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.
+
+<a id="nestedblock--template--alias"></a>
+### Nested Schema for `template.alias`
+
+Required:
+
+- `name` (String) The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.
+
+Optional:
+
+- `filter` (String) Query used to limit documents the alias can access.
+- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.
+- `is_hidden` (Boolean) If true, the alias is hidden.
+- `is_write_index` (Boolean) If true, the index is the write index for the alias.
+- `routing` (String) Value used to route indexing and search operations to a specific shard.
+- `search_routing` (String) Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.
 
 ## Import
 
