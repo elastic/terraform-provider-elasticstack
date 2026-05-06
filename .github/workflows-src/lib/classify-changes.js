@@ -8,9 +8,13 @@
  *   - Any path under .github/ EXCEPT .github/workflows/provider.yml
  *
  * @param {string[]} changedFiles - Flat list of changed file paths for this run.
- * @returns {{ providerChanges: 'true' | 'false' }}
+ * @returns {{ providerChanges: 'true' | 'false' }} - 'true' if any file is provider-impacting, or if the file list is empty (safe default).
  */
 function classifyChanges(changedFiles) {
+  if (!Array.isArray(changedFiles)) {
+    throw new TypeError('changedFiles must be an array');
+  }
+
   if (changedFiles.length === 0) {
     return { providerChanges: 'true' };
   }
