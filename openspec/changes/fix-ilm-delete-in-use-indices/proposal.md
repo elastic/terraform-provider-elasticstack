@@ -10,7 +10,7 @@ This is a silent cross-dependency that forces users to run manual cleanup comman
 
 - **`elasticstack_elasticsearch_index_lifecycle` Delete**: Before calling `DELETE /_ilm/policy/{name}`, scan all indices for references to the policy and null `index.lifecycle.name` on matching indices.
 - Add supporting ES client helper for querying index settings with the `flat_settings` option and for clearing `index.lifecycle.name` on specific indices.
-- Acceptance test that reproduces the cross-dependency scenario (Fleet integration + ILM attachment + data stream) and asserts the ILM policy can still be destroyed.
+- Acceptance test that reproduces the cross-dependency scenario (Fleet integration + ILM attachment + data stream) and asserts the ILM policy destroy fails (to be flipped to success after the fix is implemented).
 
 ## Capabilities
 

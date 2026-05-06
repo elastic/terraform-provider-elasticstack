@@ -4,9 +4,10 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_integration" "test_integration" {
-  name    = "system"
-  version = "1.18.0"
-  force   = true
+  name         = "system"
+  version      = "1.18.0"
+  force        = true
+  skip_destroy = true
 }
 
 resource "elasticstack_elasticsearch_index_lifecycle" "test" {

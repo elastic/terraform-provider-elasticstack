@@ -6,7 +6,7 @@ Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
 
 The process for removing in-use references SHALL be:
 
-1. Query `GET /_all/_settings/index.lifecycle.name` to obtain the `index.lifecycle.name` setting for every index.
+1. Query `GET /_all/_settings/index.lifecycle.name?flat_settings=true` to obtain the `index.lifecycle.name` setting for every index.
 2. Filter to indices whose setting value equals the policy name being deleted.
 3. If one or more indices match, issue `PUT /{indices}/_settings` with `{"index.lifecycle.name": null}` where `{indices}` is a comma-separated list of matched index names.
 4. After clearing references, proceed with `DELETE /_ilm/policy/{policy_name}`.

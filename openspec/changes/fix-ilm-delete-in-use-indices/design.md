@@ -68,7 +68,7 @@ If the settings-clear call partially succeeds (some indices cleared, some still 
 
 ### Decision: ES client helper functions
 
-Three new functions in `internal/clients/elasticsearch/index.go`:
+Two new functions in `internal/clients/elasticsearch/index.go`:
 
 - `GetIndicesWithILMPolicy(ctx, client, policyName) ([]string, diag.Diagnostics)`
   - Wraps `GET /_all/_settings/index.lifecycle.name?flat_settings=true`

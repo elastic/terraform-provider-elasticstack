@@ -603,9 +603,8 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", "test-fleet-ilm-policy"),
 				),
 			},
-			// Step 2: Create a data stream and index a document so Elasticsearch
-			// creates a backing index that references the ILM policy via the
-			// Fleet-managed template.
+			// Step 2: Create a data stream so Elasticsearch creates a backing
+			// index that references the ILM policy via the Fleet-managed template.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
