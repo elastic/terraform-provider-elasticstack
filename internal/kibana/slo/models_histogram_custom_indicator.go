@@ -19,6 +19,7 @@ package slo
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -75,8 +76,8 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			} `json:"total"`
 		}{
 			Index:          ind.Index.ValueString(),
-			DataViewId:     stringPtr(ind.DataViewID),
-			Filter:         stringPtr(ind.Filter),
+			DataViewId:     typeutils.ValueStringPointer(ind.DataViewID),
+			Filter:         typeutils.ValueStringPointer(ind.Filter),
 			TimestampField: ind.TimestampField.ValueString(),
 			Good: struct {
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
@@ -87,9 +88,9 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			}{
 				Field:       ind.Good[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation(ind.Good[0].Aggregation.ValueString()),
-				Filter:      stringPtr(ind.Good[0].Filter),
-				From:        float64Ptr(ind.Good[0].From),
-				To:          float64Ptr(ind.Good[0].To),
+				Filter:      typeutils.ValueStringPointer(ind.Good[0].Filter),
+				From:        typeutils.Float64PointerValue(ind.Good[0].From),
+				To:          typeutils.Float64PointerValue(ind.Good[0].To),
 			},
 			Total: struct {
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
@@ -100,9 +101,9 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			}{
 				Field:       ind.Total[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation(ind.Total[0].Aggregation.ValueString()),
-				Filter:      stringPtr(ind.Total[0].Filter),
-				From:        float64Ptr(ind.Total[0].From),
-				To:          float64Ptr(ind.Total[0].To),
+				Filter:      typeutils.ValueStringPointer(ind.Total[0].Filter),
+				From:        typeutils.Float64PointerValue(ind.Total[0].From),
+				To:          typeutils.Float64PointerValue(ind.Total[0].To),
 			},
 		},
 	}

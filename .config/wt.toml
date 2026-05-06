@@ -11,6 +11,7 @@ grep -q "^ELASTICSEARCH_ENDPOINTS=" .env || echo "ELASTICSEARCH_ENDPOINTS=http:/
 grep -q "^ELASTICSEARCH_USERNAME=" .env || echo "ELASTICSEARCH_USERNAME=elastic" >> .env
 grep -q "^KIBANA_ENDPOINT=" .env || echo "KIBANA_ENDPOINT=http://localhost:$KB_PORT" >> .env
 grep -q "^KIBANA_USERNAME=" .env || echo "KIBANA_USERNAME=elastic" >> .env
+direnv allow
 """
 
 pre-commit = "make check-lint"

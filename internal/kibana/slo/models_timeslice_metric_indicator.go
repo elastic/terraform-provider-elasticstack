@@ -135,9 +135,9 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			TimestampField string `json:"timestampField"`
 		}{
 			Index:          ind.Index.ValueString(),
-			DataViewId:     stringPtr(ind.DataViewID),
+			DataViewId:     typeutils.ValueStringPointer(ind.DataViewID),
 			TimestampField: ind.TimestampField.ValueString(),
-			Filter:         stringPtr(ind.Filter),
+			Filter:         typeutils.ValueStringPointer(ind.Filter),
 			Metric: struct {
 				Comparator kbapi.SLOsIndicatorPropertiesTimesliceMetricParamsMetricComparator        `json:"comparator"`
 				Equation   string                                                                    `json:"equation"`

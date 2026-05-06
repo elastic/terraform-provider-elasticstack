@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -58,8 +59,13 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 ) diag.Diagnostics
 
 // ElasticsearchCreateFunc performs the create after the envelope decodes the
-// plan, checks the write identity, resolves the scoped Elasticsearch client, and
-// passes the planned model. It returns the model to persist in state.
+// plan, checks the write identity, resolves the scoped Elasticsearch client,
+// and passes the planned model. The callback should call the remote create
+// API, set the composite ID on the returned model when readFunc expects to
+// carry it through (e.g. via client.ID()), include any create-only field
+// values, and return the model. The envelope invokes readFunc after a
+// successful callback and sets state from the read result; the callback must
+// not call readFunc.
 type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -68,7 +74,11 @@ type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
 ) (T, diag.Diagnostics)
 
 // ElasticsearchUpdateFunc performs the update with the same prelude as
-// [ElasticsearchCreateFunc].
+// [ElasticsearchCreateFunc]. The callback should call the remote update API,
+// set the composite ID on the returned model when readFunc expects to carry
+// it through, and return it. The envelope invokes readFunc after a successful
+// callback and sets state from the read result; the callback must not call
+// readFunc.
 type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -235,13 +245,35 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 		return diags
 	}
 
-	resultModel, callDiags := op(ctx, client, writeID.ValueString(), model)
+	if r.readFunc == nil {
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"The read callback passed to NewElasticsearchResource must not be nil.",
+		)
+		return diags
+	}
+
+	writtenModel, callDiags := op(ctx, client, writeID.ValueString(), model)
 	diags.Append(callDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(state.Set(ctx, &resultModel)...)
+	stateModel, found, readDiags := r.readFunc(ctx, client, writeID.ValueString(), writtenModel)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !found {
+		diags.AddError(
+			"Resource not found",
+			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeID.ValueString()),
+		)
+		return diags
+	}
+
+	diags.Append(state.Set(ctx, &stateModel)...)
 	return diags
 }
 

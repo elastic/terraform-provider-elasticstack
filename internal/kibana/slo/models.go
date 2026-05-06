@@ -525,22 +525,6 @@ func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
 	return &settings
 }
 
-func stringPtr(v types.String) *string {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	s := v.ValueString()
-	return &s
-}
-
-func float64Ptr(v types.Float64) *float64 {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	f := v.ValueFloat64()
-	return &f
-}
-
 func stringOrNull(v *string) types.String {
 	if v == nil {
 		return types.StringNull()

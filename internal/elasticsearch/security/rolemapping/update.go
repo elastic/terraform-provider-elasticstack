@@ -20,7 +20,6 @@ package rolemapping
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -84,18 +83,5 @@ func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedCl
 		return zero, diags
 	}
 
-	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		var zero Data
-		return zero, diags
-	}
-
-	if readData == nil {
-		diags.AddError("Not Found", fmt.Sprintf("Role mapping %q was not found after update", roleMappingName))
-		var zero Data
-		return zero, diags
-	}
-
-	return *readData, diags
+	return data, diags
 }

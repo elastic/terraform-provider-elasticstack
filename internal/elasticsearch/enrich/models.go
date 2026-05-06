@@ -45,13 +45,12 @@ type PolicyDataWithExecute struct {
 	Execute types.Bool `tfsdk:"execute"`
 }
 
-// populateFromPolicy converts models.EnrichPolicy to PolicyData fields
 func (data *PolicyData) populateFromPolicy(ctx context.Context, policy *models.EnrichPolicy, diagnostics *diag.Diagnostics) {
 	data.Name = types.StringValue(policy.Name)
 	data.PolicyType = types.StringValue(policy.Type)
 	data.MatchField = types.StringValue(policy.MatchField)
 
-	if policy.Query != "" && policy.Query != "null" {
+	if policy.Query != "" {
 		data.Query = jsontypes.NewNormalizedValue(policy.Query)
 	} else {
 		data.Query = jsontypes.NewNormalizedNull()
