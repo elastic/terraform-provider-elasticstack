@@ -56,7 +56,7 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 		if slm.Retention.ExpireAfter != nil {
 			data.ExpireAfter = types.StringValue(*slm.Retention.ExpireAfter)
 		} else {
-			data.ExpireAfter = types.StringValue("")
+			data.ExpireAfter = types.StringNull()
 		}
 		if slm.Retention.MaxCount != nil {
 			data.MaxCount = types.Int64Value(int64(*slm.Retention.MaxCount))
@@ -69,7 +69,7 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			data.MinCount = types.Int64Null()
 		}
 	} else {
-		data.ExpireAfter = types.StringValue("")
+		data.ExpireAfter = types.StringNull()
 		data.MaxCount = types.Int64Null()
 		data.MinCount = types.Int64Null()
 	}
@@ -98,21 +98,29 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			data.Partial = types.BoolValue(false)
 		}
 
-		// Indices
-		indicesList, listDiags := types.ListValueFrom(ctx, types.StringType, c.Indices)
-		diags.Append(listDiags...)
-		if diags.HasError() {
-			return state, false, diags
+		// Indices: if API returned no indices and state has null, keep null to avoid plan mismatch
+		if len(c.Indices) == 0 && (state.Indices.IsNull() || state.Indices.IsUnknown()) {
+			data.Indices = types.ListNull(types.StringType)
+		} else {
+			indicesList, listDiags := types.ListValueFrom(ctx, types.StringType, c.Indices)
+			diags.Append(listDiags...)
+			if diags.HasError() {
+				return state, false, diags
+			}
+			data.Indices = indicesList
 		}
-		data.Indices = indicesList
 
-		// FeatureStates
-		featureStatesSet, setDiags := types.SetValueFrom(ctx, types.StringType, c.FeatureStates)
-		diags.Append(setDiags...)
-		if diags.HasError() {
-			return state, false, diags
+		// FeatureStates: if API returned none and state has null, keep null
+		if len(c.FeatureStates) == 0 && (state.FeatureStates.IsNull() || state.FeatureStates.IsUnknown()) {
+			data.FeatureStates = types.SetNull(types.StringType)
+		} else {
+			featureStatesSet, setDiags := types.SetValueFrom(ctx, types.StringType, c.FeatureStates)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return state, false, diags
+			}
+			data.FeatureStates = featureStatesSet
 		}
-		data.FeatureStates = featureStatesSet
 
 		// Metadata
 		if c.Metadata != nil {
@@ -132,19 +140,16 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			}
 			data.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
 		} else {
-			if state.Metadata.IsNull() {
-				data.Metadata = jsontypes.NewNormalizedNull()
-			} else {
-				data.Metadata = state.Metadata
-			}
+			// No metadata from API: always return null to avoid leaving unknown values
+			data.Metadata = jsontypes.NewNormalizedNull()
 		}
 	} else {
 		data.ExpandWildcards = types.StringValue(defaultExpandWildcards)
 		data.IncludeGlobalState = types.BoolValue(true)
 		data.IgnoreUnavailable = types.BoolValue(false)
 		data.Partial = types.BoolValue(false)
-		data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
-		data.FeatureStates, _ = types.SetValueFrom(ctx, types.StringType, []string{})
+		data.Indices = types.ListNull(types.StringType)
+		data.FeatureStates = types.SetNull(types.StringType)
 		data.Metadata = jsontypes.NewNormalizedNull()
 	}
 
