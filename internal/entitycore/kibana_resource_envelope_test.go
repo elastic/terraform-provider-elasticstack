@@ -264,3 +264,352 @@ func TestNewKibanaResource_Configure(t *testing.T) {
 		require.True(t, resp.Diagnostics.HasError())
 	})
 }
+
+// =============================================================================
+// Subtask 2.6: Create happy path
+// =============================================================================
+
+func TestNewKibanaResource_Create_happyPath(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := newTestKibanaResourceEnvelopeWithFactory(t, factory)
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testKibanaResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "default/my-resource", result.ID.ValueString())
+	require.Equal(t, "my-resource", result.Name.ValueString())
+	require.Equal(t, "default", result.SpaceID.ValueString())
+}
+
+// =============================================================================
+// Subtask 2.7: Create short-circuits
+// =============================================================================
+
+func TestNewKibanaResource_Create_shortCircuitSpaceIDUnknown(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaResourceModel{}, nil
+		},
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	require.False(t, createCalled, "create callback should not run when spaceID is unknown")
+}
+
+func TestNewKibanaResource_Create_shortCircuitSpaceIDNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaResourceModel{}, nil
+		},
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, nil))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	require.False(t, createCalled, "create callback should not run when spaceID is null")
+}
+
+func TestNewKibanaResource_Create_shortCircuitSpaceIDEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaResourceModel{}, nil
+		},
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, ""),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	require.False(t, createCalled, "create callback should not run when spaceID is empty")
+}
+
+func TestNewKibanaResource_Create_shortCircuitClientError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := nonNilTestFactory()
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaResourceModel{}, nil
+		},
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
+	require.False(t, createCalled, "create callback should not run when client resolution fails")
+}
+
+func TestNewKibanaResource_Create_shortCircuitCallbackError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			diags.AddError("create error", "something went wrong")
+			return testKibanaResourceModel{}, diags
+		},
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "create error")
+	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when create callback fails")
+}
+
+// =============================================================================
+// Subtask 2.8: Create with nil and placeholder write callbacks
+// =============================================================================
+
+func TestNewKibanaResource_Create_nilWriteCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var nilCreate KibanaCreateFunc[testKibanaResourceModel]
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		nilCreate,
+		testKibanaUpdateFuncFound,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Kibana envelope configuration error")
+}
+
+func TestNewKibanaResource_Create_placeholderCallbackError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createFn, updateFn := PlaceholderKibanaWriteCallbacks[testKibanaResourceModel]()
+	r := NewKibanaResource[testKibanaResourceModel](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncFound,
+		testKibanaDeleteFunc,
+		createFn,
+		updateFn,
+	)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	err0 := resp.Diagnostics.Errors()[0]
+	require.Equal(t, placeholderKibanaWriteCallbackSummary, err0.Summary())
+	require.Equal(t, placeholderKibanaWriteCallbackDetail, err0.Detail())
+}
+
+func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	t.Run("Create_precedesClientError", func(t *testing.T) {
+		t.Parallel()
+		var nilCreate KibanaCreateFunc[testKibanaResourceModel]
+		r := NewKibanaResource[testKibanaResourceModel](
+			ComponentKibana,
+			"test_entity",
+			getTestKibanaResourceSchema,
+			testKibanaReadFuncFound,
+			testKibanaDeleteFunc,
+			nilCreate,
+			testKibanaUpdateFuncFound,
+		)
+		r.client = nonNilTestFactory()
+
+		plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+		respState := tfsdk.State{
+			Raw:    tftypes.NewValue(testKibanaResourceObjectType(), nil),
+			Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		}
+		resp := resource.CreateResponse{State: respState}
+		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Kibana envelope configuration error")
+		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Provider not configured")
+	})
+
+	t.Run("Create_precedesInvalidSpaceID", func(t *testing.T) {
+		t.Parallel()
+		var nilCreate KibanaCreateFunc[testKibanaResourceModel]
+		r := NewKibanaResource[testKibanaResourceModel](
+			ComponentKibana,
+			"test_entity",
+			getTestKibanaResourceSchema,
+			testKibanaReadFuncFound,
+			testKibanaDeleteFunc,
+			nilCreate,
+			testKibanaUpdateFuncFound,
+		)
+		r.client = newTestConfiguredFactory(ctx, t)
+
+		objType := testKibanaResourceObjectType()
+		objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"name":              tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"space_id":          tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		})
+		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+		respState := tfsdk.State{
+			Raw:    tftypes.NewValue(objType, nil),
+			Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		}
+		resp := resource.CreateResponse{State: respState}
+		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Kibana envelope configuration error")
+		require.NotContains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	})
+}
