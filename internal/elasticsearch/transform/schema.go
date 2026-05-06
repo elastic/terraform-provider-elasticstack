@@ -94,6 +94,12 @@ func getSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.Expressions{
+						path.MatchRoot("pivot"),
+						path.MatchRoot("latest"),
+					}...),
+				},
 			},
 			"frequency": schema.StringAttribute{
 				MarkdownDescription: "The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.",
