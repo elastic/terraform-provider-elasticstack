@@ -31,6 +31,6 @@
 
 ## 5. Verification
 
-- [ ] 5.1 `make build` passes.
-- [ ] 5.2 `make lint` passes.
-- [ ] 5.3 `make check-openspec` passes with delta spec in this change.
+- [x] 5.1 `make build` passes.
+- [x] 5.2 `make lint` passes.
+- [x] 5.3 `make check-openspec` passes with delta spec in this change.
