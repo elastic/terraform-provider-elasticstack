@@ -6,10 +6,10 @@
 
 ## 2. ILM resource Delete handler
 
-- [ ] 2.1 Update `internal/elasticsearch/index/ilm/delete.go` to call `GetIndicesWithILMPolicy` before `DeleteIlm`.
-- [ ] 2.2 If indices match, call `ClearILMPolicyFromIndices`; surface any diagnostic and short-circuit if the clear fails.
-- [ ] 2.3 Then proceed with existing `DeleteIlm` call.
-- [ ] 2.4 Verify `go build ./internal/elasticsearch/index/ilm/...` and `go vet` pass.
+- [x] 2.1 Update `internal/elasticsearch/index/ilm/delete.go` to call `GetIndicesWithILMPolicy` before `DeleteIlm`.
+- [x] 2.2 If indices match, call `ClearILMPolicyFromIndices`; surface any diagnostic and short-circuit if the clear fails.
+- [x] 2.3 Then proceed with existing `DeleteIlm` call.
+- [x] 2.4 Verify `go build ./internal/elasticsearch/index/ilm/...` and `go vet` pass.
 
 ## 3. Acceptance test
 
