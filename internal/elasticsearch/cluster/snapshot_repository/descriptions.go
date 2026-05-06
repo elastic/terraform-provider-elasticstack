@@ -15,12 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster
+package snapshot_repository
 
 import _ "embed"
 
-//go:embed descriptions/settings_resource.md
-var settingsResourceDescription string
-
-//go:embed descriptions/snapshot_repository_location_mode.md
-var snapshotRepositoryLocationModeDescription string
+//go:embed descriptions/schema.md
+var schemaMarkdownDescription string

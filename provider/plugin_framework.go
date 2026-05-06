@@ -26,6 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/slm"
+	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
@@ -218,6 +220,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		slm.NewSlmResource,
+		snapshot_repository.NewSnapshotRepositoryResource,
 	}
 }
 

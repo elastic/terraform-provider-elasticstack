@@ -10,7 +10,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   name = "${var.name}-repo"
 
-  fs {
+  fs = {
     location                  = "/tmp/snapshots"
     compress                  = true
     max_restore_bytes_per_sec = "20mb"

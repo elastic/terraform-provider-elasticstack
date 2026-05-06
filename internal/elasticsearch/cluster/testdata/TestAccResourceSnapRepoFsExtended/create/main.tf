@@ -11,7 +11,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
   name   = var.name
   verify = false
 
-  fs {
+  fs = {
     location                   = "/tmp"
     compress                   = false
     chunk_size                 = "1gb"
