@@ -93,8 +93,8 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 			return nil, diags
 		}
 
-		if httpDiags := diagutil.CheckHTTPErrorFromFW(apiResp.HTTPResponse, "Failed to list APM source maps"); httpDiags.HasError() {
-			diags.Append(httpDiags...)
+		if apiResp.HTTPResponse.StatusCode >= 400 {
+			diags.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
 			return nil, diags
 		}
 

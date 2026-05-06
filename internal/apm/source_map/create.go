@@ -123,8 +123,8 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	if diags := diagutil.CheckHTTPErrorFromFW(apiResp.HTTPResponse, "Failed to upload APM source map"); diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	if apiResp.HTTPResponse.StatusCode >= 400 {
+		resp.Diagnostics.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
 		return
 	}
 

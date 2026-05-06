@@ -68,8 +68,8 @@ func (r *resourceSourceMap) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	if diags := diagutil.CheckHTTPErrorFromFW(apiResp.HTTPResponse, "Failed to delete APM source map"); diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	if apiResp.HTTPResponse.StatusCode >= 400 {
+		resp.Diagnostics.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
 		return
 	}
 
