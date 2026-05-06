@@ -33,7 +33,7 @@ import (
 const testAccApmSourceMapResourceName = "elasticstack_apm_source_map.test"
 
 // TestAccResourceApmSourceMap_json tests creating a source map using
-// sourcemap_json, asserts id is set and non-empty, and confirms clean destroy.
+// sourcemap.json, asserts id is set and non-empty, and confirms clean destroy.
 func TestAccResourceApmSourceMap_json(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
@@ -60,7 +60,7 @@ func TestAccResourceApmSourceMap_json(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_binary tests creating a source map using
-// sourcemap_binary (base64-encoded content) and asserts id is set and non-empty.
+// sourcemap.binary (base64-encoded content) and asserts id is set and non-empty.
 func TestAccResourceApmSourceMap_binary(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
@@ -128,7 +128,7 @@ func TestAccResourceApmSourceMap_import(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"sourcemap_json", "sourcemap_binary", "kibana_connection"},
+				ImportStateVerifyIgnore: []string{"sourcemap", "kibana_connection"},
 				ImportStateIdFunc:       testAccApmSourceMapCompositeImportID(resourceName),
 			},
 			// Step 3: import using just the artifact id (no space prefix) —
@@ -197,7 +197,7 @@ func TestAccResourceApmSourceMap_plainImport(t *testing.T) {
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"sourcemap_json", "sourcemap_binary", "kibana_connection"},
+				ImportStateVerifyIgnore:  []string{"sourcemap", "kibana_connection"},
 				ImportStateIdFunc:        testAccApmSourceMapPlainImportID(resourceName),
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {
@@ -246,7 +246,7 @@ func TestAccResourceApmSourceMap_space(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_validationNeitherSet verifies that applying a config
-// with neither sourcemap_json nor sourcemap_binary returns a validation diagnostic.
+// with none of sourcemap.json, sourcemap.binary, or sourcemap.file.path returns a validation diagnostic.
 func TestAccResourceApmSourceMap_validationNeitherSet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -261,7 +261,7 @@ func TestAccResourceApmSourceMap_validationNeitherSet(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_validationBothSet verifies that applying a config
-// with both sourcemap_json and sourcemap_binary returns a validation diagnostic.
+// with both sourcemap.json and sourcemap.binary returns a validation diagnostic.
 func TestAccResourceApmSourceMap_validationBothSet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -276,7 +276,7 @@ func TestAccResourceApmSourceMap_validationBothSet(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_validationEmptyString verifies that setting
-// sourcemap_json to an empty string triggers the LengthAtLeast validation.
+// sourcemap.json to an empty string triggers the LengthAtLeast validation.
 func TestAccResourceApmSourceMap_validationEmptyString(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -291,7 +291,7 @@ func TestAccResourceApmSourceMap_validationEmptyString(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_binaryInvalidBase64 verifies that setting
-// sourcemap_binary to a non-base64 string causes an error at apply time.
+// sourcemap.binary to a non-base64 string causes an error at apply time.
 func TestAccResourceApmSourceMap_binaryInvalidBase64(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

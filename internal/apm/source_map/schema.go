@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -63,30 +64,54 @@ func (r *resourceSourceMap) Schema(_ context.Context, _ resource.SchemaRequest, 
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"sourcemap_json": schema.StringAttribute{
-				Optional:            true,
-				Sensitive:           true,
-				MarkdownDescription: "The source map content as a JSON string. Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. The value is write-only and is not read back from the API.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+			"sourcemap": schema.SingleNestedAttribute{
+				Required:            true,
+				MarkdownDescription: "The source map content. Exactly one of `json`, `binary`, or `file.path` must be set.",
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(path.MatchRoot("sourcemap_binary")),
-					stringvalidator.LengthAtLeast(1),
-				},
-			},
-			"sourcemap_binary": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
-				MarkdownDescription: "The source map content as a base64-encoded string (standard encoding). " +
-					"Exactly one of `sourcemap_json` or `sourcemap_binary` must be set. " +
-					"The value is write-only and is not read back from the API.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(path.MatchRoot("sourcemap_json")),
-					stringvalidator.LengthAtLeast(1),
+				Attributes: map[string]schema.Attribute{
+					"json": schema.StringAttribute{
+						Optional:            true,
+						Sensitive:           true,
+						MarkdownDescription: "The source map content as a JSON string. Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.",
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(
+								path.MatchRelative().AtParent().AtName("binary"),
+								path.MatchRelative().AtParent().AtName("file").AtName("path"),
+							),
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"binary": schema.StringAttribute{
+						Optional:            true,
+						Sensitive:           true,
+						MarkdownDescription: "The source map content as a base64-encoded string (standard encoding). Exactly one of `json`, `binary`, or `file.path` must be set. The value is write-only and is not read back from the API.",
+						Validators: []validator.String{
+							stringvalidator.ExactlyOneOf(
+								path.MatchRelative().AtParent().AtName("json"),
+								path.MatchRelative().AtParent().AtName("file").AtName("path"),
+							),
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"file": schema.SingleNestedAttribute{
+						Optional:            true,
+						MarkdownDescription: "Upload a source map from a local file path.",
+						Attributes: map[string]schema.Attribute{
+							"path": schema.StringAttribute{
+								Required:            true,
+								MarkdownDescription: "Absolute or relative path to the source map file on the local filesystem.",
+							},
+							"checksum": schema.StringAttribute{
+								Computed:            true,
+								MarkdownDescription: "SHA256 hex digest of the uploaded sourcemap.",
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
+							},
+						},
+					},
 				},
 			},
 			"space_id": schema.StringAttribute{

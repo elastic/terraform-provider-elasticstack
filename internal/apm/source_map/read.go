@@ -20,12 +20,10 @@ package sourcemap
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const (
@@ -54,9 +52,6 @@ func (r *resourceSourceMap) Read(ctx context.Context, req resource.ReadRequest, 
 }
 
 // read is the internal read function shared by Read and Create.
-// It reads space_id from state and paginates through the source maps list to
-// find the artifact matching state.ID. Returns nil if not found (resource removed
-// from state), or the updated state if found.
 func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*SourceMap, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -79,63 +74,43 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 	perPage := float32(readPageSize)
 
 	for {
-		apiResp, apiErr := kibana.API.GetSourceMapsWithResponse(
-			ctx,
-			&kbapi.GetSourceMapsParams{
-				Page:              &page,
-				PerPage:           &perPage,
-				ElasticApiVersion: kbapi.GetSourceMapsParamsElasticApiVersionN20231031,
-			},
-			kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		)
-		if apiErr != nil {
-			diags.AddError("Failed to list APM source maps", apiErr.Error())
+		artifacts, lDiags := kibanaoapi.ListSourceMaps(ctx, kibana, spaceID, page, perPage)
+		diags.Append(lDiags...)
+		if diags.HasError() {
 			return nil, diags
 		}
 
-		if apiResp.HTTPResponse.StatusCode >= 400 {
-			diags.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
+		if artifacts == nil {
+			// Empty page — artifact not found.
 			return nil, diags
 		}
 
-		if apiResp.JSON200 == nil {
-			diags.AddError("Unexpected response from APM source map list", "Received HTTP 200 but response body could not be parsed as JSON.")
-			return nil, diags
-		}
-
-		if apiResp.JSON200.Artifacts == nil {
-			// Empty artifact list — artifact not found.
-			return nil, diags
-		}
-
-		artifacts := *apiResp.JSON200.Artifacts
-		for i := range artifacts {
-			artifact := &artifacts[i]
-			if artifact.Id == nil || *artifact.Id != targetID {
+		for _, artifact := range artifacts {
+			if artifact.ID != targetID {
 				continue
 			}
 
-			// Found the matching artifact — populate state from the response.
-			updated := *state // copy
-			updated.ID = typeutils.StringishPointerValue(artifact.Id)
-			if artifact.Body != nil {
-				updated.BundleFilepath = typeutils.StringishPointerValue(artifact.Body.BundleFilepath)
-				updated.ServiceName = typeutils.StringishPointerValue(artifact.Body.ServiceName)
-				updated.ServiceVersion = typeutils.StringishPointerValue(artifact.Body.ServiceVersion)
+			updated := *state // copy; preserves Sourcemap, SpaceID, KibanaConnection, etc.
+			updated.ID = types.StringValue(artifact.ID)
+			// Only update body-derived fields when the API returned them;
+			// a nil Body leaves these as empty strings in the artifact.
+			if artifact.BundleFilepath != "" {
+				updated.BundleFilepath = types.StringValue(artifact.BundleFilepath)
 			}
-			// space_id is preserved from state; the API does not return space metadata.
-			// sourcemap_json and sourcemap_binary are not repopulated; the API does not
-			// return the original uploaded content.
+			if artifact.ServiceName != "" {
+				updated.ServiceName = types.StringValue(artifact.ServiceName)
+			}
+			if artifact.ServiceVersion != "" {
+				updated.ServiceVersion = types.StringValue(artifact.ServiceVersion)
+			}
 			return &updated, diags
 		}
 
-		// If the page returned fewer items than perPage, we've read the last page.
 		if len(artifacts) < readPageSize {
 			break
 		}
 		page++
 	}
 
-	// Artifact not found — signal removal from state.
 	return nil, diags
 }

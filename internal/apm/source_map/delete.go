@@ -20,11 +20,8 @@ package sourcemap
 import (
 	"context"
 	"fmt"
-	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -51,25 +48,8 @@ func (r *resourceSourceMap) Delete(ctx context.Context, req resource.DeleteReque
 	artifactID := state.ID.ValueString()
 	spaceID := state.SpaceID.ValueString()
 
-	apiResp, err := kibana.API.DeleteSourceMapWithResponse(
-		ctx,
-		artifactID,
-		&kbapi.DeleteSourceMapParams{
-			ElasticApiVersion: kbapi.N20231031,
-		},
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete APM source map", err.Error())
-		return
-	}
-
-	if apiResp.HTTPResponse.StatusCode == http.StatusNotFound {
-		return
-	}
-
-	if apiResp.HTTPResponse.StatusCode >= 400 {
-		resp.Diagnostics.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
+	resp.Diagnostics.Append(kibanaoapi.DeleteSourceMap(ctx, kibana, spaceID, artifactID)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

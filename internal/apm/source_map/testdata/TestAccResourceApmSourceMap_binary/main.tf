@@ -13,8 +13,10 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_apm_source_map" "test" {
-  bundle_filepath  = "/static/js/test.min.js"
-  service_name     = var.service_name
-  service_version  = var.service_version
-  sourcemap_binary = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoidGVzdC5taW4uanMiLCJzb3VyY2VzIjpbInRlc3QuanMiXSwibWFwcGluZ3MiOiJBQUFBIn0="
+  bundle_filepath = "/static/js/test.min.js"
+  service_name    = var.service_name
+  service_version = var.service_version
+  sourcemap = {
+    binary = "eyJ2ZXJzaW9uIjozLCJmaWxlIjoidGVzdC5taW4uanMiLCJzb3VyY2VzIjpbInRlc3QuanMiXSwibWFwcGluZ3MiOiJBQUFBIn0="
+  }
 }

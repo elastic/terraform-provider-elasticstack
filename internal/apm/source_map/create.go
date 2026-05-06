@@ -18,15 +18,15 @@
 package sourcemap
 
 import (
-	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
-	"mime/multipart"
+	"io"
+	"os"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -51,85 +51,70 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	// Resolve the source map bytes from plan attributes.
+	sm := plan.Sourcemap
+	if sm == nil {
+		resp.Diagnostics.AddError("No source map content provided", "The sourcemap block is required.")
+		return
+	}
+
 	var sourcemapBytes []byte
+	var checksum string
+
 	switch {
-	case !plan.SourcemapJSON.IsNull() && !plan.SourcemapJSON.IsUnknown():
-		sourcemapBytes = []byte(plan.SourcemapJSON.ValueString())
-	case !plan.SourcemapBinary.IsNull() && !plan.SourcemapBinary.IsUnknown():
-		decoded, decErr := base64.StdEncoding.DecodeString(plan.SourcemapBinary.ValueString())
+	case !sm.JSON.IsNull() && !sm.JSON.IsUnknown():
+		sourcemapBytes = []byte(sm.JSON.ValueString())
+
+	case !sm.Binary.IsNull() && !sm.Binary.IsUnknown():
+		decoded, decErr := base64.StdEncoding.DecodeString(sm.Binary.ValueString())
 		if decErr != nil {
-			resp.Diagnostics.AddError("Failed to decode sourcemap_binary", fmt.Sprintf("base64 decoding failed: %s", decErr.Error()))
+			resp.Diagnostics.AddError("Failed to decode sourcemap binary", fmt.Sprintf("base64 decoding failed: %s", decErr.Error()))
 			return
 		}
 		sourcemapBytes = decoded
-	default:
-		// This should never be reached if ExactlyOneOf validation is working correctly.
-		resp.Diagnostics.AddError("No source map content provided", "Exactly one of sourcemap_json or sourcemap_binary must be set.")
-		return
-	}
 
-	// Build the multipart/form-data body.
-	var buf bytes.Buffer
-	mw := multipart.NewWriter(&buf)
-
-	for _, field := range []struct{ name, value string }{
-		{"bundle_filepath", plan.BundleFilepath.ValueString()},
-		{"service_name", plan.ServiceName.ValueString()},
-		{"service_version", plan.ServiceVersion.ValueString()},
-	} {
-		if writeErr := mw.WriteField(field.name, field.value); writeErr != nil {
-			resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("writing field %q: %s", field.name, writeErr.Error()))
+	case sm.File != nil && !sm.File.Path.IsNull() && !sm.File.Path.IsUnknown():
+		f, openErr := os.Open(sm.File.Path.ValueString())
+		if openErr != nil {
+			resp.Diagnostics.AddError("Failed to open source map file", openErr.Error())
 			return
 		}
-	}
+		defer f.Close()
+		h := sha256.New()
+		var buf []byte
+		raw, readErr := io.ReadAll(io.TeeReader(f, h))
+		if readErr != nil {
+			resp.Diagnostics.AddError("Failed to read source map file", readErr.Error())
+			return
+		}
+		buf = raw
+		sourcemapBytes = buf
+		checksum = hex.EncodeToString(h.Sum(nil))
 
-	// Write the sourcemap as a file part. Always use application/octet-stream
-	// so Kibana treats the content as a raw buffer rather than parsing it as JSON.
-	filePart, partErr := mw.CreateFormFile("sourcemap", "sourcemap.js.map")
-	if partErr != nil {
-		resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("creating file part: %s", partErr.Error()))
-		return
-	}
-	if _, writeErr := filePart.Write(sourcemapBytes); writeErr != nil {
-		resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("writing sourcemap bytes: %s", writeErr.Error()))
-		return
-	}
-	if closeErr := mw.Close(); closeErr != nil {
-		resp.Diagnostics.AddError("Failed to build multipart form", fmt.Sprintf("closing writer: %s", closeErr.Error()))
-		return
-	}
-
-	spaceID := plan.SpaceID.ValueString()
-
-	apiResp, err := kibana.API.UploadSourceMapWithBodyWithResponse(
-		ctx,
-		&kbapi.UploadSourceMapParams{
-			ElasticApiVersion: kbapi.UploadSourceMapParamsElasticApiVersionN20231031,
-		},
-		mw.FormDataContentType(),
-		&buf,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to upload APM source map", err.Error())
+	default:
+		resp.Diagnostics.AddError("No source map content provided", "Exactly one of sourcemap.json, sourcemap.binary, or sourcemap.file.path must be set.")
 		return
 	}
 
-	if apiResp.HTTPResponse.StatusCode >= 400 {
-		resp.Diagnostics.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
-		return
-	}
-
-	if apiResp.JSON200 == nil || apiResp.JSON200.Id == nil {
-		resp.Diagnostics.AddError("Unexpected response from APM source map upload", "Expected a non-nil id in the upload response.")
-		return
-	}
-
-	plan.ID = types.StringValue(*apiResp.JSON200.Id)
-
-	updatedState, diags := r.read(ctx, &plan)
+	artifactID, diags := kibanaoapi.UploadSourceMap(ctx, kibana, kibanaoapi.UploadSourceMapOptions{
+		SpaceID:        plan.SpaceID.ValueString(),
+		BundleFilepath: plan.BundleFilepath.ValueString(),
+		ServiceName:    plan.ServiceName.ValueString(),
+		ServiceVersion: plan.ServiceVersion.ValueString(),
+		SourcemapBytes: sourcemapBytes,
+	})
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.ID = types.StringValue(artifactID)
+
+	if checksum != "" && sm.File != nil {
+		sm.File.Checksum = types.StringValue(checksum)
+	}
+
+	updatedState, readDiags := r.read(ctx, &plan)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

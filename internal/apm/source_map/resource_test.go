@@ -124,7 +124,9 @@ resource "elasticstack_apm_source_map" "unit" {
   bundle_filepath = "` + bundleFilepath + `"
   service_name    = "` + serviceName + `"
   service_version = "` + serviceVersion + `"
-  sourcemap_json  = "` + jsonEscape(unitTestSourceMapJSON) + `"
+  sourcemap = {
+    json = "` + jsonEscape(unitTestSourceMapJSON) + `"
+  }
 }
 `
 }
@@ -141,10 +143,12 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_apm_source_map" "unit" {
-  bundle_filepath  = "` + bundleFilepath + `"
-  service_name     = "` + serviceName + `"
-  service_version  = "` + serviceVersion + `"
-  sourcemap_binary = "` + sourceMapBase64 + `"
+  bundle_filepath = "` + bundleFilepath + `"
+  service_name    = "` + serviceName + `"
+  service_version = "` + serviceVersion + `"
+  sourcemap = {
+    binary = "` + sourceMapBase64 + `"
+  }
 }
 `
 }

@@ -11,5 +11,7 @@ resource "elasticstack_apm_source_map" "test" {
   bundle_filepath = "/static/js/test.min.js"
   service_name    = var.service_name
   service_version = "1.1.0"
-  sourcemap_json  = "{\"version\":3,\"file\":\"test.min.js\",\"sources\":[\"test.js\"],\"mappings\":\"AAAA\"}"
+  sourcemap = {
+    json = "{\"version\":3,\"file\":\"test.min.js\",\"sources\":[\"test.js\"],\"mappings\":\"AAAA\"}"
+  }
 }

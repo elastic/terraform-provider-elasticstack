@@ -19,8 +19,8 @@ package sourcemap
 
 import (
 	"context"
-	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -64,18 +64,13 @@ func (r *resourceSourceMap) Update(_ context.Context, _ resource.UpdateRequest, 
 //   - "<space_id>/<artifact_id>" — sets space_id and id from the two parts.
 //   - "<artifact_id>"           — sets id only; space_id is left unset (default space).
 func (r *resourceSourceMap) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	importID := req.ID
-
-	before, after, ok := strings.Cut(importID, "/")
-	if !ok {
-		// Plain ID: no space prefix.
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importID)...)
+	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	if diags.HasError() {
+		// Plain ID (no slash) — set id only, space_id remains unset.
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 		return
 	}
 
-	spaceID := before
-	artifactID := after
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), artifactID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), compID.ClusterID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), compID.ResourceID)...)
 }

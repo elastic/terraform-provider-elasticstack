@@ -10,14 +10,20 @@ Define schema and behavior for the APM source map resource: API usage, identity/
 
 ```hcl
 resource "elasticstack_apm_source_map" "example" {
-  id               = <computed, string>   # Fleet artifact ID returned by the upload API
-  bundle_filepath  = <required, string>   # Absolute path of the final bundle in the web application
-  service_name     = <required, string>   # Service name the source map applies to
-  service_version  = <required, string>   # Service version the source map applies to
-  sourcemap_json   = <optional, sensitive, string>  # Source map content as a JSON string; mutually exclusive with sourcemap_binary
-  sourcemap_binary = <optional, sensitive, string>  # Source map content as a base64-encoded string; mutually exclusive with sourcemap_json
-  space_id         = <optional, string>   # Kibana space ID; omit or set to "default" for the default space
-  kibana_connection = <optional, block>   # Entity-local Kibana connection override
+  id              = <computed, string>   # Fleet artifact ID returned by the upload API
+  bundle_filepath = <required, string>   # Absolute path of the final bundle in the web application
+  service_name    = <required, string>   # Service name the source map applies to
+  service_version = <required, string>   # Service version the source map applies to
+  sourcemap {                            # Required nested block; exactly one of json, binary, or file.path must be set
+    json   = <optional, sensitive, string>  # Source map content as a JSON string; write-only
+    binary = <optional, sensitive, string>  # Source map content as a base64-encoded string; write-only
+    file {                               # Optional nested block for local file upload
+      path     = <required, string>      # Local filesystem path to the source map file
+      checksum = <computed, string>      # SHA256 hex digest of the uploaded file; computed on create
+    }
+  }
+  space_id          = <optional, string>   # Kibana space ID; omit or set to "default" for the default space
+  kibana_connection = <optional, block>    # Entity-local Kibana connection override
 }
 ```
 
@@ -41,7 +47,7 @@ The resource SHALL use `UploadSourceMapWithBodyWithResponse` to upload a new sou
 
 ### Requirement: Kibana client usage (REQ-002)
 
-The resource SHALL expose an optional entity-local `kibana_connection` block using the shared Plugin Framework Kibana connection schema helper. The resource SHALL obtain its Kibana OpenAPI client through typed scoped-client resolution from the provider-configured `*clients.ProviderClientFactory`. When `kibana_connection` is absent, the resource SHALL resolve the provider-default `*clients.KibanaScopedClient`. When `kibana_connection` is configured, the resource SHALL resolve a `*clients.KibanaScopedClient` rebuilt from that scoped connection. The resource SHALL use `GetKibanaOapiClient()` on the resolved `*clients.KibanaScopedClient` for all API operations. The resource SHALL use the Elastic API version `2023-10-31` in all API requests.
+The resource SHALL expose an optional entity-local `kibana_connection` block using the shared Plugin Framework Kibana connection schema helper. The resource SHALL obtain its Kibana OpenAPI client through typed scoped-client resolution from the provider-configured `*clients.ProviderClientFactory`. When `kibana_connection` is absent, the resource SHALL resolve the provider-default `*clients.KibanaScopedClient`. When `kibana_connection` is configured, the resource SHALL resolve a `*clients.KibanaScopedClient` rebuilt from that scoped connection. The resource SHALL use `GetKibanaOapiClient()` on the resolved `*clients.KibanaScopedClient` for all API operations. All API calls (upload, list, delete) SHALL be delegated to wrapper functions in `internal/clients/kibanaoapi` rather than called inline in the resource CRUD methods. The resource SHALL use the Elastic API version `2023-10-31` in all API requests.
 
 #### Scenario: Resource resolves typed Kibana client from provider defaults
 
@@ -78,23 +84,29 @@ The resource SHALL expose a computed `id` attribute that is populated from the `
 #### Scenario: Attributes not recovered on import
 
 - WHEN any import completes
-- THEN `sourcemap_json`, `sourcemap_binary`, and `kibana_connection` SHALL NOT be reconstructed from the API response
+- THEN `sourcemap.json`, `sourcemap.binary`, `sourcemap.file.path`, and `kibana_connection` SHALL NOT be reconstructed from the API response
 
 ### Requirement: Create — multipart upload (REQ-004)
 
-On create, the resource SHALL read the plan and construct a multipart/form-data request with fields `bundle_filepath`, `service_name`, `service_version`, and `sourcemap` (file field). When `sourcemap_json` is set, its string value SHALL be used directly as the `sourcemap` file content. When `sourcemap_binary` is set, its value SHALL be decoded from base64 standard encoding and the resulting bytes SHALL be used as the `sourcemap` file content. After a successful upload, the resource SHALL extract `id` from the `APMUIUploadSourceMapsResponse`, store it in state, then perform a read to confirm the artifact is reachable. If the upload response contains a nil `id`, the resource SHALL return an error diagnostic.
+On create, the resource SHALL read the plan and construct a multipart/form-data request with fields `bundle_filepath`, `service_name`, `service_version`, and `sourcemap` (file field). The API call shall be delegated to `kibanaoapi.UploadSourceMap`. When `sourcemap.json` is set, its string value SHALL be used directly as the `sourcemap` file content. When `sourcemap.binary` is set, its value SHALL be decoded from base64 standard encoding and the resulting bytes SHALL be used as the `sourcemap` file content. When `sourcemap.file.path` is set, the file at that path SHALL be opened and its bytes used as the `sourcemap` file content; the SHA256 hex digest of those bytes SHALL be computed and stored in `sourcemap.file.checksum`. After a successful upload, the resource SHALL extract `id` from the `APMUIUploadSourceMapsResponse`, store it in state, then perform a read to confirm the artifact is reachable. If the upload response contains a nil `id`, the resource SHALL return an error diagnostic.
 
 #### Scenario: Create with JSON source map
 
-- GIVEN `sourcemap_json` is set to a valid JSON source map string
+- GIVEN `sourcemap.json` is set to a valid JSON source map string
 - WHEN create runs
 - THEN the upload request SHALL include the JSON string as the `sourcemap` file field and state SHALL have a non-empty `id`
 
 #### Scenario: Create with binary source map
 
-- GIVEN `sourcemap_binary` is set to a valid base64-encoded source map
+- GIVEN `sourcemap.binary` is set to a valid base64-encoded source map
 - WHEN create runs
 - THEN the upload request SHALL include the decoded bytes as the `sourcemap` file field and state SHALL have a non-empty `id`
+
+#### Scenario: Create with file path source map
+
+- GIVEN `sourcemap.file.path` is set to a valid local file path
+- WHEN create runs
+- THEN the upload request SHALL include the file bytes as the `sourcemap` file field, state SHALL have a non-empty `id`, and `sourcemap.file.checksum` SHALL contain the SHA256 hex digest of the file bytes
 
 #### Scenario: Nil id in upload response
 
@@ -104,7 +116,7 @@ On create, the resource SHALL read the plan and construct a multipart/form-data 
 
 ### Requirement: Read — paginated list search (REQ-005)
 
-On read, the resource SHALL read `space_id` from state (not plan) to construct the space-aware API path, preserving the space in which the artifact was created. The resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL refresh from the read response every non-sensitive attribute that the API returns for the matching artifact, including `id`, `bundle_filepath`, `service_name`, and `service_version`; `space_id` SHALL be preserved from state since the API does not return space metadata. The resource SHALL NOT attempt to reconstruct or refresh `sourcemap_json` or `sourcemap_binary` from the read response because the API does not return the original uploaded source map content. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
+On read, the resource SHALL read `space_id` from state (not plan) to construct the space-aware API path, preserving the space in which the artifact was created. The resource SHALL call `GetSourceMapsWithResponse` iterating pages until the artifact with `id` matching the state value is found or all pages are exhausted. The resource SHALL use `page` and `perPage` parameters to paginate. If the artifact is found, the resource SHALL refresh from the read response every non-sensitive attribute that the API returns for the matching artifact, including `id`, `bundle_filepath`, `service_name`, and `service_version`; `space_id` SHALL be preserved from state since the API does not return space metadata. The resource SHALL NOT attempt to reconstruct or refresh `sourcemap.json`, `sourcemap.binary`, or `sourcemap.file.path` from the read response because the API does not return the original uploaded source map content. The `sourcemap` block SHALL be preserved from state across reads. If no artifact matches the state `id`, the resource SHALL remove itself from state without returning an error.
 
 #### Scenario: Artifact found on read
 
@@ -117,7 +129,7 @@ On read, the resource SHALL read `space_id` from state (not plan) to construct t
 - GIVEN a resource is imported with only an `id` in state
 - WHEN read runs and finds the matching source map in Kibana
 - THEN the resource SHALL populate `bundle_filepath`, `service_name`, and `service_version` from the read response
-- AND the resource SHALL NOT populate `sourcemap_json` or `sourcemap_binary`
+- AND the resource SHALL NOT populate `sourcemap.json`, `sourcemap.binary`, or `sourcemap.file.path`
 
 #### Scenario: Artifact not found removes from state
 
@@ -149,17 +161,17 @@ On delete, the resource SHALL call `DeleteSourceMapWithResponse` with the state 
 
 ### Requirement: Validation — exactly one source map input (REQ-007)
 
-Exactly one of `sourcemap_json` or `sourcemap_binary` SHALL be set. Setting both or neither SHALL be an invalid configuration. The provider SHALL enforce this constraint at plan time using `ExactlyOneOf` (or equivalent) on both attributes.
+Exactly one of `sourcemap.json`, `sourcemap.binary`, or `sourcemap.file.path` SHALL be set. Setting more than one or setting none SHALL be an invalid configuration. The provider SHALL enforce this constraint at plan time using `ExactlyOneOf` on the `json` and `binary` attributes within the `sourcemap` block.
 
 #### Scenario: Neither source map attribute set
 
-- GIVEN a configuration where neither `sourcemap_json` nor `sourcemap_binary` is set
+- GIVEN a configuration with a `sourcemap` block where none of `json`, `binary`, or `file.path` is set
 - WHEN Terraform validates configuration
 - THEN the provider SHALL return a validation diagnostic
 
 #### Scenario: Both source map attributes set
 
-- GIVEN a configuration where both `sourcemap_json` and `sourcemap_binary` are set
+- GIVEN a configuration where both `sourcemap.json` and `sourcemap.binary` are set
 - WHEN Terraform validates configuration
 - THEN the provider SHALL return a validation diagnostic
 
@@ -193,7 +205,7 @@ The resource SHALL accept an optional `space_id` attribute (string, `RequireRepl
 
 ### Requirement: RequireReplace on write attributes (REQ-008)
 
-The attributes `bundle_filepath`, `service_name`, `service_version`, `sourcemap_json`, `sourcemap_binary`, and `space_id` SHALL each use the `RequireReplace` plan modifier so that any change to these attributes triggers a destroy-then-create cycle.
+The attributes `bundle_filepath`, `service_name`, `service_version`, `space_id`, and the `sourcemap` nested attribute SHALL each use the `RequireReplace` plan modifier so that any change to these attributes triggers a destroy-then-create cycle. The `sourcemap` block uses an object-level `RequiresReplace` modifier.
 
 #### Scenario: Change in service_version triggers replacement
 
@@ -205,10 +217,10 @@ The attributes `bundle_filepath`, `service_name`, `service_version`, `sourcemap_
 
 The acceptance test suite SHALL include:
 
-1. A test that creates a source map using `sourcemap_json` with a minimal but valid source map JSON, asserts `id` is non-empty after apply, and confirms the resource is destroyed cleanly on `terraform destroy`.
-2. A test that creates a source map using `sourcemap_binary` (base64-encoded minimal source map), asserts `id` is non-empty after apply.
+1. A test that creates a source map using `sourcemap.json` with a minimal but valid source map JSON, asserts `id` is non-empty after apply, and confirms the resource is destroyed cleanly on `terraform destroy`.
+2. A test that creates a source map using `sourcemap.binary` (base64-encoded minimal source map), asserts `id` is non-empty after apply.
 3. A test that imports an existing source map artifact by composite ID `<space_id>/<id>` and asserts that `space_id`, `id`, `bundle_filepath`, `service_name`, and `service_version` are correctly populated in state after import.
-4. A test that validates the `ExactlyOneOf` constraint (REQ-007): verifies that a configuration with neither `sourcemap_json` nor `sourcemap_binary` returns a validation diagnostic, and a configuration with both returns a validation diagnostic (using `ExpectError`).
+4. A test that validates the `ExactlyOneOf` constraint (REQ-007): verifies that a configuration with none of `sourcemap.json`, `sourcemap.binary`, or `sourcemap.file.path` returns a validation diagnostic, and a configuration with both `sourcemap.json` and `sourcemap.binary` returns a validation diagnostic (using `ExpectError`).
 5. A test that validates `RequireReplace` semantics (REQ-008): verifies that changing `service_version` (or any other write attribute) results in a destroy-before-create replacement plan action (using `plancheck.ExpectResourceAction` with `plancheck.ResourceActionDestroyBeforeCreate`).
 6. A test that creates a source map with a non-default `space_id`, asserts the resource is created and readable within that space, and confirms deletion removes it from that space.
 
