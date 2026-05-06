@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -30,26 +29,9 @@ import (
 func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, plan, _ Model) (Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	serverFlavor, sdkDiags := client.ServerFlavor(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	diags.Append(validateMaintenanceWindowServer(serverVersion, serverFlavor)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		diags.AddError(err.Error(), "")
+		diags.AddError("Unable to get Kibana client", err.Error())
 		return Model{}, diags
 	}
 

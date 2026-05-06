@@ -1749,7 +1749,7 @@ func TestNewKibanaResource_Delete_nilDeleteCallback(t *testing.T) {
 // Version requirements
 // =============================================================================
 
-// testKibanaResourceModelWithVersionReqs implements KibanaResourceWithVersionRequirements
+// testKibanaResourceModelWithVersionReqs implements WithVersionRequirements
 // and always returns error diagnostics from GetVersionRequirements.
 type testKibanaResourceModelWithVersionReqs struct {
 	ID               types.String `tfsdk:"id"`
@@ -1770,13 +1770,13 @@ func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]DataS
 	}
 }
 
-func TestKibanaResourceWithVersionRequirements_pointerAssertionTrue(t *testing.T) {
+func TestWithVersionRequirements_resourcePointerAssertionTrue(t *testing.T) {
 	t.Parallel()
 	var m testKibanaResourceModelWithVersionReqs
-	_, ok := any(m).(KibanaResourceWithVersionRequirements)
+	_, ok := any(m).(WithVersionRequirements)
 	require.False(t, ok, "value testKibanaResourceModelWithVersionReqs must not satisfy interface")
-	_, ok = any(&m).(KibanaResourceWithVersionRequirements)
-	require.True(t, ok, "*testKibanaResourceModelWithVersionReqs must satisfy KibanaResourceWithVersionRequirements")
+	_, ok = any(&m).(WithVersionRequirements)
+	require.True(t, ok, "*testKibanaResourceModelWithVersionReqs must satisfy WithVersionRequirements")
 }
 
 func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {

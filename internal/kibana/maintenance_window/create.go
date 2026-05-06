@@ -29,7 +29,6 @@ import (
 func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan Model) (Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Generate API request body from plan
 	body, bodyDiags := plan.toAPICreateRequest(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
@@ -38,7 +37,7 @@ func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		diags.AddError(err.Error(), "")
+		diags.AddError("Unable to get Kibana client", err.Error())
 		return Model{}, diags
 	}
 

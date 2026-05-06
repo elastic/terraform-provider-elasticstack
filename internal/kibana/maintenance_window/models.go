@@ -31,13 +31,13 @@ import (
 )
 
 type Model struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	Title            types.String `tfsdk:"title"`
-	Enabled          types.Bool   `tfsdk:"enabled"`
-	CustomSchedule   Schedule     `tfsdk:"custom_schedule"`
-	Scope            *Scope       `tfsdk:"scope"`
+	entitycore.KibanaConnectionField
+	ID             types.String `tfsdk:"id"`
+	SpaceID        types.String `tfsdk:"space_id"`
+	Title          types.String `tfsdk:"title"`
+	Enabled        types.Bool   `tfsdk:"enabled"`
+	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
+	Scope          *Scope       `tfsdk:"scope"`
 }
 
 type Scope struct {
@@ -66,16 +66,15 @@ type ScheduleRecurring struct {
 
 /* INTERFACE METHODS */
 
-func (m Model) GetID() types.String             { return m.ID }
-func (m Model) GetResourceID() types.String     { return m.ID }
-func (m Model) GetSpaceID() types.String        { return m.SpaceID }
-func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m Model) GetID() types.String         { return m.ID }
+func (m Model) GetResourceID() types.String { return m.ID }
+func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 
 // GetVersionRequirements returns the minimum Kibana version required for
 // maintenance windows. This satisfies the optional
-// entitycore.KibanaResourceWithVersionRequirements interface, allowing the
+// entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
 func (m Model) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {

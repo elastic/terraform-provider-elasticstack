@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -42,15 +41,6 @@ type KibanaResourceModel interface {
 	GetResourceID() types.String
 	GetSpaceID() types.String
 	GetKibanaConnection() types.List
-}
-
-// KibanaResourceWithVersionRequirements is an optional interface that
-// Kibana resource models may implement to declare server version
-// requirements. When a decoded model satisfies this interface, the generic
-// Kibana resource envelope evaluates the requirements after scoped client
-// resolution and before invoking the concrete lifecycle callback.
-type KibanaResourceWithVersionRequirements interface {
-	GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics)
 }
 
 type kibanaReadFunc[T KibanaResourceModel] func(
@@ -220,7 +210,7 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	if vDiags := r.enforceVersionRequirements(ctx, client, plan); vDiags.HasError() {
+	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -269,7 +259,7 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	if vDiags := r.enforceVersionRequirements(ctx, client, model); vDiags.HasError() {
+	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -326,7 +316,7 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	if vDiags := r.enforceVersionRequirements(ctx, client, plan); vDiags.HasError() {
+	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -373,32 +363,6 @@ func (r *KibanaResource[T]) Delete(ctx context.Context, req resource.DeleteReque
 	}
 
 	resp.Diagnostics.Append(r.deleteFunc(ctx, client, resourceID, spaceID, model)...)
-}
-
-// enforceVersionRequirements checks whether the model implements
-// KibanaResourceWithVersionRequirements and, if so, evaluates each
-// requirement against the scoped client. It returns any diagnostics produced.
-func (r *KibanaResource[T]) enforceVersionRequirements(ctx context.Context, client *clients.KibanaScopedClient, model T) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if versionModel, ok := any(&model).(KibanaResourceWithVersionRequirements); ok {
-		reqs, vDiags := versionModel.GetVersionRequirements()
-		diags.Append(vDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		for _, vReq := range reqs {
-			supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
-			diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			if diags.HasError() {
-				return diags
-			}
-			if !supported {
-				diags.AddError("Unsupported server version", vReq.ErrorMessage)
-				return diags
-			}
-		}
-	}
-	return diags
 }
 
 var (

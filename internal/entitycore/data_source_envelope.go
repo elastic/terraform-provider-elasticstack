@@ -23,7 +23,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -33,8 +32,8 @@ import (
 )
 
 // KibanaConnectionField is an embeddable struct that provides the
-// kibana_connection block field for data source models used with
-// [NewKibanaDataSource].
+// kibana_connection block field for Kibana entity models used with
+// [NewKibanaDataSource] or [NewKibanaResource].
 type KibanaConnectionField struct {
 	KibanaConnection types.List `tfsdk:"kibana_connection"`
 }
@@ -81,15 +80,6 @@ type DataSourceVersionRequirement struct {
 	// "Unsupported server version" diagnostic when the server does not
 	// satisfy MinVersion.
 	ErrorMessage string
-}
-
-// KibanaDataSourceWithVersionRequirements is an optional interface that
-// Kibana data source models may implement to declare pre-read server version
-// requirements. When a decoded model satisfies this interface, the generic
-// Kibana data source envelope evaluates the requirements after scoped client
-// resolution and before invoking the concrete read function.
-type KibanaDataSourceWithVersionRequirements interface {
-	GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics)
 }
 
 // genericKibanaDataSource implements [datasource.DataSource] and
@@ -235,26 +225,9 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	// If the model implements the optional version-requirements interface,
-	// evaluate each requirement before invoking the entity read function.
-	if versionModel, ok := any(&model).(KibanaDataSourceWithVersionRequirements); ok {
-		reqs, vDiags := versionModel.GetVersionRequirements()
-		resp.Diagnostics.Append(vDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		for _, vReq := range reqs {
-			supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
-			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			if !supported {
-				resp.Diagnostics.AddError("Unsupported server version", vReq.ErrorMessage)
-				return
-			}
-		}
+	resp.Diagnostics.Append(enforceVersionRequirements(ctx, client, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	result, diags := d.readFunc(ctx, client, model)

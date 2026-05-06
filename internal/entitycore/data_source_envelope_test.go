@@ -422,7 +422,7 @@ func buildReadRequestForSchema(schema dsschema.Schema) datasource.ReadRequest {
 // =============================================================================
 
 // modelNoVersionReqs is an alias for testModel to make test intent clearer.
-// It does NOT implement KibanaDataSourceWithVersionRequirements.
+// It does NOT implement WithVersionRequirements.
 // (reuses the existing testModel type)
 
 // modelWithVersionReqsDiagError always returns an error diagnostic from
@@ -491,19 +491,19 @@ func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionReq
 
 // TestNewKibanaDataSource_noVersionReqs_typeAssertionFalse confirms that the
 // standard testModel (no version-requirements interface) does NOT satisfy
-// KibanaDataSourceWithVersionRequirements for either value or pointer forms,
+// WithVersionRequirements for either value or pointer forms,
 // so the envelope correctly skips the version-check branch.
 func TestNewKibanaDataSource_noVersionReqs_typeAssertionFalse(t *testing.T) {
 	t.Parallel()
 	var m testModel
-	_, ok := any(m).(KibanaDataSourceWithVersionRequirements)
-	require.False(t, ok, "value testModel must not satisfy KibanaDataSourceWithVersionRequirements")
-	_, ok = any(&m).(KibanaDataSourceWithVersionRequirements)
-	require.False(t, ok, "*testModel must not satisfy KibanaDataSourceWithVersionRequirements")
+	_, ok := any(m).(WithVersionRequirements)
+	require.False(t, ok, "value testModel must not satisfy WithVersionRequirements")
+	_, ok = any(&m).(WithVersionRequirements)
+	require.False(t, ok, "*testModel must not satisfy WithVersionRequirements")
 }
 
 // TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked proves that when a
-// model does NOT implement KibanaDataSourceWithVersionRequirements the envelope
+// model does NOT implement WithVersionRequirements the envelope
 // calls readFunc and persists state normally.
 //
 // Scenario: Model without version requirements reads normally.
@@ -557,18 +557,18 @@ func TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 // Subtask 2.2: model WITH version requirements
 // =============================================================================
 
-// TestKibanaDataSourceWithVersionRequirements_pointerAssertionTrue confirms that
+// TestWithVersionRequirements_dataSourcePointerAssertionTrue confirms that
 // a model implementing GetVersionRequirements on its pointer receiver satisfies
 // the interface after the any(&model) cast used inside the envelope.
-func TestKibanaDataSourceWithVersionRequirements_pointerAssertionTrue(t *testing.T) {
+func TestWithVersionRequirements_dataSourcePointerAssertionTrue(t *testing.T) {
 	t.Parallel()
 	var m modelWithVersionReqsDiagError
 	// Value form must NOT satisfy the interface (method on pointer receiver).
-	_, ok := any(m).(KibanaDataSourceWithVersionRequirements)
+	_, ok := any(m).(WithVersionRequirements)
 	require.False(t, ok, "value modelWithVersionReqsDiagError must not satisfy the interface")
 	// Pointer form MUST satisfy it — this matches any(&model) in the envelope.
-	_, ok = any(&m).(KibanaDataSourceWithVersionRequirements)
-	require.True(t, ok, "*modelWithVersionReqsDiagError must satisfy KibanaDataSourceWithVersionRequirements")
+	_, ok = any(&m).(WithVersionRequirements)
+	require.True(t, ok, "*modelWithVersionReqsDiagError must satisfy WithVersionRequirements")
 }
 
 // TestKibanaDataSource_Read_versionReqDiagsStopRead exercises the full Read

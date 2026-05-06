@@ -229,7 +229,7 @@ If `enabled` is omitted, the resource SHALL default it to `false`.
 |------|---------------|
 | Schema | `internal/kibana/maintenance_window/schema.go` |
 | Metadata / Configure / Import | `internal/kibana/maintenance_window/resource.go` |
-| Version compatibility | `internal/kibana/maintenance_window/version_utils.go` |
+| Version compatibility | `internal/kibana/maintenance_window/models.go`, `internal/entitycore/kibana_resource_envelope.go` |
 | CRUD orchestration | `internal/kibana/maintenance_window/create.go`, `internal/kibana/maintenance_window/read.go`, `internal/kibana/maintenance_window/update.go`, `internal/kibana/maintenance_window/delete.go` |
 | Model mapping | `internal/kibana/maintenance_window/models.go` |
 | Response types | `internal/kibana/maintenance_window/response_types.go` |

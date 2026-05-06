@@ -39,16 +39,16 @@ const (
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
-	ID               types.String        `tfsdk:"id"`
-	KibanaConnection types.List          `tfsdk:"kibana_connection"`
-	SpaceID          types.String        `tfsdk:"space_id"`
-	Name             types.String        `tfsdk:"name"`
-	Description      types.String        `tfsdk:"description"`
-	WiredConfig      *wiredConfigModel   `tfsdk:"wired_config"`
-	ClassicConfig    *classicConfigModel `tfsdk:"classic_config"`
-	QueryConfig      *queryConfigModel   `tfsdk:"query_config"`
-	Dashboards       types.List          `tfsdk:"dashboards"`
-	Queries          []streamQueryModel  `tfsdk:"queries"`
+	entitycore.KibanaConnectionField
+	ID            types.String        `tfsdk:"id"`
+	SpaceID       types.String        `tfsdk:"space_id"`
+	Name          types.String        `tfsdk:"name"`
+	Description   types.String        `tfsdk:"description"`
+	WiredConfig   *wiredConfigModel   `tfsdk:"wired_config"`
+	ClassicConfig *classicConfigModel `tfsdk:"classic_config"`
+	QueryConfig   *queryConfigModel   `tfsdk:"query_config"`
+	Dashboards    types.List          `tfsdk:"dashboards"`
+	Queries       []streamQueryModel  `tfsdk:"queries"`
 }
 
 // streamQueryModel is the Terraform model for an attached ES|QL query.
@@ -61,16 +61,15 @@ type streamQueryModel struct {
 	Evidence      types.List    `tfsdk:"evidence"`
 }
 
-func (m streamModel) GetID() types.String             { return m.ID }
-func (m streamModel) GetResourceID() types.String     { return m.Name }
-func (m streamModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m streamModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m streamModel) GetID() types.String         { return m.ID }
+func (m streamModel) GetResourceID() types.String { return m.Name }
+func (m streamModel) GetSpaceID() types.String    { return m.SpaceID }
 
 var streamsMinVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 // GetVersionRequirements returns the minimum Kibana version required for
 // Streams. This satisfies the optional
-// entitycore.KibanaResourceWithVersionRequirements interface, allowing the
+// entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
 func (m streamModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
@@ -172,6 +171,7 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagnostics) kibanaoapi.StreamUpsertRequest {
 	// Initialise all required array fields as empty slices, not nil.
 	// The API rejects requests where these are absent or null.
+	streamType := m.streamType()
 	req := kibanaoapi.StreamUpsertRequest{
 		Dashboards: []string{},
 		Rules:      []string{},
@@ -180,11 +180,11 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 
 	// Build stream definition
 	req.Stream = kibanaoapi.StreamDefinition{
-		Type:        m.streamType(),
+		Type:        streamType,
 		Description: m.Description.ValueString(),
 	}
 
-	switch m.streamType() {
+	switch streamType {
 	case streamTypeWired:
 		req.Stream.Ingest = m.WiredConfig.toAPIIngest(diags)
 	case streamTypeClassic:

@@ -30,7 +30,7 @@ func deleteMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		diags.AddError(err.Error(), "")
+		diags.AddError("Unable to get Kibana client", err.Error())
 		return diags
 	}
 
