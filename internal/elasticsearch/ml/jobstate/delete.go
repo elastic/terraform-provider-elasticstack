@@ -21,11 +21,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+// noopDeleteMLJobState is the envelope delete callback. It is never invoked
+// because the concrete Delete method below shadows it, but a non-nil callback
+// is required by NewElasticsearchResource.
+func noopDeleteMLJobState(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ MLJobStateData) diag.Diagnostics {
+	return nil
+}
 
 func (r *mlJobStateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// ML job state resource only manages the state, not the job itself.

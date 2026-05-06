@@ -21,11 +21,57 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+// deleteMLDatafeedState is the envelope delete callback and the single
+// implementation of conditional-stop behavior. It stops the datafeed if it is
+// currently started, then returns without error so the envelope removes the
+// resource from state.
+func deleteMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data MLDatafeedStateData) diag.Diagnostics {
+	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, resourceID)
+	if fwDiags.HasError() {
+		return fwDiags
+	}
+
+	if currentState == nil {
+		// Datafeed already doesn't exist, nothing to do
+		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s not found during delete", resourceID))
+		return nil
+	}
+
+	// If the datafeed is started, stop it when deleting the resource
+	if *currentState == datafeed.StateStarted {
+		tflog.Info(ctx, fmt.Sprintf("Stopping ML datafeed %s during delete", resourceID))
+
+		// Parse timeout duration
+		timeout, parseErrs := data.Timeout.Parse()
+		if parseErrs.HasError() {
+			return parseErrs
+		}
+
+		force := data.Force.ValueBool()
+		fwDiags = elasticsearch.StopDatafeed(ctx, client, resourceID, force, timeout)
+		if fwDiags.HasError() {
+			return fwDiags
+		}
+
+		// Wait for the datafeed to stop
+		_, diags := datafeed.WaitForDatafeedState(ctx, client, resourceID, datafeed.StateStopped)
+		if diags.HasError() {
+			return diags
+		}
+
+		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully stopped during delete", resourceID))
+	}
+
+	return nil
+}
 
 func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data MLDatafeedStateData
@@ -41,44 +87,5 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	datafeedID := data.DatafeedID.ValueString()
-	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, datafeedID)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if currentState == nil {
-		// Datafeed already doesn't exist, nothing to do
-		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s not found during delete", datafeedID))
-		return
-	}
-
-	// If the datafeed is started, stop it when deleting the resource
-	if *currentState == datafeed.StateStarted {
-		tflog.Info(ctx, fmt.Sprintf("Stopping ML datafeed %s during delete", datafeedID))
-
-		// Parse timeout duration
-		timeout, parseErrs := data.Timeout.Parse()
-		resp.Diagnostics.Append(parseErrs...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		force := data.Force.ValueBool()
-		fwDiags = elasticsearch.StopDatafeed(ctx, client, datafeedID, force, timeout)
-		resp.Diagnostics.Append(fwDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		// Wait for the datafeed to stop
-		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, datafeed.StateStopped)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully stopped during delete", datafeedID))
-	}
+	resp.Diagnostics.Append(deleteMLDatafeedState(ctx, client, data.DatafeedID.ValueString(), data)...)
 }
