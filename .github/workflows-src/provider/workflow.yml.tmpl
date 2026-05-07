@@ -33,9 +33,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version: "24"
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
@@ -73,9 +70,6 @@ jobs:
         with:
           terraform_version: ${{ steps.terraform-version.outputs.version }}
           terraform_wrapper: false
-
-      - name: Install Node dependencies
-        run: npm ci
 
       - name: Lint
         run: make check-lint
