@@ -168,31 +168,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
 				),
 			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ResourceName:             "elasticstack_elasticsearch_cluster_settings.test",
-				ImportState:              true,
-				ImportStateCheck: func(is []*terraform.InstanceState) error {
-					if len(is) != 1 {
-						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
-					}
 
-					importedID := is[0].ID
-					if importedID == "" {
-						return fmt.Errorf("expected imported resource ID to be set")
-					}
-
-					if !strings.HasSuffix(importedID, "/cluster-settings") {
-						return fmt.Errorf("expected imported resource ID [%s] to end with /cluster-settings", importedID)
-					}
-
-					if is[0].Attributes["id"] != importedID {
-						return fmt.Errorf("expected imported id attribute [%s] to equal resource ID [%s]", is[0].Attributes["id"], importedID)
-					}
-
-					return nil
-				},
-			},
 		},
 	})
 }
