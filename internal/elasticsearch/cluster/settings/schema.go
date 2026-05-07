@@ -47,11 +47,13 @@ func getSchema() schema.Schema {
 				"value": schema.StringAttribute{
 					MarkdownDescription: "The value of the setting to set and track.",
 					Optional:            true,
+					Computed:            true,
 					Default:             stringdefault.StaticString(""),
 				},
 				"value_list": schema.ListAttribute{
 					MarkdownDescription: "The list of values to be set for the key, where the list is required.",
 					Optional:            true,
+					Computed:            true,
 					ElementType:         types.StringType,
 					Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 				},
