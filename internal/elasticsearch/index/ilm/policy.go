@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -54,9 +55,11 @@ func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Ver
 func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &tfModel{
-		ID:                      prior.ID,
-		ElasticsearchConnection: prior.ElasticsearchConnection,
-		Name:                    types.StringValue(policyName),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{
+			ElasticsearchConnection: prior.ElasticsearchConnection,
+		},
+		ID:           prior.ID,
+		Name:         types.StringValue(policyName),
 		ForceDestroy:            prior.ForceDestroy,
 		ModifiedDate:            types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
 	}
