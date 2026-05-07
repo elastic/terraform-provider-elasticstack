@@ -56,9 +56,9 @@
 
 ## 9. Build Verification
 
-- [ ] 9.1 Run `make build` and confirm the project compiles cleanly
-- [ ] 9.2 Run `make check-lint` and confirm no lint errors
-- [ ] 9.3 Run `make workflow-test` and `make hook-test` and confirm all pass
+- [x] 9.1 Run `make build` and confirm the project compiles cleanly
+- [x] 9.2 Run `make check-lint` and confirm no lint errors
+- [x] 9.3 Run `make workflow-test` and `make hook-test` and confirm all pass
 
 ## 10. Post-Deploy (Manual)
 
