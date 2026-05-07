@@ -12,10 +12,13 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
   advanced_settings = {
     logging_level                  = "info"
-    logging_to_files               = true
+    logging_to_files               = false
+    logging_files_interval         = "1m"
     logging_files_keepfiles        = 7
     logging_files_rotateeverybytes = 10485760
+    logging_metrics_period         = "1m"
     go_max_procs                   = 4
+    download_timeout               = "30m"
     download_target_directory      = "/tmp/elastic-agent"
   }
 }

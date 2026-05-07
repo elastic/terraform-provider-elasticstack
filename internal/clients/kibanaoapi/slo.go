@@ -64,7 +64,7 @@ func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
 	}
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // DisableSlo calls the Kibana API to disable an existing SLO.
@@ -73,7 +73,7 @@ func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
 	}
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // CreateSlo creates a new SLO in the given space and returns the created SLO's ID.

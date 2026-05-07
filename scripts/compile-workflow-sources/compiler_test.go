@@ -240,6 +240,67 @@ func TestCompileWorkflowDetectsIncludeCycles(t *testing.T) {
 	assertContains(t, err.Error(), "include cycle detected")
 }
 
+func TestProviderWorkflowContainsGateJob(t *testing.T) {
+	rootDir := filepath.Join("..", "..")
+	templatePath := filepath.Join(rootDir, ".github", "workflows-src", "provider", "workflow.yml.tmpl")
+	outputPath := filepath.Join(t.TempDir(), "provider.yml")
+
+	if _, err := CompileWorkflow(CompileOptions{
+		TemplatePath: templatePath,
+		OutputPath:   outputPath,
+		RootDir:      rootDir,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	generated := readFile(t, outputPath)
+	assertContains(t, generated, "  gate:")
+	assertContains(t, generated, "    needs: [classify, build, lint, test]")
+	assertContains(t, generated, "    if: always()")
+	assertContains(t, generated, "actions/github-script")
+	assertContains(t, generated, "function gateProvider")
+}
+
+func TestWorkflowsWorkflowContainsGateJob(t *testing.T) {
+	rootDir := filepath.Join("..", "..")
+	templatePath := filepath.Join(rootDir, ".github", "workflows-src", "workflows", "workflow.yml.tmpl")
+	outputPath := filepath.Join(t.TempDir(), "workflows.yml")
+
+	if _, err := CompileWorkflow(CompileOptions{
+		TemplatePath: templatePath,
+		OutputPath:   outputPath,
+		RootDir:      rootDir,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	generated := readFile(t, outputPath)
+	assertContains(t, generated, "  gate:")
+	assertContains(t, generated, "    needs: [classify, test]")
+	assertContains(t, generated, "    if: always()")
+	assertContains(t, generated, "actions/github-script")
+	assertContains(t, generated, "function gateWorkflows")
+}
+
+func TestOpenspecWorkflowContainsGateJob(t *testing.T) {
+	rootDir := filepath.Join("..", "..")
+	templatePath := filepath.Join(rootDir, ".github", "workflows-src", "openspec", "workflow.yml.tmpl")
+	outputPath := filepath.Join(t.TempDir(), "openspec.yml")
+
+	if _, err := CompileWorkflow(CompileOptions{
+		TemplatePath: templatePath,
+		OutputPath:   outputPath,
+		RootDir:      rootDir,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	generated := readFile(t, outputPath)
+	assertContains(t, generated, "  gate:")
+	assertContains(t, generated, "    needs: [validate]")
+	assertContains(t, generated, "    if: always()")
+}
+
 func TestCompileWorkflowExpandsQuotedScriptInclude(t *testing.T) {
 	rootDir := t.TempDir()
 
