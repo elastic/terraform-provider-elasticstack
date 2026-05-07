@@ -33,7 +33,7 @@ import (
 func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -52,7 +52,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, &params)
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -69,12 +69,12 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	httpResp, err := client.HTTP.Do(req)
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer httpResp.Body.Close()
 
@@ -84,7 +84,7 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 			Items []kbapi.EnrollmentApiKey `json:"items"`
 		}
 		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, clientError(err)
+			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 		return result.Items, nil
 	default:
