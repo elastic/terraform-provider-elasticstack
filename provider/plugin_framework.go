@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastream"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
@@ -178,6 +179,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		index.NewResource,
 		monitor.NewResource,
 		apikey.NewResource,
+		datastream.NewDataStreamResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
 		template.NewResource,

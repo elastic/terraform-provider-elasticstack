@@ -15,6 +15,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "example" {
   id            = <computed, string>      # <cluster_uuid>/<policy_name>
   name          = <required, string>      # force new
   metadata      = <optional, json object> # normalized JSON string
+  force_destroy = <optional + computed, bool> # default false
   modified_date = <computed, string>
 
   hot    { /* SingleNestedBlock */ }
@@ -129,9 +130,7 @@ Additional schema behavior:
 - `metadata`, `allocate.include`, `allocate.exclude`, and `allocate.require` use normalized JSON object string types and validate JSON-object syntax.
 - Empty allocation filter objects are omitted from state on read so unset optional filters remain absent.
 - `elasticsearch_connection` remains list-shaped in state because it comes from the shared provider connection schema.
-
 ## Requirements
-
 ### Requirement: CRUD APIs and diagnostics (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put Lifecycle API to create and update ILM policies, the Get Lifecycle API to read them, and the Delete Lifecycle API to delete them. When Elasticsearch returns a non-success response for create, update, read, or delete, except for HTTP `404` on read, the resource SHALL surface that failure as Terraform diagnostics.
@@ -194,19 +193,86 @@ Create and update SHALL expand the Terraform model into a full `models.Policy`, 
 
 ### Requirement: Read and delete behavior (REQ-013–REQ-016)
 
-Read and delete SHALL parse `id` as a composite identifier and return an error diagnostic when the format is invalid. Read SHALL call the Get Lifecycle API for the policy name portion of the id. If the API returns `404`, the provider SHALL log a warning and remove the resource from state. If the API returns success but does not contain the requested policy name in the response body, the provider SHALL return an error diagnostic. Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
+Read SHALL interpret `id` as the composite identifier `<cluster_uuid>/<policy_name>`. If `id` is not in that format or does not contain a policy name portion, Read SHALL return a Terraform diagnostic describing the invalid id and SHALL NOT issue Elasticsearch API requests.
 
-#### Scenario: Policy removed outside Terraform
+For a valid composite `id`, Read SHALL call the Get Lifecycle API using the policy name portion of `id`.
 
-- GIVEN the policy no longer exists on the cluster
+If the Get Lifecycle API returns a not found response for that policy, Read SHALL remove the resource from Terraform state.
+
+If the Get Lifecycle API returns success but the response body does not contain an entry for the requested policy name, Read SHALL return a Terraform diagnostic describing the missing policy in the response and SHALL NOT write partial state.
+
+Otherwise, Read SHALL map the returned policy into Terraform state, preserving computed fields and using the existing composite `id`.
+
+#### Scenario: Invalid composite id during read
+
+- GIVEN the resource `id` is not a valid `<cluster_uuid>/<policy_name>` composite id
 - WHEN read runs
-- THEN the provider SHALL remove the resource from state and SHALL not fail solely because of the missing policy
+- THEN the provider SHALL return a diagnostic about the invalid id
+- AND the provider SHALL NOT call the Get Lifecycle API
 
-#### Scenario: Successful response missing named policy
+#### Scenario: ILM policy not found during read
 
-- GIVEN Get Lifecycle succeeds but the requested policy is absent from the response object
+- GIVEN the resource `id` contains a valid policy name
+- AND the Get Lifecycle API returns not found for that policy
 - WHEN read runs
-- THEN the provider SHALL return an error diagnostic
+- THEN the provider SHALL remove the resource from Terraform state
+
+#### Scenario: Requested policy missing from Get Lifecycle response
+
+- GIVEN the resource `id` contains a valid policy name
+- AND the Get Lifecycle API returns success
+- AND the response does not include the requested policy name
+- WHEN read runs
+- THEN the provider SHALL return a diagnostic about the missing policy in the response
+- AND the provider SHALL NOT write partial state
+
+Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
+
+When `force_destroy` is `true`, Delete SHALL additionally identify any indices whose `index.lifecycle.name` setting references the policy name and remove that reference by setting `index.lifecycle.name` to `null` before invoking the Delete Lifecycle API. The scan-and-clear process SHALL be:
+
+1. Query `GET /_all/_settings/index.lifecycle.name?flat_settings=true` to obtain the `index.lifecycle.name` setting for every index.
+2. Filter to indices whose setting value equals the policy name being deleted.
+3. If one or more indices match, issue `PUT /{indices}/_settings` with `{"index.lifecycle.name": null}` where `{indices}` is a comma-separated list of matched index names.
+4. After clearing references, proceed with `DELETE /_ilm/policy/{policy_name}`.
+
+If the settings-clear call returns an error, Delete SHALL surface that error as a Terraform diagnostic and SHALL NOT proceed with the Delete Lifecycle API call. If the subsequent Delete Lifecycle API call returns an error (for example, because a new index referencing the policy was created during the clear step), Delete SHALL surface the Elasticsearch error verbatim.
+
+When `force_destroy` is `false` (the default), Delete SHALL call the Delete Lifecycle API directly without scanning indices. If Elasticsearch rejects the delete because the policy is still in use, the provider SHALL surface that error verbatim.
+
+#### Scenario: ILM policy deleted while referenced by backing index (force_destroy = true)
+
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = true`
+- AND an index `".ds-logs-test-default-2026.01.01-000001"` has `index.lifecycle.name` set to `"my-policy"`
+- WHEN Delete runs for the ILM policy resource
+- THEN the provider SHALL first set `index.lifecycle.name` to `null` on `.ds-logs-test-default-2026.01.01-000001`
+- AND then call `DELETE /_ilm/policy/my-policy`
+- AND the resource SHALL be destroyed successfully
+
+#### Scenario: No indices reference the policy (force_destroy = true)
+
+- GIVEN an ILM policy named `"unused-policy"` exists with `force_destroy = true`
+- AND no index has `index.lifecycle.name` set to `"unused-policy"`
+- WHEN Delete runs for the ILM policy resource
+- THEN the provider SHALL skip the settings-clear step
+- AND call `DELETE /_ilm/policy/unused-policy` directly
+
+#### Scenario: Settings-clear fails before delete (force_destroy = true)
+
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = true`
+- AND an index referencing the policy exists
+- AND the `PUT /_settings` call to clear the reference fails (e.g., index is closed or unavailable)
+- WHEN Delete runs
+- THEN the provider SHALL surface the settings-clear error as a Terraform diagnostic
+- AND SHALL NOT call `DELETE /_ilm/policy/my-policy`
+
+#### Scenario: ILM policy delete fails when referenced and force_destroy = false
+
+- GIVEN an ILM policy named `"my-policy"` exists with `force_destroy = false`
+- AND an index `"test-index"` has `index.lifecycle.name` set to `"my-policy"`
+- WHEN Delete runs for the ILM policy resource
+- THEN the provider SHALL call `DELETE /_ilm/policy/my-policy` directly
+- AND Elasticsearch SHALL reject the request because the policy is in use
+- AND the provider SHALL surface the Elasticsearch error verbatim
 
 ### Requirement: Metadata and phase/action mapping (REQ-017–REQ-021)
 
@@ -345,3 +411,4 @@ The generated Terraform documentation for the resource SHALL reflect this schema
 - GIVEN the provider documentation is generated from the resource schema
 - WHEN the `elasticstack_elasticsearch_index_lifecycle` docs are refreshed
 - THEN the `frozen` section SHALL describe `searchable_snapshot` as required within `frozen`
+

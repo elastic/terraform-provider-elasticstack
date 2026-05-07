@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index_test
+package datastream_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
@@ -176,6 +177,47 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
 
 func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
+}
+
+//go:embed testdata/TestAccResourceDataStreamFromSDK/create/main.tf
+var testAccResourceDataStreamFromSDKCreate string
+
+func TestAccResourceDataStreamFromSDK(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create the data stream with the last provider version where it was built on the SDK.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config:          testAccResourceDataStreamFromSDKCreate,
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
+				),
+			},
+			{
+				// Upgrade to the Plugin Framework resource.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+				),
+			},
+		},
+	})
 }
 
 func checkResourceDataStreamDestroy(s *terraform.State) error {

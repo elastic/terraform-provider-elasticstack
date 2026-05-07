@@ -112,7 +112,21 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 	model.ID = types.StringValue(data.Id)
 	model.PolicyID = types.StringValue(data.Id)
-	model.DataOutputID = types.StringPointerValue(data.DataOutputId)
+	// The Fleet update API treats omitted optional *string fields as
+	// "preserve existing value". When the user removes one of these fields
+	// from configuration, the provider sends nil (omitted via omitempty) and
+	// the API response continues to report the previous server-side value.
+	// Writing that value into state would conflict with the planned null and
+	// trigger "Provider produced inconsistent result after apply". Preserve
+	// the configured null in state instead; the Fleet-side value is
+	// intentionally retained.
+	preserveNullStr := func(current types.String, apiVal *string) types.String {
+		if current.IsNull() && apiVal != nil && *apiVal != "" {
+			return types.StringNull()
+		}
+		return types.StringPointerValue(apiVal)
+	}
+	model.DataOutputID = preserveNullStr(model.DataOutputID, data.DataOutputId)
 	// The Fleet API normalizes an omitted description to an empty string in
 	// its response body. When the user's plan omits description (null), that
 	// empty string would be written to state and trigger "Provider produced
@@ -128,8 +142,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	} else {
 		model.Description = types.StringPointerValue(data.Description)
 	}
-	model.DownloadSourceID = types.StringPointerValue(data.DownloadSourceId)
-	model.FleetServerHostID = types.StringPointerValue(data.FleetServerHostId)
+	model.DownloadSourceID = preserveNullStr(model.DownloadSourceID, data.DownloadSourceId)
+	model.FleetServerHostID = preserveNullStr(model.FleetServerHostID, data.FleetServerHostId)
 
 	if data.MonitoringEnabled != nil {
 		if slices.Contains(*data.MonitoringEnabled, kbapi.AgentPolicyMonitoringEnabledLogs) {
@@ -148,7 +162,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 	model.IsProtected = types.BoolValue(data.IsProtected)
 
-	model.MonitoringOutputID = types.StringPointerValue(data.MonitoringOutputId)
+	model.MonitoringOutputID = preserveNullStr(model.MonitoringOutputID, data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
