@@ -19,10 +19,10 @@
 
 ## 3. Envelope Wiring
 
-- [ ] 3.1 Replace `DataSourceSnapshotRespository() *schema.Resource` with `NewDataSource() datasource.DataSource` returning `entitycore.NewElasticsearchDataSource[snapshotRepositoryDataSourceModel]`
-- [ ] 3.2 Remove SDK-based `dataSourceSnapRepoRead` and SDK imports from the data source file
-- [ ] 3.3 Extract or adapt `flattenRepoSettings` to build PF-compatible nested values (or create a PF-specific flattening helper alongside the existing SDK one)
-- [ ] 3.4 Remove runtime schema introspection `DataSourceSnapshotRespository().Schema[currentRepo.Type]...` from the data source logic
+- [x] 3.1 Replace `DataSourceSnapshotRespository() *schema.Resource` with `NewDataSource() datasource.DataSource` returning `entitycore.NewElasticsearchDataSource[snapshotRepositoryDataSourceModel]`
+- [x] 3.2 Remove SDK-based `dataSourceSnapRepoRead` and SDK imports from the data source file
+- [x] 3.3 Extract or adapt `flattenRepoSettings` to build PF-compatible nested values (or create a PF-specific flattening helper alongside the existing SDK one)
+- [x] 3.4 Remove runtime schema introspection `DataSourceSnapshotRespository().Schema[currentRepo.Type]...` from the data source logic
 
 ## 4. Provider Registration
 
