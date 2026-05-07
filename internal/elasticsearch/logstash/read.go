@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -61,9 +62,9 @@ func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScop
 			diags.AddError("Error serializing pipeline_metadata", err.Error())
 			return state, false, diags
 		}
-		data.PipelineMetadata = types.StringValue(string(metaBytes))
+		data.PipelineMetadata = jsontypes.NewNormalizedValue(string(metaBytes))
 	} else {
-		data.PipelineMetadata = types.StringValue("{}")
+		data.PipelineMetadata = jsontypes.NewNormalizedValue("{}")
 	}
 
 	// Flatten settings from API response into typed fields.

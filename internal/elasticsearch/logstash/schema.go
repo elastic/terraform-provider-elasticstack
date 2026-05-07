@@ -20,6 +20,7 @@ package logstash
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -63,6 +64,7 @@ func GetSchema(_ context.Context) schema.Schema {
 			},
 			"pipeline_metadata": schema.StringAttribute{
 				MarkdownDescription: "Optional JSON metadata about the pipeline.",
+				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(defaultPipelineMetadata),

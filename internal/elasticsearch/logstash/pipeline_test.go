@@ -19,6 +19,7 @@ package logstash_test
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"os"
@@ -33,6 +34,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceLogstashPipelineMigration/create/main.tf
+var migrationTestConfig string
 
 func TestResourceLogstashPipeline(t *testing.T) {
 	// Pipelines must start with a letter or underscore
@@ -363,6 +367,57 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
+			},
+		},
+	})
+}
+
+// TestAccResourceLogstashPipelineMigration verifies that a logstash pipeline created
+// with the legacy SDKv2 provider (via ExternalProviders) can be seamlessly migrated
+// to and managed by the Plugin Framework implementation without triggering a recreate
+// or plan changes.
+func TestAccResourceLogstashPipelineMigration(t *testing.T) {
+	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_migration"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create with the old SDK provider.
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config: migrationTestConfig,
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
+					resource.TestCheckResourceAttr(resourceName, "description", "Migration test pipeline"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline", "input{} filter{} output{}"),
+					resource.TestCheckResourceAttr(resourceName, "username", "test_user"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline_metadata", `{"type":"logstash_pipeline","version":1}`),
+				),
+			},
+			// Step 2: Switch to the Plugin Framework provider and verify no plan changes.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
+					resource.TestCheckResourceAttr(resourceName, "description", "Migration test pipeline"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline", "input{} filter{} output{}"),
+					resource.TestCheckResourceAttr(resourceName, "username", "test_user"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline_metadata", `{"type":"logstash_pipeline","version":1}`),
+				),
 			},
 		},
 	})

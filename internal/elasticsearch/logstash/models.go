@@ -18,6 +18,7 @@
 package logstash
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -30,7 +31,7 @@ type Data struct {
 	Description      types.String `tfsdk:"description"`
 	LastModified     types.String `tfsdk:"last_modified"`
 	Pipeline         types.String `tfsdk:"pipeline"`
-	PipelineMetadata types.String `tfsdk:"pipeline_metadata"`
+	PipelineMetadata jsontypes.Normalized `tfsdk:"pipeline_metadata"`
 	Username         types.String `tfsdk:"username"`
 
 	// Pipeline settings
