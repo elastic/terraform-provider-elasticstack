@@ -35,9 +35,7 @@ type EqlRuleProcessor struct {
 func newEqlRuleProcessor() EqlRuleProcessor {
 	return EqlRuleProcessor{
 		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIEqlRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIEqlRule, d *Data) diag.Diagnostics {
-				return updateFromEqlRule(ctx, v, d)
-			},
+			updateFn: updateFromEqlRule,
 			idFn: func(v kbapi.SecurityDetectionsAPIEqlRule) string {
 				return v.Id.String()
 			},
