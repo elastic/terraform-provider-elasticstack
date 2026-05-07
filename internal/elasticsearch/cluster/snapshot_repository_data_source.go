@@ -385,6 +385,12 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		return config, diags
 	}
 
+	config, initDiags := initEmptyTypeBlocks(config)
+	diags.Append(initDiags...)
+	if diags.HasError() {
+		return config, diags
+	}
+
 	if currentRepo == nil {
 		diags.AddWarning(
 			fmt.Sprintf("Could not find snapshot repository [%s]", repoName),
@@ -397,15 +403,9 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	return populateRepositoryTypeBlocks(ctx, config, currentRepo)
 }
 
-func populateRepositoryTypeBlocks(
-	ctx context.Context,
-	config snapshotRepositoryDataSourceModel,
-	currentRepo *elasticsearch.SnapshotRepositoryInfo,
-) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
+func initEmptyTypeBlocks(config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Initialise all type blocks to empty lists so non-matching blocks are
-	// explicitly empty rather than null.
 	emptyLists := map[string]*types.List{
 		"fs":    &config.Fs,
 		"url":   &config.URL,
@@ -434,9 +434,15 @@ func populateRepositoryTypeBlocks(
 		diags.Append(d...)
 		*ptr = empty
 	}
-	if diags.HasError() {
-		return config, diags
-	}
+	return config, diags
+}
+
+func populateRepositoryTypeBlocks(
+	ctx context.Context,
+	config snapshotRepositoryDataSourceModel,
+	currentRepo *elasticsearch.SnapshotRepositoryInfo,
+) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	switch currentRepo.Type {
 	case "fs":

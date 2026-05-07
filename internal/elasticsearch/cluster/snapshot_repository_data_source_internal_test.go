@@ -411,6 +411,9 @@ func TestPopulateRepositoryTypeBlocks_Success(t *testing.T) {
 			config := snapshotRepositoryDataSourceModel{
 				Name: types.StringValue("test-repo"),
 			}
+			config, initDiags := initEmptyTypeBlocks(config)
+			require.False(t, initDiags.HasError(), "unexpected init diagnostics: %v", initDiags)
+
 			got, diags := populateRepositoryTypeBlocks(ctx, config, tt.repo)
 			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 
@@ -445,6 +448,27 @@ func TestPopulateRepositoryTypeBlocks_Success(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitEmptyTypeBlocks(t *testing.T) {
+	config := snapshotRepositoryDataSourceModel{
+		Name: types.StringValue("missing-repo"),
+	}
+	got, diags := initEmptyTypeBlocks(config)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	assert.False(t, got.Fs.IsNull())
+	assert.Empty(t, got.Fs.Elements())
+	assert.False(t, got.URL.IsNull())
+	assert.Empty(t, got.URL.Elements())
+	assert.False(t, got.GCS.IsNull())
+	assert.Empty(t, got.GCS.Elements())
+	assert.False(t, got.Azure.IsNull())
+	assert.Empty(t, got.Azure.Elements())
+	assert.False(t, got.S3.IsNull())
+	assert.Empty(t, got.S3.Elements())
+	assert.False(t, got.HDFS.IsNull())
+	assert.Empty(t, got.HDFS.Elements())
 }
 
 func TestPopulateRepositoryTypeBlocks_UnsupportedType(t *testing.T) {
