@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -41,7 +38,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	// Check Elasticsearch version
+	// The envelope does not enforce version requirements for placeholder
+	// write callbacks, so we check here.
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
@@ -61,63 +59,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	componentTemplateName := plan.getComponentTemplateName()
-
-	// Read existing component template to preserve other settings
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
-	}
-
-	existing := toModelComponentTemplateResponse(existingRaw)
-
-	// Build component template, preserving existing content if any
-	var componentTemplate models.ComponentTemplate
-	if existing != nil {
-		componentTemplate = existing.ComponentTemplate
-
-		// Warn if the existing template has a version field
-		if componentTemplate.Version != nil {
-			tflog.Warn(ctx,
-				"Existing component template has a version field. This resource does not update the version when "+
-					"modifying the template. If you rely on version tracking for change detection, consider using "+
-					"elasticstack_elasticsearch_component_template instead.",
-				map[string]any{
-					"component_template": componentTemplateName,
-					"existing_version":   *componentTemplate.Version,
-				})
-		}
-	}
-	componentTemplate.Name = componentTemplateName
-
-	// Ensure template exists
-	if componentTemplate.Template == nil {
-		componentTemplate.Template = &models.Template{}
-	}
-
-	// Merge the ILM setting
-	componentTemplate.Template.Settings = mergeILMSetting(
-		componentTemplate.Template.Settings,
-		plan.LifecycleName.ValueString(),
-	)
-
-	// Write the component template
-	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
-	}
-
-	// Read back to ensure state consistency
-	found, diags := readILMAttachment(ctx, &plan, client)
-	resp.Diagnostics.Append(diags...)
-	if !found && !resp.Diagnostics.HasError() {
-		resp.Diagnostics.AddError(
-			"Component template not found",
-			fmt.Sprintf("Component template %s was not found after update", plan.getComponentTemplateName()),
-		)
-	}
+	updatedPlan, writeDiags := writeILMAttachment(ctx, client, componentTemplateName, plan, false)
+	resp.Diagnostics.Append(writeDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, updatedPlan)...)
 }

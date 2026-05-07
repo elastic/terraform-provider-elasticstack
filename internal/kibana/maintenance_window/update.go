@@ -20,88 +20,49 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planMaintenanceWindow Model
-
-	diags := req.Plan.Get(ctx, &planMaintenanceWindow)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planMaintenanceWindow.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverFlavor, sdkDiags := client.ServerFlavor(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, plan, _ Model) (Model, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError("Unable to get Kibana client", err.Error())
+		return Model{}, diags
 	}
 
-	body, diags := planMaintenanceWindow.toAPIUpdateRequest(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, bodyDiags := plan.toAPIUpdateRequest(ctx)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
-	maintenanceWindowID, spaceID := planMaintenanceWindow.getMaintenanceWindowIDAndSpaceID()
-	diags = kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, spaceID, resourceID, body)...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
 	/*
 	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
-	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
-	if readMaintenanceWindowResponse == nil {
-		resp.State.RemoveResource(ctx)
-		return
+	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
+	if diags.HasError() {
+		return Model{}, diags
 	}
 
-	diags = planMaintenanceWindow.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	plan.ID = types.StringValue(resourceID)
+	plan.SpaceID = types.StringValue(spaceID)
 
-	planMaintenanceWindow.ID = types.StringValue(maintenanceWindowID)
-	planMaintenanceWindow.SpaceID = types.StringValue(spaceID)
-
-	diags = resp.State.Set(ctx, planMaintenanceWindow)
-	resp.Diagnostics.Append(diags...)
+	return plan, diags
 }

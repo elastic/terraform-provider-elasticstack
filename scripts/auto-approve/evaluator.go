@@ -34,9 +34,6 @@ var allowedCopilotAuthorLogins = map[string]struct{}{
 	"Copilot":             {},
 }
 
-const generatedChangelogBranch = "generated-changelog"
-const generatedChangelogAuthor = "github-actions[bot]"
-
 type EvaluationInput struct {
 	PullRequest       *github.PullRequest
 	Commits           []*github.RepositoryCommit
@@ -105,10 +102,6 @@ func matchedCategory(pr *github.PullRequest) string {
 		return ""
 	}
 
-	if pr.GetHead().GetRef() == generatedChangelogBranch {
-		return "generated-changelog"
-	}
-
 	author := pr.User.GetLogin()
 	if _, ok := allowedCopilotAuthorLogins[author]; ok {
 		return "copilot"
@@ -125,8 +118,6 @@ func evaluateCategoryGates(category string, input EvaluationInput) []string {
 		return evaluateCopilotCategory(input)
 	case "dependabot":
 		return nil
-	case "generated-changelog":
-		return evaluateGeneratedChangelogCategory(input)
 	default:
 		return []string{fmt.Sprintf("unknown auto-approve category %q", category)}
 	}
@@ -144,40 +135,6 @@ func evaluateCopilotCategory(input EvaluationInput) []string {
 		reasons = append(reasons, fmt.Sprintf("edited lines must be < %d", maxEditedLines))
 	}
 	return reasons
-}
-
-func evaluateGeneratedChangelogCategory(input EvaluationInput) []string {
-	reasons := make([]string, 0)
-	if !allCommitsByGeneratedChangelog(input.Commits) {
-		reasons = append(reasons, fmt.Sprintf("not all commits are authored by %s", generatedChangelogAuthor))
-	}
-	if len(input.Files) == 0 {
-		reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
-	}
-	for _, file := range input.Files {
-		if file == nil || file.GetFilename() != "CHANGELOG.md" {
-			reasons = append(reasons, "pull request contains files other than CHANGELOG.md")
-			break
-		}
-	}
-	return reasons
-}
-
-func allCommitsByGeneratedChangelog(commits []*github.RepositoryCommit) bool {
-	if len(commits) == 0 {
-		return false
-	}
-
-	for _, commit := range commits {
-		if commit == nil || commit.Author == nil || commit.Author.Login == nil {
-			return false
-		}
-		if commit.Author.GetLogin() != generatedChangelogAuthor {
-			return false
-		}
-	}
-
-	return true
 }
 
 func allCommitsByCopilot(commits []*github.RepositoryCommit) bool {

@@ -61,7 +61,7 @@ type agentDataSourceModel struct {
 
 // GetVersionRequirements returns the static minimum Kibana version requirements
 // for the Agent Builder agent data source. This satisfies the optional
-// entitycore.KibanaDataSourceWithVersionRequirements interface, allowing the
+// entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana data source envelope to enforce the requirement before invoking
 // the entity read callback.
 func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {

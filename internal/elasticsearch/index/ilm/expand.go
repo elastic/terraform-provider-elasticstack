@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -150,7 +150,7 @@ func expandAction(a []any, serverVersion *version.Version, settings ...string) (
 					continue
 				}
 
-				if options.skipEmptyCheck || !schemautil.IsEmpty(v) {
+				if options.skipEmptyCheck || !typeutils.IsEmpty(v) {
 					if setting == "include" || setting == "exclude" || setting == "require" {
 						res := make(map[string]any)
 						if err := json.Unmarshal([]byte(v.(string)), &res); err != nil {

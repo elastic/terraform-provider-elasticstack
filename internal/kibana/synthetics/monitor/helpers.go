@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// mapPtr returns a pointer to v, or nil if v is nil. Unlike schemautil.MapRef,
+// mapPtr returns a pointer to v, or nil if v is nil. Unlike typeutils.MapRef,
 // the key type is not restricted to string.
 func mapPtr[K comparable, V any](v map[K]V) *map[K]V {
 	if v == nil {
@@ -33,7 +33,7 @@ func mapPtr[K comparable, V any](v map[K]V) *map[K]V {
 	return &v
 }
 
-// slicePtr returns a pointer to v, or nil if v is empty. Unlike schemautil.SliceRef,
+// slicePtr returns a pointer to v, or nil if v is empty. Unlike typeutils.SliceRef,
 // an empty (but non-nil) slice also yields nil.
 func slicePtr[T any](v []T) *[]T {
 	if len(v) == 0 {

@@ -34,12 +34,20 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[streamModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "stream"),
+		KibanaResource: entitycore.NewKibanaResource[streamModel](
+			entitycore.ComponentKibana,
+			"stream",
+			getSchema,
+			readStream,
+			deleteStream,
+			createStream,
+			updateStream,
+		),
 	}
 }
 

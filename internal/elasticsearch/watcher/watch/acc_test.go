@@ -458,6 +458,64 @@ func TestResourceWatch_watchIDReplace(t *testing.T) {
 	})
 }
 
+func TestAccResourceWatch_nullMetadata(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(watchResourceName, "id"),
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", "null"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "metadata"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", `{"example_key":"example_value"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceWatchFromSDK(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

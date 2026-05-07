@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPointerInterfaceMapFromAnyMap(t *testing.T) {
@@ -99,4 +100,59 @@ func TestPointerInterfaceMapFromAnyMap(t *testing.T) {
 			t.Fatalf("expected dereferenced value to be nil, got %v", *ptr)
 		}
 	})
+}
+
+func TestFlipMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("flips keys and values", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]string{"a": "x", "b": "y"}
+		got := typeutils.FlipMap(m)
+		require.Equal(t, map[string]string{"x": "a", "y": "b"}, got)
+	})
+
+	t.Run("empty map returns empty map", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.FlipMap(map[string]string{})
+		require.Empty(t, got)
+	})
+}
+
+func TestFlattenMap(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input map[string]any
+		want  map[string]any
+	}{
+		{
+			name:  "already flat",
+			input: map[string]any{"a": 1, "b": 2},
+			want:  map[string]any{"a": 1, "b": 2},
+		},
+		{
+			name:  "one level nesting",
+			input: map[string]any{"index": map[string]any{"key": 1}},
+			want:  map[string]any{"index.key": 1},
+		},
+		{
+			name:  "deep nesting",
+			input: map[string]any{"a": map[string]any{"b": map[string]any{"c": "v"}}},
+			want:  map[string]any{"a.b.c": "v"},
+		},
+		{
+			name:  "mixed flat and nested",
+			input: map[string]any{"x": 1, "y": map[string]any{"z": 2}},
+			want:  map[string]any{"x": 1, "y.z": 2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, typeutils.FlattenMap(tt.input))
+		})
+	}
 }

@@ -21,60 +21,41 @@ import (
 	"context"
 
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel tfModel
+func readAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
+	aliasName := resourceID
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	aliasName := stateModel.Name.ValueString()
-	client, diags := r.Client().GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read the alias and update the model
 	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return state, false, diags
 	}
 
-	diags = readAliasIntoModel(ctx, aliasName, indices, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags = readAliasIntoModel(ctx, aliasName, indices, &state)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
 	// Check if the alias was found
-	if stateModel.WriteIndex.IsNull() && stateModel.ReadIndices.IsNull() {
-		resp.State.RemoveResource(ctx)
-		return
+	if state.WriteIndex.IsNull() && state.ReadIndices.IsNull() {
+		return state, false, nil
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)
+	return state, true, nil
 }
 
 // readAliasIntoModel populates the provided model from alias API response.
 func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]esTypes.IndexAliases, model *tfModel) diag.Diagnostics {
-	// If no indices returned, the alias doesn't exist
 	if len(indices) == 0 {
-		// Set both to null to indicate the alias doesn't exist
 		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
 		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
 		return nil
 	}
 
-	// Extract alias data from the response
 	aliasData := make(map[string]esTypes.AliasDefinition)
 	for indexName, indexAliases := range indices {
 		if alias, exists := indexAliases.Aliases[aliasName]; exists {
@@ -83,12 +64,10 @@ func readAliasIntoModel(ctx context.Context, aliasName string, indices map[strin
 	}
 
 	if len(aliasData) == 0 {
-		// Set both to null to indicate the alias doesn't exist
 		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
 		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
 		return nil
 	}
 
-	// Update the model with API data
 	return model.populateFromAPI(ctx, aliasName, aliasData)
 }

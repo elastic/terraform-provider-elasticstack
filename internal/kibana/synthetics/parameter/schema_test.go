@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -100,9 +100,9 @@ func Test_roundtrip(t *testing.T) {
 
 			assert.Equal(t, tt.request.Key, actual.Key)
 			assert.Equal(t, tt.request.Value, actual.Value)
-			assert.Equal(t, schemautil.DefaultIfNil(tt.request.Description), schemautil.DefaultIfNil(actual.Description))
-			assert.Equal(t, schemautil.NonNilSlice(schemautil.DefaultIfNil(tt.request.Tags)), schemautil.NonNilSlice(schemautil.DefaultIfNil(actual.Tags)))
-			assert.Equal(t, schemautil.DefaultIfNil(tt.request.ShareAcrossSpaces), schemautil.DefaultIfNil(actual.ShareAcrossSpaces))
+			assert.Equal(t, typeutils.DefaultIfNil(tt.request.Description), typeutils.DefaultIfNil(actual.Description))
+			assert.Equal(t, typeutils.NonNilSlice(typeutils.DefaultIfNil(tt.request.Tags)), typeutils.NonNilSlice(typeutils.DefaultIfNil(actual.Tags)))
+			assert.Equal(t, typeutils.DefaultIfNil(tt.request.ShareAcrossSpaces), typeutils.DefaultIfNil(actual.ShareAcrossSpaces))
 		})
 	}
 }

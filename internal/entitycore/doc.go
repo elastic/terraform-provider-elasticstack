@@ -52,7 +52,7 @@
 //
 // # Resource patterns
 //
-// Resources have the same two patterns:
+// Resources have three patterns:
 //
 //  1. **Struct-based embedding** — embed [*ResourceBase] and implement [resource.Resource]
 //     directly. This is the right choice when Create and Update flows diverge
@@ -77,6 +77,24 @@
 //     state in addition to Plan) may pass [PlaceholderElasticsearchWriteCallbacks]
 //     until their logic is migrated into envelope callbacks. Constructor shape and
 //     callback types are defined on [NewElasticsearchResource] in resource_envelope.go.
+//
+//  3. **Kibana resource envelope** — use [NewKibanaResource] for Kibana-backed
+//     resources whose Create, Read, Update, and Delete flows match a common shape.
+//     The model must satisfy [KibanaResourceModel] (value-receiver GetID for
+//     composite or plain state ID, GetResourceID for the write key such as name
+//     or API-assigned UUID, GetSpaceID for the Kibana space, and
+//     GetKibanaConnection). Supply a schema factory (without kibana_connection
+//     block), read and delete callbacks, and required create and update callbacks
+//     ([KibanaCreateFunc], [KibanaUpdateFunc]). The envelope injects the
+//     kibana_connection block, resolves resource identity via composite-ID-or-fallback
+//     for Read, Update, and Delete, validates spaceID for Create, resolves the
+//     scoped Kibana client, and owns state persistence. Create callbacks receive
+//     the plan model (and can call plan.GetResourceID() for user-ID resources);
+//     Update callbacks receive both plan and prior state. It does not implement
+//     ImportState; concrete resources add that when needed. Resources that override
+//     Create or Update may pass [PlaceholderKibanaWriteCallbacks] until their logic
+//     is migrated into envelope callbacks. Constructor shape and callback types are
+//     defined on [NewKibanaResource] in kibana_resource_envelope.go.
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family

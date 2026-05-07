@@ -31,7 +31,7 @@ import (
 func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -52,7 +52,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 
 	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -67,7 +67,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -86,7 +86,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 
 	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)

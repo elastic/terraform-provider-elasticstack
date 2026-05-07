@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -111,7 +111,7 @@ func marshalAndHash(typeName string, body any) (jsonStr string, hash string, dia
 	}
 
 	jsonStr = string(b)
-	hashPtr, err := schemautil.StringToHash(jsonStr)
+	hashPtr, err := typeutils.StringToHash(jsonStr)
 	if err != nil {
 		diags.AddError("Failed to hash processor JSON", err.Error())
 		return "", "", diags
