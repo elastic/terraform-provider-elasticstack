@@ -18,6 +18,8 @@
 package componenttemplate
 
 import (
+	"context"
+
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -55,7 +57,7 @@ func templateAttrTypes() map[string]attr.Type {
 
 // getSchema returns the Plugin Framework schema for elasticstack_elasticsearch_component_template.
 // The elasticsearch_connection block is NOT included here; the envelope injects it.
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Creates or updates a component template. Component templates are building blocks for constructing index templates " +
 			"that specify index mappings, settings, and aliases. See the " +
