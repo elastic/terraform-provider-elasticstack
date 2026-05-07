@@ -206,6 +206,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		script.NewScriptResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
+		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
 		templateilmattachment.NewResource,

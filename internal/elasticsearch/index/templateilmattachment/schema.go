@@ -18,11 +18,8 @@
 package templateilmattachment
 
 import (
-	"context"
 	_ "embed"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -31,16 +28,9 @@ import (
 //go:embed resource-description.md
 var resourceDescription string
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
 func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

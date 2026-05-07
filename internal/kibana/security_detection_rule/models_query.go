@@ -221,130 +221,57 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compID := clients.CompositeID{
-		ClusterID:  d.SpaceID.ValueString(),
-		ResourceID: rule.Id.String(),
-	}
-	d.ID = types.StringValue(compID.String())
-
-	d.RuleID = types.StringValue(rule.RuleId)
-	d.Name = types.StringValue(rule.Name)
-	d.Type = typeutils.StringishValue(rule.Type)
-
-	// Update common fields
-	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
-	dataViewIDDiags := d.updateDataViewIDFromAPI(ctx, rule.DataViewId)
-	diags.Append(dataViewIDDiags...)
-
-	namespaceDiags := d.updateNamespaceFromAPI(ctx, rule.Namespace)
-	diags.Append(namespaceDiags...)
-
-	ruleNameOverrideDiags := d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)
-	diags.Append(ruleNameOverrideDiags...)
-
-	timestampOverrideDiags := d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)
-	diags.Append(timestampOverrideDiags...)
-
-	timestampOverrideFallbackDisabledDiags := d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)
-	diags.Append(timestampOverrideFallbackDisabledDiags...)
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
+		ResourceID:                        rule.Id.String(),
+		RuleID:                            rule.RuleId,
+		Name:                              rule.Name,
+		Type:                              string(rule.Type),
+		Enabled:                           rule.Enabled,
+		From:                              rule.From,
+		To:                                rule.To,
+		Interval:                          rule.Interval,
+		Description:                       rule.Description,
+		RiskScore:                         int64(rule.RiskScore),
+		Severity:                          string(rule.Severity),
+		MaxSignals:                        int64(rule.MaxSignals),
+		Version:                           int64(rule.Version),
+		Revision:                          int64(rule.Revision),
+		CreatedAt:                         rule.CreatedAt,
+		CreatedBy:                         rule.CreatedBy,
+		UpdatedAt:                         rule.UpdatedAt,
+		UpdatedBy:                         rule.UpdatedBy,
+		TimelineID:                        rule.TimelineId,
+		TimelineTitle:                     rule.TimelineTitle,
+		DataViewID:                        rule.DataViewId,
+		Namespace:                         rule.Namespace,
+		RuleNameOverride:                  rule.RuleNameOverride,
+		TimestampOverride:                 rule.TimestampOverride,
+		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
+		BuildingBlockType:                 rule.BuildingBlockType,
+		License:                           rule.License,
+		Note:                              rule.Note,
+		Setup:                             rule.Setup,
+		Index:                             rule.Index,
+		Author:                            rule.Author,
+		Tags:                              rule.Tags,
+		FalsePositives:                    rule.FalsePositives,
+		References:                        rule.References,
+		Actions:                           rule.Actions,
+		ExceptionsList:                    rule.ExceptionsList,
+		RiskScoreMapping:                  rule.RiskScoreMapping,
+		InvestigationFields:               rule.InvestigationFields,
+		Threat:                            rule.Threat,
+		SeverityMapping:                   rule.SeverityMapping,
+		RelatedIntegrations:               rule.RelatedIntegrations,
+		RequiredFields:                    rule.RequiredFields,
+		AlertSuppression:                  rule.AlertSuppression,
+		ResponseActions:                   rule.ResponseActions,
+	})...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = typeutils.StringishValue(rule.Language)
-	d.Enabled = types.BoolValue(rule.Enabled)
-	d.From = types.StringValue(rule.From)
-	d.To = types.StringValue(rule.To)
-	d.Interval = types.StringValue(rule.Interval)
-	d.Description = types.StringValue(rule.Description)
-	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
-	d.Severity = typeutils.StringishValue(rule.Severity)
-	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
-	d.Version = types.Int64Value(int64(rule.Version))
 
-	// Update building block type
-	buildingBlockTypeDiags := d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)
-	diags.Append(buildingBlockTypeDiags...)
-
-	// Update read-only fields
-	d.CreatedAt = typeutils.TimeToStringValue(rule.CreatedAt)
-	d.CreatedBy = types.StringValue(rule.CreatedBy)
-	d.UpdatedAt = typeutils.TimeToStringValue(rule.UpdatedAt)
-	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
-	d.Revision = types.Int64Value(int64(rule.Revision))
-
-	// Update threat
-	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
-	diags.Append(threatDiags...)
-
-	// Update index patterns
-	indexDiags := d.updateIndexFromAPI(ctx, rule.Index)
-	diags.Append(indexDiags...)
-
-	// Update author
-	authorDiags := d.updateAuthorFromAPI(ctx, rule.Author)
-	diags.Append(authorDiags...)
-
-	// Update tags
-	tagsDiags := d.updateTagsFromAPI(ctx, rule.Tags)
-	diags.Append(tagsDiags...)
-
-	// Update false positives
-	falsePositivesDiags := d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)
-	diags.Append(falsePositivesDiags...)
-
-	// Update references
-	referencesDiags := d.updateReferencesFromAPI(ctx, rule.References)
-	diags.Append(referencesDiags...)
-
-	// Update optional string fields
-	licenseDiags := d.updateLicenseFromAPI(ctx, rule.License)
-	diags.Append(licenseDiags...)
-
-	noteDiags := d.updateNoteFromAPI(ctx, rule.Note)
-	diags.Append(noteDiags...)
-
-	setupDiags := d.updateSetupFromAPI(ctx, rule.Setup)
-	diags.Append(setupDiags...)
-
-	// Update actions
-	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
-	diags.Append(actionDiags...)
-
-	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
-	diags.Append(exceptionsListDiags...)
-
-	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
-	diags.Append(riskScoreMappingDiags...)
-
-	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
-	diags.Append(severityMappingDiags...)
-
-	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
-	diags.Append(relatedIntegrationsDiags...)
-
-	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
-	diags.Append(requiredFieldsDiags...)
-
-	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
-	diags.Append(investigationFieldsDiags...)
-
-	// Update filters field
-	filtersDiags := d.updateFiltersFromAPI(ctx, rule.Filters)
-	diags.Append(filtersDiags...)
-
-	// Update alert suppression
-	alertSuppressionDiags := d.updateAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
-	diags.Append(alertSuppressionDiags...)
-
-	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
-	diags.Append(responseActionsDiags...)
+	diags.Append(d.updateFiltersFromAPI(ctx, rule.Filters)...)
 
 	return diags
 }
