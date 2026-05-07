@@ -68,86 +68,55 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 		wantHasError bool
 	}{
 		{
-			name:       "no indices match",
+			name:       "no indices in use",
 			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/_ilm/policy/my-policy" {
+					w.WriteHeader(http.StatusBadRequest)
+					fmt.Fprintf(w, `{"error":"unexpected path: %s"}`, r.URL.Path)
+					return
+				}
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{
-					".ds-logs-test-default-2026.01.01-000001": {
-						"settings": {
-							"index.lifecycle.name": "other-policy"
-						}
-					},
-					"another-index": {
-						"settings": {
-							"index.lifecycle.name": "different-policy"
-						}
-					}
-				}`)
+				fmt.Fprintf(w, `{"my-policy":{
+					"version":1,
+					"modified_date":1700000000000,
+					"policy":{"phases":{}},
+					"in_use_by":{"indices":[],"data_streams":[],"composable_templates":[]}
+				}}`)
 			},
-			wantIndices: []string{},
+			wantIndices: nil,
 		},
 		{
 			name:       "some indices match",
 			policyName: "my-policy",
 			handler: func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/_all/_settings/index.lifecycle.name" {
+				if r.URL.Path != "/_ilm/policy/my-policy" {
 					w.WriteHeader(http.StatusBadRequest)
 					fmt.Fprintf(w, `{"error":"unexpected path: %s"}`, r.URL.Path)
 					return
 				}
-				if r.URL.Query().Get("flat_settings") != "true" {
-					w.WriteHeader(http.StatusBadRequest)
-					fmt.Fprintf(w, `{"error":"expected flat_settings=true"}`)
-					return
-				}
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{
-					".ds-logs-test-default-2026.01.01-000001": {
-						"settings": {
-							"index.lifecycle.name": "my-policy"
-						}
-					},
-					"unrelated-index": {
-						"settings": {
-							"index.lifecycle.name": "other-policy"
-						}
-					},
-					".ds-logs-test-default-2026.01.02-000001": {
-						"settings": {
-							"index.lifecycle.name": "my-policy"
-						}
+				fmt.Fprintf(w, `{"my-policy":{
+					"version":1,
+					"modified_date":1700000000000,
+					"policy":{"phases":{}},
+					"in_use_by":{
+						"indices":[".ds-logs-test-default-2026.01.01-000001",".ds-logs-test-default-2026.01.02-000001"],
+						"data_streams":["logs-test-default"],
+						"composable_templates":[]
 					}
-				}`)
+				}}`)
 			},
 			wantIndices: []string{".ds-logs-test-default-2026.01.01-000001", ".ds-logs-test-default-2026.01.02-000001"},
 		},
 		{
-			name:       "empty response",
+			name:       "policy missing from response body",
 			policyName: "my-policy",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{}`)
 			},
-			wantIndices: []string{},
-		},
-		{
-			name:       "index without lifecycle setting is skipped",
-			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{
-					"index-without-ilm": {
-						"settings": {}
-					},
-					"index-with-ilm": {
-						"settings": {
-							"index.lifecycle.name": "my-policy"
-						}
-					}
-				}`)
-			},
-			wantIndices: []string{"index-with-ilm"},
+			wantIndices: nil,
 		},
 		{
 			name:       "http 404 returns empty",
@@ -155,7 +124,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
-				fmt.Fprintf(w, `{"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index"}],"type":"index_not_found_exception","status":404}}`)
+				fmt.Fprintf(w, `{"error":{"root_cause":[{"type":"resource_not_found_exception","reason":"policy not found"}],"type":"resource_not_found_exception","status":404}}`)
 			},
 			wantIndices:  nil,
 			wantHasError: false,
@@ -167,22 +136,6 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(w, `{"error":{"type":"exception","reason":"something went wrong"},"status":500}`)
-			},
-			wantIndices:  nil,
-			wantHasError: true,
-		},
-		{
-			name:       "malformed lifecycle setting returns error",
-			policyName: "my-policy",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{
-					"bad-index": {
-						"settings": {
-							"index.lifecycle.name": 12345
-						}
-					}
-				}`)
 			},
 			wantIndices:  nil,
 			wantHasError: true,
@@ -204,7 +157,11 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 			}
 			require.False(t, diags.HasError(), "unexpected error diagnostics: %v", diags.Errors())
 
-			require.ElementsMatch(t, tc.wantIndices, got)
+			if tc.wantIndices == nil {
+				require.Empty(t, got)
+			} else {
+				require.ElementsMatch(t, tc.wantIndices, got)
+			}
 		})
 	}
 }

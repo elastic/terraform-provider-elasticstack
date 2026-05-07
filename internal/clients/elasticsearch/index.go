@@ -104,47 +104,58 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 }
 
-// GetIndicesWithILMPolicy returns the names of all indices whose
-// index.lifecycle.name setting equals the given policyName.
-// It queries GET /_all/_settings/index.lifecycle.name with flat_settings=true.
+// GetIndicesWithILMPolicy returns the names of all indices currently using
+// the given ILM policy.
+//
+// It queries GET /_ilm/policy/<policyName> and reads the
+// `<policy>.in_use_by.indices` field, which Elasticsearch maintains per
+// policy. This is a single targeted lookup keyed by the policy and avoids
+// scanning indices cluster-wide.
+//
+// The typed client's generated `Lifecycle` struct does not expose
+// `in_use_by`, so this function uses Perform to obtain the raw HTTP response
+// and decodes the relevant subset of the body itself.
 func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	res, err := typedClient.Indices.GetSettings().Index("_all").Name("index.lifecycle.name").FlatSettings(true).Do(ctx)
+	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Perform(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
-			return nil, nil
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Unable to fetch ILM policy",
+				fmt.Sprintf("Elasticsearch returned status %d for GET /_ilm/policy/%s: %s", res.StatusCode, policyName, strings.TrimSpace(string(body))),
+			),
 		}
+	}
+
+	// The response is shaped as:
+	//   { "<policy_name>": { "in_use_by": { "indices": [...], ... }, ... } }
+	var decoded map[string]struct {
+		InUseBy struct {
+			Indices []string `json:"indices"`
+		} `json:"in_use_by"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&decoded); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	var matching []string
-	for indexName, state := range res {
-		if state.Settings == nil || state.Settings.IndexSettings == nil {
-			continue
-		}
-		raw, ok := state.Settings.IndexSettings["index.lifecycle.name"]
-		if !ok {
-			continue
-		}
-		var value string
-		if err := json.Unmarshal(raw, &value); err != nil {
-			return nil, fwdiags.Diagnostics{
-				fwdiags.NewErrorDiagnostic(
-					"Unable to parse index lifecycle setting",
-					fmt.Sprintf("index %q has malformed index.lifecycle.name: %s", indexName, err),
-				),
-			}
-		}
-		if value == policyName {
-			matching = append(matching, indexName)
-		}
+	entry, ok := decoded[policyName]
+	if !ok {
+		return nil, nil
 	}
-
-	return matching, nil
+	return entry.InUseBy.Indices, nil
 }
 
 // ClearILMPolicyFromIndices removes the ILM policy reference from the
