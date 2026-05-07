@@ -33,6 +33,10 @@ type MLJobStateData struct {
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
 }
 
+func (d MLJobStateData) GetID() types.String                    { return d.ID }
+func (d MLJobStateData) GetResourceID() types.String            { return d.JobID }
+func (d MLJobStateData) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+
 // MLJobStats represents the statistics structure for an ML job
 type MLJobStats struct {
 	Jobs []MLJob `json:"jobs"`

@@ -39,6 +39,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
@@ -205,6 +206,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		inferenceendpoint.NewInferenceEndpointResource,
 		watch.NewWatchResource,
 		script.NewScriptResource,
+		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		ingest.NewIngestPipelineResource,

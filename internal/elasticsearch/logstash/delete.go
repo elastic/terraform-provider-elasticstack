@@ -15,18 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstate
+package logstash
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteMLJobState(ctx context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, _ MLJobStateData) diag.Diagnostics {
-	tflog.Info(ctx, fmt.Sprintf(`Dropping ML job state "%s", this does not close the job`, resourceID))
-	return nil
+func deleteLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, _ Data) diag.Diagnostics {
+	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteLogstashPipeline(ctx, client, pipelineID))
 }
