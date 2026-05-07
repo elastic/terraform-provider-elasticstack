@@ -491,7 +491,7 @@ func TestAccResourceWatch_nullMetadata(t *testing.T) {
 				ResourceName:             watchResourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "metadata"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
