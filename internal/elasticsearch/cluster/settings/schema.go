@@ -18,6 +18,8 @@
 package settings
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -30,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getSchema() schema.Schema {
+func getSchema(ctx context.Context) schema.Schema {
 	// settingBlock defines a single key/value setting entry as a block, preserving
 	// the original HCL block syntax: setting { name = "..." value = "..." }.
 	settingBlock := schema.SetNestedBlock{
