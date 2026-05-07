@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package datafeedstate
+package logstash
 
 import (
 	"context"
@@ -25,35 +25,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = newMLDatafeedStateResource()
-	_ resource.ResourceWithConfigure   = newMLDatafeedStateResource()
-	_ resource.ResourceWithImportState = newMLDatafeedStateResource()
+	_ resource.Resource                = newLogstashPipelineResource()
+	_ resource.ResourceWithConfigure   = newLogstashPipelineResource()
+	_ resource.ResourceWithImportState = newLogstashPipelineResource()
 )
 
-type mlDatafeedStateResource struct {
-	*entitycore.ElasticsearchResource[MLDatafeedStateData]
+type logstashPipelineResource struct {
+	*entitycore.ElasticsearchResource[Data]
 }
 
-func newMLDatafeedStateResource() *mlDatafeedStateResource {
-	createFunc, updateFunc := entitycore.PlaceholderElasticsearchWriteCallbacks[MLDatafeedStateData]()
-	return &mlDatafeedStateResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData](
+func newLogstashPipelineResource() *logstashPipelineResource {
+	return &logstashPipelineResource{
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
 			entitycore.ComponentElasticsearch,
-			"ml_datafeed_state",
+			"logstash_pipeline",
 			GetSchema,
-			readMLDatafeedState,
-			deleteMLDatafeedState,
-			createFunc,
-			updateFunc,
+			readLogstashPipeline,
+			deleteLogstashPipeline,
+			writeLogstashPipeline,
+			writeLogstashPipeline,
 		),
 	}
 }
 
-func NewMLDatafeedStateResource() resource.Resource {
-	return newMLDatafeedStateResource()
+// NewLogstashPipelineResource returns the PF resource constructor for
+// elasticstack_elasticsearch_logstash_pipeline.
+func NewLogstashPipelineResource() resource.Resource {
+	return newLogstashPipelineResource()
 }
 
-func (r *mlDatafeedStateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *logstashPipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

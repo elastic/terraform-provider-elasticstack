@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -115,20 +116,6 @@ func int64FromInt64Ptr(p *int64) types.Int64 {
 		return types.Int64Null()
 	}
 	return types.Int64Value(*p)
-}
-
-func stringPtrValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func boolPtrValue(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
 }
 
 func flattenDataStream(ds *estypes.IndexTemplateDataStreamConfiguration) (types.Object, diag.Diagnostics) {
@@ -260,7 +247,7 @@ func flattenDataStreamOptions(dso *estypes.DataStreamOptions) (types.Object, dia
 	var diags diag.Diagnostics
 	fs := dso.FailureStore
 	fsAttrs := map[string]attr.Value{
-		"enabled":   types.BoolValue(boolPtrValue(fs.Enabled)),
+		"enabled":   types.BoolValue(typeutils.Deref(fs.Enabled)),
 		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
 	}
 	if fs.Lifecycle != nil {
@@ -297,11 +284,11 @@ func flattenAliasElement(name string, a estypes.Alias) (attr.Value, diag.Diagnos
 	var diags diag.Diagnostics
 	attrs := map[string]attr.Value{
 		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(stringPtrValue(a.IndexRouting)),
-		"routing":        types.StringValue(stringPtrValue(a.Routing)),
-		"search_routing": types.StringValue(stringPtrValue(a.SearchRouting)),
-		"is_hidden":      types.BoolValue(boolPtrValue(a.IsHidden)),
-		"is_write_index": types.BoolValue(boolPtrValue(a.IsWriteIndex)),
+		"index_routing":  types.StringValue(typeutils.Deref(a.IndexRouting)),
+		"routing":        types.StringValue(typeutils.Deref(a.Routing)),
+		"search_routing": types.StringValue(typeutils.Deref(a.SearchRouting)),
+		"is_hidden":      types.BoolValue(typeutils.Deref(a.IsHidden)),
+		"is_write_index": types.BoolValue(typeutils.Deref(a.IsWriteIndex)),
 	}
 	if a.Filter != nil {
 		b, err := json.Marshal(a.Filter)

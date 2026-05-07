@@ -102,25 +102,23 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		return diags
 	}
 
-	// Generate composite ID
 	compID, sdkDiags := client.ID(ctx, datafeedID)
-	if len(sdkDiags) > 0 {
-		for _, d := range sdkDiags {
-			diags.AddError(d.Summary, d.Detail)
-		}
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
 		return diags
 	}
 
-	// Set the response state
 	data.ID = types.StringValue(compID.String())
 
 	var finalData *MLDatafeedStateData
 	if inDesiredState {
-		var getDiags diag.Diagnostics
-		finalData, getDiags = r.read(ctx, data)
+		result, found, getDiags := readMLDatafeedState(ctx, client, datafeedID, data)
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return diags
+		}
+		if found {
+			finalData = &result
 		}
 	} else {
 		var updateDiags diag.Diagnostics
