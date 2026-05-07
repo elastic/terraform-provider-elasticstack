@@ -47,7 +47,7 @@ jobs:
         run: make hook-test
 
   gate:
-    name: Gate
+    name: Workflows Gate
     needs: [classify, test]
     if: always()
     runs-on: ubuntu-latest
