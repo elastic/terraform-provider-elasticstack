@@ -18,6 +18,8 @@
 package logstash
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -31,7 +33,7 @@ const defaultPipelineMetadata = `{"type":"logstash_pipeline","version":1}`
 
 // GetSchema returns the PF schema for the logstash pipeline resource.
 // The elasticsearch_connection block is injected by the envelope.
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manage Logstash Pipelines via Centralized Pipeline Management. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/logstash-apis.html",
 		Attributes: map[string]schema.Attribute{
