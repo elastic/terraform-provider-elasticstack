@@ -46,7 +46,7 @@ func GetPackage(ctx context.Context, client *Client, name, version, spaceID stri
 
 	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -83,10 +83,10 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 
 	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // Uninstall uninstalls a package.
@@ -96,7 +96,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 	}
 	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -125,10 +125,10 @@ func InstallKibanaAssets(ctx context.Context, client *Client, name, version stri
 
 	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // forceQueryParamEditor returns a RequestEditorFn that appends ?force=<bool> to
@@ -147,7 +147,7 @@ func forceQueryParamEditor(force bool) kbapi.RequestEditorFn {
 func DeleteKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, kibanautil.SpaceAwarePathRequestEditor(spaceID), forceQueryParamEditor(force))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)
@@ -162,7 +162,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 
 	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -176,7 +176,7 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 			retryParams := kbapi.GetFleetEpmPackagesParams{}
 			retryResp, retryErr := client.API.GetFleetEpmPackagesWithResponse(ctx, &retryParams, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 			if retryErr != nil {
-				return nil, clientError(retryErr)
+				return nil, diagutil.FrameworkDiagFromError(retryErr)
 			}
 			if retryResp.StatusCode() == http.StatusOK {
 				return retryResp.JSON200.Items, nil
@@ -219,7 +219,7 @@ type UploadPackageResult struct {
 func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOptions) (*UploadPackageResult, diag.Diagnostics) {
 	f, err := os.Open(opts.PackagePath)
 	if err != nil {
-		return nil, clientError(fmt.Errorf("opening package file %q: %w", opts.PackagePath, err))
+		return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("opening package file %q: %w", opts.PackagePath, err))
 	}
 	defer f.Close()
 
@@ -230,7 +230,7 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 
 	resp, err := client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, io.NopCloser(f), kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	// Kibana rate-limits EPM uploads with HTTP 429 ("Please wait Xs before uploading
@@ -245,15 +245,15 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 		select {
 		case <-ctx.Done():
-			return nil, clientError(ctx.Err())
+			return nil, diagutil.FrameworkDiagFromError(ctx.Err())
 		case <-time.After(wait):
 		}
 		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
-			return nil, clientError(fmt.Errorf("rewinding package file for retry after rate limit: %w", seekErr))
+			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("rewinding package file for retry after rate limit: %w", seekErr))
 		}
 		resp, err = client.API.PostFleetEpmPackagesWithBodyWithResponse(ctx, &params, opts.ContentType, io.NopCloser(f), kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))
 		if err != nil {
-			return nil, clientError(err)
+			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 	}
 

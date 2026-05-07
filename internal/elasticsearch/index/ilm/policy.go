@@ -54,11 +54,12 @@ func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Ver
 func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &tfModel{
-		ID:           prior.ID,
-		Name:         types.StringValue(policyName),
-		ModifiedDate: types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
+		ID:                      prior.ID,
+		ElasticsearchConnection: prior.ElasticsearchConnection,
+		Name:                    types.StringValue(policyName),
+		ForceDestroy:            prior.ForceDestroy,
+		ModifiedDate:            types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
 	}
-	out.ElasticsearchConnection = prior.ElasticsearchConnection
 
 	if ilmDef.Policy.Meta_ != nil {
 		b, err := json.Marshal(ilmDef.Policy.Meta_)

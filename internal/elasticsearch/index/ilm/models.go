@@ -28,6 +28,7 @@ type tfModel struct {
 	ID           types.String         `tfsdk:"id"`
 	Name         types.String         `tfsdk:"name"`
 	Metadata     jsontypes.Normalized `tfsdk:"metadata"`
+	ForceDestroy types.Bool           `tfsdk:"force_destroy"`
 	Hot          types.Object         `tfsdk:"hot"`
 	Warm         types.Object         `tfsdk:"warm"`
 	Cold         types.Object         `tfsdk:"cold"`

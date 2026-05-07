@@ -45,6 +45,12 @@ type PolicyDataWithExecute struct {
 	Execute types.Bool `tfsdk:"execute"`
 }
 
+func (data PolicyDataWithExecute) GetID() types.String         { return data.ID }
+func (data PolicyDataWithExecute) GetResourceID() types.String { return data.Name }
+func (data PolicyDataWithExecute) GetElasticsearchConnection() types.List {
+	return data.ElasticsearchConnection
+}
+
 func (data *PolicyData) populateFromPolicy(ctx context.Context, policy *models.EnrichPolicy, diagnostics *diag.Diagnostics) {
 	data.Name = types.StringValue(policy.Name)
 	data.PolicyType = types.StringValue(policy.Type)

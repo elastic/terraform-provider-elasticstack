@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -67,6 +68,12 @@ func ilmSchema() schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators:  []validator.String{esindex.StringIsJSONObject{}},
+			},
+			"force_destroy": schema.BoolAttribute{
+				Description: "When true, the provider will clear index.lifecycle.name from any indices that reference this policy before deleting the policy.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"modified_date": schema.StringAttribute{
 				Description: "The DateTime of the last modification.",

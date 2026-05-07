@@ -19,6 +19,7 @@ package sourcemap_test
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -61,6 +62,7 @@ func TestAccResourceApmSourceMap_json(t *testing.T) {
 
 // TestAccResourceApmSourceMap_binary tests creating a source map using
 // sourcemap.binary (base64-encoded content) and asserts id is set and non-empty.
+// It also verifies mutual-exclusion: sourcemap.json must not appear in state.
 func TestAccResourceApmSourceMap_binary(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
@@ -80,6 +82,7 @@ func TestAccResourceApmSourceMap_binary(t *testing.T) {
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
 					testCheckApmSourceMapIDNonEmpty(testAccApmSourceMapResourceName),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.json"),
 				),
 			},
 		},
@@ -306,7 +309,8 @@ func TestAccResourceApmSourceMap_binaryInvalidBase64(t *testing.T) {
 }
 
 // TestAccResourceApmSourceMap_requireReplace verifies that changing service_version
-// produces a ResourceActionDestroyBeforeCreate plan action, not an in-place update.
+// or bundle_filepath produces a ResourceActionDestroyBeforeCreate plan action, not
+// an in-place update.
 func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
@@ -322,6 +326,7 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
 					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
 				),
 			},
@@ -342,6 +347,92 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.1.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
+				),
+			},
+			// Step 3: plan with a different bundle_filepath — must also show replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step3"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							testAccApmSourceMapResourceName,
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.1.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/other.min.js"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_file tests creating a source map using
+// sourcemap.file.path (local file upload) and asserts id, bundle_filepath,
+// service_name, service_version, and sourcemap.file.checksum are set.
+func TestAccResourceApmSourceMap_file(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	tmpFile := writeTempSourceMapFile(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"file_path":       config.StringVariable(tmpFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceName),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "sourcemap.file.checksum"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_kibanaConnection verifies that the resource can be
+// created when an entity-local kibana_connection block is supplied instead of
+// relying on the provider-level Kibana configuration.
+func TestAccResourceApmSourceMap_kibanaConnection(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					append([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+						resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceName),
+						resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
+						resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
+						resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "kibana_connection.#", "1"),
+						resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "kibana_connection.0.endpoints.#", "1"),
+						resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "kibana_connection.0.endpoints.0"),
+					}, acctest.KibanaConnectionAuthChecks(testAccApmSourceMapResourceName)...)...,
 				),
 			},
 		},
@@ -398,4 +489,23 @@ func testAccApmSourceMapPlainImportID(resourceName string) resource.ImportStateI
 		}
 		return id, nil
 	}
+}
+
+// writeTempSourceMapFile writes a minimal valid source map JSON to a temp file,
+// registers cleanup, and returns the file path.
+func writeTempSourceMapFile(t *testing.T) string {
+	t.Helper()
+	f, err := os.CreateTemp(t.TempDir(), "tf-acc-sourcemap-*.json")
+	if err != nil {
+		t.Fatalf("failed to create temp source map file: %s", err)
+	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
+	content := `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
+	if _, err := f.WriteString(content); err != nil {
+		t.Fatalf("failed to write temp source map file: %s", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close temp source map file: %s", err)
+	}
+	return f.Name()
 }

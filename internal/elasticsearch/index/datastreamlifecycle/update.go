@@ -20,9 +20,34 @@ package datastreamlifecycle
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.create(ctx, req.Plan, &resp.State)...)
+func updateDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	id, sdkDiags := client.ID(ctx, resourceID)
+	if sdkDiags.HasError() {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return plan, diags
+	}
+
+	plan.ID = types.StringValue(id.String())
+
+	apiModel, d := plan.toAPIModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
+	}
+
+	diags.Append(elasticsearch.PutDataStreamLifecycle(ctx, client, resourceID, plan.ExpandWildcards.ValueString(), apiModel)...)
+	if diags.HasError() {
+		return plan, diags
+	}
+
+	return plan, diags
 }
