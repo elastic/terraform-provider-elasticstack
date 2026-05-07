@@ -18,7 +18,6 @@
 package settings_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
@@ -30,7 +29,7 @@ import (
 // (ExportedExpandSettings, etc.) defined in export_test.go.
 
 func TestExpandSettings_StringValue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.MakeSettingsListWithValue("mykey", "myval")
 
 	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -46,7 +45,7 @@ func TestExpandSettings_StringValue(t *testing.T) {
 }
 
 func TestExpandSettings_ListValue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.MakeSettingsListWithValueList("listkey", []string{"a", "b"})
 
 	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -67,7 +66,7 @@ func TestExpandSettings_ListValue(t *testing.T) {
 }
 
 func TestExpandSettings_EmptyList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.EmptySettingsList()
 
 	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -80,7 +79,7 @@ func TestExpandSettings_EmptyList(t *testing.T) {
 }
 
 func TestExpandSettings_DuplicateNameError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.MakeSettingsListWithDuplicateName("dupkey", "v1", "v2")
 
 	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -90,7 +89,7 @@ func TestExpandSettings_DuplicateNameError(t *testing.T) {
 }
 
 func TestExpandSettings_BothValueAndValueList_Error(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.MakeSettingsListBothValues("key", "v", []string{"a"})
 
 	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -100,7 +99,7 @@ func TestExpandSettings_BothValueAndValueList_Error(t *testing.T) {
 }
 
 func TestExpandSettings_NeitherValueNorValueList_Error(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	settingsList := settings.MakeSettingsListNeitherValue("key")
 
 	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
@@ -140,7 +139,7 @@ func TestUpdateRemovedSettings_EqualSetsNoChange(t *testing.T) {
 }
 
 func TestFlattenSettings_ScalarValue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	configured := map[string]any{"persistent": map[string]any{"mykey": "anything"}}
 	api := map[string]any{"persistent": map[string]any{"mykey": "40mb"}}
 
@@ -165,7 +164,7 @@ func TestFlattenSettings_ScalarValue(t *testing.T) {
 }
 
 func TestFlattenSettings_ListValue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	configured := map[string]any{"transient": map[string]any{"listkey": "anything"}}
 	api := map[string]any{"transient": map[string]any{"listkey": []any{"x", "y"}}}
 
@@ -190,7 +189,7 @@ func TestFlattenSettings_ListValue(t *testing.T) {
 }
 
 func TestFlattenSettings_AbsentFromAPIIsOmitted(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	configured := map[string]any{"persistent": map[string]any{"gone": "v"}}
 	api := map[string]any{"persistent": map[string]any{}} // key not in API response
 
@@ -206,7 +205,7 @@ func TestFlattenSettings_AbsentFromAPIIsOmitted(t *testing.T) {
 }
 
 func TestFlattenSettings_EmptyConfigured(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	configured := map[string]any{}
 	api := map[string]any{"persistent": map[string]any{"somekey": "v"}}
 
