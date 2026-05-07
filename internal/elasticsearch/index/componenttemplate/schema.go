@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -46,7 +47,7 @@ func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"alias":    types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
 		"mappings": jsontypes.NormalizedType{},
-		"settings": jsontypes.NormalizedType{},
+		"settings": customtypes.IndexSettingsType{},
 	}
 }
 
@@ -99,7 +100,7 @@ func getSchema() schema.Schema {
 							"[index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) " +
 							"for more details.",
 						Optional:   true,
-						CustomType: jsontypes.NormalizedType{},
+						CustomType: customtypes.IndexSettingsType{},
 					},
 				},
 				Blocks: map[string]schema.Block{

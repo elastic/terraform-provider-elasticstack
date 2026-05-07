@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -91,16 +92,16 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 	}
 
 	// Settings
-	var settings jsontypes.Normalized
+	var settings customtypes.IndexSettingsValue
 	if t.Settings != nil {
 		b, err := json.Marshal(t.Settings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.settings", err.Error())
 			return types.ObjectNull(templateAttrTypes()), diags
 		}
-		settings = jsontypes.NewNormalizedValue(string(b))
+		settings = customtypes.NewIndexSettingsValue(string(b))
 	} else {
-		settings = jsontypes.NewNormalizedNull()
+		settings = customtypes.NewIndexSettingsNull()
 	}
 
 	// Aliases

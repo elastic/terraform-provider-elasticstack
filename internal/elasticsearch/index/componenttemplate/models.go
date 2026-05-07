@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,9 +39,9 @@ func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchCo
 
 // TemplateModel is the inner shape of the template block.
 type TemplateModel struct {
-	Alias    types.Set            `tfsdk:"alias"`
-	Mappings jsontypes.Normalized `tfsdk:"mappings"`
-	Settings jsontypes.Normalized `tfsdk:"settings"`
+	Alias    types.Set                      `tfsdk:"alias"`
+	Mappings jsontypes.Normalized           `tfsdk:"mappings"`
+	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
 }
 
 // AliasModel is the inner shape of a single alias block element.
