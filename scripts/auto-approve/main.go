@@ -264,7 +264,7 @@ func appendToFile(path, content string) error {
 
 	if _, err := f.WriteString(content); err != nil {
 		if closeErr := f.Close(); closeErr != nil {
-			return fmt.Errorf("write failed: %w; close failed: %v", err, closeErr)
+			return fmt.Errorf("write failed and close failed: %w", errors.Join(err, closeErr))
 		}
 		return err
 	}
