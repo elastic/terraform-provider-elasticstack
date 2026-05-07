@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -62,4 +63,13 @@ func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 			string(body),
 		),
 	}
+}
+
+// HandleStatusResponse returns nil when statusCode is one of successCodes, and
+// an error diagnostic otherwise.
+func HandleStatusResponse(statusCode int, body []byte, successCodes ...int) fwdiag.Diagnostics {
+	if slices.Contains(successCodes, statusCode) {
+		return nil
+	}
+	return ReportUnknownHTTPError(statusCode, body)
 }

@@ -31,7 +31,7 @@ import (
 func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
 	resp, err := client.API.GetFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -53,7 +53,7 @@ func CreateAgentDownloadSource(
 ) (*kbapi.PostFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
 	resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -74,7 +74,7 @@ func UpdateAgentDownloadSource(
 ) (*kbapi.PutFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
 	resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -89,7 +89,7 @@ func UpdateAgentDownloadSource(
 func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)
@@ -99,7 +99,7 @@ func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, s
 func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID string) (*kbapi.GetFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
 	resp, err := client.API.GetFleetAgentDownloadSourcesWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {

@@ -226,14 +226,12 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.IndexConfig],
 	},
 	".jira": {
-		defaults:        connectorConfigWithDefaultsJira,
 		remarshalConfig: remarshalConfig[kbapi.JiraConfig],
 	},
 	".opsgenie": {
 		remarshalConfig: remarshalConfig[kbapi.OpsgenieConfig],
 	},
 	".pagerduty": {
-		defaults:        connectorConfigWithDefaultsPagerduty,
 		remarshalConfig: remarshalConfig[kbapi.PagerdutyConfig],
 	},
 	".resilient": {
@@ -248,7 +246,7 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.ServicenowItomConfig],
 	},
 	".servicenow-sir": {
-		defaults:        connectorConfigWithDefaultsServicenowSir,
+		defaults:        connectorConfigWithDefaultsServicenow,
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
 	".slack_api": {
@@ -450,14 +448,6 @@ func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsJira(plan string) (string, error) {
-	return remarshalConfig[kbapi.JiraConfig](plan)
-}
-
-func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
-	return remarshalConfig[kbapi.PagerdutyConfig](plan)
-}
-
 func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
 	var planConfig kbapi.ServicenowConfig
 	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
@@ -489,10 +479,6 @@ func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 		return "", err
 	}
 	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
-	return connectorConfigWithDefaultsServicenow(plan)
 }
 
 func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
