@@ -41,7 +41,7 @@ func NewEnrichPolicyDataSource() datasource.DataSource {
 	)
 }
 
-func GetDataSourceSchema() schema.Schema {
+func GetDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: enrichPolicyDataSourceMarkdownDescription,
 		Attributes: map[string]schema.Attribute{

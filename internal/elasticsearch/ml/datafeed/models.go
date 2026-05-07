@@ -52,6 +52,16 @@ type Datafeed struct {
 	IndicesOptions          types.Object                                      `tfsdk:"indices_options"`
 }
 
+// GetID implements entitycore.ElasticsearchResourceModel.
+func (m Datafeed) GetID() types.String { return m.ID }
+
+// GetResourceID implements entitycore.ElasticsearchResourceModel.
+// Returns the plan-safe write identity (datafeed_id).
+func (m Datafeed) GetResourceID() types.String { return m.DatafeedID }
+
+// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
+func (m Datafeed) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+
 // ChunkingConfig represents the chunking configuration
 type ChunkingConfig struct {
 	Mode     types.String `tfsdk:"mode"`

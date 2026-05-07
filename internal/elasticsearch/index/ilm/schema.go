@@ -18,15 +18,12 @@
 package ilm
 
 import (
-	"context"
 	_ "embed"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -38,17 +35,18 @@ import (
 //go:embed descriptions/ilm_resource.md
 var resourceMarkdownDescription string
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+// ilmSchema returns the schema for the ILM resource without the elasticsearch_connection block.
+// The envelope injects that block automatically.
+func ilmSchema() schema.Schema {
+	return schema.Schema{
 		Version:             currentSchemaVersion,
 		MarkdownDescription: resourceMarkdownDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			ilmPhaseHot:                phaseHotBlock(),
-			ilmPhaseWarm:               phaseWarmBlock(),
-			ilmPhaseCold:               phaseColdBlock(),
-			ilmPhaseFrozen:             phaseFrozenBlock(),
-			ilmPhaseDelete:             phaseDeleteBlock(),
+			ilmPhaseHot:    phaseHotBlock(),
+			ilmPhaseWarm:   phaseWarmBlock(),
+			ilmPhaseCold:   phaseColdBlock(),
+			ilmPhaseFrozen: phaseFrozenBlock(),
+			ilmPhaseDelete: phaseDeleteBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -137,7 +135,7 @@ func phaseWarmBlock() schema.SingleNestedBlock {
 
 func phaseColdBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
-		MarkdownDescription: "The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it's okay if those queries are slower.",
+		MarkdownDescription: "The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it is okay if those queries are slower.",
 		Attributes: map[string]schema.Attribute{
 			"min_age": minAgeAttribute(),
 		},
@@ -156,7 +154,7 @@ func phaseColdBlock() schema.SingleNestedBlock {
 
 func phaseFrozenBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
-		MarkdownDescription: "The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it's okay if those queries are extremely slow.",
+		MarkdownDescription: "The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it is okay if those queries are extremely slow.",
 		Attributes: map[string]schema.Attribute{
 			"min_age": minAgeAttribute(),
 		},

@@ -18,12 +18,13 @@
 package exportsavedobjects
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func getDataSourceSchema() schema.Schema {
+func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Export Kibana saved objects. This data source allows you to export saved objects from Kibana and store the result in the Terraform state.",
 		Attributes: map[string]schema.Attribute{

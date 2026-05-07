@@ -30,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -41,20 +40,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-func (r *datafeedResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
-}
-
-func GetSchema() schema.Schema {
+// getSchema returns the resource schema without the elasticsearch_connection
+// block, which is injected by the entitycore envelope.
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
+		Blocks:              map[string]schema.Block{},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -272,15 +265,15 @@ func GetSchema() schema.Schema {
 
 // GetChunkingConfigAttrTypes returns the attribute types for chunking_config
 func GetChunkingConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // GetDelayedDataCheckConfigAttrTypes returns the attribute types for delayed_data_check_config
 func GetDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // GetIndicesOptionsAttrTypes returns the attribute types for indices_options
 func GetIndicesOptionsAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

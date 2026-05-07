@@ -18,6 +18,7 @@
 package inferenceendpoint
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -42,7 +43,7 @@ var (
 
 // getSchemaFactory returns the schema for the inference endpoint resource without
 // the elasticsearch_connection block; the envelope injects that block automatically.
-func getSchemaFactory() schema.Schema {
+func getSchemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: inferenceEndpointDescription,
 		Attributes: map[string]schema.Attribute{

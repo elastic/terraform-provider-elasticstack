@@ -47,7 +47,7 @@ type enrollmentTokenModel struct {
 }
 
 func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []kbapi.EnrollmentApiKey) (diags diag.Diagnostics) {
-	model.Tokens = typeutils.SliceToListType(ctx, data, getTokenType(), path.Root("tokens"), &diags, newEnrollmentTokenModel)
+	model.Tokens = typeutils.SliceToListType(ctx, data, getTokenType(ctx), path.Root("tokens"), &diags, newEnrollmentTokenModel)
 	return
 }
 

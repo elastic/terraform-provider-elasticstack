@@ -18,6 +18,7 @@
 package indices
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -33,7 +34,7 @@ import (
 const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
 	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
 
-func getDataSourceSchema() schema.Schema {
+func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Retrieves information about existing Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-index.html",
 		Attributes: map[string]schema.Attribute{
@@ -432,8 +433,8 @@ func getAliasSchema() schema.SetNestedAttribute {
 	}
 }
 
-func indicesElementType() attr.Type {
-	return getDataSourceSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
+func indicesElementType(ctx context.Context) attr.Type {
+	return getDataSourceSchema(ctx).Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
 func aliasElementType() attr.Type {

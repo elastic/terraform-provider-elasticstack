@@ -35,7 +35,7 @@ func testResourceSchema(t *testing.T) schema.Schema {
 	t.Helper()
 	ctx := context.Background()
 	var resp resource.SchemaResponse
-	(&Resource{}).Schema(ctx, resource.SchemaRequest{}, &resp)
+	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
 	return resp.Schema
 }
 

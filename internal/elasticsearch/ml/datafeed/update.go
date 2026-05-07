@@ -20,94 +20,69 @@ package datafeed
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *datafeedResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+// updateDatafeed updates the datafeed configuration. It stops the datafeed if
+// running, applies the update, restarts it, and sets the composite ID. It
+// satisfies the entitycore ElasticsearchUpdateFunc[Datafeed] signature.
+// The envelope handles read-after-write and state persistence.
+func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
-	var plan Datafeed
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state Datafeed
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	datafeedID := plan.DatafeedID.ValueString()
+	datafeedID := resourceID
 	if datafeedID == "" {
-		resp.Diagnostics.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
+		return plan, diags
 	}
 
 	// Convert to API update model (raw JSON to preserve query form)
-	updateBody, diags := plan.toAPIUpdateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateBody, convDiags := plan.toAPIUpdateModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	needsRestart, diags := r.maybeStopDatafeed(ctx, client, datafeedID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	needsRestart, stopDiags := maybeStopDatafeed(ctx, client, datafeedID)
+	diags.Append(stopDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	// Update the datafeed
 	updateDiags := elasticsearch.UpdateDatafeed(ctx, client, datafeedID, updateBody)
-	resp.Diagnostics.Append(updateDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	// Restart the datafeed if it was running
 	if needsRestart {
 		startDiags := elasticsearch.StartDatafeed(ctx, client, datafeedID, "", "", 0)
-		resp.Diagnostics.Append(startDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(startDiags...)
+		if diags.HasError() {
+			return plan, diags
 		}
 
 		// Wait for the datafeed to reach started state
 		_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStarted)
-		resp.Diagnostics.Append(waitDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(waitDiags...)
+		if diags.HasError() {
+			return plan, diags
 		}
 	}
 
-	// Read the updated datafeed to get the full state
+	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, datafeedID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	found, readDiags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read updated datafeed", "Datafeed not found after update")
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	return plan, diags
 }

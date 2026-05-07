@@ -19,18 +19,17 @@ package template
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // readIndexTemplate loads the named index template from Elasticsearch and maps it into [Model].
-// The second return value is true when the template exists; false on 404 or when diagnostics contain errors after a successful GET.
-func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, name string) (Model, bool, diag.Diagnostics) {
+// It accepts the prior state model so alias reconciliation and canonicalization can run inside the
+// callback. The second return value is true when the template exists; false on 404.
+// ID and ElasticsearchConnection are copied from prior to the returned model.
+func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, name string, prior Model) (Model, bool, diag.Diagnostics) {
 	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, name)
 	if diags.HasError() {
 		return Model{}, false, diags
@@ -44,51 +43,18 @@ func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedC
 	if diags.HasError() {
 		return Model{}, false, diags
 	}
-	return out, true, diags
-}
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var prior Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(applyTemplateAliasReconciliationFromReference(ctx, &out, &prior)...)
+	if diags.HasError() {
+		return Model{}, false, diags
 	}
-
-	compID, diags := clients.CompositeIDFromStrFw(prior.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	templateName := compID.ResourceID
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, prior.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(canonicalizeTemplateAliasSetInModel(ctx, &out)...)
+	if diags.HasError() {
+		return Model{}, false, diags
 	}
 
-	out, found, diags := readIndexTemplate(ctx, client, templateName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, templateName))
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &out, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &out)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	out.ElasticsearchConnection = prior.ElasticsearchConnection
 	out.ID = prior.ID
+	out.ElasticsearchConnection = prior.ElasticsearchConnection
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
+	return out, true, diags
 }

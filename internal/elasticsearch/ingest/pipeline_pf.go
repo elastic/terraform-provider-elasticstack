@@ -61,7 +61,7 @@ func (d Data) GetResourceID() types.String { return d.Name }
 
 // GetSchema returns the Plugin Framework schema without the
 // elasticsearch_connection block, which is injected by the envelope.
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
 		Attributes: map[string]schema.Attribute{

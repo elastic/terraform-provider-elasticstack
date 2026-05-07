@@ -18,6 +18,7 @@
 package datastreamlifecycle
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -31,7 +32,7 @@ import (
 
 // getSchemaFactory returns the schema for the data stream lifecycle resource
 // without the elasticsearch_connection block; the envelope injects that block.
-func getSchemaFactory() schema.Schema {
+func getSchemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Configures the data stream lifecycle for the targeted data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html",
 		Attributes: map[string]schema.Attribute{
@@ -91,6 +92,6 @@ func getSchemaFactory() schema.Schema {
 	}
 }
 
-func downsamplingElementType() attr.Type {
-	return getSchemaFactory().Attributes["downsampling"].GetType().(attr.TypeWithElementType).ElementType()
+func downsamplingElementType(ctx context.Context) attr.Type {
+	return getSchemaFactory(ctx).Attributes["downsampling"].GetType().(attr.TypeWithElementType).ElementType()
 }

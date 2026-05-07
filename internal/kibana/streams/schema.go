@@ -18,6 +18,7 @@
 package streams
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -29,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [Streams](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-streams). " +
 			"Streams is an experimental feature for managing data ingestion in Kibana. " +
