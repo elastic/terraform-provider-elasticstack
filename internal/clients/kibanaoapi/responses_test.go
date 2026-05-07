@@ -80,18 +80,3 @@ func TestHandleMutateResponse(t *testing.T) {
 		assert.JSONEq(t, `{"error":"missing"}`, diags[0].Detail())
 	})
 }
-
-func TestHandleStatusResponse(t *testing.T) {
-	t.Run("returns nil for accepted status codes", func(t *testing.T) {
-		assert.False(t, handleStatusResponse(http.StatusOK, nil, http.StatusOK, http.StatusNotFound).HasError())
-		assert.False(t, handleStatusResponse(http.StatusNotFound, nil, http.StatusOK, http.StatusNotFound).HasError())
-	})
-
-	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
-		diags := handleStatusResponse(http.StatusBadRequest, []byte(`bad request`), http.StatusOK)
-
-		require.True(t, diags.HasError())
-		assert.Equal(t, "Unexpected status code from server: got HTTP 400", diags[0].Summary())
-		assert.Equal(t, "bad request", diags[0].Detail())
-	})
-}

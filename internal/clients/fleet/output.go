@@ -31,7 +31,7 @@ import (
 func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.GetFleetOutputsWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -48,7 +48,7 @@ func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.Ou
 func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -65,7 +65,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -80,7 +80,7 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -95,7 +95,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)
