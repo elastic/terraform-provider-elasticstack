@@ -484,6 +484,34 @@ func TestAccResourceWatch_nullMetadata(t *testing.T) {
 					},
 				},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "metadata", `{"example_key":"example_value"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
 		},
 	})
 }
