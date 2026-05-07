@@ -268,17 +268,23 @@ func getSchema() schema.Schema {
 				Blocks: map[string]schema.Block{
 					"time": schema.SingleNestedBlock{
 						MarkdownDescription: "Specifies that the transform uses a time field to set the retention policy.",
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(
+								path.MatchRelative().AtName("field"),
+								path.MatchRelative().AtName("max_age"),
+							),
+						},
 						Attributes: map[string]schema.Attribute{
 							"field": schema.StringAttribute{
 								MarkdownDescription: "The date field that is used to calculate the age of the document.",
-								Required:            true,
+								Optional:            true,
 								Validators: []validator.String{
 									stringvalidator.LengthAtLeast(1),
 								},
 							},
 							"max_age": schema.StringAttribute{
 								MarkdownDescription: "Specifies the maximum age of a document in the destination index.",
-								Required:            true,
+								Optional:            true,
 								Validators: []validator.String{
 									validators.ElasticDuration(),
 								},
@@ -295,10 +301,15 @@ func getSchema() schema.Schema {
 				Blocks: map[string]schema.Block{
 					"time": schema.SingleNestedBlock{
 						MarkdownDescription: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(
+								path.MatchRelative().AtName("field"),
+							),
+						},
 						Attributes: map[string]schema.Attribute{
 							"field": schema.StringAttribute{
 								MarkdownDescription: "The date field that is used to identify new documents in the source.",
-								Required:            true,
+								Optional:            true,
 								Validators: []validator.String{
 									stringvalidator.LengthAtLeast(1),
 								},
