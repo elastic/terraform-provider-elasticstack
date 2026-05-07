@@ -53,7 +53,7 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func schemaFactory() rschema.Schema {
+func schemaFactory(_ context.Context) rschema.Schema {
 	return getSchema(currentSchemaVersion)
 }
 

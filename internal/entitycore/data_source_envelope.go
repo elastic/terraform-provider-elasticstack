@@ -90,7 +90,7 @@ type genericKibanaDataSource[T KibanaDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
-	schemaFactory  func() dsschema.Schema
+	schemaFactory  func(context.Context) dsschema.Schema
 	readFunc       func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics)
 }
 
@@ -100,7 +100,7 @@ type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
-	schemaFactory  func() dsschema.Schema
+	schemaFactory  func(context.Context) dsschema.Schema
 	readFunc       func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics)
 }
 
@@ -122,14 +122,14 @@ type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 //	    return entitycore.NewKibanaDataSource[myModel](
 //	        entitycore.ComponentKibana,
 //	        "my_entity",
-//	        getDataSourceSchema, // returns datasource.Schema without kibana_connection block
+//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
 //	        readMyEntity,
 //	    )
 //	}
 func NewKibanaDataSource[T KibanaDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func() dsschema.Schema,
+	schemaFactory func(context.Context) dsschema.Schema,
 	readFunc func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericKibanaDataSource[T]{
@@ -149,7 +149,7 @@ func NewKibanaDataSource[T KibanaDataSourceModel](
 func NewElasticsearchDataSource[T ElasticsearchDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func() dsschema.Schema,
+	schemaFactory func(context.Context) dsschema.Schema,
 	readFunc func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericElasticsearchDataSource[T]{
@@ -191,8 +191,8 @@ func (d *genericElasticsearchDataSource[T]) Metadata(_ context.Context, req data
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
-func (d *genericKibanaDataSource[T]) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory()
+func (d *genericKibanaDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	schema := d.schemaFactory(ctx)
 	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()
@@ -201,8 +201,8 @@ func (d *genericKibanaDataSource[T]) Schema(_ context.Context, _ datasource.Sche
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
-func (d *genericElasticsearchDataSource[T]) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory()
+func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	schema := d.schemaFactory(ctx)
 	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()

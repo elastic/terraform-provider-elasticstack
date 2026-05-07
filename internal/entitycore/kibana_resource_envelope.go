@@ -92,7 +92,7 @@ type KibanaUpdateFunc[T KibanaResourceModel] func(
 // choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	*ResourceBase
-	schemaFactory func() rschema.Schema
+	schemaFactory func(context.Context) rschema.Schema
 	readFunc      kibanaReadFunc[T]
 	deleteFunc    kibanaDeleteFunc[T]
 	createFunc    KibanaCreateFunc[T]
@@ -139,7 +139,7 @@ func PlaceholderKibanaWriteCallbacks[T KibanaResourceModel]() (KibanaCreateFunc[
 func NewKibanaResource[T KibanaResourceModel](
 	component Component,
 	name string,
-	schemaFactory func() rschema.Schema,
+	schemaFactory func(context.Context) rschema.Schema,
 	readFunc kibanaReadFunc[T],
 	deleteFunc kibanaDeleteFunc[T],
 	createFunc KibanaCreateFunc[T],
@@ -157,8 +157,8 @@ func NewKibanaResource[T KibanaResourceModel](
 
 // Schema implements [resource.Resource], injecting the kibana_connection
 // block into the schema returned by the concrete schema factory.
-func (r *KibanaResource[T]) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := r.schemaFactory()
+func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()

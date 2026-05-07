@@ -25,6 +25,7 @@ import (
 	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
@@ -233,6 +234,7 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		cluster.NewSnapshotRepositoryDataSource,
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,

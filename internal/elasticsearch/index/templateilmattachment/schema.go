@@ -18,6 +18,7 @@
 package templateilmattachment
 
 import (
+	"context"
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -28,7 +29,7 @@ import (
 //go:embed resource-description.md
 var resourceDescription string
 
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 

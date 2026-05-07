@@ -20,47 +20,40 @@ package datafeed
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *datafeedResource) read(ctx context.Context, model *Datafeed) (bool, fwdiags.Diagnostics) {
+// readDatafeed fetches the datafeed from Elasticsearch and populates the model.
+// It satisfies the entitycore elasticsearchReadFunc[Datafeed] signature.
+func readDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Datafeed) (Datafeed, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	if !r.resourceReady(&diags) {
-		return false, diags
-	}
-
-	datafeedID := model.DatafeedID.ValueString()
+	datafeedID := resourceID
 	if datafeedID == "" {
 		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return false, diags
-	}
-
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	// Get the datafeed from Elasticsearch
 	apiModel, getDiags := elasticsearch.GetDatafeed(ctx, client, datafeedID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	if apiModel == nil {
 		// Datafeed not found
-		return false, diags
+		return state, false, diags
 	}
 
 	// Convert API model to TF model
-	convertDiags := model.FromAPIModel(ctx, apiModel)
+	convertDiags := state.FromAPIModel(ctx, apiModel)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
-	return true, diags
+	return state, true, diags
 }
