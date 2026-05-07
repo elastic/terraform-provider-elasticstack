@@ -404,6 +404,40 @@ func populateRepositoryTypeBlocks(
 ) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	// Initialise all type blocks to empty lists so non-matching blocks are
+	// explicitly empty rather than null.
+	emptyLists := map[string]*types.List{
+		"fs":    &config.Fs,
+		"url":   &config.URL,
+		"gcs":   &config.GCS,
+		"azure": &config.Azure,
+		"s3":    &config.S3,
+		"hdfs":  &config.HDFS,
+	}
+	for key, ptr := range emptyLists {
+		var elemType attr.Type
+		switch key {
+		case "fs":
+			elemType = fsElementType()
+		case "url":
+			elemType = urlElementType()
+		case "gcs":
+			elemType = gcsElementType()
+		case "azure":
+			elemType = azureElementType()
+		case "s3":
+			elemType = s3ElementType()
+		case "hdfs":
+			elemType = hdfsElementType()
+		}
+		empty, d := types.ListValue(elemType, nil)
+		diags.Append(d...)
+		*ptr = empty
+	}
+	if diags.HasError() {
+		return config, diags
+	}
+
 	switch currentRepo.Type {
 	case "fs":
 		model, err := flattenFsSettings(currentRepo.Settings)
