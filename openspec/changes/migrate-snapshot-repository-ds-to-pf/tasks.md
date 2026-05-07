@@ -26,8 +26,8 @@
 
 ## 4. Provider Registration
 
-- [ ] 4.1 Add `cluster.NewSnapshotRepositoryDataSource` (or equivalent) to `provider/plugin_framework.go` `DataSources` slice
-- [ ] 4.2 Remove `"elasticstack_elasticsearch_snapshot_repository": cluster.DataSourceSnapshotRespository()` from `provider/provider.go` `DataSourcesMap`
+- [x] 4.1 Add `cluster.NewSnapshotRepositoryDataSource` (or equivalent) to `provider/plugin_framework.go` `DataSources` slice
+- [x] 4.2 Remove `"elasticstack_elasticsearch_snapshot_repository": cluster.DataSourceSnapshotRespository()` from `provider/provider.go` `DataSourcesMap`
 
 ## 5. Testing
 
