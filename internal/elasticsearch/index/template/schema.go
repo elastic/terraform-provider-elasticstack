@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func resourceSchema() schema.Schema {
+func resourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             schemaVersion,
 		MarkdownDescription: mdDescIndexTemplateResource,

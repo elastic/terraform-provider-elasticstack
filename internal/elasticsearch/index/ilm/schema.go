@@ -37,7 +37,7 @@ var resourceMarkdownDescription string
 
 // ilmSchema returns the schema for the ILM resource without the elasticsearch_connection block.
 // The envelope injects that block automatically.
-func ilmSchema() schema.Schema {
+func ilmSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             currentSchemaVersion,
 		MarkdownDescription: resourceMarkdownDescription,
