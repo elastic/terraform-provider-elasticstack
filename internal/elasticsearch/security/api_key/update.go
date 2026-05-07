@@ -19,6 +19,7 @@ package apikey
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -63,7 +64,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 	if !found {
-		resp.Diagnostics.AddError("API Key Not Found After Update", "The API key was not found immediately after update.")
+		resp.Diagnostics.AddError("API Key Not Found After Update", fmt.Sprintf("API key %q was not found immediately after update.", compID.ResourceID))
 		return
 	}
 

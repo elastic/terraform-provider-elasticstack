@@ -74,7 +74,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 	if !found {
-		resp.Diagnostics.AddError("API Key Not Found After Create", "The API key was not found immediately after creation.")
+		resp.Diagnostics.AddError("API Key Not Found After Create", fmt.Sprintf("API key %q was not found immediately after creation.", compID.ResourceID))
 		return
 	}
 
