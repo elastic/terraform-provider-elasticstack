@@ -21,55 +21,42 @@ import (
 	"context"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 const customSuffix = "@custom"
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state tfModel
+// readILMAttachment derives index_template from the component template name
+// during import (when state.IndexTemplate is unknown) and returns found=false
+// when the template or the ILM setting is absent.
+func readILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	compID, diags := state.GetID()
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	componentTemplateName := compID.ResourceID
-	// Derive index_template from component template name for import (component name is <index_template>@custom)
 	if !typeutils.IsKnown(state.IndexTemplate) {
-		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
+		state.IndexTemplate = types.StringValue(strings.TrimSuffix(resourceID, customSuffix))
 	}
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
+	if sdkDiags.HasError() {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return state, false, diags
 	}
 
-	found, diags := readILMAttachment(ctx, &state, client)
-	if !found {
-		if diags.HasError() {
-			resp.Diagnostics.Append(diags...)
-			return
-		}
-		tflog.Warn(ctx, "Component template or ILM setting not found, removing from state", map[string]any{
-			"name": componentTemplateName,
-		})
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	modelTpl := toModelComponentTemplateResponse(tpl)
+	if modelTpl == nil {
+		return state, false, nil
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
+	if lifecycleName == "" {
+		return state, false, nil
+	}
+
+	state.LifecycleName = types.StringValue(lifecycleName)
+	return state, true, nil
 }

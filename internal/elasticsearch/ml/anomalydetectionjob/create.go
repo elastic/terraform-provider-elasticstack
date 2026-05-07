@@ -21,74 +21,53 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectionJobResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+// createAnomalyDetectionJob creates the ML job and sets the composite ID on the
+// returned model. It satisfies the entitycore ElasticsearchCreateFunc[TFModel]
+// signature. The envelope handles the read-after-write and state persistence.
+func createAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	jobID := plan.JobID.ValueString()
+	jobID := resourceID
 
 	// Convert TF model to API model
-	apiModel, diags := plan.toAPIModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiModel, convDiags := plan.toAPIModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML anomaly detection job: %s", jobID))
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return plan, diags
 	}
 
 	// Build typed request and call the typed API
 	putReq := apiModel.toPutJobRequest()
 	_, err = typedClient.Ml.PutJob(jobID).Request(&putReq).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ML anomaly detection job", fmt.Sprintf("Unable to create ML anomaly detection job: %s — %s", jobID, err.Error()))
-		return
+		diags.AddError("Failed to create ML anomaly detection job", fmt.Sprintf("Unable to create ML anomaly detection job: %s — %s", jobID, err.Error()))
+		return plan, diags
 	}
 
-	// Read the created job to get the full state.
+	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, jobID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read created job", fmt.Sprintf("Job with ID %s not found after creation", jobID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML anomaly detection job: %s", jobID))
+	return plan, diags
 }

@@ -18,6 +18,7 @@
 package rolemapping
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -31,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Attributes: map[string]schema.Attribute{

@@ -96,7 +96,7 @@ type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
 // choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	*ResourceBase
-	schemaFactory func() rschema.Schema
+	schemaFactory func(context.Context) rschema.Schema
 	readFunc      elasticsearchReadFunc[T]
 	deleteFunc    elasticsearchDeleteFunc[T]
 	createFunc    ElasticsearchCreateFunc[T]
@@ -134,7 +134,7 @@ func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (Ela
 func NewElasticsearchResource[T ElasticsearchResourceModel](
 	component Component,
 	name string,
-	schemaFactory func() rschema.Schema,
+	schemaFactory func(context.Context) rschema.Schema,
 	readFunc elasticsearchReadFunc[T],
 	deleteFunc elasticsearchDeleteFunc[T],
 	createFunc ElasticsearchCreateFunc[T],
@@ -152,8 +152,8 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](
 
 // Schema implements [resource.Resource], injecting the elasticsearch_connection
 // block into the schema returned by the concrete schema factory.
-func (r *ElasticsearchResource[T]) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := r.schemaFactory()
+func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()

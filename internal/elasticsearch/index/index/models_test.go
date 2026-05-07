@@ -38,7 +38,7 @@ import (
 func Test_tfModel_toAPIModel(t *testing.T) {
 	validAliases, diags := basetypes.NewSetValueFrom(
 		context.Background(),
-		aliasElementType(),
+		aliasElementType(context.Background()),
 		[]aliasTfModel{
 			{Name: basetypes.NewStringValue("alias-0")},
 			{
@@ -56,7 +56,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 
 	validSetting, diags := basetypes.NewSetValueFrom(
 		context.Background(),
-		settingElementType(),
+		settingElementType(context.Background()),
 		[]settingTfModel{
 			{Name: basetypes.NewStringValue("number_of_replicas"), Value: basetypes.NewStringValue("5")},
 		},
@@ -64,7 +64,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	require.Empty(t, diags)
 
 	validSettingsBlock, diags := basetypes.NewObjectValue(
-		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType()}},
+		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType(context.Background())}},
 		map[string]attr.Value{
 			"setting": validSetting,
 		},
@@ -72,7 +72,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	require.Empty(t, diags)
 
 	validSettings, diags := basetypes.NewListValue(
-		settingsElementType(),
+		settingsElementType(context.Background()),
 		[]attr.Value{validSettingsBlock},
 	)
 	require.Empty(t, diags)

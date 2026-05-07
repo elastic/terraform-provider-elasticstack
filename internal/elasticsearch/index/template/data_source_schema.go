@@ -18,6 +18,7 @@
 package template
 
 import (
+	"context"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -25,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getDataSourceSchema() dschema.Schema {
+func getDataSourceSchema(_ context.Context) dschema.Schema {
 	return dschema.Schema{
 		MarkdownDescription: mdDescIndexTemplateDataSource,
 		Blocks: map[string]dschema.Block{

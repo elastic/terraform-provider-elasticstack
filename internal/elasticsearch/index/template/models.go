@@ -41,6 +41,13 @@ type Model struct {
 	Template                        types.Object         `tfsdk:"template"`
 }
 
+// GetID satisfies [entitycore.ElasticsearchResourceModel].
+func (m Model) GetID() types.String { return m.ID }
+
+// GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
+// For index templates the write identity is the template name.
+func (m Model) GetResourceID() types.String { return m.Name }
+
 // DataStreamModel is the inner shape of the data_stream block (for Object.As).
 type DataStreamModel struct {
 	Hidden             types.Bool `tfsdk:"hidden"`

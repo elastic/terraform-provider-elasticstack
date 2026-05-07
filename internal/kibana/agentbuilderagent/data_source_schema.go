@@ -18,6 +18,7 @@
 package agentbuilderagent
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -26,7 +27,7 @@ import (
 // getDataSourceSchema returns the schema for the agent data source.
 // The kibana_connection block is injected by the envelope and must not be
 // declared here.
-func getDataSourceSchema() dsschema.Schema {
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Description: "Export an Agent Builder agent by ID, optionally including its tools and workflows. See https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-agent-builder-agents-id",
 		MarkdownDescription: "Export an Agent Builder agent by ID, optionally including its tools and workflows. " +

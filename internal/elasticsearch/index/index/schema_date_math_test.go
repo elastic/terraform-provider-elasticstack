@@ -33,7 +33,7 @@ import (
 // against the given value and reports whether any error diagnostics were produced.
 func validateName(t *testing.T, value string) (hasError bool) {
 	t.Helper()
-	s := getSchema()
+	s := getSchema(context.Background())
 	nameAttrRaw, ok := s.Attributes["name"]
 	require.True(t, ok, "name attribute not found in schema")
 

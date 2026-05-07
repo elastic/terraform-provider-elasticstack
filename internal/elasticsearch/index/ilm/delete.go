@@ -22,42 +22,22 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !state.ForceDestroy.IsNull() && state.ForceDestroy.ValueBool() {
-		indices, diags := elasticsearch.GetIndicesWithILMPolicy(ctx, client, compID.ResourceID)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
+// deleteILM is the envelope delete callback for the ILM resource.
+func deleteILM(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model tfModel) diag.Diagnostics {
+	if !model.ForceDestroy.IsNull() && model.ForceDestroy.ValueBool() {
+		indices, diags := elasticsearch.GetIndicesWithILMPolicy(ctx, client, resourceID)
+		if diags.HasError() {
+			return diags
 		}
-
 		if len(indices) > 0 {
-			resp.Diagnostics.Append(elasticsearch.ClearILMPolicyFromIndices(ctx, client, indices)...)
-			if resp.Diagnostics.HasError() {
-				return
+			diags = elasticsearch.ClearILMPolicyFromIndices(ctx, client, indices)
+			if diags.HasError() {
+				return diags
 			}
 		}
 	}
-
-	resp.Diagnostics.Append(elasticsearch.DeleteIlm(ctx, client, compID.ResourceID)...)
+	return elasticsearch.DeleteIlm(ctx, client, resourceID)
 }

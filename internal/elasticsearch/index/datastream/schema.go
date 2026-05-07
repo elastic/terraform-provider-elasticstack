@@ -18,6 +18,7 @@
 package datastream
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -36,7 +37,7 @@ const (
 
 // GetSchema returns the Plugin Framework schema for the data stream resource.
 // The elasticsearch_connection block is injected by the entitycore envelope.
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Managing Elasticsearch data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html",
 		Attributes: map[string]schema.Attribute{
@@ -120,6 +121,6 @@ func GetSchema() schema.Schema {
 }
 
 // indicesElementType returns the element type for the indices list attribute.
-func indicesElementType() attr.Type {
-	return GetSchema().Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
+func indicesElementType(ctx context.Context) attr.Type {
+	return GetSchema(ctx).Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
 }

@@ -51,8 +51,8 @@ func readAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 // readAliasIntoModel populates the provided model from alias API response.
 func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]esTypes.IndexAliases, model *tfModel) diag.Diagnostics {
 	if len(indices) == 0 {
-		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes(ctx)})
 		return nil
 	}
 
@@ -64,8 +64,8 @@ func readAliasIntoModel(ctx context.Context, aliasName string, indices map[strin
 	}
 
 	if len(aliasData) == 0 {
-		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes()})
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes(ctx)})
 		return nil
 	}
 

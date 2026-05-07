@@ -516,21 +516,18 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 }
 
 func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.OutputID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
-	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
-	}
+	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+		id:                   data.Id,
+		name:                 data.Name,
+		outputType:           string(data.Type),
+		hosts:                data.Hosts,
+		caSha256:             data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault,
+		isDefaultMonitoring:  data.IsDefaultMonitoring,
+		configYaml:           data.ConfigYaml,
+		ssl:                  data.Ssl,
+	})
 
 	// Kafka-specific fields - initialize kafka nested object
 	kafkaModel := outputKafkaModel{}
@@ -644,13 +641,6 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaObj, nd := types.ObjectValueFrom(ctx, getKafkaAttrTypes(), kafkaModel)
 	diags.Append(nd...)
 	model.Kafka = kafkaObj
-
-	// Note: SpaceIDs is not returned by the API for outputs
-	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
-	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
 
 	clearRemoteElasticsearchOnlyFields(model)
 

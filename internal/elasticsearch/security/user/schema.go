@@ -18,6 +18,7 @@
 package securityuser
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -33,7 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
 		"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
 

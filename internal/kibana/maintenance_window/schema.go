@@ -18,6 +18,7 @@
 package maintenancewindow
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -31,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)",
 		Attributes: map[string]schema.Attribute{

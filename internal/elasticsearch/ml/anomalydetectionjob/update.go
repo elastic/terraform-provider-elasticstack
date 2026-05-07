@@ -27,8 +27,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
+// Update overrides the envelope's Update because building the update body
+// requires comparing the plan with the prior Terraform state.
+func (r *anomalyDetectionJobResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if r.Client() == nil {
+		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
 		return
 	}
 
@@ -95,9 +98,9 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	// Read the updated job to get the current state
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	// Read back the updated job to get the current state
+	resultModel, found, readDiags := readAnomalyDetectionJob(ctx, client, jobID, plan)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,7 +110,7 @@ Please report this warning to the provider developers.`)
 	}
 
 	// Set the updated state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML anomaly detection job: %s", jobID))
 }

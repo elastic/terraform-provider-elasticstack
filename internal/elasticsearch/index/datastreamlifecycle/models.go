@@ -128,5 +128,5 @@ func convertDownsamplingToModel(ctx context.Context, apiDownsamplings []models.D
 		})
 	}
 
-	return types.ListValueFrom(ctx, downsamplingElementType(), downsamplings)
+	return types.ListValueFrom(ctx, downsamplingElementType(ctx), downsamplings)
 }
