@@ -26,8 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 type processorCommunityIDModel struct {
@@ -60,22 +58,22 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
 	if IsKnown(m.SourcePort) {
-		body.SourcePort = typeutils.Ref(int(m.SourcePort.ValueInt64()))
+		body.SourcePort = new(int(m.SourcePort.ValueInt64()))
 	}
 	if IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
 	if IsKnown(m.DestinationPort) {
-		body.DestinationPort = typeutils.Ref(int(m.DestinationPort.ValueInt64()))
+		body.DestinationPort = new(int(m.DestinationPort.ValueInt64()))
 	}
 	if IsKnown(m.IanaNumber) {
-		body.IanaNumber = typeutils.Ref(int(m.IanaNumber.ValueInt64()))
+		body.IanaNumber = new(int(m.IanaNumber.ValueInt64()))
 	}
 	if IsKnown(m.IcmpType) {
-		body.IcmpType = typeutils.Ref(int(m.IcmpType.ValueInt64()))
+		body.IcmpType = new(int(m.IcmpType.ValueInt64()))
 	}
 	if IsKnown(m.IcmpCode) {
-		body.IcmpCode = typeutils.Ref(int(m.IcmpCode.ValueInt64()))
+		body.IcmpCode = new(int(m.IcmpCode.ValueInt64()))
 	}
 	if IsKnown(m.Transport) {
 		body.Transport = m.Transport.ValueString()
@@ -85,9 +83,9 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if m.Seed.IsNull() || m.Seed.IsUnknown() {
 		m.Seed = types.Int64Value(0)
-		body.Seed = typeutils.Ref(0)
+		body.Seed = new(0)
 	} else {
-		body.Seed = typeutils.Ref(int(m.Seed.ValueInt64()))
+		body.Seed = new(int(m.Seed.ValueInt64()))
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)

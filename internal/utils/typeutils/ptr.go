@@ -76,11 +76,6 @@ func Ltoi(value *int64) *int {
 	return new(int(*value))
 }
 
-// Ref returns a pointer to the given value.
-func Ref[T any](v T) *T {
-	return &v
-}
-
 // NonEmptyStringPtr returns a pointer to s, or nil if s is empty.
 func NonEmptyStringPtr(s string) *string {
 	if s == "" {
