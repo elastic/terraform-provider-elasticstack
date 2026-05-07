@@ -17,7 +17,7 @@ variable "slm_policy_name" {
 resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   name = var.repository_name
 
-  fs {
+  fs = {
     location                  = "/tmp/snapshots"
     compress                  = true
     max_restore_bytes_per_sec = "20mb"
