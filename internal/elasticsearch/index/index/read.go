@@ -23,56 +23,25 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	model, diags := readIndex(ctx, stateModel, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if model == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-}
-
-func readIndex(ctx context.Context, stateModel tfModel, client *clients.ElasticsearchScopedClient) (*tfModel, diag.Diagnostics) {
-	id, diags := stateModel.GetID()
+// readIndex is the envelope read callback. It fetches the index identified by
+// resourceID and populates the returned model. Returning found==false signals
+// the resource should be removed from state.
+func readIndex(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, stateModel tfModel) (tfModel, bool, diag.Diagnostics) {
+	apiModel, diags := elasticsearch.GetIndex(ctx, client, resourceID)
 	if diags.HasError() {
-		return nil, diags
-	}
-
-	indexName := id.ResourceID
-	apiModel, diags := elasticsearch.GetIndex(ctx, client, indexName)
-	if diags.HasError() {
-		return nil, diags
+		return tfModel{}, false, diags
 	}
 
 	if apiModel == nil {
-		return nil, nil
+		return tfModel{}, false, nil
 	}
 
-	diags = stateModel.populateFromAPI(ctx, indexName, *apiModel)
+	diags = stateModel.populateFromAPI(ctx, resourceID, *apiModel)
 	if diags.HasError() {
-		return nil, diags
+		return tfModel{}, false, diags
 	}
 
-	return &stateModel, nil
+	return stateModel, true, nil
 }
