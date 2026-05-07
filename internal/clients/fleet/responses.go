@@ -19,34 +19,14 @@ package fleet
 
 import (
 	"net/http"
-	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// clientError converts an API transport error into diagnostics.
-func clientError(err error) diag.Diagnostics {
-	return diagutil.FrameworkDiagFromError(err)
-}
-
 // handleDeleteResponse handles responses from delete operations. Both 200 and
 // 404 are treated as success (idempotent delete). Any other status code is
 // reported as an error.
 func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
-	switch statusCode {
-	case http.StatusOK, http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(statusCode, body)
-	}
-}
-
-// handleStatusResponse returns nil diagnostics when statusCode is one of the
-// provided successCodes, and an error diagnostic otherwise.
-func handleStatusResponse(statusCode int, body []byte, successCodes ...int) diag.Diagnostics {
-	if slices.Contains(successCodes, statusCode) {
-		return nil
-	}
-	return diagutil.ReportUnknownHTTPError(statusCode, body)
+	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
 }

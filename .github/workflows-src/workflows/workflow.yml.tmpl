@@ -1,0 +1,58 @@
+---
+name: Workflows CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    name: Change Classification
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      workflow_changes: ${{ steps.classify.outputs.workflow_changes }}
+    steps:
+      - id: classify
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          x-script-include: scripts/classify_changes.inline.js
+
+  test:
+    name: Test
+    needs: classify
+    if: needs.classify.outputs.workflow_changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "24"
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Get dependencies
+        run: make vendor
+      - name: Workflow tests
+        run: make workflow-test
+      - name: Hook tests
+        run: make hook-test
+
+  gate:
+    name: Gate
+    needs: [classify, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - id: gate
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          x-script-include: scripts/gate.inline.js

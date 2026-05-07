@@ -261,9 +261,18 @@ func appendToFile(path, content string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = f.WriteString(content)
-	return err
+
+	if _, err := f.WriteString(content); err != nil {
+		if closeErr := f.Close(); closeErr != nil {
+			return fmt.Errorf("write failed and close failed: %w", errors.Join(err, closeErr))
+		}
+		return err
+	}
+
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func logJSON(kind string, payload map[string]any) {

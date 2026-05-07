@@ -42,7 +42,7 @@ type downsamplingTfModel struct {
 	FixedInterval types.String `tfsdk:"fixed_interval"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+func (model tfModel) GetTFID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
@@ -50,6 +50,10 @@ func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
 
 	return compID, nil
 }
+
+func (model tfModel) GetID() types.String                    { return model.ID }
+func (model tfModel) GetResourceID() types.String            { return model.Name }
+func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
 
 func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, diag.Diagnostics) {
 	var diags diag.Diagnostics
