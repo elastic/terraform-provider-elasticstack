@@ -29,6 +29,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+const defaultUsername = "api_key"
+
 const defaultPipelineMetadata = `{"type":"logstash_pipeline","version":1}`
 
 // GetSchema returns the PF schema for the logstash pipeline resource.
@@ -52,6 +54,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Description of the pipeline.",
 				Optional:            true,
 				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 			},
 			"last_modified": schema.StringAttribute{
 				MarkdownDescription: "Date the pipeline was last updated.",
@@ -71,6 +74,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "User who last updated the pipeline.",
 				Optional:            true,
 				Computed:            true,
+				Default:             stringdefault.StaticString(defaultUsername),
 			},
 			// Pipeline settings
 			"pipeline_batch_delay": schema.Int64Attribute{
