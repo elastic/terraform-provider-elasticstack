@@ -99,5 +99,5 @@ func buildIndicesList(ctx context.Context, esIndices []estypes.DataStreamIndex) 
 			IndexUUID: types.StringValue(idx.IndexUuid),
 		}
 	}
-	return types.ListValueFrom(ctx, indicesElementType(), models)
+	return types.ListValueFrom(ctx, indicesElementType(ctx), models)
 }

@@ -76,7 +76,7 @@ func (r *enrichPolicyResource) ImportState(ctx context.Context, req resource.Imp
 
 // getSchemaFactory returns the schema for the enrich policy resource without the
 // elasticsearch_connection block; the envelope injects that block automatically.
-func getSchemaFactory() schema.Schema {
+func getSchemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.",
 		Attributes: map[string]schema.Attribute{
@@ -159,5 +159,5 @@ func getSchemaFactory() schema.Schema {
 
 // GetResourceSchema is kept for backward compatibility.
 func GetResourceSchema() schema.Schema {
-	return getSchemaFactory()
+	return getSchemaFactory(context.Background())
 }

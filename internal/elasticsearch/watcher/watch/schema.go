@@ -18,6 +18,7 @@
 package watch
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -29,7 +30,7 @@ import (
 
 // watchSchema returns the schema for the watch resource without the
 // elasticsearch_connection block; the envelope injects it.
-func watchSchema() schema.Schema {
+func watchSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manage Watches. See the [Watcher API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html) for more details.",
 		Attributes: map[string]schema.Attribute{

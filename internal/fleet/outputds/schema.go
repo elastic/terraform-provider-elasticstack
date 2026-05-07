@@ -18,12 +18,13 @@
 package outputds
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getDataSourceSchema() dsschema.Schema {
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Description: "Returns information about a Fleet output. See the [Fleet output API documentation](https://www.elastic.co/docs/api/doc/kibana/v9/group/endpoint-fleet-outputs) for more details.",
 		Attributes: map[string]dsschema.Attribute{
@@ -85,6 +86,6 @@ func getDataSourceSchema() dsschema.Schema {
 	}
 }
 
-func getOutputItemElemType() attr.Type {
-	return getDataSourceSchema().Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
+func getOutputItemElemType(ctx context.Context) attr.Type {
+	return getDataSourceSchema(ctx).Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
 }

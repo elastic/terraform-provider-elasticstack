@@ -57,7 +57,7 @@ func (m testKibanaResourceModel) GetKibanaConnection() types.List {
 	return m.KibanaConnection
 }
 
-func getTestKibanaResourceSchema() rschema.Schema {
+func getTestKibanaResourceSchema(_ context.Context) rschema.Schema {
 	return rschema.Schema{
 		Attributes: map[string]rschema.Attribute{
 			"id": rschema.StringAttribute{
@@ -109,15 +109,15 @@ func testKibanaResourceObjectType() tftypes.Type {
 	}
 }
 
-func testKibanaResourceSchemaWithConnectionBlock() rschema.Schema {
-	s := getTestKibanaResourceSchema()
+func testKibanaResourceSchemaWithConnectionBlock(ctx context.Context) rschema.Schema {
+	s := getTestKibanaResourceSchema(ctx)
 	s.Blocks = map[string]rschema.Block{
 		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 	return s
 }
 
-func makeTestKibanaResourceCreatePlan(t *testing.T, idValue tftypes.Value, spaceIDValue tftypes.Value) tfsdk.Plan {
+func makeTestKibanaResourceCreatePlan(ctx context.Context, t *testing.T, idValue tftypes.Value, spaceIDValue tftypes.Value) tfsdk.Plan {
 	t.Helper()
 	const resourceName = "my-resource"
 	objType := testKibanaResourceObjectType()
@@ -129,11 +129,11 @@ func makeTestKibanaResourceCreatePlan(t *testing.T, idValue tftypes.Value, space
 	})
 	return tfsdk.Plan{
 		Raw:    objValue,
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 }
 
-func makeTestKibanaResourceState(t *testing.T, id string) tfsdk.State {
+func makeTestKibanaResourceState(ctx context.Context, t *testing.T, id string) tfsdk.State {
 	t.Helper()
 	connBlockType := kibanaConnectionBlockType()
 	objType := tftypes.Object{
@@ -158,7 +158,7 @@ func makeTestKibanaResourceState(t *testing.T, id string) tfsdk.State {
 
 	return tfsdk.State{
 		Raw:    objValue,
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 }
 
@@ -247,8 +247,8 @@ func TestNewKibanaResource_schemaInjection(t *testing.T) {
 
 func TestNewKibanaResource_schemaDefensiveClone(t *testing.T) {
 	t.Parallel()
-	originalSchema := getTestKibanaResourceSchema()
-	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", func() rschema.Schema {
+	originalSchema := getTestKibanaResourceSchema(context.Background())
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", func(_ context.Context) rschema.Schema {
 		return originalSchema
 	}, testKibanaReadFuncFound, testKibanaDeleteFunc, testKibanaCreateFuncFound, testKibanaUpdateFuncFound)
 
@@ -330,11 +330,11 @@ func TestNewKibanaResource_Create_happyPath(t *testing.T) {
 	factory := newTestConfiguredFactory(ctx, t)
 	r := newTestKibanaResourceEnvelopeWithFactory(t, factory)
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -373,11 +373,11 @@ func TestNewKibanaResource_Create_shortCircuitSpaceIDUnknown(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -408,11 +408,11 @@ func TestNewKibanaResource_Create_shortCircuitSpaceIDNull(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, nil))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, nil))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -450,10 +450,10 @@ func TestNewKibanaResource_Create_shortCircuitSpaceIDEmpty(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, ""),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -484,11 +484,11 @@ func TestNewKibanaResource_Create_shortCircuitClientError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -519,11 +519,11 @@ func TestNewKibanaResource_Create_shortCircuitCallbackError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -561,11 +561,11 @@ func TestNewKibanaResource_Create_shortCircuitPlanGetError(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	badSchema := getTestKibanaResourceSchema()
+	badSchema := getTestKibanaResourceSchema(context.Background())
 	plan := tfsdk.Plan{Raw: objValue, Schema: badSchema}
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -596,11 +596,11 @@ func TestNewKibanaResource_Create_nilWriteCallback(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -627,11 +627,11 @@ func TestNewKibanaResource_Create_placeholderCallbackError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{
 		Raw:    tftypes.NewValue(objType, nil),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
 	resp := resource.CreateResponse{State: respState}
@@ -662,10 +662,10 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		)
 		r.client = nonNilTestFactory()
 
-		plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+		plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
 		respState := tfsdk.State{
 			Raw:    tftypes.NewValue(testKibanaResourceObjectType(), nil),
-			Schema: testKibanaResourceSchemaWithConnectionBlock(),
+			Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 		}
 		resp := resource.CreateResponse{State: respState}
 		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
@@ -696,10 +696,10 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 			"space_id":          tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		})
-		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 		respState := tfsdk.State{
 			Raw:    tftypes.NewValue(objType, nil),
-			Schema: testKibanaResourceSchemaWithConnectionBlock(),
+			Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 		}
 		resp := resource.CreateResponse{State: respState}
 		r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
@@ -720,7 +720,7 @@ func TestNewKibanaResource_Read_happyPath_compositeID(t *testing.T) {
 	factory := newTestConfiguredFactory(ctx, t)
 	r := newTestKibanaResourceEnvelopeWithFactory(t, factory)
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -761,7 +761,7 @@ func TestNewKibanaResource_Read_happyPath_fallback(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "abc-uuid")
+	state := makeTestKibanaResourceState(ctx, t, "abc-uuid")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -814,7 +814,7 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "fallback-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
-	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
@@ -870,7 +870,7 @@ func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testin
 		"space_id":          tftypes.NewValue(tftypes.String, "different-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
-	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
@@ -904,7 +904,7 @@ func TestNewKibanaResource_Read_notFound(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -951,7 +951,7 @@ func TestNewKibanaResource_Read_shortCircuitStateGetError(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	badSchema := getTestKibanaResourceSchema()
+	badSchema := getTestKibanaResourceSchema(context.Background())
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
 
 	req := resource.ReadRequest{State: state}
@@ -998,7 +998,7 @@ func TestNewKibanaResource_Read_shortCircuitEmptyResourceID(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
-	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
@@ -1029,7 +1029,7 @@ func TestNewKibanaResource_Read_shortCircuitClientError(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -1059,7 +1059,7 @@ func TestNewKibanaResource_Read_shortCircuitReadFuncError(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -1086,7 +1086,7 @@ func TestNewKibanaResource_Read_nilReadCallback(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -1106,8 +1106,8 @@ func TestNewKibanaResource_Update_happyPath(t *testing.T) {
 	factory := newTestConfiguredFactory(ctx, t)
 	r := newTestKibanaResourceEnvelopeWithFactory(t, factory)
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1143,8 +1143,8 @@ func TestNewKibanaResource_Update_callbackReceivesPlanAndPrior(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1178,8 +1178,8 @@ func TestNewKibanaResource_Update_happyPath_fallback(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "abc-uuid"), tftypes.NewValue(tftypes.String, "custom-space"))
-	prior := makeTestKibanaResourceState(t, "abc-uuid")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "abc-uuid"), tftypes.NewValue(tftypes.String, "custom-space"))
+	prior := makeTestKibanaResourceState(ctx, t, "abc-uuid")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1221,9 +1221,9 @@ func TestNewKibanaResource_Update_shortCircuitPlanGetError(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	badSchema := getTestKibanaResourceSchema()
+	badSchema := getTestKibanaResourceSchema(context.Background())
 	plan := tfsdk.Plan{Raw: objValue, Schema: badSchema}
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1252,7 +1252,7 @@ func TestNewKibanaResource_Update_shortCircuitStateGetError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
 	objType := testKibanaResourceObjectType()
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
@@ -1260,7 +1260,7 @@ func TestNewKibanaResource_Update_shortCircuitStateGetError(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	badSchema := getTestKibanaResourceSchema()
+	badSchema := getTestKibanaResourceSchema(context.Background())
 	prior := tfsdk.State{Raw: objValue, Schema: badSchema}
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
@@ -1297,8 +1297,8 @@ func TestNewKibanaResource_Update_shortCircuitEmptyResourceID(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
-	prior := makeTestKibanaResourceState(t, "default/old-resource")
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	prior := makeTestKibanaResourceState(ctx, t, "default/old-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1328,8 +1328,8 @@ func TestNewKibanaResource_Update_shortCircuitClientError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1359,8 +1359,8 @@ func TestNewKibanaResource_Update_shortCircuitCallbackError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1393,8 +1393,8 @@ func TestNewKibanaResource_Update_nilWriteCallback(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1420,8 +1420,8 @@ func TestNewKibanaResource_Update_placeholderCallbackError(t *testing.T) {
 	)
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	prior := makeTestKibanaResourceState(t, "default/my-resource")
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	req := resource.UpdateRequest{Plan: plan, State: prior}
 
@@ -1451,8 +1451,8 @@ func TestNewKibanaResource_Update_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		)
 		r.client = nonNilTestFactory()
 
-		plan := makeTestKibanaResourceCreatePlan(t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-		prior := makeTestKibanaResourceState(t, "default/my-resource")
+		plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+		prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 		resp := resource.UpdateResponse{State: prior}
 		r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior}, &resp)
 
@@ -1482,8 +1482,8 @@ func TestNewKibanaResource_Update_nilCallbackPrecedesOtherPreludeErrors(t *testi
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		})
-		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
-		prior := makeTestKibanaResourceState(t, "default/old-resource")
+		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+		prior := makeTestKibanaResourceState(ctx, t, "default/old-resource")
 		resp := resource.UpdateResponse{State: prior}
 		r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior}, &resp)
 
@@ -1519,7 +1519,7 @@ func TestNewKibanaResource_Delete_happyPath(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -1553,7 +1553,7 @@ func TestNewKibanaResource_Delete_happyPath_fallback(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "abc-uuid")
+	state := makeTestKibanaResourceState(ctx, t, "abc-uuid")
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -1602,7 +1602,7 @@ func TestNewKibanaResource_Delete_shortCircuitStateGetError(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 	})
-	badSchema := getTestKibanaResourceSchema()
+	badSchema := getTestKibanaResourceSchema(context.Background())
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
 
 	req := resource.DeleteRequest{State: state}
@@ -1648,7 +1648,7 @@ func TestNewKibanaResource_Delete_shortCircuitEmptyResourceID(t *testing.T) {
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
-	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
@@ -1679,7 +1679,7 @@ func TestNewKibanaResource_Delete_shortCircuitClientError(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -1709,7 +1709,7 @@ func TestNewKibanaResource_Delete_appendsDeleteFuncDiagnostics(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -1735,7 +1735,7 @@ func TestNewKibanaResource_Delete_nilDeleteCallback(t *testing.T) {
 	)
 	r.client = factory
 
-	state := makeTestKibanaResourceState(t, "default/my-stream")
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -1787,8 +1787,8 @@ func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {
 	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
 		ComponentKibana,
 		"test_entity",
-		func() rschema.Schema {
-			s := getTestKibanaResourceSchema()
+		func(ctx context.Context) rschema.Schema {
+			s := getTestKibanaResourceSchema(ctx)
 			s.Blocks = map[string]rschema.Block{
 				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			}
@@ -1825,10 +1825,10 @@ func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		}),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.CreateRequest{Plan: plan}
-	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock()}
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	resp := resource.CreateResponse{State: respState}
 
 	r.Create(ctx, req, &resp)
@@ -1851,8 +1851,8 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
 		ComponentKibana,
 		"test_entity",
-		func() rschema.Schema {
-			s := getTestKibanaResourceSchema()
+		func(ctx context.Context) rschema.Schema {
+			s := getTestKibanaResourceSchema(ctx)
 			s.Blocks = map[string]rschema.Block{
 				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			}
@@ -1888,7 +1888,7 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		}),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
@@ -1913,8 +1913,8 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](
 		ComponentKibana,
 		"test_entity",
-		func() rschema.Schema {
-			s := getTestKibanaResourceSchema()
+		func(ctx context.Context) rschema.Schema {
+			s := getTestKibanaResourceSchema(ctx)
 			s.Blocks = map[string]rschema.Block{
 				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			}
@@ -1951,7 +1951,7 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		}),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	state := tfsdk.State{
 		Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -1960,7 +1960,7 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
 		}),
-		Schema: testKibanaResourceSchemaWithConnectionBlock(),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
 	req := resource.UpdateRequest{Plan: plan, State: state}
 	resp := resource.UpdateResponse{State: state}

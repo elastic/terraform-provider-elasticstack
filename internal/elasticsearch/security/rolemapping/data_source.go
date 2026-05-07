@@ -40,7 +40,7 @@ func NewRoleMappingDataSource() datasource.DataSource {
 	)
 }
 
-func getDataSourceSchema() schema.Schema {
+func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Retrieves role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html",
 		Attributes: map[string]schema.Attribute{

@@ -18,6 +18,7 @@
 package alias
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -28,7 +29,7 @@ import (
 
 // getSchemaFactory returns the schema for the alias resource without the
 // elasticsearch_connection block; the envelope injects that block automatically.
-func getSchemaFactory() schema.Schema {
+func getSchemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Manages an Elasticsearch alias. " +
 			"See the [alias documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html) for more details.",
@@ -120,6 +121,6 @@ func getSchemaFactory() schema.Schema {
 	}
 }
 
-func getIndexAttrTypes() map[string]attr.Type {
-	return getSchemaFactory().Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getIndexAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchemaFactory(ctx).Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

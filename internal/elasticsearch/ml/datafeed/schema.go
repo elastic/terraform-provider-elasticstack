@@ -18,6 +18,7 @@
 package datafeed
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -43,7 +44,7 @@ import (
 
 // getSchema returns the resource schema without the elasticsearch_connection
 // block, which is injected by the entitycore envelope.
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Blocks:              map[string]schema.Block{},
@@ -264,15 +265,15 @@ func getSchema() schema.Schema {
 
 // GetChunkingConfigAttrTypes returns the attribute types for chunking_config
 func GetChunkingConfigAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // GetDelayedDataCheckConfigAttrTypes returns the attribute types for delayed_data_check_config
 func GetDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // GetIndicesOptionsAttrTypes returns the attribute types for indices_options
 func GetIndicesOptionsAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(context.Background()).Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

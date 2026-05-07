@@ -38,7 +38,7 @@ type outputModel struct {
 
 func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
 	model.ID = types.StringValue("outputs")
-	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(), path.Root("outputs"), &diags,
+	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(ctx), path.Root("outputs"), &diags,
 		func(union kbapi.OutputUnion, meta typeutils.ListMeta) outputItemModel {
 			model := outputItemModel{}
 			diags := model.populateFromAPI(ctx, &union)

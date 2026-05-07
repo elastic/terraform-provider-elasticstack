@@ -45,11 +45,7 @@ const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters
 
 // getSchema returns the resource schema without the elasticsearch_connection
 // block, which is injected by the entitycore envelope.
-func getSchema() schema.Schema {
-	return getSchemaWithContext(context.Background())
-}
-
-func getSchemaWithContext(ctx context.Context) schema.Schema {
+func getSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
@@ -461,7 +457,7 @@ func getSchemaWithContext(ctx context.Context) schema.Schema {
 }
 
 func getAnalysisConfigAttrTypes(ctx context.Context) map[string]attr.Type {
-	return getSchemaWithContext(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getDetectorAttrTypes(ctx context.Context) map[string]attr.Type {
@@ -486,13 +482,13 @@ func getRuleConditionAttrTypes(ctx context.Context) map[string]attr.Type {
 }
 
 func getAnalysisLimitsAttrTypes(ctx context.Context) map[string]attr.Type {
-	return getSchemaWithContext(ctx).Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(ctx).Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getDataDescriptionAttrTypes(ctx context.Context) map[string]attr.Type {
-	return getSchemaWithContext(ctx).Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(ctx).Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getModelPlotConfigAttrTypes(ctx context.Context) map[string]attr.Type {
-	return getSchemaWithContext(ctx).Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getSchema(ctx).Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

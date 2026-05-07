@@ -18,11 +18,12 @@
 package enrollmenttokens
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
-func getDataSourceSchema() dsschema.Schema {
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Description: dataSourceDescription,
 		Attributes: map[string]dsschema.Attribute{
@@ -79,6 +80,6 @@ func getDataSourceSchema() dsschema.Schema {
 	}
 }
 
-func getTokenType() attr.Type {
-	return getDataSourceSchema().Attributes["tokens"].GetType().(attr.TypeWithElementType).ElementType()
+func getTokenType(ctx context.Context) attr.Type {
+	return getDataSourceSchema(ctx).Attributes["tokens"].GetType().(attr.TypeWithElementType).ElementType()
 }
