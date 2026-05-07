@@ -174,7 +174,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 	}
 
 	if watch.Body.Metadata == nil {
-		d.Metadata = jsontypes.NewNormalizedValue(`{}`)
+		d.Metadata = jsontypes.NewNormalizedValue(`null`)
 	} else {
 		metadata, err := marshalCompact(watch.Body.Metadata)
 		if err != nil {
