@@ -92,19 +92,18 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 				},
 			},
 			{
-				ProtoV6ProviderFactories:             acctest.Providers,
-				ConfigDirectory:                      acctest.NamedTestCaseDirectory("create"),
-				ResourceName:                         mlDatafeedStateResourceName,
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIdentifierAttribute: "datafeed_id",
-				ImportStateVerifyIgnore:              []string{"force", "datafeed_timeout", "id"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ResourceName:             mlDatafeedStateResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"force", "datafeed_timeout"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[mlDatafeedStateResourceName]
 					if !ok {
 						return "", fmt.Errorf("not found: %s", mlDatafeedStateResourceName)
 					}
-					return rs.Primary.Attributes["datafeed_id"], nil
+					return rs.Primary.ID, nil
 				},
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
@@ -399,19 +398,18 @@ func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 				),
 			},
 			{
-				ProtoV6ProviderFactories:             acctest.Providers,
-				ConfigDirectory:                      acctest.NamedTestCaseDirectory("stopped"),
-				ResourceName:                         resourceName,
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIgnore:              []string{"elasticsearch_connection", "force", "datafeed_timeout", "id"},
-				ImportStateVerifyIdentifierAttribute: "datafeed_id",
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped"),
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "force", "datafeed_timeout"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[resourceName]
 					if !ok {
 						return "", fmt.Errorf("not found: %s", resourceName)
 					}
-					return rs.Primary.Attributes["datafeed_id"], nil
+					return rs.Primary.ID, nil
 				},
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
