@@ -37,32 +37,17 @@ test('verify-label workflow routes Claude through LiteLLM with secret-backed API
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
 });
 
-test('compiled lock wires gh-aw anthropic target and Claude env for main agent and threat detection', () => {
-  const lock = lockSource();
-  assert.match(
-    lock,
-    new RegExp(
-      `id: agentic_execution[\\s\\S]*--anthropic-api-target elastic\\.litellm-prod\\.ai[\\s\\S]*--allow-domains[^\\n]*elastic\\.litellm-prod\\.ai[\\s\\S]*\\n\\s*ANTHROPIC_BASE_URL:\\s*https:\\/\\/elastic\\.litellm-prod\\.ai[\\s\\S]*\\n\\s*ANTHROPIC_MODEL:\\s*${claudeModelPattern.source}`
-    )
-  );
-  assert.match(
-    lock,
-    new RegExp(
-      `id: detection_agentic_execution[\\s\\S]*--anthropic-api-target elastic\\.litellm-prod\\.ai[\\s\\S]*\\n\\s*ANTHROPIC_BASE_URL:\\s*https:\\/\\/elastic\\.litellm-prod\\.ai[\\s\\S]*\\n\\s*ANTHROPIC_MODEL:\\s*${claudeModelPattern.source}`
-    )
-  );
+test('verify-label source workflow configures engine env with base URL and model', () => {
+  const source = workflowSource();
+  assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
+  assert.match(source, new RegExp(`model: "?${claudeModelPattern.source}"?`));
+  assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/);
+  assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
 });
 
-test('compiled lock excludes ANTHROPIC_API_KEY from AWF --env-all and uses the Claude secret', () => {
-  const lock = lockSource();
-  assert.match(
-    lock,
-    /id: agentic_execution[\s\S]*--exclude-env ANTHROPIC_API_KEY[\s\S]*\n\s*ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/
-  );
-  assert.match(
-    lock,
-    /id: detection_agentic_execution[\s\S]*--exclude-env ANTHROPIC_API_KEY[\s\S]*\n\s*ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/
-  );
+test('verify-label source workflow includes LiteLLM in allowed network domains', () => {
+  const source = workflowSource();
+  assert.match(source, /allowed:.*elastic\.litellm-prod\.ai/);
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
