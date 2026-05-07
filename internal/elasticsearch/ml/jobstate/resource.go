@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 var (
@@ -42,7 +41,7 @@ func newMLJobStateResource() *mlJobStateResource {
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLJobStateData](
 			entitycore.ComponentElasticsearch,
 			"ml_job_state",
-			func(ctx context.Context) rschema.Schema { return GetSchema(ctx) },
+			GetSchema,
 			readMLJobState,
 			deleteMLJobState,
 			createFunc,
