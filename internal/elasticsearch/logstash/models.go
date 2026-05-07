@@ -27,12 +27,12 @@ type Data struct {
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 
-	PipelineID       types.String `tfsdk:"pipeline_id"`
-	Description      types.String `tfsdk:"description"`
-	LastModified     types.String `tfsdk:"last_modified"`
-	Pipeline         types.String `tfsdk:"pipeline"`
+	PipelineID       types.String         `tfsdk:"pipeline_id"`
+	Description      types.String         `tfsdk:"description"`
+	LastModified     types.String         `tfsdk:"last_modified"`
+	Pipeline         types.String         `tfsdk:"pipeline"`
 	PipelineMetadata jsontypes.Normalized `tfsdk:"pipeline_metadata"`
-	Username         types.String `tfsdk:"username"`
+	Username         types.String         `tfsdk:"username"`
 
 	// Pipeline settings
 	PipelineBatchDelay         types.Int64  `tfsdk:"pipeline_batch_delay"`
