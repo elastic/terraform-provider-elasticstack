@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -32,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 )
 
@@ -46,17 +44,13 @@ const (
 		"Leading or trailing whitespace is not allowed"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = r.getSchema(currentSchemaVersion)
-}
-
-func (r *Resource) getSchema(version int64) schema.Schema {
+// getSchema returns the schema for the given version. The elasticsearch_connection
+// block is omitted; the ElasticsearchResource envelope injects it.
+func getSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:     version,
 		Description: resourceDescription,
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
+		Blocks:      map[string]schema.Block{},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Internal identifier of the resource.",
@@ -109,7 +103,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					r.requiresReplaceIfUpdateNotSupported(),
+					requiresReplaceIfUpdateNotSupported(),
 					SetUnknownIfAccessHasChanges(),
 				},
 			},
@@ -134,7 +128,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				CustomType:  jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					r.requiresReplaceIfUpdateNotSupported(),
+					requiresReplaceIfUpdateNotSupported(),
 				},
 			},
 			"access": schema.SingleNestedAttribute{
@@ -206,12 +200,12 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 	}
 }
 
-func (r *Resource) requiresReplaceIfUpdateNotSupported() planmodifier.String {
+func requiresReplaceIfUpdateNotSupported() planmodifier.String {
 	return stringplanmodifier.RequiresReplaceIf(
 		func(ctx context.Context, res planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-			version, _ := r.clusterVersionOfLastRead(ctx, res.Private)
+			ver, _ := clusterVersionOfLastRead(ctx, res.Private)
 
-			resp.RequiresReplace = version != nil && version.LessThan(MinVersionWithUpdate)
+			resp.RequiresReplace = ver != nil && ver.LessThan(MinVersionWithUpdate)
 		},
 		"Requires replace if the server does not support update",
 		"Requires replace if the server does not support update",

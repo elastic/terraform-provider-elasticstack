@@ -21,11 +21,13 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -43,13 +45,30 @@ var (
 	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys enabled in 8.10
 )
 
+// Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
+// Schema, Delete, and the envelope's Create/Update (which are overridden below).
+// Create, Read, and Update are defined on the concrete type to preserve the
+// private-state cluster-version caching flow.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
+}
+
+func schemaFactory() rschema.Schema {
+	return getSchema(currentSchemaVersion)
 }
 
 func newResource() *Resource {
+	createPlaceholder, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_api_key"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
+			entitycore.ComponentElasticsearch,
+			"security_api_key",
+			schemaFactory,
+			readAPIKey,
+			deleteAPIKey,
+			createPlaceholder,
+			updatePlaceholder,
+		),
 	}
 }
 
@@ -90,19 +109,18 @@ type clusterVersionPrivateData struct {
 	Version string
 }
 
-func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv privateData) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		return diags
-	}
+// saveClusterVersion persists the current Elasticsearch cluster version in
+// private state so it can be retrieved on subsequent plan computations.
+func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScopedClient, priv privateData) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	version, sdkDiags := client.ServerVersion(ctx)
+	ver, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	data, err := json.Marshal(clusterVersionPrivateData{Version: version.String()})
+	data, err := json.Marshal(clusterVersionPrivateData{Version: ver.String()})
 	if err != nil {
 		diags.AddError("failed to marshal cluster version data", err.Error())
 		return diags
@@ -112,7 +130,8 @@ func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv p
 	return diags
 }
 
-func (r *Resource) clusterVersionOfLastRead(ctx context.Context, priv privateData) (*version.Version, diag.Diagnostics) {
+// clusterVersionOfLastRead retrieves the cached Elasticsearch cluster version.
+func clusterVersionOfLastRead(ctx context.Context, priv privateData) (*version.Version, diag.Diagnostics) {
 	versionBytes, diags := priv.GetKey(ctx, clusterVersionPrivateDataKey)
 	if diags.HasError() {
 		return nil, diags
