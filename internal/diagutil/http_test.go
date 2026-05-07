@@ -15,18 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package fleet
+package diagutil
 
 import (
 	"net/http"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// handleDeleteResponse handles responses from delete operations. Both 200 and
-// 404 are treated as success (idempotent delete). Any other status code is
-// reported as an error.
-func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
-	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
+func TestHandleStatusResponse(t *testing.T) {
+	t.Run("returns nil for accepted status codes", func(t *testing.T) {
+		assert.False(t, HandleStatusResponse(http.StatusOK, nil, http.StatusOK, http.StatusNotFound).HasError())
+		assert.False(t, HandleStatusResponse(http.StatusNotFound, nil, http.StatusOK, http.StatusNotFound).HasError())
+	})
+
+	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
+		diags := HandleStatusResponse(http.StatusBadRequest, []byte(`bad request`), http.StatusOK)
+
+		require.True(t, diags.HasError())
+		assert.Equal(t, "Unexpected status code from server: got HTTP 400", diags[0].Summary())
+		assert.Equal(t, "bad request", diags[0].Detail())
+	})
 }
