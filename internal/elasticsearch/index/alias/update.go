@@ -20,63 +20,55 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel tfModel
-	var stateModel tfModel
+func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(plan.Validate(ctx)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	resp.Diagnostics.Append(planModel.Validate(ctx)...)
-	if resp.Diagnostics.HasError() {
-		return
+	aliasName := resourceID
+
+	// Read current alias state from API to find which indices to remove
+	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	aliasName := planModel.Name.ValueString()
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get current configuration from state
-	currentConfigs, diags := stateModel.toAliasConfigs(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// Build current index map from API response
+	currentIndexMap := make(map[string]IndexConfig)
+	for indexName, indexAliases := range currentIndices {
+		if aliasDef, exists := indexAliases.Aliases[aliasName]; exists {
+			config, configDiags := aliasDefinitionToConfig(indexName, aliasDef)
+			diags.Append(configDiags...)
+			if diags.HasError() {
+				return plan, diags
+			}
+			currentIndexMap[indexName] = config
+		}
 	}
 
 	// Get planned configuration
-	plannedConfigs, diags := planModel.toAliasConfigs(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Build atomic actions
-	var actions []elasticsearch.AliasAction
-
-	// Create maps for easy lookup
-	currentIndexMap := make(map[string]IndexConfig)
-	for _, config := range currentConfigs {
-		currentIndexMap[config.Name] = config
+	plannedConfigs, configDiags := plan.toAliasConfigs(ctx)
+	diags.Append(configDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plannedIndexMap := make(map[string]IndexConfig)
 	for _, config := range plannedConfigs {
 		plannedIndexMap[config.Name] = config
 	}
+
+	// Build atomic actions
+	var actions []elasticsearch.AliasAction
 
 	// Remove indices that are no longer in the plan
 	for indexName := range currentIndexMap {
@@ -93,11 +85,10 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	for _, config := range plannedConfigs {
 		currentAlias, ok := currentIndexMap[config.Name]
 		if ok && currentAlias.Equals(config) {
-			// No change for this index
 			continue
 		}
 
-		action := elasticsearch.AliasAction{
+		actions = append(actions, elasticsearch.AliasAction{
 			Type:          "add",
 			Index:         config.Name,
 			Alias:         aliasName,
@@ -107,30 +98,15 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 			IsHidden:      config.IsHidden,
 			Routing:       config.Routing,
 			SearchRouting: config.SearchRouting,
-		}
-		actions = append(actions, action)
+		})
 	}
 
-	// Apply the atomic changes
 	if len(actions) > 0 {
-		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
+		if diags.HasError() {
+			return plan, diags
 		}
 	}
 
-	// Read back the alias to ensure state consistency, updating the current model
-	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, planModel)...)
+	return plan, diags
 }

@@ -34,3 +34,35 @@ test('single openspec file → providerChanges === false', () => {
   const result = classifyChanges(['openspec/specs/single.md']);
   assert.equal(result.providerChanges, 'false');
 });
+
+// New skip-path tests
+
+test('CHANGELOG.md only → providerChanges === false', () => {
+  const result = classifyChanges(['CHANGELOG.md']);
+  assert.equal(result.providerChanges, 'false');
+});
+
+test('all files under .agents/ → providerChanges === false', () => {
+  const result = classifyChanges(['.agents/skills/foo/SKILL.md', '.agents/skills/bar/SKILL.md']);
+  assert.equal(result.providerChanges, 'false');
+});
+
+test('.github/ non-workflow files → providerChanges === false', () => {
+  const result = classifyChanges(['.github/dependabot.yml', '.github/issue_templates/bug.md']);
+  assert.equal(result.providerChanges, 'false');
+});
+
+test('.github/workflows/provider.yml → providerChanges === true', () => {
+  const result = classifyChanges(['.github/workflows/provider.yml']);
+  assert.equal(result.providerChanges, 'true');
+});
+
+test('mixed changes (Go file + CHANGELOG) → providerChanges === true', () => {
+  const result = classifyChanges(['internal/provider/resource.go', 'CHANGELOG.md']);
+  assert.equal(result.providerChanges, 'true');
+});
+
+test('mixed .github/workflows/provider.yml + CHANGELOG → providerChanges === true', () => {
+  const result = classifyChanges(['.github/workflows/provider.yml', 'CHANGELOG.md']);
+  assert.equal(result.providerChanges, 'true');
+});
