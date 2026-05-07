@@ -173,7 +173,7 @@ type commonNewOutputBody struct {
 	CaTrustedFingerprint *string
 	ConfigYaml           *string
 	Hosts                []string
-	Id                   *string
+	ID                   *string
 	IsDefault            *bool
 	IsDefaultMonitoring  *bool
 	Name                 string
@@ -188,7 +188,7 @@ func (model outputModel) buildCommonNewOutput(ctx context.Context, diags *diag.D
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
 		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), diags),
-		Id:                   model.OutputID.ValueStringPointer(),
+		ID:                   model.OutputID.ValueStringPointer(),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),

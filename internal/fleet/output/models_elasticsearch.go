@@ -54,7 +54,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		CaTrustedFingerprint: f.CaTrustedFingerprint,
 		ConfigYaml:           f.ConfigYaml,
 		Hosts:                f.Hosts,
-		Id:                   f.Id,
+		Id:                   f.ID,
 		IsDefault:            f.IsDefault,
 		IsDefaultMonitoring:  f.IsDefaultMonitoring,
 		Name:                 f.Name,
