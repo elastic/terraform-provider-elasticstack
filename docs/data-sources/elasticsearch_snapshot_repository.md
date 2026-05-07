@@ -61,18 +61,18 @@ output "repo_url" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- `azure` (List of Object) Azure Blob storage as a repository. Set only if the type of the fetched repo is `azure`. (see [below for nested schema](#nestedatt--azure))
-- `fs` (List of Object) Shared filesystem repository. Set only if the type of the fetched repo is `fs`. (see [below for nested schema](#nestedatt--fs))
-- `gcs` (List of Object) Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`. (see [below for nested schema](#nestedatt--gcs))
-- `hdfs` (List of Object) HDFS File System as a repository. Set only if the type of the fetched repo is `hdfs`. (see [below for nested schema](#nestedatt--hdfs))
+- `azure` (Attributes List) Azure Blob storage as a repository. Set only if the type of the fetched repo is `azure`. (see [below for nested schema](#nestedatt--azure))
+- `fs` (Attributes List) Shared filesystem repository. Set only if the type of the fetched repo is `fs`. (see [below for nested schema](#nestedatt--fs))
+- `gcs` (Attributes List) Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`. (see [below for nested schema](#nestedatt--gcs))
+- `hdfs` (Attributes List) HDFS File System as a repository. Set only if the type of the fetched repo is `hdfs`. (see [below for nested schema](#nestedatt--hdfs))
 - `id` (String) Internal identifier of the resource
-- `s3` (List of Object) AWS S3 as a repository. Set only if the type of the fetched repo is `s3`. (see [below for nested schema](#nestedatt--s3))
+- `s3` (Attributes List) AWS S3 as a repository. Set only if the type of the fetched repo is `s3`. (see [below for nested schema](#nestedatt--s3))
 - `type` (String) Repository type.
-- `url` (List of Object) URL repository. Set only if the type of the fetched repo is `url`. (see [below for nested schema](#nestedatt--url))
+- `url` (Attributes List) URL repository. Set only if the type of the fetched repo is `url`. (see [below for nested schema](#nestedatt--url))
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
@@ -100,15 +100,15 @@ Optional:
 
 Read-Only:
 
-- `base_path` (String)
-- `chunk_size` (String)
-- `client` (String)
-- `compress` (Boolean)
-- `container` (String)
-- `location_mode` (String)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `readonly` (Boolean)
+- `base_path` (String) Specifies the path within the container to the repository data.
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `client` (String) Azure named client to use.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `container` (String) Container name. You must create the Azure container before creating the repository.
+- `location_mode` (String) Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `readonly` (Boolean) If true, the repository is read-only.
 
 
 <a id="nestedatt--fs"></a>
@@ -116,13 +116,13 @@ Read-Only:
 
 Read-Only:
 
-- `chunk_size` (String)
-- `compress` (Boolean)
-- `location` (String)
-- `max_number_of_snapshots` (Number)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `readonly` (Boolean)
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `location` (String) Location of the shared filesystem used to store and retrieve snapshots.
+- `max_number_of_snapshots` (Number) Maximum number of snapshots the repository can contain.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `readonly` (Boolean) If true, the repository is read-only.
 
 
 <a id="nestedatt--gcs"></a>
@@ -130,14 +130,14 @@ Read-Only:
 
 Read-Only:
 
-- `base_path` (String)
-- `bucket` (String)
-- `chunk_size` (String)
-- `client` (String)
-- `compress` (Boolean)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `readonly` (Boolean)
+- `base_path` (String) Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.
+- `bucket` (String) The name of the bucket to be used for snapshots.
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `client` (String) The name of the client to use to connect to Google Cloud Storage.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `readonly` (Boolean) If true, the repository is read-only.
 
 
 <a id="nestedatt--hdfs"></a>
@@ -145,14 +145,14 @@ Read-Only:
 
 Read-Only:
 
-- `chunk_size` (String)
-- `compress` (Boolean)
-- `load_defaults` (Boolean)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `path` (String)
-- `readonly` (Boolean)
-- `uri` (String)
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `load_defaults` (Boolean) Whether to load the default Hadoop configuration or not.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `path` (String) The file path within the filesystem where data is stored/loaded.
+- `readonly` (Boolean) If true, the repository is read-only.
+- `uri` (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
 
 
 <a id="nestedatt--s3"></a>
@@ -160,19 +160,19 @@ Read-Only:
 
 Read-Only:
 
-- `base_path` (String)
-- `bucket` (String)
-- `buffer_size` (String)
-- `canned_acl` (String)
-- `chunk_size` (String)
-- `client` (String)
-- `compress` (Boolean)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `path_style_access` (Boolean)
-- `readonly` (Boolean)
-- `server_side_encryption` (Boolean)
-- `storage_class` (String)
+- `base_path` (String) Specifies the path to the repository data within its bucket.
+- `bucket` (String) Name of the S3 bucket to use for snapshots.
+- `buffer_size` (String) Minimum threshold below which the chunk is uploaded using a single request.
+- `canned_acl` (String) The S3 repository supports all S3 canned ACLs.
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `client` (String) The name of the S3 client to use to connect to S3.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `path_style_access` (Boolean) If true, path style access pattern will be used.
+- `readonly` (Boolean) If true, the repository is read-only.
+- `server_side_encryption` (Boolean) When true, files are encrypted server-side using AES-256 algorithm.
+- `storage_class` (String) Sets the S3 storage class for objects stored in the snapshot repository.
 
 
 <a id="nestedatt--url"></a>
@@ -180,12 +180,12 @@ Read-Only:
 
 Read-Only:
 
-- `chunk_size` (String)
-- `compress` (Boolean)
-- `http_max_retries` (Number)
-- `http_socket_timeout` (String)
-- `max_number_of_snapshots` (Number)
-- `max_restore_bytes_per_sec` (String)
-- `max_snapshot_bytes_per_sec` (String)
-- `readonly` (Boolean)
-- `url` (String)
+- `chunk_size` (String) Maximum size of files in snapshots.
+- `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `http_max_retries` (Number) Maximum number of retries for http and https URLs.
+- `http_socket_timeout` (String) Maximum wait time for data transfers over a connection.
+- `max_number_of_snapshots` (Number) Maximum number of snapshots the repository can contain.
+- `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
+- `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `readonly` (Boolean) If true, the repository is read-only.
+- `url` (String) URL location of the root of the shared filesystem repository.
