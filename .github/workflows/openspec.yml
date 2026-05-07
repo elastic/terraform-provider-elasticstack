@@ -30,7 +30,7 @@ jobs:
         run: make check-openspec
 
   gate:
-    name: Gate
+    name: OpenSpec Gate
     needs: [validate]
     if: always()
     runs-on: ubuntu-latest

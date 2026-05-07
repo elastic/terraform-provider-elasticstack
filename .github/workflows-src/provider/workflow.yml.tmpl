@@ -309,7 +309,7 @@ jobs:
           STACK_VERSION: ${{ matrix.version }}
 
   gate:
-    name: Gate
+    name: Provider Gate
     needs: [classify, build, lint, test]
     if: always()
     runs-on: ubuntu-latest
