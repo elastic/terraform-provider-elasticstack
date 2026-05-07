@@ -32,16 +32,16 @@ import (
 func deprecatedSettingsBlockList(ctx context.Context, t *testing.T, entries []settingTfModel) types.List {
 	t.Helper()
 
-	settingSet, diags := basetypes.NewSetValueFrom(ctx, settingElementType(), entries)
+	settingSet, diags := basetypes.NewSetValueFrom(ctx, settingElementType(ctx), entries)
 	require.Empty(t, diags)
 
 	obj, diags := basetypes.NewObjectValue(
-		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType()}},
+		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType(ctx)}},
 		map[string]attr.Value{"setting": settingSet},
 	)
 	require.Empty(t, diags)
 
-	list, diags := basetypes.NewListValue(settingsElementType(), []attr.Value{obj})
+	list, diags := basetypes.NewListValue(settingsElementType(ctx), []attr.Value{obj})
 	require.Empty(t, diags)
 
 	return list

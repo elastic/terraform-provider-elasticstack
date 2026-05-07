@@ -29,7 +29,7 @@ import (
 //go:embed resource-description.md
 var resourceDescription string
 
-func getSchema(ctx context.Context) schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 
