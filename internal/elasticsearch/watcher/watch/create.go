@@ -19,103 +19,34 @@ package watch
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *watchResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+func createWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	put, modelDiags := plan.toPutModel(ctx)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(elasticsearch.PutWatch(ctx, client, put)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	watchID := data.WatchID.ValueString()
-	id, sdkDiags := client.ID(ctx, watchID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, sdkDiags := client.ID(ctx, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	put, modelDiags := data.toPutModel(ctx)
-	resp.Diagnostics.Append(modelDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(elasticsearch.PutWatch(ctx, client, put)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	data.ID = types.StringValue(id.String())
-
-	readData, readDiags := r.read(ctx, data)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.Diagnostics.AddError("Not Found", fmt.Sprintf("Watch %q was not found after create", watchID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
-}
-
-func (r *watchResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	watchID := data.WatchID.ValueString()
-	id, sdkDiags := client.ID(ctx, watchID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	data.ID = types.StringValue(id.String())
-
-	put, modelDiags := data.toPutModel(ctx)
-	resp.Diagnostics.Append(modelDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(elasticsearch.PutWatch(ctx, client, put)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readData, readDiags := r.read(ctx, data)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.Diagnostics.AddError("Not Found", fmt.Sprintf("Watch %q was not found after update", data.WatchID.ValueString()))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	plan.ID = types.StringValue(id.String())
+	return plan, diags
 }

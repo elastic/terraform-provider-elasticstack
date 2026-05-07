@@ -30,13 +30,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
+func TestResource_embedsElasticsearchResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[aliasResource]()
-	field, ok := rt.FieldByName("ResourceBase")
+	field, ok := rt.FieldByName("ElasticsearchResource")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.ElasticsearchResource[tfModel]](), field.Type)
 }
 
 func TestAliasResource_importState_passthroughCompoundID(t *testing.T) {

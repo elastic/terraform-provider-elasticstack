@@ -103,6 +103,52 @@ The resource SHALL use the Fleet Create Agent Policy API (`POST /api/fleet/agent
 - WHEN delete runs
 - THEN the resource SHALL treat the response as success and return no error
 
+### Requirement: Optional ID fields preserve API value when removed from configuration
+
+The resource SHALL include `data_output_id`, `monitoring_output_id`, `fleet_server_host_id`, and `download_source_id` in the Fleet create and update API request bodies only when the configured value is known and non-null. When any of these fields is null in configuration, the resource SHALL omit the field from the request body, allowing the Fleet API to retain the existing server-side value.
+
+To keep Terraform state consistent with the configuration, when one of these fields is null in the configuration and the Fleet API response continues to report a non-empty value (because the field was omitted from the request), the resource SHALL store a null value in state for that field. The Fleet-side policy SHALL retain its previously-assigned value; clearing the server-side value is out of scope for this resource.
+
+The resource SHALL apply the same preserve-null-on-empty behavior to `description`: when the configured `description` is null and the Fleet API response reports an empty string (the API normalizes omitted descriptions to `""`), the resource SHALL store a null value in state.
+
+#### Scenario: Removing data_output_id from configuration
+
+- GIVEN an existing agent policy whose state and Fleet-side value for `data_output_id` is `"out-1"`
+- WHEN the user removes `data_output_id` from configuration and runs apply
+- THEN the resource SHALL omit `data_output_id` from the Fleet update request body
+- AND the resource SHALL store `data_output_id = null` in Terraform state
+- AND the Fleet-side policy SHALL continue to reference `"out-1"`
+
+#### Scenario: Removing monitoring_output_id from configuration
+
+- GIVEN an existing agent policy whose state and Fleet-side value for `monitoring_output_id` is `"out-1"`
+- WHEN the user removes `monitoring_output_id` from configuration and runs apply
+- THEN the resource SHALL omit `monitoring_output_id` from the Fleet update request body
+- AND the resource SHALL store `monitoring_output_id = null` in Terraform state
+- AND the Fleet-side policy SHALL continue to reference `"out-1"`
+
+#### Scenario: Removing fleet_server_host_id from configuration
+
+- GIVEN an existing agent policy whose state and Fleet-side value for `fleet_server_host_id` is `"host-1"`
+- WHEN the user removes `fleet_server_host_id` from configuration and runs apply
+- THEN the resource SHALL omit `fleet_server_host_id` from the Fleet update request body
+- AND the resource SHALL store `fleet_server_host_id = null` in Terraform state
+- AND the Fleet-side policy SHALL continue to reference `"host-1"`
+
+#### Scenario: Removing download_source_id from configuration
+
+- GIVEN an existing agent policy whose state and Fleet-side value for `download_source_id` is `"src-1"`
+- WHEN the user removes `download_source_id` from configuration and runs apply
+- THEN the resource SHALL omit `download_source_id` from the Fleet update request body
+- AND the resource SHALL store `download_source_id = null` in Terraform state
+- AND the Fleet-side policy SHALL continue to reference `"src-1"`
+
+#### Scenario: Description null with empty-string API response
+
+- GIVEN a configuration that omits `description`
+- WHEN the Fleet API response returns `description = ""`
+- THEN the resource SHALL store `description = null` in Terraform state
+
 ### Requirement: Identity (REQ-005)
 
 The resource SHALL expose a computed `id` attribute whose value is set to the policy ID returned by the Fleet API. The resource SHALL also expose a computed `policy_id` attribute set to the same policy ID value. Both `id` and `policy_id` SHALL be equal to the API-assigned policy identifier after create or update.
