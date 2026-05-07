@@ -44,7 +44,7 @@ func newMLJobStateResource() *mlJobStateResource {
 			"ml_job_state",
 			func() rschema.Schema { return GetSchema(context.Background()) },
 			readMLJobState,
-			noopDeleteMLJobState,
+			deleteMLJobState,
 			createFunc,
 			updateFunc,
 		),

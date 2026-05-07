@@ -28,13 +28,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// readMLDatafeedState is the envelope read callback. It reads datafeed stats
-// and returns the updated model. During import, computed attributes without
-// a stored value are set to their zero/null defaults.
 func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state MLDatafeedStateData) (MLDatafeedStateData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Check if the datafeed exists by getting its stats
 	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
@@ -45,7 +41,7 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 		return state, false, diags
 	}
 
-	// Update the data with current information
+	state.DatafeedID = types.StringValue(resourceID)
 	state.State = types.StringValue(datafeedStats.State.String())
 
 	// Regenerate composite ID to ensure it's current
@@ -62,7 +58,7 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 		return state, false, diags
 	}
 
-	// Set defaults for computed attributes if they're not already set (e.g., during import)
+	// Defaults are import-only guards; they are already present in managed state.
 	if state.Force.IsNull() {
 		state.Force = types.BoolValue(false)
 	}
@@ -71,41 +67,4 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	return state, true, diags
-}
-
-// read is the internal helper used by the update path to read datafeed stats
-// given a model that already has the ElasticsearchConnection populated.
-func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	datafeedID := data.DatafeedID.ValueString()
-	// Check if the datafeed exists by getting its stats
-	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if datafeedStats == nil {
-		return nil, diags
-	}
-
-	// Update the data with current information
-	data.State = types.StringValue(datafeedStats.State.String())
-
-	// Regenerate composite ID to ensure it's current
-	compID, sdkDiags := client.ID(ctx, datafeedID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	data.ID = types.StringValue(compID.String())
-
-	diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
-
-	return &data, diags
 }

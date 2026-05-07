@@ -25,14 +25,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// deleteMLDatafeedState is the envelope delete callback and the single
-// implementation of conditional-stop behavior. It stops the datafeed if it is
-// currently started, then returns without error so Terraform drops the resource
-// from state.
 func deleteMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data MLDatafeedStateData) diag.Diagnostics {
 	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, resourceID)
 	if fwDiags.HasError() {
@@ -71,21 +66,4 @@ func deleteMLDatafeedState(ctx context.Context, client *clients.ElasticsearchSco
 	}
 
 	return nil
-}
-
-func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data MLDatafeedStateData
-	diags := req.State.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(deleteMLDatafeedState(ctx, client, data.DatafeedID.ValueString(), data)...)
 }

@@ -20,8 +20,6 @@ package datafeedstate
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -59,15 +57,4 @@ func NewMLDatafeedStateResource() resource.Resource {
 
 func (r *mlDatafeedStateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-
-	compID, sdkDiags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	datafeedID := compID.ResourceID
-
-	// Set the datafeed_id attribute
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("datafeed_id"), datafeedID)...)
 }
