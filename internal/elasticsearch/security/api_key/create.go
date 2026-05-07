@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -55,13 +56,29 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	finalModel, diags := r.read(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	compID, idDiags := clients.CompositeIDFromStrFw(planModel.GetID().ValueString())
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
+	esClient, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	finalModel, found, readDiags := readAPIKey(ctx, esClient, compID.ResourceID, planModel)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError("API Key Not Found After Create", fmt.Sprintf("API key %q was not found immediately after creation.", compID.ResourceID))
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
 func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel) diag.Diagnostics {

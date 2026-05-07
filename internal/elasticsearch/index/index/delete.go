@@ -20,38 +20,26 @@ package index
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+// deleteIndex is the envelope delete callback. It checks deletion_protection
+// before calling the Delete Index API.
+func deleteIndex(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	if model.DeletionProtection.ValueBool() {
-		resp.Diagnostics.AddAttributeError(
+		diags.AddAttributeError(
 			path.Root("deletion_protection"),
 			"cannot destroy index without setting deletion_protection=false and running `terraform apply`",
 			"cannot destroy index without setting deletion_protection=false and running `terraform apply`",
 		)
-		return
+		return diags
 	}
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	id, diags := model.GetID()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(elasticsearch.DeleteIndex(ctx, client, id.ResourceID)...)
+	diags.Append(elasticsearch.DeleteIndex(ctx, client, resourceID)...)
+	return diags
 }
