@@ -18,14 +18,10 @@
 package template
 
 import (
-	"context"
-
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
@@ -36,18 +32,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resourceSchema()
-}
-
 func resourceSchema() schema.Schema {
 	return schema.Schema{
 		Version:             schemaVersion,
 		MarkdownDescription: mdDescIndexTemplateResource,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			"data_stream":              dataStreamBlock(),
-			"template":                 templateBlock(),
+			"data_stream": dataStreamBlock(),
+			"template":    templateBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

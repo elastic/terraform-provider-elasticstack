@@ -24,54 +24,38 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+// deleteAnomalyDetectionJob closes and deletes the ML job. It satisfies the
+// entitycore elasticsearchDeleteFunc[TFModel] signature.
+func deleteAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) fwdiags.Diagnostics {
+	var diags fwdiags.Diagnostics
 
-	var jobIDValue basetypes.StringValue
-	diags := req.State.GetAttribute(ctx, path.Root("job_id"), &jobIDValue)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	jobID := resourceID
+	if jobID == "" {
+		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+		return diags
 	}
-
-	jobID := jobIDValue.ValueString()
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML anomaly detection job: %s", jobID))
 
-	var data TFModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	deleteTimeout, fwDiags := data.Timeouts.Delete(ctx, 20*time.Minute)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	deleteTimeout, fwDiags := state.Timeouts.Delete(ctx, 20*time.Minute)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return diags
 	}
 
 	// First, close the job if it's open. Force=true and AllowNoMatch=true to be safe.
@@ -90,11 +74,11 @@ func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.D
 		// timeout directly rather than letting it propagate as a confusing delete
 		// error.
 		if ctx.Err() != nil {
-			resp.Diagnostics.AddError(
+			diags.AddError(
 				"Timeout waiting for ML job to close",
 				fmt.Sprintf("ML job %s did not close within the allotted time: %s", jobID, err.Error()),
 			)
-			return
+			return diags
 		}
 		tflog.Warn(ctx, fmt.Sprintf("Failed to wait for ML job %s to close before deletion: %s", jobID, err.Error()))
 		// Continue with deletion even if the wait fails for non-timeout reasons.
@@ -107,19 +91,20 @@ func (r *anomalyDetectionJobResource) delete(ctx context.Context, req resource.D
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
 			tflog.Debug(ctx, fmt.Sprintf("ML job %s not found on delete, treating as success", jobID))
-			return
+			return diags
 		}
 		tflog.Warn(ctx, fmt.Sprintf("Initial delete of ML job %s failed, retrying with force=true: %s", jobID, err.Error()))
 		_, retryErr := typedClient.Ml.DeleteJob(jobID).Force(true).Do(ctx)
 		if retryErr != nil {
 			if errors.As(retryErr, &esErr) && esErr.Status == 404 {
 				tflog.Debug(ctx, fmt.Sprintf("ML job %s not found on force-delete retry, treating as success", jobID))
-				return
+				return diags
 			}
-			resp.Diagnostics.AddError("Failed to delete ML anomaly detection job", fmt.Sprintf("Unable to delete ML anomaly detection job: %s — %s", jobID, retryErr.Error()))
-			return
+			diags.AddError("Failed to delete ML anomaly detection job", fmt.Sprintf("Unable to delete ML anomaly detection job: %s — %s", jobID, retryErr.Error()))
+			return diags
 		}
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML anomaly detection job: %s", jobID))
+	return diags
 }

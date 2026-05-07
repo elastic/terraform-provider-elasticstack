@@ -56,7 +56,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		indices = append(indices, indexStateModel)
 	}
 
-	indicesList, listDiags := types.ListValueFrom(ctx, indicesElementType(), indices)
+	indicesList, listDiags := types.ListValueFrom(ctx, indicesElementType(ctx), indices)
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return config, diags

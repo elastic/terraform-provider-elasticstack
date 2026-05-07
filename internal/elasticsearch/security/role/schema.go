@@ -18,6 +18,7 @@
 package role
 
 import (
+	"context"
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,7 +40,7 @@ const CurrentSchemaVersion = 1
 //go:embed resource-description.md
 var roleResourceDescription string
 
-func getSchemaFactory() schema.Schema { return GetSchema(CurrentSchemaVersion) }
+func getSchemaFactory(_ context.Context) schema.Schema { return GetSchema(CurrentSchemaVersion) }
 
 func GetSchema(version int64) schema.Schema {
 	return schema.Schema{

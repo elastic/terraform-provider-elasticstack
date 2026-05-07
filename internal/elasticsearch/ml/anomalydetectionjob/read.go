@@ -23,30 +23,27 @@ import (
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (bool, fwdiags.Diagnostics) {
+// readAnomalyDetectionJob fetches the job from Elasticsearch and populates the
+// TF model. It satisfies the entitycore elasticsearchReadFunc[TFModel] signature.
+func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	if !r.resourceReady(&diags) {
-		return false, diags
+	jobID := resourceID
+	if jobID == "" {
+		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+		return state, false, diags
 	}
-
-	jobID := job.JobID.ValueString()
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
-
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, job.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
 
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return false, diags
+		return state, false, diags
 	}
 
 	// Get the ML job using the typed client
@@ -54,14 +51,14 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return false, nil
+			return state, false, nil
 		}
 		diags.AddError("Failed to get ML anomaly detection job", fmt.Sprintf("Unable to get ML anomaly detection job: %s — %s", jobID, err.Error()))
-		return false, diags
+		return state, false, diags
 	}
 
 	if len(res.Jobs) == 0 {
-		return false, nil
+		return state, false, nil
 	}
 
 	if len(res.Jobs) > 1 {
@@ -81,11 +78,11 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (b
 
 	// Convert the typed response to APIModel, then populate TF model
 	apiModel := fromTypedJob(&res.Jobs[0])
-	diags.Append(job.fromAPIModel(ctx, apiModel)...)
+	diags.Append(state.fromAPIModel(ctx, apiModel)...)
 	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML anomaly detection job: %s", jobID))
-	return true, diags
+	return state, true, diags
 }

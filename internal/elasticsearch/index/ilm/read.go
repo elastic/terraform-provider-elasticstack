@@ -22,45 +22,30 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var prior tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStrFw(prior.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	policyName := compID.ResourceID
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, prior.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+// readILM is the envelope read callback. It fetches the ILM policy from Elasticsearch,
+// maps it into tfModel, copies ID and ElasticsearchConnection from the prior state, and
+// returns (model, true, nil). Returns (_, false, nil) when the policy is not found.
+func readILM(ctx context.Context, client *clients.ElasticsearchScopedClient, policyName string, prior tfModel) (tfModel, bool, diag.Diagnostics) {
 	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return tfModel{}, false, diags
 	}
 	if ilmDef == nil {
 		tflog.Warn(ctx, "ILM policy not found during read, removing from state", map[string]any{"policy_name": policyName})
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, policyName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		return tfModel{}, false, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, out)...)
+	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, policyName)
+	if diags.HasError() {
+		return tfModel{}, false, diags
+	}
+
+	out.ID = prior.ID
+	out.ElasticsearchConnection = prior.ElasticsearchConnection
+
+	return *out, true, diags
 }

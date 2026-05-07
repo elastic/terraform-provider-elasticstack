@@ -245,7 +245,7 @@ func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes
 		aliases = append(aliases, tfAlias)
 	}
 
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(), aliases)
+	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(ctx), aliases)
 	if diags.HasError() {
 		return basetypes.SetValue{}, diags
 	}

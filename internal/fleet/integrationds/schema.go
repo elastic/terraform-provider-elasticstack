@@ -18,10 +18,11 @@
 package integrationds
 
 import (
+	"context"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
-func getDataSourceSchema() dsschema.Schema {
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Description: `This data source provides information about a Fleet integration package. Currently,
 the data source will retrieve the latest available version of the package. Version

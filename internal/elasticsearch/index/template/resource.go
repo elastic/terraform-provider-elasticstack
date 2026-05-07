@@ -25,13 +25,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// Resource implements the elasticstack_elasticsearch_index_template resource.
+// It embeds *entitycore.ElasticsearchResource[Model] for schema injection, Read,
+// and Delete. Create and Update remain on the concrete type because they require
+// config-derived alias reconciliation, server-version gating, and the 8.x
+// allow_custom_routing workaround that cannot be expressed via the callback contract.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[Model]
 }
 
 func newResource() *Resource {
+	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Model]()
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "index_template"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Model](
+			entitycore.ComponentElasticsearch,
+			"index_template",
+			resourceSchema,
+			readIndexTemplate,
+			deleteIndexTemplate,
+			createFn,
+			updateFn,
+		),
 	}
 }
 
