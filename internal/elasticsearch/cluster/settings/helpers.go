@@ -196,9 +196,9 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 		switch t := v.(type) {
 		case string:
 			sm.Value = types.StringValue(t)
-			sm.ValueList = types.ListValueMust(types.StringType, []attr.Value{})
+			sm.ValueList = types.ListNull(types.StringType)
 		case []any:
-			sm.Value = types.StringValue("")
+			sm.Value = types.StringNull()
 			vals := make([]attr.Value, len(t))
 			for i, item := range t {
 				vals[i] = types.StringValue(fmt.Sprintf("%v", item))
@@ -211,7 +211,7 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 			sm.ValueList = listVal
 		default:
 			sm.Value = types.StringValue(fmt.Sprintf("%v", v))
-			sm.ValueList = types.ListValueMust(types.StringType, []attr.Value{})
+			sm.ValueList = types.ListNull(types.StringType)
 		}
 
 		obj, ds := types.ObjectValueFrom(ctx, settingModelAttr, sm)

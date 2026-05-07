@@ -19,6 +19,7 @@ package settings
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -31,6 +32,9 @@ func getSchema() schema.Schema {
 	// the original HCL block syntax: setting { name = "..." value = "..." }.
 	settingBlock := schema.SetNestedBlock{
 		MarkdownDescription: "Defines the settings in the cluster.",
+		Validators: []validator.Set{
+			setvalidator.SizeAtLeast(1),
+		},
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{

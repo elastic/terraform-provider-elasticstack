@@ -159,8 +159,8 @@ func TestFlattenSettings_ScalarValue(t *testing.T) {
 	if items[0].Value != "40mb" {
 		t.Errorf("expected value=40mb, got %s", items[0].Value)
 	}
-	if len(items[0].ValueList) != 0 {
-		t.Errorf("expected empty value_list, got %v", items[0].ValueList)
+	if items[0].ValueList != nil {
+		t.Errorf("expected null value_list, got %v", items[0].ValueList)
 	}
 }
 
@@ -181,8 +181,8 @@ func TestFlattenSettings_ListValue(t *testing.T) {
 	if items[0].Name != "listkey" {
 		t.Errorf("expected name=listkey, got %s", items[0].Name)
 	}
-	if items[0].Value != "" {
-		t.Errorf("expected empty value, got %s", items[0].Value)
+	if items[0].HasValue {
+		t.Errorf("expected null value, got %s", items[0].Value)
 	}
 	if diff := cmp.Diff([]string{"x", "y"}, items[0].ValueList); diff != "" {
 		t.Errorf("value_list mismatch (-want +got):\n%s", diff)
