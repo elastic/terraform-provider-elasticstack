@@ -44,8 +44,8 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}
 
 	// Source
-	if len(model.Source) > 0 {
-		src := model.Source[0]
+	if model.Source != nil {
+		src := model.Source
 		transform.Source = &models.TransformSource{}
 
 		indices := make([]string, 0, len(src.Indices))
@@ -76,8 +76,8 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}
 
 	// Destination
-	if len(model.Destination) > 0 {
-		dst := model.Destination[0]
+	if model.Destination != nil {
+		dst := model.Destination
 		transform.Destination = &models.TransformDestination{
 			Index: dst.Index.ValueString(),
 		}
@@ -133,8 +133,8 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}
 
 	// RetentionPolicy
-	if len(model.RetentionPolicy) > 0 && len(model.RetentionPolicy[0].Time) > 0 {
-		t := model.RetentionPolicy[0].Time[0]
+	if model.RetentionPolicy != nil && model.RetentionPolicy.Time != nil {
+		t := model.RetentionPolicy.Time
 		transform.RetentionPolicy = &models.TransformRetentionPolicy{
 			Time: models.TransformRetentionPolicyTime{
 				Field:  t.Field.ValueString(),
@@ -144,8 +144,8 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}
 
 	// Sync
-	if len(model.Sync) > 0 && len(model.Sync[0].Time) > 0 {
-		t := model.Sync[0].Time[0]
+	if model.Sync != nil && model.Sync.Time != nil {
+		t := model.Sync.Time
 		transform.Sync = &models.TransformSync{
 			Time: models.TransformSyncTime{
 				Field: t.Field.ValueString(),
@@ -154,58 +154,32 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 		}
 	}
 
-	// Settings (version-gated)
+	// Each entry pairs the API setting name (used for version gating) with the
+	// configured value. set==false means the user did not configure the field,
+	// so we skip both the version check and the assignment (avoids spurious
+	// "not allowed" warnings for unset fields).
 	settings := models.TransformSettings{}
 	setSettings := false
+	applies := []struct {
+		name  string
+		set   bool
+		write func()
+	}{
+		{name: "align_checkpoints", set: isConfigured(model.AlignCheckpoints), write: func() { v := model.AlignCheckpoints.ValueBool(); settings.AlignCheckpoints = &v }},
+		{name: "dates_as_epoch_millis", set: isConfigured(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
+		{name: "deduce_mappings", set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
+		{name: "docs_per_second", set: isConfigured(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
+		{name: "max_page_search_size", set: isConfigured(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
+		{name: "num_failure_retries", set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
+		{name: "unattended", set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
+	}
 
-	if !model.AlignCheckpoints.IsNull() && !model.AlignCheckpoints.IsUnknown() {
-		if isSettingAllowed(ctx, "align_checkpoints", serverVersion) {
-			setSettings = true
-			v := model.AlignCheckpoints.ValueBool()
-			settings.AlignCheckpoints = &v
+	for _, s := range applies {
+		if !s.set || !isSettingAllowed(ctx, s.name, serverVersion) {
+			continue
 		}
-	}
-	if !model.DatesAsEpochMillis.IsNull() && !model.DatesAsEpochMillis.IsUnknown() {
-		if isSettingAllowed(ctx, "dates_as_epoch_millis", serverVersion) {
-			setSettings = true
-			v := model.DatesAsEpochMillis.ValueBool()
-			settings.DatesAsEpochMillis = &v
-		}
-	}
-	if !model.DeduceMappings.IsNull() && !model.DeduceMappings.IsUnknown() {
-		if isSettingAllowed(ctx, "deduce_mappings", serverVersion) {
-			setSettings = true
-			v := model.DeduceMappings.ValueBool()
-			settings.DeduceMappings = &v
-		}
-	}
-	if !model.DocsPerSecond.IsNull() && !model.DocsPerSecond.IsUnknown() {
-		if isSettingAllowed(ctx, "docs_per_second", serverVersion) {
-			setSettings = true
-			v := model.DocsPerSecond.ValueFloat64()
-			settings.DocsPerSecond = &v
-		}
-	}
-	if !model.MaxPageSearchSize.IsNull() && !model.MaxPageSearchSize.IsUnknown() {
-		if isSettingAllowed(ctx, "max_page_search_size", serverVersion) {
-			setSettings = true
-			v := int(model.MaxPageSearchSize.ValueInt64())
-			settings.MaxPageSearchSize = &v
-		}
-	}
-	if !model.NumFailureRetries.IsNull() && !model.NumFailureRetries.IsUnknown() {
-		if isSettingAllowed(ctx, "num_failure_retries", serverVersion) {
-			setSettings = true
-			v := int(model.NumFailureRetries.ValueInt64())
-			settings.NumFailureRetries = &v
-		}
-	}
-	if !model.Unattended.IsNull() && !model.Unattended.IsUnknown() {
-		if isSettingAllowed(ctx, "unattended", serverVersion) {
-			setSettings = true
-			v := model.Unattended.ValueBool()
-			settings.Unattended = &v
-		}
+		s.write()
+		setSettings = true
 	}
 
 	if setSettings {
@@ -214,6 +188,15 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 
 	return &transform, diags
 }
+
+// isConfigured reports whether a Plugin Framework value was set in the
+// configuration (i.e. not null and not an unknown plan value).
+type configurable interface {
+	IsNull() bool
+	IsUnknown() bool
+}
+
+func isConfigured(v configurable) bool { return !v.IsNull() && !v.IsUnknown() }
 
 // fromAPIModel populates the PF model from a Get Transform response and Get Transform Stats.
 func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types.TransformStats, state tfModel) (tfModel, fwdiag.Diagnostics) {
@@ -263,9 +246,9 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			src.RuntimeMappings = jsontypes.NewNormalizedNull()
 		}
 
-		model.Source = []tfModelSource{src}
+		model.Source = &src
 	} else {
-		model.Source = []tfModelSource{}
+		model.Source = nil
 	}
 
 	// Destination
@@ -293,9 +276,9 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			dst.Aliases = nil
 		}
 
-		model.Destination = []tfModelDestination{dst}
+		model.Destination = &dst
 	} else {
-		model.Destination = []tfModelDestination{}
+		model.Destination = nil
 	}
 
 	// Pivot
@@ -331,7 +314,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			Field: basetypes.NewStringValue(transform.Sync.Time.Field),
 			Delay: basetypes.NewStringValue(transform.Sync.Time.Delay),
 		}
-		model.Sync = []tfModelSync{{Time: []tfModelSyncTime{syncTime}}}
+		model.Sync = &tfModelSync{Time: &syncTime}
 	} else {
 		model.Sync = nil
 	}
@@ -342,7 +325,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			Field:  basetypes.NewStringValue(transform.RetentionPolicy.Time.Field),
 			MaxAge: basetypes.NewStringValue(transform.RetentionPolicy.Time.MaxAge),
 		}
-		model.RetentionPolicy = []tfModelRetention{{Time: []tfModelRetentionTime{retTime}}}
+		model.RetentionPolicy = &tfModelRetention{Time: &retTime}
 	} else {
 		model.RetentionPolicy = nil
 	}

@@ -19,7 +19,6 @@ package transform
 
 import (
 	"context"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -48,14 +47,12 @@ func createTransform(ctx context.Context, client *clients.ElasticsearchScopedCli
 		return model, diags
 	}
 
-	// Parse timeout.
-	timeout, err := time.ParseDuration(model.Timeout.ValueString())
-	if err != nil {
-		diags.AddError("Invalid timeout", err.Error())
+	timeout, parseDiags := model.Timeout.Parse()
+	diags.Append(parseDiags...)
+	if diags.HasError() {
 		return model, diags
 	}
 
-	// Put Transform (and optionally start).
 	deferValidation := model.DeferValidation.ValueBool()
 	enabled := model.Enabled.ValueBool()
 

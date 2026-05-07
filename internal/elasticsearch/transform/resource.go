@@ -19,7 +19,6 @@ package transform
 
 import (
 	"context"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -31,9 +30,10 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = newTransformResource()
-	_ resource.ResourceWithConfigure   = newTransformResource()
-	_ resource.ResourceWithImportState = newTransformResource()
+	_ resource.Resource                 = newTransformResource()
+	_ resource.ResourceWithConfigure    = newTransformResource()
+	_ resource.ResourceWithImportState  = newTransformResource()
+	_ resource.ResourceWithUpgradeState = newTransformResource()
 )
 
 // transformResource wraps the entitycore envelope and overrides Create and
@@ -147,10 +147,9 @@ func (r *transformResource) Update(ctx context.Context, req resource.UpdateReque
 	apiTransform.Pivot = nil
 	apiTransform.Latest = nil
 
-	// Parse timeout.
-	timeout, err := time.ParseDuration(plan.Timeout.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Invalid timeout", err.Error())
+	timeout, parseDiags := plan.Timeout.Parse()
+	resp.Diagnostics.Append(parseDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -183,6 +182,16 @@ func (r *transformResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
+}
+
+// UpgradeState provides state upgraders for prior schema versions. The v0→v1
+// upgrade unwraps singleton-list nested blocks (source, destination,
+// retention_policy, sync, and their inner time blocks) into single objects
+// after the schema migration from ListNestedBlock to SingleNestedBlock.
+func (r *transformResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {StateUpgrader: migrateStateV0ToV1},
+	}
 }
 
 // ImportState implements passthrough import on the composite id attribute.

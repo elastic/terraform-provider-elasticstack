@@ -20,10 +20,12 @@ package transform
 import (
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -38,10 +40,22 @@ const (
 	destinationIndexAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see the " +
 		"[indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html" +
 		"#indices-create-api-path-params) for more details"
+
+	// currentSchemaVersion is the resource schema version. Bump when the on-disk
+	// state shape changes; add a corresponding entry in resource.UpgradeState.
+	currentSchemaVersion int64 = 1
+)
+
+var (
+	transformNameAllowedCharsRegexp   = regexp.MustCompile(`^[a-z0-9_-]+$`)
+	transformNameStartEndRegexp       = regexp.MustCompile(`^[a-z0-9].*[a-z0-9]$`)
+	destinationIndexLeadingCharRegexp = regexp.MustCompile(`^[^-_+]`)
+	destinationIndexAllowedRegexp     = regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`)
 )
 
 func getSchema() schema.Schema {
 	return schema.Schema{
+		Version:             currentSchemaVersion,
 		MarkdownDescription: transformDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -60,11 +74,11 @@ func getSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9_-]+$`),
+						transformNameAllowedCharsRegexp,
 						"must contain only lower case alphanumeric characters, hyphens, and underscores",
 					),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9].*[a-z0-9]$`),
+						transformNameStartEndRegexp,
 						"must start and end with a lowercase alphanumeric character",
 					),
 				},
@@ -107,7 +121,7 @@ func getSchema() schema.Schema {
 				Computed:            true,
 				Default:             stringdefault.StaticString("1m"),
 				Validators: []validator.String{
-					elasticDurationValidator{},
+					validators.ElasticDuration(),
 				},
 			},
 			"metadata": schema.StringAttribute{
@@ -163,10 +177,8 @@ func getSchema() schema.Schema {
 				MarkdownDescription: timeoutDescription,
 				Optional:            true,
 				Computed:            true,
+				CustomType:          customtypes.DurationType{},
 				Default:             stringdefault.StaticString("30s"),
-				Validators: []validator.String{
-					goDurationValidator{},
-				},
 			},
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: "Controls whether the transform should be started or stopped. Default is `false` (stopped).",
@@ -176,150 +188,128 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"source": schema.ListNestedBlock{
+			"source": schema.SingleNestedBlock{
 				MarkdownDescription: "The source of the data for the transform.",
-				Validators: []validator.List{
-					listvalidator.SizeBetween(1, 1),
-					listvalidator.IsRequired(),
+				Validators: []validator.Object{
+					objectvalidator.IsRequired(),
 				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"indices": schema.ListAttribute{
-							MarkdownDescription: "The source indices for the transform.",
-							Required:            true,
-							ElementType:         stringAttributeType,
-						},
-						"query": schema.StringAttribute{
-							MarkdownDescription: "A query clause that retrieves a subset of data from the source index.",
-							Optional:            true,
-							Computed:            true,
-							CustomType:          jsontypes.NormalizedType{},
-							Default:             stringdefault.StaticString(`{"match_all":{}}`),
-						},
-						"runtime_mappings": schema.StringAttribute{
-							MarkdownDescription: "Definitions of search-time runtime fields that can be used by the transform.",
-							Optional:            true,
-							CustomType:          jsontypes.NormalizedType{},
-						},
+				Attributes: map[string]schema.Attribute{
+					"indices": schema.ListAttribute{
+						MarkdownDescription: "The source indices for the transform.",
+						Required:            true,
+						ElementType:         stringAttributeType,
+					},
+					"query": schema.StringAttribute{
+						MarkdownDescription: "A query clause that retrieves a subset of data from the source index.",
+						Optional:            true,
+						Computed:            true,
+						CustomType:          jsontypes.NormalizedType{},
+						Default:             stringdefault.StaticString(`{"match_all":{}}`),
+					},
+					"runtime_mappings": schema.StringAttribute{
+						MarkdownDescription: "Definitions of search-time runtime fields that can be used by the transform.",
+						Optional:            true,
+						CustomType:          jsontypes.NormalizedType{},
 					},
 				},
 			},
-			"destination": schema.ListNestedBlock{
+			"destination": schema.SingleNestedBlock{
 				MarkdownDescription: "The destination for the transform.",
-				Validators: []validator.List{
-					listvalidator.SizeBetween(1, 1),
-					listvalidator.IsRequired(),
+				Validators: []validator.Object{
+					objectvalidator.IsRequired(),
 				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"index": schema.StringAttribute{
-							MarkdownDescription: "The destination index for the transform.",
-							Required:            true,
-							Validators: []validator.String{
-								stringvalidator.LengthBetween(1, 255),
-								stringvalidator.NoneOf(".", ".."),
-								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[^-_+]`),
-									"cannot start with -, _, +",
-								),
-								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-									destinationIndexAllowedCharsError,
-								),
-							},
-						},
-						"pipeline": schema.StringAttribute{
-							MarkdownDescription: "The unique identifier for an ingest pipeline.",
-							Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"index": schema.StringAttribute{
+						MarkdownDescription: "The destination index for the transform.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.LengthBetween(1, 255),
+							stringvalidator.NoneOf(".", ".."),
+							stringvalidator.RegexMatches(
+								destinationIndexLeadingCharRegexp,
+								"cannot start with -, _, +",
+							),
+							stringvalidator.RegexMatches(
+								destinationIndexAllowedRegexp,
+								destinationIndexAllowedCharsError,
+							),
 						},
 					},
-					Blocks: map[string]schema.Block{
-						"aliases": schema.ListNestedBlock{
-							MarkdownDescription: "The aliases that the destination index for the transform should have.",
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"alias": schema.StringAttribute{
-										MarkdownDescription: "The name of the alias.",
-										Required:            true,
-									},
-									"move_on_creation": schema.BoolAttribute{
-										MarkdownDescription: "Whether the destination index should be the only index in this alias. Defaults to false.",
-										Optional:            true,
-										Computed:            true,
-										Default:             booldefault.StaticBool(false),
-									},
+					"pipeline": schema.StringAttribute{
+						MarkdownDescription: "The unique identifier for an ingest pipeline.",
+						Optional:            true,
+					},
+				},
+				Blocks: map[string]schema.Block{
+					"aliases": schema.ListNestedBlock{
+						MarkdownDescription: "The aliases that the destination index for the transform should have.",
+						NestedObject: schema.NestedBlockObject{
+							Attributes: map[string]schema.Attribute{
+								"alias": schema.StringAttribute{
+									MarkdownDescription: "The name of the alias.",
+									Required:            true,
+								},
+								"move_on_creation": schema.BoolAttribute{
+									MarkdownDescription: "Whether the destination index should be the only index in this alias. Defaults to false.",
+									Optional:            true,
+									Computed:            true,
+									Default:             booldefault.StaticBool(false),
 								},
 							},
 						},
 					},
 				},
 			},
-			"retention_policy": schema.ListNestedBlock{
+			"retention_policy": schema.SingleNestedBlock{
 				MarkdownDescription: "Defines a retention policy for the transform.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("time")),
 				},
-				NestedObject: schema.NestedBlockObject{
-					Blocks: map[string]schema.Block{
-						"time": schema.ListNestedBlock{
-							MarkdownDescription: "Specifies that the transform uses a time field to set the retention policy.",
-							Validators: []validator.List{
-								listvalidator.SizeBetween(1, 1),
-								listvalidator.IsRequired(),
+				Blocks: map[string]schema.Block{
+					"time": schema.SingleNestedBlock{
+						MarkdownDescription: "Specifies that the transform uses a time field to set the retention policy.",
+						Attributes: map[string]schema.Attribute{
+							"field": schema.StringAttribute{
+								MarkdownDescription: "The date field that is used to calculate the age of the document.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.LengthAtLeast(1),
+								},
 							},
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"field": schema.StringAttribute{
-										MarkdownDescription: "The date field that is used to calculate the age of the document.",
-										Required:            true,
-										Validators: []validator.String{
-											stringvalidator.LengthAtLeast(1),
-										},
-									},
-									"max_age": schema.StringAttribute{
-										MarkdownDescription: "Specifies the maximum age of a document in the destination index.",
-										Required:            true,
-										Validators: []validator.String{
-											elasticDurationValidator{},
-										},
-									},
+							"max_age": schema.StringAttribute{
+								MarkdownDescription: "Specifies the maximum age of a document in the destination index.",
+								Required:            true,
+								Validators: []validator.String{
+									validators.ElasticDuration(),
 								},
 							},
 						},
 					},
 				},
 			},
-			"sync": schema.ListNestedBlock{
+			"sync": schema.SingleNestedBlock{
 				MarkdownDescription: "Defines the properties transforms require to run continuously.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("time")),
 				},
-				NestedObject: schema.NestedBlockObject{
-					Blocks: map[string]schema.Block{
-						"time": schema.ListNestedBlock{
-							MarkdownDescription: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
-							Validators: []validator.List{
-								listvalidator.SizeBetween(1, 1),
-								listvalidator.IsRequired(),
+				Blocks: map[string]schema.Block{
+					"time": schema.SingleNestedBlock{
+						MarkdownDescription: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
+						Attributes: map[string]schema.Attribute{
+							"field": schema.StringAttribute{
+								MarkdownDescription: "The date field that is used to identify new documents in the source.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.LengthAtLeast(1),
+								},
 							},
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"field": schema.StringAttribute{
-										MarkdownDescription: "The date field that is used to identify new documents in the source.",
-										Required:            true,
-										Validators: []validator.String{
-											stringvalidator.LengthAtLeast(1),
-										},
-									},
-									"delay": schema.StringAttribute{
-										MarkdownDescription: "The time delay between the current time and the latest input data time. The default value is 60s.",
-										Optional:            true,
-										Computed:            true,
-										Default:             stringdefault.StaticString("60s"),
-										Validators: []validator.String{
-											elasticDurationValidator{},
-										},
-									},
+							"delay": schema.StringAttribute{
+								MarkdownDescription: "The time delay between the current time and the latest input data time. The default value is 60s.",
+								Optional:            true,
+								Computed:            true,
+								Default:             stringdefault.StaticString("60s"),
+								Validators: []validator.String{
+									validators.ElasticDuration(),
 								},
 							},
 						},

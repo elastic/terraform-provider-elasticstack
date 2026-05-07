@@ -85,8 +85,8 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 ### Required
 
 - `name` (String) Name of the transform you wish to create.
-- `destination` (Block List, Min: 1, Max: 1) The destination for the transform. (see [below for nested schema](#nestedblock--destination))
-- `source` (Block List, Min: 1, Max: 1) The source of the data for the transform. (see [below for nested schema](#nestedblock--source))
+- `destination` (Block, Single) The destination for the transform. (see [below for nested schema](#nestedblock--destination))
+- `source` (Block, Single) The source of the data for the transform. (see [below for nested schema](#nestedblock--source))
 
 ### Optional
 
@@ -104,8 +104,8 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `metadata` (String) Defines optional transform metadata.
 - `num_failure_retries` (Number) Defines the number of retries on a recoverable failure before the transform task is marked as failed. The default value is the cluster-level setting num_transform_failure_retries.
 - `pivot` (String) The pivot method transforms the data by aggregating and grouping it. JSON definition expected. Either 'pivot' or 'latest' must be present.
-- `retention_policy` (Block List) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
-- `sync` (Block List) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
+- `retention_policy` (Block, Single) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
+- `sync` (Block, Single) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
 - `timeout` (String) Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
 - `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.
 
@@ -164,7 +164,7 @@ Optional:
 
 Optional:
 
-- `time` (Block List) Specifies that the transform uses a time field to set the retention policy. (see [below for nested schema](#nestedblock--retention_policy--time))
+- `time` (Block, Single) Specifies that the transform uses a time field to set the retention policy. (see [below for nested schema](#nestedblock--retention_policy--time))
 
 <a id="nestedblock--retention_policy--time"></a>
 ### Nested Schema for `retention_policy.time`
@@ -194,7 +194,7 @@ Optional:
 
 Optional:
 
-- `time` (Block List) Specifies that the transform uses a time field to synchronize the source and destination indices. (see [below for nested schema](#nestedblock--sync--time))
+- `time` (Block, Single) Specifies that the transform uses a time field to synchronize the source and destination indices. (see [below for nested schema](#nestedblock--sync--time))
 
 <a id="nestedblock--sync--time"></a>
 ### Nested Schema for `sync.time`

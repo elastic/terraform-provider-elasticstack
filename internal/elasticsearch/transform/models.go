@@ -18,6 +18,7 @@
 package transform
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -28,14 +29,14 @@ type tfModel struct {
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Name                    types.String         `tfsdk:"name"`
 	Description             types.String         `tfsdk:"description"`
-	Source                  []tfModelSource      `tfsdk:"source"`
-	Destination             []tfModelDestination `tfsdk:"destination"`
+	Source                  *tfModelSource       `tfsdk:"source"`
+	Destination             *tfModelDestination  `tfsdk:"destination"`
 	Pivot                   jsontypes.Normalized `tfsdk:"pivot"`
 	Latest                  jsontypes.Normalized `tfsdk:"latest"`
 	Frequency               types.String         `tfsdk:"frequency"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	RetentionPolicy         []tfModelRetention   `tfsdk:"retention_policy"`
-	Sync                    []tfModelSync        `tfsdk:"sync"`
+	RetentionPolicy         *tfModelRetention    `tfsdk:"retention_policy"`
+	Sync                    *tfModelSync         `tfsdk:"sync"`
 	AlignCheckpoints        types.Bool           `tfsdk:"align_checkpoints"`
 	DatesAsEpochMillis      types.Bool           `tfsdk:"dates_as_epoch_millis"`
 	DeduceMappings          types.Bool           `tfsdk:"deduce_mappings"`
@@ -44,7 +45,7 @@ type tfModel struct {
 	NumFailureRetries       types.Int64          `tfsdk:"num_failure_retries"`
 	Unattended              types.Bool           `tfsdk:"unattended"`
 	DeferValidation         types.Bool           `tfsdk:"defer_validation"`
-	Timeout                 types.String         `tfsdk:"timeout"`
+	Timeout                 customtypes.Duration `tfsdk:"timeout"`
 	Enabled                 types.Bool           `tfsdk:"enabled"`
 }
 
@@ -80,7 +81,7 @@ type tfModelRetentionTime struct {
 
 // tfModelRetention holds the retention_policy block.
 type tfModelRetention struct {
-	Time []tfModelRetentionTime `tfsdk:"time"`
+	Time *tfModelRetentionTime `tfsdk:"time"`
 }
 
 // tfModelSyncTime holds the time sub-block of sync.
@@ -91,5 +92,5 @@ type tfModelSyncTime struct {
 
 // tfModelSync holds the sync block.
 type tfModelSync struct {
-	Time []tfModelSyncTime `tfsdk:"time"`
+	Time *tfModelSyncTime `tfsdk:"time"`
 }
