@@ -35,7 +35,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -55,7 +55,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -76,7 +76,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 
 	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -93,12 +93,12 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	var unionReq kbapi.PackagePolicyRequest
 	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -117,7 +117,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -135,12 +135,12 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	var unionReq kbapi.PackagePolicyRequest
 	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
@@ -159,7 +159,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 
 	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	return handleDeleteResponse(resp.StatusCode(), resp.Body)
