@@ -27,6 +27,7 @@ type tfModel struct {
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Name                    types.String         `tfsdk:"name"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
+	ForceDestroy            types.Bool           `tfsdk:"force_destroy"`
 	Hot                     types.Object         `tfsdk:"hot"`
 	Warm                    types.Object         `tfsdk:"warm"`
 	Cold                    types.Object         `tfsdk:"cold"`

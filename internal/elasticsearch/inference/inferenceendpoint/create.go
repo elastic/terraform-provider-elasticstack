@@ -19,69 +19,46 @@ package inferenceendpoint
 
 import (
 	"context"
-
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *inferenceEndpointResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	inferenceID := data.InferenceID.ValueString()
-	id, sdkDiags := client.ID(ctx, inferenceID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, sdkDiags := client.ID(ctx, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return data, diags
 	}
 
 	supported, sdkDiags := client.EnforceMinVersion(ctx, MinSupportedVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return data, diags
 	}
 	if !supported {
-		resp.Diagnostics.AddError("Unsupported Feature", fmt.Sprintf("inference endpoints require Elasticsearch v%s or above", MinSupportedVersion.String()))
-		return
+		diags.AddError("Unsupported Feature", fmt.Sprintf("inference endpoints require Elasticsearch v%s or above", MinSupportedVersion.String()))
+		return data, diags
 	}
 
 	endpoint, modelDiags := data.toAPIModel(ctx)
-	resp.Diagnostics.Append(modelDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return data, diags
 	}
 
-	putDiags := elasticsearch.PutInferenceEndpoint(ctx, client, inferenceID, data.TaskType.ValueString(), endpoint)
-	resp.Diagnostics.Append(putDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(elasticsearch.PutInferenceEndpoint(ctx, client, resourceID, data.TaskType.ValueString(), endpoint)...)
+	if diags.HasError() {
+		return data, diags
 	}
 
 	data.ID = types.StringValue(id.String())
 
-	readData, readDiags := r.read(ctx, data)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.Diagnostics.AddError("Not Found", fmt.Sprintf("Inference endpoint %q was not found after create", inferenceID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return data, diags
 }

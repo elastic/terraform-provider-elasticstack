@@ -24,47 +24,28 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *enrichPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data PolicyDataWithExecute
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readEnrichPolicy(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state PolicyDataWithExecute) (PolicyDataWithExecute, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	policyName := compID.ResourceID
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, policyName)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
 	if policy == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Enrich policy "%s" not found, removing from state`, policyName))
-		resp.State.RemoveResource(ctx)
-		return
+		tflog.Warn(ctx, fmt.Sprintf(`Enrich policy "%s" not found, removing from state`, resourceID))
+		return state, false, diags
 	}
 
-	// Convert model to framework types using shared function
-	data.populateFromPolicy(ctx, policy, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	state.populateFromPolicy(ctx, policy, &diags)
+	if diags.HasError() {
+		return state, false, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return state, true, diags
 }
