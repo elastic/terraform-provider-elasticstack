@@ -23,6 +23,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -151,7 +152,7 @@ func flattenAliasSet(ctx context.Context, aliases map[string]estypes.AliasDefini
 func flattenAliasElement(name string, a estypes.AliasDefinition, preservedRouting map[string]string) (attr.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	routing := stringPtrValue(a.Routing)
+	routing := typeutils.Deref(a.Routing)
 	// Preserve routing from prior state when the API omits it
 	if routing == "" {
 		if pr, ok := preservedRouting[name]; ok {
@@ -161,11 +162,11 @@ func flattenAliasElement(name string, a estypes.AliasDefinition, preservedRoutin
 
 	attrs := map[string]attr.Value{
 		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(stringPtrValue(a.IndexRouting)),
+		"index_routing":  types.StringValue(typeutils.Deref(a.IndexRouting)),
 		"routing":        types.StringValue(routing),
-		"search_routing": types.StringValue(stringPtrValue(a.SearchRouting)),
-		"is_hidden":      types.BoolValue(boolPtrValue(a.IsHidden)),
-		"is_write_index": types.BoolValue(boolPtrValue(a.IsWriteIndex)),
+		"search_routing": types.StringValue(typeutils.Deref(a.SearchRouting)),
+		"is_hidden":      types.BoolValue(typeutils.Deref(a.IsHidden)),
+		"is_write_index": types.BoolValue(typeutils.Deref(a.IsWriteIndex)),
 	}
 
 	if a.Filter != nil {
@@ -226,16 +227,4 @@ func extractAliasRoutingFromData(prior Data) map[string]string {
 	return result
 }
 
-func stringPtrValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
 
-func boolPtrValue(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
-}

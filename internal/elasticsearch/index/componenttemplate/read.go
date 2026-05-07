@@ -42,7 +42,7 @@ func readComponentTemplate(ctx context.Context, client *clients.ElasticsearchSco
 	}
 
 	if tpl == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, resourceID))
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found`, resourceID))
 		return state, false, diags
 	}
 

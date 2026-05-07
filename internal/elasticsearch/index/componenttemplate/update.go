@@ -38,11 +38,9 @@ func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchS
 	}
 
 	sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
-	if sdkDiags != nil {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		if diags.HasError() {
-			return plan, diags
-		}
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	return plan, diags

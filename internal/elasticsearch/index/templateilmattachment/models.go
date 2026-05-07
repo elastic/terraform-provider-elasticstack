@@ -133,7 +133,7 @@ func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *mo
 	}
 
 	if tpl.ComponentTemplate.Version != nil {
-		version := int(*tpl.ComponentTemplate.Version)
+		version := *tpl.ComponentTemplate.Version
 		resp.ComponentTemplate.Version = &version
 	}
 

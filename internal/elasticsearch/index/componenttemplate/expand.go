@@ -57,7 +57,7 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 	}
 
 	if !d.Version.IsNull() && !d.Version.IsUnknown() {
-		v := int(d.Version.ValueInt64())
+		v := d.Version.ValueInt64()
 		out.Version = &v
 	}
 
@@ -130,23 +130,29 @@ func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.Index
 
 	aliases := make(map[string]models.IndexAlias, len(elems))
 	for _, am := range elems {
-		ia := expandAliasElement(am)
+		ia, d := expandAliasElement(am)
+		if d.HasError() {
+			return nil, d
+		}
 		aliases[am.Name.ValueString()] = ia
 	}
 	return aliases, diags
 }
 
 // expandAliasElement converts a single AliasModel to a models.IndexAlias.
-func expandAliasElement(am AliasModel) models.IndexAlias {
+func expandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	ia := models.IndexAlias{Name: am.Name.ValueString()}
 
 	if !am.Filter.IsNull() && !am.Filter.IsUnknown() {
 		fs := strings.TrimSpace(am.Filter.ValueString())
 		if fs != "" {
 			filterMap := make(map[string]any)
-			if err := json.Unmarshal([]byte(fs), &filterMap); err == nil {
-				ia.Filter = filterMap
+			if err := json.Unmarshal([]byte(fs), &filterMap); err != nil {
+				diags.AddError("Invalid alias filter JSON", err.Error())
+				return ia, diags
 			}
+			ia.Filter = filterMap
 		}
 	}
 
@@ -166,5 +172,5 @@ func expandAliasElement(am AliasModel) models.IndexAlias {
 		ia.IsWriteIndex = am.IsWriteIndex.ValueBool()
 	}
 
-	return ia
+	return ia, diags
 }
