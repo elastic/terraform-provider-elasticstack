@@ -226,5 +226,3 @@ func extractAliasRoutingFromData(prior Data) map[string]string {
 
 	return result
 }
-
-
