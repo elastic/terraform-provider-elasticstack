@@ -212,7 +212,7 @@ type Downsampling struct {
 
 type LogstashPipeline struct {
 	PipelineID       string         `json:"-"`
-	Description      string         `json:"description,omitempty"`
+	Description      string         `json:"description"`
 	LastModified     string         `json:"last_modified"`
 	Pipeline         string         `json:"pipeline"`
 	PipelineMetadata map[string]any `json:"pipeline_metadata"`
