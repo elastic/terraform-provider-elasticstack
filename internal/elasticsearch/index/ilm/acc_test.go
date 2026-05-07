@@ -78,10 +78,10 @@ func TestAccResourceILM(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ImportState:           true,
-				ImportStateVerify:     true,
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_destroy"},
-				ResourceName:          "elasticstack_elasticsearch_index_lifecycle.test",
+				ResourceName:            "elasticstack_elasticsearch_index_lifecycle.test",
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
