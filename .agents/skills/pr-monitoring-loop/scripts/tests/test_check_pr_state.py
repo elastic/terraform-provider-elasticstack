@@ -322,7 +322,7 @@ def test_verify_openspec_runstate_none_when_no_label_no_review(cps):
     payload, _ = cps.compute_payload(**_empty_kwargs())
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     assert vo["runState"] == "none"
-    assert vo["requiresOpenspecVerification"] is True
+    assert vo["approvalIsCurrent"] is False
 
 
 def test_verify_openspec_runstate_pending_pickup_when_label_present(cps):
@@ -331,7 +331,7 @@ def test_verify_openspec_runstate_pending_pickup_when_label_present(cps):
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     assert vo["runState"] == "pending-pickup"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["approvalIsCurrent"] is False
 
 
 def test_verify_openspec_runstate_in_progress_after_workflow_removes_label(cps):
@@ -346,10 +346,10 @@ def test_verify_openspec_runstate_in_progress_after_workflow_removes_label(cps):
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     # critical: do NOT report `none` just because pr.labels no longer has it
     assert vo["runState"] == "in-progress"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["approvalIsCurrent"] is False
 
 
-def test_verify_openspec_runstate_approved(cps):
+def test_verify_openspec_runstate_approved_current(cps):
     kwargs = _empty_kwargs()
     kwargs["event_data"] = [
         _label_event("labeled", "2026-05-07T01:00:00Z"),
@@ -358,13 +358,13 @@ def test_verify_openspec_runstate_approved(cps):
     kwargs["review_data"] = [_verify_review(7, "APPROVED")]
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
-    assert vo["runState"] == "approved"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["runState"] == "approved-current"
+    assert vo["approvalIsCurrent"] is True
     assert vo["lastApprovalHeadSha"] == HEAD_SHA
 
 
-def test_verify_openspec_runstate_approved_does_not_go_stale(cps):
-    """Approval exists but for an older commit; still reported as approved."""
+def test_verify_openspec_runstate_approved_stale(cps):
+    """Approval exists but for an older commit; no current label/run."""
 
     kwargs = _empty_kwargs()
     kwargs["review_data"] = [
@@ -372,8 +372,8 @@ def test_verify_openspec_runstate_approved_does_not_go_stale(cps):
     ]
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
-    assert vo["runState"] == "approved"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["runState"] == "approved-stale"
+    assert vo["approvalIsCurrent"] is False
 
 
 def test_verify_openspec_runstate_changes_requested(cps):
@@ -382,7 +382,7 @@ def test_verify_openspec_runstate_changes_requested(cps):
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     assert vo["runState"] == "changes-requested"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["approvalIsCurrent"] is False
 
 
 def test_verify_openspec_ignores_unrelated_github_actions_reviews(cps):
@@ -405,7 +405,7 @@ def test_verify_openspec_ignores_unrelated_github_actions_reviews(cps):
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     assert vo["runState"] == "none"
-    assert vo["requiresOpenspecVerification"] is True
+    assert vo["approvalIsCurrent"] is False
 
 
 def test_verify_openspec_recognizes_review_by_body_marker(cps):
@@ -424,9 +424,7 @@ def test_verify_openspec_recognizes_review_by_body_marker(cps):
         ),
     ]
     payload, _ = cps.compute_payload(**kwargs)
-    vo = payload["summary"]["reviews"]["verifyOpenspec"]
-    assert vo["runState"] == "approved"
-    assert vo["requiresOpenspecVerification"] is False
+    assert payload["summary"]["reviews"]["verifyOpenspec"]["approvalIsCurrent"] is True
 
 
 def test_verify_openspec_relabel_after_approval_resets_to_pending(cps):
@@ -443,7 +441,7 @@ def test_verify_openspec_relabel_after_approval_resets_to_pending(cps):
     payload, _ = cps.compute_payload(**kwargs)
     vo = payload["summary"]["reviews"]["verifyOpenspec"]
     assert vo["runState"] == "pending-pickup"
-    assert vo["requiresOpenspecVerification"] is False
+    assert vo["approvalIsCurrent"] is False
 
 
 # ---------------------------------------------------------------------------
