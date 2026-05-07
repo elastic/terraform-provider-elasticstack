@@ -27,8 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-//go:embed testdata/TestAccResourceComponentTemplateFromSDK/step1_sdk/main.tf
-var sdkComponentTemplateFromSDKStep1 string
+//go:embed testdata/TestAccResourceComponentTemplateFromSDK/config/main.tf
+var sdkComponentTemplateFromSDKConfig string
 
 // TestAccResourceComponentTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
 // (REQ-042). Step 1 uses registry provider 0.14.5; step 2 applies the Plugin Framework configuration;
@@ -51,7 +51,7 @@ func TestAccResourceComponentTemplateFromSDK(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				Config: sdkComponentTemplateFromSDKStep1,
+				Config: sdkComponentTemplateFromSDKConfig,
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
@@ -70,7 +70,7 @@ func TestAccResourceComponentTemplateFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("config"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
@@ -89,7 +89,7 @@ func TestAccResourceComponentTemplateFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("config"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},

@@ -24,7 +24,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 8. Send findings back to that task's implementor and repeat until clean, then move to the next top-level task
 9. Push the branch to `origin`
 10. **Commit mode**: Watch GitHub Actions on the pushed branch/commit  
-    **PR mode**: Create a PR, then use the `pr-monitoring-loop` skill to monitor CI, reviews, comments, mergeability, and `verify-openspec` approval through watcher and worker subagents
+    **PR mode**: Create a PR, then use the `pr-monitoring-loop` skill to monitor CI, reviews, comments, mergeability, and `verify-openspec` approval through watcher and delegate subagents
 11. Report final outcome
 
 **Steps**
@@ -259,19 +259,12 @@ Orchestrate an implementation loop around a single OpenSpec change.
 
     **Delegate PR monitoring to `pr-monitoring-loop`**:
     - load and follow the `pr-monitoring-loop` skill for the entire PR monitoring phase
-    - start a worker subagent for the PR instead of polling in this main implementation-loop agent
-    - instruct the worker to invoke `.agents/skills/pr-monitoring-loop/scripts/check-pr-state.py <pr>` on every cadence tick (or use `--watch` with the cadence guidance documented in `pr-monitoring-loop`) so CI (commit-pinned), reviews, PR comments, review comments, unresolved threads, merge conflicts, and stale branch state are checked together. Append `--state-file <path>` only if you decided to override the default path above.
-    - allow the worker to fix and push changes it judges simple, then perform the thread-resolution protocol for any addressed threads (reply with addressing commit SHA, then `resolveReviewThread`), and continue watching the new PR head
-    - when the worker returns `delegate`, launch a fresh worker subagent scoped only to the reported failure or feedback (with the same `--state-file`); after the worker commits, pushes, replies, and resolves addressed threads, restart the watch cycle for the new head commit with a new worker
+    - start a delegate subagent for the PR instead of polling in this main implementation-loop agent
+    - instruct the delegate to invoke `.agents/skills/pr-monitoring-loop/scripts/check-pr-state.py <pr>` on every cadence tick (or use `--watch` with the cadence guidance documented in `pr-monitoring-loop`) so CI (commit-pinned), reviews, PR comments, review comments, unresolved threads, merge conflicts, and stale branch state are checked together. Append `--state-file <path>` only if you decided to override the default path above.
+    - allow the delegate to fix and push changes it judges simple, then perform the thread-resolution protocol for any addressed threads (reply with addressing commit SHA, then `resolveReviewThread`), and continue watching the new PR head
+    - when the delegate returns `delegate`, launch a fresh delegate subagent scoped only to the reported failure or feedback (with the same `--state-file`); after the delegate commits, pushes, replies, and resolves addressed threads, restart the watch cycle for the new head commit with a new delegate
 
-    **OpenSpec-specific success criteria for `pr-monitoring-loop`**:
-    - explicitly opt in to `verify-openspec` behavior when invoking `pr-monitoring-loop`; this behavior is not enabled by default in the reusable skill
-    - drive every verify-openspec decision off `summary.reviews.verifyOpenspec.{runState, approvalIsCurrent}`; do NOT recompute label/review timestamp arithmetic in this main loop
-    - the `verify-openspec` workflow REMOVES its own label as soon as it picks up the PR — label absence on `pr.labels` is NOT a signal that verify "was never requested". Always read `summary.reviews.verifyOpenspec.runState`, never `pr.labels`, when deciding whether to (re-)apply the label
-    - **anti-relabel guardrail**: NEVER (re-)apply the `verify-openspec` label when `summary.reviews.verifyOpenspec.approvalIsCurrent == true`. Treat a current-head approval as terminal for the verify gate; further label applications are wasted CI and may invalidate the existing approval
-    - apply (or re-apply) the label only when `runState == "none"` (or `"approved-stale"` after a new head was pushed) AND `summary.checks.failed == 0` and `summary.checks.pending == 0` for the current head AND no known unaddressed actionable items remain (`summary.comments.new*`, `summary.threads.unresolvedNew`, `summary.reviews.effectiveDecision != "CHANGES_REQUESTED"`)
-    - end successfully only when `summary.reviews.verifyOpenspec.approvalIsCurrent == true` AND `summary.checks.failed == 0`. Do NOT treat `pr.reviewDecision == "APPROVED"`, a Macroscope/human approval alone, or a green verify workflow check as equivalent
-    - cross-link to `pr-monitoring-loop` for the polling cadence (`--watch --interval`) and resilience contract (exit code `2` is transient, retry; do not escalate to `blocked`); do not restate cadence here
+    When monitoring in PR mode, tell the PR watcher to opt in to `verify-openspec` behavior per the `pr-monitoring-loop` skill. The `pr-monitoring-loop` skill defines when to apply the `verify-openspec` label (via `requiresOpenspecVerification`) and when the PR is considered verified (`runState == "approved"`). Do not restate those rules here.
 
 13. **Report final outcome**
 
@@ -295,7 +288,7 @@ Orchestrate an implementation loop around a single OpenSpec change.
 - **Critical reviewer**: reviews code quality and logic
 - **Spec reviewer**: checks the implementation against the approved OpenSpec change
 - **Coverage reviewer**: checks test coverage quality using the appropriate strategy
-- **PR watcher**: a fresh subagent using `pr-monitoring-loop` to poll PR state, directly fix simple actionable issues, and return non-simple work to the main agent for worker delegation
+- **PR watcher**: a fresh subagent using `pr-monitoring-loop` to poll PR state, directly fix simple actionable issues, and return non-simple work to the main agent for delegation to a fresh subagent
 
 **Guardrails**
 
