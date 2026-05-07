@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -33,11 +34,11 @@ func readComponentTemplate(ctx context.Context, client *clients.ElasticsearchSco
 	var diags diag.Diagnostics
 
 	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
-	if sdkDiags != nil && sdkDiags.HasError() {
-		for _, d := range sdkDiags {
-			diags.AddError(d.Summary, d.Detail)
+	if sdkDiags != nil {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if diags.HasError() {
+			return state, false, diags
 		}
-		return state, false, diags
 	}
 
 	if tpl == nil {

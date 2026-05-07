@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,19 +40,19 @@ func createComponentTemplate(ctx context.Context, client *clients.ElasticsearchS
 	}
 
 	sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
-	if sdkDiags != nil && sdkDiags.HasError() {
-		for _, d := range sdkDiags {
-			diags.AddError(d.Summary, d.Detail)
+	if sdkDiags != nil {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if diags.HasError() {
+			return plan, diags
 		}
-		return plan, diags
 	}
 
 	compositeID, idDiags := client.ID(ctx, resourceID)
-	if idDiags != nil && idDiags.HasError() {
-		for _, d := range idDiags {
-			diags.AddError(d.Summary, d.Detail)
+	if idDiags != nil {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+		if diags.HasError() {
+			return plan, diags
 		}
-		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compositeID.String())

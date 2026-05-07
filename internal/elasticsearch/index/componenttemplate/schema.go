@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -26,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -94,6 +96,9 @@ func getSchema() schema.Schema {
 							"for more details.",
 						Optional:   true,
 						CustomType: jsontypes.NormalizedType{},
+						Validators: []validator.String{
+							esindex.StringIsJSONObject{},
+						},
 					},
 					"settings": schema.StringAttribute{
 						MarkdownDescription: "Configuration options for the index. See the " +
@@ -118,6 +123,9 @@ func getSchema() schema.Schema {
 									MarkdownDescription: "Query used to limit documents the alias can access.",
 									Optional:            true,
 									CustomType:          jsontypes.NormalizedType{},
+									Validators: []validator.String{
+										esindex.StringIsJSONObject{},
+									},
 								},
 								"index_routing": schema.StringAttribute{
 									MarkdownDescription: "Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.",
