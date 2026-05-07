@@ -104,6 +104,85 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 }
 
+// GetIndicesWithILMPolicy returns the names of all indices currently using
+// the given ILM policy.
+//
+// It queries GET /_ilm/policy/<policyName> and reads the
+// `<policy>.in_use_by.indices` field, which Elasticsearch maintains per
+// policy. This is a single targeted lookup keyed by the policy and avoids
+// scanning indices cluster-wide.
+//
+// The typed client's generated `Lifecycle` struct does not expose
+// `in_use_by`, so this function uses Perform to obtain the raw HTTP response
+// and decodes the relevant subset of the body itself.
+func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Perform(ctx)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Unable to fetch ILM policy",
+				fmt.Sprintf("Elasticsearch returned status %d for GET /_ilm/policy/%s: %s", res.StatusCode, policyName, strings.TrimSpace(string(body))),
+			),
+		}
+	}
+
+	// The response is shaped as:
+	//   { "<policy_name>": { "in_use_by": { "indices": [...], ... }, ... } }
+	var decoded map[string]struct {
+		InUseBy struct {
+			Indices []string `json:"indices"`
+		} `json:"in_use_by"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&decoded); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	entry, ok := decoded[policyName]
+	if !ok {
+		return nil, nil
+	}
+	return entry.InUseBy.Indices, nil
+}
+
+// ClearILMPolicyFromIndices removes the ILM policy reference from the
+// provided indices by setting index.lifecycle.name to null.
+// It issues PUT /{indices}/_settings.
+func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indices []string) fwdiags.Diagnostics {
+	if len(indices) == 0 {
+		return nil
+	}
+
+	settingsBytes, err := json.Marshal(map[string]any{"index.lifecycle.name": nil})
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return nil
+}
+
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {

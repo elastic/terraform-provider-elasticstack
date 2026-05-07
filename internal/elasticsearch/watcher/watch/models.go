@@ -45,6 +45,10 @@ type Data struct {
 	ThrottlePeriodInMillis  types.Int64          `tfsdk:"throttle_period_in_millis"`
 }
 
+func (d Data) GetID() types.String                    { return d.ID }
+func (d Data) GetResourceID() types.String            { return d.WatchID }
+func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+
 // toPutModel converts the Terraform state into a models.PutWatch for the API.
 func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics) {
 	var diags diag.Diagnostics
