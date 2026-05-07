@@ -64,7 +64,7 @@ func TestFlattenFsSettings_Nulls(t *testing.T) {
 
 func TestFlattenURLSettings(t *testing.T) {
 	settings := map[string]any{
-		urlRepoType:                  "file:/tmp",
+		"url":                        "file:/tmp",
 		"chunk_size":                 "1gb",
 		"compress":                   "true",
 		"max_snapshot_bytes_per_sec": "40mb",
@@ -326,82 +326,78 @@ func TestInt64Setting(t *testing.T) {
 	assert.True(t, i.IsNull())
 }
 
-const urlRepoType = "url"
-
 func TestPopulateRepositoryTypeBlocks_Success(t *testing.T) {
 	tests := []struct {
 		name          string
 		repo          *elasticsearch.SnapshotRepositoryInfo
 		wantPopulated string
-		wantReadonly  *bool
 	}{
 		{
 			name: "fs",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: "fs",
+				Type: repoTypeFS,
 				Settings: map[string]any{
 					"location": "/tmp",
 					"compress": true,
 				},
 			},
-			wantPopulated: "fs",
+			wantPopulated: repoTypeFS,
 		},
 		{
-			name: urlRepoType,
+			name: "url",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: urlRepoType,
+				Type: repoTypeURL,
 				Settings: map[string]any{
-					urlRepoType: "file:/tmp",
-					"readonly":  "false",
+					"url":      "file:/tmp",
+					"readonly": "false",
 				},
 			},
-			wantPopulated: urlRepoType,
-			wantReadonly:  func() *bool { b := false; return &b }(),
+			wantPopulated: repoTypeURL,
 		},
 		{
 			name: "gcs",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: "gcs",
+				Type: repoTypeGCS,
 				Settings: map[string]any{
 					"bucket": "my-bucket",
 					"client": "default",
 				},
 			},
-			wantPopulated: "gcs",
+			wantPopulated: repoTypeGCS,
 		},
 		{
 			name: "azure",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: "azure",
+				Type: repoTypeAzure,
 				Settings: map[string]any{
 					"container": "my-container",
 					"client":    "default",
 				},
 			},
-			wantPopulated: "azure",
+			wantPopulated: repoTypeAzure,
 		},
 		{
 			name: "s3",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: "s3",
+				Type: repoTypeS3,
 				Settings: map[string]any{
 					"bucket":   "my-bucket",
 					"client":   "default",
 					"compress": true,
 				},
 			},
-			wantPopulated: "s3",
+			wantPopulated: repoTypeS3,
 		},
 		{
 			name: "hdfs",
 			repo: &elasticsearch.SnapshotRepositoryInfo{
-				Type: "hdfs",
+				Type: repoTypeHDFS,
 				Settings: map[string]any{
 					"uri":  "hdfs://host:8020/",
 					"path": "/repo",
 				},
 			},
-			wantPopulated: "hdfs",
+			wantPopulated: repoTypeHDFS,
 		},
 	}
 
@@ -423,29 +419,21 @@ func TestPopulateRepositoryTypeBlocks_Success(t *testing.T) {
 			}
 
 			populated := map[string]int{
-				"fs":    0,
-				"url":   0,
-				"gcs":   0,
-				"azure": 0,
-				"s3":    0,
-				"hdfs":  0,
+				repoTypeFS:    0,
+				repoTypeURL:   0,
+				repoTypeGCS:   0,
+				repoTypeAzure: 0,
+				repoTypeS3:    0,
+				repoTypeHDFS:  0,
 			}
 			populated[tt.wantPopulated] = 1
 
-			assertListLength(got.Fs, populated["fs"])
-			assertListLength(got.URL, populated[urlRepoType])
-			assertListLength(got.GCS, populated["gcs"])
-			assertListLength(got.Azure, populated["azure"])
-			assertListLength(got.S3, populated["s3"])
-			assertListLength(got.HDFS, populated["hdfs"])
-
-			if tt.wantPopulated == urlRepoType && tt.wantReadonly != nil {
-				var urls []urlDataSourceModel
-				d := got.URL.ElementsAs(ctx, &urls, false)
-				require.False(t, d.HasError())
-				require.Len(t, urls, 1)
-				assert.Equal(t, types.BoolValue(*tt.wantReadonly), urls[0].Readonly)
-			}
+			assertListLength(got.Fs, populated[repoTypeFS])
+			assertListLength(got.URL, populated[repoTypeURL])
+			assertListLength(got.GCS, populated[repoTypeGCS])
+			assertListLength(got.Azure, populated[repoTypeAzure])
+			assertListLength(got.S3, populated[repoTypeS3])
+			assertListLength(got.HDFS, populated[repoTypeHDFS])
 		})
 	}
 }

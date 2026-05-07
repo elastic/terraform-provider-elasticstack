@@ -34,7 +34,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// -- Models
+const (
+	repoTypeFS    = "fs"
+	repoTypeURL   = "url"
+	repoTypeGCS   = "gcs"
+	repoTypeAzure = "azure"
+	repoTypeS3    = "s3"
+	repoTypeHDFS  = "hdfs"
+)
+
+type commonDataSourceModel struct {
+	ChunkSize              types.String `tfsdk:"chunk_size"`
+	Compress               types.Bool   `tfsdk:"compress"`
+	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
+	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
+	Readonly               types.Bool   `tfsdk:"readonly"`
+}
 
 type snapshotRepositoryDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
@@ -50,80 +65,54 @@ type snapshotRepositoryDataSourceModel struct {
 }
 
 type fsDataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	MaxNumberOfSnapshots   types.Int64  `tfsdk:"max_number_of_snapshots"`
-	Location               types.String `tfsdk:"location"`
+	commonDataSourceModel
+	MaxNumberOfSnapshots types.Int64  `tfsdk:"max_number_of_snapshots"`
+	Location             types.String `tfsdk:"location"`
 }
 
 type urlDataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	MaxNumberOfSnapshots   types.Int64  `tfsdk:"max_number_of_snapshots"`
-	URL                    types.String `tfsdk:"url"`
-	HTTPMaxRetries         types.Int64  `tfsdk:"http_max_retries"`
-	HTTPSocketTimeout      types.String `tfsdk:"http_socket_timeout"`
+	commonDataSourceModel
+	MaxNumberOfSnapshots types.Int64  `tfsdk:"max_number_of_snapshots"`
+	URL                  types.String `tfsdk:"url"`
+	HTTPMaxRetries       types.Int64  `tfsdk:"http_max_retries"`
+	HTTPSocketTimeout    types.String `tfsdk:"http_socket_timeout"`
 }
 
 type gcsDataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	Bucket                 types.String `tfsdk:"bucket"`
-	Client                 types.String `tfsdk:"client"`
-	BasePath               types.String `tfsdk:"base_path"`
+	commonDataSourceModel
+	Bucket   types.String `tfsdk:"bucket"`
+	Client   types.String `tfsdk:"client"`
+	BasePath types.String `tfsdk:"base_path"`
 }
 
 type azureDataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	Container              types.String `tfsdk:"container"`
-	Client                 types.String `tfsdk:"client"`
-	BasePath               types.String `tfsdk:"base_path"`
-	LocationMode           types.String `tfsdk:"location_mode"`
+	commonDataSourceModel
+	Container    types.String `tfsdk:"container"`
+	Client       types.String `tfsdk:"client"`
+	BasePath     types.String `tfsdk:"base_path"`
+	LocationMode types.String `tfsdk:"location_mode"`
 }
 
 type s3DataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	Bucket                 types.String `tfsdk:"bucket"`
-	Client                 types.String `tfsdk:"client"`
-	BasePath               types.String `tfsdk:"base_path"`
-	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
-	BufferSize             types.String `tfsdk:"buffer_size"`
-	CannedACL              types.String `tfsdk:"canned_acl"`
-	StorageClass           types.String `tfsdk:"storage_class"`
-	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
+	commonDataSourceModel
+	Bucket               types.String `tfsdk:"bucket"`
+	Client               types.String `tfsdk:"client"`
+	BasePath             types.String `tfsdk:"base_path"`
+	ServerSideEncryption types.Bool   `tfsdk:"server_side_encryption"`
+	BufferSize           types.String `tfsdk:"buffer_size"`
+	CannedACL            types.String `tfsdk:"canned_acl"`
+	StorageClass         types.String `tfsdk:"storage_class"`
+	PathStyleAccess      types.Bool   `tfsdk:"path_style_access"`
 }
 
 type hdfsDataSourceModel struct {
-	ChunkSize              types.String `tfsdk:"chunk_size"`
-	Compress               types.Bool   `tfsdk:"compress"`
-	MaxSnapshotBytesPerSec types.String `tfsdk:"max_snapshot_bytes_per_sec"`
-	MaxRestoreBytesPerSec  types.String `tfsdk:"max_restore_bytes_per_sec"`
-	Readonly               types.Bool   `tfsdk:"readonly"`
-	URI                    types.String `tfsdk:"uri"`
-	Path                   types.String `tfsdk:"path"`
-	LoadDefaults           types.Bool   `tfsdk:"load_defaults"`
+	commonDataSourceModel
+	URI          types.String `tfsdk:"uri"`
+	Path         types.String `tfsdk:"path"`
+	LoadDefaults types.Bool   `tfsdk:"load_defaults"`
 }
 
-// -- Schema
-
-func getDataSourceSchema() schema.Schema {
+func buildDataSourceSchema() schema.Schema {
 	commonSettings := map[string]schema.Attribute{
 		"chunk_size": schema.StringAttribute{
 			MarkdownDescription: "Maximum size of files in snapshots.",
@@ -329,33 +318,33 @@ func mergeAttrMaps(mapsToMerge ...map[string]schema.Attribute) map[string]schema
 	return result
 }
 
-// -- Element types
+var dataSourceSchema = buildDataSourceSchema()
 
-func fsElementType() attr.Type {
-	return getDataSourceSchema().Attributes["fs"].GetType().(attr.TypeWithElementType).ElementType()
+func getDataSourceSchema() schema.Schema { return dataSourceSchema }
+
+func mustElementType(t attr.Type) attr.Type {
+	et, ok := t.(attr.TypeWithElementType)
+	if !ok {
+		panic(fmt.Sprintf("expected attr.TypeWithElementType, got %T", t))
+	}
+	return et.ElementType()
 }
 
-func urlElementType() attr.Type {
-	return getDataSourceSchema().Attributes["url"].GetType().(attr.TypeWithElementType).ElementType()
-}
+var (
+	fsElemType    = mustElementType(dataSourceSchema.Attributes[repoTypeFS].GetType())
+	urlElemType   = mustElementType(dataSourceSchema.Attributes[repoTypeURL].GetType())
+	gcsElemType   = mustElementType(dataSourceSchema.Attributes[repoTypeGCS].GetType())
+	azureElemType = mustElementType(dataSourceSchema.Attributes[repoTypeAzure].GetType())
+	s3ElemType    = mustElementType(dataSourceSchema.Attributes[repoTypeS3].GetType())
+	hdfsElemType  = mustElementType(dataSourceSchema.Attributes[repoTypeHDFS].GetType())
+)
 
-func gcsElementType() attr.Type {
-	return getDataSourceSchema().Attributes["gcs"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
-func azureElementType() attr.Type {
-	return getDataSourceSchema().Attributes["azure"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
-func s3ElementType() attr.Type {
-	return getDataSourceSchema().Attributes["s3"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
-func hdfsElementType() attr.Type {
-	return getDataSourceSchema().Attributes["hdfs"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
-// -- Constructor
+func fsElementType() attr.Type    { return fsElemType }
+func urlElementType() attr.Type   { return urlElemType }
+func gcsElementType() attr.Type   { return gcsElemType }
+func azureElementType() attr.Type { return azureElemType }
+func s3ElementType() attr.Type    { return s3ElemType }
+func hdfsElementType() attr.Type  { return hdfsElemType }
 
 func NewSnapshotRepositoryDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[snapshotRepositoryDataSourceModel](
@@ -365,8 +354,6 @@ func NewSnapshotRepositoryDataSource() datasource.DataSource {
 		readDataSource,
 	)
 }
-
-// -- Read callback
 
 func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -406,34 +393,19 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 func initEmptyTypeBlocks(config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	emptyLists := map[string]*types.List{
-		"fs":    &config.Fs,
-		"url":   &config.URL,
-		"gcs":   &config.GCS,
-		"azure": &config.Azure,
-		"s3":    &config.S3,
-		"hdfs":  &config.HDFS,
-	}
-	for key, ptr := range emptyLists {
-		var elemType attr.Type
-		switch key {
-		case "fs":
-			elemType = fsElementType()
-		case "url":
-			elemType = urlElementType()
-		case "gcs":
-			elemType = gcsElementType()
-		case "azure":
-			elemType = azureElementType()
-		case "s3":
-			elemType = s3ElementType()
-		case "hdfs":
-			elemType = hdfsElementType()
-		}
-		empty, d := types.ListValue(elemType, nil)
+	empty := func(elemType attr.Type) types.List {
+		v, d := types.ListValue(elemType, nil)
 		diags.Append(d...)
-		*ptr = empty
+		return v
 	}
+
+	config.Fs = empty(fsElemType)
+	config.URL = empty(urlElemType)
+	config.GCS = empty(gcsElemType)
+	config.Azure = empty(azureElemType)
+	config.S3 = empty(s3ElemType)
+	config.HDFS = empty(hdfsElemType)
+
 	return config, diags
 }
 
@@ -445,73 +417,73 @@ func populateRepositoryTypeBlocks(
 	var diags diag.Diagnostics
 
 	switch currentRepo.Type {
-	case "fs":
+	case repoTypeFS:
 		model, err := flattenFsSettings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, fsElementType(), []fsDataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, fsElemType, []fsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
 		config.Fs = listValue
-	case "url":
+	case repoTypeURL:
 		model, err := flattenURLSettings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, urlElementType(), []urlDataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, urlElemType, []urlDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
 		config.URL = listValue
-	case "gcs":
+	case repoTypeGCS:
 		model, err := flattenGCSSettings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, gcsElementType(), []gcsDataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, gcsElemType, []gcsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
 		config.GCS = listValue
-	case "azure":
+	case repoTypeAzure:
 		model, err := flattenAzureSettings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, azureElementType(), []azureDataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, azureElemType, []azureDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
 		config.Azure = listValue
-	case "s3":
+	case repoTypeS3:
 		model, err := flattenS3Settings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, s3ElementType(), []s3DataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, s3ElemType, []s3DataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
 		}
 		config.S3 = listValue
-	case "hdfs":
+	case repoTypeHDFS:
 		model, err := flattenHDFSSettings(currentRepo.Settings)
 		if err != nil {
 			diags.AddError("Unable to parse snapshot repository settings.", fmt.Sprintf("Unable to parse settings returned by ES API: %v", err))
 			return config, diags
 		}
-		listValue, listDiags := types.ListValueFrom(ctx, hdfsElementType(), []hdfsDataSourceModel{model})
+		listValue, listDiags := types.ListValueFrom(ctx, hdfsElemType, []hdfsDataSourceModel{model})
 		diags.Append(listDiags...)
 		if diags.HasError() {
 			return config, diags
@@ -528,10 +500,8 @@ func populateRepositoryTypeBlocks(
 	return config, diags
 }
 
-// -- Flatten helpers
-
-func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
-	var m fsDataSourceModel
+func flattenCommonSettings(settings map[string]any) (commonDataSourceModel, error) {
+	var m commonDataSourceModel
 	var err error
 	m.ChunkSize = stringSetting(settings, "chunk_size")
 	m.Compress, err = boolSetting(settings, "compress")
@@ -541,6 +511,16 @@ func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
 	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
 	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
 	m.Readonly, err = boolSetting(settings, "readonly")
+	if err != nil {
+		return m, err
+	}
+	return m, nil
+}
+
+func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
+	var m fsDataSourceModel
+	var err error
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
@@ -555,14 +535,7 @@ func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
 func flattenURLSettings(settings map[string]any) (urlDataSourceModel, error) {
 	var m urlDataSourceModel
 	var err error
-	m.ChunkSize = stringSetting(settings, "chunk_size")
-	m.Compress, err = boolSetting(settings, "compress")
-	if err != nil {
-		return m, err
-	}
-	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = boolSetting(settings, "readonly")
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
@@ -582,14 +555,7 @@ func flattenURLSettings(settings map[string]any) (urlDataSourceModel, error) {
 func flattenGCSSettings(settings map[string]any) (gcsDataSourceModel, error) {
 	var m gcsDataSourceModel
 	var err error
-	m.ChunkSize = stringSetting(settings, "chunk_size")
-	m.Compress, err = boolSetting(settings, "compress")
-	if err != nil {
-		return m, err
-	}
-	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = boolSetting(settings, "readonly")
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
@@ -602,14 +568,7 @@ func flattenGCSSettings(settings map[string]any) (gcsDataSourceModel, error) {
 func flattenAzureSettings(settings map[string]any) (azureDataSourceModel, error) {
 	var m azureDataSourceModel
 	var err error
-	m.ChunkSize = stringSetting(settings, "chunk_size")
-	m.Compress, err = boolSetting(settings, "compress")
-	if err != nil {
-		return m, err
-	}
-	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = boolSetting(settings, "readonly")
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
@@ -623,14 +582,7 @@ func flattenAzureSettings(settings map[string]any) (azureDataSourceModel, error)
 func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
 	var m s3DataSourceModel
 	var err error
-	m.ChunkSize = stringSetting(settings, "chunk_size")
-	m.Compress, err = boolSetting(settings, "compress")
-	if err != nil {
-		return m, err
-	}
-	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = boolSetting(settings, "readonly")
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
@@ -654,14 +606,7 @@ func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
 func flattenHDFSSettings(settings map[string]any) (hdfsDataSourceModel, error) {
 	var m hdfsDataSourceModel
 	var err error
-	m.ChunkSize = stringSetting(settings, "chunk_size")
-	m.Compress, err = boolSetting(settings, "compress")
-	if err != nil {
-		return m, err
-	}
-	m.MaxSnapshotBytesPerSec = stringSetting(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = stringSetting(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = boolSetting(settings, "readonly")
+	m.commonDataSourceModel, err = flattenCommonSettings(settings)
 	if err != nil {
 		return m, err
 	}
