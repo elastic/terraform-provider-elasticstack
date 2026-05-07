@@ -107,5 +107,5 @@ func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
 }
