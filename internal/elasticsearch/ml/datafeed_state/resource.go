@@ -42,7 +42,7 @@ func newMLDatafeedStateResource() *mlDatafeedStateResource {
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData](
 			entitycore.ComponentElasticsearch,
 			"ml_datafeed_state",
-			func() rschema.Schema { return GetSchema(context.Background()) },
+			func(ctx context.Context) rschema.Schema { return GetSchema(ctx) },
 			readMLDatafeedState,
 			deleteMLDatafeedState,
 			createFunc,

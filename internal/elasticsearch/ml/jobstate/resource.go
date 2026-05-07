@@ -42,7 +42,7 @@ func newMLJobStateResource() *mlJobStateResource {
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLJobStateData](
 			entitycore.ComponentElasticsearch,
 			"ml_job_state",
-			func() rschema.Schema { return GetSchema(context.Background()) },
+			func(ctx context.Context) rschema.Schema { return GetSchema(ctx) },
 			readMLJobState,
 			deleteMLJobState,
 			createFunc,
