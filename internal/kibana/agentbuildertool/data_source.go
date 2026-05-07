@@ -33,7 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getDataSourceSchema() dsschema.Schema {
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Description: "Reads an Agent Builder tool by ID. See https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html",
 		Attributes: map[string]dsschema.Attribute{

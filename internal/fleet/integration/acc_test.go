@@ -335,6 +335,8 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_destroy", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
 				),
@@ -346,10 +348,22 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_destroy", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_mapping_update_errors", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step1"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_mapping_update_errors"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover"),
 				),
 			},
 		},
@@ -389,6 +403,76 @@ func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "space_id", spaceID),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckIntegrationInstalled queries the Fleet API to verify that the
+// given package version is installed globally (no space scoping).
+func testAccCheckIntegrationInstalled(pkgName, pkgVersion string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		fleetClient, err := testAccFleetClient()
+		if err != nil {
+			return err
+		}
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, pkgName, pkgVersion, "")
+		if diags.HasError() {
+			return fmt.Errorf("failed to get package: %v", diags)
+		}
+		if pkg == nil || pkg.InstallationInfo == nil {
+			return fmt.Errorf("package %s/%s not installed", pkgName, pkgVersion)
+		}
+		installed := pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+		if !installed && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
+			installed = true
+		}
+		if !installed {
+			return fmt.Errorf("package %s/%s is not installed", pkgName, pkgVersion)
+		}
+		return nil
+	}
+}
+
+// TestAccResourceIntegrationSkipDestroy verifies that when skip_destroy = true,
+// Terraform removes the resource from state on destroy but leaves the integration
+// package installed in Fleet.
+func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: Install tcp@1.16.0 with skip_destroy = true; assert attributes.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_skip_destroy"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "skip_destroy", "true"),
+				),
+			},
+			// Step 2: Remove the resource from config. Terraform calls Delete, but
+			// skip_destroy = true means no actual uninstall occurs. Check that the
+			// package is still installed via the Fleet API.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckIntegrationInstalled("tcp", "1.16.0"),
+				),
+			},
+			// Step 3: Reinstall without skip_destroy so the test framework's automatic
+			// final destroy properly uninstalls the package on cleanup.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_skip_destroy"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "version", "1.16.0"),
 				),
 			},
 		},

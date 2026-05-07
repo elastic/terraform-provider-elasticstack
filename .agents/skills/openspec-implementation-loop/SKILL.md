@@ -252,19 +252,26 @@ Orchestrate an implementation loop around a single OpenSpec change.
     - use `gh pr create` (or equivalent) with an appropriate title and body tied to the OpenSpec change
     - record the PR number or URL
 
+    **State file**:
+    - the script auto-uses `.agents/skills/pr-monitoring-loop/scripts/state/.pr-monitor-<pr>.json` (gitignored), so subagents can simply invoke `check-pr-state.py <pr>` and `lastPolledAt` / seen IDs persist across watcher restarts without any explicit path management
+    - pass `--state-file <path>` only when you need isolation (e.g., parallel watchers on different branches that share a PR number, or tests). When you do override, pass the same path to every subagent in this loop
+    - do NOT put the state file under `.git/` — this repo uses git worktrees, where `.git` is a file that points at a worktree-specific git dir, which would fragment state across worktrees watching the same PR
+
     **Delegate PR monitoring to `pr-monitoring-loop`**:
     - load and follow the `pr-monitoring-loop` skill for the entire PR monitoring phase
     - start a worker subagent for the PR instead of polling in this main implementation-loop agent
-    - instruct the worker to use `.agents/skills/pr-monitoring-loop/scripts/check-pr-state.py <pr>` on every cadence tick so CI, reviews, PR comments, review comments, unresolved threads, merge conflicts, and stale branch state are checked together
-    - allow the worker to fix and push changes it judges simple, then continue watching the new PR head
-    - when the worker returns `delegate`, launch a fresh worker subagent scoped only to the reported failure or feedback; after the worker commits and pushes, restart the watch cycle for the new head commit with a new worker
+    - instruct the worker to invoke `.agents/skills/pr-monitoring-loop/scripts/check-pr-state.py <pr>` on every cadence tick (or use `--watch` with the cadence guidance documented in `pr-monitoring-loop`) so CI (commit-pinned), reviews, PR comments, review comments, unresolved threads, merge conflicts, and stale branch state are checked together. Append `--state-file <path>` only if you decided to override the default path above.
+    - allow the worker to fix and push changes it judges simple, then perform the thread-resolution protocol for any addressed threads (reply with addressing commit SHA, then `resolveReviewThread`), and continue watching the new PR head
+    - when the worker returns `delegate`, launch a fresh worker subagent scoped only to the reported failure or feedback (with the same `--state-file`); after the worker commits, pushes, replies, and resolves addressed threads, restart the watch cycle for the new head commit with a new worker
 
     **OpenSpec-specific success criteria for `pr-monitoring-loop`**:
     - explicitly opt in to `verify-openspec` behavior when invoking `pr-monitoring-loop`; this behavior is not enabled by default in the reusable skill
-    - add `verify-openspec` only after the current PR head commit has green required CI and all known actionable review feedback is addressed
-    - end successfully only when current-head CI is green, `verify-openspec` has submitted a qualifying `APPROVED` review after the most recent label application, and no later blocking `CHANGES_REQUESTED` review exists
-    - do not treat `summary.pr.reviewDecision == "APPROVED"`, a Macroscope/human approval alone, or a green verify workflow check as equivalent to the required `verify-openspec` approval review
-    - if 20 minutes pass after the most recent `verify-openspec` label application and a qualifying approval review has still not arrived, stop the loop and report that timeout state to the user
+    - drive every verify-openspec decision off `summary.reviews.verifyOpenspec.{runState, approvalIsCurrent}`; do NOT recompute label/review timestamp arithmetic in this main loop
+    - the `verify-openspec` workflow REMOVES its own label as soon as it picks up the PR — label absence on `pr.labels` is NOT a signal that verify "was never requested". Always read `summary.reviews.verifyOpenspec.runState`, never `pr.labels`, when deciding whether to (re-)apply the label
+    - **anti-relabel guardrail**: NEVER (re-)apply the `verify-openspec` label when `summary.reviews.verifyOpenspec.approvalIsCurrent == true`. Treat a current-head approval as terminal for the verify gate; further label applications are wasted CI and may invalidate the existing approval
+    - apply (or re-apply) the label only when `runState == "none"` (or `"approved-stale"` after a new head was pushed) AND `summary.checks.failed == 0` and `summary.checks.pending == 0` for the current head AND no known unaddressed actionable items remain (`summary.comments.new*`, `summary.threads.unresolvedNew`, `summary.reviews.effectiveDecision != "CHANGES_REQUESTED"`)
+    - end successfully only when `summary.reviews.verifyOpenspec.approvalIsCurrent == true` AND `summary.checks.failed == 0`. Do NOT treat `pr.reviewDecision == "APPROVED"`, a Macroscope/human approval alone, or a green verify workflow check as equivalent
+    - cross-link to `pr-monitoring-loop` for the polling cadence (`--watch --interval`) and resilience contract (exit code `2` is transient, retry; do not escalate to `blocked`); do not restate cadence here
 
 13. **Report final outcome**
 

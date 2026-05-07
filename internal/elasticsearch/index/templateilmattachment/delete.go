@@ -20,67 +20,46 @@ package templateilmattachment
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state tfModel
+// deleteILMAttachment removes the index.lifecycle.name setting from the @custom
+// component template. It never calls Delete Component Template because the
+// template may be in use by an index template (e.g. from Fleet).
+func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := state.GetID()
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	componentTemplateName := compID.ResourceID
-
-	// Read existing component template
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
+	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
 	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return diags
 	}
 
 	existing := toModelComponentTemplateResponse(existingRaw)
-
 	if existing == nil {
-		// Already gone
 		tflog.Debug(ctx, "Component template already deleted", map[string]any{
-			"name": componentTemplateName,
+			"name": resourceID,
 		})
-		return
+		return nil
 	}
 
-	// Remove the ILM setting from the template
 	if existing.ComponentTemplate.Template != nil {
 		existing.ComponentTemplate.Template.Settings = removeILMSetting(existing.ComponentTemplate.Template.Settings)
 	}
 
-	// Always update the component template with the ILM setting removed; never delete it.
-	// The template (e.g. logs-system.syslog@custom) is typically used by an index template
-	// (e.g. from Fleet); deleting it would fail with "cannot be removed as they are still in use".
 	componentTemplate := models.ComponentTemplate{
-		Name:     componentTemplateName,
+		Name:     resourceID,
 		Template: existing.ComponentTemplate.Template,
 		Meta:     existing.ComponentTemplate.Meta,
 		Version:  existing.ComponentTemplate.Version,
 	}
 	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	}
+	return diags
 }

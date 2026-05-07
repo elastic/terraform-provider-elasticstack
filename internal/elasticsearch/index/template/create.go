@@ -74,7 +74,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	refreshed, found, diags := readIndexTemplate(ctx, client, plan.Name.ValueString())
+	// Build a prior model carrying the computed ID and connection so readIndexTemplate can copy them.
+	// Use configuration (not plan) as the reconciliation reference: plan can carry unknown/Computed
+	// placeholders in nested set elements that then differ from non-refresh planning.
+	priorForRead := config
+	priorForRead.ID = types.StringValue(id.String())
+	priorForRead.ElasticsearchConnection = plan.ElasticsearchConnection
+
+	refreshed, found, diags := readIndexTemplate(ctx, client, plan.Name.ValueString(), priorForRead)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -84,20 +91,6 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		resp.Diagnostics.AddError("Index template missing after create", plan.Name.ValueString())
 		return
 	}
-
-	// Use configuration (not plan): plan can carry unknown/Computed placeholders in nested set elements that
-	// then differ from non-refresh planning, which compares against config-shaped defaults.
-	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &refreshed)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
-	refreshed.ID = types.StringValue(id.String())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }

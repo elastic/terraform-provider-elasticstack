@@ -21,28 +21,23 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.OutputID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
-	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
-	}
+	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+		id:                   data.Id,
+		name:                 data.Name,
+		outputType:           string(data.Type),
+		hosts:                data.Hosts,
+		caSha256:             data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault,
+		isDefaultMonitoring:  data.IsDefaultMonitoring,
+		configYaml:           data.ConfigYaml,
+		ssl:                  data.Ssl,
+	})
 
 	// Preserve configured secret when Fleet omits/redacts it in read responses.
 	if data.ServiceToken != nil {
@@ -55,32 +50,28 @@ func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, d
 	model.SyncUninstalledIntegrations = types.BoolPointerValue(data.SyncUninstalledIntegrations)
 	model.WriteToLogsStreams = types.BoolPointerValue(data.WriteToLogsStreams)
 
-	// Note: SpaceIDs is not returned by the API for outputs.
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
-
 	return
 }
 
 func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
-	ssl, diags := objectValueToSSL(ctx, model.Ssl)
+	var diags diag.Diagnostics
+	f := model.buildCommonNewOutput(ctx, &diags)
 	if diags.HasError() {
 		return kbapi.NewOutputUnion{}, diags
 	}
 
 	body := kbapi.NewOutputRemoteElasticsearch{
 		Type:                        kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchTypeRemoteElasticsearch,
-		CaSha256:                    model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint:        model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:                  model.ConfigYaml.ValueStringPointer(),
-		Hosts:                       typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
-		Id:                          model.OutputID.ValueStringPointer(),
-		IsDefault:                   model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:         model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                        model.Name.ValueString(),
+		CaSha256:                    f.CaSha256,
+		CaTrustedFingerprint:        f.CaTrustedFingerprint,
+		ConfigYaml:                  f.ConfigYaml,
+		Hosts:                       f.Hosts,
+		Id:                          f.ID,
+		IsDefault:                   f.IsDefault,
+		IsDefaultMonitoring:         f.IsDefaultMonitoring,
+		Name:                        f.Name,
 		ServiceToken:                model.ServiceToken.ValueStringPointer(),
-		Ssl:                         ssl.toAPI(),
+		Ssl:                         f.Ssl,
 		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),
 		SyncUninstalledIntegrations: model.SyncUninstalledIntegrations.ValueBoolPointer(),
 		WriteToLogsStreams:          model.WriteToLogsStreams.ValueBoolPointer(),
@@ -97,7 +88,8 @@ func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context
 }
 
 func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
-	ssl, diags := objectValueToSSLUpdate(ctx, model.Ssl)
+	var diags diag.Diagnostics
+	f := model.buildCommonUpdateOutput(ctx, &diags)
 	if diags.HasError() {
 		return kbapi.UpdateOutputUnion{}, diags
 	}
@@ -107,15 +99,15 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 			outputType := kbapi.RemoteElasticsearch
 			return &outputType
 		}(),
-		CaSha256:                    model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint:        model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:                  model.ConfigYaml.ValueStringPointer(),
-		Hosts:                       typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
-		IsDefault:                   model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:         model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                        model.Name.ValueStringPointer(),
+		CaSha256:                    f.CaSha256,
+		CaTrustedFingerprint:        f.CaTrustedFingerprint,
+		ConfigYaml:                  f.ConfigYaml,
+		Hosts:                       f.Hosts,
+		IsDefault:                   f.IsDefault,
+		IsDefaultMonitoring:         f.IsDefaultMonitoring,
+		Name:                        f.Name,
 		ServiceToken:                model.ServiceToken.ValueStringPointer(),
-		Ssl:                         ssl.toAPI(),
+		Ssl:                         f.Ssl,
 		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),
 		SyncUninstalledIntegrations: model.SyncUninstalledIntegrations.ValueBoolPointer(),
 		WriteToLogsStreams:          model.WriteToLogsStreams.ValueBoolPointer(),

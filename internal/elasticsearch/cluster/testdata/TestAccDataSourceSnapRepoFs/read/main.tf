@@ -13,6 +13,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
   fs {
     location                   = "/tmp"
     compress                   = true
+    readonly                   = false
     max_restore_bytes_per_sec  = "10mb"
     chunk_size                 = "1gb"
     max_snapshot_bytes_per_sec = "20mb"

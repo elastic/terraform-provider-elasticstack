@@ -22,59 +22,45 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+// deleteDatafeed stops and deletes the datafeed. It satisfies the entitycore
+// elasticsearchDeleteFunc[Datafeed] signature.
+func deleteDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Datafeed) fwdiags.Diagnostics {
+	var diags fwdiags.Diagnostics
 
-	var state Datafeed
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	datafeedID := state.DatafeedID.ValueString()
+	datafeedID := resourceID
 	if datafeedID == "" {
-		resp.Diagnostics.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
+		return diags
 	}
 
 	// Before deleting, we need to stop the datafeed if it's running
-	_, stopDiags := r.maybeStopDatafeed(ctx, client, datafeedID)
-	resp.Diagnostics.Append(stopDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	_, stopDiags := maybeStopDatafeed(ctx, client, datafeedID)
+	diags.Append(stopDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
 	// Delete the datafeed
 	deleteDiags := elasticsearch.DeleteDatafeed(ctx, client, datafeedID, false)
-	resp.Diagnostics.Append(deleteDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// The resource is automatically removed from state on successful delete
+	diags.Append(deleteDiags...)
+	return diags
 }
 
-func (r *datafeedResource) maybeStopDatafeed(
+// maybeStopDatafeed stops the datafeed if it is currently running. Returns
+// true if the datafeed was stopped and should be restarted after an update.
+func maybeStopDatafeed(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	datafeedID string,
-) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
+) (bool, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
 	// Check current state
-	currentState, diags := GetDatafeedState(ctx, client, datafeedID)
+	currentState, stateDiags := GetDatafeedState(ctx, client, datafeedID)
+	diags.Append(stateDiags...)
 	if diags.HasError() {
 		return false, diags
 	}

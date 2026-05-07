@@ -18,17 +18,20 @@
 package templateilmattachment
 
 import (
-	"context"
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// Ensure tfModel satisfies the entitycore.ElasticsearchResourceModel interface.
+var _ interface {
+	GetID() types.String
+	GetResourceID() types.String
+	GetElasticsearchConnection() types.List
+} = tfModel{}
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
@@ -39,18 +42,23 @@ type tfModel struct {
 }
 
 // getComponentTemplateName returns the name of the @custom component template.
-func (m *tfModel) getComponentTemplateName() string {
-	return m.IndexTemplate.ValueString() + "@custom"
+func (m tfModel) getComponentTemplateName() string {
+	return m.GetResourceID().ValueString()
 }
 
-// GetID parses and returns the composite ID from the model.
-func (m *tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(m.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+// GetID returns the composite ID string for the resource.
+func (m tfModel) GetID() types.String { return m.ID }
+
+// GetResourceID returns the derived component template name used as the write identity.
+func (m tfModel) GetResourceID() types.String {
+	if !typeutils.IsKnown(m.IndexTemplate) || m.IndexTemplate.ValueString() == "" {
+		return types.StringUnknown()
 	}
-	return compID, nil
+	return types.StringValue(m.IndexTemplate.ValueString() + "@custom")
 }
+
+// GetElasticsearchConnection returns the Elasticsearch connection configuration.
+func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
 func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {
@@ -93,16 +101,6 @@ func removeILMSetting(settings map[string]any) map[string]any {
 	return settings
 }
 
-// isComponentTemplateEmpty checks if a component template has no meaningful content.
-func isComponentTemplateEmpty(template *models.Template) bool {
-	if template == nil {
-		return true
-	}
-	return len(template.Settings) == 0 &&
-		len(template.Mappings) == 0 &&
-		len(template.Aliases) == 0
-}
-
 // extractILMSetting extracts the index.lifecycle.name setting from component template settings.
 func extractILMSetting(template *models.Template) string {
 	if template == nil || template.Settings == nil {
@@ -120,36 +118,6 @@ func extractILMSetting(template *models.Template) string {
 		return v
 	}
 	return ""
-}
-
-// readILMAttachment reads the component template and updates the model with the actual ILM setting.
-// It returns (true, nil) on success, (false, diags) on SDK error, and (false, nil) when the
-// template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
-// removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, model *tfModel, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	componentTemplateName := model.getComponentTemplateName()
-
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
-	if sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return false, diags
-	}
-
-	modelTpl := toModelComponentTemplateResponse(tpl)
-
-	if modelTpl == nil {
-		return false, nil
-	}
-
-	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
-	if lifecycleName == "" {
-		return false, nil
-	}
-
-	model.LifecycleName = types.StringValue(lifecycleName)
-	return true, nil
 }
 
 func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *models.ComponentTemplateResponse {
@@ -176,54 +144,52 @@ func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *mo
 		resp.ComponentTemplate.Meta = metaMap
 	}
 
-	{
-		t := &models.Template{}
+	t := &models.Template{}
 
-		if tpl.ComponentTemplate.Template.Settings != nil {
-			settingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Settings)
-			var settingsMap map[string]any
-			_ = json.Unmarshal(settingsBytes, &settingsMap)
-			t.Settings = settingsMap
-		}
-
-		if tpl.ComponentTemplate.Template.Mappings != nil {
-			mappingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Mappings)
-			var mappingsMap map[string]any
-			_ = json.Unmarshal(mappingsBytes, &mappingsMap)
-			t.Mappings = mappingsMap
-		}
-
-		if len(tpl.ComponentTemplate.Template.Aliases) > 0 {
-			t.Aliases = make(map[string]models.IndexAlias, len(tpl.ComponentTemplate.Template.Aliases))
-			for name, alias := range tpl.ComponentTemplate.Template.Aliases {
-				ia := models.IndexAlias{Name: name}
-				if alias.Filter != nil {
-					filterBytes, _ := json.Marshal(alias.Filter)
-					var filterMap map[string]any
-					_ = json.Unmarshal(filterBytes, &filterMap)
-					ia.Filter = filterMap
-				}
-				if alias.IndexRouting != nil {
-					ia.IndexRouting = *alias.IndexRouting
-				}
-				if alias.IsHidden != nil {
-					ia.IsHidden = *alias.IsHidden
-				}
-				if alias.IsWriteIndex != nil {
-					ia.IsWriteIndex = *alias.IsWriteIndex
-				}
-				if alias.Routing != nil {
-					ia.Routing = *alias.Routing
-				}
-				if alias.SearchRouting != nil {
-					ia.SearchRouting = *alias.SearchRouting
-				}
-				t.Aliases[name] = ia
-			}
-		}
-
-		resp.ComponentTemplate.Template = t
+	if tpl.ComponentTemplate.Template.Settings != nil {
+		settingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Settings)
+		var settingsMap map[string]any
+		_ = json.Unmarshal(settingsBytes, &settingsMap)
+		t.Settings = settingsMap
 	}
+
+	if tpl.ComponentTemplate.Template.Mappings != nil {
+		mappingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Mappings)
+		var mappingsMap map[string]any
+		_ = json.Unmarshal(mappingsBytes, &mappingsMap)
+		t.Mappings = mappingsMap
+	}
+
+	if len(tpl.ComponentTemplate.Template.Aliases) > 0 {
+		t.Aliases = make(map[string]models.IndexAlias, len(tpl.ComponentTemplate.Template.Aliases))
+		for name, alias := range tpl.ComponentTemplate.Template.Aliases {
+			ia := models.IndexAlias{Name: name}
+			if alias.Filter != nil {
+				filterBytes, _ := json.Marshal(alias.Filter)
+				var filterMap map[string]any
+				_ = json.Unmarshal(filterBytes, &filterMap)
+				ia.Filter = filterMap
+			}
+			if alias.IndexRouting != nil {
+				ia.IndexRouting = *alias.IndexRouting
+			}
+			if alias.IsHidden != nil {
+				ia.IsHidden = *alias.IsHidden
+			}
+			if alias.IsWriteIndex != nil {
+				ia.IsWriteIndex = *alias.IsWriteIndex
+			}
+			if alias.Routing != nil {
+				ia.Routing = *alias.Routing
+			}
+			if alias.SearchRouting != nil {
+				ia.SearchRouting = *alias.SearchRouting
+			}
+			t.Aliases[name] = ia
+		}
+	}
+
+	resp.ComponentTemplate.Template = t
 
 	return resp
 }

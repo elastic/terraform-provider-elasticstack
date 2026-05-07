@@ -20,65 +20,45 @@ package datafeed
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *datafeedResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+// createDatafeed creates the datafeed and sets the composite ID on the returned
+// model. It satisfies the entitycore ElasticsearchCreateFunc[Datafeed] signature.
+// The envelope handles read-after-write and state persistence.
+func createDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
-	var plan Datafeed
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	datafeedID := plan.DatafeedID.ValueString()
+	datafeedID := resourceID
 	if datafeedID == "" {
-		resp.Diagnostics.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return
+		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
+		return plan, diags
 	}
 
 	// Convert to API create model (raw JSON to preserve query form)
-	createBody, diags := plan.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createBody, convDiags := plan.toAPICreateModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	createDiags := elasticsearch.PutDatafeed(ctx, client, datafeedID, createBody)
-	resp.Diagnostics.Append(createDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	// Read the created datafeed to get the full state.
+	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, datafeedID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	found, readDiags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read created datafeed", "Datafeed not found after creation")
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	return plan, diags
 }

@@ -245,7 +245,7 @@ func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes
 		aliases = append(aliases, tfAlias)
 	}
 
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(), aliases)
+	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(ctx), aliases)
 	if diags.HasError() {
 		return basetypes.SetValue{}, diags
 	}
@@ -330,7 +330,18 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 	return params
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+// GetID satisfies [entitycore.ElasticsearchResourceModel].
+func (model tfModel) GetID() types.String { return model.ID }
+
+// GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
+// Returns the configured index name (which may be a date-math expression)
+// used as the write identity on create.
+func (model tfModel) GetResourceID() types.String { return model.Name }
+
+// GetElasticsearchConnection satisfies [entitycore.ElasticsearchResourceModel].
+func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
+
+func (model tfModel) getCompositeID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
