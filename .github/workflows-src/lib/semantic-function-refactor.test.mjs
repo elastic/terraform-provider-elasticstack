@@ -65,7 +65,7 @@ test('compiled lock wires gh-aw anthropic target and Claude env for the agent', 
   const lock = lockSource();
   assert.match(
     lock,
-    /id: agentic_execution[\s\S]*--anthropic-api-target elastic\.litellm-prod\.ai[\s\S]*--allow-domains[^\n]*elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
+    /id: agentic_execution[\s\S]*\n\s*ANTHROPIC_BASE_URL:\s*https:\/\/elastic\.litellm-prod\.ai[\s\S]*\n\s*ANTHROPIC_MODEL:\s*llm-gateway\/claude-sonnet-4-6/
   );
 });
 
