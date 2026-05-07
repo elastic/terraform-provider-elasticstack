@@ -44,6 +44,19 @@ func readClusterSettings(ctx context.Context, client *clients.ElasticsearchScope
 		return state, false, diags
 	}
 
+	// During import configuredSettings is empty. Absorb every setting currently
+	// present in the cluster so the imported resource can manage them and
+	// destroy can null them out correctly.
+	if len(configuredSettings) == 0 {
+		configuredSettings = make(map[string]any)
+		if p, ok := clusterSettings["persistent"].(map[string]any); ok && len(p) > 0 {
+			configuredSettings["persistent"] = p
+		}
+		if t, ok := clusterSettings["transient"].(map[string]any); ok && len(t) > 0 {
+			configuredSettings["transient"] = t
+		}
+	}
+
 	persistent, ds := flattenSettings(ctx, "persistent", configuredSettings, clusterSettings)
 	diags.Append(ds...)
 	if diags.HasError() {
