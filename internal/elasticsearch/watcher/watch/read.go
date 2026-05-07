@@ -24,58 +24,27 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *watchResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	readData, diags := r.read(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
-}
-
-func (r *watchResource) read(ctx context.Context, data Data) (*Data, diag.Diagnostics) {
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	watch, watchDiags := elasticsearch.GetWatch(ctx, client, compID.ResourceID)
+	watch, watchDiags := elasticsearch.GetWatch(ctx, client, resourceID)
 	diags.Append(watchDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
 	if watch == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Watch "%s" not found`, compID.ResourceID))
-		return nil, nil
+		tflog.Warn(ctx, fmt.Sprintf(`Watch "%s" not found`, resourceID))
+		return state, false, nil
 	}
 
-	diags.Append(data.fromAPIModel(ctx, watch, data.Actions)...)
+	diags.Append(state.fromAPIModel(ctx, watch, state.Actions)...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
-	return &data, diags
+	return state, true, diags
 }

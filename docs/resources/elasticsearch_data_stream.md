@@ -74,7 +74,7 @@ resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
@@ -82,7 +82,7 @@ resource "elasticstack_elasticsearch_data_stream" "my_data_stream" {
 - `hidden` (Boolean) If `true`, the data stream is hidden.
 - `id` (String) Internal identifier of the resource
 - `ilm_policy` (String) Name of the current ILM lifecycle policy in the stream's matching index template.
-- `indices` (List of Object) Array of objects containing information about the data stream's backing indices. The last item in this array contains information about the stream's current write index. (see [below for nested schema](#nestedatt--indices))
+- `indices` (Attributes List) Array of objects containing information about the data stream's backing indices. The last item in this array contains information about the stream's current write index. (see [below for nested schema](#nestedatt--indices))
 - `metadata` (String) Custom metadata for the stream, copied from the _meta object of the stream's matching index template.
 - `replicated` (Boolean) If `true`, the data stream is created and managed by cross-cluster replication and the local cluster can not write into this data stream or change its mappings.
 - `status` (String) Health status of the data stream.
@@ -116,8 +116,8 @@ Optional:
 
 Read-Only:
 
-- `index_name` (String)
-- `index_uuid` (String)
+- `index_name` (String) Name of the backing index.
+- `index_uuid` (String) Universally unique identifier (UUID) for the index.
 
 ## Import
 

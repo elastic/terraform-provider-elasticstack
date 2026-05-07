@@ -18,16 +18,13 @@
 package inferenceendpoint
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -43,12 +40,11 @@ var (
 	taskTypesMarkdown   = fmt.Sprintf("[`%s`]", strings.Join(validTaskTypes, "`, `"))
 )
 
-func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+// getSchemaFactory returns the schema for the inference endpoint resource without
+// the elasticsearch_connection block; the envelope injects that block automatically.
+func getSchemaFactory() schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: inferenceEndpointDescription,
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource.",
