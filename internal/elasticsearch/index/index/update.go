@@ -19,6 +19,7 @@ package index
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -50,7 +51,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	// Use the concrete index identity from the current state so update operations
 	// target the concrete managed index, not the configured (possibly date math) name.
-	stateID, diags := stateModel.GetID()
+	stateID, diags := stateModel.getCompositeID()
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -91,9 +92,16 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	finalModel, diags := readIndex(ctx, planModel, client)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError(
+			"Index not found after update",
+			fmt.Sprintf("index %q was not found after update", concreteName),
+		)
 		return
 	}
 

@@ -45,6 +45,10 @@ type Data struct {
 	ThrottlePeriodInMillis  types.Int64          `tfsdk:"throttle_period_in_millis"`
 }
 
+func (d Data) GetID() types.String                    { return d.ID }
+func (d Data) GetResourceID() types.String            { return d.WatchID }
+func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+
 // toPutModel converts the Terraform state into a models.PutWatch for the API.
 func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -173,8 +177,12 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 		d.Actions = jsontypes.NewNormalizedValue(actions)
 	}
 
-	if watch.Body.Metadata == nil {
-		d.Metadata = jsontypes.NewNormalizedValue(`{}`)
+	if len(watch.Body.Metadata) == 0 {
+		if typeutils.IsKnown(d.Metadata) && d.Metadata.ValueString() == "null" {
+			d.Metadata = jsontypes.NewNormalizedValue(`null`)
+		} else {
+			d.Metadata = jsontypes.NewNormalizedValue(`{}`)
+		}
 	} else {
 		metadata, err := marshalCompact(watch.Body.Metadata)
 		if err != nil {

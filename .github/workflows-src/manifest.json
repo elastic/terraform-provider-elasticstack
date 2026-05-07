@@ -21,8 +21,16 @@
       "output": ".github/workflows/semantic-function-refactor.md"
     },
     {
-      "template": ".github/workflows-src/test/workflow.yml.tmpl",
-      "output": ".github/workflows/test.yml"
+      "template": ".github/workflows-src/provider/workflow.yml.tmpl",
+      "output": ".github/workflows/provider.yml"
+    },
+    {
+      "template": ".github/workflows-src/openspec/workflow.yml.tmpl",
+      "output": ".github/workflows/openspec.yml"
+    },
+    {
+      "template": ".github/workflows-src/workflows/workflow.yml.tmpl",
+      "output": ".github/workflows/workflows.yml"
     },
     {
       "template": ".github/workflows-src/changelog-generation/workflow.yml.tmpl",
