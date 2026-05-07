@@ -1,6 +1,6 @@
 ## 1. Spec
 
-- [ ] 1.1 Validate the change with `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-watch-null-metadata-inconsistency --type change`.
+- [x] 1.1 Validate the change with `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-watch-null-metadata-inconsistency --type change`.
 - [x] 1.2 Sync or archive the delta into `openspec/specs/elasticsearch-watch/spec.md` after implementation is verified.
 
 ## 2. Fix null-metadata round-trip
