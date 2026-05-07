@@ -18,6 +18,7 @@
 package transform
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -53,7 +54,7 @@ var (
 	destinationIndexAllowedRegexp     = regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`)
 )
 
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             currentSchemaVersion,
 		MarkdownDescription: transformDescription,
