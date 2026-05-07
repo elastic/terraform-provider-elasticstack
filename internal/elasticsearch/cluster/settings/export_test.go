@@ -48,7 +48,6 @@ func ExportedFlattenSettings(ctx context.Context, category string, configured, a
 type SettingItem struct {
 	Name      string
 	Value     string
-	HasValue  bool
 	ValueList []string
 }
 
@@ -78,11 +77,7 @@ func ExtractSettingsFromList(ctx context.Context, t testing.TB, list types.List)
 
 	items := make([]SettingItem, 0, len(models))
 	for _, m := range models {
-		item := SettingItem{Name: m.Name.ValueString()}
-		if !m.Value.IsNull() && !m.Value.IsUnknown() {
-			item.Value = m.Value.ValueString()
-			item.HasValue = true
-		}
+		item := SettingItem{Name: m.Name.ValueString(), Value: m.Value.ValueString()}
 		if !m.ValueList.IsNull() && !m.ValueList.IsUnknown() {
 			var vals []string
 			diags = m.ValueList.ElementsAs(ctx, &vals, false)
@@ -102,7 +97,7 @@ func MakeSettingsListWithValue(name, value string) types.List {
 	sm := settingModel{
 		Name:      types.StringValue(name),
 		Value:     types.StringValue(value),
-		ValueList: types.ListNull(types.StringType),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
 	}
 	return makeSettingsListFromModels([]settingModel{sm})
 }
@@ -115,7 +110,7 @@ func MakeSettingsListWithValueList(name string, vals []string) types.List {
 	}
 	sm := settingModel{
 		Name:      types.StringValue(name),
-		Value:     types.StringNull(),
+		Value:     types.StringValue(""),
 		ValueList: types.ListValueMust(types.StringType, attrVals),
 	}
 	return makeSettingsListFromModels([]settingModel{sm})
@@ -126,12 +121,12 @@ func MakeSettingsListWithDuplicateName(name, v1, v2 string) types.List {
 	s1 := settingModel{
 		Name:      types.StringValue(name),
 		Value:     types.StringValue(v1),
-		ValueList: types.ListNull(types.StringType),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
 	}
 	s2 := settingModel{
 		Name:      types.StringValue(name),
 		Value:     types.StringValue(v2),
-		ValueList: types.ListNull(types.StringType),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
 	}
 	return makeSettingsListFromModels([]settingModel{s1, s2})
 }
@@ -154,8 +149,8 @@ func MakeSettingsListBothValues(name, value string, listVals []string) types.Lis
 func MakeSettingsListNeitherValue(name string) types.List {
 	sm := settingModel{
 		Name:      types.StringValue(name),
-		Value:     types.StringNull(),
-		ValueList: types.ListNull(types.StringType),
+		Value:     types.StringValue(""),
+		ValueList: types.ListValueMust(types.StringType, []attr.Value{}),
 	}
 	return makeSettingsListFromModels([]settingModel{sm})
 }
