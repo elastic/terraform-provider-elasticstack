@@ -60,8 +60,8 @@ func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *
 		},
 		ID:           prior.ID,
 		Name:         types.StringValue(policyName),
-		ForceDestroy:            prior.ForceDestroy,
-		ModifiedDate:            types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
+		ForceDestroy: prior.ForceDestroy,
+		ModifiedDate: types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
 	}
 
 	if ilmDef.Policy.Meta_ != nil {
