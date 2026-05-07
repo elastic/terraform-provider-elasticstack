@@ -339,13 +339,6 @@ var (
 	hdfsElemType  = mustElementType(dataSourceSchema.Attributes[repoTypeHDFS].GetType())
 )
 
-func fsElementType() attr.Type    { return fsElemType }
-func urlElementType() attr.Type   { return urlElemType }
-func gcsElementType() attr.Type   { return gcsElemType }
-func azureElementType() attr.Type { return azureElemType }
-func s3ElementType() attr.Type    { return s3ElemType }
-func hdfsElementType() attr.Type  { return hdfsElemType }
-
 func NewSnapshotRepositoryDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[snapshotRepositoryDataSourceModel](
 		entitycore.ComponentElasticsearch,
