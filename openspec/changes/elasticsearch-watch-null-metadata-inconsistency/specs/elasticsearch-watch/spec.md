@@ -18,19 +18,19 @@ directly from the API response. The resource SHALL store `throttle_period_in_mil
 response. JSON fields SHALL normalize semantically equivalent JSON so formatting-only changes do
 not create perpetual diffs.
 
-When the Elasticsearch API response contains a nil (absent) or empty `metadata` field, and
+When the Elasticsearch API response contains an empty `metadata` field, and
 the prior known Terraform `metadata` value (plan on read-after-write, or state on refresh)
 is the JSON string `"null"`, the resource SHALL preserve `"null"` in the `metadata` state
-attribute. When the API response contains a nil or empty `metadata` field and the prior known
+attribute. When the API response contains an empty `metadata` field and the prior known
 value is anything other than `"null"`, the resource SHALL store the empty-object string `"{}"`
 in the `metadata` state attribute. This preserves round-trip consistency for configurations that
 set `metadata = jsonencode(null)`.
 
-#### Scenario: nil or empty metadata returned by API is stored as JSON null when prior value is null
+#### Scenario: empty metadata returned by API is stored as JSON null when prior value is null
 
 - **GIVEN** the configuration sets `metadata = jsonencode(null)` (the string `"null"`)
-- **AND** Elasticsearch receives null metadata and returns either a nil metadata field or an
-  empty map in the Get Watch response
+- **AND** Elasticsearch receives null metadata and returns an empty metadata field in the Get Watch
+  response
 - **WHEN** read runs after create or during a subsequent refresh
 - **THEN** the `metadata` attribute in Terraform state SHALL be `"null"`
 - **AND** a subsequent plan SHALL be empty (no perpetual diff)
@@ -39,6 +39,6 @@ set `metadata = jsonencode(null)`.
 
 - **GIVEN** the configuration sets `metadata` to the empty JSON object string `"{}"` (or omits
   `metadata` so the schema default `"{}"` is used)
-- **AND** Elasticsearch returns a nil or empty `metadata` field in the Get Watch response
+- **AND** Elasticsearch returns an empty `metadata` field in the Get Watch response
 - **WHEN** read runs
 - **THEN** the `metadata` attribute in Terraform state SHALL be `"{}"`

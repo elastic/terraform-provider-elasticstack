@@ -173,7 +173,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 		d.Actions = jsontypes.NewNormalizedValue(actions)
 	}
 
-	if watch.Body.Metadata == nil || len(watch.Body.Metadata) == 0 {
+	if len(watch.Body.Metadata) == 0 {
 		if typeutils.IsKnown(d.Metadata) && d.Metadata.ValueString() == "null" {
 			d.Metadata = jsontypes.NewNormalizedValue(`null`)
 		} else {
