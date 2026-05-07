@@ -37,6 +37,7 @@ func TestAccDataSourceSnapRepoMissing(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "id"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "type"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.#", "0"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "url.#", "0"),
