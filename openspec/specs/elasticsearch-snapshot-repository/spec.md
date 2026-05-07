@@ -299,13 +299,13 @@ When `verify` is set to `true` (the default), the resource SHALL include `verify
 
 ### Requirement: Data source read-only semantics (REQ-DS-001)
 
-The data source SHALL support only a read operation. It SHALL NOT perform create, update, or delete operations.
+The data source SHALL support only a read operation. It SHALL NOT perform create, update, or delete operations. The data source SHALL be constructed via `entitycore.NewElasticsearchDataSource`.
 
 #### Scenario: Read-only data source
 
-- GIVEN the data source is configured
-- WHEN Terraform evaluates the data source
-- THEN the provider SHALL only read the repository and SHALL NOT create, update, or delete it
+- **GIVEN** the data source is configured
+- **WHEN** Terraform evaluates the data source
+- **THEN** the provider SHALL only read the repository and SHALL NOT create, update, or delete it
 
 ### Requirement: Data source API (REQ-DS-002)
 
@@ -313,9 +313,9 @@ The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_
 
 #### Scenario: Repository not found
 
-- GIVEN no repository with the requested name exists
-- WHEN the data source is read
-- THEN a warning diagnostic SHALL be returned and type block attributes SHALL remain empty
+- **GIVEN** no repository with the requested name exists
+- **WHEN** the data source is read
+- **THEN** a warning diagnostic SHALL be returned and type block attributes SHALL remain empty
 
 ### Requirement: Data source identity (REQ-DS-003)
 
@@ -323,19 +323,19 @@ The data source SHALL set `id` in the format `<cluster_uuid>/<repository_name>` 
 
 #### Scenario: Data source id set
 
-- GIVEN the data source read runs for a repository name
-- WHEN the provider resolves the Elasticsearch client
-- THEN `id` SHALL be set to `<cluster_uuid>/<repository_name>`
+- **GIVEN** the data source read runs for a repository name
+- **WHEN** the provider resolves the Elasticsearch client
+- **THEN** `id` SHALL be set to `<cluster_uuid>/<repository_name>`
 
 ### Requirement: Data source connection (REQ-DS-004)
 
-The data source SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory and call `GetESClient()` to perform Elasticsearch operations. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection.
+The data source SHALL resolve a `*clients.ElasticsearchScopedClient` from the provider client factory. When `elasticsearch_connection` is absent, the factory SHALL return a typed client built from provider-level defaults. When `elasticsearch_connection` is configured, the factory SHALL return a typed scoped client rebuilt from that connection. Connection resolution SHALL be owned by the `entitycore.NewElasticsearchDataSource` envelope.
 
 #### Scenario: Data source-scoped connection
 
-- GIVEN `elasticsearch_connection` is configured on the data source
-- WHEN the data source reads the repository
-- THEN the provider SHALL use the typed scoped client rebuilt from that connection
+- **GIVEN** `elasticsearch_connection` is configured on the data source
+- **WHEN** the data source reads the repository
+- **THEN** the provider SHALL use the typed scoped client rebuilt from that connection
 
 ### Requirement: Data source type block population (REQ-DS-005)
 
@@ -343,9 +343,9 @@ After a successful read, the data source SHALL set the `type` attribute to the r
 
 #### Scenario: GCS repository
 
-- GIVEN a GCS snapshot repository exists in Elasticsearch
-- WHEN the data source is read
-- THEN `type` SHALL be `"gcs"`, the `gcs` block SHALL be populated with the repository settings, and all other type blocks SHALL remain empty
+- **GIVEN** a GCS snapshot repository exists in Elasticsearch
+- **WHEN** the data source is read
+- **THEN** `type` SHALL be `"gcs"`, the `gcs` block SHALL be populated with the repository settings, and all other type blocks SHALL remain empty
 
 ### Requirement: Data source schema — computed attributes (REQ-DS-006)
 
@@ -353,9 +353,9 @@ All attributes in the data source schema except `name` SHALL be computed. The `n
 
 #### Scenario: Name is required
 
-- GIVEN no `name` is provided in the data source configuration
-- WHEN Terraform validates the configuration
-- THEN a validation error SHALL be returned
+- **GIVEN** no `name` is provided in the data source configuration
+- **WHEN** Terraform validates the configuration
+- **THEN** a validation error SHALL be returned
 
 ### Requirement: Typed client implementation for snapshot repository CRUD
 The resource and data source SHALL use the go-elasticsearch Typed API for all snapshot repository operations. `GetSnapshotRepository` SHALL use `Snapshot.GetRepository().Do(ctx)`, `PutSnapshotRepository` SHALL use `Snapshot.CreateRepository().Do(ctx)`, and `DeleteSnapshotRepository` SHALL use `Snapshot.DeleteRepository().Do(ctx)`. Manual JSON marshaling and unmarshaling SHALL be eliminated.
@@ -376,4 +376,23 @@ The resource and data source SHALL use the go-elasticsearch Typed API for all sn
 - WHEN the provider calls the Put API
 - THEN the request body SHALL be constructed using typed API request builders
 - AND manual `json.Marshal` into an intermediate `models.SnapshotRepository` SHALL NOT occur
+
+### Requirement: Data source uses Plugin Framework and entitycore envelope
+
+The data source SHALL be implemented as a Plugin Framework `datasource.DataSource` constructed via `entitycore.NewElasticsearchDataSource`. The concrete model SHALL embed `entitycore.ElasticsearchConnectionField` and SHALL satisfy `entitycore.ElasticsearchDataSourceModel`. The envelope SHALL own config decode, scoped client resolution, and state persistence.
+
+#### Scenario: Envelope handles connection and decode
+
+- **WHEN** the data source is evaluated
+- **THEN** `entitycore.NewElasticsearchDataSource` SHALL decode the configuration into the concrete model
+- **AND** resolve the scoped Elasticsearch client from the model's `elasticsearch_connection` block
+- **AND** invoke the entity-specific read callback
+- **AND** persist the returned model to state
+
+#### Scenario: Read callback owns API call and id assignment
+
+- **WHEN** the entity-specific read callback is invoked with the scoped client and config
+- **THEN** it SHALL call `elasticsearch.GetSnapshotRepository`
+- **AND** set `model.ID` to `<cluster_uuid>/<repository_name>`
+- **AND** map the API response into the corresponding type block in the model
 
