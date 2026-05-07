@@ -37,11 +37,39 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
       events = {
         process = true
       }
+      popup = {
+        malware = {
+          message = ""
+          enabled = false
+        }
+        memory_protection = {
+          message = ""
+          enabled = false
+        }
+        behavior_protection = {
+          message = ""
+          enabled = false
+        }
+      }
     }
     linux = {
       events = {
         process = true
         network = true
+      }
+      popup = {
+        malware = {
+          message = ""
+          enabled = false
+        }
+        memory_protection = {
+          message = ""
+          enabled = false
+        }
+        behavior_protection = {
+          message = ""
+          enabled = false
+        }
       }
     }
   }

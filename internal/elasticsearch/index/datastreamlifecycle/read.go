@@ -20,53 +20,24 @@ package datastreamlifecycle
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, diags := r.read(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if finalModel == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
-}
-
-func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	compID, diags := model.GetID()
+func readDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
+	ds, diags := elasticsearch.GetDataStreamLifecycle(ctx, client, resourceID, state.ExpandWildcards.ValueString())
 	if diags.HasError() {
-		return nil, diags
-	}
-
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	ds, diags := elasticsearch.GetDataStreamLifecycle(ctx, client, compID.ResourceID, model.ExpandWildcards.ValueString())
-	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 	if ds == nil || len(ds.DataStreams) == 0 {
-		return nil, nil
+		return state, false, nil
 	}
 
-	diags.Append(model.populateFromAPI(ctx, ds.DataStreams)...)
-	return &model, diags
+	diags.Append(state.populateFromAPI(ctx, ds.DataStreams)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	return state, true, diags
 }

@@ -11,7 +11,8 @@ resource "elasticstack_fleet_integration" "test_integration" {
 }
 
 resource "elasticstack_elasticsearch_index_lifecycle" "test" {
-  name = "test-fleet-ilm-policy"
+  name          = "test-fleet-ilm-policy"
+  force_destroy = true
 
   hot {
     rollover {

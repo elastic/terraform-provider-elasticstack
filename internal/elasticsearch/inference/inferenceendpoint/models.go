@@ -40,6 +40,10 @@ type Data struct {
 	ChunkingSettings        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
+func (data Data) GetID() types.String                    { return data.ID }
+func (data Data) GetResourceID() types.String            { return data.InferenceID }
+func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+
 func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
