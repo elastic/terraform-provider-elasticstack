@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -39,14 +40,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Ensure pipelineResource satisfies framework interfaces.
 var (
 	_ resource.Resource                = newPipelineResource()
 	_ resource.ResourceWithConfigure   = newPipelineResource()
 	_ resource.ResourceWithImportState = newPipelineResource()
 )
 
-// Data is the Plugin Framework model for the ingest pipeline resource.
 type Data struct {
 	entitycore.ElasticsearchConnectionField
 	ID          types.String         `tfsdk:"id"`
@@ -60,8 +59,8 @@ type Data struct {
 func (d Data) GetID() types.String         { return d.ID }
 func (d Data) GetResourceID() types.String { return d.Name }
 
-// GetSchema returns the Plugin Framework schema for the ingest pipeline resource
-// without the elasticsearch_connection block (injected by the envelope).
+// GetSchema returns the Plugin Framework schema without the
+// elasticsearch_connection block, which is injected by the envelope.
 func GetSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
@@ -102,7 +101,6 @@ func GetSchema() schema.Schema {
 	}
 }
 
-// pipelineResource is the concrete Plugin Framework resource type.
 type pipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
@@ -115,23 +113,20 @@ func newPipelineResource() *pipelineResource {
 			GetSchema,
 			readIngestPipeline,
 			deleteIngestPipeline,
-			createIngestPipeline,
-			updateIngestPipeline,
+			writeIngestPipeline,
+			writeIngestPipeline,
 		),
 	}
 }
 
-// NewIngestPipelineResource returns a new Plugin Framework resource for the ingest pipeline.
 func NewIngestPipelineResource() resource.Resource {
 	return newPipelineResource()
 }
 
-// ImportState implements resource.ResourceWithImportState.
 func (r *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// readIngestPipeline is the readFunc callback for the envelope.
 func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -140,7 +135,6 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	if diags.HasError() {
 		return state, false, diags
 	}
-
 	if pipeline == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Ingest pipeline "%s" not found, removing from state`, resourceID))
 		return state, false, nil
@@ -152,56 +146,27 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 		return state, false, diags
 	}
 
-	data := Data{}
-	data.ElasticsearchConnection = state.ElasticsearchConnection
-	data.ID = types.StringValue(compID.String())
-	data.Name = types.StringValue(resourceID)
-
-	if pipeline.Description != nil {
-		data.Description = types.StringValue(*pipeline.Description)
-	} else {
-		data.Description = types.StringNull()
+	data := Data{
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: state.ElasticsearchConnection},
+		ID:                           types.StringValue(compID.String()),
+		Name:                         types.StringValue(resourceID),
+		Description:                  types.StringPointerValue(pipeline.Description),
 	}
 
-	// Serialize processors
-	procs := make([]jsontypes.Normalized, len(pipeline.Processors))
-	for i, v := range pipeline.Processors {
-		b, err := json.Marshal(v)
-		if err != nil {
-			diags.AddError("Failed to serialize processor", err.Error())
-			return state, false, diags
-		}
-		procs[i] = jsontypes.NewNormalizedValue(string(b))
-	}
-	processorsList, listDiags := types.ListValueFrom(ctx, jsontypes.NormalizedType{}, procs)
+	processorsList, listDiags := jsonListFromSlice(ctx, pipeline.Processors, "processor")
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
 	data.Processors = processorsList
 
-	// Serialize on_failure
-	if len(pipeline.OnFailure) > 0 {
-		failureProcs := make([]jsontypes.Normalized, len(pipeline.OnFailure))
-		for i, v := range pipeline.OnFailure {
-			b, err := json.Marshal(v)
-			if err != nil {
-				diags.AddError("Failed to serialize on_failure processor", err.Error())
-				return state, false, diags
-			}
-			failureProcs[i] = jsontypes.NewNormalizedValue(string(b))
-		}
-		onFailureList, listDiags := types.ListValueFrom(ctx, jsontypes.NormalizedType{}, failureProcs)
-		diags.Append(listDiags...)
-		if diags.HasError() {
-			return state, false, diags
-		}
-		data.OnFailure = onFailureList
-	} else {
-		data.OnFailure = types.ListNull(jsontypes.NormalizedType{})
+	onFailureList, listDiags := jsonListFromSlice(ctx, pipeline.OnFailure, "on_failure processor")
+	diags.Append(listDiags...)
+	if diags.HasError() {
+		return state, false, diags
 	}
+	data.OnFailure = onFailureList
 
-	// Serialize metadata
 	if pipeline.Meta_ != nil {
 		b, err := json.Marshal(pipeline.Meta_)
 		if err != nil {
@@ -216,13 +181,11 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	return data, true, diags
 }
 
-// deleteIngestPipeline is the deleteFunc callback for the envelope.
 func deleteIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
 	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteIngestPipeline(ctx, client, resourceID))
 }
 
-// createIngestPipeline is the createFunc callback for the envelope.
-func createIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body, buildDiags := buildPipelineBody(ctx, data)
@@ -247,65 +210,36 @@ func createIngestPipeline(ctx context.Context, client *clients.ElasticsearchScop
 	return data, diags
 }
 
-// updateIngestPipeline is the updateFunc callback; identical to createIngestPipeline for PUT-based resources.
-func updateIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
-	return createIngestPipeline(ctx, client, resourceID, data)
-}
-
-// buildPipelineBody constructs the JSON body map for a PutIngestPipeline call.
 func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := map[string]any{}
 
-	if !data.Description.IsNull() && !data.Description.IsUnknown() {
+	if typeutils.IsKnown(data.Description) {
 		body["description"] = data.Description.ValueString()
 	}
 
-	// Decode processors list
-	if data.Processors.IsNull() || data.Processors.IsUnknown() {
+	processors, procDiags := decodeJSONList(ctx, data.Processors, "processor")
+	diags.Append(procDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if processors == nil {
+		// Required + MinItems=1 enforced by schema; envelope should not call us with a missing list.
 		diags.AddError("Missing required processors", "processors must contain at least one element")
 		return nil, diags
 	}
+	body["processors"] = processors
 
-	if !data.Processors.IsNull() && !data.Processors.IsUnknown() {
-		var procValues []jsontypes.Normalized
-		diags.Append(data.Processors.ElementsAs(ctx, &procValues, false)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		procs := make([]map[string]any, len(procValues))
-		for i, v := range procValues {
-			item := map[string]any{}
-			if err := json.Unmarshal([]byte(v.ValueString()), &item); err != nil {
-				diags.AddError("Failed to decode processor JSON", err.Error())
-				return nil, diags
-			}
-			procs[i] = item
-		}
-		body["processors"] = procs
+	onFailure, ofDiags := decodeJSONList(ctx, data.OnFailure, "on_failure processor")
+	diags.Append(ofDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if onFailure != nil {
+		body["on_failure"] = onFailure
 	}
 
-	// Decode on_failure list
-	if !data.OnFailure.IsNull() && !data.OnFailure.IsUnknown() {
-		var failureValues []jsontypes.Normalized
-		diags.Append(data.OnFailure.ElementsAs(ctx, &failureValues, false)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		failureProcs := make([]map[string]any, len(failureValues))
-		for i, v := range failureValues {
-			item := map[string]any{}
-			if err := json.Unmarshal([]byte(v.ValueString()), &item); err != nil {
-				diags.AddError("Failed to decode on_failure processor JSON", err.Error())
-				return nil, diags
-			}
-			failureProcs[i] = item
-		}
-		body["on_failure"] = failureProcs
-	}
-
-	// Decode metadata
-	if !data.Metadata.IsNull() && !data.Metadata.IsUnknown() {
+	if typeutils.IsKnown(data.Metadata) {
 		metadata := map[string]any{}
 		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 			diags.AddError("Failed to decode metadata JSON", err.Error())
@@ -315,4 +249,48 @@ func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Dia
 	}
 
 	return body, diags
+}
+
+// jsonListFromSlice marshals each element of items to JSON and returns a
+// types.List of jsontypes.Normalized values; an empty/nil input yields a null
+// list so Terraform does not record an empty Optional list as set.
+func jsonListFromSlice[T any](ctx context.Context, items []T, label string) (types.List, diag.Diagnostics) {
+	if len(items) == 0 {
+		return types.ListNull(jsontypes.NormalizedType{}), nil
+	}
+	values := make([]jsontypes.Normalized, len(items))
+	for i, v := range items {
+		b, err := json.Marshal(v)
+		if err != nil {
+			var diags diag.Diagnostics
+			diags.AddError(fmt.Sprintf("Failed to serialize %s", label), err.Error())
+			return types.ListNull(jsontypes.NormalizedType{}), diags
+		}
+		values[i] = jsontypes.NewNormalizedValue(string(b))
+	}
+	return types.ListValueFrom(ctx, jsontypes.NormalizedType{}, values)
+}
+
+// decodeJSONList unmarshals each Normalized element of list into a JSON object.
+// Returns (nil, nil) when the list is null or unknown.
+func decodeJSONList(ctx context.Context, list types.List, label string) ([]map[string]any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if !typeutils.IsKnown(list) {
+		return nil, diags
+	}
+	var values []jsontypes.Normalized
+	diags.Append(list.ElementsAs(ctx, &values, false)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	out := make([]map[string]any, len(values))
+	for i, v := range values {
+		item := map[string]any{}
+		if err := json.Unmarshal([]byte(v.ValueString()), &item); err != nil {
+			diags.AddError(fmt.Sprintf("Failed to decode %s JSON", label), err.Error())
+			return nil, diags
+		}
+		out[i] = item
+	}
+	return out, diags
 }
