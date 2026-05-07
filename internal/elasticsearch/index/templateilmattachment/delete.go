@@ -28,11 +28,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// deleteILMAttachment is the envelope delete callback. It reads the existing @custom
-// component template, removes the index.lifecycle.name setting, and writes the updated
-// template back via Put Component Template. It never calls Delete Component Template
-// because the template may be in use by an index template. When the template is already
-// absent, it returns nil diagnostics.
+// deleteILMAttachment removes the index.lifecycle.name setting from the @custom
+// component template. It never calls Delete Component Template because the
+// template may be in use by an index template (e.g. from Fleet).
 func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -44,21 +42,16 @@ func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScope
 
 	existing := toModelComponentTemplateResponse(existingRaw)
 	if existing == nil {
-		// Already gone.
 		tflog.Debug(ctx, "Component template already deleted", map[string]any{
 			"name": resourceID,
 		})
 		return nil
 	}
 
-	// Remove the ILM setting from the template.
 	if existing.ComponentTemplate.Template != nil {
 		existing.ComponentTemplate.Template.Settings = removeILMSetting(existing.ComponentTemplate.Template.Settings)
 	}
 
-	// Always update the component template with the ILM setting removed; never delete it.
-	// The template (e.g. logs-system.syslog@custom) is typically used by an index template
-	// (e.g. from Fleet); deleting it would fail with "cannot be removed as they are still in use".
 	componentTemplate := models.ComponentTemplate{
 		Name:     resourceID,
 		Template: existing.ComponentTemplate.Template,

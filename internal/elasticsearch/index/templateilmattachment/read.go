@@ -31,15 +31,12 @@ import (
 
 const customSuffix = "@custom"
 
-// readILMAttachment is the envelope read callback. It derives the index_template
-// attribute from the component template name when importing (index_template unknown),
-// calls Get Component Template, and returns found=false when the template or the
-// ILM setting is absent.
+// readILMAttachment derives index_template from the component template name
+// during import (when state.IndexTemplate is unknown) and returns found=false
+// when the template or the ILM setting is absent.
 func readILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Derive index_template from component template name for import
-	// (component name is <index_template>@custom).
 	if !typeutils.IsKnown(state.IndexTemplate) {
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(resourceID, customSuffix))
 	}
