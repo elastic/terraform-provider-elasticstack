@@ -259,8 +259,10 @@ func TestComponentTemplateUpgradeState_combined_v0_realistic(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
 
-	require.Equal(t, `{"k":"v"}`, got["metadata"])
-	require.Equal(t, float64(3), got["version"])
+	metadata, ok := got["metadata"].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"k":"v"}`, metadata)
+	require.InEpsilon(t, 3.0, got["version"], 0.0001)
 
 	tmpl, ok := got["template"].(map[string]any)
 	require.True(t, ok)
