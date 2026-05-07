@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getSchema(ctx context.Context) schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	// settingBlock defines a single key/value setting entry as a block, preserving
 	// the original HCL block syntax: setting { name = "..." value = "..." }.
 	settingBlock := schema.SetNestedBlock{
