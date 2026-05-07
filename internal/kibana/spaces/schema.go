@@ -18,11 +18,12 @@
 package spaces
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getDataSourceSchema() schema.Schema {
+func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Use this data source to retrieve and get information about all existing Kibana spaces. See https://www.elastic.co/guide/en/kibana/master/spaces-api-get-all.html",
 		Attributes: map[string]schema.Attribute{

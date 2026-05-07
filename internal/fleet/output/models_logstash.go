@@ -21,57 +21,44 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.OutputID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
-	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
-	}
-
-	// Note: SpaceIDs is not returned by the API for outputs
-	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
-	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
-
+	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+		id:                   data.Id,
+		name:                 data.Name,
+		outputType:           string(data.Type),
+		hosts:                data.Hosts,
+		caSha256:             data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault,
+		isDefaultMonitoring:  data.IsDefaultMonitoring,
+		configYaml:           data.ConfigYaml,
+		ssl:                  data.Ssl,
+	})
 	clearRemoteElasticsearchOnlyFields(model)
-
 	return
 }
 
 func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
-	ssl, diags := objectValueToSSL(ctx, model.Ssl)
+	var diags diag.Diagnostics
+	f := model.buildCommonNewOutput(ctx, &diags)
 	if diags.HasError() {
 		return kbapi.NewOutputUnion{}, diags
 	}
+
 	body := kbapi.NewOutputLogstash{
 		Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
-		CaSha256:             model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
-		Id:                   model.OutputID.ValueStringPointer(),
-		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl.toAPI(),
+		CaSha256:             f.CaSha256,
+		CaTrustedFingerprint: f.CaTrustedFingerprint,
+		ConfigYaml:           f.ConfigYaml,
+		Hosts:                f.Hosts,
+		Id:                   f.ID,
+		IsDefault:            f.IsDefault,
+		IsDefaultMonitoring:  f.IsDefaultMonitoring,
+		Name:                 f.Name,
+		Ssl:                  f.Ssl,
 	}
 
 	var union kbapi.NewOutputUnion
@@ -85,23 +72,25 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 }
 
 func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
-	ssl, diags := objectValueToSSLUpdate(ctx, model.Ssl)
+	var diags diag.Diagnostics
+	f := model.buildCommonUpdateOutput(ctx, &diags)
 	if diags.HasError() {
 		return kbapi.UpdateOutputUnion{}, diags
 	}
+
 	body := kbapi.UpdateOutputLogstash{
 		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputLogstashType {
 			outputType := kbapi.Logstash
 			return &outputType
 		}(),
-		CaSha256:             model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
-		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl.toAPI(),
+		CaSha256:             f.CaSha256,
+		CaTrustedFingerprint: f.CaTrustedFingerprint,
+		ConfigYaml:           f.ConfigYaml,
+		Hosts:                f.Hosts,
+		IsDefault:            f.IsDefault,
+		IsDefaultMonitoring:  f.IsDefaultMonitoring,
+		Name:                 f.Name,
+		Ssl:                  f.Ssl,
 	}
 
 	var union kbapi.UpdateOutputUnion

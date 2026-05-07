@@ -18,6 +18,7 @@
 package index
 
 import (
+	"context"
 	"regexp"
 
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -46,7 +47,7 @@ const indexNameAllowedCharsMessage = "must contain lower case alphanumeric chara
 
 const dateMathIndexNameMessage = "must be a valid plain date math index name expression enclosed in angle brackets with at least one {…} section, e.g. <logs-{now/d}>"
 
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
@@ -555,14 +556,14 @@ func getSchema() schema.Schema {
 	}
 }
 
-func aliasElementType() attr.Type {
-	return getSchema().Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
+func aliasElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
-func settingsElementType() attr.Type {
-	return getSchema().Blocks["settings"].Type().(attr.TypeWithElementType).ElementType()
+func settingsElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Blocks["settings"].Type().(attr.TypeWithElementType).ElementType()
 }
 
-func settingElementType() attr.Type {
-	return getSchema().Blocks["settings"].GetNestedObject().GetBlocks()["setting"].Type().(attr.TypeWithElementType).ElementType()
+func settingElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()["setting"].Type().(attr.TypeWithElementType).ElementType()
 }

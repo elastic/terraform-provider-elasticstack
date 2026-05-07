@@ -43,7 +43,10 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	var diags diag.Diagnostics
 
 	name := config.Name.ValueString()
-	out, found, diags := readIndexTemplate(ctx, esClient, name)
+
+	// For the data source there is no prior state: pass config as the prior so that
+	// ElasticsearchConnection and any alias reference values come from configuration.
+	out, found, diags := readIndexTemplate(ctx, esClient, name, config)
 	if diags.HasError() {
 		return config, diags
 	}

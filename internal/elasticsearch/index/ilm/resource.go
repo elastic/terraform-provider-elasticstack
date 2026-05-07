@@ -33,13 +33,25 @@ var (
 	_ resource.ResourceWithUpgradeState   = newResource()
 )
 
+// Resource implements the elasticstack_elasticsearch_index_lifecycle resource.
+// It embeds *entitycore.ElasticsearchResource[tfModel] which owns Schema (with
+// connection-block injection), Create, Read, Update, and Delete via callbacks.
+// ImportState and UpgradeState are preserved on the concrete type.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "index_lifecycle"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
+			entitycore.ComponentElasticsearch,
+			"index_lifecycle",
+			ilmSchema,
+			readILM,
+			deleteILM,
+			createILM,
+			updateILM,
+		),
 	}
 }
 

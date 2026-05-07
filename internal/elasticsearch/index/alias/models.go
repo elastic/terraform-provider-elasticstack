@@ -188,18 +188,18 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 
 	// Set write index
 	if writeIndex != nil {
-		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(), *writeIndex)
+		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), *writeIndex)
 		if diags.HasError() {
 			return diags
 		}
 		model.WriteIndex = writeIndexObj
 	} else {
-		model.WriteIndex = types.ObjectNull(getIndexAttrTypes())
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
 	}
 
 	// Set read indices
 	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
-		AttrTypes: getIndexAttrTypes(),
+		AttrTypes: getIndexAttrTypes(ctx),
 	}, readIndices)
 	if diags.HasError() {
 		return diags

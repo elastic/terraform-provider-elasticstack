@@ -18,23 +18,31 @@
 package ilm
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type tfModel struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	ForceDestroy            types.Bool           `tfsdk:"force_destroy"`
-	Hot                     types.Object         `tfsdk:"hot"`
-	Warm                    types.Object         `tfsdk:"warm"`
-	Cold                    types.Object         `tfsdk:"cold"`
-	Frozen                  types.Object         `tfsdk:"frozen"`
-	Delete                  types.Object         `tfsdk:"delete"`
-	ModifiedDate            types.String         `tfsdk:"modified_date"`
+	entitycore.ElasticsearchConnectionField
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	Metadata     jsontypes.Normalized `tfsdk:"metadata"`
+	ForceDestroy types.Bool           `tfsdk:"force_destroy"`
+	Hot          types.Object         `tfsdk:"hot"`
+	Warm         types.Object         `tfsdk:"warm"`
+	Cold         types.Object         `tfsdk:"cold"`
+	Frozen       types.Object         `tfsdk:"frozen"`
+	Delete       types.Object         `tfsdk:"delete"`
+	ModifiedDate types.String         `tfsdk:"modified_date"`
 }
+
+// GetID satisfies [entitycore.ElasticsearchResourceModel].
+func (m tfModel) GetID() types.String { return m.ID }
+
+// GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
+// For ILM policies the write identity is the policy name.
+func (m tfModel) GetResourceID() types.String { return m.Name }
 
 func (m *tfModel) phaseObject(name string) types.Object {
 	switch name {

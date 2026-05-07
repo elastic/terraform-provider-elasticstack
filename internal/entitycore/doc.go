@@ -45,7 +45,7 @@
 //	    return entitycore.NewKibanaDataSource[myModel](
 //	        entitycore.ComponentKibana,
 //	        "my_entity",
-//	        getDataSourceSchema, // returns datasource.Schema without kibana_connection block
+//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
 //	        readMyEntity,
 //	    )
 //	}
