@@ -39,7 +39,7 @@ The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_
 
 - **GIVEN** no repository with the requested name exists
 - **WHEN** the data source is read
-- **THEN** a warning diagnostic SHALL be returned and type block attributes SHALL remain empty
+- **THEN** a warning diagnostic SHALL be returned and all type block attributes SHALL be empty lists
 
 ### Requirement: Data source identity (REQ-DS-003)
 
@@ -63,13 +63,13 @@ The data source SHALL resolve a `*clients.ElasticsearchScopedClient` from the pr
 
 ### Requirement: Data source type block population (REQ-DS-005)
 
-After a successful read, the data source SHALL set the `type` attribute to the repository type string returned by the API. The data source SHALL populate only the type block corresponding to the returned type; all other type blocks SHALL remain empty. The data source SHALL flatten settings from the API response using the same type conversion logic as the resource (string-to-int, string-to-bool, string-as-string). If the `type` returned by the API does not match any of the supported type block names in the schema, the data source SHALL return an error diagnostic.
+After a successful read, the data source SHALL set the `type` attribute to the repository type string returned by the API. The data source SHALL populate only the type block corresponding to the returned type; all other type blocks SHALL be empty lists. The data source SHALL flatten settings from the API response using the same type conversion logic as the resource (string-to-int, string-to-bool, string-as-string). If the `type` returned by the API does not match any of the supported type block names in the schema, the data source SHALL return an error diagnostic.
 
 #### Scenario: GCS repository
 
 - **GIVEN** a GCS snapshot repository exists in Elasticsearch
 - **WHEN** the data source is read
-- **THEN** `type` SHALL be `"gcs"`, the `gcs` block SHALL be populated with the repository settings, and all other type blocks SHALL remain empty
+- **THEN** `type` SHALL be `"gcs"`, the `gcs` block SHALL be populated with the repository settings, and all other type blocks SHALL be empty lists
 
 ### Requirement: Data source schema — computed attributes (REQ-DS-006)
 
