@@ -18,6 +18,7 @@
 package ilm
 
 import (
+	"context"
 	_ "embed"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
