@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -69,13 +68,16 @@ type tfModel struct {
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
-	}
+func (model tfModel) GetID() types.String {
+	return model.ID
+}
 
-	return compID, nil
+func (model tfModel) GetResourceID() types.String {
+	return model.Name
+}
+
+func (model tfModel) GetElasticsearchConnection() types.List {
+	return model.ElasticsearchConnection
 }
 
 func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {

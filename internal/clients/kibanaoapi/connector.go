@@ -297,6 +297,22 @@ func remarshalConfig[T any](plan string) (string, error) {
 	return string(customJSON), nil
 }
 
+// connectorConfigWithDefaults is the generic helper shared by all per-connector
+// defaults functions. It unmarshals plan into T, calls setDefaults to fill any
+// missing fields, then marshals back to JSON.
+func connectorConfigWithDefaults[T any](plan string, setDefaults func(*T)) (string, error) {
+	var config T
+	if err := json.Unmarshal([]byte(plan), &config); err != nil {
+		return "", err
+	}
+	setDefaults(&config)
+	customJSON, err := json.Marshal(config)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
 // remarshalConfigGenAi handles config for .gen-ai connectors.
 // The .gen-ai connector type has multiple possible config structures depending on the apiProvider
 // (GenaiOpenaiConfig, GenaiAzureConfig, GenaiOpenaiOtherConfig). This function unmarshals to the
@@ -331,18 +347,11 @@ func remarshalConfigGenAi(plan string) (string, error) {
 }
 
 func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
-	var custom kbapi.BedrockConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.DefaultModel == nil {
-		custom.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.BedrockConfig) {
+		if c.DefaultModel == nil {
+			c.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+		}
+	})
 }
 
 func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
@@ -363,195 +372,136 @@ func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
 	// unknown fields are automatically filtered out.
 	switch apiProvider {
 	case "OpenAI":
-		// No defaults to apply for OpenAI
 		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
 	case "Azure OpenAI":
-		// No defaults to apply for Azure
 		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
 	case "Other":
-		var config kbapi.GenaiOpenaiOtherConfig
-		if err := json.Unmarshal([]byte(plan), &config); err != nil {
-			return "", err
-		}
-		// Apply verificationMode default for "Other" provider
-		if config.VerificationMode == nil {
-			config.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
-		}
-		customJSON, err := json.Marshal(config)
-		if err != nil {
-			return "", err
-		}
-		return string(customJSON), nil
+		return connectorConfigWithDefaults(plan, func(c *kbapi.GenaiOpenaiOtherConfig) {
+			if c.VerificationMode == nil {
+				c.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+			}
+		})
 	default:
 		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
 	}
 }
 
 func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
-	var custom kbapi.CasesWebhookConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.AuthType == nil {
-		authType := kbapi.WebhookAuthenticationBasic
-		custom.AuthType = &authType
-	}
-	if custom.CreateIncidentMethod == nil {
-		custom.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
-	}
-	if custom.HasAuth == nil {
-		custom.HasAuth = new(true)
-	}
-	if custom.UpdateIncidentMethod == nil {
-		custom.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
-	}
-	if custom.CreateCommentMethod == nil {
-		custom.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.CasesWebhookConfig) {
+		if c.AuthType == nil {
+			authType := kbapi.WebhookAuthenticationBasic
+			c.AuthType = &authType
+		}
+		if c.CreateIncidentMethod == nil {
+			c.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
+		}
+		if c.HasAuth == nil {
+			c.HasAuth = new(true)
+		}
+		if c.UpdateIncidentMethod == nil {
+			c.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
+		}
+		if c.CreateCommentMethod == nil {
+			c.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
+		}
+	})
 }
 
 func connectorConfigWithDefaultsEmail(plan string) (string, error) {
-	var custom kbapi.EmailConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.HasAuth == nil {
-		custom.HasAuth = new(true)
-	}
-	if custom.Service == nil {
-		custom.Service = new(kbapi.EmailConfigService("other"))
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.EmailConfig) {
+		if c.HasAuth == nil {
+			c.HasAuth = new(true)
+		}
+		if c.Service == nil {
+			c.Service = new(kbapi.EmailConfigService("other"))
+		}
+	})
 }
 
 func connectorConfigWithDefaultsIndex(plan string) (string, error) {
-	var custom kbapi.IndexConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.Refresh == nil {
-		custom.Refresh = new(false)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.IndexConfig) {
+		if c.Refresh == nil {
+			c.Refresh = new(false)
+		}
+	})
 }
 
 func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
-	var planConfig kbapi.ServicenowConfig
-	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
-		return "", err
-	}
-	if planConfig.IsOAuth == nil {
-		planConfig.IsOAuth = new(false)
-	}
-	if planConfig.UsesTableApi == nil {
-		planConfig.UsesTableApi = new(true)
-	}
-	customJSON, err := json.Marshal(planConfig)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowConfig) {
+		if c.IsOAuth == nil {
+			c.IsOAuth = new(false)
+		}
+		if c.UsesTableApi == nil {
+			c.UsesTableApi = new(true)
+		}
+	})
 }
 
 func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
-	var custom kbapi.ServicenowItomConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.IsOAuth == nil {
-		custom.IsOAuth = new(false)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowItomConfig) {
+		if c.IsOAuth == nil {
+			c.IsOAuth = new(false)
+		}
+	})
 }
 
 func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
-	var custom kbapi.SwimlaneConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.Mappings == nil {
-		custom.Mappings = &struct {
-			AlertIdConfig *struct { //nolint:revive // var-naming: API struct field
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"alertIdConfig,omitempty\""
-			CaseIdConfig *struct { //nolint:revive // var-naming: API struct field
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"caseIdConfig,omitempty\""
-			CaseNameConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"caseNameConfig,omitempty\""
-			CommentsConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"commentsConfig,omitempty\""
-			DescriptionConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"descriptionConfig,omitempty\""
-			RuleNameConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"ruleNameConfig,omitempty\""
-			SeverityConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"severityConfig,omitempty\""
-		}{}
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.SwimlaneConfig) {
+		if c.Mappings == nil {
+			c.Mappings = &struct {
+				AlertIdConfig *struct { //nolint:revive // var-naming: API struct field
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"alertIdConfig,omitempty\""
+				CaseIdConfig *struct { //nolint:revive // var-naming: API struct field
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"caseIdConfig,omitempty\""
+				CaseNameConfig *struct {
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"caseNameConfig,omitempty\""
+				CommentsConfig *struct {
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"commentsConfig,omitempty\""
+				DescriptionConfig *struct {
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"descriptionConfig,omitempty\""
+				RuleNameConfig *struct {
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"ruleNameConfig,omitempty\""
+				SeverityConfig *struct {
+					FieldType string "json:\"fieldType\""
+					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+					Key       string "json:\"key\""
+					Name      string "json:\"name\""
+				} "json:\"severityConfig,omitempty\""
+			}{}
+		}
+	})
 }
 
 func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
-	var custom kbapi.XmattersConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.UsesBasic == nil {
-		custom.UsesBasic = new(true)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults(plan, func(c *kbapi.XmattersConfig) {
+		if c.UsesBasic == nil {
+			c.UsesBasic = new(true)
+		}
+	})
 }
 
 func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.PostActionsConnectorIdJSONRequestBody, error) {
