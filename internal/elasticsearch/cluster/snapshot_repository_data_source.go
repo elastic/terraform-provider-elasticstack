@@ -320,7 +320,7 @@ func mergeAttrMaps(mapsToMerge ...map[string]schema.Attribute) map[string]schema
 
 var dataSourceSchema = buildDataSourceSchema()
 
-func getDataSourceSchema() schema.Schema { return dataSourceSchema }
+func getDataSourceSchema(_ context.Context) schema.Schema { return dataSourceSchema }
 
 func mustElementType(t attr.Type) attr.Type {
 	et, ok := t.(attr.TypeWithElementType)

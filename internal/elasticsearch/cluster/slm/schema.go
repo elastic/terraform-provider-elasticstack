@@ -31,7 +31,7 @@ import (
 const defaultExpandWildcards = "open,hidden"
 const defaultSnapshotName = "<snap-{now/d}>"
 
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Attributes: map[string]schema.Attribute{
