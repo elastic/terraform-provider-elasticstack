@@ -22,8 +22,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,6 +36,119 @@ import (
 )
 
 // Utilities to convert various API types to Terraform model types
+
+// commonAPIRuleFields holds the common fields extracted from any API rule response.
+// Each updateFrom*Rule function populates this struct and calls updateCommonRuleFieldsFromAPI.
+// Fields not applicable to a rule type (e.g. DataViewId for ESQL/ML) should be left nil.
+type commonAPIRuleFields struct {
+	ResourceID  string // rule.Id.String() — used to build the composite ID
+	RuleID      string
+	Name        string
+	Type        string
+	Enabled     bool
+	From        string
+	To          string
+	Interval    string
+	Description string
+	RiskScore   int64
+	Severity    string
+	MaxSignals  int64
+	Version     int64
+	Revision    int64
+	CreatedAt   time.Time
+	CreatedBy   string
+	UpdatedAt   time.Time
+	UpdatedBy   string
+
+	TimelineID                        *kbapi.SecurityDetectionsAPITimelineTemplateId
+	TimelineTitle                     *kbapi.SecurityDetectionsAPITimelineTemplateTitle
+	DataViewID                        *kbapi.SecurityDetectionsAPIDataViewId // nil for ESQL/ML → sets DataViewID to null
+	Namespace                         *kbapi.SecurityDetectionsAPIAlertsIndexNamespace
+	RuleNameOverride                  *kbapi.SecurityDetectionsAPIRuleNameOverride
+	TimestampOverride                 *kbapi.SecurityDetectionsAPITimestampOverride
+	TimestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
+	BuildingBlockType                 *kbapi.SecurityDetectionsAPIBuildingBlockType
+	License                           *kbapi.SecurityDetectionsAPIRuleLicense
+	Note                              *kbapi.SecurityDetectionsAPIInvestigationGuide
+
+	Index          *[]string // nil for ESQL/ML → sets Index to empty list
+	Author         []string
+	Tags           []string
+	FalsePositives []string
+	References     []string
+	Setup          kbapi.SecurityDetectionsAPISetupGuide
+
+	Actions             []kbapi.SecurityDetectionsAPIRuleAction
+	ExceptionsList      []kbapi.SecurityDetectionsAPIRuleExceptionList
+	RiskScoreMapping    kbapi.SecurityDetectionsAPIRiskScoreMapping
+	InvestigationFields *kbapi.SecurityDetectionsAPIInvestigationFields
+	Threat              kbapi.SecurityDetectionsAPIThreatArray
+	SeverityMapping     kbapi.SecurityDetectionsAPISeverityMapping
+	RelatedIntegrations kbapi.SecurityDetectionsAPIRelatedIntegrationArray
+	RequiredFields      kbapi.SecurityDetectionsAPIRequiredFieldArray
+	// AlertSuppression is nil for Threshold rules (which use a different API type handled separately).
+	AlertSuppression *kbapi.SecurityDetectionsAPIAlertSuppression
+	ResponseActions  *[]kbapi.SecurityDetectionsAPIResponseAction
+}
+
+// updateCommonRuleFieldsFromAPI populates the Data fields that are shared across all rule types.
+func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonAPIRuleFields) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: fields.ResourceID,
+	}
+	d.ID = types.StringValue(compID.String())
+	d.RuleID = types.StringValue(fields.RuleID)
+	d.Name = types.StringValue(fields.Name)
+	d.Type = types.StringValue(fields.Type)
+	d.Enabled = types.BoolValue(fields.Enabled)
+	d.From = types.StringValue(fields.From)
+	d.To = types.StringValue(fields.To)
+	d.Interval = types.StringValue(fields.Interval)
+	d.Description = types.StringValue(fields.Description)
+	d.RiskScore = types.Int64Value(fields.RiskScore)
+	d.Severity = types.StringValue(fields.Severity)
+	d.MaxSignals = types.Int64Value(fields.MaxSignals)
+	d.Version = types.Int64Value(fields.Version)
+	d.CreatedAt = typeutils.TimeToStringValue(fields.CreatedAt)
+	d.CreatedBy = types.StringValue(fields.CreatedBy)
+	d.UpdatedAt = typeutils.TimeToStringValue(fields.UpdatedAt)
+	d.UpdatedBy = types.StringValue(fields.UpdatedBy)
+	d.Revision = types.Int64Value(fields.Revision)
+
+	diags.Append(d.updateTimelineIDFromAPI(ctx, fields.TimelineID)...)
+	diags.Append(d.updateTimelineTitleFromAPI(ctx, fields.TimelineTitle)...)
+	diags.Append(d.updateDataViewIDFromAPI(ctx, fields.DataViewID)...)
+	diags.Append(d.updateNamespaceFromAPI(ctx, fields.Namespace)...)
+	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, fields.RuleNameOverride)...)
+	diags.Append(d.updateTimestampOverrideFromAPI(ctx, fields.TimestampOverride)...)
+	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, fields.TimestampOverrideFallbackDisabled)...)
+	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, fields.BuildingBlockType)...)
+	diags.Append(d.updateLicenseFromAPI(ctx, fields.License)...)
+	diags.Append(d.updateNoteFromAPI(ctx, fields.Note)...)
+	diags.Append(d.updateSetupFromAPI(ctx, fields.Setup)...)
+
+	diags.Append(d.updateIndexFromAPI(ctx, fields.Index)...)
+	diags.Append(d.updateAuthorFromAPI(ctx, fields.Author)...)
+	diags.Append(d.updateTagsFromAPI(ctx, fields.Tags)...)
+	diags.Append(d.updateFalsePositivesFromAPI(ctx, fields.FalsePositives)...)
+	diags.Append(d.updateReferencesFromAPI(ctx, fields.References)...)
+
+	diags.Append(d.updateActionsFromAPI(ctx, fields.Actions)...)
+	diags.Append(d.updateExceptionsListFromAPI(ctx, fields.ExceptionsList)...)
+	diags.Append(d.updateRiskScoreMappingFromAPI(ctx, fields.RiskScoreMapping)...)
+	diags.Append(d.updateInvestigationFieldsFromAPI(ctx, fields.InvestigationFields)...)
+	diags.Append(d.updateThreatFromAPI(ctx, &fields.Threat)...)
+	diags.Append(d.updateSeverityMappingFromAPI(ctx, &fields.SeverityMapping)...)
+	diags.Append(d.updateRelatedIntegrationsFromAPI(ctx, &fields.RelatedIntegrations)...)
+	diags.Append(d.updateRequiredFieldsFromAPI(ctx, &fields.RequiredFields)...)
+	diags.Append(d.updateAlertSuppressionFromAPI(ctx, fields.AlertSuppression)...)
+	diags.Append(d.updateResponseActionsFromAPI(ctx, fields.ResponseActions)...)
+
+	return diags
+}
 
 // convertActionsToModel converts kbapi.SecurityDetectionsAPIRuleAction slice to Terraform model
 func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetectionsAPIRuleAction) (types.List, diag.Diagnostics) {
