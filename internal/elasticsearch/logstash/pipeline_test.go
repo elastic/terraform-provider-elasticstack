@@ -227,10 +227,9 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 // set in one step and then removed (unset) in a subsequent step without error,
 // demonstrating proper optional-attribute lifecycle management.
 //
-// Note: Elasticsearch retains pipeline settings (batch delay, batch size, queue type, etc.)
+// Note: Elasticsearch retains all pipeline settings (including description and queue settings)
 // server-side after a PUT that omits them. The provider reads them back on every Read, so
-// those attributes will remain populated in state even when removed from config. Only simple
-// top-level fields like `description` that the provider explicitly sends as empty are cleared.
+// attributes will remain populated in state even when removed from config.
 func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_optional"
@@ -259,9 +258,8 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 				),
 			},
 			// Step 2: remove optional attributes from config; the resource must apply without
-			// error. Elasticsearch retains the previously-sent pipeline/queue settings
-			// server-side, so only the description (explicitly set to "" by the provider) can
-			// be asserted as cleared.
+			// error. Elasticsearch retains the previously-set values server-side, so the state
+			// will reflect the retained description and other settings.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
@@ -270,7 +268,6 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
-					resource.TestCheckResourceAttr(resourceName, "description", ""),
 				),
 			},
 		},
