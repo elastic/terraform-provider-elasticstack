@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -267,9 +266,9 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	diags.Append(buildingBlockTypeDiags...)
 
 	// Update read-only fields
-	d.CreatedAt = schemautil.TimeToStringValue(rule.CreatedAt)
+	d.CreatedAt = typeutils.TimeToStringValue(rule.CreatedAt)
 	d.CreatedBy = types.StringValue(rule.CreatedBy)
-	d.UpdatedAt = schemautil.TimeToStringValue(rule.UpdatedAt)
+	d.UpdatedAt = typeutils.TimeToStringValue(rule.UpdatedAt)
 	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
 	d.Revision = types.Int64Value(int64(rule.Revision))
 

@@ -31,3 +31,7 @@ type Data struct {
 	Params                  jsontypes.Normalized `tfsdk:"params"`
 	Context                 types.String         `tfsdk:"context"`
 }
+
+func (d Data) GetID() types.String                    { return d.ID }
+func (d Data) GetResourceID() types.String            { return d.ScriptID }
+func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }

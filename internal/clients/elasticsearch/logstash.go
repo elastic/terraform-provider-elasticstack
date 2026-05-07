@@ -54,7 +54,7 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 	}
 	defer res.Body.Close()
 
-	if d := diagutil.CheckHTTPError(res, "Unable to create or update logstash pipeline"); d.HasError() {
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to create or update logstash pipeline")); d.HasError() {
 		return d
 	}
 
@@ -83,7 +83,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return nil, nil
 	}
 
-	if d := diagutil.CheckHTTPError(res, "Unable to find logstash pipeline on cluster."); d.HasError() {
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to find logstash pipeline on cluster.")); d.HasError() {
 		return nil, d
 	}
 
@@ -131,7 +131,7 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 		return diags
 	}
 
-	if d := diagutil.CheckHTTPError(res, "Unable to delete logstash pipeline"); d.HasError() {
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to delete logstash pipeline")); d.HasError() {
 		return d
 	}
 

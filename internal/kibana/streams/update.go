@@ -19,47 +19,23 @@ package streams
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel streamModel
+func updateStream(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, plan, _ streamModel) (streamModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError(
-			"Unsupported server version",
-			fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", minVersionStreams),
-		)
-		return
-	}
-
-	readModel := r.upsert(ctx, client, planModel, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	readModel, upsertDiags := upsertStream(ctx, client, plan)
+	diags.Append(upsertDiags...)
+	if diags.HasError() {
+		return streamModel{}, diags
 	}
 	if readModel == nil {
-		resp.Diagnostics.AddError("Error reading stream after update", "The stream was updated but could not be read back.")
-		return
+		diags.AddError("Error reading stream after update", "The stream was updated but could not be read back.")
+		return streamModel{}, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
+	return *readModel, diags
 }

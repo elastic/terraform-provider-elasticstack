@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 // assertPanelConfigEquals asserts that result matches expected using semantic JSON equality.
@@ -37,7 +37,7 @@ func assertPanelConfigEquals(t *testing.T, expectedJSON string, result map[strin
 	require.NoError(t, err)
 	expectedBytes, err := json.Marshal(expected)
 	require.NoError(t, err)
-	eq, err := schemautil.JSONBytesEqual(resultBytes, expectedBytes)
+	eq, err := typeutils.JSONBytesEqual(resultBytes, expectedBytes)
 	require.NoError(t, err)
 	assert.True(t, eq, "result %s != expected %s", string(resultBytes), string(expectedBytes))
 }

@@ -20,7 +20,7 @@ package tfsdkutils
 import (
 	"testing"
 
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +54,7 @@ func TestFlattenMap(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		res := schemautil.FlattenMap(tc.in)
+		res := typeutils.FlattenMap(tc.in)
 		require.Equal(t, tc.out, res)
 	}
 }

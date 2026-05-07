@@ -20,22 +20,24 @@ package maintenancewindow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type Model struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	Title            types.String `tfsdk:"title"`
-	Enabled          types.Bool   `tfsdk:"enabled"`
-	CustomSchedule   Schedule     `tfsdk:"custom_schedule"`
-	Scope            *Scope       `tfsdk:"scope"`
+	entitycore.KibanaConnectionField
+	ID             types.String `tfsdk:"id"`
+	SpaceID        types.String `tfsdk:"space_id"`
+	Title          types.String `tfsdk:"title"`
+	Enabled        types.Bool   `tfsdk:"enabled"`
+	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
+	Scope          *Scope       `tfsdk:"scope"`
 }
 
 type Scope struct {
@@ -62,31 +64,53 @@ type ScheduleRecurring struct {
 	OnMonth     types.List   `tfsdk:"on_month"`
 }
 
+/* INTERFACE METHODS */
+
+func (m Model) GetID() types.String         { return m.ID }
+func (m Model) GetResourceID() types.String { return m.ID }
+func (m Model) GetSpaceID() types.String    { return m.SpaceID }
+
+var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
+
+// GetVersionRequirements returns the minimum Kibana version required for
+// maintenance windows. This satisfies the optional
+// entitycore.WithVersionRequirements interface, allowing the
+// generic Kibana resource envelope to enforce the requirement before invoking
+// lifecycle callbacks.
+func (m Model) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
+	return []entitycore.DataSourceVersionRequirement{
+		{
+			MinVersion:   *maintenanceWindowMinVersion,
+			ErrorMessage: fmt.Sprintf("Maintenance windows require Elastic Stack v%s or later.", maintenanceWindowMinVersion),
+		},
+	}, nil
+}
+
 /* CREATE */
 
-func (model Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
+func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostMaintenanceWindowJSONRequestBody{
-		Enabled: model.Enabled.ValueBoolPointer(),
-		Title:   model.Title.ValueString(),
+		Enabled: m.Enabled.ValueBoolPointer(),
+		Title:   m.Title.ValueString(),
 	}
 
-	body.Schedule.Custom.Duration = model.CustomSchedule.Duration.ValueString()
-	body.Schedule.Custom.Start = model.CustomSchedule.Start.ValueString()
+	body.Schedule.Custom.Duration = m.CustomSchedule.Duration.ValueString()
+	body.Schedule.Custom.Start = m.CustomSchedule.Start.ValueString()
 
-	if !model.CustomSchedule.Timezone.IsNull() && !model.CustomSchedule.Timezone.IsUnknown() {
-		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
+	if !m.CustomSchedule.Timezone.IsNull() && !m.CustomSchedule.Timezone.IsUnknown() {
+		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
-	customRecurring, diags := model.CustomSchedule.Recurring.toAPIRequest(ctx)
+	customRecurring, diags := m.CustomSchedule.Recurring.toAPIRequest(ctx)
 	body.Schedule.Custom.Recurring = customRecurring
-	body.Scope = model.Scope.toAPIRequest()
+	body.Scope = m.Scope.toAPIRequest()
 
 	return body, diags
 }
 
 /* READ */
 
-func (model *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
+func (m *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -99,15 +123,15 @@ func (model *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMain
 		return diags
 	}
 
-	return model._fromAPIResponse(ctx, *response)
+	return m._fromAPIResponse(ctx, *response)
 }
 
 /* UPDATE */
 
-func (model Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
+func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-		Enabled: model.Enabled.ValueBoolPointer(),
-		Title:   model.Title.ValueStringPointer(),
+		Enabled: m.Enabled.ValueBoolPointer(),
+		Title:   m.Title.ValueStringPointer(),
 	}
 
 	body.Schedule = &struct {
@@ -138,47 +162,31 @@ func (model Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenan
 			Start    string  `json:"start"`
 			Timezone *string `json:"timezone,omitempty"`
 		}{
-			Duration: model.CustomSchedule.Duration.ValueString(),
-			Start:    model.CustomSchedule.Start.ValueString(),
+			Duration: m.CustomSchedule.Duration.ValueString(),
+			Start:    m.CustomSchedule.Start.ValueString(),
 		},
 	}
 
-	if typeutils.IsKnown(model.CustomSchedule.Timezone) {
-		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
+	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
+		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
-	customRecurring, diags := model.CustomSchedule.Recurring.toAPIRequest(ctx)
+	customRecurring, diags := m.CustomSchedule.Recurring.toAPIRequest(ctx)
 	body.Schedule.Custom.Recurring = customRecurring
-	body.Scope = model.Scope.toAPIRequest()
+	body.Scope = m.Scope.toAPIRequest()
 
 	return body, diags
 }
 
-/* DELETE */
-
-func (model Model) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
-	maintenanceWindowID = model.ID.ValueString()
-	spaceID = model.SpaceID.ValueString()
-
-	resourceID := model.ID.ValueString()
-	maybeCompositeID, _ := clients.CompositeIDFromStr(resourceID)
-	if maybeCompositeID != nil {
-		maintenanceWindowID = maybeCompositeID.ResourceID
-		spaceID = maybeCompositeID.ClusterID
-	}
-
-	return
-}
-
 /* RESPONSE HANDLER */
 
-func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) diag.Diagnostics {
+func (m *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) diag.Diagnostics {
 	var diags = diag.Diagnostics{}
 
-	model.Title = types.StringValue(response.Title)
-	model.Enabled = types.BoolValue(response.Enabled)
+	m.Title = types.StringValue(response.Title)
+	m.Enabled = types.BoolValue(response.Enabled)
 
-	model.CustomSchedule = Schedule{
+	m.CustomSchedule = Schedule{
 		Start:    types.StringValue(response.Schedule.Custom.Start),
 		Duration: types.StringValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
@@ -192,12 +200,12 @@ func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON)
 	}
 
 	if response.Schedule.Custom.Recurring != nil {
-		model.CustomSchedule.Recurring.End = types.StringPointerValue(response.Schedule.Custom.Recurring.End)
-		model.CustomSchedule.Recurring.Every = types.StringPointerValue(response.Schedule.Custom.Recurring.Every)
+		m.CustomSchedule.Recurring.End = types.StringPointerValue(response.Schedule.Custom.Recurring.End)
+		m.CustomSchedule.Recurring.Every = types.StringPointerValue(response.Schedule.Custom.Recurring.Every)
 
 		if response.Schedule.Custom.Recurring.Occurrences != nil {
 			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)
-			model.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
+			m.CustomSchedule.Recurring.Occurrences = types.Int32PointerValue(&occurrences)
 		}
 
 		if response.Schedule.Custom.Recurring.OnWeekDay != nil {
@@ -206,7 +214,7 @@ func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON)
 			if d.HasError() {
 				diags.Append(d...)
 			} else {
-				model.CustomSchedule.Recurring.OnWeekDay = onWeekDay
+				m.CustomSchedule.Recurring.OnWeekDay = onWeekDay
 			}
 		}
 
@@ -216,7 +224,7 @@ func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON)
 			if d.HasError() {
 				diags.Append(d...)
 			} else {
-				model.CustomSchedule.Recurring.OnMonth = onMonth
+				m.CustomSchedule.Recurring.OnMonth = onMonth
 			}
 		}
 
@@ -226,13 +234,13 @@ func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON)
 			if d.HasError() {
 				diags.Append(d...)
 			} else {
-				model.CustomSchedule.Recurring.OnMonthDay = onMonthDay
+				m.CustomSchedule.Recurring.OnMonthDay = onMonthDay
 			}
 		}
 	}
 
 	if response.Scope != nil {
-		model.Scope = &Scope{
+		m.Scope = &Scope{
 			Alerting: AlertingScope{
 				Kql: types.StringValue(response.Scope.Alerting.Query.Kql),
 			},

@@ -23,62 +23,27 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel streamModel
+func readStream(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model streamModel) (streamModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readModel, diags := r.read(ctx, client, stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readModel == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
-}
-
-func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel streamModel) (*streamModel, diag.Diagnostics) {
-	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	spaceID := composite.ClusterID
-	name := composite.ResourceID
-
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
+	kibanaClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana client", err.Error())
-		return nil, diags
+		return model, false, diags
 	}
 
-	apiResp, getDiags := kibanaoapi.GetStream(ctx, kibanaClient, spaceID, name)
+	apiResp, getDiags := kibanaoapi.GetStream(ctx, kibanaClient, spaceID, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return model, false, diags
 	}
 
 	if apiResp == nil {
-		return nil, diags
+		return model, false, diags
 	}
 
-	diags.Append(stateModel.populateFromAPI(ctx, apiResp, name, spaceID)...)
-	return &stateModel, diags
+	diags.Append(model.populateFromAPI(ctx, apiResp, resourceID, spaceID)...)
+	return model, true, diags
 }

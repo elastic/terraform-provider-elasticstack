@@ -19,10 +19,18 @@ package alertingrule
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateRuleParamsIndexThreshold(t *testing.T) {
@@ -808,4 +816,159 @@ func TestValidateRuleParamsUptimeMonitorStatusRejectsSyntheticsFields(t *testing
 	if !strings.Contains(strings.Join(errs, "; "), "unknown field \"monitorIds\"") {
 		t.Fatalf("expected unknown field error for 'monitorIds', got: %v", errs)
 	}
+}
+
+// testActionsListWithGroups builds a types.List of actionModel objects using the
+// provided group names, one action per group.
+func testActionsListWithGroups(ctx context.Context, t *testing.T, groups ...string) types.List {
+	t.Helper()
+	objs := make([]attr.Value, 0, len(groups))
+	for _, g := range groups {
+		am := actionModel{
+			Group:        types.StringValue(g),
+			ID:           types.StringValue("connector-id"),
+			Params:       jsontypes.NewNormalizedValue(`{}`),
+			Frequency:    types.ObjectNull(getFrequencyAttrTypes()),
+			AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
+		}
+		obj, d := types.ObjectValueFrom(ctx, getActionsAttrTypes(), am)
+		require.Empty(t, d)
+		objs = append(objs, obj)
+	}
+	list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getActionsAttrTypes()}, objs)
+	require.Empty(t, d)
+	return list
+}
+
+func TestValidateDuplicateActionGroups_duplicateRejected(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		Actions: testActionsListWithGroups(ctx, t,
+			"slo.burnRate.alert",
+			"slo.burnRate.high",
+			"slo.burnRate.alert", // duplicate of index 0
+		),
+	}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Detail(), `"slo.burnRate.alert"`)
+	assert.Contains(t, diags[0].Detail(), "actions[0]")
+	assert.Contains(t, diags[0].Detail(), "actions[2]")
+}
+
+func TestValidateDuplicateActionGroups_uniqueGroupsAccepted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		Actions: testActionsListWithGroups(ctx, t,
+			"slo.burnRate.alert",
+			"slo.burnRate.high",
+			"slo.burnRate.medium",
+			"slo.burnRate.low",
+		),
+	}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateDuplicateActionGroups_emptyActionsAccepted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		Actions: types.ListNull(types.ObjectType{AttrTypes: getActionsAttrTypes()}),
+	}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateDuplicateActionGroups_twoNullGroupsTreatedAsDefault(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	// Both actions omit group — both resolve to the schema default "default".
+	am := actionModel{
+		Group:        types.StringNull(),
+		ID:           types.StringValue("connector-id"),
+		Params:       jsontypes.NewNormalizedValue(`{}`),
+		Frequency:    types.ObjectNull(getFrequencyAttrTypes()),
+		AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
+	}
+	obj, d := types.ObjectValueFrom(ctx, getActionsAttrTypes(), am)
+	require.Empty(t, d)
+	list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getActionsAttrTypes()}, []attr.Value{obj, obj})
+	require.Empty(t, d)
+
+	data := alertingRuleModel{Actions: list}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+
+	require.True(t, diags.HasError(), "two omitted groups both resolve to 'default' and should be rejected")
+	assert.Contains(t, diags[0].Detail(), `"default"`)
+}
+
+func TestValidateDuplicateActionGroups_nullAndExplicitDefaultAreDuplicates(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	nullAction := actionModel{
+		Group:        types.StringNull(),
+		ID:           types.StringValue("connector-1"),
+		Params:       jsontypes.NewNormalizedValue(`{}`),
+		Frequency:    types.ObjectNull(getFrequencyAttrTypes()),
+		AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
+	}
+	explicitAction := actionModel{
+		Group:        types.StringValue("default"),
+		ID:           types.StringValue("connector-2"),
+		Params:       jsontypes.NewNormalizedValue(`{}`),
+		Frequency:    types.ObjectNull(getFrequencyAttrTypes()),
+		AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
+	}
+	nullObj, d := types.ObjectValueFrom(ctx, getActionsAttrTypes(), nullAction)
+	require.Empty(t, d)
+	explicitObj, d := types.ObjectValueFrom(ctx, getActionsAttrTypes(), explicitAction)
+	require.Empty(t, d)
+	list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getActionsAttrTypes()}, []attr.Value{nullObj, explicitObj})
+	require.Empty(t, d)
+
+	data := alertingRuleModel{Actions: list}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+
+	require.True(t, diags.HasError(), "omitted group + explicit group=\"default\" are duplicates")
+	assert.Contains(t, diags[0].Detail(), `"default"`)
+}
+
+// TestValidateDuplicateActionGroups_notMaskedByPriorErrors verifies that a
+// pre-existing error on the shared diags (e.g. from
+// validateNotifyWhenThrottleFrequencyExclusivity) does not cause
+// validateDuplicateActionGroups to bail out before it can check groups.
+func TestValidateDuplicateActionGroups_notMaskedByPriorErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// Seed the shared diags with a pre-existing error, as if an earlier
+	// validator already ran and found a problem.
+	var diags diag.Diagnostics
+	diags.AddError("prior error", "some earlier validator already flagged an issue")
+
+	data := alertingRuleModel{
+		Actions: testActionsListWithGroups(ctx, t,
+			"slo.burnRate.alert",
+			"slo.burnRate.alert", // duplicate
+		),
+	}
+	validateDuplicateActionGroups(ctx, &data, &diags)
+
+	require.True(t, diags.HasError())
+	summaries := make([]string, 0, len(diags))
+	for _, d := range diags {
+		summaries = append(summaries, d.Summary())
+	}
+	assert.Contains(t, summaries, "prior error", "prior error should still be present")
+	assert.Contains(t, summaries, "Duplicate action group", "duplicate group error should also be present despite prior error")
 }

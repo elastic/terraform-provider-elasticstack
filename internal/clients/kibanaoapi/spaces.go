@@ -97,7 +97,7 @@ func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceRe
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }
 
@@ -119,7 +119,7 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }
 
@@ -141,7 +141,7 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 		}
 		return resp.JSON200, nil
 	default:
-		return nil, diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }
 
@@ -158,6 +158,6 @@ func DeleteSpace(ctx context.Context, client *Client, id string) sdkdiag.Diagnos
 	case http.StatusNotFound:
 		return nil
 	default:
-		return diagutil.ReportUnknownHTTPErrorSDK(resp.StatusCode(), resp.Body)
+		return diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 }

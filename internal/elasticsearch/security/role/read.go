@@ -54,19 +54,3 @@ func readRole(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 
 	return state, true, diags
 }
-
-func readRoleForUpdate(ctx context.Context, r *roleResource, data Data) (*Data, diag.Diagnostics) {
-	roleID := data.Name.ValueString()
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if clientDiags.HasError() {
-		return nil, clientDiags
-	}
-	result, found, diags := readRole(ctx, client, roleID, data)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if !found {
-		return nil, diags
-	}
-	return &result, diags
-}

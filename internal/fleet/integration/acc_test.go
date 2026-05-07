@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -567,6 +568,87 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegration_destroyWithILMCrossDependency reproduces the cross-
+// dependency failure described in
+// https://github.com/elastic/terraform-provider-elasticstack/issues/1999.
+//
+// When a Fleet integration is installed it creates index templates, component
+// templates and ingest pipelines. If data is ingested into a data stream that
+// matches those templates, Elasticsearch creates backing indices. When an ILM
+// policy is attached to the Fleet-managed template (via
+// elasticstack_elasticsearch_index_template_ilm_attachment) those backing indices
+// carry the ILM policy reference. On terraform destroy, Fleet successfully
+// uninstalls the package, but the backing indices remain. Terraform-managed
+// resources that reference the ILM policy (e.g.
+// elasticstack_elasticsearch_index_lifecycle) then fail to destroy because ES
+// refuses to delete an ILM policy that is still in use by one or more indices.
+func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: Install the system integration, create an ILM policy and
+			// attach it to the Fleet-managed index template.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.18.0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", "test-fleet-ilm-policy"),
+				),
+			},
+			// Step 2: Create a data stream so Elasticsearch creates a backing
+			// index that references the ILM policy via the Fleet-managed template.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					require.NoError(t, err)
+					ctx := context.Background()
+
+					diags := esclient.PutDataStream(ctx, client, "logs-system.syslog-default")
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
+				),
+			},
+			// Step 3: Try to destroy the ILM policy. Because the backing index
+			// still references the ILM policy, Elasticsearch rejects the deletion
+			// and the provider surfaces an error.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ResourceName:             "elasticstack_elasticsearch_index_lifecycle.test",
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile("(?i)cannot delete policy|in use by"),
+			},
+			// Step 4: Remove the data stream so the implicit terraform destroy at
+			// the end of the test case can clean up the remaining resources.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					require.NoError(t, err)
+					ctx := context.Background()
+
+					diags := esclient.DeleteDataStream(ctx, client, "logs-system.syslog-default")
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
+				),
 			},
 		},
 	})

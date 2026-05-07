@@ -44,6 +44,8 @@ func newSystemUserResource() *systemUserResource {
 			GetSchema,
 			readSystemUser,
 			deleteSystemUser,
+			writeSystemUser,
+			writeSystemUser,
 		),
 	}
 }

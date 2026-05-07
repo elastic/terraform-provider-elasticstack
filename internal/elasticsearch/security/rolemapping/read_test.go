@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
 func TestRoleTemplatesToJSON(t *testing.T) {
@@ -54,4 +55,9 @@ func TestRoleTemplatesToJSON(t *testing.T) {
 	if result != configJSON {
 		t.Errorf("roleTemplatesToJSON mismatch\nexpected: %s\ngot:      %s", configJSON, result)
 	}
+}
+
+func TestData_satisfiesElasticsearchResourceModelContract(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.ElasticsearchResourceModel = Data{}
 }

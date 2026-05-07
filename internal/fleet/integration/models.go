@@ -18,7 +18,7 @@
 package integration
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,6 +37,6 @@ type integrationModel struct {
 }
 
 func getPackageID(name string, version string) string {
-	hash, _ := schemautil.StringToHash(name + version)
+	hash, _ := typeutils.StringToHash(name + version)
 	return *hash
 }

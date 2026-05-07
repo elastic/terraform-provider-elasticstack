@@ -23,7 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -59,7 +59,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	if policyID != "" {
 		config.ID = types.StringValue(policyID)
 	} else {
-		hash, err := schemautil.StringToHash(fleetClient.URL)
+		hash, err := typeutils.StringToHash(fleetClient.URL)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 			return config, diags

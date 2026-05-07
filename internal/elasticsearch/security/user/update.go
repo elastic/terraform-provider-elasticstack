@@ -45,7 +45,16 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
-	// Check if we have existing state (this is an update, not a create)
+	writeID := planData.GetResourceID()
+	if !typeutils.IsKnown(writeID) || writeID.ValueString() == "" {
+		diags.AddError(
+			"Invalid resource identifier",
+			"The resource write identity from configuration is unknown or empty; cannot create or update.",
+		)
+		return diags
+	}
+	usernameID := writeID.ValueString()
+
 	hasState := false
 	var stateData Data
 	if state != nil && !state.Raw.IsNull() {
@@ -56,7 +65,6 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		}
 	}
 
-	usernameID := planData.Username.ValueString()
 	client, connDiags := r.Client().GetElasticsearchClient(ctx, planData.ElasticsearchConnection)
 	diags.Append(connDiags...)
 	if diags.HasError() {

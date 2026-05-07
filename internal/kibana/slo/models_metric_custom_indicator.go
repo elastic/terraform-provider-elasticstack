@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -55,7 +56,7 @@ func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorProper
 		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1Aggregation(metric.Aggregation.ValueString()),
-			Filter:      stringPtr(metric.Filter),
+			Filter:      typeutils.ValueStringPointer(metric.Filter),
 		}
 		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics1(m1); err != nil {
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
@@ -68,7 +69,7 @@ func buildGoodMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorProper
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0Aggregation(metric.Aggregation.ValueString()),
 			Field:       metric.Field.ValueString(),
-			Filter:      stringPtr(metric.Filter),
+			Filter:      typeutils.ValueStringPointer(metric.Filter),
 		}
 		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0(m0); err != nil {
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Good_Metrics_Item{}, err
@@ -86,7 +87,7 @@ func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPrope
 		m1 := kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1{
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1Aggregation(metric.Aggregation.ValueString()),
-			Filter:      stringPtr(metric.Filter),
+			Filter:      typeutils.ValueStringPointer(metric.Filter),
 		}
 		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics1(m1); err != nil {
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
@@ -99,7 +100,7 @@ func buildTotalMetricItem(metric tfMetricCustomMetric) (kbapi.SLOsIndicatorPrope
 			Name:        metric.Name.ValueString(),
 			Aggregation: kbapi.SLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0Aggregation(metric.Aggregation.ValueString()),
 			Field:       metric.Field.ValueString(),
-			Filter:      stringPtr(metric.Filter),
+			Filter:      typeutils.ValueStringPointer(metric.Filter),
 		}
 		if err := item.FromSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0(m0); err != nil {
 			return kbapi.SLOsIndicatorPropertiesCustomMetric_Params_Total_Metrics_Item{}, err
@@ -157,8 +158,8 @@ func (m tfModel) metricCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummaryRes
 			} `json:"total"`
 		}{
 			Index:          ind.Index.ValueString(),
-			DataViewId:     stringPtr(ind.DataViewID),
-			Filter:         stringPtr(ind.Filter),
+			DataViewId:     typeutils.ValueStringPointer(ind.DataViewID),
+			Filter:         typeutils.ValueStringPointer(ind.Filter),
 			TimestampField: ind.TimestampField.ValueString(),
 			Good: struct {
 				Equation string                                                               `json:"equation"`

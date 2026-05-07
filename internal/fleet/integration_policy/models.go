@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -117,7 +116,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
 
-	varsMap := schemautil.Deref(data.Vars)
+	varsMap := typeutils.Deref(data.Vars)
 	if varsMap == nil {
 		model.VarsJSON = NewVarsJSONNull()
 	} else {
@@ -187,7 +186,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	for inputID, inputData := range inputs {
 		inputModel := integrationPolicyInputsModel{
 			Enabled: types.BoolPointerValue(inputData.Enabled),
-			Vars:    typeutils.MapToNormalizedType(schemautil.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
+			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
 		}
 
 		// Populate streams
@@ -196,7 +195,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 			for streamID, streamData := range *inputData.Streams {
 				streamModel := integrationPolicyInputStreamModel{
 					Enabled: types.BoolPointerValue(streamData.Enabled),
-					Vars:    typeutils.MapToNormalizedType(schemautil.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
+					Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
 				}
 
 				streams[streamID] = streamModel
@@ -292,7 +291,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 			if diags.HasError() {
 				return nil
 			}
-			return schemautil.MapRef(typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags))
+			return typeutils.MapRef(typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags))
 		}(),
 	}
 
@@ -332,7 +331,7 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
 			Enabled: inputModel.Enabled.ValueBoolPointer(),
-			Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
+			Vars:    typeutils.MapRef(typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
@@ -343,7 +342,7 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 				for streamID, streamModel := range streamsMap {
 					streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
 						Enabled: streamModel.Enabled.ValueBoolPointer(),
-						Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
+						Vars:    typeutils.MapRef(typeutils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
 					}
 				}
 				apiInput.Streams = &streams

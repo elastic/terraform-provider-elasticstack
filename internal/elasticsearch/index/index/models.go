@@ -30,7 +30,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -505,11 +504,11 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
 	tfAlias := aliasTfModel{
 		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(schemautil.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(schemautil.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(schemautil.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(schemautil.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(schemautil.Deref(apiModel.SearchRouting)),
+		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
 	}
 
 	if apiModel.Filter != nil {
@@ -544,11 +543,11 @@ func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics
 		for name, alias := range state.Aliases {
 			indexAlias := models.IndexAlias{
 				Name:          name,
-				IndexRouting:  schemautil.Deref(alias.IndexRouting),
-				IsHidden:      schemautil.Deref(alias.IsHidden),
-				IsWriteIndex:  schemautil.Deref(alias.IsWriteIndex),
-				Routing:       schemautil.Deref(alias.Routing),
-				SearchRouting: schemautil.Deref(alias.SearchRouting),
+				IndexRouting:  typeutils.Deref(alias.IndexRouting),
+				IsHidden:      typeutils.Deref(alias.IsHidden),
+				IsWriteIndex:  typeutils.Deref(alias.IsWriteIndex),
+				Routing:       typeutils.Deref(alias.Routing),
+				SearchRouting: typeutils.Deref(alias.SearchRouting),
 			}
 			if alias.Filter != nil {
 				filterBytes, err := json.Marshal(alias.Filter)

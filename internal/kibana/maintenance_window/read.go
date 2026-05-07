@@ -20,71 +20,38 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel Model
+func readMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverFlavor, sdkDiags := apiClient.ServerFlavor(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = validateMaintenanceWindowServer(serverVersion, serverFlavor)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := apiClient.GetKibanaOapiClient()
+	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError("Unable to get Kibana client", err.Error())
+		return model, false, diags
 	}
 
-	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	maintenanceWindow, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	maintenanceWindow, getDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if maintenanceWindow == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
-	diags = stateModel.fromAPIReadResponse(ctx, maintenanceWindow)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(model.fromAPIReadResponse(ctx, maintenanceWindow)...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	stateModel.ID = types.StringValue(maintenanceWindowID)
-	stateModel.SpaceID = types.StringValue(spaceID)
+	model.ID = types.StringValue(resourceID)
+	model.SpaceID = types.StringValue(spaceID)
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }

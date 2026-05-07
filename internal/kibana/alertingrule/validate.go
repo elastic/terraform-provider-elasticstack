@@ -28,6 +28,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -116,6 +117,7 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	}
 
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &resp.Diagnostics)
+	validateDuplicateActionGroups(ctx, &data, &resp.Diagnostics)
 
 	if !typeutils.IsKnown(data.Params) || !typeutils.IsKnown(data.RuleTypeID) {
 		return
@@ -365,4 +367,43 @@ func stripKeys(raw []byte, keys []string) ([]byte, error) {
 
 func formatParamsValidationErrors(errs []string) string {
 	return strings.Join(errs, "\n")
+}
+
+// validateDuplicateActionGroups checks that no two actions share the same
+// group value. Kibana rejects such rules with an opaque HTTP 400; catching
+// this at plan time surfaces a clear diagnostic before any API call is made.
+func validateDuplicateActionGroups(ctx context.Context, data *alertingRuleModel, diags *diag.Diagnostics) {
+	if !typeutils.IsKnown(data.Actions) || data.Actions.IsNull() {
+		return
+	}
+
+	var actions []actionModel
+	var localDiags diag.Diagnostics
+	localDiags.Append(data.Actions.ElementsAs(ctx, &actions, false)...)
+	diags.Append(localDiags...)
+	if localDiags.HasError() {
+		return
+	}
+
+	seen := make(map[string]int, len(actions))
+	for i, action := range actions {
+		if action.Group.IsUnknown() {
+			// Cannot validate at config time; skip.
+			continue
+		}
+		// Null means the attribute was omitted; the schema default is "default".
+		group := "default"
+		if !action.Group.IsNull() {
+			group = action.Group.ValueString()
+		}
+		if firstIdx, exists := seen[group]; exists {
+			diags.AddAttributeError(
+				path.Root("actions").AtListIndex(i).AtName("group"),
+				"Duplicate action group",
+				fmt.Sprintf("actions[%d] and actions[%d] both use group %q. Each action group may only appear once per rule.", firstIdx, i, group),
+			)
+			return
+		}
+		seen[group] = i
+	}
 }

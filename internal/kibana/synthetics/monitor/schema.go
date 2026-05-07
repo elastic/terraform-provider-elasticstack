@@ -32,7 +32,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -714,7 +713,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 
 	resourceID := clients.CompositeID{
 		ClusterID:  space,
-		ResourceID: schemautil.Deref(api.Id),
+		ResourceID: typeutils.Deref(api.Id),
 	}
 
 	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
@@ -736,8 +735,8 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		Locations:        v.Locations,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
-		Tags:             synthetics.StringSliceValue(derefSlice(api.Tags)),
-		Labels:           typeutils.MapValueFrom(ctx, derefMap(api.Labels), types.StringType, path.Root("labels"), &dg),
+		Tags:             synthetics.StringSliceValue(typeutils.Deref(api.Tags)),
+		Labels:           typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
 		Alert:            alertV0,
 		APMServiceName:   types.StringPointerValue(api.ServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
@@ -885,11 +884,11 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 }
 
 func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
-	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, derefSlice(api.SslSupportedProtocols), path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, typeutils.Deref(api.SslSupportedProtocols), path.Root(p).AtName("ssl_supported_protocols"), &dg)
 	return tfSSLConfig{
 		SslVerificationMode:       types.StringPointerValue(api.SslVerificationMode),
 		SslSupportedProtocols:     sslSupportedProtocols,
-		SslCertificateAuthorities: synthetics.StringSliceValue(derefSlice(api.SslCertificateAuthorities)),
+		SslCertificateAuthorities: synthetics.StringSliceValue(typeutils.Deref(api.SslCertificateAuthorities)),
 		SslCertificate:            types.StringPointerValue(api.SslCertificate),
 		SslKey:                    types.StringPointerValue(api.SslKey),
 		SslKeyPassphrase:          types.StringPointerValue(api.SslKeyPassphrase),
@@ -1110,22 +1109,22 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		MaxRedirects:         int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(h.MaxRedirects),
 		Mode:                 stringEnumPtr[kbapi.SyntheticsHttpMonitorFieldsMode](h.Mode),
 		Name:                 v.Name.ValueString(),
-		Namespace:            stringPtr(v.Namespace),
+		Namespace:            typeutils.NonEmptyStringPointerValue(v.Namespace),
 		Params:               mapPtr(params),
-		Password:             stringPtr(h.Password),
+		Password:             typeutils.NonEmptyStringPointerValue(h.Password),
 		PrivateLocations:     slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
 		ProxyHeaders:         mapPtr(proxyHeaders),
-		ProxyUrl:             stringPtr(h.ProxyURL),
+		ProxyUrl:             typeutils.NonEmptyStringPointerValue(h.ProxyURL),
 		Response:             mapPtr(response),
 		RetestOnFailure:      v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:             int64ToFloat32Ptr(v.Schedule),
-		ServiceName:          stringPtr(v.APMServiceName),
+		ServiceName:          typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		Ssl:                  ssl,
 		Tags:                 slicePtr(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:              int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:                 kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
 		Url:                  h.URL.ValueString(),
-		Username:             stringPtr(h.Username),
+		Username:             typeutils.NonEmptyStringPointerValue(h.Username),
 	}
 
 	if check != nil {
@@ -1162,14 +1161,14 @@ func (v *tfModelV0) newTCPMonitorRequest(
 		Labels:                mapPtr(labels),
 		Locations:             slicePtr(locations),
 		Name:                  v.Name.ValueString(),
-		Namespace:             stringPtr(v.Namespace),
+		Namespace:             typeutils.NonEmptyStringPointerValue(v.Namespace),
 		Params:                mapPtr(params),
 		PrivateLocations:      slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
-		ProxyUrl:              stringPtr(v.TCP.ProxyURL),
+		ProxyUrl:              typeutils.NonEmptyStringPointerValue(v.TCP.ProxyURL),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 		RetestOnFailure:       v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:              int64ToFloat32Ptr(v.Schedule),
-		ServiceName:           stringPtr(v.APMServiceName),
+		ServiceName:           typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		Ssl:                   ssl,
 		Tags:                  slicePtr(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:               int64ToFloat32Ptr(v.TimeoutSeconds),
@@ -1186,12 +1185,12 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 		Labels:           mapPtr(labels),
 		Locations:        slicePtr(locations),
 		Name:             v.Name.ValueString(),
-		Namespace:        stringPtr(v.Namespace),
+		Namespace:        typeutils.NonEmptyStringPointerValue(v.Namespace),
 		Params:           mapPtr(params),
 		PrivateLocations: slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:         int64ToFloat32Ptr(v.Schedule),
-		ServiceName:      stringPtr(v.APMServiceName),
+		ServiceName:      typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		Tags:             slicePtr(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:          int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:             kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
@@ -1218,95 +1217,19 @@ func (v *tfModelV0) newBrowserMonitorRequest(
 		Labels:            mapPtr(labels),
 		Locations:         slicePtr(locations),
 		Name:              v.Name.ValueString(),
-		Namespace:         stringPtr(v.Namespace),
+		Namespace:         typeutils.NonEmptyStringPointerValue(v.Namespace),
 		Params:            mapPtr(params),
 		PlaywrightOptions: mapPtr(playwrightOptions),
 		PrivateLocations:  slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:   v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:          int64ToFloat32Ptr(v.Schedule),
 		Screenshots:       stringEnumPtr[kbapi.SyntheticsBrowserMonitorFieldsScreenshots](v.Browser.Screenshots),
-		ServiceName:       stringPtr(v.APMServiceName),
+		ServiceName:       typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		SyntheticsArgs:    slicePtr(synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)),
 		Tags:              slicePtr(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:           int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:              kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
 	}, dg
-}
-
-func derefSlice[T any](v *[]T) []T {
-	if v == nil {
-		return nil
-	}
-	return *v
-}
-
-func derefMap[K comparable, V any](v *map[K]V) map[K]V {
-	if v == nil {
-		return nil
-	}
-	return *v
-}
-
-func mapPtr[K comparable, V any](v map[K]V) *map[K]V {
-	if v == nil {
-		return nil
-	}
-	return &v
-}
-
-func slicePtr[T any](v []T) *[]T {
-	if len(v) == 0 {
-		return nil
-	}
-	return &v
-}
-
-func stringPtr(v types.String) *string {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return nil
-	}
-	value := v.ValueString()
-	return &value
-}
-
-func stringEnumPtr[T ~string](v types.String) *T {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return nil
-	}
-	value := T(v.ValueString())
-	return &value
-}
-
-func int64ToFloat32Ptr(v types.Int64) *float32 {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	value := float32(v.ValueInt64())
-	return &value
-}
-
-func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmpMonitorFields_Wait {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-
-	wait := &kbapi.SyntheticsIcmpMonitorFields_Wait{}
-	if err := wait.FromSyntheticsIcmpMonitorFieldsWait0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
-		return nil
-	}
-	return wait
-}
-
-func int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(v types.Int64) *kbapi.SyntheticsHttpMonitorFields_MaxRedirects {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-
-	maxRedirects := &kbapi.SyntheticsHttpMonitorFields_MaxRedirects{}
-	if err := maxRedirects.FromSyntheticsHttpMonitorFieldsMaxRedirects0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
-		return nil
-	}
-	return maxRedirects
 }
 
 func (v tfAlertConfigV0) toAPIAlertConfig() *kbapi.SyntheticsMonitorAlert {
