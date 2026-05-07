@@ -193,6 +193,39 @@ Create and update SHALL expand the Terraform model into a full `models.Policy`, 
 
 ### Requirement: Read and delete behavior (REQ-013–REQ-016)
 
+Read SHALL interpret `id` as the composite identifier `<cluster_uuid>/<policy_name>`. If `id` is not in that format or does not contain a policy name portion, Read SHALL return a Terraform diagnostic describing the invalid id and SHALL NOT issue Elasticsearch API requests.
+
+For a valid composite `id`, Read SHALL call the Get Lifecycle API using the policy name portion of `id`.
+
+If the Get Lifecycle API returns a not found response for that policy, Read SHALL remove the resource from Terraform state.
+
+If the Get Lifecycle API returns success but the response body does not contain an entry for the requested policy name, Read SHALL return a Terraform diagnostic describing the missing policy in the response and SHALL NOT write partial state.
+
+Otherwise, Read SHALL map the returned policy into Terraform state, preserving computed fields and using the existing composite `id`.
+
+#### Scenario: Invalid composite id during read
+
+- GIVEN the resource `id` is not a valid `<cluster_uuid>/<policy_name>` composite id
+- WHEN read runs
+- THEN the provider SHALL return a diagnostic about the invalid id
+- AND the provider SHALL NOT call the Get Lifecycle API
+
+#### Scenario: ILM policy not found during read
+
+- GIVEN the resource `id` contains a valid policy name
+- AND the Get Lifecycle API returns not found for that policy
+- WHEN read runs
+- THEN the provider SHALL remove the resource from Terraform state
+
+#### Scenario: Requested policy missing from Get Lifecycle response
+
+- GIVEN the resource `id` contains a valid policy name
+- AND the Get Lifecycle API returns success
+- AND the response does not include the requested policy name
+- WHEN read runs
+- THEN the provider SHALL return a diagnostic about the missing policy in the response
+- AND the provider SHALL NOT write partial state
+
 Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
 
 When `force_destroy` is `true`, Delete SHALL additionally identify any indices whose `index.lifecycle.name` setting references the policy name and remove that reference by setting `index.lifecycle.name` to `null` before invoking the Delete Lifecycle API. The scan-and-clear process SHALL be:
