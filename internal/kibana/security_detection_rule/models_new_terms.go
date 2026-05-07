@@ -30,7 +30,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type NewTermsRuleProcessor struct{}
+type NewTermsRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPINewTermsRule]
+}
+
+func newNewTermsRuleProcessor() NewTermsRuleProcessor {
+	return NewTermsRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPINewTermsRule]{
+			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPINewTermsRule, d *Data) diag.Diagnostics {
+				return d.updateFromNewTermsRule(ctx, v)
+			},
+			idFn: func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (n NewTermsRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "new_terms"
@@ -42,22 +57,6 @@ func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, client clients
 
 func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toNewTermsRuleUpdateProps(ctx, client)
-}
-
-func (n NewTermsRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPINewTermsRule](rule)
-}
-
-func (n NewTermsRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPINewTermsRule](rule, func(v *kbapi.SecurityDetectionsAPINewTermsRule) diag.Diagnostics {
-		return d.updateFromNewTermsRule(ctx, v)
-	})
-}
-
-func (n NewTermsRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPINewTermsRule](response, func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
-		return v.Id.String()
-	})
 }
 
 func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
