@@ -27,6 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// TODO: Remove after SDK index-template resource is fully migrated to Framework.
+// Canonical version lives in internal/elasticsearch/index/template/version_gating.go.
 // validateDataStreamOptionsVersion returns an error diagnostic if data_stream_options is configured and the server is too old.
 // Used by tests; index template resource logic lives in the Plugin Framework template package.
 func validateDataStreamOptionsVersion(serverVersion *version.Version, templ *models.Template) diag.Diagnostics {
