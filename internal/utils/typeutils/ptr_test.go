@@ -144,3 +144,44 @@ func TestLtoi(t *testing.T) {
 		require.Equal(t, 99, *result)
 	})
 }
+
+func TestRef(t *testing.T) {
+	t.Parallel()
+
+	t.Run("int value returns pointer to int", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.Ref(42)
+		require.NotNil(t, p)
+		require.Equal(t, 42, *p)
+	})
+
+	t.Run("string value returns pointer to string", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.Ref("hello")
+		require.NotNil(t, p)
+		require.Equal(t, "hello", *p)
+	})
+
+	t.Run("zero value returns pointer to zero", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.Ref(0)
+		require.NotNil(t, p)
+		require.Equal(t, 0, *p)
+	})
+}
+
+func TestNonEmptyStringPtr(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty string returns nil", func(t *testing.T) {
+		t.Parallel()
+		require.Nil(t, typeutils.NonEmptyStringPtr(""))
+	})
+
+	t.Run("non-empty string returns pointer", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.NonEmptyStringPtr("hello")
+		require.NotNil(t, p)
+		require.Equal(t, "hello", *p)
+	})
+}
