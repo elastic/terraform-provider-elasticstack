@@ -26,6 +26,18 @@ import (
 )
 
 // deleteILM is the envelope delete callback for the ILM resource.
-func deleteILM(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
+func deleteILM(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model tfModel) diag.Diagnostics {
+	if !model.ForceDestroy.IsNull() && model.ForceDestroy.ValueBool() {
+		indices, diags := elasticsearch.GetIndicesWithILMPolicy(ctx, client, resourceID)
+		if diags.HasError() {
+			return diags
+		}
+		if len(indices) > 0 {
+			diags = elasticsearch.ClearILMPolicyFromIndices(ctx, client, indices)
+			if diags.HasError() {
+				return diags
+			}
+		}
+	}
 	return elasticsearch.DeleteIlm(ctx, client, resourceID)
 }
