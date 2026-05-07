@@ -48,10 +48,3 @@ func createDataStream(ctx context.Context, client *clients.ElasticsearchScopedCl
 	data.ID = types.StringValue(id.String())
 	return data, diags
 }
-
-// updateDataStream behaves identically to createDataStream because name is ForceNew.
-// Terraform will Destroy+Create on name change; this callback exists only to satisfy
-// the envelope contract.
-func updateDataStream(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
-	return createDataStream(ctx, client, resourceID, data)
-}

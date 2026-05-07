@@ -18,24 +18,25 @@
 package datastream
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Data is the Plugin Framework model for the elasticstack_elasticsearch_data_stream resource.
 type Data struct {
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Name                    types.String `tfsdk:"name"`
-	TimestampField          types.String `tfsdk:"timestamp_field"`
-	Indices                 types.List   `tfsdk:"indices"`
-	Generation              types.Int64  `tfsdk:"generation"`
-	Metadata                types.String `tfsdk:"metadata"`
-	Status                  types.String `tfsdk:"status"`
-	Template                types.String `tfsdk:"template"`
-	ILMPolicy               types.String `tfsdk:"ilm_policy"`
-	Hidden                  types.Bool   `tfsdk:"hidden"`
-	System                  types.Bool   `tfsdk:"system"`
-	Replicated              types.Bool   `tfsdk:"replicated"`
+	entitycore.ElasticsearchConnectionField
+	ID             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	TimestampField types.String `tfsdk:"timestamp_field"`
+	Indices        types.List   `tfsdk:"indices"`
+	Generation     types.Int64  `tfsdk:"generation"`
+	Metadata       types.String `tfsdk:"metadata"`
+	Status         types.String `tfsdk:"status"`
+	Template       types.String `tfsdk:"template"`
+	ILMPolicy      types.String `tfsdk:"ilm_policy"`
+	Hidden         types.Bool   `tfsdk:"hidden"`
+	System         types.Bool   `tfsdk:"system"`
+	Replicated     types.Bool   `tfsdk:"replicated"`
 }
 
 // indexModel represents a backing index entry in the indices list.
@@ -44,6 +45,5 @@ type indexModel struct {
 	IndexUUID types.String `tfsdk:"index_uuid"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Name }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Name }
