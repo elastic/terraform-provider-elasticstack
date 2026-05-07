@@ -57,6 +57,7 @@ func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *
 		ID:                      prior.ID,
 		ElasticsearchConnection: prior.ElasticsearchConnection,
 		Name:                    types.StringValue(policyName),
+		ForceDestroy:            prior.ForceDestroy,
 		ModifiedDate:            types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
 	}
 

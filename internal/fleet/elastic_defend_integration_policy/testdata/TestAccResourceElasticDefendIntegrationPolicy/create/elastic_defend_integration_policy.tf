@@ -86,7 +86,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         file    = true
       }
       malware = {
-        mode = "prevent"
+        mode          = "prevent"
+        blocklist     = true
+        on_write_scan = true
+        notify_user   = true
       }
       memory_protection = {
         mode = "prevent"

@@ -24,57 +24,24 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *inferenceEndpointResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readData, diags := r.read(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
-}
-
-func (r *inferenceEndpointResource) read(ctx context.Context, data Data) (*Data, diag.Diagnostics) {
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+func readInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	endpoint, diags := elasticsearch.GetInferenceEndpoint(ctx, client, resourceID)
 	if diags.HasError() {
-		return nil, diags
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	endpoint, endpointDiags := elasticsearch.GetInferenceEndpoint(ctx, client, compID.ResourceID)
-	diags.Append(endpointDiags...)
-	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
 	if endpoint == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Inference endpoint "%s" not found`, compID.ResourceID))
-		return nil, nil
+		tflog.Warn(ctx, fmt.Sprintf(`Inference endpoint "%s" not found`, resourceID))
+		return state, false, diags
 	}
 
-	diags.Append(data.fromAPIModel(ctx, endpoint)...)
+	diags.Append(state.fromAPIModel(ctx, endpoint)...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
-	return &data, diags
+	return state, true, diags
 }

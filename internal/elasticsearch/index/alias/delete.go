@@ -20,33 +20,19 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel tfModel
+func deleteAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) diag.Diagnostics {
+	aliasName := resourceID
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
+	currentConfigs, diags := state.toAliasConfigs(ctx)
+	if diags.HasError() {
+		return diags
 	}
 
-	aliasName := stateModel.Name.ValueString()
-	client, diags := r.Client().GetElasticsearchClient(ctx, stateModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get current configuration from state
-	currentConfigs, diags := stateModel.toAliasConfigs(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Build remove actions for all indices
 	var actions []elasticsearch.AliasAction
 	for _, config := range currentConfigs {
 		actions = append(actions, elasticsearch.AliasAction{
@@ -56,8 +42,8 @@ func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		})
 	}
 
-	// Remove the alias from all indices
 	if len(actions) > 0 {
-		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
+		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 	}
+	return diags
 }

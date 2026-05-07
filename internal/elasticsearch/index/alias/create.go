@@ -20,45 +20,36 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel tfModel
+func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(plan.Validate(ctx)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	resp.Diagnostics.Append(planModel.Validate(ctx)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	aliasName := planModel.Name.ValueString()
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	aliasName := resourceID
 
 	// Set the ID using client.ID
 	id, sdkDiags := client.ID(ctx, aliasName)
 	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
+		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return plan, diags
 	}
-	planModel.ID = basetypes.NewStringValue(id.String())
+	plan.ID = basetypes.NewStringValue(id.String())
 
 	// Get alias configurations from the plan
-	configs, diags := planModel.toAliasConfigs(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	configs, configDiags := plan.toAliasConfigs(ctx)
+	diags.Append(configDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	// Convert to alias actions
@@ -79,23 +70,10 @@ func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alias atomically
-	resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	// Read back the alias to ensure state consistency, updating the current model
-	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, planModel)...)
+	return plan, diags
 }

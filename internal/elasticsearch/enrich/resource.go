@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -46,21 +45,25 @@ var (
 )
 
 type enrichPolicyResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[PolicyDataWithExecute]
 }
 
 func newEnrichPolicyResource() *enrichPolicyResource {
 	return &enrichPolicyResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "enrich_policy"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[PolicyDataWithExecute](
+			entitycore.ComponentElasticsearch,
+			"enrich_policy",
+			getSchemaFactory,
+			readEnrichPolicy,
+			deleteEnrichPolicy,
+			upsertEnrichPolicy,
+			upsertEnrichPolicy,
+		),
 	}
 }
 
 func NewEnrichPolicyResource() resource.Resource {
 	return newEnrichPolicyResource()
-}
-
-func (r *enrichPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetResourceSchema()
 }
 
 func (r *enrichPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -71,12 +74,11 @@ func (r *enrichPolicyResource) ImportState(ctx context.Context, req resource.Imp
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("execute"), types.BoolValue(true))...)
 }
 
-func GetResourceSchema() schema.Schema {
+// getSchemaFactory returns the schema for the enrich policy resource without the
+// elasticsearch_connection block; the envelope injects that block automatically.
+func getSchemaFactory() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.",
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -153,4 +155,9 @@ func GetResourceSchema() schema.Schema {
 			},
 		},
 	}
+}
+
+// GetResourceSchema is kept for backward compatibility.
+func GetResourceSchema() schema.Schema {
+	return getSchemaFactory()
 }
