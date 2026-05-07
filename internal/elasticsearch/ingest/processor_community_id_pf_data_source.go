@@ -47,7 +47,6 @@ type processorCommunityIDModel struct {
 
 func (m *processorCommunityIDModel) TypeName() string { return "community_id" }
 
-
 func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorCommunityIDBody{}
