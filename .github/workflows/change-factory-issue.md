@@ -1758,7 +1758,7 @@ When a block is present:
 - Adopt the block's `### Recommendation` as the spine of `proposal.md`.
 - Copy the block's `### Open questions` verbatim into `design.md` under a `## Open questions` section.
 - Treat the block's `### Approaches considered` as already-evaluated context. Do **not** re-explore alternative approaches the block has already evaluated.
-- **Edge case — explicit contradiction**: If the issue body content *outside* the block (for example, human-edited text added after the research ran) explicitly contradicts the block's recommendation, note the contradiction in `design.md` under a section explaining the deviation and use your judgment on how to proceed. This is a narrow exception to the exclusive-scope rule and should only apply when there is a clear, direct contradiction — not merely because outside-block content discusses the topic.
+- **Edge case (explicit contradiction)**: If the issue body content *outside* the block (for example, human-edited text added after the research ran) explicitly contradicts the block's recommendation, note the contradiction in `design.md` under a section explaining the deviation and use your judgment on how to proceed. This is a narrow exception to the exclusive-scope rule and should only apply when there is a clear, direct contradiction - not merely because outside-block content discusses the topic.
 
 You **must not** modify the implementation-research block. Do **not** emit `update-issue` operations that rewrite the block, add or remove the markers, or edit the text between them. This applies even if the block's content appears outdated or incomplete.
 
