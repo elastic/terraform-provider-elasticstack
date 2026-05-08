@@ -79,8 +79,9 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	switch v := res.Version.BuildDate.(type) {
 	case string:
 		buildDate = v
-	case int64:
-		buildDate = fmt.Sprintf("%d", v)
+	case float64:
+		// JSON numbers decode to float64; format as integer milliseconds string.
+		buildDate = fmt.Sprintf("%d", int64(v))
 	default:
 		buildDate = fmt.Sprintf("%v", v)
 	}

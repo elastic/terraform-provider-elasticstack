@@ -44,7 +44,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 			},
 			"tagline": schema.StringAttribute{
-				MarkdownDescription: "Elasticsearh tag line.",
+				MarkdownDescription: "Elasticsearch tag line.",
 				Computed:            true,
 			},
 			"version": schema.ListNestedAttribute{
@@ -77,11 +77,11 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Computed:            true,
 						},
 						"minimum_index_compatibility_version": schema.StringAttribute{
-							MarkdownDescription: "Minium index compatibility version.",
+							MarkdownDescription: "Minimum index compatibility version.",
 							Computed:            true,
 						},
 						"minimum_wire_compatibility_version": schema.StringAttribute{
-							MarkdownDescription: "Minium wire compatibility version.",
+							MarkdownDescription: "Minimum wire compatibility version.",
 							Computed:            true,
 						},
 						"number": schema.StringAttribute{

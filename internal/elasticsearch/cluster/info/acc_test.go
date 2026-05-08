@@ -60,6 +60,7 @@ func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_name"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
 					// id must equal cluster_uuid
 					resource.TestCheckResourceAttrPair(
 						"data.elasticstack_elasticsearch_info.test", "id",
@@ -113,8 +114,9 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.number", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version", semverRe),
-					// build_snapshot is a bool; Terraform encodes it as "true" or "false"
-					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", regexp.MustCompile(`^(true|false)$`)),
+					// build_snapshot is a bool; Terraform encodes it as "true" or "false".
+					// Standard CI runs against a release build, so this must be "false".
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", "false"),
 				),
 			},
 		},
@@ -184,6 +186,7 @@ func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure", "true"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.%"),
 				),
 			},
 		},
