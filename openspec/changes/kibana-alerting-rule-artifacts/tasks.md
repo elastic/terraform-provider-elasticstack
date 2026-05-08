@@ -17,9 +17,9 @@
 
 ## 3. Testing
 
-- [ ] 3.1 Add acceptance test(s) for `artifacts.dashboards`: create a rule with one or more dashboard IDs; assert state matches; update the list; assert round-trip.
-- [ ] 3.2 Add acceptance test for `artifacts.investigation_guide` with inline `content`: create rule with guide text; assert state stores the text; update text; assert change is applied.
-- [ ] 3.3 Add acceptance test for `artifacts.investigation_guide` with `content_path`: write a temp file; create rule; assert `checksum` is set; modify file; run `terraform plan`; assert a non-empty plan is produced; apply; assert `checksum` reflects the new file content.
-- [ ] 3.4 Add acceptance test for preserving artifacts on omit and clearing dashboards explicitly: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged); then add `artifacts` back with an explicit empty `dashboards` list to clear dashboards; assert state is consistent. Clearing `investigation_guide` is out of scope.
-- [ ] 3.5 Add unit tests for version gating (if a minimum version is confirmed) and for `content` vs `content_path` request body construction, mirroring existing unit test patterns in `models_flapping_test.go`.
-- [ ] 3.6 Add unit tests for the read-path mapping: blob → `content` when prior state used `content`; no overwrite of `content_path` when prior state used `content_path`.
+- [x] 3.1 Add acceptance test(s) for `artifacts.dashboards`: create a rule with one or more dashboard IDs; assert state matches; update the list; assert round-trip.
+- [x] 3.2 Add acceptance test for `artifacts.investigation_guide` with inline `content`: create rule with guide text; assert state stores the text; update text; assert change is applied.
+- [x] 3.3 Add acceptance test for `artifacts.investigation_guide` with `content_path`: write a temp file; create rule; assert `checksum` is set; modify file; run `terraform plan`; assert a non-empty plan is produced; apply; assert `checksum` reflects the new file content.
+- [x] 3.4 Add acceptance test for preserving artifacts on omit and clearing dashboards explicitly: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged); then add `artifacts` back with an explicit empty `dashboards` list to clear dashboards; assert state is consistent. Clearing `investigation_guide` is out of scope.
+- [x] 3.5 Add unit tests for version gating (if a minimum version is confirmed) and for `content` vs `content_path` request body construction, mirroring existing unit test patterns in `models_flapping_test.go`.
+- [x] 3.6 Add unit tests for the read-path mapping: blob → `content` when prior state used `content`; no overwrite of `content_path` when prior state used `content_path`.
