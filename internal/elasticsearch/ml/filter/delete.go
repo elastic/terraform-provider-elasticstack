@@ -21,47 +21,34 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *filterResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
+	var diags fwdiags.Diagnostics
 
-	var filterIDValue basetypes.StringValue
-	diags := req.State.GetAttribute(ctx, path.Root("filter_id"), &filterIDValue)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	filterID := resourceID
+	if filterID == "" {
+		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+		return diags
 	}
-
-	filterID := filterIDValue.ValueString()
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return diags
 	}
 
-	res, err := esClient.ML.DeleteFilter(filterID, esClient.ML.DeleteFilter.WithContext(ctx))
+	_, err = typedClient.Ml.DeleteFilter(filterID).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete ML filter", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML filter: %s", filterID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		diags.AddError("Failed to delete ML filter", fmt.Sprintf("Unable to delete ML filter: %s — %s", filterID, err.Error()))
+		return diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML filter: %s", filterID))
+	return diags
 }

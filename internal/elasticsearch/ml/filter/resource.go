@@ -21,75 +21,47 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &filterResource{}
-var _ resource.ResourceWithConfigure = &filterResource{}
-var _ resource.ResourceWithImportState = &filterResource{}
-
-func NewFilterResource() resource.Resource {
-	return &filterResource{}
-}
+var (
+	_ resource.Resource                = newFilterResource()
+	_ resource.ResourceWithConfigure   = newFilterResource()
+	_ resource.ResourceWithImportState = newFilterResource()
+)
 
 type filterResource struct {
-	client *clients.ApiClient
+	*entitycore.ElasticsearchResource[TFModel]
 }
 
-func (r *filterResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_filter"
-}
-
-func (r *filterResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
-}
-
-func (r *filterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req, resp)
-}
-
-func (r *filterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state TFModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+func newFilterResource() *filterResource {
+	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
+	return &filterResource{
+		ElasticsearchResource: entitycore.NewElasticsearchResource(
+			entitycore.ComponentElasticsearch,
+			"ml_filter",
+			getSchema,
+			readFilter,
+			deleteFilter,
+			createFilter,
+			updateFn,
+		),
 	}
-
-	found, diags := r.read(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *filterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.update(ctx, req, resp)
-}
-
-func (r *filterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	r.delete(ctx, req, resp)
-}
-
-func (r *filterResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.client == nil {
-		diags.AddError("Client not configured", "Provider client is not configured")
-		return false
-	}
-	return true
+func NewFilterResource() resource.Resource {
+	return newFilterResource()
 }
 
 func (r *filterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("filter_id"), compID.ResourceID)...)
 }

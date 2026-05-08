@@ -32,6 +32,12 @@ type TFModel struct {
 	Items                   types.Set    `tfsdk:"items"`
 }
 
+func (m TFModel) GetID() types.String { return m.ID }
+
+func (m TFModel) GetResourceID() types.String { return m.FilterID }
+
+func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+
 type CreateAPIModel struct {
 	Description string   `json:"description,omitempty"`
 	Items       []string `json:"items,omitempty"`

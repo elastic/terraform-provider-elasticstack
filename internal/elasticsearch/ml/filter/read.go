@@ -19,73 +19,67 @@ package filter
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *filterResource) read(ctx context.Context, model *TFModel) (bool, fwdiags.Diagnostics) {
+func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	if !r.resourceReady(&diags) {
-		return false, diags
+	filterID := resourceID
+	if filterID == "" {
+		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+		return state, false, diags
 	}
-
-	compID, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return false, diags
-	}
-	filterID := compID.ResourceId
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML filter: %s", filterID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return false, diags
+		return state, false, diags
 	}
 
-	res, err := esClient.ML.GetFilters(esClient.ML.GetFilters.WithFilterID(filterID), esClient.ML.GetFilters.WithContext(ctx))
+	res, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML filter", err.Error())
-		return false, diags
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return state, false, nil
+		}
+		diags.AddError("Failed to get ML filter", fmt.Sprintf("Unable to get ML filter: %s — %s", filterID, err.Error()))
+		return state, false, diags
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return false, nil
+	if len(res.Filters) == 0 {
+		return state, false, nil
 	}
 
-	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML filter: %s", filterID))
-	diags.Append(getDiags...)
+	out := state
+	api := mlFilterToAPIModel(&res.Filters[0])
+	diags.Append((&out).fromAPIModel(ctx, api)...)
 	if diags.HasError() {
-		return false, diags
-	}
-
-	var response struct {
-		Filters []APIModel `json:"filters"`
-		Count   int        `json:"count"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		diags.AddError("Failed to decode filter response", err.Error())
-		return false, diags
-	}
-
-	if len(response.Filters) == 0 {
-		return false, nil
-	}
-
-	diags.Append(model.fromAPIModel(ctx, &response.Filters[0])...)
-	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML filter: %s", filterID))
-	return true, diags
+	return out, true, diags
+}
+
+func mlFilterToAPIModel(f *types.MLFilter) *APIModel {
+	if f == nil {
+		return &APIModel{}
+	}
+	m := &APIModel{
+		FilterID: f.FilterId,
+		Items:    f.Items,
+	}
+	if f.Description != nil {
+		m.Description = *f.Description
+	}
+	return m
 }

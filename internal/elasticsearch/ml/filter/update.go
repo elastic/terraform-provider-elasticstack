@@ -21,17 +21,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
+// Update overrides the envelope's Update because building the update body
+// requires comparing the plan with the prior Terraform state and diffing items.
+func (r *filterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if r.Client() == nil {
+		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
 		return
 	}
 
@@ -53,52 +55,35 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML filter: %s", filterID))
 
-	esClient, err := r.client.GetESClient()
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, plan.GetElasticsearchConnection())
+	resp.Diagnostics.Append(connDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(state.ID.ValueString())
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read current filter to get current items for diffing.
-	res, err := esClient.ML.GetFilters(esClient.ML.GetFilters.WithFilterID(compID.ResourceId), esClient.ML.GetFilters.WithContext(ctx))
+	getRes, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			resp.Diagnostics.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
+			return
+		}
 		resp.Diagnostics.AddError("Failed to get current ML filter", err.Error())
 		return
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
+	if len(getRes.Filters) == 0 {
 		resp.Diagnostics.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
 		return
 	}
 
-	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML filter for update: %s", filterID))
-	resp.Diagnostics.Append(getDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var currentResponse struct {
-		Filters []APIModel `json:"filters"`
-		Count   int        `json:"count"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&currentResponse); err != nil {
-		resp.Diagnostics.AddError("Failed to decode filter response", err.Error())
-		return
-	}
-
-	if len(currentResponse.Filters) == 0 {
-		resp.Diagnostics.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
-		return
-	}
-
-	currentFilter := currentResponse.Filters[0]
+	currentFilter := mlFilterToAPIModel(&getRes.Filters[0])
 
 	currentItemSet := make(map[string]struct{})
 	for _, item := range currentFilter.Items {
@@ -149,21 +134,14 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	updateRes, err := esClient.ML.UpdateFilter(bytes.NewReader(body), filterID, esClient.ML.UpdateFilter.WithContext(ctx))
+	_, err = typedClient.Ml.UpdateFilter(filterID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to update ML filter", err.Error())
-		return
-	}
-	defer updateRes.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(updateRes, fmt.Sprintf("Unable to update ML filter: %s", filterID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Failed to update ML filter", fmt.Sprintf("Unable to update ML filter: %s — %s", filterID, err.Error()))
 		return
 	}
 
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resultModel, found, readDiags := readFilter(ctx, client, filterID, plan)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -172,7 +150,7 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML filter: %s", filterID))
 }

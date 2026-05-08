@@ -23,77 +23,56 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *filterResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
+func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
+
+	filterID := resourceID
+	if filterID == "" {
+		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+		return plan, diags
 	}
 
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	filterID := plan.FilterID.ValueString()
-
-	apiModel, diags := plan.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiModel, convDiags := plan.toAPICreateModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML filter: %s", filterID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return plan, diags
 	}
 
 	body, err := json.Marshal(apiModel)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal filter configuration", err.Error())
-		return
+		diags.AddError("Failed to marshal filter configuration", err.Error())
+		return plan, diags
 	}
 
-	res, err := esClient.ML.PutFilter(bytes.NewReader(body), filterID, esClient.ML.PutFilter.WithContext(ctx))
+	_, err = typedClient.Ml.PutFilter(filterID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ML filter", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML filter: %s", filterID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		diags.AddError("Failed to create ML filter", fmt.Sprintf("Unable to create ML filter: %s — %s", filterID, err.Error()))
+		return plan, diags
 	}
 
-	compID, sdkDiags := r.client.ID(ctx, filterID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	compID, idDiags := client.ID(ctx, filterID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read created filter", fmt.Sprintf("Filter with ID %s not found after creation", filterID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML filter: %s", filterID))
+	return plan, diags
 }
