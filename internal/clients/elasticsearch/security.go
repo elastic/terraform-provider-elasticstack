@@ -83,7 +83,7 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	res, err := typedClient.Security.GetUser().Username(username).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diag.FromErr(err)
@@ -112,7 +112,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 
 	_, err = typedClient.Security.DeleteUser(username).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Unable to delete a user", err.Error())
@@ -266,7 +266,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	res, err := typedClient.Security.GetRole().Name(rolename).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diag.FromErr(err)
@@ -293,7 +293,7 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 
 	_, err = typedClient.Security.DeleteRole(rolename).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags = append(diags, diag.Diagnostic{
@@ -386,7 +386,7 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 	res, err := typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, diags
 		}
 		diags.AddError("Unable to get role mapping", err.Error())
@@ -412,7 +412,7 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScop
 
 	_, err = typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Unable to delete role mapping", err.Error())
@@ -469,7 +469,7 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 	res, err := typedClient.Security.GetApiKey().Id(id).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, diags
 		}
 		diags.AddError("Unable to get an apikey", err.Error())
@@ -501,7 +501,7 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		Ids: []string{id},
 	}).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Unable to delete an apikey", err.Error())

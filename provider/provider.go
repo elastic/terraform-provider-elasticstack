@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -54,7 +53,6 @@ func New(version string) *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings": cluster.ResourceSettings(),
-			"elasticstack_elasticsearch_transform":        transform.ResourceTransform(),
 
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),
 			"elasticstack_kibana_security_role": kibana.ResourceRole(),

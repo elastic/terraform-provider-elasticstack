@@ -19,7 +19,6 @@ package validators
 
 import (
 	"fmt"
-	"regexp"
 	"time"
 )
 
@@ -49,9 +48,7 @@ func StringIsElasticDuration(i any, k string) (warnings []string, errors []error
 		return nil, []error{fmt.Errorf("%q contains an invalid duration: [empty]", k)}
 	}
 
-	r := regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)?(?:d|h|m|s|ms|micros|nanos)$`)
-
-	if !r.MatchString(v) {
+	if !elasticDurationRegexp.MatchString(v) {
 		return nil, []error{fmt.Errorf("%q contains an invalid duration: not conforming to Elastic time-units format", k)}
 	}
 

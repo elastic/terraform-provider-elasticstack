@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -102,7 +103,7 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Cluster.GetComponentTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			if acctest.IsNotFoundElasticsearchError(err) {
+			if esclient.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err
