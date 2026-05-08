@@ -2,11 +2,12 @@
 
 - [ ] 1.1 In `internal/elasticsearch/security/api_key/models.go`, in the
   `toAPICreateRequest()` method, wrap the `model.RoleDescriptors.Unmarshal(...)` block with
-  an `typeutils.IsKnown(model.RoleDescriptors) && !model.RoleDescriptors.IsNull()` guard
-  (matching the existing pattern used for `Metadata`). When the guard is false, leave
-  `roleDescriptors` as nil and skip `req.RoleDescriptors` assignment.
-- [ ] 1.2 Apply the same guard to `toUpdateAPIRequest()` in the same file, which has an
-  identical unconditional `Unmarshal` call.
+  a `typeutils.IsKnown(model.RoleDescriptors)` guard (matching the existing pattern used
+  for `Metadata`). When the guard is false, leave `roleDescriptors` as nil and skip
+  `req.RoleDescriptors` assignment.
+- [ ] 1.2 Apply the same `typeutils.IsKnown(model.RoleDescriptors)` guard to
+  `toUpdateAPIRequest()` in the same file, which has an identical unconditional
+  `Unmarshal` call.
 
 ## 2. Guard `validateRestrictionSupport` against Unknown/Null `role_descriptors`
 

@@ -12,8 +12,9 @@ without first checking whether the value is Known:
 `jsontypes.Normalized.Unmarshal` (the underlying method) explicitly returns an error when the
 value is Unknown, producing the user-visible "json string value is unknown" diagnostic.
 
-The workaround (`role_descriptors = jsonencode({})`) provides a known JSON string, bypassing
-both guards. This confirms the fix is purely a null/unknown guard — no API behaviour change.
+The workaround (`role_descriptors = jsonencode({})`) provides a known JSON string to both
+failing `Unmarshal` call sites. This confirms the fix is purely a null/unknown guard — no API
+behaviour change.
 
 ## Goals / Non-Goals
 
@@ -57,7 +58,7 @@ validation is a no-op. Returning early is safer than attempting to unmarshal an 
 
 **Choice:** A single-step test that creates an API key with only `name` set (no
 `role_descriptors`, no `expiration`), asserts the resource was created, and checks that
-`role_descriptors` is a valid non-error value in state.
+`id`, `key_id`, `api_key`, and `encoded` are set in state.
 
 **Rationale:** The regression is a create-time crash. A create-and-destroy test is sufficient
 to prove the fix. Update behaviour for this scenario is covered by the existing update-capable
