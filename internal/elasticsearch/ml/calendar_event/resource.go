@@ -27,9 +27,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = (*calendarEventResource)(nil)
-	_ resource.ResourceWithConfigure   = (*calendarEventResource)(nil)
-	_ resource.ResourceWithImportState = (*calendarEventResource)(nil)
+	_ resource.Resource                   = (*calendarEventResource)(nil)
+	_ resource.ResourceWithConfigure      = (*calendarEventResource)(nil)
+	_ resource.ResourceWithImportState    = (*calendarEventResource)(nil)
+	_ resource.ResourceWithValidateConfig = (*calendarEventResource)(nil)
 )
 
 type calendarEventResource struct {

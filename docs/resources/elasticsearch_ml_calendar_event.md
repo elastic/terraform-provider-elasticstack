@@ -17,7 +17,7 @@ Manages scheduled events for a Machine Learning calendar. See the [ML Calendar E
 
 ### Required
 
-- `calendar_id` (String) The identifier for the calendar that owns the event.
+- `calendar_id` (String) The identifier for the calendar that owns the event. Must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.
 - `description` (String) A description of the scheduled event.
 - `end_time` (String) The end time of the scheduled event in RFC 3339 format.
 - `start_time` (String) The start time of the scheduled event in RFC 3339 format.

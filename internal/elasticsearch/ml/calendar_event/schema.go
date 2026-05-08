@@ -19,6 +19,7 @@ package calendar_event
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -41,13 +42,19 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"calendar_id": schema.StringAttribute{
-				MarkdownDescription: "The identifier for the calendar that owns the event.",
-				Required:            true,
+				MarkdownDescription: "The identifier for the calendar that owns the event. Must contain lowercase alphanumeric characters " +
+					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`),
+						"must contain lowercase alphanumeric characters, hyphens, and underscores, "+
+							"and must start and end with alphanumeric characters",
+					),
 				},
 			},
 			"description": schema.StringAttribute{
