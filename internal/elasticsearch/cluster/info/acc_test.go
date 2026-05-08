@@ -15,9 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster_test
+package info_test
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccDataSourceClusterInfo(t *testing.T) {
@@ -58,6 +60,7 @@ func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_name"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
 					// id must equal cluster_uuid
 					resource.TestCheckResourceAttrPair(
 						"data.elasticstack_elasticsearch_info.test", "id",
@@ -111,7 +114,8 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.number", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version", semverRe),
-					// build_snapshot is a bool; Terraform encodes it as "true" or "false"
+					// build_snapshot is a bool; Terraform encodes it as "true" or "false".
+					// Use a regex match so the test is resilient to both release and snapshot builds.
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", regexp.MustCompile(`^(true|false)$`)),
 				),
 			},
@@ -160,7 +164,7 @@ func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 // provided with endpoints and insecure = true.  The test also confirms that
 // the connection block attributes are reflected back in the state.
 func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
-	endpoint := clusterInfoPrimaryESEndpoint()
+	endpoint := primaryESEndpoint()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -182,6 +186,7 @@ func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure", "true"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.%"),
 				),
 			},
 		},
@@ -204,9 +209,9 @@ func TestAccDataSourceClusterInfo_withoutExplicitConnection(t *testing.T) {
 }
 
 func TestAccDataSourceClusterInfo_withBasicAuthHeadersAndMultiEndpoints(t *testing.T) {
-	endpoints := clusterInfoConnectionEndpoints()
+	endpoints := connectionEndpoints()
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { preCheckClusterInfoESBasicAuth(t) },
+		PreCheck: func() { preCheckESBasicAuth(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -228,16 +233,16 @@ func TestAccDataSourceClusterInfo_withBasicAuthHeadersAndMultiEndpoints(t *testi
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.%", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTerraformTest", "basic-auth"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTrace", "cluster-info"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure", "false"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure"),
 				),
 			},
 		},
@@ -245,7 +250,7 @@ func TestAccDataSourceClusterInfo_withBasicAuthHeadersAndMultiEndpoints(t *testi
 }
 
 func TestAccDataSourceClusterInfo_withAPIKey(t *testing.T) {
-	endpoint := clusterInfoPrimaryESEndpoint()
+	endpoint := primaryESEndpoint()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -258,9 +263,9 @@ func TestAccDataSourceClusterInfo_withAPIKey(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 				),
@@ -270,12 +275,12 @@ func TestAccDataSourceClusterInfo_withAPIKey(t *testing.T) {
 }
 
 func TestAccDataSourceClusterInfo_withBearerToken(t *testing.T) {
-	preCheckClusterInfoESBasicAuth(t)
+	preCheckESBasicAuth(t)
 
-	endpoint := clusterInfoPrimaryESEndpoint()
+	endpoint := primaryESEndpoint()
 	bearerToken := acctest.CreateESAccessToken(t)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { preCheckClusterInfoESBasicAuth(t) },
+		PreCheck: func() { preCheckESBasicAuth(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -288,9 +293,9 @@ func TestAccDataSourceClusterInfo_withBearerToken(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", bearerToken),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
 				),
 			},
 		},
@@ -298,7 +303,7 @@ func TestAccDataSourceClusterInfo_withBearerToken(t *testing.T) {
 }
 
 func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
-	endpoint := clusterInfoPrimaryESEndpoint()
+	endpoint := primaryESEndpoint()
 	tlsMaterial := acctest.CreateTLSMaterial(t, "cluster-info-test")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -317,9 +322,9 @@ func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data", tlsMaterial.CAPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data", tlsMaterial.CertPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data", tlsMaterial.KeyPEM),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file"),
 				),
 			},
 			{
@@ -336,9 +341,9 @@ func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file", tlsMaterial.CAFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file", tlsMaterial.CertFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file", tlsMaterial.KeyFile),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data"),
 				),
 			},
 		},
@@ -352,12 +357,9 @@ func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
 // UUID format (8-4-4-4-12 hex) or as a URL-safe base64-encoded identifier
 // (≥20 URL-safe base64 chars).  Both variants are accepted by the regex.
 func TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats(t *testing.T) {
-	// standardUUIDPattern matches the canonical hyphenated 8-4-4-4-12 hex UUID.
 	const standardUUIDPattern = `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`
-	// base64UUIDPattern matches Elasticsearch's compact URL-safe base64 cluster ID (≥20 chars).
 	const base64UUIDPattern = `[A-Za-z0-9_-]{20,}`
 	uuidRe := regexp.MustCompile(`^(` + standardUUIDPattern + `|` + base64UUIDPattern + `)$`)
-	// cluster_name and node name must be at least one non-whitespace character.
 	nonEmptyRe := regexp.MustCompile(`\S`)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -369,7 +371,6 @@ func TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats(t *testing.T) {
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "cluster_uuid", uuidRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "cluster_name", nonEmptyRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "name", nonEmptyRe),
-					// id must still equal cluster_uuid (regression guard).
 					resource.TestCheckResourceAttrPair(
 						"data.elasticstack_elasticsearch_info.test", "id",
 						"data.elasticstack_elasticsearch_info.test", "cluster_uuid",
@@ -381,9 +382,7 @@ func TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats(t *testing.T) {
 }
 
 // TestAccDataSourceClusterInfo_versionBuildFormats adds format-level checks
-// for the version sub-fields that were previously only asserted as "set":
-// build_hash (hex git ref), build_date (date-prefixed string), build_flavor,
-// build_type, and lucene_version (semver).
+// for the version sub-fields that were previously only asserted as "set".
 // Note: build_date is stored via Go's time.Time.String() which produces the
 // format "YYYY-MM-DD HH:MM:SS.NNNNNNNNN +0000 UTC" rather than strict ISO-8601.
 func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
@@ -415,9 +414,24 @@ func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// clusterInfoPrimaryESEndpoint returns the first endpoint from the
-// ELASTICSEARCH_ENDPOINTS env var, falling back to http://localhost:9200.
-func clusterInfoPrimaryESEndpoint() string {
+// checkAttrAbsent asserts that the given attribute is either absent from state
+// or present with an empty string value. PF blocks only write attributes that
+// were explicitly configured, so unset optional fields will not appear in state.
+func checkAttrAbsent(resourceName, attrName string) resource.TestCheckFunc { //nolint:unparam // resourceName is a parameter for API flexibility; all callers currently use the same resource
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+		value, ok := rs.Primary.Attributes[attrName]
+		if ok && value != "" {
+			return fmt.Errorf("expected %s to be absent or empty, got %q", attrName, value)
+		}
+		return nil
+	}
+}
+
+func primaryESEndpoint() string {
 	for ep := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
 		ep = strings.TrimSpace(ep)
 		if ep != "" {
@@ -427,7 +441,7 @@ func clusterInfoPrimaryESEndpoint() string {
 	return "http://localhost:9200"
 }
 
-func clusterInfoConnectionEndpoints() []string {
+func connectionEndpoints() []string {
 	endpoints := make([]string, 0, 2)
 	for endpoint := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
 		endpoint = strings.TrimSpace(endpoint)
@@ -435,18 +449,16 @@ func clusterInfoConnectionEndpoints() []string {
 			endpoints = append(endpoints, endpoint)
 		}
 	}
-
 	if len(endpoints) == 0 {
 		endpoints = append(endpoints, "http://localhost:9200")
 	}
 	if len(endpoints) == 1 {
 		endpoints = append(endpoints, endpoints[0])
 	}
-
 	return endpoints[:2]
 }
 
-func preCheckClusterInfoESBasicAuth(t *testing.T) {
+func preCheckESBasicAuth(t *testing.T) {
 	t.Helper()
 	acctest.PreCheck(t)
 	if os.Getenv("ELASTICSEARCH_USERNAME") == "" || os.Getenv("ELASTICSEARCH_PASSWORD") == "" {
