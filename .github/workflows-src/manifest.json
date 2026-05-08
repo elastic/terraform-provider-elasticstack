@@ -55,6 +55,10 @@
     {
       "template": ".github/workflows-src/change-factory-issue/workflow.md.tmpl",
       "output": ".github/workflows/change-factory-issue.md"
+    },
+    {
+      "template": ".github/workflows-src/research-factory-issue/workflow.md.tmpl",
+      "output": ".github/workflows/research-factory-issue.md"
     }
   ]
 }

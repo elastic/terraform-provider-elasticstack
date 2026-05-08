@@ -11,20 +11,20 @@
 
 ## 3. Workflow source skeleton
 
-- [ ] 3.1 Create directory `.github/workflows-src/research-factory-issue/` with subdirectories `scripts/` and a `workflow.md.tmpl` placeholder.
-- [ ] 3.2 Create `intake-constants.js` in the new directory mirroring change-factory's structure (e.g. `FACTORY_LABEL = 'research-factory'`, `ISSUE_BRANCH_PREFIX` is unused but include a placeholder comment explaining its omission since this workflow does not branch).
-- [ ] 3.3 Add the new workflow to `.github/workflows-src/manifest.json` with template path and output path `.github/workflows/research-factory-issue.md`.
+- [x] 3.1 Create directory `.github/workflows-src/research-factory-issue/` with subdirectories `scripts/` and a `workflow.md.tmpl` placeholder.
+- [x] 3.2 Create `intake-constants.js` in the new directory mirroring change-factory's structure (e.g. `FACTORY_LABEL = 'research-factory'`, `ISSUE_BRANCH_PREFIX` is unused but include a placeholder comment explaining its omission since this workflow does not branch).
+- [x] 3.3 Add the new workflow to `.github/workflows-src/manifest.json` with template path and output path `.github/workflows/research-factory-issue.md`.
 
 ## 4. Workflow inline scripts
 
-- [ ] 4.1 Add `scripts/qualify_trigger.inline.js` mirroring change-factory's qualify trigger (using `FACTORY_LABEL = 'research-factory'`).
-- [ ] 4.2 Add `scripts/validate_dispatch_inputs.inline.js` mirroring code-factory's dispatch validator (parsing `issue_number` and optional `source_workflow`).
-- [ ] 4.3 Add `scripts/fetch_live_issue.inline.js` mirroring code-factory's fetch-live-issue script.
-- [ ] 4.4 Add `scripts/check_actor_trust.inline.js` mirroring code-factory's actor trust script (issue-event mode only).
-- [ ] 4.5 Add `scripts/fetch_issue_comments.inline.js` that calls the new `factoryFetchIssueComments` shared helper and emits the captured comments as a serialized GitHub Actions output (using the heredoc/EOF pattern already used by code-factory's `normalize_context` step for multi-line outputs).
-- [ ] 4.6 Add `scripts/remove_trigger_label.inline.js` reusing the shared `removeTriggerLabel` helper with `labelName: 'research-factory'`.
-- [ ] 4.7 Add `scripts/finalize_gate.inline.js` adapted from change-factory's finalize gate (no duplicate-PR concept; gate covers event eligibility, actor trust, and concurrency).
-- [ ] 4.8 Add unit tests for any new inline scripts that contain non-trivial logic (e.g. `fetch_issue_comments.inline.js`) under `.github/workflows-src/lib/`.
+- [x] 4.1 Add `scripts/qualify_trigger.inline.js` mirroring change-factory's qualify trigger (using `FACTORY_LABEL = 'research-factory'`).
+- [x] 4.2 Add `scripts/validate_dispatch_inputs.inline.js` mirroring code-factory's dispatch validator (parsing `issue_number` and optional `source_workflow`).
+- [x] 4.3 Add `scripts/fetch_live_issue.inline.js` mirroring code-factory's fetch-live-issue script.
+- [x] 4.4 Add `scripts/check_actor_trust.inline.js` mirroring code-factory's actor trust script (issue-event mode only).
+- [x] 4.5 Add `scripts/fetch_issue_comments.inline.js` that calls the new `factoryFetchIssueComments` shared helper and emits the captured comments as a serialized GitHub Actions output (using the heredoc/EOF pattern already used by code-factory's `normalize_context` step for multi-line outputs).
+- [x] 4.6 Add `scripts/remove_trigger_label.inline.js` reusing the shared `removeTriggerLabel` helper with `labelName: 'research-factory'`.
+- [x] 4.7 Add `scripts/finalize_gate.inline.js` adapted from change-factory's finalize gate (no duplicate-PR concept; gate covers event eligibility, actor trust, and concurrency).
+- [x] 4.8 Add unit tests for any new inline scripts that contain non-trivial logic (e.g. `fetch_issue_comments.inline.js`) under `.github/workflows-src/lib/`.
 
 ## 5. Workflow template (`workflow.md.tmpl`)
 
