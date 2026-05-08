@@ -23,19 +23,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/stretchr/testify/require"
 )
-
-func testResourceSchema(t *testing.T) fwschema.Schema {
-	t.Helper()
-	ctx := context.Background()
-	var resp resource.SchemaResponse
-	newSnapshotRepositoryResource().Schema(ctx, resource.SchemaRequest{}, &resp)
-	return resp.Schema
-}
 
 func runUpgrade(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
 	t.Helper()
@@ -53,26 +43,6 @@ func runUpgrade(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse
 	resp := &resource.UpgradeStateResponse{}
 	up.StateUpgrader(context.Background(), req, resp)
 	return resp
-}
-
-func requireUpgradedStateDecodes(t *testing.T, resp *resource.UpgradeStateResponse) {
-	t.Helper()
-	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
-	require.NotNil(t, resp.DynamicValue)
-	require.NotNil(t, resp.DynamicValue.JSON)
-
-	ctx := context.Background()
-	sch := testResourceSchema(t)
-	tfTyp := sch.Type().TerraformType(ctx)
-	raw, err := resp.DynamicValue.Unmarshal(tfTyp)
-	require.NoError(t, err)
-
-	state := tfsdk.State{Schema: sch, Raw: raw}
-	var model Data
-	// State decode for blocks requires using the schema.
-	// We just verify the raw JSON shape here instead.
-	_ = state
-	_ = model
 }
 
 func baseSnapshotRepositoryState() map[string]any {
@@ -133,7 +103,7 @@ func TestSnapshotRepositoryUpgradeState_url_singleton_list_to_object(t *testing.
 	u, ok := got["url"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "file:///tmp", u["url"])
-	require.Equal(t, float64(5), u["http_max_retries"])
+	require.InEpsilon(t, 5.0, u["http_max_retries"], 0.0001)
 }
 
 func TestSnapshotRepositoryUpgradeState_multiple_blocks_error(t *testing.T) {

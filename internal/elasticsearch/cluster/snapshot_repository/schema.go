@@ -216,10 +216,11 @@ func azureBlock() schema.Block {
 			Computed:            true,
 		},
 		"location_mode": schema.StringAttribute{
-			MarkdownDescription: "Location mode for the Azure repository. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
-			Optional:            true,
-			Computed:            true,
-			Default:             stringdefault.StaticString("primary_only"),
+			MarkdownDescription: "Location mode for the Azure repository. `primary_only` or `secondary_only`. " +
+				"See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
+			Optional: true,
+			Computed: true,
+			Default:  stringdefault.StaticString("primary_only"),
 			Validators: []validator.String{
 				stringvalidator.OneOf("primary_only", "secondary_only"),
 			},

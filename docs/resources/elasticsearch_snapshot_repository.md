@@ -71,7 +71,7 @@ Optional:
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) Azure named client to use.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
-- `location_mode` (String) Location mode for the Azure repository. Primary_only or secondary_only.
+- `location_mode` (String) Location mode for the Azure repository. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `readonly` (Boolean) If true, the repository is read-only.

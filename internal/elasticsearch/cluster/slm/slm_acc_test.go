@@ -19,6 +19,7 @@ package slm_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"strings"
 	"testing"
@@ -30,6 +31,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceSLMMigration/main.tf
+var slmMigrationConfig string
 
 func TestAccResourceSLM(t *testing.T) {
 	// generate a random policy name
@@ -247,7 +251,7 @@ func TestAccResourceSLMMigration(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory(""),
+				Config: slmMigrationConfig,
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
 				},

@@ -19,6 +19,7 @@ package snapshot_repository_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -29,6 +30,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceSnapRepoMigration/main.tf
+var snapRepoMigrationConfig string
 
 func TestAccResourceSnapRepoFs(t *testing.T) {
 	// generate a random policy name
@@ -225,7 +229,7 @@ func TestAccResourceSnapRepoMigration(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory(""),
+				Config: snapRepoMigrationConfig,
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
 				},
