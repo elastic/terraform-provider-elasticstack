@@ -36,7 +36,7 @@ import (
 func NewDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[dataSourceModel](
 		entitycore.ComponentElasticsearch,
-		"elasticsearch_info",
+		"info",
 		getDataSourceSchema,
 		readDataSource,
 	)
