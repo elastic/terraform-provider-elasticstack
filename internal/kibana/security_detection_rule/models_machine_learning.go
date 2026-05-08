@@ -30,7 +30,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type MachineLearningRuleProcessor struct{}
+type MachineLearningRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIMachineLearningRule]
+}
+
+func newMachineLearningRuleProcessor() MachineLearningRuleProcessor {
+	return MachineLearningRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIMachineLearningRule]{
+			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
+				return d.updateFromMachineLearningRule(ctx, v)
+			},
+			idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (m MachineLearningRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "machine_learning"
@@ -50,22 +65,6 @@ func (m MachineLearningRuleProcessor) ToUpdateProps(
 	d Data,
 ) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toMachineLearningRuleUpdateProps(ctx, client)
-}
-
-func (m MachineLearningRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIMachineLearningRule](rule)
-}
-
-func (m MachineLearningRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIMachineLearningRule](rule, func(v *kbapi.SecurityDetectionsAPIMachineLearningRule) diag.Diagnostics {
-		return d.updateFromMachineLearningRule(ctx, v)
-	})
-}
-
-func (m MachineLearningRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPIMachineLearningRule](response, func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
-		return v.Id.String()
-	})
 }
 
 func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

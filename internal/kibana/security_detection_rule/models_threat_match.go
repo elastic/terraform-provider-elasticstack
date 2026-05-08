@@ -30,7 +30,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type ThreatMatchRuleProcessor struct{}
+type ThreatMatchRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIThreatMatchRule]
+}
+
+func newThreatMatchRuleProcessor() ThreatMatchRuleProcessor {
+	return ThreatMatchRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThreatMatchRule]{
+			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
+				return d.updateFromThreatMatchRule(ctx, v)
+			},
+			idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (t ThreatMatchRuleProcessor) HandlesRuleType(ruleType string) bool {
 	return ruleType == "threat_match"
@@ -42,22 +57,6 @@ func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clie
 
 func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toThreatMatchRuleUpdateProps(ctx, client)
-}
-
-func (t ThreatMatchRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIThreatMatchRule](rule)
-}
-
-func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIThreatMatchRule](rule, func(v *kbapi.SecurityDetectionsAPIThreatMatchRule) diag.Diagnostics {
-		return d.updateFromThreatMatchRule(ctx, v)
-	})
-}
-
-func (t ThreatMatchRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPIThreatMatchRule](response, func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
-		return v.Id.String()
-	})
 }
 
 func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

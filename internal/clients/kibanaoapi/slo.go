@@ -291,12 +291,3 @@ func TransformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
 
 	return nil
 }
-
-// TagsToPtr returns nil for a nil slice or a pointer to the slice otherwise,
-// allowing the API to distinguish "not set" from "explicitly empty".
-func TagsToPtr(tags []string) *[]string {
-	if tags == nil {
-		return nil
-	}
-	return &tags
-}
