@@ -39,6 +39,7 @@ type AlertingRule struct {
 	ExecutionStatus AlertingRuleExecutionStatus
 	AlertDelay      *float32
 	Flapping        *AlertingRuleFlapping
+	Artifacts       *AlertingRuleArtifacts
 }
 
 // AlertingRuleFlapping is rule-level flapping detection settings (Kibana 8.16+).
@@ -46,6 +47,22 @@ type AlertingRuleFlapping struct {
 	LookBackWindow        int64
 	StatusChangeThreshold int64
 	Enabled               *bool
+}
+
+// AlertingRuleArtifacts represents the artifacts attached to an alerting rule.
+type AlertingRuleArtifacts struct {
+	Dashboards         []AlertingRuleArtifactDashboard
+	InvestigationGuide *AlertingRuleArtifactInvestigationGuide
+}
+
+// AlertingRuleArtifactDashboard is a reference to a Kibana dashboard.
+type AlertingRuleArtifactDashboard struct {
+	ID string
+}
+
+// AlertingRuleArtifactInvestigationGuide is the investigation guide content.
+type AlertingRuleArtifactInvestigationGuide struct {
+	Blob string
 }
 
 type AlertingRuleSchedule struct {
