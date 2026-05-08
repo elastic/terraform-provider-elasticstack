@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster_test
+package slm_test
 
 import (
 	"context"
@@ -231,4 +231,51 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 		}
 		return nil
 	}
+}
+
+func TestAccResourceSLMMigration(t *testing.T) {
+	name := "slm-migration-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_lifecycle.test_migration"
+
+	config := fmt.Sprintf(`
+resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
+  name = "%s-repo"
+  fs {
+    location = "/tmp"
+  }
+}
+
+resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_migration" {
+  name     = "%s"
+  schedule = "0 30 1 * * ?"
+  repository = elasticstack_elasticsearch_snapshot_repository.repo.name
+}
+`, name, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "schedule", "0 30 1 * * ?"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "schedule", "0 30 1 * * ?"),
+				),
+			},
+		},
+	})
 }

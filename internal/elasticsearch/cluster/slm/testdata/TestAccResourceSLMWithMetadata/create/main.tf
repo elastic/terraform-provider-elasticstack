@@ -10,24 +10,21 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   name = "${var.name}-repo"
 
-  fs = {
+  fs {
     location                  = "/tmp/snapshots"
     compress                  = true
     max_restore_bytes_per_sec = "20mb"
   }
 }
 
-resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
+resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm_metadata" {
   name = var.name
 
   schedule      = "0 30 1 * * ?"
   snapshot_name = "<daily-snap-{now/d}>"
   repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
 
-  expand_wildcards     = "closed,hidden"
-  indices              = ["data-*"]
-  feature_states       = ["kibana"]
-  partial              = true
+  indices              = ["data-*", "abc"]
   ignore_unavailable   = false
   include_global_state = false
 

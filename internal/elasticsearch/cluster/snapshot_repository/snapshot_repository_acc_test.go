@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster_test
+package snapshot_repository_test
 
 import (
 	"context"
@@ -209,4 +209,45 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 		}
 		return nil
 	}
+}
+
+func TestAccResourceSnapRepoMigration(t *testing.T) {
+	name := "repo-migration-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_migration"
+
+	config := fmt.Sprintf(`
+resource "elasticstack_elasticsearch_snapshot_repository" "test_migration" {
+  name = "%s"
+  fs {
+    location = "/tmp"
+  }
+}
+`, name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "fs.location", "/tmp"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "fs.location", "/tmp"),
+				),
+			},
+		},
+	})
 }
