@@ -40,7 +40,7 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 
 ## Open Questions
 
-1. **Minimum Kibana version for `artifacts` on alerting rules**: Not confirmed from release notes. Implementation MUST check whether the field is rejected on older stack versions and add an appropriate version gate (e.g. `>= 8.16.0` or `>= 9.x`) with a diagnostic if confirmed. If no minimum version can be established, rely on the API to reject the request on unsupported versions.
+1. ~~**Minimum Kibana version for `artifacts` on alerting rules**:~~ **Resolved**: The minimum Kibana version is **8.19.0** (8.x series) and **9.1.0** (9.x series). Confirmed from [elastic/kibana#216292](https://github.com/elastic/kibana/pull/216292) (dashboards) and [elastic/kibana#216377](https://github.com/elastic/kibana/pull/216377) (investigation guide), which were backported to `8.19` and labelled for `9.1.0`. The provider SHALL enforce a version gate mirroring the `alert_delay`/`flapping` pattern (REQ-051).
 2. **Blob normalisation**: Does Kibana modify the investigation guide blob (e.g. trim whitespace, normalise line endings) before storing? If so, read-path comparison for `content` may produce spurious drift. Investigate during acceptance testing.
 
 ## Migration / State

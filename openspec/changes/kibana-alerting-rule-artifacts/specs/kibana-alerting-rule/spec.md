@@ -159,3 +159,13 @@ If the minimum Kibana version for `artifacts` is confirmed to be above the CI de
 - GIVEN a rule applied with `artifacts.investigation_guide.content_path` pointing to a file
 - WHEN the file's content is modified and `terraform plan` runs
 - THEN the plan SHALL show a diff for the `artifacts` block
+
+### Requirement: Compatibility — `artifacts` (REQ-051)
+
+When the stack version is strictly below **8.19.0** (for the 8.x series) or strictly below **9.1.0** (for the 9.x series and above), if the `artifacts` block is present with known attribute values, create and update SHALL fail with a diagnostic that states `artifacts` is only supported for Kibana **8.19** or higher, or Elastic Stack **9.1** or higher.
+
+#### Scenario: Artifacts on old stack
+
+- GIVEN server version &lt; 8.19.0 (8.x) or &lt; 9.1.0 (9.x+) and a configured `artifacts` block with known values
+- WHEN create or update runs
+- THEN the provider SHALL return an `artifacts` unsupported error

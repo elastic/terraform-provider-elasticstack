@@ -35,7 +35,7 @@ Add an optional single nested block at rule level:
 
 ### Version rules
 
-The minimum Kibana version that supports `artifacts` on alerting rules has not been independently confirmed from release notes. The kbapi generated client already models the field, and it is present in the current API. An exact minimum version MUST be determined during implementation; if no server-side version check can be confirmed, the provider SHOULD omit the version gate and rely on the Kibana API to reject the field on incompatible versions. This is an open question recorded in `design.md`.
+The minimum Kibana version for `artifacts` on alerting rules is **8.19.0** (8.x series) and **9.1.0** (9.x series). This was confirmed from the Kibana source: the `artifacts` schema was introduced in [elastic/kibana#216292](https://github.com/elastic/kibana/pull/216292) (dashboards) and [elastic/kibana#216377](https://github.com/elastic/kibana/pull/216377) (investigation guide), both backported to the `8.19` branch and labelled for `9.1.0`. The provider SHALL enforce a version gate so that `artifacts` is rejected on older stacks, mirroring the pattern used for `alert_delay` and `flapping`.
 
 ### Acceptance tests
 
@@ -50,7 +50,7 @@ The minimum Kibana version that supports `artifacts` on alerting rules has not b
 
 ### Modified Capabilities
 
-- `kibana-alerting-rule`: Add optional `artifacts` block (dashboards list + investigation guide), including validation rules (mutually exclusive `content`/`content_path`), create/update/read mapping, checksum drift-detection for file-based content, and acceptance-test expectations (REQ-045–REQ-050).
+- `kibana-alerting-rule`: Add optional `artifacts` block (dashboards list + investigation guide), including validation rules (mutually exclusive `content`/`content_path`), create/update/read mapping, checksum drift-detection for file-based content, version-gated compatibility, and acceptance-test expectations (REQ-045–REQ-051).
 
 ## Impact
 
