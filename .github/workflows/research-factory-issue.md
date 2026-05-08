@@ -1974,6 +1974,30 @@ on:
           core.setOutput('gate_reason', result.gate_reason);
           core.info(`Gate reason: ${result.gate_reason}`);
           
+    - name: Write issue context to files
+      id: write_context_files
+      if: >
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.normalize_context.outputs.issue_number != ''
+      env:
+        ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
+        ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
+      run: |
+        mkdir -p /tmp/research-factory-context
+        printf '%s' "${ISSUE_BODY}" > /tmp/research-factory-context/issue_body.md
+        printf '%s' "${ISSUE_COMMENTS}" > /tmp/research-factory-context/issue_comments.md
+      shell: bash
+    - name: Upload issue context artifact
+      if: >
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.normalize_context.outputs.issue_number != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: research-factory-issue-context
+        path: /tmp/research-factory-context/
+        if-no-files-found: error
 concurrency:
   group: research-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
@@ -1982,6 +2006,11 @@ if: >-
   needs.pre_activation.outputs.actor_trusted == 'true' &&
   needs.pre_activation.outputs.issue_number != ''
 steps:
+  - name: Download issue context artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: research-factory-issue-context
+      path: /tmp/agent
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -2007,8 +2036,6 @@ jobs:
       intake_mode: ${{ steps.normalize_context.outputs.intake_mode }}
       issue_number: ${{ steps.normalize_context.outputs.issue_number }}
       issue_title: ${{ steps.normalize_context.outputs.issue_title }}
-      issue_body: ${{ steps.normalize_context.outputs.issue_body }}
-      issue_comments: ${{ steps.normalize_context.outputs.issue_comments }}
       event_eligible: ${{ steps.normalize_context.outputs.event_eligible }}
       event_eligible_reason: ${{ steps.normalize_context.outputs.event_eligible_reason }}
       actor_trusted: ${{ steps.normalize_context.outputs.actor_trusted }}
@@ -2049,17 +2076,11 @@ only durable output is a single update to the issue body via the `update_issue` 
 - **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
 - **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body**:
+- **Issue body**: see `/tmp/agent/issue_body.md`
+- **Comment history**: see `/tmp/agent/issue_comments.md`
 
-  ```markdown
-  ${{ needs.pre_activation.outputs.issue_body }}
-  ```
-
-- **Comment history**:
-
-  ```markdown
-  ${{ needs.pre_activation.outputs.issue_comments }}
-  ```
+Read both files before proceeding. They may contain markdown, code fences, and other content that
+cannot be safely embedded inline in a prompt.
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`
