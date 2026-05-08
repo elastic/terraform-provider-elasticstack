@@ -264,12 +264,12 @@ func TestAccResourceClusterSettingsFromSDK(t *testing.T) {
 				// Under the new PF schema (version 1) the same logical state
 				// must produce no plan diff thanks to the v0->v1 state upgrader.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   fromSDKCreateConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("from-sdk"),
 				PlanOnly:                 true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   fromSDKCreateConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("from-sdk"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.setting.#", "3"),
