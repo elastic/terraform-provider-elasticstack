@@ -57,8 +57,11 @@ func templateAttrTypes() map[string]attr.Type {
 
 // getSchema returns the Plugin Framework schema for elasticstack_elasticsearch_component_template.
 // The elasticsearch_connection block is NOT included here; the envelope injects it.
+const schemaVersion int64 = 1
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
+		Version: schemaVersion,
 		MarkdownDescription: "Creates or updates a component template. Component templates are building blocks for constructing index templates " +
 			"that specify index mappings, settings, and aliases. See the " +
 			"[component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) " +
