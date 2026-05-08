@@ -6,14 +6,14 @@
 
 ## 2. Implementation
 
-- [ ] 2.1 Extend `internal/models.AlertingRule` with an `Artifacts *AlertingRuleArtifacts` field; add `AlertingRuleArtifacts`, `AlertingRuleArtifactDashboard`, and `AlertingRuleArtifactInvestigationGuide` types matching the API shape.
-- [ ] 2.2 Map `artifacts` in `internal/clients/kibanaoapi/alerting_rule.go`: include `artifacts` in `buildCreateRequestBody` and `buildUpdateRequestBody` when configured (omit the key when not configured); unmarshal `artifacts` from intermediate struct in `ConvertResponseToModel`.
-- [ ] 2.3 Add `artifacts` single nested block to `internal/kibana/alertingrule/schema.go`, containing a `dashboards` list nested block (with required `id` string) and an `investigation_guide` single nested block (with optional `content`, optional `content_path`, and computed `checksum`). Enforce mutual exclusion of `content` and `content_path` via `objectvalidator.ExactlyOneOf` or equivalent.
-- [ ] 2.4 Add `artifactsModel`, `dashboardModel`, and `investigationGuideModel` to `internal/kibana/alertingrule/models.go`; wire `alertingRuleModel` with `Artifacts types.Object`; implement `populateArtifactsFromAPI` and the `artifacts` portion of `toAPIModel`.
-- [ ] 2.5 Implement `ModifyPlan` (or extend the existing one if present) to read the file at `content_path` during plan, compute SHA-256, and mark `checksum` (and the resource `id`) as unknown when the digest changes — mirroring `elasticstack_fleet_custom_integration/plan_modifier.go`.
-- [ ] 2.6 On the read path: if prior state had `content` set, populate `content` from API `blob`; if prior state had `content_path` set, preserve `content_path` in state and do not overwrite from API (checksum is managed by the plan modifier).
-- [ ] 2.7 Update embedded descriptions (`descriptions/*.md` or `resource-description.md`) and schema `MarkdownDescription` for the `artifacts`, `dashboards`, and `investigation_guide` blocks.
-- [ ] 2.8 If a minimum Kibana version is confirmed for `artifacts` (task 1.2), add a version gate in `toAPIModel` (mirroring the `alert_delay` / `flapping` pattern) with a clear diagnostic.
+- [x] 2.1 Extend `internal/models.AlertingRule` with an `Artifacts *AlertingRuleArtifacts` field; add `AlertingRuleArtifacts`, `AlertingRuleArtifactDashboard`, and `AlertingRuleArtifactInvestigationGuide` types matching the API shape.
+- [x] 2.2 Map `artifacts` in `internal/clients/kibanaoapi/alerting_rule.go`: include `artifacts` in `buildCreateRequestBody` and `buildUpdateRequestBody` when configured (omit the key when not configured); unmarshal `artifacts` from intermediate struct in `ConvertResponseToModel`.
+- [x] 2.3 Add `artifacts` single nested block to `internal/kibana/alertingrule/schema.go`, containing a `dashboards` list nested block (with required `id` string) and an `investigation_guide` single nested block (with optional `content`, optional `content_path`, and computed `checksum`). Enforce mutual exclusion of `content` and `content_path` via `objectvalidator.ExactlyOneOf` or equivalent.
+- [x] 2.4 Add `artifactsModel`, `dashboardModel`, and `investigationGuideModel` to `internal/kibana/alertingrule/models.go`; wire `alertingRuleModel` with `Artifacts types.Object`; implement `populateArtifactsFromAPI` and the `artifacts` portion of `toAPIModel`.
+- [x] 2.5 Implement `ModifyPlan` (or extend the existing one if present) to read the file at `content_path` during plan, compute SHA-256, and mark `checksum` (and the resource `id`) as unknown when the digest changes — mirroring `elasticstack_fleet_custom_integration/plan_modifier.go`.
+- [x] 2.6 On the read path: if prior state had `content` set, populate `content` from API `blob`; if prior state had `content_path` set, preserve `content_path` in state and do not overwrite from API (checksum is managed by the plan modifier).
+- [x] 2.7 Update embedded descriptions (`descriptions/*.md` or `resource-description.md`) and schema `MarkdownDescription` for the `artifacts`, `dashboards`, and `investigation_guide` blocks.
+- [x] 2.8 If a minimum Kibana version is confirmed for `artifacts` (task 1.2), add a version gate in `toAPIModel` (mirroring the `alert_delay` / `flapping` pattern) with a clear diagnostic.
 
 ## 3. Testing
 
